@@ -29,7 +29,7 @@ except ImportError:  # pragma: no cover - current Workshop hosts are POSIX
     fcntl = None  # type: ignore[assignment]
 
 from workshop.artifacts import build_artifact_manifest
-from workshop.errors import ArtifactError, ContractError, StateConflict
+from workshop.errors import ArtifactError, ContractError, ReceiptError, StateConflict
 from workshop.make.native import NativeMade
 from workshop.release.native import (
     NATIVE_RELEASE_LEGACY_MANUAL_PATH,
@@ -359,6 +359,8 @@ def _workflow_overview_markdown(staging: Path) -> str:
 
     explicit_invent = (staging / "invent").is_dir()
     explicit_playtest = (staging / "playtest").is_dir()
+    release = _read_json_object(staging / "release" / "release.json") or {}
+    make_output = release.get("schema_version") == 4
     if explicit_playtest:
         effort = "Quest"
         route = "Wish -> Invent -> Make -> Playtest -> Release"
@@ -431,21 +433,28 @@ def _workflow_overview_markdown(staging: Path) -> str:
         ("Invent", invent_count, invent_outcome),
         ("Make", make_count, make_outcome),
         ("Playtest", playtest_count, playtest_outcome),
-        ("Release", release_count, release_outcome),
+        ("Release", "host" if make_output else release_count, release_outcome),
         ("Publication", "host", publication_status),
     )
     table = "\n".join(
         ["| Stage | Attempts | Outcome |", "|---|---|---|"]
         + ["| %s | %s | %s |" % row for row in rows]
     )
+    selection_note = (
+        "The accepted Inventor assignment is preserved under `match/`. "
+        "Release is host-owned publication of Make output, with no native "
+        "Release turn or new manual."
+        if make_output
+        else "Inventor selection is folded into %s." % first_creative
+    )
     return (
         "## Workflow\n\n"
-        "%s: `%s`. Inventor selection is folded into %s.\n\n"
+        "%s: `%s`. %s\n\n"
         "%s\n\n"
         "Counts come from each stage's public `ATTEMPTS.json`. Skipped stages "
         "created no turn, artifact, or gate. Private host rejections and native "
         "session resumes are not public.\n"
-        % (effort, route, first_creative, table)
+        % (effort, route, selection_note, table)
     )
 
 
@@ -525,6 +534,7 @@ def _creation_story_markdown(staging: Path) -> str:
     product = _read_json_object(staging / "make" / "product.json") or {}
     playtested = _read_json_object(staging / "playtest" / "playtested.json")
     release = _read_json_object(staging / "release" / "release.json") or {}
+    make_output = release.get("schema_version") == 4
     publication = _read_json_object(
         staging / "publication" / "PUBLICATION.json"
     ) or {}
@@ -562,8 +572,13 @@ def _creation_story_markdown(staging: Path) -> str:
         "Invent was a separate native Goal."
         if explicit_invent
         else (
-            "Spark has no separate Invent Goal; selection and this compact "
-            "concept were folded into Make."
+            "Spark has no separate Invent Goal; the accepted Inventor "
+            "assignment and compact Make concept are preserved separately."
+            if make_output
+            else (
+                "Spark has no separate Invent Goal; selection and this compact "
+                "concept were folded into Make."
+            )
         )
     )
 
@@ -628,9 +643,26 @@ def _creation_story_markdown(staging: Path) -> str:
         )
 
     manual_path = release.get("manual_path")
-    if not isinstance(manual_path, str) or not manual_path.strip():
+    if not make_output and (
+        not isinstance(manual_path, str) or not manual_path.strip()
+    ):
         manual_path = "MANUAL.pdf"
-    manual_link = "release/%s" % urllib.parse.quote(manual_path, safe="/")
+    if make_output:
+        release_output = (
+            "the existing Make files and hash-bound publication metadata, "
+            "with no new manual, PDF, review, or native Release turn"
+        )
+        if isinstance(manual_path, str):
+            release_output += (
+                "; [the existing README](release/%s) was reused from Make"
+                % urllib.parse.quote(manual_path, safe="/")
+            )
+    else:
+        release_output = (
+            "the hash-bound Release package, product facts, and printable "
+            "[customer manual](release/%s)"
+            % urllib.parse.quote(manual_path, safe="/")
+        )
     nested_publication = publication.get("publication")
     page_url = (
         nested_publication.get("page_url")
@@ -663,8 +695,7 @@ def _creation_story_markdown(staging: Path) -> str:
         "### 5. Release — make the customer package\n\n"
         "**Input:** the sealed product and the passed Playtest evidence or "
         "truthful not-run record. "
-        "**Output:** the hash-bound Release package, product facts, and printable "
-        "[customer manual](%s); see [the Release contract](release/release.json).\n\n"
+        "**Output:** %s; see [the Release contract](release/release.json).\n\n"
         "### 6. Publication — perform and verify the external effect\n\n"
         "**Input:** the exact sealed Release package plus host-held Factory "
         "authorization; credentials never enter the native session. "
@@ -684,7 +715,7 @@ def _creation_story_markdown(staging: Path) -> str:
             model_text,
             render_text,
             playtest_output,
-            manual_link,
+            release_output,
             public_page,
         )
     )
@@ -1207,9 +1238,10 @@ def materialize_public_example(
         raise StateConflict("public Factory slug is not safe for a repository path")
     receipt.assert_artifact(release.product_artifact_sha256)
     details = receipt.details
+    make_output = release.schema_version == 4
     pdf_first = release.manual_path == NATIVE_RELEASE_MANUAL_PATH
     for field in (
-        "manual_sha256",
+        "publication_anchor_sha256" if make_output else "manual_sha256",
         "primary_model_sha256",
         "product_page_sha256",
         "release_sha256",
@@ -1219,7 +1251,35 @@ def materialize_public_example(
             or re.fullmatch(r"[0-9a-f]{64}", details[field]) is None
         ):
             raise StateConflict("public Factory receipt lacks exact byte identities")
-    if pdf_first:
+    if make_output:
+        # Reuse Factory's exact pinned-CDN URL contract; this is a read-only
+        # receipt projection and never invokes the authenticated adapter.
+        from workshop.integrations.factory import (
+            FACTORY_RELEASE_PAGE_PATH,
+            MAKE_OUTPUT_PUBLICATION_MODE,
+            _factory_project_file_url,
+        )
+
+        try:
+            anchor_url = _factory_project_file_url(
+                receipt.project_url, FACTORY_RELEASE_PAGE_PATH
+            )
+        except (ContractError, ReceiptError) as exc:
+            raise StateConflict(
+                "public Factory publication anchor URL is invalid"
+            ) from exc
+        if (
+            details.get("publication_mode") != MAKE_OUTPUT_PUBLICATION_MODE
+            or details.get("publication_anchor_path") != FACTORY_RELEASE_PAGE_PATH
+            or details.get("publication_anchor_sha256") != release.product_json_sha256
+            or details.get("publication_anchor_readback_sha256")
+            != release.product_json_sha256
+            or details.get("publication_anchor_url") != anchor_url
+        ):
+            raise StateConflict(
+                "public Factory receipt lacks exact Make-output anchor readback"
+            )
+    elif pdf_first:
         if details.get("manual_path") != NATIVE_RELEASE_MANUAL_PATH:
             raise StateConflict("public Factory receipt belongs to a different manual path")
     elif (
@@ -1260,21 +1320,34 @@ def materialize_public_example(
     product_entries = {
         entry.path: entry for entry in made.product_manifest.entries
     }
-    manual = _bound_bytes(
-        package_root,
-        package_entries,
-        release.manual_path,
-        label="public %s" % release.manual_path,
-    )
+    if release.manual_path is not None:
+        _bound_bytes(
+            package_root,
+            package_entries,
+            release.manual_path,
+            label="public %s" % release.manual_path,
+        )
     product_json = _bound_bytes(
         package_root,
         package_entries,
         release.product_json_path,
         label="public product.json",
     )
-    manual_entry = package_entries[release.manual_path]
-    if details.get("manual_sha256") != manual_entry.sha256:
+    manual_entry = package_entries.get(release.manual_path)
+    if not make_output and details.get("manual_sha256") != manual_entry.sha256:
         raise StateConflict("public Factory receipt belongs to different manual bytes")
+    if make_output and release.product["source_document"] is not None:
+        document = release.product["source_document"]
+        source_entry = product_entries.get(document["source_path"])
+        if (
+            source_entry is None
+            or manual_entry is None
+            or source_entry.sha256 != document["sha256"]
+            or source_entry.sha256 != manual_entry.sha256
+        ):
+            raise StateConflict(
+                "public Make-output README differs from the original Made bytes"
+            )
 
     target = toys / (inventor_id + "-" + slug)
     staging = Path(
@@ -1365,7 +1438,7 @@ def materialize_public_example(
         page_url = _https_public_url(details.get("page_url"), "public page URL")
         cover_url = (
             None
-            if pdf_first
+            if pdf_first or make_output
             else _https_public_url(details.get("cover_url"), "public cover URL")
         )
         title = str(release.product["title"])
@@ -1378,12 +1451,21 @@ def materialize_public_example(
                 release.playtest_evidence_artifact_sha256
             ),
             "product_page_sha256": release.product_json_sha256,
-            "manual_sha256": manual_entry.sha256,
             "primary_model_sha256": primary_sha256,
         }
+        if make_output:
+            identities.update(
+                publication_anchor_path=details["publication_anchor_path"],
+                publication_anchor_sha256=details["publication_anchor_sha256"],
+                publication_anchor_readback_sha256=details[
+                    "publication_anchor_readback_sha256"
+                ],
+            )
+        else:
+            identities["manual_sha256"] = manual_entry.sha256
         if pdf_first:
             identities["manual_path"] = release.manual_path
-        else:
+        elif not make_output:
             identities["factory_content_sha256"] = details.get(
                 "factory_content_sha256"
             )
@@ -1400,6 +1482,9 @@ def materialize_public_example(
         }
         if cover_url is not None:
             publication_details["cover_url"] = cover_url
+        if make_output:
+            publication_details["publication_mode"] = details["publication_mode"]
+            publication_details["publication_anchor_url"] = anchor_url
         publication = {
             "schema_version": 2,
             "kind": "autonomous-workshop.public-toy-snapshot",
@@ -1446,14 +1531,25 @@ def materialize_public_example(
         heading = " ".join(title.split())
         product_description = (
             "the exact sealed Release facts"
-            if pdf_first
+            if pdf_first or make_output
             else "the exact sealed public Release page contract"
         )
-        manual_description = (
-            "the exact sealed printable in-box manual"
-            if pdf_first
-            else "the exact sealed public manual"
-        )
+        if make_output:
+            document_contents = (
+                "- `release/%s` — the existing Make README, reused without rewriting.\n"
+                % release.manual_path
+                if release.manual_path is not None
+                else "- No README or customer manual was created by Release.\n"
+            )
+        else:
+            document_contents = "- `release/%s` — %s.\n" % (
+                release.manual_path,
+                (
+                    "the exact sealed printable in-box manual"
+                    if pdf_first
+                    else "the exact sealed public manual"
+                ),
+            )
         runtime_rows = (
             "| Agent | %s (`--agent %s`) |\n"
             "| Workflow | %s (`--workflow %s`) |\n"
@@ -1493,7 +1589,7 @@ def materialize_public_example(
             "- `match/` — accepted Match assignment.\n"
             "%s"
             "- `make/` — %s, exact CAD source, models, product renders, verification, and sealed prior attempts.\n"
-            "- `release/%s` — %s.\n"
+            "%s"
             "- `release/` — accepted Release contract and exact package bytes.\n"
             "- `publication/PUBLICATION.json` — sanitized public readback identities.\n"
         "- `TOKENS.json` — separate Manager-reported gross/cached/uncached input and output/reasoning tokens by stage; no combined total or dollar estimate.\n"
@@ -1537,8 +1633,7 @@ def materialize_public_example(
                 else "- Invent was skipped by this effort route; its sealed compact concept is under `make/`.\n"
             ),
             product_description,
-            release.manual_path,
-            manual_description,
+            document_contents,
             (
                 "- `SANITIZATION.json` — source/public hashes for host-local path prefixes replaced by stable placeholders.\n"
                 if (staging / "SANITIZATION.json").is_file()
@@ -1546,7 +1641,7 @@ def materialize_public_example(
             ),
             (
                 "- `playtest/` — accepted Playtest contract/evidence and sealed superseded attempts.\n"
-                if release.schema_version != 3
+                if release.schema_version not in (3, 4)
                 else "- Playtest was not run; Release records that omission explicitly.\n"
             ),
         )

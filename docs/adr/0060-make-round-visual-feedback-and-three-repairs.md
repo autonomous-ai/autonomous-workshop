@@ -26,7 +26,9 @@ and pass print preflight before every rereview; retain exact observations before
 comparison and disclose prior knowledge on rereviews. Exhaustion produces a
 truthful failed outcome. Early-proof and Release manual review budgets do not
 change. The final integrated verifier still runs after passing blind review;
-only the host performs the authoritative isolated fresh rebuild.
+only the host performs any additional isolated fresh rebuild. Under ADR 0061,
+Spark omits that duplicate host rebuild; Forge and Quest retain it. This does
+not change Make's visual feedback, review allowance, or final verifier.
 
 ## Compatibility
 
@@ -34,7 +36,8 @@ The new instructions, finalizer and CAD verifier are materialized and hashed
 at run creation. Existing runs keep their original tool bytes and review
 allowance. No existing workspace or host checkpoint is rewritten. Signature
 review retains schema v6 and its exact fields; the bounded integer expands to
-1–4 in new validators. The host replays the run's frozen verifier.
+1–4 in new validators. Forge/Quest's host replays the run's frozen verifier;
+Spark's host accepts Make's output without that replay under ADR 0061.
 
 ## Verification
 

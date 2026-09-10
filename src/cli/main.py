@@ -94,7 +94,7 @@ from workshop.workflow import (
 )
 from workshop.wish import Wish, generate_wish_id
 from workshop.workflow import native_run_status, resume_native_run, start_native_run
-from workshop.workflow.token_budget import DEFAULT_PRODUCT_TOKENS
+from workshop.workflow.token_budget import DEFAULT_PRODUCT_TOKENS, MAX_PRODUCT_TOKENS
 from workshop.workflow.effort import (
     DEFAULT_WORKSHOP_EFFORT,
     WORKSHOP_EFFORTS,
@@ -500,8 +500,8 @@ def _token_budget(value: str) -> int:
         parsed = int(value)
     except ValueError as exc:
         raise argparse.ArgumentTypeError("token budget must be an integer") from exc
-    if not 1_000 <= parsed <= 100_000_000:
-        raise argparse.ArgumentTypeError("token budget must be between 1000 and 100000000")
+    if not 1_000 <= parsed <= MAX_PRODUCT_TOKENS:
+        raise argparse.ArgumentTypeError("token budget must be between 1000 and %d" % MAX_PRODUCT_TOKENS)
     return parsed
 
 
@@ -1659,7 +1659,7 @@ def parser() -> argparse.ArgumentParser:
         choices=SUPPORTED_REASONING_EFFORTS,
         default=None,
         metavar="LEVEL",
-        help="model reasoning effort (default: medium for Codex and Claude Code)",
+        help="model reasoning effort (default: medium; ultra requires Codex Astra)",
     )
     start.add_argument(
         "--root", type=Path, help="Workshop checkout or inventor catalog"
@@ -1757,7 +1757,7 @@ def parser() -> argparse.ArgumentParser:
         choices=SUPPORTED_REASONING_EFFORTS,
         default=None,
         metavar="LEVEL",
-        help="model reasoning effort (default: medium for Codex and Claude Code)",
+        help="model reasoning effort (default: medium; ultra requires Codex Astra)",
     )
     daydream.add_argument(
         "--root", type=Path, help="Workshop checkout or inventor catalog"
@@ -1821,7 +1821,7 @@ def parser() -> argparse.ArgumentParser:
         choices=SUPPORTED_REASONING_EFFORTS,
         default=None,
         metavar="LEVEL",
-        help="model reasoning effort (default: medium for Codex and Claude Code)",
+        help="model reasoning effort (default: medium; ultra requires Codex Astra)",
     )
     wish.add_argument(
         "--max-rounds",

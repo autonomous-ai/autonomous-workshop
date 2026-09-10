@@ -254,3 +254,12 @@ repair-and-rereview cycles. Python performs no visual judgment or model calls.
   lock still covers every tree under `make/skills/`. It sequences the reviewed
   `cad` and `image-to-cad` tools without changing them; a resync of the
   upstream skills does not touch it.
+
+## Earlier review-count compatibility correction (2026-09-09)
+
+An earlier local correction allowed positive signature-review counts instead
+of the former two-review allowance. Integration with the team's ADR 0060
+superseded that change: Make's current four-review policy and verifier are
+preserved unchanged, in accordance with the instruction to leave Make alone.
+Workshop token budgeting removes host execution caps, not Make's internal
+review allowance. The lock binds the integrated team skill bytes.

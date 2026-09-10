@@ -462,6 +462,24 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaises(ContractError):
             run.refresh_domain_skill_tools({"cad": cad}, reason="")
 
+    def test_token_review_refresh_is_allowlisted_and_preserves_workflow(self):
+        marker = self.skill / "references/token-budget-v1.md"
+        marker.write_bytes(b"old token rules\n")
+        run = self.create()
+        before = run.snapshot()
+        marker.write_bytes(b"token-only rules\n")
+        (self.skill / "SKILL.md").write_bytes(b"unrelated instruction change\n")
+        changes = run.refresh_domain_skill_tools(
+            {}, reason="remove review spending cap", token_budget_skill_root=self.skill
+        )
+        self.assertEqual([c["path"] for c in changes],
+                         [".agents/skills/autonomous-workshop/references/token-budget-v1.md"])
+        after = run.snapshot()
+        self.assertEqual(after.product_id, before.product_id)
+        self.assertEqual(after.stage, before.stage)
+        self.assertEqual(after.input_sha256s[".agents/skills/autonomous-workshop/SKILL.md"],
+                         before.input_sha256s[".agents/skills/autonomous-workshop/SKILL.md"])
+
     def test_create_materializes_custom_agent_roster_and_executable_skills(self):
         cad = self.root / "cad-skill"
         (cad / "scripts").mkdir(parents=True)
@@ -1067,6 +1085,123 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaisesRegex(TransitionError, "complete the Workshop"):
             run.apply_outcome(outcome, gate=self.gate(run, outcome))
         self.assertEqual(run.snapshot().stage, "release")
+
+    def test_token_budget_revisions_survive_legacy_round_and_history_caps(self):
+        references = self.skill / "references"
+        (references / "token-budget-v1.md").write_bytes(b"token allowance\n")
+        (references / "effort-routes-v1.md").write_bytes(b"routes\n")
+        (references / "make-invent-revision-v1.md").write_bytes(b"revisions\n")
+        run = self.create(max_rounds=1, effort="forge")
+        self.advance(run, "wish", "invent")
+        self.advance(run, "invent", "make")
+        for _ in range(10):
+            proposal = self.outcome(run, "make", "invent")
+            run.apply_outcome(proposal, gate=self.gate(run, proposal, passed=False))
+            self.advance(run, "invent", "make")
+        checkpoint = run.snapshot()
+        self.assertEqual(checkpoint.round_index, 11)
+        self.assertEqual(checkpoint.max_rounds, 1)
+        self.assertEqual(checkpoint.stage, "make")
+
+    def test_token_run_host_growth_has_no_aggregate_artifact_or_checkpoint_cap(self):
+        references = self.skill / "references"
+        (references / "token-budget-v1.md").write_bytes(b"token allowance\n")
+        (references / "effort-routes-v1.md").write_bytes(b"routes\n")
+        run = self.create(effort="spark")
+        self.advance(run, "wish", "make")
+        outcome = self.outcome(run, "make", "release")
+        parts = tuple(
+            self.artifact(run, "make", name="part-%04d.txt" % index, content=b"safe\n")
+            for index in range(513)
+        )
+        with patch.object(agent_run_module, "MAX_AGENT_REFERENCED_BYTES", 10), patch.object(
+            agent_run_module, "MAX_AGENT_CHECKPOINT_BYTES", 1024
+        ):
+            checkpoint = run.apply_outcome(
+                outcome, gate=self.gate(run, outcome), additional_artifacts=parts
+            )
+            self.assertEqual(checkpoint.stage, "release")
+            reopened = AgentRun.open(run.run_root, host_state_root=run.host_state_root)
+            self.assertEqual(reopened.snapshot().checkpoint_sha256, checkpoint.checkpoint_sha256)
+            self.assertGreater((run.host_state_root / "agent-run.json").stat().st_size, 1024)
+            (run.run_root / parts[0].path).write_bytes(b"changed\n")
+            with self.assertRaisesRegex(StateConflict, "sealed agent artifact changed"):
+                reopened.snapshot()
+
+    def test_non_token_run_keeps_legacy_host_growth_caps(self):
+        run = self.create()
+        outcome = self.outcome(run, "wish", "match")
+        extra = self.artifact(run, "wish", name="extra.txt", content=b"safe\n")
+        gate = self.gate(run, outcome)
+        with patch.object(agent_run_module, "MAX_HOST_SEALED_ARTIFACTS_PER_GATE", 0):
+            with self.assertRaisesRegex(ArtifactError, "too many artifacts"):
+                run.apply_outcome(outcome, gate=gate, additional_artifacts=(extra,))
+        with patch.object(agent_run_module, "MAX_AGENT_REFERENCED_BYTES", 1):
+            with self.assertRaisesRegex(ArtifactError, "total limit"):
+                run.apply_outcome(outcome, gate=gate)
+        with patch.object(agent_run_module, "MAX_AGENT_CHECKPOINT_BYTES", 1):
+            with self.assertRaisesRegex(StateConflict, "byte limit"):
+                run.snapshot()
+
+    def test_token_run_keeps_per_file_and_credential_safety_checks(self):
+        (self.skill / "references" / "token-budget-v1.md").write_bytes(b"token allowance\n")
+        run = self.create()
+        outcome = self.outcome(run, "wish", "match", content=b"regular artifact\n")
+        gate = self.gate(run, outcome)
+        with patch.object(agent_run_module, "MAX_AGENT_ARTIFACT_BYTES", 1):
+            with self.assertRaisesRegex(ArtifactError, "byte limit"):
+                run.apply_outcome(outcome, gate=gate)
+        secret = self.outcome(run, "wish", "match", content=b"FACTORY_PASSWORD=must-not-seal\n")
+        with self.assertRaisesRegex(ArtifactError, "credential"):
+            run.apply_outcome(secret, gate=self.gate(run, secret))
+
+    def test_adopted_token_budget_uses_verified_host_authority_without_new_inputs(self):
+        from workshop.workflow import native_run as host
+        from workshop.workflow.budgets import LifetimeBudget
+        from tests.workflow.test_token_budget import observation
+
+        references = self.skill / "references"
+        (references / "lifetime-budgets-v1.md").write_bytes(b"legacy lifetime budget\n")
+        (references / "effort-routes-v1.md").write_bytes(b"routes\n")
+        (references / "make-invent-revision-v1.md").write_bytes(b"revisions\n")
+        run = self.create(max_rounds=1, effort="forge")
+        self.advance(run, "wish", "invent")
+        self.advance(run, "invent", "make")
+        checkpoint = run.snapshot()
+        inputs_before = dict(checkpoint.input_sha256s)
+        paths = host.NativeRunPaths(workspace=run.run_root, host_state=run.host_state_root)
+        previous = LifetimeBudget()
+        host._save_lifetime_budget(paths, checkpoint, previous)
+        with patch.object(host, "_read_product_token_usage", return_value=observation(100)):
+            host._adopt_token_budget(paths, checkpoint, 1_000_000)
+        adopted = host._open_budgeted_agent_run(paths)
+        self.assertTrue(adopted.snapshot().token_budgeted)
+        self.assertNotIn(host.TOKEN_BUDGET_CAPABILITY_PATH, adopted.snapshot().input_sha256s)
+        with patch.object(agent_run_module, "MAX_AGENT_CHECKPOINT_BYTES", 1024), patch.object(
+            agent_run_module, "MAX_AGENT_REFERENCED_BYTES", 1
+        ), patch.object(agent_run_module, "MAX_HOST_SEALED_ARTIFACTS_PER_GATE", 0):
+            for index in range(10):
+                proposal = self.outcome(adopted, "make", "invent")
+                extra = self.artifact(adopted, "make", name="adopted-%d.txt" % index)
+                adopted.apply_outcome(proposal, gate=self.gate(adopted, proposal, passed=False), additional_artifacts=(extra,))
+                self.advance(adopted, "invent", "make")
+            adopted = host._open_budgeted_agent_run(paths)
+            self.assertEqual(adopted.snapshot().round_index, 11)
+        self.assertEqual(dict(adopted.snapshot().input_sha256s), inputs_before)
+        budget = host._load_lifetime_budget(paths, adopted.snapshot())
+        self.assertEqual(budget.previous_budget, previous.to_dict())
+        self.assertEqual(budget.to_dict()["used_tokens"], 110)
+        ledger = paths.host_state / "native-budget.json"
+        encoded = ledger.read_bytes()
+        invalid = json.loads(encoded)
+        invalid["wish_sha256"] = "f" * 64
+        ledger.write_text(json.dumps(invalid))
+        with self.assertRaisesRegex(StateConflict, "binding"):
+            host._open_budgeted_agent_run(paths)
+        ledger.write_bytes(encoded)
+        ledger.unlink()
+        with self.assertRaisesRegex(StateConflict, "unavailable"):
+            host._open_budgeted_agent_run(paths)
 
     def test_effort_checkpoint_rejects_a_disabled_active_stage(self):
         marker = self.skill / "references" / "effort-routes-v1.md"

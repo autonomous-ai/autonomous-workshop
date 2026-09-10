@@ -1,0 +1,20 @@
+$ <HOME>/miniconda/bin/python3.12 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/parts/board_1_0.stl --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-board_1_0.md
+(19.9s, exit 1)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/parts/board_1_0.stl: 146.27 cm3 solid, grid 0.291 mm (664x664x26), 384408 surface samples, grid resolved to 0.146 mm, exact where under the minimum
+  FAIL  wall >= 0.80 mm (grid +/-0.15, exact where under) 0.0% of surface below (61 of 384408 samples); thinnest 0.29 mm at (82.3, 192.0, 3.4) in 8 region(s); 7 wall(s) (widest band 1.46 mm), 0 taper(s) at feature edges and 1 spot(s) too small to be a wall (0.00% of surface, budget 2%); 31 grid reading(s) under the limit measured exact on the mesh
+  PASS  thickness distribution         median 4.80 mm, p95 41.91 mm, max 191.80 mm
+  WARN  hollowable at 1.20 mm wall     54.73 of 146.27 cm3 (37%) in 1 pocket(s)
+  PASS  filament that would save       8.21 cm3, 10.2 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.36 mm at (0.0, 25.6, 4.7)     11 samples, 2.9 mm2, runs 2.0 mm, band 1.46 mm
+        2. [wall ] 0.29 mm at (82.3, 192.0, 3.4)     11 samples, 2.8 mm2, runs 1.9 mm, band 1.46 mm
+        3. [wall ] 0.31 mm at (0.0, 64.3, 2.6)     10 samples, 2.6 mm2, runs 2.3 mm, band 1.11 mm
+        4. [wall ] 0.34 mm at (166.3, 192.0, 4.4)      7 samples, 2.0 mm2, runs 2.1 mm, band 0.93 mm
+        5. [spot ] 0.36 mm at (0.0, 148.4, 3.3)      6 samples, 1.7 mm2, runs 1.2 mm, band 1.45 mm
+        6. [wall ] 0.46 mm at (0.3, 109.7, 3.9)      5 samples, 1.6 mm2, runs 1.7 mm, band 0.93 mm
+        ... and 2 smaller region(s)
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-board_1_0.md
+
+--- stderr

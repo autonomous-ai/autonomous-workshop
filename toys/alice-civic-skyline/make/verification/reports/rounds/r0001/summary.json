@@ -1,0 +1,117 @@
+{
+ "changed": [
+  "bishop",
+  "board_0_0",
+  "board_0_1",
+  "board_1_0",
+  "board_1_1",
+  "dark_tile",
+  "king",
+  "knight",
+  "pawn",
+  "queen",
+  "rook"
+ ],
+ "checked": [
+  "bishop",
+  "board_0_0",
+  "board_0_1",
+  "board_1_0",
+  "board_1_1",
+  "dark_tile",
+  "king",
+  "knight",
+  "pawn",
+  "queen",
+  "rook"
+ ],
+ "entry": "city.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001",
+ "parts": [
+  "bishop",
+  "board_0_0",
+  "board_0_1",
+  "board_1_0",
+  "board_1_1",
+  "dark_tile",
+  "king",
+  "knight",
+  "pawn",
+  "queen",
+  "rook"
+ ],
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "round": 1,
+ "thickness": {
+  "bishop": {
+   "failures": [],
+   "thinnest_mm": 0.11,
+   "verdict": "PASS"
+  },
+  "board_0_0": {
+   "failures": [
+    "wall >= 0.80 mm (grid +/-0.15, exact where under) 0.0% of surface below (56 of 3"
+   ],
+   "thinnest_mm": 0.33,
+   "verdict": "FAIL"
+  },
+  "board_0_1": {
+   "failures": [
+    "wall >= 0.80 mm (grid +/-0.15, exact where under) 0.0% of surface below (70 of 3"
+   ],
+   "thinnest_mm": 0.3,
+   "verdict": "FAIL"
+  },
+  "board_1_0": {
+   "failures": [
+    "wall >= 0.80 mm (grid +/-0.15, exact where under) 0.0% of surface below (61 of 3"
+   ],
+   "thinnest_mm": 0.29,
+   "verdict": "FAIL"
+  },
+  "board_1_1": {
+   "failures": [
+    "wall >= 0.80 mm (grid +/-0.15, exact where under) 0.0% of surface below (69 of 3"
+   ],
+   "thinnest_mm": 0.21,
+   "verdict": "FAIL"
+  },
+  "dark_tile": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  },
+  "king": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  },
+  "knight": {
+   "failures": [],
+   "thinnest_mm": 0.67,
+   "verdict": "PASS"
+  },
+  "pawn": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  },
+  "queen": {
+   "failures": [
+    "wall >= 0.80 mm (grid +/-0.09, exact where under) 0.2% of surface below (244 of "
+   ],
+   "thinnest_mm": 0.12,
+   "verdict": "FAIL"
+  },
+  "rook": {
+   "failures": [],
+   "thinnest_mm": null,
+   "verdict": "PASS"
+  }
+ }
+}

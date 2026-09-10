@@ -19,6 +19,8 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping, Optional, Sequence
 
+from workshop._validation import require_sha256
+
 try:
     import fcntl
 except ImportError:  # pragma: no cover - Codex CLI hosts are currently POSIX
@@ -32,6 +34,7 @@ from workshop.errors import (
     TransitionError,
     WorkshopError,
 )
+from workshop.artifacts import build_artifact_manifest
 from workshop.contributors import (
     parse_taste_bytes,
 )
@@ -97,6 +100,17 @@ from workshop.match.native import (
     InventorRoster,
     InventorRosterEntry,
 )
+from workshop.workflow.inventor_selection import (
+    INVENTOR_SELECTION_MARKER_NAME,
+    INVENTOR_SELECTION_RECEIPT_NAME,
+    MAX_SELECTION_BYTES,
+    assignment_from_receipt,
+    pinned_selection_receipt,
+    selection_enabled,
+    selection_packet,
+    selection_prompt,
+    selection_receipt,
+)
 from workshop.playtest.native import NativePlaytested
 from workshop.playtest.vault_evidence import (
     build_rows,
@@ -120,11 +134,15 @@ from workshop.release.manual_design import (
 from workshop.release.native import (
     DIRECT_RELEASE_PLAYTEST_STATUS,
     DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
+    MAKE_OUTPUT_RELEASE_PACKAGE_ROOT,
+    MAX_NATIVE_RELEASE_CONTRACT_BYTES,
     NATIVE_RELEASE_LEGACY_MANUAL_PATH,
     NATIVE_RELEASE_MANUAL_PATH,
     NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
     NativeRelease,
     NativeReleasePackage,
+    prepare_make_output_release,
+    read_native_release,
 )
 from workshop.release.verification import try_materialize_digital_verification
 from workshop.release.public_example import (
@@ -189,7 +207,7 @@ from workshop.workflow.budgets import (
 from workshop.workflow.token_budget import (
     ProductTokenBudget, TOKEN_BUDGET_CAPABILITY_PATH, DEFAULT_PRODUCT_TOKENS, validate_limit,
 )
-from workshop.runtime.codex_usage import read_product_usage, UsageUnavailable
+from workshop.runtime.codex_usage import read_product_usage, UsageUnavailable, UsageNotReady
 from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
@@ -337,6 +355,13 @@ _PRODUCT_RUN_DIRECT_RELEASE_INPUT = (
 )
 _PRODUCT_RUN_EFFORT_ROUTES_INPUT = EFFORT_ROUTE_CAPABILITY_PATH
 _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
+    "make-inventor-selection-mismatch": (
+        "Make's selection fields differ from Workshop's accepted assignment. "
+        "Copy selected_inventor_id and ranking exactly from "
+        "STAGE.json inputs.workshop_selection.assignment into the existing "
+        "creative source and rerun the Make finalizer. This is a selection "
+        "handoff repair; do not regenerate CAD, images, or product geometry."
+    ),
     "make-product-metadata-invalid": (
         "The host rejected product.json metadata. Add both title and summary "
         "as non-empty text values of at most 2000 characters, then rerun "
@@ -1069,6 +1094,60 @@ def _validate_make_proposal_rejection_record(
     directory: Path,
     seen: frozenset[str] = frozenset(),
 ) -> Mapping[str, Any]:
+    return _validate_proposal_rejection_chain(
+        record, stage_name="Make", seen=seen,
+        validate_entry=lambda value: _validate_make_proposal_rejection_entry(
+            run, checkpoint, value, directory=directory
+        ),
+        record_path=lambda digest: _make_proposal_rejection_record_path(directory, digest),
+        maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+    )
+
+
+def _validate_proposal_rejection_chain(
+    record: Mapping[str, Any], *, stage_name: str,
+    validate_entry: Callable[[Mapping[str, Any]], Mapping[str, Any]],
+    record_path: Callable[[str], Path], maximum_bytes: int,
+    seen: frozenset[str] = frozenset(),
+) -> Mapping[str, Any]:
+    """Verify every exact predecessor without a Python recursion-depth budget."""
+    visited = set(seen)
+    head = None
+    expected_digest = None
+    expected_number = None
+    while True:
+        current = validate_entry(record)
+        digest = current["rejection_sha256"]
+        if digest in visited:
+            raise StateConflict("%s proposal rejection chain contains a cycle" % stage_name)
+        visited.add(digest)
+        if expected_digest is not None and (
+            digest != expected_digest or current["rejection_number"] != expected_number
+        ):
+            raise StateConflict("%s proposal rejection predecessor is invalid" % stage_name)
+        if head is None:
+            head = current
+        previous = current["previous_rejection_sha256"]
+        if previous is None:
+            return head
+        expected_digest = previous
+        expected_number = current["rejection_number"] - 1
+        label = "prior %s proposal rejection" % stage_name
+        content = _read_stable_private_bytes(
+            record_path(previous), label=label, maximum_bytes=maximum_bytes
+        )
+        try:
+            record = _strict_json_bytes(content, label=label)
+        except ContractError as exc:
+            raise StateConflict("%s is invalid" % label) from exc
+        if content != _canonical_json_bytes(record) + b"\n":
+            raise StateConflict("%s is not canonical" % label)
+
+
+def _validate_make_proposal_rejection_entry(
+    run: AgentRun, checkpoint: AgentRunCheckpoint, record: Mapping[str, Any], *,
+    directory: Path,
+) -> Mapping[str, Any]:
     expected = {
         "schema_version",
         "kind",
@@ -1109,7 +1188,9 @@ def _validate_make_proposal_rejection_record(
         or record.get("stage") != "make"
         or record.get("round") != checkpoint.round_index
         or type(rejection_number) is not int
-        or not 1 <= rejection_number <= _MAX_MAKE_PROPOSAL_REJECTIONS
+        or rejection_number < 1
+        or (not _checkpoint_uses_token_budget(checkpoint)
+            and rejection_number > _MAX_MAKE_PROPOSAL_REJECTIONS)
         or record.get("checkpoint_sha256") != checkpoint.checkpoint_sha256
         or (
             previous is not None
@@ -1143,9 +1224,6 @@ def _validate_make_proposal_rejection_record(
     identity = {key: record[key] for key in expected - {"rejection_sha256"}}
     if rejection_sha256 != _sha256(_canonical_json_bytes(identity)):
         raise StateConflict("Make proposal rejection hash is invalid")
-    if rejection_sha256 in seen:
-        raise StateConflict("Make proposal rejection chain contains a cycle")
-
     quarantine_path = _make_proposal_quarantine_path(
         directory, record["rejected_proposal_file_sha256"]
     )
@@ -1166,7 +1244,7 @@ def _validate_make_proposal_rejection_record(
         or proposal.subject_sha256 != record["subject_sha256"]
         or proposal.outcome.stage != "make"
         or proposal.outcome.status != "ready"
-        or proposal.outcome.proposed_transition != "playtest"
+        or proposal.outcome.proposed_transition != _checkpoint_next_stage(checkpoint, "make")
         or proposal.sha256 != record["rejected_proposal_sha256"]
         or proposal.outcome.sha256 != record["rejected_outcome_sha256"]
         or [artifact.to_dict() for artifact in proposal.outcome.artifacts]
@@ -1179,31 +1257,6 @@ def _validate_make_proposal_rejection_record(
             raise StateConflict("Make proposal rejection predecessor is invalid")
     else:
         if rejection_number <= 1:
-            raise StateConflict("Make proposal rejection predecessor is invalid")
-        previous_content = _read_stable_private_bytes(
-            _make_proposal_rejection_record_path(directory, previous),
-            label="prior Make proposal rejection",
-            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
-        )
-        try:
-            previous_record = _strict_json_bytes(
-                previous_content, label="prior Make proposal rejection"
-            )
-        except ContractError as exc:
-            raise StateConflict("prior Make proposal rejection is invalid") from exc
-        if previous_content != _canonical_json_bytes(previous_record) + b"\n":
-            raise StateConflict("prior Make proposal rejection is not canonical")
-        validated_previous = _validate_make_proposal_rejection_record(
-            run,
-            checkpoint,
-            previous_record,
-            directory=directory,
-            seen=seen | {rejection_sha256},
-        )
-        if (
-            validated_previous["rejection_sha256"] != previous
-            or validated_previous["rejection_number"] != rejection_number - 1
-        ):
             raise StateConflict("Make proposal rejection predecessor is invalid")
     return dict(record)
 
@@ -1272,6 +1325,12 @@ def _make_rejection_for_error(error: ContractError) -> _MakeProposalRejected:
     if isinstance(error, StateConflict) or not isinstance(error, ContractError):
         raise StateConflict("Make proposal rejection classification is invalid")
     message = str(error)
+    if message == "Make must use Workshop's accepted inventor selection":
+        failure_code = "make-inventor-selection-mismatch"
+        return _MakeProposalRejected(
+            failure_code=failure_code,
+            feedback=_MAKE_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+        )
     if message.startswith("Made product title ") or message.startswith(
         "Made product summary "
     ):
@@ -1333,6 +1392,7 @@ def _persist_make_proposal_rejection(
         return previous
     if (
         previous is not None
+        and not _checkpoint_uses_token_budget(checkpoint)
         and previous["rejection_number"] >= _MAX_MAKE_PROPOSAL_REJECTIONS
     ):
         raise WorkshopError(
@@ -1484,6 +1544,20 @@ def _validate_playtest_proposal_rejection_record(
     directory: Path,
     seen: frozenset[str] = frozenset(),
 ) -> Mapping[str, Any]:
+    return _validate_proposal_rejection_chain(
+        record, stage_name="Playtest", seen=seen,
+        validate_entry=lambda value: _validate_playtest_proposal_rejection_entry(
+            run, checkpoint, value, directory=directory
+        ),
+        record_path=lambda digest: _playtest_proposal_rejection_record_path(directory, digest),
+        maximum_bytes=_MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES,
+    )
+
+
+def _validate_playtest_proposal_rejection_entry(
+    run: AgentRun, checkpoint: AgentRunCheckpoint, record: Mapping[str, Any], *,
+    directory: Path,
+) -> Mapping[str, Any]:
     expected = {
         "schema_version",
         "kind",
@@ -1523,7 +1597,9 @@ def _validate_playtest_proposal_rejection_record(
         or record.get("stage") != "playtest"
         or record.get("round") != checkpoint.round_index
         or type(rejection_number) is not int
-        or not 1 <= rejection_number <= _MAX_PLAYTEST_PROPOSAL_REJECTIONS
+        or rejection_number < 1
+        or (not _checkpoint_uses_token_budget(checkpoint)
+            and rejection_number > _MAX_PLAYTEST_PROPOSAL_REJECTIONS)
         or record.get("checkpoint_sha256") != checkpoint.checkpoint_sha256
         or (
             previous is not None
@@ -1556,9 +1632,6 @@ def _validate_playtest_proposal_rejection_record(
     identity = {key: record[key] for key in expected - {"rejection_sha256"}}
     if rejection_sha256 != _sha256(_canonical_json_bytes(identity)):
         raise StateConflict("Playtest proposal rejection hash is invalid")
-    if rejection_sha256 in seen:
-        raise StateConflict("Playtest proposal rejection chain contains a cycle")
-
     quarantine = _read_stable_private_bytes(
         _playtest_proposal_quarantine_path(
             directory, record["rejected_proposal_file_sha256"]
@@ -1594,35 +1667,6 @@ def _validate_playtest_proposal_rejection_record(
             raise StateConflict("Playtest proposal rejection predecessor is invalid")
     else:
         if rejection_number <= 1:
-            raise StateConflict("Playtest proposal rejection predecessor is invalid")
-        previous_content = _read_stable_private_bytes(
-            _playtest_proposal_rejection_record_path(directory, previous),
-            label="prior Playtest proposal rejection",
-            maximum_bytes=_MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES,
-        )
-        try:
-            previous_record = _strict_json_bytes(
-                previous_content, label="prior Playtest proposal rejection"
-            )
-        except ContractError as exc:
-            raise StateConflict(
-                "prior Playtest proposal rejection is invalid"
-            ) from exc
-        if previous_content != _canonical_json_bytes(previous_record) + b"\n":
-            raise StateConflict(
-                "prior Playtest proposal rejection is not canonical"
-            )
-        validated_previous = _validate_playtest_proposal_rejection_record(
-            run,
-            checkpoint,
-            previous_record,
-            directory=directory,
-            seen=seen | {rejection_sha256},
-        )
-        if (
-            validated_previous["rejection_sha256"] != previous
-            or validated_previous["rejection_number"] != rejection_number - 1
-        ):
             raise StateConflict("Playtest proposal rejection predecessor is invalid")
     return dict(record)
 
@@ -1730,6 +1774,7 @@ def _persist_playtest_proposal_rejection(
         return previous
     if (
         previous is not None
+        and not _checkpoint_uses_token_budget(checkpoint)
         and previous["rejection_number"] >= _MAX_PLAYTEST_PROPOSAL_REJECTIONS
     ):
         raise WorkshopError(
@@ -1956,8 +2001,20 @@ def _materialized_release_contract(
     inputs = checkpoint.input_sha256s
     if _PRODUCT_RUN_FINALIZER_INPUT not in inputs:
         raise StateConflict("native run lacks its materialized stage finalizer")
+    if checkpoint.effort == "spark":
+        return {
+            "native_release_schema_version": 4,
+            "manual_path": None,
+            "product_schema_version": 6,
+            "product_status": "make-output-ready",
+            "playtest_status": DIRECT_RELEASE_PLAYTEST_STATUS,
+            "playtest_omission_path": NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
+        }
     direct_release = _checkpoint_uses_direct_release(checkpoint)
-    manual_design_evidence = _PRODUCT_RUN_MANUAL_DESIGN_EVIDENCE_INPUT in inputs
+    manual_design_evidence = (
+        checkpoint.effort != "spark"
+        and _PRODUCT_RUN_MANUAL_DESIGN_EVIDENCE_INPUT in inputs
+    )
     if direct_release:
         contract = {
             "native_release_schema_version": 3,
@@ -1989,6 +2046,77 @@ def _materialized_release_contract(
         "product_schema_version": 3,
         "product_status": "page-ready",
     }
+
+
+def _pending_spark_release_contract(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    subject_inputs: Mapping[str, Any],
+    context: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Recover only an exact pre-Publish Spark contract from its saved wait.
+
+    The saved subject, exact ready outcome, and unchanged schema-3 Release
+    together authorize compatibility. Source-checkout policy alone never
+    rewrites an existing package or invents evidence for a pending effect.
+    """
+
+    current = subject_inputs["release_contract"]
+    if checkpoint.effort != "spark" or checkpoint.status not in ("active", "waiting"):
+        return current
+    if checkpoint.status == "waiting":
+        waiting = _read_release_effect_wait(run, checkpoint)
+        if waiting is None or waiting["schema_version"] != 2:
+            return current
+        expected_subject = waiting["proposal_subject_sha256"]
+        proposal = AgentOutcomeProposal(
+            checkpoint_sha256=waiting["proposal_checkpoint_sha256"],
+            subject_sha256=expected_subject,
+            outcome=AgentOutcome.from_mapping(waiting["outcome"]),
+        )
+    else:
+        if not _agent_outcome_exists(run.run_root):
+            return current
+        document, _ = read_bounded_json_artifact(
+            run.run_root, _AGENT_OUTCOME_NAME,
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+            label="pending Release outcome",
+        )
+        proposal = AgentOutcomeProposal.from_mapping(document)
+        if proposal.checkpoint_sha256 != checkpoint.checkpoint_sha256:
+            raise StateConflict("pending Release outcome belongs to a different checkpoint")
+        expected_subject = proposal.subject_sha256
+    if _stage_subject("release", subject_inputs) == expected_subject:
+        return current
+    artifact = _ready_contract_artifact(
+        proposal, stage="release", transitions=(context["terminal_transition"],),
+        path="artifacts/release/release.json",
+    )
+    release = _read_contract(
+        run.run_root, artifact, NativeRelease, label="pending Spark Release contract"
+    )
+    release.assert_context(context["made"], context["playtested"])
+    if release.schema_version != 3:
+        raise StateConflict("pending Release proposal subject changed while waiting")
+    legacy = {
+        "native_release_schema_version": 3,
+        "manual_path": NATIVE_RELEASE_MANUAL_PATH,
+        "product_schema_version": DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
+        "product_status": "manual-ready",
+        "playtest_status": DIRECT_RELEASE_PLAYTEST_STATUS,
+        "playtest_omission_path": NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
+    }
+    candidates = [legacy]
+    if _PRODUCT_RUN_MANUAL_DESIGN_EVIDENCE_INPUT in checkpoint.input_sha256s:
+        candidates.append({
+            **legacy,
+            "manual_design_evidence_path": MANUAL_DESIGN_EVIDENCE_PATH,
+            "manual_design_evidence_schema_version": 1,
+        })
+    for candidate in candidates:
+        if _stage_subject("release", {**subject_inputs, "release_contract": candidate}) == expected_subject:
+            return candidate
+    raise StateConflict("pending Release proposal subject changed while waiting")
 
 
 _VAULT_STAGES = ("invent", "make", "playtest")
@@ -3358,12 +3486,135 @@ def native_run_exists(product_id: str) -> bool:
 
 def _open_native_run(product_id: str) -> tuple[AgentRun, AgentRunCheckpoint]:
     paths = native_run_paths(product_id)
-    run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
+    run = _open_budgeted_agent_run(paths)
     return run, run.snapshot()
+
+
+def _open_budgeted_agent_run(paths: NativeRunPaths) -> AgentRun:
+    return AgentRun.open(
+        paths.workspace, host_state_root=paths.host_state,
+        budget_authority=_persistent_token_budget_authority(paths),
+    )
 
 
 def _artifact_binding(artifact: AgentArtifact) -> dict[str, str]:
     return {"path": artifact.path, "sha256": artifact.sha256}
+
+
+_SELECTION_PREMATURE_OUTCOME_FEEDBACK = (
+    "Workshop preserved a premature stage proposal without accepting it. "
+    "Finish inventor selection first: write only the selection marker named "
+    "in inputs.workshop_selection, then return. Do not invoke Make or a stage "
+    "finalizer until the host supplies the accepted selection. Keep existing "
+    "product files; this setup repair does not require regenerating them."
+)
+
+
+def _selection_setup_feedback(run: AgentRun, checkpoint: AgentRunCheckpoint) -> Optional[str]:
+    path = run.host_state_root / "inventor-selection-feedback.json"
+    if not path.exists() and not path.is_symlink():
+        return None
+    value = _read_stable_private_json(path, label="selection setup feedback", maximum_bytes=4096)
+    if (
+        set(value) != {"schema_version", "kind", "product_id", "wish_sha256", "checkpoint_sha256", "proposal_sha256"}
+        or type(value["schema_version"]) is not int or value["schema_version"] != 1
+        or value["kind"] != "autonomous-workshop.inventor-selection-feedback"
+        or value["product_id"] != checkpoint.product_id
+        or value["wish_sha256"] != checkpoint.wish_sha256
+    ):
+        raise StateConflict("selection setup feedback belongs to different host inputs")
+    for key in ("checkpoint_sha256", "proposal_sha256"):
+        require_sha256(value[key], "selection setup feedback %s" % key)
+    preserved = run.host_state_root / "inventor-selection-quarantine" / (value["proposal_sha256"] + ".json")
+    content = _read_stable_private_bytes(preserved, label="preserved premature proposal", maximum_bytes=MAX_SELECTION_BYTES)
+    if _sha256(content) != value["proposal_sha256"]:
+        raise StateConflict("preserved premature selection proposal changed")
+    return _SELECTION_PREMATURE_OUTCOME_FEEDBACK
+
+
+def _quarantine_preselection_outcome(run: AgentRun, checkpoint: AgentRunCheckpoint) -> None:
+    """Preserve a setup mistake privately, without a product gate or retry cap."""
+
+    path = run.run_root / _AGENT_OUTCOME_NAME
+    try:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+        try:
+            before = os.fstat(descriptor)
+            if not stat.S_ISREG(before.st_mode) or not 1 <= before.st_size <= MAX_SELECTION_BYTES:
+                raise StateConflict("premature selection proposal must be regular bounded bytes")
+            with os.fdopen(descriptor, "rb", closefd=False) as stream:
+                content = stream.read(MAX_SELECTION_BYTES + 1)
+            after = os.fstat(descriptor)
+            current = path.lstat()
+        finally:
+            os.close(descriptor)
+    except OSError as error:
+        raise StateConflict("premature selection proposal cannot be preserved") from error
+    fingerprint = lambda value: (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns)
+    if fingerprint(before) != fingerprint(after) or fingerprint(after) != fingerprint(current) or len(content) != before.st_size:
+        raise StateConflict("premature selection proposal changed while preserving")
+    digest = _sha256(content)
+    directory = _ensure_private_directory(
+        run.host_state_root / "inventor-selection-quarantine", label="selection proposal quarantine"
+    )
+    destination = directory / (digest + ".json")
+    _atomic_private_write(destination, content, mode=0o600)
+    _write_private_json(run.host_state_root / "inventor-selection-feedback.json", {
+        "schema_version": 1, "kind": "autonomous-workshop.inventor-selection-feedback",
+        "product_id": checkpoint.product_id, "wish_sha256": checkpoint.wish_sha256,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256, "proposal_sha256": digest,
+    })
+    # Every exact byte is durable above before removing the live proposal slot.
+    if fingerprint(path.lstat()) != fingerprint(current):
+        raise StateConflict("premature selection proposal changed before quarantine")
+    path.unlink()
+
+
+def _workshop_inventor_selection(
+    run: AgentRun, checkpoint: AgentRunCheckpoint, roster: InventorRoster
+) -> tuple[Optional[NativeMatchAssignment], Optional[str]]:
+    """Bind setup before Make, without a new stage, Goal, or root session."""
+
+    receipt_path = run.host_state_root / INVENTOR_SELECTION_RECEIPT_NAME
+    if receipt_path.exists() or receipt_path.is_symlink():
+        receipt = _read_stable_private_json(
+            receipt_path, label="Workshop inventor selection", maximum_bytes=MAX_SELECTION_BYTES
+        )
+        return assignment_from_receipt(receipt, checkpoint=checkpoint, roster=roster), None
+    required_inventor_id = _load_wish(run.run_root).context.get("inventor_id")
+    if required_inventor_id is not None:
+        receipt = pinned_selection_receipt(
+            checkpoint=checkpoint, roster=roster, required_inventor_id=required_inventor_id
+        )
+    else:
+        marker_path = run.run_root / INVENTOR_SELECTION_MARKER_NAME
+        if not marker_path.exists() and not marker_path.is_symlink():
+            return None, _selection_setup_feedback(run, checkpoint)
+        try:
+            identity = marker_path.lstat()
+            if not stat.S_ISREG(identity.st_mode) or identity.st_size > MAX_SELECTION_BYTES:
+                raise ContractError("selection marker must be a regular JSON file")
+            descriptor = os.open(marker_path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+            try:
+                opened = os.fstat(descriptor)
+                if (opened.st_dev, opened.st_ino) != (identity.st_dev, identity.st_ino):
+                    raise ContractError("selection marker changed while opening")
+                with os.fdopen(descriptor, "rb", closefd=False) as stream:
+                    content = stream.read(MAX_SELECTION_BYTES + 1)
+                after = os.fstat(descriptor)
+                current = marker_path.lstat()
+                fingerprint = lambda value: (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns)
+                if fingerprint(opened) != fingerprint(after) or fingerprint(after) != fingerprint(current):
+                    raise ContractError("selection marker changed while reading")
+            finally:
+                os.close(descriptor)
+            receipt = selection_receipt(content, checkpoint=checkpoint, roster=roster)
+        except (OSError, ContractError) as error:
+            # An agent-authored setup mistake is repairable in this same
+            # session; no product work or Make gate has been invoked yet.
+            return None, "Correct the inventor-selection marker: %s" % error
+    _write_private_json(receipt_path, receipt, mode=0o600)
+    return assignment_from_receipt(receipt, checkpoint=checkpoint, roster=roster), None
 
 
 def _inventor_discovery_index(
@@ -3639,6 +3890,12 @@ def _prepare_effort_stage_input(
                     "invented_contract_path": invented_path,
                 }
             )
+            if selection_enabled(checkpoint):
+                selected, feedback = _workshop_inventor_selection(run, checkpoint, roster)
+                common["workshop_selection"] = selection_packet(checkpoint, roster, selected)
+                if feedback is not None:
+                    common["workshop_selection"]["feedback"] = feedback
+                context["workshop_selected_assignment"] = selected
             assignment = invented = None
             context.update(
                 {
@@ -3755,7 +4012,7 @@ def _prepare_effort_stage_input(
                 "assembled.step.json",
                 "assembled.stl",
             ],
-            "production_parts_rule": _MAKE_PRODUCTION_PARTS_RULE,
+            **({"production_parts_rule": _MAKE_PRODUCTION_PARTS_RULE} if effort.name != "spark" else {}),
         }
         if make_invent_revision_allowed:
             inputs.update(
@@ -3900,17 +4157,22 @@ def _prepare_effort_stage_input(
                 **common,
                 "round": checkpoint.round_index,
                 "host_cad_gate_rejection": cad_gate_rejection,
-                "package_root": "artifacts/release/package",
+                "package_root": (
+                    MAKE_OUTPUT_RELEASE_PACKAGE_ROOT
+                    if release_contract["native_release_schema_version"] == 4
+                    else "artifacts/release/package"
+                ),
                 "contract_path": "artifacts/release/release.json",
                 "release_contract": release_contract,
                 "required_package_files": [
-                    release_contract["manual_path"],
                     "product.json",
                 ],
                 "host_renders": host_renders_stage_input(
                     run.run_root, made, load_host_renders(run.host_state_root, made)
                 ),
             }
+            if release_contract["manual_path"] is not None:
+                inputs["required_package_files"].append(release_contract["manual_path"])
             if release_contract.get("manual_design_evidence_path") is not None:
                 inputs["required_package_files"].append(
                     release_contract["manual_design_evidence_path"]
@@ -3953,6 +4215,20 @@ def _prepare_effort_stage_input(
                 inputs["required_package_files"].append(
                     NATIVE_RELEASE_PLAYTEST_OMISSION_PATH
                 )
+            selected_contract = _pending_spark_release_contract(
+                run, checkpoint, subject_inputs, context
+            )
+            if selected_contract != release_contract:
+                subject_inputs["release_contract"] = selected_contract
+                context["release_contract"] = selected_contract
+                inputs["release_contract"] = selected_contract
+                inputs["package_root"] = "artifacts/release/package"
+                inputs["required_package_files"] = [
+                    selected_contract["manual_path"], "product.json",
+                    NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
+                ]
+                if selected_contract.get("manual_design_evidence_path") is not None:
+                    inputs["required_package_files"].append(selected_contract["manual_design_evidence_path"])
             subject = _stage_subject("release", subject_inputs)
         else:  # pragma: no cover - effort membership is checked above
             raise TransitionError("effort route cannot prepare this stage")
@@ -3970,7 +4246,11 @@ def _prepare_effort_stage_input(
             if stage in ("make", "playtest", "release")
             else None
         ),
-        "max_rounds": checkpoint.max_rounds,
+        # Frozen older finalizers require round <= max_rounds. Keep that packet
+        # shape without turning legacy metadata into a token-run spending cap.
+        "max_rounds": max(checkpoint.max_rounds, checkpoint.round_index)
+        if _checkpoint_uses_token_budget(checkpoint)
+        else checkpoint.max_rounds,
         "inputs": inputs,
     }
     encoded = _canonical_json_bytes(packet) + b"\n"
@@ -4549,7 +4829,7 @@ def _load_lifetime_budget(
     if not path.exists() and not path.is_symlink() and initialize:
         _save_lifetime_budget(paths, checkpoint, budget)
         return budget
-    value = _read_stable_private_json(path, label="persistent native budget", maximum_bytes=65536)
+    value = _read_stable_private_json(path, label="persistent native budget", maximum_bytes=None)
     if (
         set(value) != {"schema_version", "product_id", "wish_sha256", "capability_sha256", "budget"}
         or type(value["schema_version"]) is not int
@@ -4574,9 +4854,46 @@ def _load_lifetime_budget(
     return budget
 
 
+@dataclass(frozen=True)
+class _BudgetCheckpointBinding:
+    product_id: str
+    wish_sha256: str
+    manager_id: str
+    input_sha256s: Mapping[str, str]
+
+
+def _persistent_token_budget_authority(paths: NativeRunPaths):
+    """Let AgentRun consult verified host accounting, never invent a capability."""
+    def authority(payload: Mapping[str, Any]) -> bool:
+        inputs = payload.get("inputs")
+        if not isinstance(inputs, list) or any(
+            not isinstance(item, Mapping) or not isinstance(item.get("path"), str)
+            or not isinstance(item.get("sha256"), str) for item in inputs
+        ):
+            raise StateConflict("agent run budget input bindings are invalid")
+        hashes = {item["path"]: item["sha256"] for item in inputs}
+        if len(hashes) != len(inputs) or "WISH.json" not in hashes:
+            raise StateConflict("agent run budget input bindings are invalid")
+        checkpoint = _BudgetCheckpointBinding(
+            product_id=payload.get("product_id"), wish_sha256=hashes["WISH.json"],
+            manager_id=payload.get("manager_id", DEFAULT_MANAGER_ID), input_sha256s=hashes,
+        )
+        return isinstance(_load_lifetime_budget(paths, checkpoint), ProductTokenBudget)
+    return authority
+
+
+def _checkpoint_uses_token_budget(checkpoint: AgentRunCheckpoint) -> bool:
+    return bool(getattr(checkpoint, "token_budgeted", False)) or (
+        TOKEN_BUDGET_CAPABILITY_PATH in checkpoint.input_sha256s
+    )
+
+
 def _read_product_token_usage(paths, checkpoint):
+    session_path = paths.host_state / "codex-session.json"
+    if not session_path.exists() and not session_path.is_symlink():
+        raise UsageNotReady("native token session has not been bound yet")
     session = _read_stable_private_json(
-        paths.host_state / "codex-session.json", label="native token session", maximum_bytes=32768
+        session_path, label="native token session", maximum_bytes=32768
     )
     identity = {key: value for key, value in session.items() if key != "checkpoint_sha256"}
     if (
@@ -4608,26 +4925,77 @@ def _adopt_token_budget(paths, checkpoint, limit):
     _save_lifetime_budget(paths, checkpoint, budget)
 
 
+def _root_token_counts(observation):
+    if observation is None:
+        return {"input_tokens": 0, "output_tokens": 0}
+    root = next(thread for thread in observation["threads"]
+                if thread["thread_id"] == observation["root_thread_id"])
+    return {key: root["tokens"][key] for key in ("input_tokens", "output_tokens")}
+
+
+def _record_token_accounting_need(paths, checkpoint, baseline, *, completed_turn=False, terminal_usage=None):
+    path = paths.host_state / "token-accounting-need.json"
+    if path.exists() or path.is_symlink():
+        previous = _read_stable_private_json(path, label="token accounting need", maximum_bytes=4096)
+        if not (set(previous) == {"schema_version", "product_id", "wish_sha256", "baseline_root_tokens", "completed_turn", "terminal_usage"}
+                and previous.get("schema_version") == 1 and type(previous.get("schema_version")) is int
+                and previous.get("terminal_usage") is None
+                and completed_turn and previous.get("completed_turn") is False
+                and previous.get("product_id") == checkpoint.product_id
+                and previous.get("wish_sha256") == checkpoint.wish_sha256
+                and previous.get("baseline_root_tokens") == baseline):
+            return  # Never replace an unresolved completed-turn expectation.
+    _write_private_json(path, {
+        "schema_version": 1, "product_id": checkpoint.product_id,
+        "wish_sha256": checkpoint.wish_sha256, "baseline_root_tokens": baseline,
+        "completed_turn": completed_turn, "terminal_usage": terminal_usage,
+    })
+
+
+def _reconcile_token_accounting_need(paths, checkpoint, budget):
+    """Recover exact metering before any continuation or pending product effect."""
+    path = paths.host_state / "token-accounting-need.json"
+    if not path.exists() and not path.is_symlink():
+        return
+    need = _read_stable_private_json(path, label="token accounting need", maximum_bytes=4096)
+    def counters(value):
+        return (isinstance(value, dict) and set(value) == {"input_tokens", "output_tokens"}
+                and all(type(count) is int and 0 <= count <= 10**12 for count in value.values()))
+    if (set(need) != {"schema_version", "product_id", "wish_sha256", "baseline_root_tokens", "completed_turn", "terminal_usage"}
+            or need["schema_version"] != 1 or type(need["schema_version"]) is not int
+            or need["product_id"] != checkpoint.product_id or need["wish_sha256"] != checkpoint.wish_sha256
+            or not counters(need["baseline_root_tokens"]) or type(need["completed_turn"]) is not bool
+            or (need["terminal_usage"] is not None and not counters(need["terminal_usage"]))
+            or (not need["completed_turn"] and need["terminal_usage"] is not None)):
+        raise StateConflict("token accounting need binding is invalid")
+    value = _read_product_token_usage(paths, checkpoint)
+    budget.observe(value)
+    _save_lifetime_budget(paths, checkpoint, budget)
+    current = _root_token_counts(value)
+    baseline = need["baseline_root_tokens"]
+    terminal = need["terminal_usage"]
+    if need["completed_turn"] and (
+        (terminal is not None and any(current[key] < baseline[key] + terminal[key] for key in current))
+        or (terminal is None and all(current[key] <= baseline[key] for key in current))
+    ):
+        raise UsageUnavailable("completed native turn lacks reconciled token usage")
+    path.unlink()
+
+
 def _product_token_observer(paths, checkpoint, budget):
-    started = time.monotonic()
-    pending_since = {}
+    baseline = _root_token_counts(budget.observation)
     def observe():
         try:
             value = _read_product_token_usage(paths, checkpoint)
-            for thread in value["threads"]:
-                if thread.get("status") == "pending":
-                    first_seen = pending_since.setdefault(thread["thread_id"], time.monotonic())
-                    if time.monotonic() - first_seen >= 180:
-                        raise UsageUnavailable("native thread has not reported usage within startup grace")
-                else:
-                    pending_since.pop(thread["thread_id"], None)
             budget.observe(value)
             _save_lifetime_budget(paths, checkpoint, budget)
+        except UsageNotReady:
+            if budget.observation is None:
+                return  # Pre-identity startup, not fabricated zero-token usage.
+            _record_token_accounting_need(paths, checkpoint, baseline)
+            raise
         except (WorkshopError, OSError, ValueError):
-            # Bound the initially unmetered first response. Once observations
-            # exist, loss/regression of accounting immediately fails closed.
-            if budget.observation is None and time.monotonic() - started < 180:
-                return
+            _record_token_accounting_need(paths, checkpoint, baseline)
             _write_private_json(paths.host_state / "token-budget-stop.json", {
                 "reason": "native token usage unavailable or inconsistent",
                 "product_id": checkpoint.product_id,
@@ -4642,6 +5010,15 @@ def _product_token_observer(paths, checkpoint, budget):
             except (WorkshopError, OSError):
                 pass  # the stop record above is the authority; the lesson is enrichment
             raise ContractError("product token limit reached")
+
+    def reconcile_completed_turn(usage):
+        terminal = None if usage is None else {"input_tokens": usage[0], "output_tokens": usage[3]}
+        _record_token_accounting_need(
+            paths, checkpoint, baseline, completed_turn=True, terminal_usage=terminal
+        )
+        _reconcile_token_accounting_need(paths, checkpoint, budget)
+
+    observe.reconcile_completed_turn = reconcile_completed_turn
     return observe
 
 
@@ -5814,17 +6191,19 @@ def _launcher_call(
     unfinished_continuation: bool = False,
     recoverable_continuation: bool = False,
     make_proof_boundary: bool = False,
+    inventor_selection_boundary: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
-    prompt = native_stage_prompt(checkpoint.stage)
+    prompt = selection_prompt() if inventor_selection_boundary else native_stage_prompt(checkpoint.stage)
     budget = _load_lifetime_budget(paths, checkpoint)
     if isinstance(budget, ProductTokenBudget):
         prompt += (
             "\n\nHost budget authority: the entire product has one persistent "
             "input-plus-output token budget including children and all resumes. "
             "It supersedes aggregate time and turn-count budgets. No scheduled "
-            "twenty-minute split applies; a one-hour emergency watchdog remains. "
+            "twenty-minute split or wall-clock execution watchdog applies. "
+            "There is no native-turn, proposal-retry, or lifecycle-round spending cap. "
             "All gates remain mandatory. Limit: %d; observed usage: %d. "
             "Reuse existing work and repair concrete remaining checks."
             % (budget.limit, budget.to_dict()["used_tokens"])
@@ -5841,6 +6220,7 @@ def _launcher_call(
         )
     phased_make = (
         checkpoint.stage == "make"
+        and checkpoint.effort in ("forge", "quest")
         and _phased_deep_capability_path(checkpoint) is not None
     )
     if (
@@ -5851,7 +6231,7 @@ def _launcher_call(
             checkpoint,
             proof_boundary=make_proof_boundary,
         )
-    if unfinished_continuation:
+    if unfinished_continuation and not inventor_selection_boundary:
         prompt += (
             "\n\nYour previous native turn returned without "
             "agent-outcome.json. The active Goal is not complete. Continue "
@@ -5859,7 +6239,7 @@ def _launcher_call(
             "the required stage finalizer, and return only after it writes "
             "agent-outcome.json."
         )
-    if recoverable_continuation:
+    if recoverable_continuation and not inventor_selection_boundary:
         prompt += (
             "\n\nThe immediately previous native turn ended at the host's "
             "timeout or provider-transport recovery boundary, or this explicit "
@@ -5887,9 +6267,13 @@ def _launcher_call(
         "prompt": prompt,
         "activity_observer": activity_observer,
         "finalization_marker": (
-            _make_proof_ready_path(paths)
-            if make_proof_boundary
-            else paths.workspace / _AGENT_OUTCOME_NAME
+            paths.workspace / INVENTOR_SELECTION_MARKER_NAME
+            if inventor_selection_boundary
+            else (
+                _make_proof_ready_path(paths)
+                if make_proof_boundary
+                else paths.workspace / _AGENT_OUTCOME_NAME
+            )
         ),
     }
     try:
@@ -6128,7 +6512,8 @@ def _evaluate_make_invent_revision_stage(
         raise StateConflict(
             "Make Invent revision is absent from this run's frozen protocol"
         )
-    if checkpoint.round_index >= checkpoint.max_rounds:
+    if (not _checkpoint_uses_token_budget(checkpoint)
+            and checkpoint.round_index >= checkpoint.max_rounds):
         raise TransitionError("Invent-Make-Playtest round budget is exhausted")
     contract_path = (
         "artifacts/make/r%04d/invent-revision-request.json"
@@ -6314,6 +6699,10 @@ def _evaluate_make_stage(
                 wish_sha256=checkpoint.wish_sha256,
                 roster=context["roster"],
             )
+            if selection_enabled(checkpoint):
+                selected = context.get("workshop_selected_assignment")
+                if selected is None or assignment.assignment_sha256 != selected.assignment_sha256:
+                    raise ContractError("Make must use Workshop's accepted inventor selection")
             invented = _read_contract(
                 run.run_root,
                 invented_artifact,
@@ -6342,10 +6731,19 @@ def _evaluate_make_stage(
             assignment, invented, expected_round=checkpoint.round_index
         )
         canonical = made.validate_product_tree(run.run_root)
-        build_groups = validate_build_groups(
-            invented.concept, run.run_root / Path(*made.product_root.split("/"))
-        )
-        production_parts = _validate_made_production_parts(made, run.run_root)
+        # Spark consumes Make's accepted output, not another engineering
+        # acceptance pass. Keep only exact-byte and upstream identity checks.
+        product_checks = {}
+        if checkpoint.effort != "spark":
+            build_groups = validate_build_groups(
+                invented.concept, run.run_root / Path(*made.product_root.split("/"))
+            )
+            production_parts = _validate_made_production_parts(made, run.run_root)
+            product_checks = {
+                "build_groups": build_groups["groups"],
+                "build_parts": build_groups["parts"],
+                "production_parts": production_parts,
+            }
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -6354,17 +6752,20 @@ def _evaluate_make_stage(
         # proposal. StateConflict is a separate hierarchy and the trusted CAD
         # verifier is deliberately invoked below, outside this recovery path.
         raise _make_rejection_for_error(error) from error
-    verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
-    if not isinstance(verifier_sha256, str):
-        raise StateConflict("native run lacks its trusted CAD verifier binding")
     try:
-        cad_evidence = verify_native_made_cad(
-            made,
-            run_root=run.run_root,
-            host_state_root=run.host_state_root,
-            expected_verifier_sha256=verifier_sha256,
-            require_print_ready=transition == "release",
-        )
+        cad_evidence = None
+        if checkpoint.effort != "spark":
+            verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
+            if not isinstance(verifier_sha256, str):
+                raise StateConflict("native run lacks its trusted CAD verifier binding")
+            cad_evidence = verify_native_made_cad(
+                made,
+                run_root=run.run_root,
+                host_state_root=run.host_state_root,
+                expected_verifier_sha256=verifier_sha256,
+                require_print_ready=transition == "release",
+                **({"timeout_seconds": None} if _checkpoint_uses_token_budget(checkpoint) else {}),
+            )
     except NativeMadeTreeGateError as error:
         # A tool can materialize cache directories after the run-local
         # finalizer inventories the tree but before the host reopens it. Keep
@@ -6375,10 +6776,17 @@ def _evaluate_make_stage(
     # bytes are rendered by the trusted host so Release and the shop can show
     # the exact product. A missing or failing renderer records "unavailable"
     # and changes nothing about the gate decision.
-    host_renders = render_made_product(run.run_root, run.host_state_root, made)
+    host_renders = (
+        None if checkpoint.effort == "spark"
+        else render_made_product(run.run_root, run.host_state_root, made)
+    )
     evidence = StageGateEvidence(
         stage="make",
-        gate_id="make.sealed-revision-v1",
+        gate_id=(
+            "make.output-handoff-v1"
+            if checkpoint.effort == "spark"
+            else "make.sealed-revision-v1"
+        ),
         validator_version="1.0.0",
         passed=True,
         checkpoint_sha256=checkpoint.checkpoint_sha256,
@@ -6391,39 +6799,53 @@ def _evaluate_make_stage(
             "made_sha256": made.made_sha256,
             "product_artifact_sha256": canonical.artifact_sha256,
             "product_tree_rehashed": True,
-            "build_groups": build_groups["groups"],
-            "build_parts": build_groups["parts"],
-            "production_parts": production_parts,
+            **product_checks,
             "upstream_bindings_valid": True,
-            "cad_receipt_sha256": cad_evidence.receipt_sha256,
-            "cad_verifier_sha256": cad_evidence.verifier_sha256,
-            "cad_verifier_mode": cad_evidence.verifier_mode,
-            "cad_verification_tier": cad_evidence.verification_tier,
-            "cad_thickness_gate_required": cad_evidence.thickness_gate_required,
-            "cad_print_ready_eligible": cad_evidence.print_ready_eligible,
-            "cad_verification_passed": cad_evidence.passed,
-            "host_renders_status": host_renders.status,
+            **(_host_cad_omission_checks() if cad_evidence is None else {
+                "cad_receipt_sha256": cad_evidence.receipt_sha256,
+                "cad_verifier_sha256": cad_evidence.verifier_sha256,
+                "cad_verifier_mode": cad_evidence.verifier_mode,
+                "cad_verification_tier": cad_evidence.verification_tier,
+                "cad_thickness_gate_required": cad_evidence.thickness_gate_required,
+                "cad_print_ready_eligible": cad_evidence.print_ready_eligible,
+                "cad_verification_passed": cad_evidence.passed,
+            }),
+            "host_renders_status": "not-run" if host_renders is None else host_renders.status,
         },
     )
     return StageGateDecision(evidence=evidence, transition=transition), additional
 
 
 def _read_stable_private_json(
-    path: Path, *, label: str, maximum_bytes: int
+    path: Path, *, label: str, maximum_bytes: Optional[int]
 ) -> Mapping[str, Any]:
+    """Read one exact private snapshot; usage ledgers may grow with descendants."""
+
+    def identity(info):
+        return (info.st_dev, info.st_ino, info.st_mode, info.st_mtime_ns, info.st_size)
+
     try:
         before = path.lstat()
-        content = path.read_bytes()
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or stat.S_IMODE(before.st_mode) != 0o600
+            or before.st_size < 1
+            or (maximum_bytes is not None and before.st_size > maximum_bytes)
+        ):
+            raise StateConflict("%s is not a stable private file" % label)
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        with os.fdopen(descriptor, "rb") as stream:
+            if identity(os.fstat(stream.fileno())) != identity(before):
+                raise StateConflict("%s is not a stable private file" % label)
+            content = stream.read(before.st_size + 1)
+            opened_after = os.fstat(stream.fileno())
         after = path.lstat()
     except OSError as exc:
         raise StateConflict("%s is unavailable" % label) from exc
     if (
-        path.is_symlink()
-        or not stat.S_ISREG(before.st_mode)
-        or stat.S_IMODE(before.st_mode) != 0o600
-        or not 1 <= len(content) <= maximum_bytes
-        or (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
-        != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+        len(content) != before.st_size
+        or identity(before) != identity(opened_after)
+        or identity(before) != identity(after)
     ):
         raise StateConflict("%s is not a stable private file" % label)
     try:
@@ -7056,6 +7478,7 @@ def _evaluate_playtest_stage(
         ),
         evidence_stage="playtest",
         require_print_ready=playtested.verdict == "pass",
+        **({"timeout_seconds": None} if _checkpoint_uses_token_budget(checkpoint) else {}),
     )
     vault = context.get("design_vault")
     leads = (
@@ -7307,6 +7730,14 @@ def _read_release_effect(run: AgentRun, release: NativeRelease) -> Optional[Rece
     ):
         raise StateConflict("Release effect checkpoint must be a private file")
     value = _strict_json_bytes(content, label="Release effect checkpoint")
+    if release.schema_version == 4:
+        try:
+            receipt = Receipt.from_dict(value["receipt"])
+        except (KeyError, TypeError, ValueError, ContractError) as exc:
+            raise StateConflict("Make-output effect receipt is invalid") from exc
+        if value != _make_output_effect_record(run, release, receipt):
+            raise StateConflict("Make-output effect checkpoint belongs to different bytes")
+        return receipt
     common = {
         "schema_version",
         "kind",
@@ -7390,6 +7821,9 @@ def _read_release_effect(run: AgentRun, release: NativeRelease) -> Optional[Rece
 def _write_release_effect(
     run: AgentRun, release: NativeRelease, receipt: Receipt
 ) -> None:
+    if release.schema_version == 4:
+        _write_private_json(_release_effect_path(run), _make_output_effect_record(run, release, receipt))
+        return
     status = "public" if receipt.is_verified_public else "draft"
     entries = {entry.path: entry for entry in release.package_manifest.entries}
     manual_entry = entries.get(release.manual_path)
@@ -7444,6 +7878,9 @@ def _assert_required_public_readback(
 
     if not receipt.is_verified_public:
         raise StateConflict("Release lacks authenticated public Factory readback")
+    if release.schema_version == 4:
+        _assert_make_output_receipt(release, receipt)
+        return
     if release.schema_version not in (2, 3):
         return
     manual_entry = next(
@@ -7466,6 +7903,48 @@ def _assert_required_public_readback(
         raise StateConflict(
             "Release lacks exact public MANUAL.pdf hash readback"
         )
+
+
+def _assert_make_output_receipt(release: NativeRelease, receipt: Receipt) -> None:
+    """Prove the exact uploaded carrier, without inventing a manual receipt."""
+
+    receipt.assert_artifact(release.product_artifact_sha256)
+    details = receipt.details
+    expected = {
+        "release_sha256": release.package_manifest.artifact_sha256,
+        "product_page_sha256": release.product_json_sha256,
+        "publication_mode": "make-output-v1",
+        "publication_anchor_path": "workshop-release-page.json",
+        "publication_anchor_sha256": release.product_json_sha256,
+        "publication_anchor_readback_sha256": release.product_json_sha256,
+    }
+    anchor_url = details.get("publication_anchor_url")
+    if (
+        any(details.get(key) != value for key, value in expected.items())
+        or not isinstance(anchor_url, str)
+        or not anchor_url.startswith("https://")
+        or not receipt.project_url
+        or anchor_url != receipt.project_url.rstrip("/") + "/workshop-release-page.json"
+        or not (receipt.is_verified_draft or receipt.is_verified_public)
+    ):
+        raise StateConflict("Release lacks exact Make-output publication readback")
+
+
+def _make_output_effect_record(
+    run: AgentRun, release: NativeRelease, receipt: Receipt
+) -> Mapping[str, Any]:
+    _assert_make_output_receipt(release, receipt)
+    return {
+        "schema_version": 4,
+        "kind": "autonomous-workshop.release-effect",
+        "product_id": run.snapshot().product_id,
+        "native_release_sha256": release.release_sha256,
+        "product_artifact_sha256": release.product_artifact_sha256,
+        "package_artifact_sha256": release.package_manifest.artifact_sha256,
+        "product_page_sha256": release.product_json_sha256,
+        "publication_status": "public" if receipt.is_verified_public else "draft",
+        "receipt": receipt.to_dict(),
+    }
 
 
 def _verified_release(
@@ -7724,12 +8203,99 @@ def _accept_local_release(
     )
 
 
+def _host_cad_omission_checks() -> dict[str, Any]:
+    return {
+        "host_cad_verification_status": "not-run",
+        "host_cad_verification_reason": "Spark accepts Make output without a duplicate host rebuild",
+        "cad_verification_passed": None,
+        "cad_print_ready_eligible": None,
+    }
+
+
+def _prepare_spark_publication(
+    run: AgentRun, checkpoint: AgentRunCheckpoint, made: NativeMade
+) -> NativeRelease:
+    """Preserve exact existing releases, or retain an uneffected partial draft.
+
+    Legacy authoring files are never overwritten. Only an unsealed canonical
+    contract with no effect, wait, or proposal authority may be moved aside;
+    the new carrier lives in its own directory beside those retained files.
+    """
+
+    path = run.run_root / "artifacts/release/release.json"
+    has_contract = path.exists() or path.is_symlink()
+    original_error = None
+    if has_contract:
+        try:
+            release = read_native_release(run.run_root)
+            release.assert_context(made, None)
+            observed = build_artifact_manifest(
+                run.run_root / release.package_root,
+                created_at=release.package_manifest.created_at,
+            )
+            if observed != release.package_manifest:
+                raise ArtifactError("unsealed Release package inventory is incomplete")
+            return release
+        except (ArtifactError, ContractError) as error:
+            original_error = error
+    if (
+        checkpoint.stage != "release" or checkpoint.effort != "spark"
+        or checkpoint.stage_artifacts.get("release")
+        or _agent_outcome_exists(run.run_root)
+        or _release_effect_path(run).exists() or _release_effect_path(run).is_symlink()
+        or _release_effect_wait_path(run).exists() or _release_effect_wait_path(run).is_symlink()
+    ):
+        raise StateConflict("existing Release requires exact reconciliation before replacement") from original_error
+    ledger = run.host_state_root / "factory-effects.sqlite3"
+    if ledger.exists() or ledger.is_symlink():
+        for kind in ("factory-import", "factory-import-version", "factory-content", "factory-part-colors", "factory-publish"):
+            if EffectLedger.inspect_latest(ledger, checkpoint.product_id, kind) is not None:
+                raise StateConflict("existing Factory intent forbids replacing Release bytes") from original_error
+    if not has_contract:
+        return prepare_make_output_release(run.run_root, made)
+    try:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    except OSError as error:
+        raise StateConflict("unsealed Release cannot be opened without following links") from error
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_NATIVE_RELEASE_CONTRACT_BYTES:
+            raise StateConflict("unsealed Release contract must be a regular file")
+        with os.fdopen(descriptor, "rb", closefd=False) as stream:
+            content = stream.read(MAX_NATIVE_RELEASE_CONTRACT_BYTES + 1)
+        after = os.fstat(descriptor)
+    finally:
+        os.close(descriptor)
+    fingerprint = lambda value: (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns)
+    if fingerprint(before) != fingerprint(after) or fingerprint(after) != fingerprint(path.lstat()):
+        raise StateConflict("unsealed Release changed while being retained")
+    digest = _sha256(content)
+    retained = run.host_state_root / "retained-release-proposals"
+    retained.mkdir(mode=0o700, exist_ok=True)
+    if not stat.S_ISDIR(retained.lstat().st_mode):
+        raise StateConflict("retained Release directory must not be a link")
+    destination = retained / (digest + ".json")
+    if destination.exists() or destination.is_symlink():
+        if not stat.S_ISREG(destination.lstat().st_mode) or destination.read_bytes() != content:
+            raise StateConflict("retained Release archive has conflicting bytes")
+    else:
+        _atomic_private_write(destination, content, mode=0o600)
+    if fingerprint(path.lstat()) != fingerprint(after) or path.read_bytes() != content:
+        raise StateConflict("unsealed Release changed before archival completed")
+    path.unlink()
+    return prepare_make_output_release(run.run_root, made)
+
+
 def _verify_release_print_ready_cad(
     run: AgentRun,
     checkpoint: AgentRunCheckpoint,
     made: NativeMade,
 ) -> Any:
-    """Re-run the current full CAD gate before any public Release claim."""
+    """Spark preserves Make bytes; other routes retain independent verification."""
+
+    if checkpoint.effort == "spark":
+        made.validate_product_tree(run.run_root)
+        return None
 
     verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
     if not isinstance(verifier_sha256, str):
@@ -7741,6 +8307,7 @@ def _verify_release_print_ready_cad(
         expected_verifier_sha256=verifier_sha256,
         evidence_stage="release",
         require_print_ready=True,
+        **({"timeout_seconds": None} if _checkpoint_uses_token_budget(checkpoint) else {}),
     )
     if (
         not evidence.passed
@@ -7779,9 +8346,13 @@ def _evaluate_release_stage(
     expected_release = context.get("release_contract")
     if (
         not isinstance(expected_release, Mapping)
-        or release.schema_version
-        != expected_release.get("native_release_schema_version")
-        or release.manual_path != expected_release.get("manual_path")
+        or (
+            not (checkpoint.effort == "spark" and release.schema_version in (3, 4))
+            and (
+                release.schema_version != expected_release.get("native_release_schema_version")
+                or release.manual_path != expected_release.get("manual_path")
+            )
+        )
     ):
         raise StateConflict(
             "native Release contract differs from the run's materialized "
@@ -7789,7 +8360,7 @@ def _evaluate_release_stage(
         )
     release.assert_context(context["made"], context["playtested"])
     verified = _accept_local_release(run, release, context=context)
-    if (
+    if release.schema_version != 4 and (
         release.schema_version not in (2, 3)
         or release.manual_path != NATIVE_RELEASE_MANUAL_PATH
     ):
@@ -7840,7 +8411,11 @@ def _evaluate_release_stage(
         )
     evidence = StageGateEvidence(
         stage="release",
-        gate_id="release.public-print-package-v3",
+        gate_id=(
+            "release.published-output-v1"
+            if checkpoint.effort == "spark"
+            else "release.public-print-package-v3"
+        ),
         validator_version="3.0.0",
         passed=True,
         checkpoint_sha256=checkpoint.checkpoint_sha256,
@@ -7862,12 +8437,23 @@ def _evaluate_release_stage(
                 else "passed"
             ),
             "package_tree_rehashed": True,
-            "cad_receipt_sha256": cad_evidence.receipt_sha256,
-            "cad_verifier_sha256": cad_evidence.verifier_sha256,
-            "cad_verifier_mode": cad_evidence.verifier_mode,
-            "cad_verification_tier": cad_evidence.verification_tier,
-            "cad_thickness_gate_required": cad_evidence.thickness_gate_required,
-            "cad_print_ready_eligible": cad_evidence.print_ready_eligible,
+            "manual_review_status": (
+                "not-run"
+                if checkpoint.effort == "spark"
+                else (
+                    "evidence-validated"
+                    if expected_release.get("manual_design_evidence_path")
+                    else "not-required"
+                )
+            ),
+            **(_host_cad_omission_checks() if cad_evidence is None else {
+                "cad_receipt_sha256": cad_evidence.receipt_sha256,
+                "cad_verifier_sha256": cad_evidence.verifier_sha256,
+                "cad_verifier_mode": cad_evidence.verifier_mode,
+                "cad_verification_tier": cad_evidence.verification_tier,
+                "cad_thickness_gate_required": cad_evidence.thickness_gate_required,
+                "cad_print_ready_eligible": cad_evidence.print_ready_eligible,
+            }),
             "publication_status": "public",
             "factory_readback_verified": True,
             "page_url": publication.details.get("page_url"),
@@ -8275,8 +8861,10 @@ def _run_native_session(
         MAX_BUDGETED_TURNS if budget is not None else _native_turn_limit(run.snapshot())
     )
     initial_make_boundaries: set[str] = set()
-    while turns < native_turn_limit:
+    while isinstance(budget, ProductTokenBudget) or turns < native_turn_limit:
         checkpoint = run.snapshot()
+        if isinstance(budget, ProductTokenBudget):
+            _reconcile_token_accounting_need(paths, checkpoint, budget)
         if checkpoint.status in ("waiting", "failed", "complete"):
             return checkpoint, last_session, turns, action
         if checkpoint.stage == "deliver":
@@ -8294,12 +8882,43 @@ def _run_native_session(
             stage=checkpoint.stage,
             operation="stage.prepare",
         ):
-            subject, unused_packet, context = _prepare_stage_input(
+            subject, stage_packet, context = _prepare_stage_input(
                 run, checkpoint
             )
-        del unused_packet
+        inventor_selection_boundary = (
+            stage_packet["inputs"].get("workshop_selection", {}).get("status") == "pending"
+        )
+
+        if (
+            checkpoint.stage == "release"
+            and checkpoint.effort == "spark"
+            and not _agent_outcome_exists(run.run_root)
+        ):
+            # Publishing is a host-owned transport effect, not another native
+            # creative stage. Reuse an existing sealed proposal on resume;
+            # otherwise package Make's exact output without new assets.
+            release_path = run.run_root / "artifacts/release/release.json"
+            release = _prepare_spark_publication(run, checkpoint, context["made"])
+            release.assert_context(context["made"], context["playtested"])
+            proposal = AgentOutcomeProposal(
+                checkpoint_sha256=checkpoint.checkpoint_sha256,
+                subject_sha256=subject,
+                outcome=AgentOutcome(
+                    stage="release", status="ready",
+                    artifacts=(AgentArtifact("artifacts/release/release.json", _sha256(release_path.read_bytes())),),
+                    proposed_transition=context["terminal_transition"],
+                ),
+            )
+            _atomic_private_write(
+                run.run_root / _AGENT_OUTCOME_NAME,
+                _canonical_json_bytes(proposal.to_dict()) + b"\n",
+                mode=0o600,
+            )
 
         if _agent_outcome_exists(run.run_root):
+            if inventor_selection_boundary:
+                _quarantine_preselection_outcome(run, checkpoint)
+                continue
             recovered_progress = _NativeProgressTracker.existing(paths, checkpoint)
             recovered_progress.observe("finalizing")
             try:
@@ -8352,6 +8971,7 @@ def _run_native_session(
         if turn_launcher is None:
             if (
                 checkpoint.stage == "make"
+                and checkpoint.effort in ("forge", "quest")
                 and _phased_deep_capability_path(checkpoint) is not None
             ):
                 initial_make_proof_boundary = not _make_proof_ready(
@@ -8378,7 +8998,7 @@ def _run_native_session(
                     model=turn_launcher.model, reasoning_effort=turn_launcher.reasoning_effort,
                     auto_compact_token_limit=turn_launcher.auto_compact_token_limit,
                     runtime_profile_sha256=checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH),
-                    binary=turn_launcher.binary, timeout_seconds=3600,
+                    binary=turn_launcher.binary, timeout_seconds=None,
                     cli_version=turn_launcher.cli_version,
                     popen_factory=turn_launcher._popen_factory,
                     version_runner=turn_launcher._version_runner,
@@ -8395,7 +9015,7 @@ def _run_native_session(
         turn_mark = None if budget is None else budget.started()
         reserved_seconds = None
         if isinstance(budget, LifetimeBudget):
-            reserved_seconds = min(
+            reserved_seconds = 0 if isinstance(budget, ProductTokenBudget) else min(
                 budget.turn_timeout_seconds(checkpoint.stage),
                 getattr(turn_launcher, "timeout_seconds", 60 * 60),
             )
@@ -8416,6 +9036,7 @@ def _run_native_session(
                     unfinished_continuation=unfinished_continuation,
                     recoverable_continuation=recoverable_continuation,
                     make_proof_boundary=make_proof_boundary,
+                    inventor_selection_boundary=inventor_selection_boundary,
                     activity_observer=turn_activity_observer,
                 )
         except WorkshopError as exc:
@@ -8471,8 +9092,20 @@ def _run_native_session(
             # Token telemetry is best-effort and never a lifecycle gate.
             pass
         turns += 1
+        if isinstance(budget, ProductTokenBudget):
+            _reconcile_token_accounting_need(paths, checkpoint, budget)
         if budget is not None and turn_mark is not None and not isinstance(budget, LifetimeBudget):
             budget.spend_since(checkpoint.stage, turn_mark)
+        if inventor_selection_boundary:
+            if _agent_outcome_exists(run.run_root):
+                _quarantine_preselection_outcome(run, checkpoint)
+            selected, unused_feedback = _workshop_inventor_selection(run, checkpoint, context["roster"])
+            if selected is not None:
+                unfinished_continuation = False
+                recoverable_continuation = False
+                consecutive_unfinished_turns = 0
+                consecutive_recoverable_turns = 0
+                continue
         if not _agent_outcome_exists(run.run_root):
             # A normal native turn may end before the active Goal reaches its
             # finalizer. Continue the exact checkpointed session under the same
@@ -8531,7 +9164,7 @@ def _run_native_session(
                                 checkpoint.product_id,
                             )
                         )
-                    if turns < native_turn_limit:
+                    if isinstance(budget, ProductTokenBudget) or turns < native_turn_limit:
                         time.sleep(
                             _recoverable_native_turn_backoff_seconds(
                                 checkpoint,
@@ -8661,6 +9294,8 @@ def _draft_publication_intent_state(
         or intent.request.get("product_page_sha256")
         != details.get("product_page_sha256")
         or intent.request.get("manual_sha256") != details.get("manual_sha256")
+        or intent.request.get("publication_mode") != details.get("publication_mode")
+        or intent.request.get("publication_anchor_sha256") != details.get("publication_anchor_sha256")
     ):
         raise StateConflict(
             "Factory publication intent belongs to different Release bytes"
@@ -8692,9 +9327,7 @@ def _native_receipt(
     rounds = _playtest_score_history(paths.host_state) if paths is not None else []
     if paths is not None:
         if checkpoint.stage == "release" and checkpoint.status == "waiting":
-            wait_run = AgentRun.open(
-                paths.workspace, host_state_root=paths.host_state
-            )
+            wait_run = _open_budgeted_agent_run(paths)
             effect_wait = _read_release_effect_wait(wait_run, checkpoint)
             if effect_wait is not None:
                 if effect_wait["need"] not in needs:
@@ -8716,9 +9349,7 @@ def _native_receipt(
                 }
             )
         elif effect.exists() or effect.is_symlink():
-            effect_run = AgentRun.open(
-                paths.workspace, host_state_root=paths.host_state
-            )
+            effect_run = _open_budgeted_agent_run(paths)
             observed_checkpoint = effect_run.snapshot()
             if observed_checkpoint.checkpoint_sha256 != checkpoint.checkpoint_sha256:
                 raise StateConflict("Release status raced a checkpoint update")
@@ -8749,6 +9380,9 @@ def _native_receipt(
                     "required": True,
                     "page_url": receipt.details.get("page_url"),
                     "manual_url": receipt.details.get("manual_url"),
+                    "publication_mode": receipt.details.get("publication_mode"),
+                    "publication_anchor_url": receipt.details.get("publication_anchor_url"),
+                    "publication_anchor_readback_sha256": receipt.details.get("publication_anchor_readback_sha256"),
                     "cover_url": receipt.details.get("cover_url"),
                     "handoff_transport": receipt.details.get("handoff_transport"),
                     "occurrence_count": receipt.details.get("occurrence_count"),
@@ -8816,9 +9450,7 @@ def _native_receipt(
                 # Revalidate the exact accepted Release to recover its selected
                 # Inventor, then report a useful retry condition without
                 # creating an effect intent or weakening local Release.
-                effect_run = AgentRun.open(
-                    paths.workspace, host_state_root=paths.host_state
-                )
+                effect_run = _open_budgeted_agent_run(paths)
                 verified = _existing_release_for_promotion(effect_run, checkpoint)
                 try:
                     _factory_credentials(verified.inventor_id)
@@ -9203,22 +9835,29 @@ def _resume_native_run_locked(
         effect_wait = _read_release_effect_wait(run, checkpoint)
         if effect_wait is not None and effect_wait["schema_version"] == 2:
             pending_outcome = AgentOutcome.from_mapping(effect_wait["outcome"])
-            checkpoint = run.resume()
-            _rebind_existing_progress(paths, waiting_checkpoint, checkpoint)
             with wish_run_timing_span(
                 timing_observer,
                 product_id=checkpoint.product_id,
                 stage=checkpoint.stage,
                 operation="stage.prepare",
             ):
-                subject, unused_packet, context = _prepare_stage_input(
+                subject, pending_packet, context = _prepare_stage_input(
                     run, checkpoint
                 )
-            del unused_packet
             if subject != effect_wait["proposal_subject_sha256"]:
                 raise StateConflict(
                     "pending Release proposal subject changed while waiting"
                 )
+            # Prove the saved subject before consuming the waiting checkpoint.
+            # Otherwise a policy mismatch strands the still-bound wait after
+            # run.resume() has already advanced its checkpoint identity.
+            checkpoint = run.resume()
+            _rebind_existing_progress(paths, waiting_checkpoint, checkpoint)
+            _atomic_private_write(
+                run.run_root / _STAGE_INPUT_NAME,
+                _canonical_json_bytes({**pending_packet, "checkpoint_sha256": checkpoint.checkpoint_sha256}) + b"\n",
+                mode=0o400,
+            )
             proposal = AgentOutcomeProposal(
                 checkpoint_sha256=checkpoint.checkpoint_sha256,
                 subject_sha256=subject,
@@ -9371,12 +10010,16 @@ def resume_native_run(
     timing_observer = _validated_timing_observer(timing_observer)
     paths = native_run_paths(product_id)
     with _native_run_mutation_lock(paths):
-        run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
+        run = _open_budgeted_agent_run(paths)
         checkpoint = run.snapshot()
         if adopt_turn_budget:
             _adopt_turn_budget(paths, checkpoint)
         if max_tokens is not None:
             _adopt_token_budget(paths, checkpoint, max_tokens)
+            checkpoint = run.snapshot()
+        budget = _load_lifetime_budget(paths, checkpoint)
+        if isinstance(budget, ProductTokenBudget):
+            _reconcile_token_accounting_need(paths, checkpoint, budget)
         return _resume_native_run_locked(
             product_id,
             run=run,
@@ -9385,6 +10028,47 @@ def resume_native_run(
             activity_observer=activity_observer,
             timing_observer=timing_observer,
         )
+
+
+def _reconcile_refreshed_token_budget(paths, run, checkpoint):
+    """Rebind only a host-recorded capability refresh, retaining exact usage."""
+    if TOKEN_BUDGET_CAPABILITY_PATH not in checkpoint.input_sha256s:
+        return
+    value = _read_stable_private_json(
+        paths.host_state / "native-budget.json", label="persistent native budget", maximum_bytes=None
+    )
+    current = checkpoint.input_sha256s[TOKEN_BUDGET_CAPABILITY_PATH]
+    previous = value.get("capability_sha256")
+    if previous == current:
+        _load_lifetime_budget(paths, checkpoint)
+        return
+    ledger = _read_stable_private_bytes(
+        paths.host_state / "host-corrections.jsonl", label="host corrections", maximum_bytes=1024 * 1024
+    )
+    # Resume may already have activated the waiting checkpoint before the old
+    # host discovers the stale budget binding. Accept that one verified direct
+    # successor, not an arbitrary historical correction.
+    payload = run._load()
+    refresh_checkpoints = {checkpoint.checkpoint_sha256, payload["previous_checkpoint_sha256"]}
+    authorized = any(
+        record.get("kind") == "autonomous-workshop.host-correction"
+        and record.get("schema_version") == 1
+        and record.get("correction") == "domain-skill-refresh"
+        and record.get("checkpoint_sha256") in refresh_checkpoints
+        and any(change.get("path") == TOKEN_BUDGET_CAPABILITY_PATH
+                and change.get("previous_sha256") == previous
+                and change.get("sha256") == current
+                for change in record.get("changes", []))
+        for record in (json.loads(line) for line in ledger.splitlines() if line)
+    )
+    if not authorized:
+        raise StateConflict("token budget refresh lacks exact host correction evidence")
+    from dataclasses import replace
+    old_checkpoint = replace(checkpoint, input_sha256s={
+        **checkpoint.input_sha256s, TOKEN_BUDGET_CAPABILITY_PATH: previous
+    })
+    budget = _load_lifetime_budget(paths, old_checkpoint)
+    _save_lifetime_budget(paths, checkpoint, budget)
 
 
 def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, Any]:
@@ -9401,12 +10085,20 @@ def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, An
 
     paths = native_run_paths(product_id)
     with _native_run_mutation_lock(paths):
-        run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
+        run = _open_budgeted_agent_run(paths)
         before = run.snapshot()
+        # Finish an interrupted prior refresh before creating another input
+        # checkpoint, so its exact correction evidence remains the predecessor.
+        _reconcile_refreshed_token_budget(paths, run, before)
         changes = run.refresh_domain_skill_tools(
-            product_run_domain_skill_roots(), reason=reason
+            product_run_domain_skill_roots(), reason=reason,
+            token_budget_skill_root=(
+                product_run_agent_assets().skill_root
+                if TOKEN_BUDGET_CAPABILITY_PATH in before.input_sha256s else None
+            ),
         )
         after = run.snapshot()
+        _reconcile_refreshed_token_budget(paths, run, after)
         # The stored Manager session binds the instruction-tree hash the run
         # started with. A refreshed tool moves that hash by design, so the
         # same host operation rebinds the session record it owns -- and does

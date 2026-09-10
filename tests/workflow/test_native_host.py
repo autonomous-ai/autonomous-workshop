@@ -1850,6 +1850,32 @@ class NativeHostTest(unittest.TestCase):
         ):
             _materialized_release_contract(checkpoint)
 
+    def test_spark_publish_does_not_require_an_additional_manual_review(self):
+        checkpoint = self._release_protocol_checkpoint(
+            manual_first=True, direct_release=True, manual_design=True,
+        )
+        for workflow in ("spark", "forge", "quest"):
+            with self.subTest(workflow=workflow):
+                selected = AgentRunCheckpoint(
+                    **{
+                        **checkpoint.__dict__,
+                        "effort": workflow,
+                        "input_sha256s": {
+                            **checkpoint.input_sha256s,
+                            ".agents/skills/autonomous-workshop/references/effort-routes-v1.md": "a" * 64,
+                        },
+                    }
+                )
+                contract = _materialized_release_contract(selected)
+                self.assertEqual(
+                    "manual_design_evidence_path" in contract,
+                    workflow != "spark",
+                )
+                self.assertEqual(
+                    "manual_design_evidence_schema_version" in contract,
+                    workflow != "spark",
+                )
+
     def test_host_prunes_only_empty_make_directories_before_native_resume(self):
         with tempfile.TemporaryDirectory() as temporary:
             run_root = Path(temporary).resolve() / "run"
@@ -3146,6 +3172,8 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run.ProductTokenBudget", MeteredFakeBudget
             ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher", return_value=launcher
+            ), mock.patch(
+                "workshop.workflow.native_run.MAX_BUDGETED_TURNS", 0
             ):
                 with self.assertRaisesRegex(WorkshopError, "persistent token limit"):
                     start_native_run(Wish.create("token-budget-test", "a small toy"), max_tokens=1000)

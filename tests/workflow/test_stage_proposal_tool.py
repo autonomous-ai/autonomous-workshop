@@ -555,7 +555,7 @@ class StageProposalToolTest(unittest.TestCase):
             "anti_generic_signature_visible": True,
             "signature_experience_unmistakable": True,
             "finished_product_desirable": True,
-            "review_rounds": 1,
+            "review_rounds": 3,
             "critical_form_requirements": [
                 {
                     "requirement": "The observatory must be rounded and volumetric.",

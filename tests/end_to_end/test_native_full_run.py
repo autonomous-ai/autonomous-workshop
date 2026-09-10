@@ -368,6 +368,7 @@ class _OneSessionProductAgent:
         self.starts = []
         self.resumes = []
         self.stage_packets = []
+        self.selection_packets = []
         self.finalizer_commands = []
         self.playtest_plan = list(playtest_plan) if playtest_plan else []
         self.confirm_first_lead = confirm_first_lead
@@ -983,8 +984,26 @@ class _OneSessionProductAgent:
         stage = _read_json(stage_path)
         if stage["product_id"] != arguments["product_id"]:
             raise AssertionError("STAGE product identity differs from the session")
-        if stage["stage"] not in arguments["prompt"]:
+        if stage["stage"] not in arguments["prompt"].lower():
             raise AssertionError("native prompt does not identify the current stage")
+        selection = stage["inputs"].get("workshop_selection", {})
+        if selection.get("status") == "pending":
+            self.selection_packets.append(stage)
+            if self.stage_packets or self.finalizer_commands:
+                raise AssertionError("Workshop selection must precede Make")
+            if "BEFORE Make" not in arguments["prompt"]:
+                raise AssertionError("selection received a Make prompt")
+            _write_json(run_root / selection["marker_path"], {
+                "schema_version": 1,
+                "kind": "autonomous-workshop.inventor-selection-ready",
+                "product_id": stage["product_id"],
+                "checkpoint_sha256": stage["checkpoint_sha256"],
+                "wish_sha256": selection["wish_sha256"],
+                "inventor_roster_sha256": selection["inventor_roster_sha256"],
+                "selected_inventor_id": "alice",
+                "ranking": self._ranking(stage),
+            })
+            return _SessionOutcome(arguments, stage["stage"])
         self.stage_packets.append(stage)
         getattr(self, "_author_%s" % stage["stage"])(run_root, stage)
         return _SessionOutcome(arguments, stage["stage"])
@@ -1060,6 +1079,11 @@ class _OneUnfinishedTurnAgent(_OneSessionProductAgent):
         self.received_continuation_prompt = False
 
     def _turn(self, arguments):
+        run_root = Path(arguments["run_root"])
+        stage = _read_json(run_root / "STAGE.json")
+        if stage["inputs"].get("workshop_selection", {}).get("status") == "pending":
+            # This fixture interrupts Make, not Workshop's preceding setup.
+            return super()._turn(arguments)
         if self.returned_unfinished:
             if not self.received_continuation_prompt:
                 self.received_continuation_prompt = (
@@ -1070,8 +1094,6 @@ class _OneUnfinishedTurnAgent(_OneSessionProductAgent):
                     raise AssertionError("unfinished continuation prompt is missing")
             return super()._turn(arguments)
         self._assert_public_arguments(arguments)
-        run_root = Path(arguments["run_root"])
-        stage = _read_json(run_root / "STAGE.json")
         self.stage_packets.append(stage)
         self.returned_unfinished = True
         return _SessionOutcome(arguments, stage["stage"])
@@ -1391,20 +1413,24 @@ class _FactoryEffects:
 
         def write(context, root, manifest):
             fixture.writer_calls.append((context, root, manifest))
+            page = _read_json(Path(root) / "product.json")
+            make_output = page.get("schema_version") == 6
             manual_path = (
+                None if make_output else
                 "MANUAL.pdf"
                 if (Path(root) / "MANUAL.pdf").is_file()
                 else "MANUAL.md"
             )
-            if not (Path(root) / manual_path).is_file():
+            if not make_output and not (Path(root) / manual_path).is_file():
                 raise AssertionError("Factory effect did not receive the verified manual")
             context.assert_current()
             product_root = context.made.artifact_root
             exact_print_package = {
                 "assembled.step": (product_root / "assembled.step").read_bytes(),
                 "assembled.stl": (product_root / "assembled.stl").read_bytes(),
-                manual_path: (Path(root) / manual_path).read_bytes(),
             }
+            if manual_path is not None:
+                exact_print_package[manual_path] = (Path(root) / manual_path).read_bytes()
             if not exact_print_package["assembled.step"].startswith(
                 b"ISO-10303-21;"
             ) or not exact_print_package["assembled.stl"].startswith(b"solid "):
@@ -1415,7 +1441,7 @@ class _FactoryEffects:
                 for entry in manifest.entries
                 if entry.path == "product.json"
             )
-            manual_sha256 = next(
+            manual_sha256 = None if make_output else next(
                 entry.sha256
                 for entry in manifest.entries
                 if entry.path == manual_path
@@ -1423,11 +1449,21 @@ class _FactoryEffects:
             details = {
                 "release_sha256": manifest.artifact_sha256,
                 "product_page_sha256": product_page_sha256,
-                "manual_path": manual_path,
-                "manual_sha256": manual_sha256,
                 "page_url": _PAGE_URL,
                 "cover_url": _COVER_URL,
             }
+            if make_output:
+                if (Path(root) / "MANUAL.pdf").exists() or (Path(root) / "MANUAL-DESIGN.json").exists():
+                    raise AssertionError("Spark must publish without authoring a manual")
+                details.update({
+                    "publication_mode": "make-output-v1",
+                    "publication_anchor_path": "workshop-release-page.json",
+                    "publication_anchor_sha256": product_page_sha256,
+                    "publication_anchor_readback_sha256": product_page_sha256,
+                    "publication_anchor_url": "https://cdn.autonomous.ai/projects/orbit-dog-1/workshop-release-page.json",
+                })
+            else:
+                details.update(manual_path=manual_path, manual_sha256=manual_sha256)
             if manual_path == "MANUAL.pdf":
                 details.update(
                     {
@@ -1435,7 +1471,7 @@ class _FactoryEffects:
                         "manual_readback_sha256": manual_sha256,
                     }
                 )
-            else:
+            elif not make_output:
                 details.update(
                     {
                         "factory_content_sha256": _sha256(
@@ -1874,6 +1910,8 @@ class NativeFullRunTest(unittest.TestCase):
         effects = _FactoryEffects()
 
         def verify_cad(made, **arguments):
+            if effort == "spark":
+                raise AssertionError("Spark must not run a duplicate host CAD verifier")
             return SimpleNamespace(
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
@@ -1940,6 +1978,26 @@ class NativeFullRunTest(unittest.TestCase):
                     paths.workspace, host_state_root=paths.host_state
                 )
                 checkpoint = run.snapshot()
+
+                if effort == "spark":
+                    checked_stages = set()
+                    for gate_path in (paths.host_state / "gates").glob("*.json"):
+                        evidence = _read_json(gate_path).get("evidence", {})
+                        if evidence.get("stage") in ("make", "release"):
+                            checked_stages.add(evidence["stage"])
+                            checks = evidence["checks"]
+                            self.assertEqual(checks["host_cad_verification_status"], "not-run")
+                            self.assertIsNone(checks["cad_verification_passed"])
+                            self.assertIsNone(checks["cad_print_ready_eligible"])
+                            self.assertNotIn("cad_receipt_sha256", checks)
+                            if evidence["stage"] == "make":
+                                self.assertEqual(evidence["gate_id"], "make.output-handoff-v1")
+                                self.assertNotIn("build_groups", checks)
+                                self.assertNotIn("production_parts", checks)
+                            else:
+                                self.assertEqual(evidence["gate_id"], "release.published-output-v1")
+                                self.assertEqual(checks["manual_review_status"], "not-run")
+                    self.assertEqual(checked_stages, {"make", "release"})
 
         self.assertEqual(receipt["status"], "complete")
         self.assertEqual(receipt["stage"], "release")
@@ -2047,8 +2105,9 @@ class NativeFullRunTest(unittest.TestCase):
         self.assertEqual(checkpoint.effort, "spark")
         self.assertEqual(
             [packet["stage"] for packet in launcher.stage_packets],
-            ["make", "make", "release"],
+            ["make", "make"],
         )
+        self.assertEqual(len(launcher.selection_packets), 1)
         self.assertEqual(len(launcher.starts), 1)
         self.assertGreaterEqual(len(launcher.resumes), 2)
         self.assertTrue(launcher.received_continuation_prompt)
@@ -2066,8 +2125,13 @@ class NativeFullRunTest(unittest.TestCase):
         self.assertTrue(checkpoint.complete)
         self.assertEqual(
             [packet["stage"] for packet in launcher.stage_packets],
-            ["make", "release"],
+            ["make"],
         )
+        self.assertEqual(len(launcher.selection_packets), 1)
+        self.assertEqual(len(launcher.starts), 1)
+        self.assertEqual(len(launcher.resumes), 1)
+        self.assertEqual(launcher.stage_packets[0]["inputs"]["workshop_selection"]["status"], "selected")
+        self.assertTrue(all(command[5] != "release" for command in launcher.finalizer_commands))
         make_paths = {artifact.path for artifact in checkpoint.stage_artifacts["make"]}
         self.assertIn("artifacts/make/r0001/assignment.json", make_paths)
         self.assertIn("artifacts/make/r0001/invented.json", make_paths)
@@ -3476,7 +3540,7 @@ class NativeFullRunTest(unittest.TestCase):
 
     def test_each_selectable_effort_runs_its_exact_passthrough_route(self):
         routes = {
-            "spark": ["make", "release"],
+            "spark": ["make"],
             "forge": ["invent", "make", "release"],
             "quest": ["invent", "make", "playtest", "release"],
         }
@@ -3539,7 +3603,11 @@ class NativeFullRunTest(unittest.TestCase):
                     [packet["stage"] for packet in launcher.stage_packets],
                     expected_stages,
                 )
-                self.assertEqual(receipt["native_turns"], len(expected_stages))
+                self.assertEqual(
+                    receipt["native_turns"],
+                    len(expected_stages) + (1 if effort == "spark" else 0),
+                )
+                self.assertEqual(len(launcher.selection_packets), 1 if effort == "spark" else 0)
                 self.assertNotIn("match", checkpoint.stage_artifacts)
                 self.assertEqual(
                     "playtest" in checkpoint.stage_artifacts,
@@ -3559,7 +3627,7 @@ class NativeFullRunTest(unittest.TestCase):
                         / checkpoint.stage_artifacts["release"][0].path
                     )
                 )
-                self.assertEqual(release.schema_version, 2 if effort == "quest" else 3)
+                self.assertEqual(release.schema_version, {"spark": 4, "forge": 3, "quest": 2}[effort])
                 if effort == "quest":
                     by_stage = {
                         packet["stage"]: packet for packet in launcher.stage_packets

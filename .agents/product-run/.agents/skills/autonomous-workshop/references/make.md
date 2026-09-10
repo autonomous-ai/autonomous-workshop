@@ -204,8 +204,9 @@ Then run:
 
 For Spark only, also pass `--source <spark-source.json>`. Do not pass it when
 `STAGE.json` already contains sealed assignment and Invented inputs. Complete
-the Goal and return immediately after the finalizer succeeds. The host then
-rehashes the complete tree and reruns the authoritative isolated CAD gate.
+the Goal and return immediately after the finalizer succeeds. The host seals
+the exact submitted bytes. Forge and Quest additionally run their isolated CAD
+verification; Spark accepts Make's output without repeating that verification.
 
 Digital evidence never proves a successful print, tactile fit, durability,
 comfort, discoverability, or human delight. Quest Playtest owns its separate

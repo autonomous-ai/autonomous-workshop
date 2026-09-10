@@ -1,6 +1,6 @@
 # Review a moving product with motion evidence
 
-Keep the canonical schema-v6 signature review and its two-round independent
+Keep the canonical schema-v6 signature review and its independent
 critic limit. Images judge appearance. An exact-CAD animation judges whether
 the intended action is visible. `check_motion` separately tests the declared
 coupled motion, drive contact, collision and retention conditions. None is a

@@ -1,0 +1,38 @@
+{
+  "renderer": "render_canonical.py: exact triangle software depth buffer, orthographic projection, face-normal directional shading",
+  "source_stl": "city.stl",
+  "source_sha256": "a7fb666e9f588814f50f6cb6b2236a0524c15d984964499c687c49da71d70a0e",
+  "geometry": "Triangles extracted from exact assembly STL into declared occurrence envelopes; no triangles added to models. Palette and occurrence centers follow city.step.py. Motif detail surfaces are clipped to local 46 x 24 mm envelopes and z>=4.79; original board floor fragments are retained, with no added caps. Their directional shadows are computed from these exact surfaces.",
+  "states": [
+    "starting position",
+    "1. a4 a5 2. b4 b5 3. c4 c5 4. d4 d5 5. e4 e5 6. f4 f5 7. g4 g5 8. h4 h5"
+  ],
+  "state_files": {
+    "start.stl": "579927f7669f80b6e67ef3f21c1061671c8dbdcd8d71a6b12c2382e455509a49",
+    "opening.stl": "f36dc3cdaa89c4409479951812454b5c6ebc0751314f67da5170292ddbd07f81"
+  },
+  "images": {
+    "iso.png": {
+      "sha256": "c825afa0b4f968fc05ce955b3cd47a5e7c88dfc77665dcd78054a24c89b97c6a",
+      "size": [
+        2000,
+        1800
+      ],
+      "mode": "RGB"
+    },
+    "signature.png": {
+      "sha256": "f37ff528a3d85ad7ac746cc6822b470264e0131f52868337e3bbd92cc5aef167",
+      "size": [
+        2400,
+        2000
+      ],
+      "mode": "RGB"
+    }
+  },
+  "triangles": {
+    "assembly": 21952,
+    "board_and_tiles": 3984,
+    "pieces": 17968
+  },
+  "limitations": "Appearance evidence only; digital state translations do not prove physical printing, stability or human response."
+}

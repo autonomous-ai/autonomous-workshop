@@ -52,6 +52,22 @@ def test_counts_resumes_and_deduplicates_notifications(tmp_path):
     assert result["status"] == "observed"
 
 
+def test_more_than_32_native_sessions_are_counted_exactly(tmp_path):
+    write(tmp_path, records() + [usage()])
+    for index in range(40):
+        child = "01a0795f-26fd-7902-be2c-%012d" % index
+        write(tmp_path, records(child, ROOT) + [usage()], child)
+    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    assert len(result["threads"]) == 41
+    assert result["total_tokens"] == 41 * 110
+    from workshop.workflow.token_budget import ProductTokenBudget
+    budget = ProductTokenBudget()
+    budget.observe(result)
+    restored = ProductTokenBudget()
+    restored.restore(budget.to_dict())
+    assert restored.to_dict() == budget.to_dict()
+
+
 def test_followup_task_keeps_cumulative_usage_then_process_resume_resets(tmp_path):
     events = records() + [usage(200)] + [
         {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},

@@ -1,0 +1,6 @@
+$ <HOME>/miniconda/bin/python3.12 <WORKSHOP_RUN>/.agents/skills/cad/scripts/export <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_pawn.step.py --stl <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/parts/pawn.stl --json
+(51.4s, exit 0)
+--- stdout
+{"ok":true,"files":[{"format":"stl","path":"<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/parts/pawn.stl"}]}
+
+--- stderr

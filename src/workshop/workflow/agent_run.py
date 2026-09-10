@@ -17,7 +17,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Callable, Mapping, Optional, Sequence
 
 from workshop.artifacts import MAX_FILE_BYTES, assert_packable_content
 from workshop.contributors.extensions import (
@@ -61,6 +61,21 @@ from workshop.workflow.effort import (
     EFFORT_ROUTE_CAPABILITY_PATH,
     workshop_effort,
 )
+
+
+BudgetAuthority = Callable[[Mapping[str, Any]], bool]
+
+
+def _uses_token_budget(
+    payload: Mapping[str, Any], authority: Optional[BudgetAuthority] = None,
+) -> bool:
+    inputs = payload.get("inputs", ())
+    marked = isinstance(inputs, (list, tuple)) and any(
+        isinstance(item, Mapping)
+        and item.get("path") == ".agents/skills/autonomous-workshop/references/token-budget-v1.md"
+        for item in inputs
+    )
+    return marked or (authority is not None and authority(payload) is True)
 
 
 AGENT_RUN_STAGES = (
@@ -335,14 +350,14 @@ def _reject_private_agent_bytes(path: str, content: bytes) -> None:
         raise ArtifactError("outside-effect receipts must not be agent artifacts")
 
 
-def _read_regular(path: Path, label: str, maximum: int) -> bytes:
+def _read_regular(path: Path, label: str, maximum: Optional[int]) -> bytes:
     try:
         expected = path.lstat()
     except OSError as exc:
         raise ArtifactError("%s is unavailable" % label) from exc
     if path.is_symlink() or not stat.S_ISREG(expected.st_mode):
         raise ArtifactError("%s must be a regular file" % label)
-    if not 0 <= expected.st_size <= maximum:
+    if expected.st_size < 0 or (maximum is not None and expected.st_size > maximum):
         raise ArtifactError("%s exceeds its byte limit" % label)
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
     try:
@@ -357,7 +372,8 @@ def _read_regular(path: Path, label: str, maximum: int) -> bytes:
         ):
             raise ArtifactError("%s changed while opening" % label)
         chunks = []
-        remaining = maximum + 1
+        read_limit = opened.st_size if maximum is None else maximum
+        remaining = read_limit + 1
         while remaining:
             chunk = os.read(descriptor, min(1024 * 1024, remaining))
             if not chunk:
@@ -365,7 +381,7 @@ def _read_regular(path: Path, label: str, maximum: int) -> bytes:
             chunks.append(chunk)
             remaining -= len(chunk)
         content = b"".join(chunks)
-        if len(content) > maximum or os.read(descriptor, 1):
+        if len(content) > read_limit or os.read(descriptor, 1):
             raise ArtifactError("%s exceeds its byte limit" % label)
         after = os.fstat(descriptor)
         if (
@@ -713,6 +729,7 @@ class AgentRunCheckpoint:
     manager_model: Optional[str] = None
     manager_reasoning_effort: Optional[str] = None
     needs: tuple[str, ...] = ()
+    token_budgeted: bool = False  # Derived host authority, not an immutable input.
 
     @property
     def complete(self) -> bool:
@@ -727,11 +744,13 @@ class AgentRun:
         run_root: Path,
         host_state_root: Path,
         checkpoint_sha256: str,
+        *, budget_authority: Optional[BudgetAuthority] = None,
     ) -> None:
         self.run_root = run_root
         self.host_state_root = host_state_root
         self._checkpoint_path = host_state_root / "agent-run.json"
         self._expected_checkpoint_sha256 = checkpoint_sha256
+        self._budget_authority = budget_authority
 
     @classmethod
     def create(
@@ -1169,6 +1188,7 @@ class AgentRun:
         *,
         host_state_root: Path,
         expected_checkpoint_sha256: Optional[str] = None,
+        budget_authority: Optional[BudgetAuthority] = None,
     ) -> "AgentRun":
         try:
             requested = Path(run_root)
@@ -1198,35 +1218,42 @@ class AgentRun:
         ):
             raise ContractError("agent run and host-state roots must not overlap")
         checkpoint_path = selected_host / "agent-run.json"
-        payload = cls._read_checkpoint_file(checkpoint_path)
+        payload = cls._read_checkpoint_file(checkpoint_path, budget_authority=budget_authority)
         observed = payload["checkpoint_sha256"]
         if expected_checkpoint_sha256 is not None:
             require_sha256(expected_checkpoint_sha256, "expected agent checkpoint sha256")
             if observed != expected_checkpoint_sha256:
                 raise StateConflict("agent run checkpoint differs from trusted state")
-        run = cls(selected, selected_host, observed)
+        run = cls(selected, selected_host, observed, budget_authority=budget_authority)
         run.snapshot()
         return run
 
     @staticmethod
-    def _write_checkpoint_file(path: Path, core: Mapping[str, Any]) -> str:
+    def _write_checkpoint_file(
+        path: Path, core: Mapping[str, Any], *, budget_authority: Optional[BudgetAuthority] = None,
+    ) -> str:
         encoded_core = _canonical_json(dict(core))
         digest = _sha256(encoded_core)
         encoded = _canonical_json({**dict(core), "checkpoint_sha256": digest}) + b"\n"
-        if len(encoded) > MAX_AGENT_CHECKPOINT_BYTES:
+        if not _uses_token_budget(core, budget_authority) and len(encoded) > MAX_AGENT_CHECKPOINT_BYTES:
             raise StateConflict("agent run checkpoint exceeds its byte limit")
         _atomic_private_write(path, encoded)
         return digest
 
     @staticmethod
-    def _read_checkpoint_file(path: Path) -> dict[str, Any]:
+    def _read_checkpoint_file(
+        path: Path, *, budget_authority: Optional[BudgetAuthority] = None,
+    ) -> dict[str, Any]:
         try:
             checkpoint_mode = stat.S_IMODE(path.lstat().st_mode)
         except OSError as exc:
             raise StateConflict("agent run checkpoint is unavailable") from exc
         if checkpoint_mode != 0o600:
             raise StateConflict("agent run checkpoint mode must be 0600")
-        content = _read_regular(path, "agent run checkpoint", MAX_AGENT_CHECKPOINT_BYTES)
+        # The host-owned checkpoint grows with accepted revisions and exact
+        # artifact identities. Read one stable snapshot before choosing the
+        # frozen policy; a token run has no aggregate checkpoint-size budget.
+        content = _read_regular(path, "agent run checkpoint", None)
         try:
             value = json.loads(content.decode("utf-8"), object_pairs_hook=_strict_object)
         except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
@@ -1241,6 +1268,8 @@ class AgentRun:
         if digest != _sha256(_canonical_json(value)):
             raise StateConflict("agent run checkpoint digest does not match its bytes")
         value["checkpoint_sha256"] = digest
+        if not _uses_token_budget(value, budget_authority) and len(content) > MAX_AGENT_CHECKPOINT_BYTES:
+            raise StateConflict("agent run checkpoint exceeds its byte limit")
         return value
 
     def _load(self) -> dict[str, Any]:
@@ -1267,7 +1296,7 @@ class AgentRun:
                 or stat.S_IMODE(identity.st_mode) != expected_mode
             ):
                 raise StateConflict("agent run private directory mode changed")
-        payload = self._read_checkpoint_file(self._checkpoint_path)
+        payload = self._read_checkpoint_file(self._checkpoint_path, budget_authority=self._budget_authority)
         if payload["checkpoint_sha256"] != self._expected_checkpoint_sha256:
             raise StateConflict("agent run checkpoint changed since this host read it")
         expected_fields = {
@@ -1311,9 +1340,12 @@ class AgentRun:
             or type(payload["round_index"]) is not int
             or type(payload["max_rounds"]) is not int
             or not 1 <= payload["max_rounds"] <= 100
-            or not 0 <= payload["round_index"] <= payload["max_rounds"]
+            or payload["round_index"] < 0
+            or (not _uses_token_budget(payload, self._budget_authority)
+                and payload["round_index"] > payload["max_rounds"])
             or not isinstance(payload["history"], list)
-            or len(payload["history"]) > payload["max_rounds"] * 3 + 16
+            or (not _uses_token_budget(payload, self._budget_authority)
+                and len(payload["history"]) > payload["max_rounds"] * 3 + 16)
         ):
             raise StateConflict("agent run checkpoint values are invalid")
         if schema_version == 4:
@@ -1544,7 +1576,7 @@ class AgentRun:
                 raise StateConflict("a sealed agent artifact changed")
             total += size
             by_path[artifact.path] = dict(item)
-        if total > MAX_AGENT_REFERENCED_BYTES:
+        if not _uses_token_budget(payload, self._budget_authority) and total > MAX_AGENT_REFERENCED_BYTES:
             raise StateConflict("agent run referenced artifacts exceed their total limit")
         stage_artifacts = payload.get("stage_artifacts")
         if not isinstance(stage_artifacts, Mapping):
@@ -1563,12 +1595,14 @@ class AgentRun:
     def _write_next(self, current: Mapping[str, Any], updated: dict[str, Any]) -> None:
         history = updated.get("history")
         maximum_history = current["max_rounds"] * 3 + 16
-        if not isinstance(history, list) or len(history) > maximum_history:
+        if not isinstance(history, list) or (
+            not _uses_token_budget(current, self._budget_authority) and len(history) > maximum_history
+        ):
             raise TransitionError("agent run checkpoint history budget is exhausted")
         updated["revision"] = current["revision"] + 1
         updated["previous_checkpoint_sha256"] = current["checkpoint_sha256"]
         updated.pop("checkpoint_sha256", None)
-        digest = self._write_checkpoint_file(self._checkpoint_path, updated)
+        digest = self._write_checkpoint_file(self._checkpoint_path, updated, budget_authority=self._budget_authority)
         self._expected_checkpoint_sha256 = digest
 
     @staticmethod
@@ -1595,6 +1629,7 @@ class AgentRun:
         domain_skill_roots: Mapping[str, Path],
         *,
         reason: str,
+        token_budget_skill_root: Optional[Path] = None,
     ) -> tuple[dict[str, Any], ...]:
         """Bring the run's host-owned domain skills up to the installed source.
 
@@ -1619,15 +1654,27 @@ class AgentRun:
         changes: list[dict[str, Any]] = []
         writes: list[tuple[PurePosixPath, bytes, int]] = []
         removals: list[PurePosixPath] = []
-        for name, source_root in sorted(domain_skill_roots.items()):
+        roots = dict(domain_skill_roots)
+        review_paths = {
+            "scripts/stage_proposal.py", "references/make.md",
+            "references/make-playtest.md", "references/motion-review-v1.md",
+            "references/token-budget-v1.md",
+        }
+        if token_budget_skill_root is not None:
+            if not _uses_token_budget(payload):
+                raise ContractError("review-tool refresh requires a token-budget run")
+            roots["autonomous-workshop"] = token_budget_skill_root
+        for name, source_root in sorted(roots.items()):
             if (
                 not isinstance(name, str)
                 or _AGENT_SKILL_NAME.fullmatch(name) is None
-                or name == "autonomous-workshop"
+                or (name == "autonomous-workshop" and token_budget_skill_root is None)
             ):
                 raise ContractError("domain skill name is invalid")
             prefix = ".agents/skills/%s/" % name
             carried = {path for path in by_path if path.startswith(prefix)}
+            if name == "autonomous-workshop":
+                carried &= {prefix + path for path in review_paths}
             if not carried:
                 continue
             files = _source_tree_files(source_root, label="source %s skill" % name)
@@ -1635,6 +1682,8 @@ class AgentRun:
                 raise ArtifactError("source %s skill lacks SKILL.md" % name)
             wanted: dict[str, tuple[bytes, int]] = {}
             for relative, content, mode in files:
+                if name == "autonomous-workshop" and prefix + relative.as_posix() not in carried:
+                    continue
                 destination = (PurePosixPath(".agents/skills") / name / relative).as_posix()
                 _reject_private_agent_bytes(destination, content)
                 wanted[destination] = (content, mode)
@@ -1808,6 +1857,7 @@ class AgentRun:
             manager_model=manager_model,
             manager_reasoning_effort=manager_reasoning_effort,
             needs=tuple(payload.get("needs", ())),
+            token_budgeted=_uses_token_budget(payload, self._budget_authority),
         )
 
     def expected_gate_subject_sha256(self) -> str:
@@ -1953,7 +2003,7 @@ class AgentRun:
                     {"path": artifact.path, "sha256": artifact.sha256, "size": size}
                 )
                 total += size
-        if total > MAX_AGENT_REFERENCED_BYTES:
+        if not _uses_token_budget(payload, self._budget_authority) and total > MAX_AGENT_REFERENCED_BYTES:
             raise ArtifactError("agent run referenced artifacts exceed their total limit")
         return additions
 
@@ -1969,7 +2019,7 @@ class AgentRun:
         payload = self._load()
         self._validate_current_outcome(payload, outcome)
         host_artifacts = tuple(additional_artifacts)
-        if len(host_artifacts) > MAX_HOST_SEALED_ARTIFACTS_PER_GATE:
+        if not _uses_token_budget(payload, self._budget_authority) and len(host_artifacts) > MAX_HOST_SEALED_ARTIFACTS_PER_GATE:
             raise ArtifactError("host gate selected too many artifacts to seal")
         if not all(isinstance(item, AgentArtifact) for item in host_artifacts):
             raise ContractError("additional artifacts must use AgentArtifact values")
@@ -2037,7 +2087,8 @@ class AgentRun:
                 if outcome.stage == "playtest":
                     raise TransitionError("passing Playtest must advance to Release")
                 raise TransitionError("passing Make must advance to its next stage")
-            if payload["round_index"] >= payload["max_rounds"]:
+            if (not _uses_token_budget(payload, self._budget_authority)
+                    and payload["round_index"] >= payload["max_rounds"]):
                 raise TransitionError("Invent-Make-Playtest round budget is exhausted")
         elif not gate.passed:
             raise TransitionError("a failed deterministic gate cannot advance")

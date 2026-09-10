@@ -42,7 +42,7 @@ Our initial Inventors seed the shop and exercise the system. The long-term platf
 ## What works today and what comes next
 
 - **Available in the CLI:** `workshop create inventor --taste ./TASTE.md` creates a specialist bundle from your exact Taste and connects its publishing account. `workshop start <inventor>` repeatedly dreams, builds, and attempts publication until stopped or its failure limit is reached. `workshop daydream <inventor>` lets you inspect an idea before building it. See the [Quickstart](#quickstart) and [Build an Inventor](docs/BUILD_AN_INVENTOR.md).
-- **Implemented production boundary:** the host seals and checks each enabled stage, then publishes the accepted digital product and manual through Factory with authenticated readback. Operations owns physical production, hands-on checks, shipping, and customer support after that handoff. Publication alone does not prove manufacture or delivery.
+- **Implemented production boundary:** Spark uses Workshop inventor selection → Make → Publish. Make owns its product checks; Workshop publishes its existing files without another CAD rebuild, review, PDF-generation step, or native Release turn. Forge and Quest retain their deeper stage contracts. Authenticated readback is required for publication; Operations owns physical production, hands-on checks, shipping, and customer support afterward.
 - **Planned creator workspace:** the hosted Manage Inventors page, persistent creator chat, conversation-driven Taste revisions, and invention performance views described above.
 - **Planned learning loop:** creator feedback and actual product outcomes inform future work. Today's notebook remembers previous ideas to avoid repetition; sales, playtests, and customer reviews do not yet flow back into it. Outcome feedback should improve an Inventor's judgment while preserving the creator's control over its Taste.
 
@@ -95,13 +95,23 @@ product and stops. Omit `--inventor` on a Wish to let the Manager choose the
 best match. `start <inventor> --once` dreams and builds one Inventor-generated
 idea. `resume <wish-id>` continues the same unfinished product and session.
 
+For new Spark runs, Workshop selects the inventor before starting Make. An
+explicit `--inventor` binds your choice immediately; otherwise the Manager
+selects from the roster and continues into Make in the same native session.
+Publish uses the existing Make files and optional existing README. It does not
+require a newly authored manual. The lifecycle still calls this final host-owned
+publication checkpoint `release`; omitted reviews are recorded as not run.
+The new direct-publication path passes deterministic end-to-end tests; live
+acceptance is still in progress.
+
 `start <inventor> --wish "..."` builds your own brief as that Inventor without
 a daydream: the Inventor id is sealed into the Wish, so the run materializes
 only that Inventor, Match can bind nobody else, and Release publishes with
 that Inventor's account. `--ref` attaches up to eight reference images (PNG,
 JPEG, or WebP) to a `wish` or a `start --wish`, each a local file or an
 `http(s)` link that is downloaded once at Wish time and sealed by its bytes;
-`--max-rounds` raises the Invent-Make round budget:
+`--max-rounds` sets the legacy Invent-Make round budget (not a spending limit
+for token-budgeted products):
 
 ```bash
 uv run workshop start ferro-line --workflow forge --max-rounds 6 \
@@ -126,7 +136,10 @@ uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
 
-`start` and `wish` accept `--max-tokens N`, default **30,000,000** per Codex
+Codex Astra also supports `--effort ultra`, passed unchanged to native Codex.
+Ultra is restricted to Astra; other models retain their existing effort levels.
+
+`start` and `wish` accept `--max-tokens N` up to **200,000,000**, default **30,000,000** per Codex
 product. Input plus output is counted across all enabled build steps, native
 children, retries, and resumes. Cached input counts and is reported separately;
 reasoning output is already part of output. `start` gives each product its own
@@ -141,15 +154,23 @@ uv run workshop resume <wish-id> --max-tokens 15000000  # total cap, not extra t
 Omitting `--max-tokens` on resume preserves the saved allowance. Providing it
 explicitly adopts token budgeting for an eligible older run or changes its
 total cap, retaining recovered prior usage. Token-budgeted runs no longer split
-every twenty minutes; a one-hour emergency execution watchdog remains. Native
+on a wall-clock timer. Tokens are their only Workshop execution budget: no host
+turn, proposal-retry, or lifecycle-round cap. Make retains its own engineering
+checks and review allowance (four reviews in current tools). Safety boundaries remain. Native
 usage is observed after requests, so in-flight work can overshoot the threshold.
 Missing usage is not free work. This is not a dollar cap. The local usage adapter
 currently requires Codex 0.153.4; other Managers retain their existing policy.
 Live acceptance passed for [Quiet Arc](https://www.autonomous.ai/toys/product/quiet-arc):
 Spark / Codex / Astra / medium / Soren, including same-session recovery and
 verified publication, used 6,893,962 observed tokens of the 10M allowance.
-This validates one simple digital-product workflow, not physical manufacture
-or every live parameter combination.
+On 2026-09-10, [Civic Skyline](https://www.autonomous.ai/toys/product/civic-skyline)
+completed live Spark host-only publication under Dee with 32,678,604 observed
+tokens of its unchanged 200M cap. Recovery repaired Factory's carrier-root
+selection through a new version of the same private draft; it reused Make's
+files without another Make run, native Release turn, PDF, or CAD verification.
+This frozen run retained its earlier inventor selection; the new selection-before-Make
+boundary is separately covered by deterministic tests. These results prove
+digital publication, not physical manufacture or every live parameter combination.
 
 Long turns remain attached to the same session if the locally installed Codex
 CLI receives a supported in-place update. Workshop still rejects downgrades,
@@ -166,7 +187,7 @@ One run is one native coding-agent session — the shop lead. Resume cannot swit
 
 ```bash
 uv run workshop start pico-press --agent codex    # Sol + medium; default
-uv run workshop start pico-press --agent claude   # Opus 5 + high; experimental
+uv run workshop start pico-press --agent claude   # Opus 5 + medium; experimental
 uv run workshop start pico-press --agent grok     # experimental
 ```
 
@@ -336,21 +357,21 @@ Shop -> Scoreboard (views, orders, prints, returns) -> back to Daydream
 
 Route diagrams: [Spark](docs/images/effort-spark.svg) · [Forge](docs/images/effort-forge.svg) · [Quest](docs/images/effort-quest.svg).
 
-Every run is keyed by a Wish id. Passed-through stages create no turn, artifact, gate, or evidence; Spark and Forge record Playtest as `not-run`. The reverse arrows are evidence-bound repair routes that spend a shared revision budget, not free retries.
+Every run is keyed by a Wish id. Passed-through stages create no turn, artifact, gate, or evidence; Spark and Forge record Playtest as `not-run`. The reverse arrows are evidence-bound repair routes recorded in shared revision history; token-budget runs spend the persistent token allowance instead of a host revision-count allowance.
 
-**Who does what.** The selected [Workshop Manager](#workshop-managers) does the product work in one persistent native session, one Goal at a time. Every step is one native Goal, Daydream included, and every Goal ends with a run-local finalizer writing `agent-outcome.json`, which is the only completion signal the host trusts. The Python host is narrow and trusted: identity, exact bytes, lifecycle order, budgets, session start and resume, deterministic gates, credential isolation, and authorized effects. There is no second agent framework, prompt chain, or reward loop.
+**Who does what.** The selected [Workshop Manager](#workshop-managers) does the product work in one persistent native session, one Goal at a time. Creative stages use native Goals and run-local finalizers; Workshop inventor setup and Spark's host-only Publish are not additional Goals. The Python host is narrow and trusted: identity, exact bytes, lifecycle order, budgets, session start and resume, deterministic gates, credential isolation, and authorized effects. There is no second agent framework, prompt chain, or reward loop.
 
 **Two sessions, by design.** `workshop start` is a loop: dream, build, dream again. A daydream is its own short native session. It ends when the idea is sealed: linted, hashed, written to the Inventor's notebook, and rendered as the brief. Each liked idea then gets its own persistent build session, one per run, exactly as a typed brief would. The idea is an immutable input to the build, so Make can never quietly rewrite what it is building; daydreams can run on their own cadence; a saved idea can be built later, on any route or Manager, or rebuilt after a failed Make; and a build failure never touches the idea.
 
-**What Make must prove.** Every printable part passes a fixed print preflight (bed fit, mesh validity, wall thickness at a 0.4 mm nozzle). One independent critic then reviews exact renders blind, before the brief is revealed, and the host rebuilds the CAD in isolation and seals the bytes. When a stage is truly blocked, it records a `Need:` that the receipt and `workshop status` show; nothing waits silently.
+**What Make must prove.** Every printable part passes a fixed print preflight (bed fit, mesh validity, wall thickness at a 0.4 mm nozzle). Make records native visual feedback and an independent critic reviews exact renders blind before the brief is revealed; current Make permits up to four reviews. Make then runs its integrated verifier. Spark accepts those output bytes without another host rebuild; Forge/Quest retain isolated host verification. When a stage is truly blocked, it records a `Need:` that the receipt and `workshop status` show; nothing waits silently.
 
-**What Release means.** Three facts about the same exact bytes:
+**What Release means.** Spark publishes Make's existing files with exact metadata-anchor readback and requires no new PDF or review. Forge/Quest's PDF-first Release contracts retain three facts about the same exact bytes:
 
 - full-tier, thickness-checked, ready-to-print CAD
 - a self-contained printable `MANUAL.pdf` for the box
 - authenticated public Factory readback of those CAD and manual hashes
 
-A multi-part toy crosses to the shop as one mesh per sealed occurrence in the colours Make sealed. The host renders the sealed assembly with a pinned three.js renderer (`tools/render/`, optional; see `workshop doctor`) so the manual and the listing cover show the exact product. The build session stays private; no transcript ships with the listing.
+For those PDF-first contracts, a multi-part toy crosses to the shop as one mesh per sealed occurrence in the colours Make sealed. The host can render the sealed assembly with a pinned three.js renderer (`tools/render/`, optional; see `workshop doctor`). Spark instead transports Make's complete existing tree without new renders. The build session stays private; no transcript ships with the listing.
 
 Workshop code ends there. Printing, delivery, and Review belong to Operations. Publication does not claim a physical print, pack, or delivery.
 
