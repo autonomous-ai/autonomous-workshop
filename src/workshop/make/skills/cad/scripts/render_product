@@ -464,6 +464,70 @@ def motion_sheet(
     return sheet
 
 
+def _triangle_geometry_key(triangle: np.ndarray) -> tuple:
+    """Exact world-space vertices, independent of triangle vertex ordering."""
+    return tuple(sorted(tuple(vertex) for vertex in triangle))
+
+
+def _state_comparison_colors(
+    states: tuple[np.ndarray, ...],
+    state_colors: tuple[np.ndarray, ...] | None,
+) -> tuple[np.ndarray | None, ...]:
+    """Keep only unchanged, unambiguous opacity in neutral geometry views.
+
+    Rendering has already validated the arrays. Moving or unmatched triangles
+    remain opaque. A fixed clear cover can expose real motion, while changing
+    color or opacity cannot manufacture a difference between operating states.
+    """
+    opaque = (None,) * len(states)
+    if state_colors is None:
+        return opaque
+    state_colors = tuple(np.asarray(colors) for colors in state_colors)
+    if state_colors[0].shape[1] != 4:
+        return opaque
+    shared = {
+        _triangle_geometry_key(triangle)
+        for triangle, alpha in zip(states[0], state_colors[0][:, 3])
+        if alpha < 1
+    }
+    if not shared:
+        return opaque
+    observations = []
+    for triangles, colors in zip(states, state_colors):
+        records = {}
+        for index, triangle in enumerate(triangles):
+            key = _triangle_geometry_key(triangle)
+            if key not in shared:
+                continue
+            alpha = colors[index, 3] if colors.shape[1] == 4 else 1.0
+            if key not in records:
+                records[key] = [alpha, [index]]
+            else:
+                record = records[key]
+                if record[0] != alpha:
+                    record[0] = None  # Coincident triangles disagree on opacity.
+                record[1].append(index)
+        observations.append(records)
+        first = observations[0]
+        shared = {
+            key for key in shared
+            if key in records and records[key][0] is not None
+            and records[key][0] == first[key][0]
+            and len(records[key][1]) == len(first[key][1])
+        }
+        if not shared:
+            return opaque
+    result = []
+    for triangles, records in zip(states, observations):
+        colors = np.full((len(triangles), 4), -1.0)
+        colors[:, 3] = 1.0
+        for key in shared:
+            alpha, indices = records[key]
+            colors[indices, 3] = alpha
+        result.append(colors)
+    return tuple(result)
+
+
 def state_sheet(
     states: tuple[np.ndarray, ...],
     *,
@@ -493,14 +557,15 @@ def state_sheet(
         )
         for index, triangles in enumerate(states)
     ]
-    # Preserve the existing geometry-state distinction: repainting unchanged
-    # parts cannot turn duplicate geometry into evidence of product motion.
+    # Neutral RGB preserves the geometry-state distinction. Only fixed geometry
+    # with unchanged opacity may stay transparent in the comparison views.
+    comparison_colors = _state_comparison_colors(states, state_colors)
     difference_frames = frames if state_colors is None else [
         render(
             triangles, size=size, view=view, base=base, accent=accent,
-            background=background,
+            background=background, triangle_colors=comparison_colors[index],
         )
-        for triangles in states
+        for index, triangles in enumerate(states)
     ]
     samples = [
         np.asarray(frame.resize((96, 96)), dtype=np.float64) for frame in difference_frames

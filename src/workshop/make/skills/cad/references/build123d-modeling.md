@@ -179,6 +179,15 @@ export path to retain that alpha in STEP. All geometry remains in the model and
 its framing. Transparent faces receive no opaque silhouette outline; fully
 invisible faces contribute no fill, outline or shadow.
 
+Exact-state sheets compare neutral RGB views. A triangle keeps its opacity in
+that comparison only when its exact world-space vertices, opacity and
+unambiguous coincident multiplicity agree across every state. An unchanged
+clear cover can therefore reveal real mechanism motion. Color or opacity edits
+alone cannot establish a state change. Moving, unmatched or ambiguous triangles
+are compared as opaque, so motion behind a moving transparent cover may still
+need a clearer fixed camera view. The displayed frames keep authored appearance;
+this comparison does not replace the motion or geometry checks.
+
 This presentation does not simulate refraction, reflections, mirror images or
 physical light transmission. Mean triangle-depth sorting can approximate
 crossing or overlapping transparent surfaces incorrectly. Inspect the exact
