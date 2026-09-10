@@ -354,22 +354,25 @@ labelled assembly children, not a fused solid:
 
 ```python
 from cadgen.assembly import AssemblyHelper
-from cadgen.color import srgb
+from cadfilament import filament
 
 asm = AssemblyHelper("enclosure")
-asm.add(base, "base", color=srgb("#2E3742"))
-asm.add(lid, "lid", color=srgb("#D9D9D6"))
+asm.add(base, "base", color=filament("dark gray"))
+asm.add(lid, "lid", color=filament("white"))
 return asm.compound()
 ```
 
 Fusing separately printed parts loses clearances, fits, and per-part mesh export.
 Name the parts in the spec in the order they should be added.
 
-Colour is worth one line in the spec per part, because two rules about it fail
-silently — raw `Color()` channels are linear RGB and come out washed out, and
-colour set on a group compound never reaches the render even though it does
-reach the STEP's XCAF label. So name each part's colour as a **hex** the
-implementer passes to `srgb()`, and name it for every leaf, never for a group.
+Colour is worth one line in the spec per part. Name each printed part's colour as
+a **Bambu Lab PLA Lite filament name** the implementer passes to `filament()` —
+`beige`, `black`, `blue`, `cocoa brown`, `cyan`, `dark gray`, `gray`, `green`,
+`orange`, `red`, `sunflower yellow`, `white`, `yellow` — never a hex of your own,
+which invents a filament that cannot be loaded. When the reference colour falls
+between two of them, choose the nearer and record the substitution as a spec row.
+Name a colour for every leaf, never for a group: colour on a group compound never
+reaches the render even though it does reach the STEP's XCAF label.
 
 `cad` owns the full write-up, with the worked example and the alpha form:
 **Colour** in `cad/references/build123d-modeling.md`. That skill is the one

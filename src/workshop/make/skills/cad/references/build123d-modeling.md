@@ -150,19 +150,53 @@ For repeated parts, keep occurrence labels, transforms, or joint connections exp
 
 ## Colour
 
-Two rules, both of which fail silently — no error, just a model that looks wrong.
+Three rules. The first and the last fail silently — no error, just a model that
+looks wrong.
 
 **Channels are LINEAR RGB, not sRGB.** The renderer converts them to sRGB on the
 way to the screen, so `Color(0.5, 0.5, 0.5)` displays as roughly `#BCBCBC`, not
 `#808080`. Picking channel values off a hex palette by eye gives a washed-out,
-desaturated model. Author with `cadgen.srgb()`, which takes the hex you want to
-see:
+desaturated model. Never author a channel triple by hand.
+
+**Every printable part takes its colour by name from the filament palette.** The
+palette is Bambu Lab PLA Lite, the only stock this repository prints, so a model
+coloured from it shows spools that can actually be loaded; a free hex invents a
+filament nobody can buy. `scripts/cadfilament.py` owns the table and does the
+sRGB conversion, and imports with no path setup wherever `cadfits` does:
+
+```python
+from cadfilament import filament
+
+body.color = filament("sunflower yellow")
+lens.color = filament("cyan", 0.42)     # with alpha
+```
+
+| name | hex | name | hex |
+| --- | --- | --- | --- |
+| `beige` | `#F7E6DE` | `gray` | `#9FA19F` |
+| `black` | `#000000` | `green` | `#00BB31` |
+| `blue` | `#004EA8` | `orange` | `#FF671F` |
+| `cocoa brown` | `#8E3C06` | `red` | `#FF0000` |
+| `cyan` | `#00FFFF` | `sunflower yellow` | `#FFB549` |
+| `dark gray` | `#6F6E6D` | `white` | `#FFFEF7` |
+| | | `yellow` | `#FFD834` |
+
+Names match case- and separator-insensitively (`"Dark Gray"` = `"dark_gray"`);
+an unknown name raises with the list above rather than guessing a near colour.
+Run `python "$CAD_SKILL_ROOT/scripts/cadfilament.py"` for its self-check, which
+round-trips every colour back to the published hex.
+Two parts that must be visually distinct need two names from this table — if the
+reference colour is not in it, pick the nearest filament and record the
+substitution in the spec, do not reach for the exact hex.
+
+`cadgen.srgb("#rrggbb")` stays available for geometry that is deliberately not
+printed filament — a purchased component, a reference surface, a see-through
+datum:
 
 ```python
 from cadgen import srgb
 
-body.color = srgb("#2E3742")
-glass.color = srgb("#38414D", 0.42)   # with alpha
+bearing.color = srgb("#8A8F98")       # purchased part, not a spool
 ```
 
 **Colour on a group compound is ignored.** Only *leaf* occurrences carry colour

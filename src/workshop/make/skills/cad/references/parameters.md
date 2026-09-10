@@ -60,6 +60,22 @@ Compute dependent values from the real constraints:
 
 If a parameter changes a source-level CAD generator, regenerate STEP and validate the exported geometry — that is the only way a parameter change is confirmed here.
 
+## Colour A Printed Part From Stock — `cadfilament`
+
+```python
+from cadfilament import filament
+body.color = filament("sunflower yellow")   # a spool, not a hex
+```
+
+`scripts/cadfilament.py` holds the Bambu Lab PLA Lite palette — the 13 names
+this repository prints — and converts each to the linear channels the renderer
+wants. It imports with no setup wherever `cadfits` does, and an unknown name
+raises with the whole list instead of resolving to something close. A colour
+that is not printed filament (a purchased part, a reference surface) stays on
+`cadgen.srgb()`. Run `python "$CAD_SKILL_ROOT/scripts/cadfilament.py"` for its
+self-check. The full rules, and the table, are **Colour** in
+`references/build123d-modeling.md`.
+
 ## Derive The Second Half Of A Mate — `cadfits`
 
 ```python

@@ -145,19 +145,25 @@ Keep the two representations separate, because they answer different questions:
   reports nothing, because the pieces do not overlap.
 
 ```python
+from cadfilament import filament
+
 regions = [("head", head_tool, COL_HEAD), ("legs", leg_tool, COL_LIMB), ...]
 taken = None
 for name, tool, colour in regions:
     piece = fused & tool
     taken = tool if taken is None else taken + tool
-    asm.add(piece, name, color=Color(*colour))
-asm.add(fused - taken, "body", color=Color(*COL_BODY))
+    asm.add(piece, name, color=filament(colour))
+asm.add(fused - taken, "body", color=filament(COL_BODY))
 ```
 
-Sample the colours off the reference rather than naming them: a
-`--palette`/`--isolate` run in `$image-to-cad` reports hex values, and a
-glossy surface splits into a lit and a shaded cluster of the same paint, so
-merge those by eye before writing the constant.
+Measure the reference, then round to stock. A `--palette`/`--isolate` run in
+`$image-to-cad` reports hex values — and a glossy surface splits into a lit and
+a shaded cluster of the same paint, so merge those by eye first. Each merged hex
+then picks the nearest **Bambu Lab PLA Lite** name (the table under **Colour** in
+`references/build123d-modeling.md`), and that name is what the region constant
+holds. A region printed in a colour outside the palette is a region that cannot
+be printed as drawn, so record the substitution in the spec instead of passing
+the sampled hex through `Color()` or `srgb()`.
 
 ## Cost of the loop
 

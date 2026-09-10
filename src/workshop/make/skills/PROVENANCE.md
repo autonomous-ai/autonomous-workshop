@@ -3,10 +3,38 @@
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
-  `673a9fa595d3ddfda89ed9a34a8bceabb49bc0db` (2026-09-10), resynced from
+  `facbc582ceee2b73e655711afa112e9bf10d7592` (2026-09-10), resynced from
+  `673a9fa595d3ddfda89ed9a34a8bceabb49bc0db` (2026-09-10),
   `39a63f73617d70a45473c984b46926c9d29bb9bd` (2026-09-10),
   `ec25343ea240c520074b66eee7b28e76bd91ee49` (2026-09-09) and
   `9e75609bb53bf880429353e57201995a4c0482e6` (2026-09-07).
+- The third 2026-09-10 resync takes upstream's `cad/filament-palette` branch,
+  which gives colour a source of truth. `cad/scripts/cadfilament.py` is new: the
+  Bambu Lab PLA Lite palette (13 names with the hex published at
+  3dfilamentprofiles.com, read 2026-09-10) and `filament(name, alpha)`, which
+  converts through `cadgen.color.srgb` so the channels reach the renderer
+  linear. A printed part takes a filament name; `cadgen.srgb()` keeps the
+  colours that are deliberately not filament — a purchased component, a
+  reference surface, a see-through datum. An unknown name raises with the whole
+  list rather than resolving to the nearest colour, for the reason `cadfits`
+  derives the second half of a mate instead of asserting it. Four reference
+  files move with it: `cad/references/build123d-modeling.md` (**Colour** is
+  three rules now and carries the table), `cad/references/parameters.md` (a
+  `cadfilament` section beside `cadfits`), `cad/references/organic-lofts.md`
+  (the per-region example rounds sampled hex to stock rather than passing raw
+  `Color()` channels, which broke the linear-RGB rule two sections above it) and
+  `image-to-cad/references/build123d-operations.md` (a spec names a filament per
+  leaf, never a hex of its own).
+- Nothing in the toolchain enforces the palette: it is a table a generator
+  imports, not a gate. Geometry is untouched, and the STEP still carries linear
+  RGB, which is what `workshop.make.cad.step_color` reads back and Release
+  publishes. Workshop adopted the branch in full, with the two path adaptations
+  it already applies to `cadfits` — the self-check line names
+  `"$CAD_SKILL_ROOT/scripts/cadfilament.py"`, and the import note records that
+  `verify_project` also supplies its materialized scripts directory when it
+  launches local audits. Verified here: the self-check passes 16/16 in the
+  Workshop environment, round-tripping all 13 colours back to their published
+  hex.
 - The second 2026-09-10 resync takes upstream's
   `cad/restore-print-gates-on-source` branch and its ordering follow-up, which
   **reverse the gate half of the removal below while keeping the export half
