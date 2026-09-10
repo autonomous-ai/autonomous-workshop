@@ -17,7 +17,7 @@ from unittest import mock
 
 from workshop.errors import StateConflict, WorkshopError
 from workshop.make.native_gate import (
-    NATIVE_CAD_FULL_TIER,
+    NATIVE_CAD_NON_PRINT_READY_TIER,
     NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
     CapturedVerifierStream,
@@ -37,7 +37,7 @@ from workshop.workflow.native_run import (
 DIGEST = "a" * 64
 
 
-def _evidence(*, duration_ms, failure_code="thickness-gate-failed"):
+def _evidence(*, duration_ms, failure_code="interference-gate-failed"):
     return NativeCadGateEvidence(
         passed=False,
         failure_code=failure_code,
@@ -51,7 +51,6 @@ def _evidence(*, duration_ms, failure_code="thickness-gate-failed"):
             NATIVE_CAD_VERIFIER_PATH,
             "<isolated-cad-project>",
             "--fresh",
-            "--exports",
             "--strict-fit",
         ),
         returncode=7,
@@ -60,7 +59,7 @@ def _evidence(*, duration_ms, failure_code="thickness-gate-failed"):
         stdout=CapturedVerifierStream.from_bytes(b"inspected\n", 64 * 1024),
         stderr=CapturedVerifierStream.from_bytes(b"failed\n", 64 * 1024),
         source_tree_unchanged=True,
-        verification_tier=NATIVE_CAD_FULL_TIER,
+        verification_tier=NATIVE_CAD_NON_PRINT_READY_TIER,
         verifier_mode=NATIVE_CAD_VERIFIER_MODE,
         evidence_stage="make",
     )
@@ -102,7 +101,7 @@ class CadGateRejectionBudgetTest(unittest.TestCase):
         self.applied.append(outcome)
         return SimpleNamespace(status=outcome.status, stage=outcome.stage)
 
-    def reject(self, duration_ms, failure_code="thickness-gate-failed"):
+    def reject(self, duration_ms, failure_code="interference-gate-failed"):
         evidence = _evidence(
             duration_ms=duration_ms, failure_code=failure_code
         )
@@ -162,7 +161,7 @@ class CadGateRejectionBudgetTest(unittest.TestCase):
             )
         self.assertEqual(self.applied, [])
 
-        last = self.reject(duration_ms=8_888, failure_code="mesh-gate-failed")
+        last = self.reject(duration_ms=8_888, failure_code="validity-gate-failed")
         self.assertEqual(last["rejection_number"], _MAX_CAD_GATE_REJECTIONS)
         _cad_gate_budget_outcome(
             self.run, self.checkpoint, self.proposal, last
@@ -170,7 +169,7 @@ class CadGateRejectionBudgetTest(unittest.TestCase):
         self.assertEqual(len(self.applied), 1)
         outcome = self.applied[0]
         self.assertEqual((outcome.stage, outcome.status), ("make", "failed"))
-        self.assertIn("mesh-gate-failed", outcome.needs[0])
+        self.assertIn("validity-gate-failed", outcome.needs[0])
         self.assertIn(str(_MAX_CAD_GATE_REJECTIONS), outcome.needs[0])
 
     def test_token_budget_has_no_rejection_count_stop(self):

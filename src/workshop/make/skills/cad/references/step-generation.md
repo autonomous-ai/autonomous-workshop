@@ -8,13 +8,12 @@ The launchers live in the CAD skill directory:
 
 ```bash
 python "$CAD_SKILL_ROOT/scripts/gen" targets... [flags]     # build render GLB/topology packages from gen_step() sources
-python "$CAD_SKILL_ROOT/scripts/export" target [flags]      # write STL/3MF/GLB mesh files (see supported-exports.md)
 python "$CAD_SKILL_ROOT/scripts/verify_project" project ... # sequential quick/final project workflow
 ```
 
 `scripts/gen` accepts gen_step() Python generator sources only. Use explicit target paths only; target paths resolve from the command cwd unless absolute. Do not rely on directory-wide generation.
 
-Building a generator writes its hidden render package (GLB/topology artifacts) beside the source; it writes no `.step` file by default. Write the `.step` file in the same generation run with `scripts/gen <name>.step.py --write` — bare `--write` writes each target's sibling `<name>.step`; an explicit path requires exactly one target and resolves from the command cwd. This is the only way to write a `.step` file; `scripts/export` writes mesh formats only. Do not put output paths in the `gen_step()` return value; the CLI flags own output paths.
+Building a generator writes its hidden render package (GLB/topology artifacts) beside the source; it writes no `.step` file by default. Write the `.step` file in the same generation run with `scripts/gen <name>.step.py --write` — bare `--write` writes each target's sibling `<name>.step`; an explicit path requires exactly one target and resolves from the command cwd. This is the only way to write a `.step` file, and STEP is the only deliverable format this repository writes. Do not put output paths in the `gen_step()` return value; the CLI flags own output paths.
 
 Generated STEP files use the fixed ISO-8601 `FILE_NAME` timestamp
 `1970-01-01T00:00:00`. This is deliberate canonical artifact metadata: two
@@ -46,7 +45,8 @@ placed part. The separate part entries remain mandatory review/edit outputs.
 Legacy part entries are also print targets unless they declare
 `PRINTABLE = False`; a split one-piece model instead declares
 `PRINTABLE = True` on its combined entry. The final runner sends only those
-actual print targets through fit, STL, mesh and thickness checks.
+actual print targets through `check_fit`; no mesh is written and no mesh,
+overhang or thickness check exists.
 
 ```bash
 # Fast visual loop
@@ -72,11 +72,11 @@ For a Tier 2 project, use the runner when its generic gates match the task:
 # Combined assembly only, coarse preview mesh, one ISO review
 CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --quick --fresh
 
-# Complete sequential gate; also refresh GLB/STLs and validate each STL
-CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh --exports
+# Complete sequential gate
+CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh
 
 # Image-derived final: add every usable reference viewpoint
-CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh --exports \
+CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh \
   --image-derived --unpowered \
   --likeness-ref hero=ref/hero.png \
   --likeness-ref side=ref/side.png
@@ -89,9 +89,8 @@ product has a functional electrical load. For a non-image final command, add
 `verify_project` runs `check_layout`, performs one final multi-target generation,
 `check_fit`, the local `measure/check_{fit,spec,landmarks}.py` hooks that exist,
 `check_mount`, `check_power` and `check_motion` when their manifests exist, then one batched
-refs/validate/interfere pass. With `--exports`, it exports each printable STL,
-runs `check_mesh` first, then `check_thickness`, and writes each thickness
-report under `measure/`.
+refs/validate/interfere pass. It writes no mesh and runs no mesh, overhang or
+wall-thickness gate: STEP is the deliverable, and printability is unverified.
 
 `--image-derived` is an explicit completion mode rather than an inferred one.
 It requires exactly one `*_spec.md`, both `measure/check_spec.py` and
@@ -120,14 +119,12 @@ JSON is needed. `--bed` overrides the first `--bed WxDxH` declaration in the
 project README/spec, which otherwise overrides the 220 x 220 x 220 default.
 Pass `--strict-fit` when a project's advisory disconnected-body and local-audit
 notes are also meant to fail the run; legitimate print plates may leave it off.
-Pass `--skip-thickness` only for an explicit mesh-only delivery; doing so makes
-the resulting artifacts ineligible for a print-ready claim. In an Autonomous
-Workshop Make handoff, the host accepts that lower tier only when the sealed
-root product status is exactly `digitally-verified-not-print-ready` and the
-hash-bound CAD verification JSON independently records the literal boolean
-`final_pipeline.print_ready_claim: false`. The flag changes only the
-per-part thickness phase; all earlier generation, fit, spec, motion, kernel,
-interference, export, and mesh gates still run.
+No run here can support a print-ready claim: there is no mesh gate to pass.
+In an Autonomous Workshop Make handoff this is the only tier, so the sealed
+root product status is always exactly `digitally-verified-not-print-ready` and
+the hash-bound CAD verification JSON always records the literal boolean
+`final_pipeline.print_ready_claim: false`. Generation, fit, spec, motion,
+kernel and interference gates still run; nothing measures a wall.
 
 ## Generated vs imported STEP
 
@@ -144,8 +141,8 @@ An entry defines **exactly one `gen_step()` at module scope**, takes no
 arguments, and returns the shape — a build123d object, an assembly compound, or
 the envelope dict described below. Everything else in the file is a helper it
 calls. Output paths are owned by the CLI flags and never appear in the return
-value, and the generated `.step`, `.stl`, `.3mf`, `.glb` and render sidecars are
-outputs: edit the generator and rebuild, never the artifact.
+value, and the generated `.step`, `.glb` and render sidecars are outputs: edit
+the generator and rebuild, never the artifact.
 
 A **STEP entry generator** — a Python script that defines `gen_step()` and is meant to be built, inspected, or exported on its own — is named `<name>.step.py`. That filename is the marker the build tools scan for. Ordinary **helper / library modules** (shared geometry functions, `*_parts/` packages, `*_common.py`, anything imported by other generators but not built on its own) stay `<name>.py` and are NOT treated as entries even if they define `gen_step` — the tools scan for `.step.py`, not every Python file. So: if a `.py` script is a buildable model on its own, name it `<name>.step.py`; if it only exists to be imported by other generators, leave it `<name>.py`.
 
@@ -200,14 +197,13 @@ Passing a generated assembly's exported `.step` to a tool treats it as imported 
 
 An imported STEP/STP file (downloaded or authored elsewhere, no generator) needs no build command. Its render artifacts are generated on demand from the STEP file itself by `scripts/inspect`, and its part/assembly kind is inferred from embedded metadata or the STEP product hierarchy.
 
-To produce STL/3MF/native GLB files from an imported STEP, pass it directly to `scripts/export`; read `supported-exports.md`.
+There is no mesh export from an imported STEP, or from anything else: STEP is the only format written here. Its render artifacts for `inspect` and the viewer are built on demand into `__cadgen__/`.
 
-After a generated target has been rebuilt with `--write`, use its fresh sibling
-STEP as the input for STL/3MF and geometry-only GLB exports. Passing the
-`.step.py` source to `scripts/export` invokes its builders again. Use the source
-target only when the export needs source-only scene metadata that the STEP did
-not retain. Omit an explicit output path when the desired result is the normal
-sibling file; relative explicit export paths are easier to misplace than the
+After a generated target has been rebuilt with `--write`, the fresh sibling STEP
+is the deliverable; prefer it over the `.step.py` source as the input to any
+later inspection, since passing the source invokes its builders again. Omit an
+explicit output path when the desired result is the normal sibling file;
+relative explicit paths are easier to misplace than the
 default.
 
 To debug or pre-run the on-demand render-package build itself, `scripts/artifact` runs exactly one build for an imported STEP/STP file (or a generator source) and prints the result payload:
@@ -272,7 +268,7 @@ python "$CAD_SKILL_ROOT/scripts/inspect" refs path/to/model.step --facts --plane
 
 ## Warm daemon (opt-in)
 
-Every `scripts/gen` / `scripts/export` / `scripts/artifact` / `scripts/inspect`
+Every `scripts/gen` / `scripts/artifact` / `scripts/inspect`
 invocation pays a multi-second OCP/build123d import. Set
 `CADGEN_WARM=1` to route these CLIs through a shared warm-process daemon
 instead:

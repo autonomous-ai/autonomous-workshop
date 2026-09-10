@@ -63,7 +63,7 @@ def test_declared_states_and_animation_reconcile(tmp_path):
     HELPER["validate"](tmp_path, fixture(tmp_path))
 
 
-@pytest.mark.parametrize("path", ["model.step.py", "measure/motion-states/state-000.stl", "measure/motion.json", "snap/motion.gif", HELPER["EVIDENCE"]])
+@pytest.mark.parametrize("path", ["model.step.py", "measure/motion.json", "snap/motion.gif", HELPER["EVIDENCE"]])
 def test_changed_bytes_fail(tmp_path, path):
     signature = fixture(tmp_path)
     target = tmp_path / path
@@ -86,8 +86,7 @@ def test_rehashed_wrong_state_is_rejected(tmp_path):
     signature = fixture(tmp_path)
     evidence = json.loads((tmp_path / HELPER["EVIDENCE"]).read_bytes())
     original, target = evidence["states"][:2]
-    (tmp_path / target["path"]).write_bytes((tmp_path / original["path"]).read_bytes())
-    target["sha256"] = HELPER["digest"](tmp_path, target["path"])
+    target["sha256"] = original["sha256"]
     rebind_test_evidence(tmp_path, evidence)
     with pytest.raises(ValueError, match="differs from the checked poses"):
         HELPER["validate"](tmp_path, signature)
@@ -125,13 +124,21 @@ def test_legacy_hash_only_evidence_is_not_promoted(tmp_path):
         HELPER["validate"](tmp_path, signature)
 
 
+def test_no_mesh_is_written_to_disk(tmp_path):
+    signature = fixture(tmp_path)
+    HELPER["validate"](tmp_path, signature)
+    assert not [p for p in tmp_path.rglob("*") if p.suffix in (".stl", ".3mf", ".glb")]
+
+
 def test_missing_and_linked_evidence_fail(tmp_path):
     signature = fixture(tmp_path)
-    path = tmp_path / "measure/motion-states/state-000.stl"
+    path = tmp_path / HELPER["EVIDENCE"]
+    other = tmp_path / "snap/other-evidence.json"
+    other.write_bytes(path.read_bytes())
     path.unlink()
     with pytest.raises(OSError):
         HELPER["validate"](tmp_path, signature)
-    path.symlink_to(tmp_path / "measure/motion-states/state-001.stl")
+    path.symlink_to(other)
     with pytest.raises(ValueError, match="linked"):
         HELPER["validate"](tmp_path, signature)
 
@@ -204,12 +211,12 @@ def test_invalid_samples_are_rejected(indices):
         STATES["sample_indices"](condition(), indices)
 
 
-def test_stl_encoding_preserves_winding_and_ignores_triangle_order():
+def test_state_encoding_preserves_winding_and_ignores_triangle_order():
     points = np.array([[0,0,0], [1,0,0], [0,1,0], [0,0,1]], dtype=float)
     faces = np.array([[0,1,2], [0,3,1]])
-    first = STATES["stl_bytes"]([(points, faces, (100,100,100))])
-    shuffled = STATES["stl_bytes"]([(points, np.roll(faces[::-1], 1, axis=1), (100,100,100))])
-    reversed_winding = STATES["stl_bytes"]([(points, faces[:, ::-1], (100,100,100))])
+    first = STATES["state_bytes"]([(points, faces, (100,100,100))])
+    shuffled = STATES["state_bytes"]([(points, np.roll(faces[::-1], 1, axis=1), (100,100,100))])
+    reversed_winding = STATES["state_bytes"]([(points, faces[:, ::-1], (100,100,100))])
     assert first == shuffled and first != reversed_winding
 
 

@@ -34,7 +34,7 @@ MAX_PART_BYTES = 95 * 1024 * 1024
 
 
 def part_path(key: str) -> str:
-    return "%s/%s.stl" % (PARTS_DIRECTORY, key)
+    return "%s/%s.step" % (PARTS_DIRECTORY, key)
 
 
 def group_path(name: str) -> str:
@@ -54,7 +54,7 @@ def validate_build_groups(concept: Mapping[str, Any], product_root: Path) -> dic
     """Every planned group must be sealed against the exact part files on disk.
 
     A concept without a ``build_plan`` (Invented schema 3 or 4) requires no
-    groups.  Otherwise each component needs ``parts/<key>.stl`` and each
+    groups.  Otherwise each component needs ``parts/<key>.step`` and each
     group needs ``groups/<group>.json`` recording the part hashes it was sealed
     with; a later group that silently rebuilt an earlier group's part fails
     here rather than at Playtest.
@@ -67,7 +67,7 @@ def validate_build_groups(concept: Mapping[str, Any], product_root: Path) -> dic
     hashes: dict[str, str] = {}
     for item in concept.get("components", ()):
         key = item["key"]
-        content = _regular_bytes(root / PARTS_DIRECTORY / ("%s.stl" % key), "part %s" % key)
+        content = _regular_bytes(root / PARTS_DIRECTORY / ("%s.step" % key), "part %s" % key)
         hashes[key] = hashlib.sha256(content).hexdigest()
     for group in plan:
         name = group["group"]
@@ -218,8 +218,11 @@ class NativeMade:
             raise ContractError("native Made manifest lacks its CAD verification receipt")
         if not any(path.endswith(".step") for path in paths):
             raise ContractError("native Made manifest must contain a STEP artifact")
-        if not any(path.endswith(".stl") for path in paths):
-            raise ContractError("native Made manifest must contain a printable STL")
+        if any(path.endswith((".stl", ".3mf", ".glb")) for path in paths):
+            raise ContractError(
+                "native Made manifest must not contain a mesh artifact; STEP "
+                "is the only geometry format the toolchain writes"
+            )
         object.__setattr__(
             self,
             "made_sha256",

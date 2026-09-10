@@ -262,8 +262,7 @@ class StageProposalToolTest(unittest.TestCase):
                     "product.json",
                     "assembled.step",
                     "assembled.step.json",
-                    "assembled.stl",
-                ],
+                                    ],
             )
         document = {
             "schema_version": 1,
@@ -488,7 +487,6 @@ class StageProposalToolTest(unittest.TestCase):
         product_root = self.run_root / "artifacts/make/r0001/product"
         (product_root / "cad/project").mkdir(parents=True)
         (product_root / "cad/project/snap").mkdir()
-        (product_root / "exports/stl").mkdir(parents=True)
         (product_root / "cad/project/validation").mkdir()
         product = {
             "title": "Moon Nook",
@@ -503,17 +501,7 @@ class StageProposalToolTest(unittest.TestCase):
             b"- Result: **PASS** (exit 0)\n\n"
             b"| # | command | result | seconds |\n"
             b"|---:|---|---:|---:|\n"
-            b"| 1 | `check_thickness exact.stl` | rc=0 | 0.01 |\n"
-        )
-        preflight = (
-            b"# Verification pipeline record\n\n"
-            b"- Recorded: content-addressed\n"
-            b"- Mode: `print-preflight`\n"
-            b"- Result: **PASS** (exit 0)\n\n"
-            b"| # | command | result | seconds |\n"
-            b"|---:|---|---:|---:|\n"
-            b"| 1 | `check_mesh exact.stl` | rc=0 | 0.01 |\n"
-            b"| 2 | `check_thickness exact.stl --nozzle 0.4` | rc=0 | 0.01 |\n"
+            b"| 1 | `check_fit project` | rc=0 | 0.01 |\n"
         )
         (product_root / "product.json").write_bytes(product_bytes)
         (product_root / "cad/project/moon.step.py").write_text("pass\n")
@@ -521,16 +509,8 @@ class StageProposalToolTest(unittest.TestCase):
         (product_root / "assembled.step.json").write_bytes(
             canonical_json({"assembly": "Moon Nook", "parts": 1}) + b"\n"
         )
-        assembled_stl = (
-            b"solid moon\nendsolid moon\n"
-        )
-        (product_root / "assembled.stl").write_bytes(assembled_stl)
-        (product_root / "exports/stl/assembled.stl").write_bytes(assembled_stl)
         (product_root / "cad/project/validation/cad-build.json").write_bytes(verification)
         (product_root / "cad/project/measure").mkdir()
-        (product_root / "cad/project/measure/print-preflight.md").write_bytes(
-            preflight
-        )
         write_parts(product_root, self.invented.to_dict()["concept"])
         for group in self.invented.to_dict()["concept"]["build_plan"]:
             seal_group(product_root, self.invented.to_dict()["concept"], group["group"])
@@ -549,7 +529,7 @@ class StageProposalToolTest(unittest.TestCase):
             product_root / "cad/project/snap/signature.png", format="PNG"
         )
         review = {
-            "schema_version": 6,
+            "schema_version": 7,
             "kind": "autonomous-workshop.signature-experience-review",
             "concept_sha256": self.invented.concept_sha256,
             "iso_sha256": sha256(
@@ -583,7 +563,6 @@ class StageProposalToolTest(unittest.TestCase):
                 }
             ],
             "blocking_visual_defects": [],
-            "print_preflight_sha256": sha256(preflight),
             "largest_risk": "The three states need a stronger direction cue.",
             "resolution": "The final sheet uses separated contrasting states.",
         }
@@ -972,7 +951,7 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertEqual(sealed["outcome_path"], "artifacts/make/r0001/product/groups/body.json")
         self.assertEqual(sealed["exit_criteria"], "Dome turns freely on the base ring.")
         self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "cap")
-        (product_root / "parts" / "dome.stl").write_bytes(b"solid dome v2\nendsolid\n")
+        (product_root / "parts" / "dome.step").write_bytes(b"ISO-10303-21;\n/* dome v2 */\n")
         completed = self.run_tool(
             "make", "--product-root", "artifacts/make/r0001/product",
             "--cad-project-path", "cad/project", "--cad-verification-path", "cad/project/validation/cad-build.json",
@@ -988,21 +967,21 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("not in the sealed build_plan", completed.stderr)
         completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0002/product", "--group", "cap", expected=2)
         self.assertIn("Make product root must be", completed.stderr)
-        (product_root / "parts" / "lens_cap.stl").unlink()
+        (product_root / "parts" / "lens_cap.step").unlink()
         completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "cap", expected=2)
         self.assertIn("part lens_cap is missing", completed.stderr)
-        (product_root / "parts" / "lens_cap.stl").write_bytes(b"")
+        (product_root / "parts" / "lens_cap.step").write_bytes(b"")
         completed = self.run_tool("make-group", "--product-root", "artifacts/make/r0001/product", "--group", "cap", expected=2)
         self.assertIn("part lens_cap is empty", completed.stderr)
         # in-process mirror of the group validator's remaining branches
         spec = importlib.util.spec_from_file_location("stage_proposal_groups_test", TOOL)
         tool = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(tool)
-        (product_root / "parts" / "lens_cap.stl").write_bytes(b"solid cap\nendsolid\n")
+        (product_root / "parts" / "lens_cap.step").write_bytes(b"ISO-10303-21;\n/* cap */\n")
         with self.assertRaisesRegex(tool.ProposalError, "Make part lens_cap is empty|part lens_cap"):
-            (product_root / "parts" / "lens_cap.stl").write_bytes(b"")
+            (product_root / "parts" / "lens_cap.step").write_bytes(b"")
             tool._validate_build_groups(concept, product_root)
-        (product_root / "parts" / "lens_cap.stl").write_bytes(b"solid cap\nendsolid\n")
+        (product_root / "parts" / "lens_cap.step").write_bytes(b"ISO-10303-21;\n/* cap */\n")
         import argparse
 
         with mock.patch.dict(os.environ, {"WORKSHOP_PYTHON": str(Path(sys.executable).absolute())}):
@@ -1036,13 +1015,13 @@ class StageProposalToolTest(unittest.TestCase):
         ):
             with self.assertRaisesRegex(tool.ProposalError, pattern):
                 tool._make_group(self.run_root, stage, **kwargs)
-        (product_root / "parts" / "lens_cap.stl").unlink()
+        (product_root / "parts" / "lens_cap.step").unlink()
         with self.assertRaisesRegex(tool.ProposalError, "part lens_cap is missing"):
             tool._make_group(self.run_root, stage, product_root_value="artifacts/make/r0001/product", group_name="cap")
-        (product_root / "parts" / "lens_cap.stl").write_bytes(b"")
+        (product_root / "parts" / "lens_cap.step").write_bytes(b"")
         with self.assertRaisesRegex(tool.ProposalError, "part lens_cap is empty"):
             tool._make_group(self.run_root, stage, product_root_value="artifacts/make/r0001/product", group_name="cap")
-        (product_root / "parts" / "lens_cap.stl").write_bytes(b"solid cap\nendsolid\n")
+        (product_root / "parts" / "lens_cap.step").write_bytes(b"ISO-10303-21;\n/* cap */\n")
         shutil.rmtree(product_root / "groups")
         with self.assertRaisesRegex(tool.ProposalError, "build group body has no sealed outcome"):
             tool._validate_build_groups(concept, product_root)
@@ -1065,7 +1044,7 @@ class StageProposalToolTest(unittest.TestCase):
             with self.subTest(pattern=pattern):
                 with self.assertRaisesRegex(tool.ProposalError, pattern):
                     tool._validate_build_groups(concept, product_root)
-        (product_root / "parts" / "base.stl").unlink()
+        (product_root / "parts" / "base.step").unlink()
         with self.assertRaisesRegex(tool.ProposalError, "lacks part base"):
             tool._validate_build_groups(concept, product_root)
         self.write_stage(
@@ -1151,7 +1130,7 @@ class StageProposalToolTest(unittest.TestCase):
 
     def test_make_rejects_missing_required_root_delivery_files(self):
         product_root, _, _, _ = self.create_product()
-        for required in ("assembled.step", "assembled.step.json", "assembled.stl"):
+        for required in ("assembled.step", "assembled.step.json"):
             with self.subTest(required=required):
                 path = product_root / required
                 content = path.read_bytes()
@@ -1529,7 +1508,7 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("not bound to the final signature.png", stale.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
-    def test_make_requires_current_full_tier_verification_report(self):
+    def test_make_requires_the_current_passing_final_report(self):
         product_root, _, _, _ = self.create_product()
         report = product_root / "cad/project/validation/cad-build.json"
         self.write_stage(
@@ -1541,13 +1520,14 @@ class StageProposalToolTest(unittest.TestCase):
             },
             round_index=1,
         )
+        # A quick-mode record is not the final gate, however cleanly it passed.
         report.write_text(
             "# Verification pipeline record\n\n"
-            "- Mode: `final`\n"
+            "- Mode: `quick`\n"
             "- Result: **PASS** (exit 0)\n\n"
             "| # | command | result | seconds |\n"
             "|---:|---|---:|---:|\n"
-            "| 1 | `check_mesh exact.stl` | rc=0 | 0.01 |\n",
+            "| 1 | `check_fit project` | rc=0 | 0.01 |\n",
             encoding="utf-8",
         )
         omitted = self.run_tool(
@@ -1560,7 +1540,7 @@ class StageProposalToolTest(unittest.TestCase):
             "cad/project/validation/cad-build.json",
             expected=2,
         )
-        self.assertIn("passing final full-tier report", omitted.stderr)
+        self.assertIn("current passing final report", omitted.stderr)
 
         report.write_text(
             "# Verification pipeline record\n\n"
@@ -1568,12 +1548,12 @@ class StageProposalToolTest(unittest.TestCase):
             "- Result: **FAIL** (exit 1)\n\n"
             "| # | command | result | seconds |\n"
             "|---:|---|---:|---:|\n"
-            "| 1 | `check_thickness exact.stl` | rc=1 | 0.01 |\n\n"
+            "| 1 | `check_fit project` | rc=1 | 0.01 |\n\n"
             "---\n\n## Previous pipeline record\n\n"
             "# Verification pipeline record\n\n"
             "- Mode: `final`\n"
             "- Result: **PASS** (exit 0)\n\n"
-            "| 1 | `check_thickness old.stl` | rc=0 | 0.01 |\n",
+            "| 1 | `check_fit project` | rc=0 | 0.01 |\n",
             encoding="utf-8",
         )
         failed_current = self.run_tool(
@@ -1586,47 +1566,7 @@ class StageProposalToolTest(unittest.TestCase):
             "cad/project/validation/cad-build.json",
             expected=2,
         )
-        self.assertIn("passing final full-tier report", failed_current.stderr)
-
-    def test_make_requires_hash_bound_standard_print_preflight(self):
-        product_root, _, _, _ = self.create_product()
-        self.write_stage(
-            "make",
-            {
-                "assignment": self.assignment.to_dict(),
-                "invented": self.invented.to_dict(),
-                "feedback": [],
-            },
-            round_index=1,
-        )
-        preflight = product_root / "cad/project/measure/print-preflight.md"
-        preflight.write_text(
-            "# Verification pipeline record\n\n"
-            "- Mode: `print-preflight`\n"
-            "- Result: **PASS** (exit 0)\n\n"
-            "| # | command | result | seconds |\n"
-            "|---:|---|---:|---:|\n"
-            "| 1 | `check_mesh exact.stl` | rc=0 | 0.01 |\n"
-            "| 2 | `check_thickness exact.stl --nozzle 0.1` | rc=0 | 0.01 |\n",
-            encoding="utf-8",
-        )
-        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
-        review = json.loads(review_path.read_text(encoding="utf-8"))
-        review["print_preflight_sha256"] = sha256(preflight.read_bytes())
-        review_path.write_bytes(canonical_json(review))
-
-        completed = self.run_tool(
-            "make",
-            "--product-root",
-            "artifacts/make/r0001/product",
-            "--cad-project-path",
-            "cad/project",
-            "--cad-verification-path",
-            "cad/project/validation/cad-build.json",
-            expected=2,
-        )
-
-        self.assertIn("standard 0.4 mm thickness", completed.stderr)
+        self.assertIn("current passing final report", failed_current.stderr)
 
     def test_make_verification_must_belong_to_declared_cad_project(self):
         product_root, _, _, verification = self.create_product()

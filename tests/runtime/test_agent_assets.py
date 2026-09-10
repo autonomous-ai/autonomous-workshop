@@ -170,8 +170,8 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
 
         for required in (
             "smallest viable parametric baseline",
-            "--print-preflight",
-            "0.4 mm nozzle",
+            "STEP is the only geometry format the toolchain writes",
+            "never call a product print-ready",
             "one canonical final render family",
             "independent native critic",
             "blind held",
@@ -191,7 +191,8 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         ):
             with self.subTest(reference="playtest", required=required):
                 self.assertIn(required, playtest)
-        self.assertNotIn("--print-preflight --fresh", make)
+        self.assertNotIn("--print-preflight", make)
+        self.assertNotIn("check_thickness", make)
         self.assertNotIn("Make contract", playtest)
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):

@@ -28,11 +28,11 @@ class GeneratorMetadata:
     mesh_angular_tolerance: float | None
 
 
+# "stl" and "3mf" are deliberately absent: this repository writes STEP only, so an
+# envelope naming a mesh output is refused rather than silently ignored.
 STEP_ENVELOPE_FIELDS = {
     "shape",
     "params",
-    "stl",
-    "3mf",
     "mesh_tolerance",
     "mesh_angular_tolerance",
 }

@@ -16,9 +16,7 @@ from workshop.errors import ArtifactError, ContractError
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
     DEFAULT_NATIVE_CAD_OUTPUT_BYTES,
-    NATIVE_CAD_FULL_TIER,
     NATIVE_CAD_NON_PRINT_READY_TIER,
-    NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
     NativeCadGateError,
@@ -66,6 +64,7 @@ class NativeCadGateTest(unittest.TestCase):
             "components": ["observatory"],
             "instructions": "Explore the craters.",
             "limitations": ["Digital checks only"],
+            "status": "digitally-verified-not-print-ready",
         }
         product_bytes = (
             json.dumps(product, sort_keys=True, separators=(",", ":")) + "\n"
@@ -75,17 +74,15 @@ class NativeCadGateTest(unittest.TestCase):
         (product_root / "assembled.step.json").write_text(
             '{"assembly":"Moon Nook","parts":1}\n'
         )
-        (product_root / "assembled.stl").write_bytes(
-            b"solid moon\nendsolid moon\n"
-        )
         (project / "moon.step.py").write_text("def build():\n    return None\n")
         (project / "moon.step").write_bytes(b"ISO-10303-21;\n")
-        (project / "moon.stl").write_bytes(b"solid moon\nendsolid moon\n")
-        (project / "measure/thickness-moon.md").write_text("old thickness\n")
         (project / "measure/verification-pipeline.md").write_text("old timing\n")
         (project / "measure/design-review.md").write_text("stable review\n")
         (project / "measure/fit-report.json").write_text('{"ok":true}\n')
-        verification = b'{"ok":true,"validator":"cad-final"}\n'
+        verification = (
+            b'{"final_pipeline":{"print_ready_claim":false},"ok":true,'
+            b'"validator":"cad-final"}\n'
+        )
         (validation / "cad-build.json").write_bytes(verification)
         manifest = build_artifact_manifest(product_root, created_at="content-addressed")
         return (
@@ -200,12 +197,12 @@ class NativeCadGateTest(unittest.TestCase):
             invoked = True
             raise AssertionError("verifier must not run")
 
-        (self.product_root / "assembled.stl").unlink()
+        (self.product_root / "assembled.step.json").unlink()
         self._rebuild_made_manifest()
 
         with self.assertRaisesRegex(
             NativeMadeTreeGateError,
-            "lacks required root delivery files: assembled.stl",
+            "lacks required root delivery files: assembled.step.json",
         ):
             self._verify(runner)
         self.assertFalse(invoked)
@@ -231,11 +228,9 @@ class NativeCadGateTest(unittest.TestCase):
                 [
                     "measure/design-review.md",
                     "measure/fit-report.json",
-                    "measure/thickness-moon.md",
                     "measure/verification-pipeline.md",
                     "moon.step",
                     "moon.step.py",
-                    "moon.stl",
                 ],
             )
             (copied / "__cadgen__").mkdir()
@@ -256,7 +251,7 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertEqual(observed["command"][0], sys.executable)
         self.assertEqual(Path(observed["command"][1]), self.verifier)
         self.assertEqual(
-            observed["command"][3:], ("--fresh", "--exports", "--strict-fit")
+            observed["command"][3:], ("--fresh", "--strict-fit")
         )
         self.assertEqual(observed["environment"]["PYTHONDONTWRITEBYTECODE"], "1")
         self.assertNotIn("FACTORY_PASSWORD", observed["environment"])
@@ -326,7 +321,7 @@ class NativeCadGateTest(unittest.TestCase):
             json.loads(playtest_path.read_text()), playtest_evidence.to_dict()
         )
 
-    def test_explicit_non_print_ready_pair_skips_only_thickness(self):
+    def test_the_only_tier_is_declared_not_print_ready(self):
         self._rewrite_claim_declarations(
             product_status=NATIVE_CAD_NON_PRINT_READY_TIER,
             print_ready_claim=False,
@@ -341,11 +336,9 @@ class NativeCadGateTest(unittest.TestCase):
 
         self.assertEqual(
             observed["command"][3:],
-            ("--fresh", "--exports", "--strict-fit", "--skip-thickness"),
+            ("--fresh", "--strict-fit"),
         )
-        self.assertEqual(
-            evidence.verifier_mode, NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE
-        )
+        self.assertEqual(evidence.verifier_mode, NATIVE_CAD_VERIFIER_MODE)
         self.assertEqual(
             evidence.verification_tier, NATIVE_CAD_NON_PRINT_READY_TIER
         )
@@ -397,7 +390,7 @@ class NativeCadGateTest(unittest.TestCase):
             return VerifierProcessResult.from_bytes(0)
 
         with self.assertRaisesRegex(
-            ContractError, "status and CAD print_ready_claim must agree"
+            ContractError, "must both declare"
         ):
             self._verify(runner)
         self.assertFalse(called)
@@ -416,87 +409,34 @@ class NativeCadGateTest(unittest.TestCase):
             return VerifierProcessResult.from_bytes(0)
 
         with self.assertRaisesRegex(
-            ContractError, "status and CAD print_ready_claim must agree"
+            ContractError, "must both declare"
         ):
             self._verify(runner)
         self.assertFalse(called)
 
-    def test_accepted_legacy_full_gate_replays_thickness_without_readiness(self):
-        self._rewrite_claim_declarations(
-            product_status="digitally-verified-pending-physical-playtest",
-            print_ready_claim=False,
-        )
-        accepted = mock.Mock()
-        observed = {}
-
-        def runner(command, **arguments):
-            del arguments
-            observed["command"] = tuple(command)
-            return VerifierProcessResult.from_bytes(0)
-
-        evidence = self._verify(
-            runner,
-            legacy_full_tier_validator=accepted,
-            evidence_stage="playtest",
-        )
-
-        accepted.assert_called_once_with()
-        self.assertEqual(
-            observed["command"][3:],
-            ("--fresh", "--exports", "--strict-fit"),
-        )
-        self.assertEqual(evidence.verification_tier, NATIVE_CAD_FULL_TIER)
-        self.assertTrue(evidence.thickness_gate_required)
-        self.assertTrue(evidence.legacy_full_tier_compatibility)
-        self.assertFalse(evidence.print_ready_eligible)
-        self.assertEqual(evidence.evidence_stage, "playtest")
-
-    def test_legacy_validator_cannot_waive_an_arbitrary_claim_mismatch(self):
-        self._rewrite_claim_declarations(
-            product_status="print-ready",
-            print_ready_claim=False,
-        )
-        accepted = mock.Mock()
-
-        with self.assertRaisesRegex(
-            ContractError, "status and CAD print_ready_claim must agree"
-        ):
-            self._verify(
-                lambda *args, **kwargs: VerifierProcessResult.from_bytes(0),
-                legacy_full_tier_validator=accepted,
-                evidence_stage="playtest",
-            )
-
-        accepted.assert_not_called()
-
-    def test_only_literal_false_in_strict_receipt_json_can_skip_thickness(self):
+    def test_only_a_literal_false_receipt_claim_is_accepted(self):
         self._rewrite_claim_declarations(
             product_status=NATIVE_CAD_NON_PRINT_READY_TIER,
             print_ready_claim="false",
         )
-        with self.assertRaisesRegex(ContractError, "must agree"):
+        with self.assertRaisesRegex(ContractError, "must both declare"):
             self._verify(
                 lambda *args, **kwargs: VerifierProcessResult.from_bytes(0)
             )
 
-    def test_explicit_true_claim_keeps_the_full_thickness_gate(self):
+    def test_an_explicit_print_ready_claim_is_refused(self):
         self._rewrite_claim_declarations(print_ready_claim=True)
-        observed = {}
+        called = False
 
         def runner(command, **arguments):
-            del arguments
-            observed["command"] = tuple(command)
+            nonlocal called
+            del command, arguments
+            called = True
             return VerifierProcessResult.from_bytes(0)
 
-        evidence = self._verify(runner)
-
-        self.assertEqual(
-            observed["command"][3:], ("--fresh", "--exports", "--strict-fit")
-        )
-        self.assertEqual(evidence.verifier_mode, NATIVE_CAD_VERIFIER_MODE)
-        self.assertEqual(evidence.verification_tier, NATIVE_CAD_FULL_TIER)
-        self.assertTrue(evidence.thickness_gate_required)
-        self.assertTrue(evidence.print_ready_eligible)
+        with self.assertRaisesRegex(ContractError, "must both declare"):
+            self._verify(runner)
+        self.assertFalse(called)
 
     def test_nonzero_and_bounded_output_write_failed_host_evidence(self):
         def runner(command, **arguments):
@@ -649,9 +589,6 @@ class NativeCadGateTest(unittest.TestCase):
         def runner(command, **arguments):
             observed["command"] = tuple(command)
             copied = Path(command[2])
-            (copied / "measure/thickness-moon.md").write_text(
-                "project/moon.stl was checked\n"
-            )
             (copied / "measure/verification-pipeline.md").write_text(
                 "different path and wall-clock timing\n"
             )
@@ -661,11 +598,7 @@ class NativeCadGateTest(unittest.TestCase):
 
         self.assertTrue(evidence.passed)
         self.assertEqual(
-            observed["command"][3:], ("--fresh", "--exports", "--strict-fit")
-        )
-        self.assertEqual(
-            (self.product_root / "cad/project/measure/thickness-moon.md").read_text(),
-            "old thickness\n",
+            observed["command"][3:], ("--fresh", "--strict-fit")
         )
         self.assertEqual(
             (
@@ -674,67 +607,6 @@ class NativeCadGateTest(unittest.TestCase):
             ).read_text(),
             "old timing\n",
         )
-
-    @staticmethod
-    def _overhang_report(prefix):
-        return (
-            "# Overhang and support\n\n"
-            f"`{prefix}moon.stl --angle 45.0 --report {prefix}measure/overhang-moon.md`\n\n"
-            f"{prefix}moon.stl: 65.5 cm2 of surface, 0 unsupported samples\n\n"
-            "| check | status | detail |\n|---|---|---|\n"
-            "| overhang | PASS | 0 regions need support |\n"
-        )
-
-    def _seal_overhang_report(self):
-        path = self.product_root / "cad/project/measure/overhang-moon.md"
-        path.write_text(self._overhang_report("artifacts/make/r0001/product/cad/project/"))
-        self._rebuild_made_manifest()
-        return path
-
-    def test_overhang_report_relocation_preserves_every_measurement(self):
-        sealed = self._seal_overhang_report()
-        before = sealed.read_bytes()
-
-        def runner(command, **arguments):
-            Path(command[2], "measure/overhang-moon.md").write_text(
-                self._overhang_report("project/")
-            )
-            return VerifierProcessResult.from_bytes(0)
-
-        self.assertTrue(self._verify(runner).passed)
-        self.assertEqual(sealed.read_bytes(), before)
-
-    def test_overhang_report_content_changes_fail_closed(self):
-        self._seal_overhang_report()
-        for old, new in (
-            ("65.5", "65.6"), ("PASS", "FAIL"), ("45.0", "30.0"),
-            ("0 regions", "1 regions"), ("moon.stl", "other.stl"),
-            ("# Overhang and support", "# Custom report"),
-        ):
-            with self.subTest(old=old):
-                def runner(command, **arguments):
-                    Path(command[2], "measure/overhang-moon.md").write_text(
-                        self._overhang_report("project/").replace(old, new)
-                    )
-                    return VerifierProcessResult.from_bytes(0)
-                with self.assertRaises(NativeCadGateError) as caught:
-                    self._verify(runner)
-                self.assertEqual(caught.exception.failure_code, "declared-cad-output-changed")
-
-    def test_overhang_report_mode_and_symlink_changes_fail_closed(self):
-        self._seal_overhang_report()
-        for link in (False, True):
-            with self.subTest(link=link):
-                def runner(command, **arguments):
-                    path = Path(command[2], "measure/overhang-moon.md")
-                    if link:
-                        path.unlink()
-                        path.symlink_to(Path(command[2], "moon.stl"))
-                    else:
-                        path.chmod(0o700)
-                    return VerifierProcessResult.from_bytes(0)
-                with self.assertRaises(NativeCadGateError):
-                    self._verify(runner)
 
     def test_arbitrary_report_change_still_fails_closed(self):
         def runner(command, **arguments):
@@ -750,7 +622,7 @@ class NativeCadGateTest(unittest.TestCase):
     def test_volatile_report_exemption_does_not_allow_mode_changes(self):
         def runner(command, **arguments):
             del arguments
-            Path(command[2], "measure/thickness-moon.md").chmod(0o700)
+            Path(command[2], "measure/verification-pipeline.md").chmod(0o700)
             return VerifierProcessResult.from_bytes(0)
 
         with self.assertRaises(NativeCadGateError) as caught:
@@ -897,21 +769,8 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         signature = b"exact signature fixture"
         (snap / "iso.png").write_bytes(iso)
         (snap / "signature.png").write_bytes(signature)
-        preflight = (
-            b"# Verification pipeline record\n\n"
-            b"- Recorded: content-addressed\n"
-            b"- Mode: `print-preflight`\n"
-            b"- Result: **PASS** (exit 0)\n\n"
-            b"| # | command | result | seconds |\n"
-            b"|---:|---|---:|---:|\n"
-            b'| 0 | `assembly preflight  # NOTE: {"assembly":"assembly.step.py","checks":["validate","interfere"],"interference_tolerance_mm3":1.0}` | note | 0.00 |\n'
-            b"| 1 | `check_mesh part_token.stl` | rc=0 | 0.01 |\n"
-            b"| 2 | `check_thickness part_token.stl --nozzle 0.4` | rc=0 | 0.01 |\n"
-            b"| 3 | `check_overhang part_token.stl --angle 45.0` | rc=0 | 0.01 |\n"
-        )
-        (self.project / "measure/print-preflight.md").write_bytes(preflight)
         review = {
-            "schema_version": 6,
+            "schema_version": 7,
             "kind": "autonomous-workshop.signature-experience-review",
             "concept_sha256": "0" * 64,
             "iso_sha256": _sha(iso),
@@ -941,7 +800,6 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
                 }
             ],
             "blocking_visual_defects": [],
-            "print_preflight_sha256": _sha(preflight),
             "largest_risk": "The relationship could be subtle.",
             "resolution": "The exact relationship is visible.",
         }
@@ -957,7 +815,6 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
                 str(self.verifier),
                 str(self.project),
                 "--fresh",
-                "--exports",
                 "--strict-fit",
                 "--dry-run",
                 *extra,
@@ -978,7 +835,6 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
                 str(self.verifier),
                 str(self.project),
                 "--fresh",
-                "--exports",
                 "--strict-fit",
                 "--no-report",
             ),
@@ -1001,7 +857,6 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
                 str(self.verifier),
                 str(self.project),
                 "--fresh",
-                "--exports",
                 "--strict-fit",
                 "--no-report",
             ),
@@ -1022,15 +877,12 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         self._write_signature_review(review_rounds=4)
         validate = runpy.run_path(str(self.verifier))["_required_signature_review"]
         review_path = self.project / "snap/SIGNATURE-REVIEW.json"
-        self.assertEqual(validate(self.project, [self.project / "part_token.step.py"],
-                     self.project / "assembly.step.py"),
-                         _sha(review_path.read_bytes()))
+        self.assertEqual(validate(self.project), _sha(review_path.read_bytes()))
         review = json.loads(review_path.read_text())
         review["review_rounds"] = 5
         review_path.write_text(json.dumps(review, sort_keys=True, separators=(",", ":")))
         with self.assertRaisesRegex(ValueError, "one to four"):
-            validate(self.project, [self.project / "part_token.step.py"],
-                     self.project / "assembly.step.py")
+            validate(self.project)
 
     def test_blocking_form_defect_cannot_unlock_final_geometry(self):
         self._write_signature_review(review_rounds=1)
@@ -1049,7 +901,6 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
                 str(self.verifier),
                 str(self.project),
                 "--fresh",
-                "--exports",
                 "--strict-fit",
                 "--no-report",
             ),
@@ -1064,43 +915,8 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         self.assertIn("still has blocking visual defects", completed.stderr)
         self.assertNotIn("check_layout", completed.stdout)
 
-    def test_weakened_bound_preflight_cannot_unlock_final_geometry(self):
-        self._write_signature_review(review_rounds=1)
-        preflight_path = self.project / "measure/print-preflight.md"
-        preflight = preflight_path.read_bytes().replace(
-            b"--nozzle 0.4", b"--nozzle 0.1"
-        )
-        preflight_path.write_bytes(preflight)
-        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
-        review = json.loads(review_path.read_text(encoding="utf-8"))
-        review["print_preflight_sha256"] = _sha(preflight)
-        review_path.write_text(
-            json.dumps(review, sort_keys=True, separators=(",", ":")),
-            encoding="utf-8",
-        )
-        completed = subprocess.run(
-            (
-                sys.executable,
-                str(self.verifier),
-                str(self.project),
-                "--fresh",
-                "--exports",
-                "--strict-fit",
-                "--no-report",
-            ),
-            cwd=self.root,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
-
-        self.assertEqual(completed.returncode, 2)
-        self.assertIn("standard 0.4 mm thickness", completed.stderr)
-        self.assertNotIn("check_layout", completed.stdout)
-
-    def test_non_print_ready_plan_retains_every_other_deterministic_gate(self):
-        output = self._plan("--skip-thickness")
+    def test_the_only_plan_retains_every_surviving_deterministic_gate(self):
+        output = self._plan()
 
         for required in (
             "check_layout",
@@ -1111,80 +927,10 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             "check_mount",
             "check_motion",
             "inspect batch",
-            "export",
-            "check_mesh",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, output)
-        self.assertNotIn("check_thickness", output)
+        for retired in ("check_thickness", "check_mesh", "check_overhang", "export"):
+            with self.subTest(retired=retired):
+                self.assertNotIn(retired, output)
 
-    def test_full_plan_still_requires_thickness(self):
-        self.assertIn("check_thickness", self._plan())
-
-    def test_print_preflight_checks_every_printable_at_fixed_profile(self):
-        completed = subprocess.run(
-            (
-                sys.executable,
-                str(self.verifier),
-                str(self.project),
-                "--print-preflight",
-                "--fresh",
-                "--dry-run",
-            ),
-            cwd=self.root,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
-
-        self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertIn("part_token.step.py", completed.stdout)
-        self.assertIn("check_fit", completed.stdout)
-        self.assertIn("--strict", completed.stdout)
-        self.assertIn("check_mesh", completed.stdout)
-        self.assertIn("check_thickness", completed.stdout)
-        self.assertIn("--nozzle 0.4", completed.stdout)
-        self.assertIn("check_overhang", completed.stdout)
-        self.assertIn("--angle 45.0", completed.stdout)
-        self.assertIn("inspect batch", completed.stdout)
-        self.assertIn('"id":"validate:assembly"', completed.stdout)
-        self.assertIn('"id":"interfere:assembly"', completed.stdout)
-        self.assertNotIn('"id":"refs:assembly"', completed.stdout)
-        self.assertNotIn("SIGNATURE-REVIEW", completed.stderr)
-
-    def test_print_preflight_refuses_weakened_overhang_profile(self):
-        completed = subprocess.run(
-            (sys.executable, str(self.verifier), str(self.project),
-             "--print-preflight", "--overhang-angle", "10"),
-            cwd=self.root, text=True, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, check=False,
-        )
-        self.assertEqual(completed.returncode, 2)
-        self.assertIn("fixed 45 degree overhang profile", completed.stderr)
-        self.assertNotIn("check_layout", completed.stdout)
-
-    def test_print_preflight_refuses_weakened_nozzle(self):
-        completed = subprocess.run(
-            (
-                sys.executable,
-                str(self.verifier),
-                str(self.project),
-                "--print-preflight",
-                "--nozzle",
-                "0.1",
-            ),
-            cwd=self.root,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
-
-        self.assertEqual(completed.returncode, 2)
-        self.assertIn("fixed 0.4 mm nozzle profile", completed.stderr)
-        self.assertNotIn("check_layout", completed.stdout)
-
-
-if __name__ == "__main__":
-    unittest.main()

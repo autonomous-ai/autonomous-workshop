@@ -29,11 +29,13 @@ revolves, polar-patterned cuts, ~110 faces on its largest part, no lofts.
 | `check_fit` | 47 s | 4.1 s |
 | `check_motion` | 5 m 26 s (25 checks) | 10.0 s (8 checks) |
 | `check_mount` (1 mount) | 1.4 s | — |
-| `export --stl` | 5.8 s each | 1.0 s for six |
-| `check_mesh` | 0.1 s each | 1.3 s for six |
-| `check_thickness` | — | 36.9 s for six (before `march`) |
 | `render_views` (4 views) | 7 s | 42.1 s with matches + `--compare-step` |
 | **whole suite once** | **~23 m 25 s** | **1 m 53 s** |
+
+The suite totals were measured while this toolchain still exported STL and ran
+mesh, overhang and thickness gates. Those are gone, so treat both numbers as
+upper bounds rather than current figures; the per-command rows above were
+measured independently and still hold.
 
 `validate` and `interfere` are more than half the organic run and **3 % of the
 prismatic one**. Their cost is B-rep complexity, and a lofted organic assembly
@@ -44,7 +46,7 @@ that scale with **surface area and pixels** instead.
 
 `check_mount` scales with mounts rather than with the model — one boolean per
 obstacle solid the component's bbox reaches, plus two per hole. Its figure, like
-`check_layout`'s and `check_mesh`'s, excludes the ~2 s interpreter import that
+`check_layout`'s, excludes the ~2 s interpreter import that
 `CADGEN_WARM=1` cannot remove from a standalone gate, so one call is ~3.4 s in
 practice.
 
@@ -68,21 +70,13 @@ with every `--view` and every `--match` costs about what a single match costs,
 and adding `--poses-from` turns 59.2 s of searching into 7.8 s of replay with
 identical numbers. **Search once, replay while editing, search again at the end.**
 
-`check_thickness` scales with surface area and grid pitch, and pitch comes from
-the nozzle (`min_wall / 6`), so `--nozzle 0.25` builds a grid two and a half
-times finer than `--nozzle 0.4` and costs 3.1x on the same part. `--voxel`
-overrides it at the price of a wider pass/fail band — the gate fails only below
-`min_wall - pitch/2`, so a 0.40 mm grid puts ±0.20 of slack on a 0.50 mm limit.
-Parts are independent files: running five concurrently took 10.6 s to 4.3 s on
-a 10-core host, so iterating one part at a time is no longer the saving it was.
-
 **Do not let a local audit go unmeasured.** A `measure/check_landmarks.py` that
 samples solids where it could read edges has been seen to cost 62 % of an
 entire suite; the same ledger reading edges cost 0.004 s.
 `image-derived-verification.md` has the numbers.
 
 **"One machine, one run" is not advice.** Concurrent audit processes and
-parameter sweeps on one host inflated `check_thickness` 5x — a tax on every
+parameter sweeps on one host inflated the since-removed thickness gate 5x — a tax on every
 measurement taken while they were alive, and one that looks like a slow tool
 rather than a busy machine. Check `ps` before believing a timing.
 
@@ -133,13 +127,13 @@ do not tell you when a round was wasted.
 **The two bed flags do not take the same form**, and each rejects the other's:
 
 ```bash
-python "$CAD_SKILL_ROOT/scripts/check_fit"  <project-dir> --bed 220 220
-python "$CAD_SKILL_ROOT/scripts/check_mesh" <project-dir>/part_x.stl --bed 220x220x250
+python "$CAD_SKILL_ROOT/scripts/check_fit"      <project-dir> --bed 220 220
+python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --bed 220x220x220
 ```
 
-`check_fit` takes two numbers because it only asks about the footprint;
-`check_mesh` takes `WxDxH` because it also has a height. Declare the bed once
-as a `--bed WxDxH` line in the project README/spec and both gates read it.
+`check_fit` takes two numbers because it only asks about the footprint; the
+runner takes `WxDxH` because a project declaration carries a height too. Declare
+the bed once as a `--bed WxDxH` line in the project README/spec and both read it.
 `verify_project --self-check` holds a fixture on the distinction.
 
 **Keep stale generators out of the worktree.** `cadgen` resolves even an

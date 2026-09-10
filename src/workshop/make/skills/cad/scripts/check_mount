@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Bought-part seating gate: does the built model actually hold the component?
 
-`check_fit` reads the source and asks whether a part can be printed.
-`check_mesh` reads the artifact. `check_motion` asks whether parts can be
-brought together. None of them has ever seen the servo.
+`check_fit` reads the source and asks whether a part sits on the bed and fits
+it. `check_motion` asks whether parts can be brought together. Neither has ever
+seen the servo.
 
 That gap is the expensive one, because a bought part's dimensions live in a
 datasheet rather than in the repository: a bracket whose pocket is 2 mm too

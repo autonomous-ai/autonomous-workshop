@@ -1,6 +1,6 @@
 ---
 name: make-round
-description: Run each Make repair round with deterministic CAD checks and native visual inspection. Render the model, inspect placement and proportions, and record visual errors alongside likeness, wall and motion results. Does not replace independent blind review or final verification.
+description: Run each Make repair round with deterministic CAD checks and native visual inspection. Render the model, inspect placement and proportions, and record visual errors alongside likeness, build and motion results. Does not replace independent blind review or final verification.
 ---
 
 # Make round
@@ -34,30 +34,28 @@ calls were reassembling by hand.
   replaces the final `verify_project` run the Make gate requires. It writes
   round reports under `<project>/measure/rounds/` and the reusable state at
   `<project>/measure/make-round-state.json`.
-  CAD tools may update generated caches and exports.
+  CAD tools may update generated caches.
 
 ## Usage
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
     --ref hero=<project>/cad/ref/hero.png [--ref side=...] \
-    [--min 0.90] [--nozzle 0.4] [--all-parts] [--no-motion] [--json]
+    [--min 0.90] [--all-parts] [--no-motion] [--json]
 ```
 
 - `<project>/cad` is the directory holding the generator sources: exactly one
   entry `<name>.step.py` and any number of `part_<role>.step.py`.
 - `--ref LABEL=PATH` repeats once per reference view. Omitted, the labels are
   read from the `LABEL=ref/<file>` lines of the project's `*_spec.md`.
-- Every part needs a passing wall measurement. Reuse requires identical STL
-  bytes, nozzle, checker/helper/wrapper sources, Python identity, numerical
-  package versions, and a retained tool log matching its recorded hash.
-  Failed, missing, or older hash-only evidence is checked again.
-  `--all-parts` forces a new check even when a PASS could be reused.
-- Without `part_<role>.step.py` files, the single entry is exported and
-  wall-checked as the one-piece product.
-- `summary.json` retains each wall result and its original measurement round
-  and log. `changed` lists changed STL bytes; `checked` lists fresh checks
-  (including export failures); `reused` lists retained passing evidence.
+- Only parts whose written STEP bytes changed since the previous round are
+  reported; `--all-parts` reports every part. The first round reports all.
+  Nothing measures a wall, a mesh or an overhang: a part that builds is built,
+  never printable.
+- Without `part_<role>.step.py` files, the single entry is built and reported
+  as the one-piece product.
+- `summary.json` records `changed` (parts whose STEP bytes moved) and `checked`
+  (parts with a fresh build verdict, including build failures).
 - The initial command returns exit 1 with visual status `pending` until native
   feedback is recorded, even if all numeric checks pass. A renderer failure
   produces visual status `error`; never fabricate feedback for missing images.
@@ -102,14 +100,14 @@ never rebind prior prose to new hashes. Manager self-review does not consume or
 replace the independent blind critic allowance.
 
 Final Make allows an initial independent blind review plus up to three focused
-repair-and-rereview cycles (four reviews total). After print preflight and a
-passing hash-bound blind review, the final `--record-visual` may also use
-`--full` to invoke `verify_project --exports --strict-fit` once. Normally run
+repair-and-rereview cycles (four reviews total). After a passing hash-bound
+blind review, the final `--record-visual` may also use
+`--full` to invoke `verify_project --strict-fit` once. Normally run
 the integrated verifier directly after blind review; never start a new round
 just to run it. The host alone performs the authoritative `--fresh` rebuild.
 
-The summary names, in order: the changed parts, fresh wall verdicts with the
-thinnest region, reused passing measurements, the likeness score per view with the change since
+The summary names, in order: the changed parts and their build verdicts, the
+likeness score per view with the change since
 the previous round and the pose it was scored at, the motion gate verdict,
 the native visual findings, and the `--full` verdict when requested. Everything the tools printed is kept
 under `measure/rounds/rNNNN/` beside `summary.json`.
@@ -121,12 +119,11 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 
 | Step | Invocation | Reads |
 |---|---|---|
-| export a part | `"$WORKSHOP_PYTHON" $C/export part_<role>.step.py --stl <out>.stl --json` | `files[].path` |
-| wall check | `"$WORKSHOP_PYTHON" $C/check_thickness <stl> --nozzle 0.4 --report <md>` | `PASS`/`FAIL` lines, `RESULT:` line, any nonzero exit fails, even without a parsed failure line |
+| build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
 | likeness | `"$WORKSHOP_PYTHON" $I/render_views.py <entry>.step.py --match <ref.png> --label <L> --min 0.90 -o <dir> --shaded --json [--poses-from <prev poses.json>]` | `results[].iou`, `.ok`, `.az/.el/.roll/.fov` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
 | inspection views | `"$WORKSHOP_PYTHON" $C/render_review <entry.step.py> --view front --view top --view iso -o <round>/visual` | exact shaded PNGs for native Manager inspection |
-| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --exports --strict-fit [--image-derived --likeness-ref L=PATH ...] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
+| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit [--image-derived --likeness-ref L=PATH ...] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
 | motion sheet | `"$WORKSHOP_PYTHON" $C/motion_presentation.py` (see the cad skill) | presentation only, not a gate |
 
 `render_views.py --match` searches the camera pose and scores with the

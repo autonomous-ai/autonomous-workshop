@@ -587,8 +587,6 @@ def _creation_story_markdown(staging: Path) -> str:
         "%s %s" % (count, label)
         for count, label in (
             (_suffix_count(models_root, ".step"), "STEP"),
-            (_suffix_count(models_root, ".stl"), "STL"),
-            (_suffix_count(models_root, ".glb"), "GLB"),
         )
         if count
     ]
@@ -1372,14 +1370,14 @@ def materialize_public_example(
                 )
         if (
             isinstance(primary_path, str)
-            and PurePosixPath(primary_path).suffix.casefold() == ".stl"
+            and PurePosixPath(primary_path).suffix.casefold() == ".step"
         ):
             entry = product_entries.get(primary_path)
             if entry is None or entry.sha256 != primary_sha256:
                 raise StateConflict(
                     "public Factory primary model differs from sealed Made bytes"
                 )
-            destination = "make/models/assembled.stl"
+            destination = "make/models/assembled.step"
             primary_model = _copy_model(
                 product_root=product_root,
                 product_entries=product_entries,
@@ -1400,7 +1398,7 @@ def materialize_public_example(
         for index, part in enumerate(inventory_parts or (), start=1):
             if not isinstance(part, Mapping):
                 raise StateConflict("Made product print inventory is malformed")
-            reference = part.get("stl")
+            reference = part.get("step")
             quantity = part.get("quantity")
             if (
                 not isinstance(reference, Mapping)
@@ -1415,7 +1413,7 @@ def materialize_public_example(
             entry = product_entries.get(source)
             if (
                 pure.is_absolute()
-                or pure.suffix.casefold() != ".stl"
+                or pure.suffix.casefold() != ".step"
                 or ".." in pure.parts
                 or entry is None
                 or reference.get("bytes") != entry.bytes
@@ -1424,7 +1422,7 @@ def materialize_public_example(
                 raise StateConflict(
                     "Made product print inventory differs from sealed model bytes"
                 )
-            destination = "make/models/print/component-%03d.stl" % index
+            destination = "make/models/part-%03d.step" % index
             copied = _copy_model(
                 product_root=product_root,
                 product_entries=product_entries,

@@ -74,8 +74,8 @@ class ReadAssemblyPackageTest(unittest.TestCase):
             ["reversible_nest", "owl_follower"],
         )
         self.assertEqual(
-            package.production_stl_paths,
-            ("parts/reversible_nest.stl", "parts/owl_follower.stl"),
+            package.production_step_paths,
+            ("parts/reversible_nest.step", "parts/owl_follower.step"),
         )
         owl = package.occurrences[1]
         self.assertEqual(owl.translation, (0.0, 0.0, 0.0))
@@ -164,16 +164,16 @@ class ReadAssemblyPackageTest(unittest.TestCase):
         package = read_assembly_package(encode(quarterhoot_package()))
 
         self.assertEqual(
-            missing_production_parts(package, {"parts/owl_follower.stl"}),
-            ("parts/reversible_nest.stl",),
+            missing_production_parts(package, {"parts/owl_follower.step"}),
+            ("parts/reversible_nest.step",),
         )
-        with self.assertRaisesRegex(ContractError, "parts/reversible_nest.stl"):
-            validate_production_parts(package, {"parts/owl_follower.stl"})
+        with self.assertRaisesRegex(ContractError, "parts/reversible_nest.step"):
+            validate_production_parts(package, {"parts/owl_follower.step"})
         self.assertEqual(
             validate_production_parts(
-                package, {"parts/owl_follower.stl", "parts/reversible_nest.stl"}
+                package, {"parts/owl_follower.step", "parts/reversible_nest.step"}
             ),
-            ("parts/reversible_nest.stl", "parts/owl_follower.stl"),
+            ("parts/reversible_nest.step", "parts/owl_follower.step"),
         )
 
 

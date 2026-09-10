@@ -131,7 +131,6 @@ class SkillFingerprintTest(unittest.TestCase):
             )
             relative_source = source.relative_to(workspace)
             step = source.with_suffix("")
-            stl = step.with_suffix(".stl")
             held = proof / "held.png"
             signature = proof / "signature.png"
 
@@ -144,14 +143,8 @@ class SkillFingerprintTest(unittest.TestCase):
                 ),
                 (
                     sys.executable,
-                    str(cad / "scripts" / "export"),
-                    str(step.relative_to(workspace)),
-                    "--stl",
-                ),
-                (
-                    sys.executable,
                     str(cad / "scripts" / "render_product"),
-                    str(stl.relative_to(workspace)),
+                    str(step.relative_to(workspace)),
                     "-o",
                     str(held.relative_to(workspace)),
                     "--motion-sheet",
@@ -173,15 +166,14 @@ class SkillFingerprintTest(unittest.TestCase):
                     self.assertEqual(result.returncode, 0, result.stderr)
 
             self.assertTrue(step.is_file())
-            self.assertTrue(stl.is_file())
             self.assertTrue(held.is_file())
             self.assertTrue(signature.is_file())
 
-    def test_state_sheet_uses_distinct_exact_meshes_and_rejects_duplicates(self):
+    def test_state_sheet_uses_distinct_exact_states_and_rejects_duplicates(self):
         cad = resolve_skills_root() / "cad"
         with tempfile.TemporaryDirectory() as temporary:
             workspace = Path(temporary).resolve()
-            state_stls = []
+            state_steps = []
             for index, width in enumerate((20, 28, 36)):
                 source = workspace / ("state-%d.step.py" % index)
                 source.write_text(
@@ -205,33 +197,20 @@ class SkillFingerprintTest(unittest.TestCase):
                 )
                 self.assertEqual(generated.returncode, 0, generated.stderr)
                 step = source.with_suffix("")
-                exported = subprocess.run(
-                    (
-                        sys.executable,
-                        str(cad / "scripts" / "export"),
-                        step.name,
-                        "--stl",
-                    ),
-                    cwd=workspace,
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                    timeout=60,
-                )
-                self.assertEqual(exported.returncode, 0, exported.stderr)
-                state_stls.append(step.with_suffix(".stl"))
+                self.assertTrue(step.is_file())
+                state_steps.append(step)
 
             command = [
                 sys.executable,
                 str(cad / "scripts" / "render_product"),
-                state_stls[0].name,
+                state_steps[0].name,
                 "-o",
                 "held.png",
                 "--state-sheet",
                 "signature.png",
             ]
-            for state in state_stls:
-                command.extend(("--state-stl", state.name))
+            for state in state_steps:
+                command.extend(("--state-source", state.name))
             rendered = subprocess.run(
                 command,
                 cwd=workspace,
@@ -248,15 +227,15 @@ class SkillFingerprintTest(unittest.TestCase):
                 (
                     sys.executable,
                     str(cad / "scripts" / "render_product"),
-                    state_stls[0].name,
+                    state_steps[0].name,
                     "-o",
                     "duplicate-held.png",
                     "--state-sheet",
                     "duplicate-signature.png",
-                    "--state-stl",
-                    state_stls[0].name,
-                    "--state-stl",
-                    state_stls[0].name,
+                    "--state-source",
+                    state_steps[0].name,
+                    "--state-source",
+                    state_steps[0].name,
                 ),
                 cwd=workspace,
                 capture_output=True,

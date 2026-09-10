@@ -32,6 +32,20 @@ def _sha(value):
     return hashlib.sha256(value).hexdigest()
 
 
+def _step_cube(scale=1.0, offset=0.0):
+    """A real STEP cube of edge ``scale``: the host tessellates it to render."""
+
+    import tempfile
+
+    from build123d import Box, Pos, export_step
+
+    solid = Pos(offset + scale / 2.0, scale / 2.0, scale / 2.0) * Box(scale, scale, scale)
+    with tempfile.TemporaryDirectory(prefix="render-fixture-") as temporary:
+        path = Path(temporary) / "cube.step"
+        export_step(solid, str(path))
+        return path.read_bytes()
+
+
 def _binary_cube(scale=1.0, offset=0.0):
     faces = []
 
@@ -134,21 +148,19 @@ class HostRendersTest(unittest.TestCase):
             (product_root / "states").mkdir()
             for index, path in enumerate(states):
                 target = product_root.joinpath(*path.split("/"))
-                target.write_bytes(_binary_cube(1.0 + index))
+                target.write_bytes(_step_cube(1.0 + index))
         product_bytes = (
             json.dumps(product, sort_keys=True, separators=(",", ":")) + "\n"
         ).encode("utf-8")
         (product_root / "product.json").write_bytes(product_bytes)
-        (product_root / "assembled.step").write_bytes(step)
+        (product_root / "assembled.step").write_bytes(_step_cube(2.0))
         descriptor = json.dumps(package if package is not None else {"assembly": "x"}).encode()
         (product_root / "assembled.step.json").write_bytes(descriptor)
-        (product_root / "assembled.stl").write_bytes(_binary_cube(2.0))
         for name, scale in parts:
             (product_root / "parts").mkdir(exist_ok=True)
-            (product_root / "parts" / ("%s.stl" % name)).write_bytes(_binary_cube(scale))
+            (product_root / "parts" / ("%s.step" % name)).write_bytes(_step_cube(scale))
         (project / "moon.step.py").write_text("def build():\n    return None\n")
         (project / "moon.step").write_bytes(b"ISO-10303-21;\n")
-        (project / "moon.stl").write_bytes(_binary_cube(1.0))
         verification = b'{"ok":true}\n'
         (validation / "cad-build.json").write_bytes(verification)
         manifest = build_artifact_manifest(product_root, created_at="content-addressed")
@@ -205,7 +217,7 @@ class HostRendersTest(unittest.TestCase):
         self.assertEqual((hero.width, hero.height, hero.path), (2000, 2000, "renders/hero.png"))
         self.assertEqual(
             [path for path, _ in record.inputs],
-            ["assembled.stl", "parts/owl.stl", "parts/nest.stl"],
+            ["assembled.step", "parts/owl.step", "parts/nest.step"],
         )
         renders_dir = self.run_root / "artifacts/make/r0001/renders"
         self.assertEqual(_sha((renders_dir / "hero.png").read_bytes()), hero.sha256)
@@ -217,7 +229,7 @@ class HostRendersTest(unittest.TestCase):
         self.assertEqual(load_host_renders(self.host_state, made), record)
 
     def test_states_render_a_signature_strip_when_frames_differ(self):
-        made = self._made(states=["states/a.stl", "states/b.stl", "states/c.stl"])
+        made = self._made(states=["states/a.step", "states/b.step", "states/c.step"])
         renderer = FakeRenderer()
 
         record = render_made_product(self.run_root, self.host_state, made, runner=renderer)
@@ -240,7 +252,7 @@ class HostRendersTest(unittest.TestCase):
         )
 
     def test_indistinguishable_states_are_not_presented(self):
-        made = self._made(states=["states/a.stl", "states/b.stl"])
+        made = self._made(states=["states/a.step", "states/b.step"])
 
         record = render_made_product(
             self.run_root, self.host_state, made, runner=FakeRenderer(distinct_states=False)
@@ -252,7 +264,7 @@ class HostRendersTest(unittest.TestCase):
         self.assertIn("indistinguishable", record.states["reason"])
 
     def test_malformed_state_declaration_still_renders_the_hero(self):
-        made = self._made(states=["states/a.stl"])
+        made = self._made(states=["states/a.step"])
 
         record = render_made_product(self.run_root, self.host_state, made, runner=FakeRenderer())
 

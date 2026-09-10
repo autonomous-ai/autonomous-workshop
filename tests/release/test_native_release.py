@@ -272,7 +272,7 @@ class NativeReleaseTest(unittest.TestCase):
 
     def test_make_output_release_rejects_changed_made_bytes(self):
         prepare_make_output_release(self.run_root, self.made)
-        (self.run_root / self.made.product_root / "assembled.stl").write_bytes(b"different")
+        (self.run_root / self.made.product_root / "assembled.step").write_bytes(b"different")
         with self.assertRaises((ArtifactError, ContractError)):
             prepare_make_output_release(self.run_root, self.made)
 
@@ -407,8 +407,8 @@ class NativeReleaseTest(unittest.TestCase):
             "instructions": "Arrange the rover and explore the observatory.",
             "limitations": ["AI-simulated playtest only"],
             "cad": {
-                "assembled_stl": {
-                    "path": "assembled.stl",
+                "assembled_step": {
+                    "path": "assembled.step",
                     "bytes": len(assembled),
                     "sha256": _sha(assembled),
                 }
@@ -418,8 +418,8 @@ class NativeReleaseTest(unittest.TestCase):
                     {
                         "id": "moon-body",
                         "quantity": 2,
-                        "stl": {
-                            "path": "cad/project/moon-body.stl",
+                        "step": {
+                            "path": "cad/project/moon-body.step",
                             "bytes": len(printable),
                             "sha256": _sha(printable),
                         },
@@ -436,8 +436,8 @@ class NativeReleaseTest(unittest.TestCase):
             "# Parametric Moon Nook\n", encoding="utf-8"
         )
         (root / "cad/project/moon.step").write_bytes(b"ISO-10303-21;\n")
-        (root / "assembled.stl").write_bytes(assembled)
-        (root / "cad/project/moon-body.stl").write_bytes(printable)
+        (root / "assembled.step").write_bytes(assembled)
+        (root / "cad/project/moon-body.step").write_bytes(printable)
         (root / "validation/cad-build.json").write_bytes(receipt)
         (root / "cad/project/snap/iso.png").write_bytes(
             bytes.fromhex(
@@ -693,9 +693,9 @@ class NativeReleaseTest(unittest.TestCase):
         details = {
             "release_sha256": release.package_manifest.artifact_sha256,
             "product_page_sha256": release.product_json_sha256,
-            "primary_model_path": "assembled.stl",
+            "primary_model_path": "assembled.step",
             "primary_model_sha256": self.made.product["cad"][
-                "assembled_stl"
+                "assembled_step"
             ]["sha256"],
             "page_url": "https://www.autonomous.ai/factory/product/%s" % slug,
         }
@@ -1381,9 +1381,9 @@ class NativeReleaseTest(unittest.TestCase):
                 "product_page_sha256": release.product_json_sha256,
                 "manual_sha256": entries[release.manual_path].sha256,
                 "factory_content_sha256": "f" * 64,
-                "primary_model_path": "assembled.stl",
+                "primary_model_path": "assembled.step",
                 "primary_model_sha256": self.made.product["cad"][
-                    "assembled_stl"
+                    "assembled_step"
                 ]["sha256"],
                 "page_url": "https://www.autonomous.ai/factory/product/moon-nook",
                 "cover_url": "https://cdn.autonomous.ai/moon-nook.png",
@@ -1488,10 +1488,10 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertEqual(publication["print_files"][0]["quantity"], 2)
         self.assertEqual(
             publication["print_files"][0]["path"],
-            "make/models/print/component-001.stl",
+            "make/models/part-001.step",
         )
         self.assertTrue(
-            (target / "make/models/print/component-001.stl").is_file()
+            (target / "make/models/part-001.step").is_file()
         )
         wish = json.loads((target / "wish/wish.json").read_text(encoding="utf-8"))
         self.assertEqual(wish["objective_disclosure"], "withheld")
@@ -1538,7 +1538,7 @@ class NativeReleaseTest(unittest.TestCase):
             "**Concept parts:** observatory shell, moon rover.",
             readme,
         )
-        self.assertIn("1 STEP, 3 STL and 1 product render PNG", readme)
+        self.assertIn("4 STEP and 1 product render PNG", readme)
         self.assertIn(
             "verdict **pass** from 3 checks (agent-playtest, mechanical-check, printability-check)",
             readme,
@@ -1615,9 +1615,9 @@ class NativeReleaseTest(unittest.TestCase):
                 "product_page_sha256": release.product_json_sha256,
                 "manual_path": "MANUAL.pdf",
                 "manual_sha256": entries[release.manual_path].sha256,
-                "primary_model_path": "assembled.stl",
+                "primary_model_path": "assembled.step",
                 "primary_model_sha256": self.made.product["cad"][
-                    "assembled_stl"
+                    "assembled_step"
                 ]["sha256"],
                 "page_url": (
                     "https://www.autonomous.ai/factory/product/moon-nook-pdf"
@@ -1818,7 +1818,7 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertFalse((target / "invent").exists())
         self.assertFalse((target / "release/MANUAL.pdf").exists())
         self.assertFalse((target / "release/MANUAL-DESIGN.json").exists())
-        self.assertTrue((target / "make/models/assembled.stl").is_file())
+        self.assertTrue((target / "make/models/assembled.step").is_file())
         self.assertEqual(
             json.loads((target / "release/PLAYTEST-NOT-RUN.json").read_bytes()),
             playtest_omission_record(),
@@ -1915,7 +1915,7 @@ class NativeReleaseTest(unittest.TestCase):
 
     def test_public_archive_make_output_rejects_changed_made_bytes(self):
         release, repository, receipt = self._make_output_archive_inputs()
-        (self.run_root / self.made.product_root / "assembled.stl").write_bytes(b"changed")
+        (self.run_root / self.made.product_root / "assembled.step").write_bytes(b"changed")
         with self.assertRaisesRegex(ArtifactError, "differs from its manifest"):
             materialize_public_example(
                 repository, self.run_root, release=release, made=self.made,

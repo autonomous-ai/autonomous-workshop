@@ -1,23 +1,23 @@
-"""Export one CAD model to standalone STEP/STL/3MF/GLB files.
+"""Export one CAD model to a standalone STEP file.
 
-Two callers share this module, and they offer different formats:
+STEP is the only format this module writes. The mesh exporters it used to offer —
+STL, 3MF and a user-facing native GLB — are gone: this repository delivers
+validated CAD geometry and nothing downstream of it, so there is no supported
+path from a model to a print or view mesh, from this module or from any CLI.
 
-* The CAD Viewer's "Export model" backend — one format to an arbitrary ``--out``
-  destination picked from a native Save dialog, via ``main()``/
-  :func:`export_model_to_path`. Offers every :data:`FORMAT_SUFFIX` format, STEP included,
-  because "Download STEP" is a Viewer menu item.
-* The CAD skill's ``scripts/export`` CLI — one or more formats per run, via
-  :func:`export_cad_target`. Mesh formats only (:data:`MESH_EXPORT_FORMATS`); a model's
-  ``.step`` file is written by ``scripts/gen --write-step`` during generation instead.
+Its one caller is the CAD Viewer's "Export model" backend — one format to an
+arbitrary ``--out`` destination picked from a native Save dialog, via ``main()``/
+:func:`export_model_to_path`. A Viewer that asks for any other format now gets a
+refusal rather than a mesh.
 
-Both accept an imported ``.step``/``.stp`` or a generated ``gen_step()`` Python source;
-both always build from source, so exports can never be stale.
+It accepts an imported ``.step``/``.stp`` or a generated ``gen_step()`` Python
+source, and always builds from source, so an export can never be stale.
 
-It is deliberately distinct from :mod:`cadgen.step_artifact_cli`, which only (re)builds the
-per-folder ``__cadgen__`` viewer GLB/topology package beside the source. This module
-produces standalone files and writes **no** package or beside-source artifacts. Within a
-run the scene is built once and meshed at most once, so every requested format comes from
-identical geometry.
+It is deliberately distinct from :mod:`cadgen.step_artifact_cli`, which (re)builds
+the per-folder ``__cadgen__`` viewer GLB/topology package beside the source. That
+package is the viewer's and ``inspect``'s internal working format, not a
+deliverable; this module produces a standalone file and writes **no** package or
+beside-source artifacts.
 
 Emits a single final JSON line on stdout: ``{"ok": true, "path": ..., "filename": ...}``
 or ``{"ok": false, "error": ...}`` (the Node spawner parses the last stdout JSON line).
@@ -39,7 +39,6 @@ from cadgen._internal.generation import (
     _selector_options_for_part,
     run_script_generator,
 )
-from cadgen._internal.glb import export_native_glb_from_scene
 from cadgen.metadata import normalize_mesh_numeric
 from cadgen.step_artifact_cli import _build_entry_spec, _cad_ref_for_step, infer_entry_kind
 from cadgen.step_export import export_build123d_step_file
@@ -49,17 +48,10 @@ from cadgen._internal.step_scene import (
     mesh_step_scene,
     scene_export_shape,
 )
-from cadgen._internal.stl import export_part_stl_from_scene
-from cadgen._internal.threemf import export_part_3mf_from_scene
 
 # Logical format name -> conventional file suffix (informational; the caller owns `--out`).
-FORMAT_SUFFIX = {"step": ".step", "stl": ".stl", "3mf": ".3mf", "glb": ".glb"}
-
-# Formats :func:`export_cad_target` (the CAD skill's `scripts/export`) offers. STEP is
-# deliberately absent: a generated model writes its `.step` through
-# `scripts/gen --write-step` in the generation run, and an imported model's STEP is
-# already the file on disk. The Viewer's Save-dialog export still offers STEP.
-MESH_EXPORT_FORMATS = ("stl", "3mf", "glb")
+# STEP only. No mesh format is offered anywhere in this repository.
+FORMAT_SUFFIX = {"step": ".step"}
 
 
 def _apply_mesh_overrides(
@@ -178,37 +170,16 @@ def _export_scene(
             return out
         raise RuntimeError("No STEP geometry available to export")
 
-    # Mesh once before the single-file mesh exporters (STL/3MF/native GLB), matching the
-    # sidecar-job pipeline in generation.py. Per-occurrence colors ride on the meshed scene.
-    mesh_step_scene(
-        scene,
-        linear_deflection=selector_options.linear_deflection,
-        angular_deflection=selector_options.angular_deflection,
-        relative=selector_options.relative,
+    raise ValueError(
+        f"Unsupported export format: {fmt}. This repository exports STEP only; "
+        "no STL, 3MF or GLB export exists."
     )
-    scene_export_shape(scene)
-
-    if fmt == "stl":
-        return export_part_stl_from_scene(spec.step_path, scene, target_path=out)
-    if fmt == "3mf":
-        return export_part_3mf_from_scene(spec.step_path, scene, target_path=out, color=spec.color)
-    if fmt == "glb":
-        # User-facing GLB: native Y-up glTF for external tools, not the viewer's Z-up cad GLB.
-        return export_native_glb_from_scene(
-            spec.step_path,
-            scene,
-            target_path=out,
-            linear_deflection=selector_options.linear_deflection,
-            angular_deflection=selector_options.angular_deflection,
-            color=spec.color,
-        )
-    raise ValueError(f"Unsupported export format: {fmt}")
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m cadgen.step_export_target",
-        description="Export one CAD model to STEP/3MF/STL/GLB at an explicit destination path.",
+        description="Export one CAD model to STEP at an explicit destination path.",
     )
     parser.add_argument("--repo-root", required=True, help="Repository/workspace root for relative metadata.")
     parser.add_argument("--step", required=True, help="Logical STEP path (generated) or on-disk STEP/STP (imported).")
@@ -233,7 +204,7 @@ def export_model_to_path(
     reset_runtime_closure: bool = False,
     logger: CliLogger | None = None,
 ) -> dict[str, object]:
-    """Export one CAD model to STEP/STL/3MF/GLB at ``out`` and RETURN
+    """Export one CAD model to STEP at ``out`` and RETURN
     {ok, path, filename, format}. Single source of truth, callable in-process by a
     warm-OCCT worker AND wrapped by main(); it RAISES on error so callers map their
     own protocol (the CLI shell keeps the {ok:false,error} JSON envelope).
@@ -264,100 +235,6 @@ def export_model_to_path(
 
 def _is_step_suffix(path: Path) -> bool:
     return path.suffix.lower() in {".step", ".stp"}
-
-
-def _resolve_export_output(
-    fmt: str,
-    raw: str | Path | None,
-    *,
-    logical_step: Path,
-) -> Path:
-    """Resolve one requested mesh export output. ``None`` means the default sibling path
-    (``<name>.<ext>`` beside the logical STEP); a relative path resolves beside the
-    logical STEP, matching the historical sidecar-path semantics."""
-    if raw is None:
-        return logical_step.with_suffix(FORMAT_SUFFIX[fmt]).resolve()
-    out = Path(raw).expanduser()
-    if not out.is_absolute():
-        out = logical_step.parent / out
-    out = out.resolve()
-    if out.suffix.lower() != FORMAT_SUFFIX[fmt]:
-        raise ValueError(f"--{fmt} output must end with {FORMAT_SUFFIX[fmt]}: {raw}")
-    return out
-
-
-def export_cad_target(
-    target: str | Path,
-    outputs: "list[tuple[str, str | Path | None]]",
-    *,
-    repo_root: Path | None = None,
-    mesh_tolerance: float | None = None,
-    mesh_angular_tolerance: float | None = None,
-    verbose: bool = False,
-    logger: CliLogger | None = None,
-) -> dict[str, object]:
-    """Export one CAD model — an imported ``.step``/``.stp`` or a generated Python
-    ``gen_step()`` source — to one or more of :data:`MESH_EXPORT_FORMATS` in a single run.
-
-    The scene is built once (the generator runs once for a Python source) and meshed at
-    most once, so all requested formats come from identical geometry. ``outputs`` pairs a
-    format name with an explicit output path or ``None`` for the default sibling path.
-    Writes no ``.step``, no ``__cadgen__`` render package, and no other beside-source
-    artifacts."""
-    if logger is None:
-        logger = CliLogger("scripts/export", verbose=verbose)
-    if not outputs:
-        raise ValueError("No export formats requested")
-    for fmt, _ in outputs:
-        if fmt not in MESH_EXPORT_FORMATS:
-            raise ValueError(
-                f"Unsupported export format: {fmt}. "
-                f"Supported formats: {', '.join(MESH_EXPORT_FORMATS)}."
-            )
-    repo_root = Path(repo_root).expanduser().resolve() if repo_root else Path.cwd()
-    target_path = Path(target).expanduser().resolve()
-    mesh_tolerance = normalize_mesh_numeric(mesh_tolerance, field_name="mesh_tolerance")
-    mesh_angular_tolerance = normalize_mesh_numeric(
-        mesh_angular_tolerance, field_name="mesh_angular_tolerance"
-    )
-
-    if _is_step_suffix(target_path):
-        step_path: Path | None = target_path
-        source_path: Path | None = None
-    elif target_path.suffix.lower() == ".py":
-        step_path = None
-        source_path = target_path
-    else:
-        raise ValueError(
-            f"Export target must be a .step/.stp file or a gen_step() Python source: {target}"
-        )
-
-    spec, scene = _resolve_spec_and_scene(
-        repo_root,
-        step_path,
-        source_path,
-        mesh_tolerance=mesh_tolerance,
-        mesh_angular_tolerance=mesh_angular_tolerance,
-        logger=logger,
-    )
-
-    resolved: list[tuple[str, Path]] = []
-    seen: dict[Path, str] = {}
-    for fmt, raw in outputs:
-        out = _resolve_export_output(fmt, raw, logical_step=spec.step_path)
-        if out in seen:
-            raise ValueError(f"--{seen[out]} and --{fmt} resolve to the same output path: {out}")
-        seen[out] = fmt
-        resolved.append((fmt, out))
-
-    selector_options = _selector_options_for_part(spec, scene=scene)
-    files: list[dict[str, str]] = []
-    for fmt, out in resolved:
-        with logger.timed(f"export {fmt.upper()} {out.name}"):
-            written = _export_scene(fmt, spec, scene, out, selector_options)
-        files.append({"format": fmt, "path": str(written)})
-    logger.total()
-    return {"ok": True, "files": files}
 
 
 def run_cli_payload(

@@ -66,8 +66,11 @@ DEEP_ECONOMICS_V11_CAPABILITY_PATH = (
 DEEP_ECONOMICS_V12_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/deep-economics-v12.md"
 )
-DEEP_ECONOMICS_CAPABILITY_PATH = (
+DEEP_ECONOMICS_V13_CAPABILITY_PATH = (
     ".agents/skills/autonomous-workshop/references/deep-economics-v13.md"
+)
+DEEP_ECONOMICS_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/deep-economics-v14.md"
 )
 SPARK_AUTO_COMPACT_TOKEN_LIMIT = 64_000
 # A 64,000-token ceiling holds a simple product's whole Make but forces a
@@ -210,6 +213,7 @@ __all__ = [
     "DEEP_ECONOMICS_V10_CAPABILITY_PATH",
     "DEEP_ECONOMICS_V11_CAPABILITY_PATH",
     "DEEP_ECONOMICS_V12_CAPABILITY_PATH",
+    "DEEP_ECONOMICS_V13_CAPABILITY_PATH",
     "DEEP_INITIAL_MAKE_PROOF_TIMEOUT_SECONDS",
     "DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT",
     "DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT",

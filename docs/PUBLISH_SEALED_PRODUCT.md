@@ -79,15 +79,17 @@ and the Factory import ships the hero as `assembled_review/_assembled.png`
 so the shop's cover ranking selects it. A missing or failing renderer records
 `unavailable` and every step behaves as it did without host renders.
 
-The Factory handoff derives one production mesh per occurrence from the sealed
-cadgen assembly-package (`assembled.step.json`) and the build-group STLs under
-`parts/`, and transports them as `assembled_parts/<name>.stl` with an indexed
-sidecar. The shop's viewer colours the assembled mesh by groups it computes
-itself (manifold-edge shells, loose facets owned by the shell they face,
-numbered in triangle order) and keys group `i` by the `i`-th slide file, so
-the host reproduces that grouping on the sealed `assembled.stl`, owns every
-group with the production mesh's shape signature and the posed occurrence
-geometry of the sealed STEP, and writes one `assembly_parts` entry per viewer
+The Factory handoff addresses one production solid per occurrence from the
+sealed cadgen assembly-package (`assembled.step.json`) and the build-group
+STEPs under `parts/`, and transports them as `assembled_parts/<name>.step` with
+an indexed sidecar. The shop's viewer colours the assembled mesh by groups it
+computes itself (manifold-edge shells, loose facets owned by the shell they
+face, numbered in triangle order) and keys group `i` by the `i`-th slide file,
+so the host tessellates the sealed `assembled.step` into throwaway keying bytes
+to reproduce that grouping — scaffolding, never a deliverable or a
+printability claim — owns every group with the production solid's shape
+signature and the posed occurrence geometry of the sealed STEP, and writes one
+`assembly_parts` entry per viewer
 group (order, slide or `#slot` key, owner, sealed colour) through the
 part-colours effect, verified on readback. A Make whose package lists two or
 more occurrences without those STLs, or without a sealed colour on every

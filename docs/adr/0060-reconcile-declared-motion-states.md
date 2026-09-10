@@ -24,10 +24,10 @@ the native agent continues to author the mechanical model and select the
 meaningful presentation samples and camera.
 
 Motion evidence version 2 records the assembly entry, project Python sources,
-motion manifest, every coupled condition's selected sample indices, generated
-STL states, camera and animation. The tool renders with occurrence colors and
+motion manifest, every coupled condition's selected sample indices, the hash of
+every generated state, camera and animation. The tool renders with occurrence colors and
 one frame of reference. Validation first checks provenance and the existing
-independent review, then reconstructs the expected meshes and GIF and compares
+independent review, then reconstructs the expected states and GIF and compares
 their bytes. Rehashing an incorrect state or unrelated animation is insufficient.
 The source and manifest are rechecked after reconstruction.
 
@@ -45,8 +45,16 @@ movers, nonuniform rotation plus translation, fixed framing and stale review.
 The retained failure is also replayed outside the running native cohort.
 
 This proves correspondence to a declared motion model, not correctness of that
-model or a complete product. Existing drive, collision, insertion, retention,
-STEP/export and print checks remain required. In particular, repairing the
-animation does not repair an uncaptured crank. The full exported STEP and the
+model or a complete product. Existing drive, collision, insertion, retention
+and STEP checks remain required. In particular, repairing the
+animation does not repair an uncaptured crank. The full STEP and the
 physical product still need their own verification. Native adoption, held-out
 Wish fidelity and human acceptance remain unproven until measured.
+
+## Superseded in part (2026-09-10)
+
+ADR 0062 makes STEP the only geometry format the toolchain writes. The
+constructor, the reconstruction comparison and evidence schema 2 all stand;
+the states are now tessellated in memory and bound by hash instead of being
+written as `measure/motion-states/state-*.stl`, which a sealed product manifest
+would reject.

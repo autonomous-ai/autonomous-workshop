@@ -630,16 +630,16 @@ their two-review bound. Make rounds also render inspection views and record
 native Manager feedback on placement, proportions and other visible defects
 through `make_round --record-visual`. Pending visual feedback cannot pass a
 round, and self-review never replaces the independent critic (ADR 0060).
-Before independent review, Make runs the fixed print-preflight mode: every
-declared printable is generated, strict-fit checked, exported, mesh checked,
-and thickness checked at the final 0.4 mm nozzle profile. The review binds the
-passing preflight hash. Native iteration relies on source-closure freshness and
+Before independent review, Make generates every declared entry with `--write`
+so each carries a fresh `.step`. There is no print preflight and no mesh,
+overhang or wall-thickness gate anywhere in the toolchain (ADR 0062), so no
+stage may call a product printable. Native iteration relies on source-closure freshness and
 does not delete protected `__cadgen__` directories; the trusted host owns the
 additional isolated `--fresh` rebuild for Forge/Quest; Spark omits this host replay.
 Make then performs one integrated final verifier, so a
 printability repair cannot invalidate an already-spent visual read. The
 materialized final verifier refuses to begin final-mode geometry work until the
-canonical schema-v6 review and exact image hashes exist, then records the review
+canonical schema-v7 review and exact image hashes exist, then records the review
 hash in its report. The finalizer rejects a second
 final `snap/` family outside the declared CAD project. Those explicit paths are archived under
 `make/verification/renders/`; the family is the only one eligible for automatic
@@ -718,33 +718,22 @@ provider, separate drawing effect, or second model credential sits between
 Invent and Make.
 
 The host CAD gate retains two claim-bound tiers for historical protocols. Its
-default/full tier reruns the
-materialized verifier with fresh generation, exports, strict fit, mesh, and
-wall-thickness checks. A Made revision may use the lower
-`digitally-verified-not-print-ready` tier only when two independently sealed
-declarations agree: root `product.json.status` has that exact value and the
-declared CAD-verification JSON contains the literal boolean
-`final_pipeline.print_ready_claim: false`. Either declaration alone is a
-contract mismatch and cannot waive a check. The lower tier adds only
-`--skip-thickness`; generation, layout, fit, local spec audits, mount, motion,
-kernel validation, interference, exports, and mesh checks remain gates. The
-host receipt and stage-gate evidence record the lower tier, the distinct
-verifier mode, and that it is not print-ready eligible. Historical or
-unstructured receipts continue through the full tier when their product
-metadata does not separately request the lower tier. New direct-Release runs
-require full-tier, print-ready-eligible CAD at Make and cannot advance on the
-lower tier.
+single surviving tier reruns the materialized verifier with fresh generation,
+strict fit, layout, local spec audits, mount, motion, kernel validation and
+interference. `digitally-verified-not-print-ready` is the only tier there is,
+and a Made revision must declare it twice: root `product.json.status` has that
+exact value *and* the declared CAD-verification JSON contains the literal
+boolean `final_pipeline.print_ready_claim: false`. A product still claiming
+print readiness is refused rather than downgraded, because nothing measures a
+wall, a mesh or an overhang any more. The host receipt and stage-gate evidence
+record the tier and that it is not print-ready eligible. Release requires
+passing evidence at that tier and publishes a digitally verified exchange
+solid whose printability is unverified.
 
-For frozen older runs, Make and Playtest replay evidence remain persisted under
-separate host-owned stage paths. A Made revision accepted before the
-two-declaration policy may resolve only the exact historical
-`digitally-verified-pending-physical-playtest` status plus literal false CAD
-claim mismatch, and only when its immediate Make predecessor, checkpoint
-history, exact contract/product hashes, schema-v1 CAD receipt, verifier hash,
-and full command all agree. Playtest then reruns the full verifier, including
-thickness, in isolation. That compatibility receipt remains ineligible for a
-print-ready claim: stronger geometric replay does not erase the legacy
-product's explicit uncertainty about slicing, physical printing, or fit.
+The legacy full-tier replay path is retired: it would rerun a thickness-checked
+verifier that no longer exists. For frozen older runs, Make and Playtest replay
+evidence remain persisted under separate host-owned stage paths, and those runs
+keep their own materialized skill bytes.
 
 ## Terminal published Release
 
@@ -786,8 +775,8 @@ The PDF worker supports Linux and macOS. Linux requires `RLIMIT_AS`; macOS
 skips only fully unbounded memory limits that Darwin cannot lower. Both retain
 CPU, file, timeout, parser, and render bounds; other platforms fail closed.
 
-Release completes only after the host replays full-tier,
-thickness-checked, print-ready CAD, validates the exact `MANUAL.pdf`, imports
+Release completes only after the host replays the
+digitally-verified-not-print-ready CAD tier, validates the exact `MANUAL.pdf`, imports
 the exact CAD/manual handoff, publishes it, and verifies public page and manual
 readback hashes. Missing credentials or a remote outage leaves Release waiting
 and resumable; the durable effect ledger reconciles before retry. Local
@@ -910,8 +899,9 @@ private Wish demonstrate that:
 6. Spark/Forge Release records Playtest as `not-run`; Quest Release binds its
    passing evidence; every exact `MANUAL.pdf` passes structural validation;
 7. no credential reaches the native subprocess or its readable filesystem;
-8. terminal Release requires exact full-tier print-ready CAD, validated
-   `MANUAL.pdf`, and authenticated public readback bound to those hashes;
+8. terminal Release requires exact passing not-print-ready CAD evidence,
+   validated `MANUAL.pdf`, and authenticated public readback bound to those
+   hashes; printability is never asserted;
 9. an optional Git snapshot can be retried after terminal Release and preserves
    every sealed Invent/Make/Playtest attempt, Make product render, revision
    request, and evidence tree without copying native-session or credential
@@ -1109,10 +1099,10 @@ For new runs it also requires two inspected chromatic exact-product renders:
 `<cad-project>/snap/signature.png` shows the signature interaction, reveal, or
 anti-generic detail without relying on marketing copy. When geometry changes,
 it uses fixed-camera exact-state STLs; motion-sheet poses of one mesh are only
-viewpoint evidence. Before spending that review, Make runs one fixed print preflight that
-generates every printable part and requires strict bed fit, mesh validity, and
-wall thickness at the final 0.4 mm nozzle profile. Its passing report is bound
-into a schema-v6 `SIGNATURE-REVIEW.json`, which records one bounded
+viewpoint evidence. Before spending that review, Make generates every declared
+entry with `--write`; no preflight measures a wall, a mesh or an overhang, so
+the review cannot be bound to one. The
+schema-v7 `SIGNATURE-REVIEW.json` records one bounded
 independent critic's unprompted held object, volumetric form, subjects, action,
 and spatial or causal relationship before the Wish is revealed. That same
 critic then compares each dimension and the concept's anti-generic signature
@@ -1123,8 +1113,8 @@ mechanism, zoom-dependent signature, raw faceting, unclear state change, or any
 visible caveat is blocking. This historical protocol permitted two review rounds;
 new runs use four under ADR 0060 and then
 performs one integrated final verifier. The finalizer accepts only the current
-passing full-tier report with a successful thickness row, so omitting a failed
-check cannot spend a host isolated rebuild.
+passing `final` report, so omitting a failed check cannot spend a host isolated
+rebuild.
 The final verification report must live inside the declared self-contained CAD
 project, catching a misplaced build entry before the host pays for an isolated
 rebuild.

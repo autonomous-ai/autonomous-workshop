@@ -47,7 +47,7 @@ def _add_gen_arguments(parser: argparse.ArgumentParser) -> None:
             "Also write the .step file during generation. Without a path, each target "
             "writes its sibling <name>.step; an explicit path requires exactly one target "
             "and resolves from the command cwd. This is the only way to write a .step "
-            "file; scripts/export writes mesh formats only."
+            "file, and STEP is the only deliverable format this repository writes."
         ),
     )
     parser.add_argument(
@@ -91,14 +91,13 @@ def _validate_python_targets(targets: Sequence[str], *, parser: argparse.Argumen
         if "=" in target_text:
             parser.error(
                 "SOURCE=OUTPUT pairs are no longer supported. Use --write to also "
-                "write the .step file, or scripts/export for STL/3MF/GLB files."
+                "write the .step file."
             )
         suffix = Path(target_text).suffix.lower()
         if suffix in {".step", ".stp"}:
             parser.error(
                 f"scripts/gen builds gen_step() Python sources only: {target_text}. "
-                "Imported STEP/STP files get render artifacts on demand (inspect); "
-                "use scripts/export for STL/3MF/GLB files from an imported STEP."
+                "Imported STEP/STP files get render artifacts on demand (inspect)."
             )
         if suffix != ".py":
             parser.error(f"scripts/gen target must be a gen_step() Python source: {target_text}")
@@ -137,8 +136,8 @@ def build_parser() -> argparse.ArgumentParser:
         prog="scripts/gen",
         description=(
             "Build CAD Viewer render packages (GLB/topology) for explicit gen_step() "
-            "Python targets. Writes a .step file only with --write; use "
-            "scripts/export for STL/3MF/GLB files."
+            "Python targets. Writes a .step file only with --write; STEP is the only "
+            "deliverable format this repository writes."
         ),
     )
     _add_gen_arguments(parser)

@@ -92,7 +92,7 @@ def manual_design_evidence(manual: bytes, made) -> dict:
     visual = next(
         entry
         for entry in made["product_manifest"]["entries"]
-        if entry["path"] == "assembled.stl"
+        if entry["path"] == "assembled.step"
     )
     return {
         "schema_version": 1,
@@ -430,13 +430,13 @@ def author_make(root: Path, stage) -> None:
         "limitations": [
             "Digitally verified; no claim of physical manufacture or delivery."
         ],
+        "status": "digitally-verified-not-print-ready",
     }
     write_json(product_root / "product.json", product)
     (product_root / "wish.json").write_bytes((root / "WISH.json").read_bytes())
     (product_root / "assembled.step").write_bytes(
         b"ISO-10303-21;\nHEADER;ENDSEC;\nDATA;ENDSEC;\nEND-ISO-10303-21;\n"
     )
-    (product_root / "assembled.stl").write_bytes(tetrahedron_stl())
     render_path = project / "snap/iso.png"
     render_path.parent.mkdir(parents=True, exist_ok=True)
     render = Image.new("RGB", (900, 900), "#fff4df")
@@ -482,13 +482,15 @@ def author_make(root: Path, stage) -> None:
             "validator": "materialized-cad-final",
             "validator_version": "1.0.0",
             "passed": True,
-            "checks": ["fresh-export", "strict-fit", "printable-mesh"],
-            "final_pipeline": {"print_ready_claim": True},
+            "checks": ["fresh-export", "strict-fit"],
+            "final_pipeline": {"print_ready_claim": False},
         },
     )
     parts = product_root / "parts"
     parts.mkdir(exist_ok=True)
-    (parts / "board.stl").write_bytes(tetrahedron_stl())
+    (parts / "board.step").write_bytes(
+        b"ISO-10303-21;\nHEADER;ENDSEC;\nDATA;ENDSEC;\nEND-ISO-10303-21;\n"
+    )
     group_arguments = ["make-group"]
     if creative_source is not None:
         group_arguments.extend(("--source", creative_source))

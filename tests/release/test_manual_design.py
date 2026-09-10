@@ -57,7 +57,7 @@ class ManualDesignEvidenceTest(unittest.TestCase):
         (self.product_root / "cad/project").mkdir(parents=True)
         (self.product_root / "validation").mkdir()
         visual = b"solid exact-product-visual\nendsolid exact-product-visual\n"
-        (self.product_root / "cad/project/hero.stl").write_bytes(visual)
+        (self.product_root / "cad/project/hero.step").write_bytes(visual)
         (self.product_root / "cad/project/hero.step").write_bytes(
             b"ISO-10303-21;\nEND-ISO-10303-21;\n"
         )
@@ -112,7 +112,7 @@ class ManualDesignEvidenceTest(unittest.TestCase):
         visual = next(
             entry
             for entry in self.made.product_manifest.entries
-            if entry.path == "cad/project/hero.stl"
+            if entry.path == "cad/project/hero.step"
         )
         return {
             "schema_version": 1,

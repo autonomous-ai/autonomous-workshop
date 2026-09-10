@@ -181,7 +181,7 @@ class NativePlaytestedTest(unittest.TestCase):
         (product_root / "product.json").write_bytes(product_bytes)
         (product_root / "cad/project/moon.step.py").write_text("pass\n")
         (product_root / "cad/project/moon.step").write_bytes(b"ISO-10303-21;\n")
-        (product_root / "cad/project/moon.stl").write_bytes(
+        (product_root / "cad/project/moon-detail.step").write_bytes(
             b"solid moon\nendsolid moon\n"
         )
         (product_root / "validation/cad-build.json").write_bytes(receipt)

@@ -5,11 +5,15 @@ skill's ``artifact`` tool as an *assembly-package*: the occurrence tree of the
 sealed STEP with one 4x4 row-major transform and one optional surface colour
 per occurrence.  The trusted host reads it here for two purposes only:
 
-* the Factory handoff derives one production mesh per occurrence from it so a
-  multi-part toy reaches the shop as addressable, colourable meshes; and
+* the Factory handoff addresses one production part per occurrence through it
+  so a multi-part toy reaches the shop as addressable, colourable solids; and
 * the Make gate requires every occurrence of a multi-part package to have its
-  sealed production STL under ``parts/<name>.stl``, the same path the
+  sealed production STEP under ``parts/<name>.step``, the same path the
   build-group contract already uses.
+
+STEP is the only geometry format the CAD toolchain writes, so the shop receives
+exchange solids rather than sliced meshes and printability is not asserted
+here.
 
 Colour channels are the raw values the designer passed to build123d's
 ``Color``.  The cadgen GLB exporter and the shop viewer display those values
@@ -108,8 +112,8 @@ class AssemblyOccurrence:
             raise ContractError("assembly-package occurrence colour is invalid")
 
     @property
-    def production_stl_path(self) -> str:
-        return "%s/%s.stl" % (PRODUCTION_PARTS_DIRECTORY, self.name)
+    def production_step_path(self) -> str:
+        return "%s/%s.step" % (PRODUCTION_PARTS_DIRECTORY, self.name)
 
     @property
     def translation(self) -> Tuple[float, float, float]:
@@ -144,8 +148,8 @@ class AssemblyPackage:
         return len(self.occurrences) >= 2
 
     @property
-    def production_stl_paths(self) -> Tuple[str, ...]:
-        return tuple(item.production_stl_path for item in self.occurrences)
+    def production_step_paths(self) -> Tuple[str, ...]:
+        return tuple(item.production_step_path for item in self.occurrences)
 
     def part_colors(self) -> dict[str, str]:
         return {
@@ -256,28 +260,28 @@ def read_assembly_package_file(path: Path) -> AssemblyPackage:
 def missing_production_parts(
     package: AssemblyPackage, sealed_paths: Collection[str]
 ) -> Tuple[str, ...]:
-    """Return the production STL paths a multi-part package lacks."""
+    """Return the production STEP paths a multi-part package lacks."""
 
     if not package.is_multipart:
         return ()
     sealed = set(sealed_paths)
     return tuple(
-        path for path in package.production_stl_paths if path not in sealed
+        path for path in package.production_step_paths if path not in sealed
     )
 
 
 def validate_production_parts(
     package: AssemblyPackage, sealed_paths: Collection[str]
 ) -> Tuple[str, ...]:
-    """Require one sealed production STL per occurrence of a multi-part package."""
+    """Require one sealed production STEP per occurrence of a multi-part package."""
 
     missing = missing_production_parts(package, sealed_paths)
     if missing:
         raise ContractError(
-            "Made assembly-package lists %d occurrences but lacks production STLs: %s"
+            "Made assembly-package lists %d occurrences but lacks production STEPs: %s"
             % (package.occurrence_count, ", ".join(missing))
         )
-    return package.production_stl_paths if package.is_multipart else ()
+    return package.production_step_paths if package.is_multipart else ()
 
 
 __all__ = [

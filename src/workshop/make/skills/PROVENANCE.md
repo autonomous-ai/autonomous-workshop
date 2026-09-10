@@ -3,8 +3,50 @@
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
-  `ec25343ea240c520074b66eee7b28e76bd91ee49` (2026-09-09), resynced from
+  `39a63f73617d70a45473c984b46926c9d29bb9bd` (2026-09-10), resynced from
+  `ec25343ea240c520074b66eee7b28e76bd91ee49` (2026-09-09) and
   `9e75609bb53bf880429353e57201995a4c0482e6` (2026-09-07).
+- The 2026-09-10 resync takes upstream's `cad/drop-assembly-glb-export` branch,
+  which is a single coherent capability removal: **STEP becomes the only
+  format the toolchain writes.** Upstream deletes `scripts/export` (the whole
+  CLI), `meshlib.py`, `cadprint.py`, `repair_mesh`, the `check_mesh`,
+  `check_thickness` and `check_overhang` gates, cadgen's `_internal/stl.py`
+  and `_internal/threemf.py`, `verify_project`'s `--exports` mode, and the
+  `supported-exports.md`, `repair-loop.md` and `print-optimisation.md`
+  references. `cad/SKILL.md` now states that a request for an STL, a 3MF, a
+  GLB or any sliced mesh has no workflow, and that an output must never be
+  called print-ready. Every non-deletion hunk in the four upstream commits is
+  prose or validation following from that removal; there is no independent
+  fix to take. `design-reference`, `electromechanical-integration` and
+  `step-parts` are byte-identical to the previous snapshot, and `cadgen` stays
+  at 0.4.19.
+- Workshop adopted the removal in full rather than forking the mesh half, so
+  this is a breaking product change and not a routine resync. Its consequences
+  are recorded in ADR 0062: `render_product` and `motion_presentation.py`
+  tessellate the exact STEP in memory instead of reading an STL; the
+  Workshop-local `--print-preflight` mode and its
+  `measure/print-preflight.md` record are gone, taking
+  `print_preflight_sha256` out of the signature review (schema 6 -> 7);
+  `make-round` reports a build verdict per part instead of a wall verdict; the
+  host CAD gate collapses to the single
+  `digitally-verified-not-print-ready` tier, retires the legacy full-tier
+  replay path, and can no longer substantiate a print-ready claim at any
+  stage; sealed products carry `parts/<name>.step` rather than
+  `parts/<name>.stl` and no `assembled.stl`; and the Factory handoff ships
+  exchange solids. Nothing in the toolchain measures a wall, a mesh or an
+  overhang any more, so no Workshop stage may call a product printable.
+- Rebasing the removal onto Workshop's later mesh work retired that work with
+  its subject. The pre-review assembly screening of 2026-09-08 lived inside
+  `--print-preflight` and goes with it; final verification still runs the same
+  validity and 1.0 mm3 interference checks, only later. The `check_overhang`
+  preceding-layer/bridge-span fix and its `mesh_support.py` helper measured a
+  mesh that is no longer built. `motion_presentation.py` keeps the declared-pose
+  constructor and byte reconciliation of ADR 0060, but its states are
+  tessellated in memory and bound by hash instead of written as
+  `measure/motion-states/state-*.stl`, which the sealed manifest would now
+  reject. `make_round` keeps the strict `check_motion` reader, per-reference
+  pose files and one-piece entry handling; the wall-evidence reuse it gained
+  has no wall left to reuse.
 - The reviewed snapshot includes the complete upstream trees for all five
   skills. `cad` includes the vendored `cadgen` 0.4.19 source, bought-part mount
   tooling, run-cost guidance, and the strengthened image-derived verification
@@ -346,14 +388,15 @@ can rest on the preceding layer without being mislabeled as a bridge. The same
 geometric principle is used in [OrcaSlicer 2.4.2's angle-based support detection](https://github.com/OrcaSlicer/OrcaSlicer/blob/v2.4.2/src/libslic3r/Support/SupportMaterial.cpp#L1434);
 this is an independent implementation, not a slicer port.
 
-The deterministic `mesh_support.py` helper measures exact section boundaries,
+The deterministic `mesh_support.py` helper measured exact section boundaries,
 deduplicates coincident oriented crossings, and finds real support separation.
 It tests X/Y and the direction toward the nearest boundary point, allowing
 rotated slots without an arbitrary angular grid. Bounded batches limit temporary
 intersection matrices. Voxels only describe air gaps in reports; they no longer
 select which surfaces can fail. Existing angle, layer, bridge-length, sample
 budget and minimum-region-area limits remain. Frozen materialized runs retain
-their prior bytes.
+their prior bytes. The 2026-09-10 STEP-only resync removed the gate and this
+helper along with every other mesh measurement.
 
 Area remains sampled, the bridge directions are a bounded search, and grouping
 by a connected down-facing surface can combine unsupported subsets separated

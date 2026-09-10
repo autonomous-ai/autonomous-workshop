@@ -28,7 +28,7 @@ from workshop.wish.contracts import Wish
 PUBLIC_ARCHIVE_SCHEMA_VERSION = 4
 _MAX_BOUND_FILE_BYTES = 128 * 1024 * 1024
 _GENERATED_DIRECTORIES = frozenset(("__cadgen__", "__pycache__"))
-_MODEL_SUFFIXES = frozenset((".3mf", ".glb", ".obj", ".step", ".stl"))
+_MODEL_SUFFIXES = frozenset((".step",))
 
 PublicWriter = Callable[[str, bytes], None]
 _ROOT_MANIFEST_EXCLUDES = frozenset(("MANIFEST.json", "README.md"))

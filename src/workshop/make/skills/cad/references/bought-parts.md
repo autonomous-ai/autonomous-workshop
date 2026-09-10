@@ -3,7 +3,7 @@
 A servo, gearmotor, bearing or board is the one kind of dimension a project
 cannot own. It lives in a datasheet, a product page or a photograph, and once it
 is typed into a generator nothing downstream can check it: `validate`,
-`interfere`, `check_fit`, `check_motion` and `check_mesh` all pass a bracket
+`interfere`, `check_fit` and `check_motion` all pass a bracket
 whose pocket is 2 mm too shallow for the motor it was drawn for. This is the
 mate `references/parameters.md` warns about with the nominal removed from the
 repository altogether.
@@ -103,7 +103,7 @@ clearance obeys the same table as every other mate in the project.
 Deriving the seat is not proof the model has one. The generator may never have
 subtracted it, may have subtracted it in the wrong place, or may have added a
 feature three lines later that ate half of it — and `validate`, `interfere`,
-`check_fit`, `check_motion` and `check_mesh` all pass every one of those.
+`check_fit` and `check_motion` all pass every one of those.
 
 ```bash
 python "$CAD_SKILL_ROOT/scripts/check_mount" <project-dir>                  # measure/mounts.json
@@ -184,7 +184,9 @@ The last two are the ones every other gate in the toolchain passes.
   joint that wants `"expect": "clear"` for the insertion and `"blocked"` for the
   direction it must not back out of.
 - **That the bracket around the seat can be printed.** A seat cut close to an
-  outer surface leaves a wall no gate here measures — `check_thickness`.
+  outer surface leaves a thin wall, and nothing in this toolchain measures wall
+  thickness. Keep the wall in the parameter block with its own provenance
+  comment; no gate will catch it for you.
 - **That the catalog model matches the part in your hand.** Hobby servos vary
   between vendors under one name. The STEP is a claim with a checksum, not a
   measurement.

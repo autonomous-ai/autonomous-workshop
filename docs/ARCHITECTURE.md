@@ -309,7 +309,7 @@ so they are never stable product evidence. A sandbox-protected empty directory
 has no content-addressable bytes and is ignored by both finalizer and host
 inventory. Exported CAD, source, measurements, renders, every other file,
 symlinks, special nodes, and unsafe cache content remain exact and fail-closed.
-The native Make iteration therefore runs print-preflight without destructive
+The native Make iteration therefore regenerates entries without destructive
 `--fresh` cleanup. Source-closure checks regenerate changed targets inside the
 product sandbox; only the trusted isolated host rebuild deletes generated cache
 bytes. The shared verifier tolerates protected empty cache directories but

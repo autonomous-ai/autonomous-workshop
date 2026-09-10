@@ -74,3 +74,42 @@ def step_document(parts, *, colours=True) -> bytes:
         identifier += 20
     lines.extend(["ENDSEC;", "END-ISO-10303-21;", ""])
     return "\n".join(lines).encode("ascii")
+
+
+def step_solid_document(parts, *, colours=True, start_index=0) -> bytes:
+    """A real STEP carrying geometry, for paths that tessellate the solid.
+
+    ``step_document`` above is a hand-written fixture with empty shells: it
+    exercises colour parsing and nothing else.  Anything that has to turn the
+    sealed solid into triangles -- the host renderer and the Factory part
+    keying -- needs a STEP the CAD kernel can actually read, so this builds one
+    with build123d and lets the kernel write it.
+    """
+
+    import tempfile
+    from pathlib import Path
+
+    from build123d import Box, Color, Compound, Cylinder, Pos, export_step
+
+    children = []
+    for index, (name, colour) in enumerate(parts):
+        place = start_index + index
+        # A curved face keeps each part above the viewer's real-part triangle
+        # floor, so keying sees a part rather than a sliver.
+        solid = Pos(place * 30.0, 0, 0) * (
+            Box(10 + place, 8 + place, 6 + place)
+            + Cylinder(2.0 + place * 0.5, 12 + place)
+        )
+        solid.label = name
+        if colours and colour is not None:
+            solid.color = Color(*srgb_channels(colour))
+        children.append(solid)
+    if len(children) == 1:
+        shape = children[0]
+    else:
+        shape = Compound(children=children)
+        shape.label = "assembly"
+    with tempfile.TemporaryDirectory(prefix="step-fixture-") as temporary:
+        path = Path(temporary) / "fixture.step"
+        export_step(shape, str(path))
+        return path.read_bytes()

@@ -21,7 +21,7 @@ MANUAL_DESIGN_EVIDENCE_SCHEMA_VERSION = 1
 MAX_MANUAL_DESIGN_EVIDENCE_BYTES = 64 * 1024
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _VISUAL_SUFFIXES = frozenset(
-    (".3mf", ".glb", ".jpeg", ".jpg", ".obj", ".png", ".step", ".stl", ".svg", ".webp")
+    (".jpeg", ".jpg", ".png", ".step", ".svg", ".webp")
 )
 # Host renders are cited under this virtual prefix; their bytes are bound by
 # the host's private render record, not by the agent-authored Made manifest.

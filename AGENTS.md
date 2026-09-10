@@ -122,7 +122,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0050-structured-terminal-failure-diagnostics.md`, and
 `docs/adr/0049-product-wide-token-budget.md`, and
 `docs/adr/0060-make-round-visual-feedback-and-three-repairs.md`, and
-`docs/adr/0061-spark-make-owned-verification.md` before changing the CLI, runtime,
+`docs/adr/0061-spark-make-owned-verification.md`, and
+`docs/adr/0062-step-only-cad-toolchain.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -157,6 +158,12 @@ reintroduce these removed boundaries from an older ADR or frozen-run fixture.
 ADR 0060 requires native Manager visual feedback within Make rounds and expands
 final blind review to an initial review plus three repair-and-rereview cycles
 for new runs. Frozen older runs retain their original allowance and tool bytes.
+ADR 0062 makes STEP the only geometry format Workshop writes, seals or ships:
+the mesh export, `check_mesh`, `check_thickness`, `check_overhang` and
+print-preflight paths are gone, the CAD gate has a single
+`digitally-verified-not-print-ready` tier, and **no stage may call a product
+printable or print-ready**. Do not reintroduce a mesh deliverable or a
+print-ready claim from an older ADR or a frozen-run fixture.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

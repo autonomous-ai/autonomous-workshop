@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Construct and reconcile motion review from the checker's declared poses.
 
+States are tessellated in memory and bound by hash; no mesh reaches disk,
+because STEP is the only geometry format this toolchain writes.
+
 This validates the presented geometry, not physical dynamics or Wish fidelity.
 The independent motion review and check_motion remain required.
 """
@@ -114,13 +117,13 @@ def _bound_state_evidence(project):
     if not isinstance(states, list) or not 8 <= len(states) <= 48:
         raise ValueError("motion presentation needs 8 to 48 ordered declared states")
     for row in states:
-        if (not isinstance(row, dict) or set(row) != {"condition_id", "sample_index", "path", "sha256"}
+        if (not isinstance(row, dict) or set(row) != {"condition_id", "sample_index", "sha256"}
                 or not isinstance(row["condition_id"], str) or type(row["sample_index"]) is not int
-                or not isinstance(row["path"], str) or not row["path"].endswith(".stl")
-                or row["sha256"] != digest(project, row["path"])):
+                or not isinstance(row["sha256"], str) or len(row["sha256"]) != 64):
             raise ValueError("motion animation has invalid or stale state geometry")
-    if len({s["path"] for s in states}) != len(states) or len({s["sha256"] for s in states}) < 3:
-        raise ValueError("motion animation needs distinct paths and geometry states")
+    identities = [(s["condition_id"], s["sample_index"]) for s in states]
+    if len(set(identities)) != len(states) or len({s["sha256"] for s in states}) < 3:
+        raise ValueError("motion animation needs distinct samples and geometry states")
     return raw, evidence
 
 
@@ -170,8 +173,8 @@ def validate(project, signature_review):
     for row, (identity, occurrences) in zip(states, expected):
         if any(row[key] != value for key, value in identity.items()):
             raise ValueError("motion states are not in declared condition/sample order")
-        if row["sha256"] != hashlib.sha256(tool["stl_bytes"](occurrences)).hexdigest():
-            raise ValueError(f"motion state {row['path']} differs from the checked poses; regenerate the presentation")
+        if row["sha256"] != hashlib.sha256(tool["state_bytes"](occurrences)).hexdigest():
+            raise ValueError(f"motion state {row['condition_id']}[{row['sample_index']}] differs from the checked poses; regenerate the presentation")
     if evidence["animation_sha256"] != hashlib.sha256(tool["animation_bytes"](expected, evidence["render"])).hexdigest():
         raise ValueError("motion animation differs from its reconciled geometry and camera")
     if sources(project) != evidence["sources"] or digest(project, "measure/motion.json") != evidence["motion_sha256"]:
@@ -209,13 +212,13 @@ def generate(project, *, selections=None, frames=8, view="iso", size=600):
     if source_hashes != sources(project) or motion_hash != digest(project, "measure/motion.json"):
         raise ValueError("motion inputs changed during generation")
     rows = []
-    for index, (identity, occurrences) in enumerate(states):
-        path = f"measure/motion-states/state-{index:03d}.stl"
-        data = tool["stl_bytes"](occurrences)
+    for identity, occurrences in states:
+        # Bound by hash only: the state never reaches disk, and validation
+        # rebuilds it from the same declared poses.
+        data = tool["state_bytes"](occurrences)
         if len(data) > 20 * 1024 * 1024:
-            raise ValueError("motion state exceeds the 20 MiB artifact limit")
-        _write(project, path, data)
-        rows.append({**identity, "path": path, "sha256": hashlib.sha256(data).hexdigest()})
+            raise ValueError("motion state exceeds the 20 MiB reconciliation limit")
+        rows.append({**identity, "sha256": hashlib.sha256(data).hexdigest()})
     evidence = {"schema_version": 2, "kind": "declared-cad-motion-animation", "sources": source_hashes,
                 "assembly_entry": entry, "states": rows, "render": render,
                 "animation_sha256": hashlib.sha256(animation).hexdigest(), "motion_sha256": motion_hash}
@@ -250,7 +253,7 @@ def main():
         generate(args.project.resolve(), selections=selected, frames=args.frames, view=args.view, size=args.size)
     except (OSError, ValueError, TypeError, KeyError, argparse.ArgumentTypeError) as exc:
         parser.error(str(exc))
-    print("Wrote reconciled declared-pose states, snap/motion.gif and snap/MOTION-EVIDENCE.json; independent review and check_motion are still required.")
+    print("Wrote snap/motion.gif and snap/MOTION-EVIDENCE.json from reconciled declared poses; independent review and check_motion are still required.")
 
 
 if __name__ == "__main__":

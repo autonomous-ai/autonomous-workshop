@@ -1,7 +1,7 @@
 """Viewer-parity part groups and colour keys for the Factory listing.
 
 The Factory viewer colours a listing's assembled mesh by *groups* it computes
-itself from ``assembled.stl``: triangles joined only across manifold edges
+itself from the tessellation of ``assembled.step``: triangles joined only across manifold edges
 (exactly two incident triangles) form a shell, a shell with no closed edge is
 a loose contact facet that takes an owner's colour, and the remaining shells
 are numbered densely in triangle order.  Group ``i`` then keys its colour by
@@ -640,7 +640,7 @@ def key_parts(
     assembled_stl: bytes,
     occurrences: Sequence[PosedOccurrence],
     *,
-    lead: str = "assembled.stl",
+    lead: str = "assembled.step",
     slide_order: Sequence[str],
     colours: Optional[Mapping[str, str]] = None,
     part_meshes: Optional[Mapping[str, bytes]] = None,
@@ -648,13 +648,13 @@ def key_parts(
     """Key every viewer group of ``assembled_stl`` for the shop.
 
     ``slide_order`` lists occurrence names in the sidecar's ``parts[]`` order;
-    slide ``i`` is ``<name>.stl``.  ``colours`` maps occurrence names to sealed
+    slide ``i`` is ``<name>.step``.  ``colours`` maps occurrence names to sealed
     ``#rrggbb`` values.  ``part_meshes`` maps occurrence names to their sealed
     production STL bytes, the shape identity that anchors ownership.
     """
 
     groups = fe_part_groups(read_stl_triangles(assembled_stl))
-    slides = tuple("%s.stl" % name for name in slide_order)
+    slides = tuple("%s.step" % name for name in slide_order)
     shapes = part_shapes(part_meshes) if part_meshes else None
     owners = own_groups(groups, occurrences, shapes)
     palette = dict(colours or {})

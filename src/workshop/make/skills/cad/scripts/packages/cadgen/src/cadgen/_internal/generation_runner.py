@@ -107,9 +107,10 @@ def _normalize_step_payload(
     if isinstance(result, Build123dShape):
         return {"shape": result}
     if isinstance(result, dict):
-        # stl / 3mf / mesh_tolerance / mesh_angular_tolerance are consumed via the static
-        # metadata path (per-generator STL/3MF outputs + mesh tolerances); keep allowing them.
-        allowed_fields = {"shape", "params", "stl", "3mf", "mesh_tolerance", "mesh_angular_tolerance"}
+        # mesh_tolerance / mesh_angular_tolerance are consumed via the static metadata
+        # path. "stl" and "3mf" are refused, not ignored: STEP is the only format written
+        # here, and an envelope that names a mesh output should say so loudly.
+        allowed_fields = {"shape", "params", "mesh_tolerance", "mesh_angular_tolerance"}
         extra_fields = sorted(str(key) for key in result if key not in allowed_fields)
         if extra_fields:
             joined = ", ".join(extra_fields)

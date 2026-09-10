@@ -12,8 +12,8 @@ For an operating mechanism declare its complete cycle as
 and driven outputs. Assembly-only paths keep their existing checks and need
 no operating animation. Do not omit the coupled cycle to avoid this contract.
 
-Use the bundled constructor to export 8–48 ordered state STLs directly from
-the assembly and the same pose table used by the motion checker:
+Use the bundled constructor to build 8–48 ordered states directly from the
+assembly and the same pose table used by the motion checker:
 
 ```bash
 "$WORKSHOP_PYTHON" .agents/skills/cad/scripts/motion_presentation.py <cad-project> --view iso

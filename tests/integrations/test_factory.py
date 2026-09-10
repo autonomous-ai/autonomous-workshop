@@ -17,7 +17,7 @@ from workshop.errors import (
     ReceiptError,
     StateConflict,
 )
-from tests.make.step_documents import step_document
+from tests.make.step_documents import step_document, step_solid_document
 from workshop.integrations.factory import (
     FACTORY_COVER_RENDER_PATH,
     DEFAULT_FACTORY_API,
@@ -41,37 +41,7 @@ from workshop.wish import Wish
 
 OBSERVED = "2026-08-26T00:00:00+00:00"
 PDF_MANUAL = b"%PDF-1.7\n%\xff\xfe exact binary manual\n%%EOF\n"
-TETRA_STL = b"""solid workshop
-  facet normal 0 0 0
-    outer loop
-      vertex 0 0 0
-      vertex 0 1 0
-      vertex 1 0 0
-    endloop
-  endfacet
-  facet normal 0 0 0
-    outer loop
-      vertex 0 0 0
-      vertex 1 0 0
-      vertex 0 0 1
-    endloop
-  endfacet
-  facet normal 0 0 0
-    outer loop
-      vertex 0 0 0
-      vertex 0 0 1
-      vertex 0 1 0
-    endloop
-  endfacet
-  facet normal 0 0 0
-    outer loop
-      vertex 1 0 0
-      vertex 0 1 0
-      vertex 0 0 1
-    endloop
-  endfacet
-endsolid workshop
-"""
+TETRA_STEP = step_solid_document([("workshop", "#4c859e")])
 
 
 def canonical_json(value):
@@ -476,8 +446,7 @@ class FactoryReleaseTest(unittest.TestCase):
         (product / "project.json").write_text(
             '{"id":"verified-toy","name":"Verified Toy"}\n', encoding="utf-8"
         )
-        (product / "assembled.step").write_bytes(b"exact STEP bytes")
-        (product / "assembled.stl").write_bytes(b"solid verified\nendsolid verified\n")
+        (product / "assembled.step").write_bytes(TETRA_STEP)
         (product / "main.py").write_text(
             "def gen_step():\n    raise RuntimeError('must not execute')\n",
             encoding="utf-8",
@@ -670,7 +639,7 @@ class FactoryReleaseTest(unittest.TestCase):
             receipt.details["page_url"],
             "https://www.autonomous.ai/toys/product/verified-toy",
         )
-        self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
+        self.assertEqual(receipt.details["primary_model_path"], "assembled.step")
         self.assertEqual(
             receipt.details["factory_category_slug"],
             FACTORY_TOY_CATEGORY_SLUG,
@@ -694,7 +663,7 @@ class FactoryReleaseTest(unittest.TestCase):
         )
         with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
             names = set(archive.namelist())
-            self.assertIn("assembled.stl", names)
+            self.assertIn("assembled.step", names)
             self.assertIn("workshop-release-page.json", names)
             self.assertIn("workshop-product-facts.json", names)
             self.assertIn("MANUAL.md", names)
@@ -721,7 +690,7 @@ class FactoryReleaseTest(unittest.TestCase):
                 (self.made.artifact_root / "project.json").read_bytes(),
             )
             facts = json.loads(archive.read("workshop-product-facts.json"))
-            self.assertEqual(facts["primary_model"]["path"], "assembled.stl")
+            self.assertEqual(facts["primary_model"]["path"], "assembled.step")
             self.assertEqual(
                 archive.read("workshop-release-page.json"),
                 canonical_json(self.page),
@@ -797,8 +766,8 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertEqual(archive.read("MANUAL.pdf"), manual)
             self.assertIn("assembled.step", archive.namelist())
             self.assertEqual(
-                archive.read("assembled.stl"),
-                (self.made.artifact_root / "assembled.stl").read_bytes(),
+                archive.read("assembled.step"),
+                (self.made.artifact_root / "assembled.step").read_bytes(),
             )
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(
@@ -810,7 +779,7 @@ class FactoryReleaseTest(unittest.TestCase):
             )
             self.assertEqual(
                 facts["primary_model"]["path"],
-                "assembled.stl",
+                "assembled.step",
             )
             self.assertEqual(facts["release"], self.page)
 
@@ -973,7 +942,7 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertTrue(receipt.is_verified_draft)
         self.assertEqual(transport.selected_roots, [""])
         files = transport.snapshots["history-1"]
-        self.assertIn("assembled.stl", files)
+        self.assertIn("assembled.step", files)
         self.assertIn("README.md", files)
         self.assertIn("workshop-release-page.json", files)
         facts = json.loads(files["workshop-product-facts.json"])
@@ -995,7 +964,7 @@ class FactoryReleaseTest(unittest.TestCase):
         mapping = {entry["source_path"]: entry["archive_path"] for entry in facts["make_artifacts"]["files"]}
         self.assertEqual(mapping["000/earlier.py"], "_workshop/make/000/earlier.py")
         self.assertEqual(mapping["000_workshop_import_root.py"], "_workshop/make/000_workshop_import_root.py")
-        self.assertEqual(mapping["assembled.stl"], "assembled.stl")
+        self.assertEqual(mapping["assembled.step"], "assembled.step")
         for source, archive in mapping.items():
             self.assertEqual(files[archive], (product / source).read_bytes())
 
@@ -1171,10 +1140,7 @@ class FactoryReleaseTest(unittest.TestCase):
         (product / "product.json").write_bytes(
             canonical_json(self.made.product) + b"\n"
         )
-        (product / "assembled.stl").write_bytes(TETRA_STL)
-        (product / "assembled.step").write_bytes(b"alternate STEP representation")
-        (product / "assembled.3mf").write_bytes(b"alternate 3MF representation")
-        (product / "assembled.gcode.3mf").write_bytes(b"slicer project representation")
+        (product / "assembled.step").write_bytes(TETRA_STEP)
         self.assertFalse((product / "project.json").exists())
 
         self.made = Made.from_root(product, self.made.product)
@@ -1191,7 +1157,7 @@ class FactoryReleaseTest(unittest.TestCase):
         receipt = self.writer(transport)(self.context, self.release, self.manifest)
 
         self.assertTrue(receipt.is_verified_draft)
-        self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
+        self.assertEqual(receipt.details["primary_model_path"], "assembled.step")
         import_call = next(
             call for call in transport.calls if call[1].endswith("/designs/import")
         )
@@ -1199,22 +1165,14 @@ class FactoryReleaseTest(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
             names = set(archive.namelist())
             self.assertIn("product.json", names)
-            self.assertIn("assembled.stl", names)
+            self.assertIn("assembled.step", names)
             counted_geometry = sorted(
                 name
                 for name in names
                 if PurePosixPath(name).suffix.casefold()
-                in {".stl", ".step", ".stp", ".3mf", ".obj", ".glb", ".gltf"}
+                in {".step", ".stp"}
             )
-            self.assertEqual(
-                counted_geometry,
-                [
-                    "assembled.3mf",
-                    "assembled.gcode.3mf",
-                    "assembled.step",
-                    "assembled.stl",
-                ],
-            )
+            self.assertEqual(counted_geometry, ["assembled.step"])
             self.assertFalse((product / "project.json").exists())
             self.assertEqual(
                 json.loads(archive.read("project.json")),
@@ -1335,7 +1293,7 @@ class FactoryReleaseTest(unittest.TestCase):
 
     def test_generator_primary_and_complete_make_tree_are_included(self):
         product = self.made.artifact_root
-        (product / "assembled.stl").unlink()
+        (product / "assembled.step").unlink()
         self.made = Made.from_root(product, self.made.product)
         self.context = ReleaseContext(self.made)
         release_facts_path = self.release / "product.json"
@@ -1357,7 +1315,7 @@ class FactoryReleaseTest(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
             names = set(archive.namelist())
             self.assertIn("main.py", names)
-            self.assertIn("assembled.step", names)
+            self.assertNotIn("assembled.step", names)
             self.assertIn("unrelated.py", names)
             self.assertIn("page.json", names)
             self.assertIn("review.json", names)
@@ -1377,7 +1335,7 @@ class FactoryReleaseTest(unittest.TestCase):
         buffer = io.BytesIO()
         manual = b"# Exact Manual\n"
         with zipfile.ZipFile(buffer, "w") as archive:
-            archive.writestr("assembled.stl", primary)
+            archive.writestr("assembled.step", primary)
             archive.writestr("MANUAL.md", manual)
             archive.writestr(
                 "workshop-release-page.json", canonical_json(self.page)
@@ -1387,8 +1345,8 @@ class FactoryReleaseTest(unittest.TestCase):
                 json.dumps(
                     {
                         "primary_model": {
-                            "kind": "mesh",
-                            "path": "assembled.stl",
+                            "kind": "solid",
+                            "path": "assembled.step",
                             "sha256": hashlib.sha256(primary).hexdigest(),
                         },
                         "manual": {
@@ -1415,8 +1373,8 @@ class FactoryReleaseTest(unittest.TestCase):
 
     def test_multipart_import_preserves_safe_underscore_occurrence_names(self):
         product = self.made.artifact_root
-        (product / "assembled.stl").write_bytes(TETRA_STL)
-        (product / "stone_rook_a1.stl").write_bytes(TETRA_STL)
+        (product / "assembled.step").write_bytes(TETRA_STEP)
+        (product / "stone_rook_a1.step").write_bytes(TETRA_STEP)
         (product / "assembled.step.json").write_text(
             json.dumps(
                 {
@@ -1424,7 +1382,7 @@ class FactoryReleaseTest(unittest.TestCase):
                     "entryKind": "assembly",
                     "primaryPose": "assembled",
                     "parts": [
-                        {"name": "stone_rook_a1", "stlPath": "stone_rook_a1.stl"}
+                        {"name": "stone_rook_a1", "stepPath": "stone_rook_a1.step"}
                     ],
                 },
                 sort_keys=True,
@@ -1452,11 +1410,11 @@ class FactoryReleaseTest(unittest.TestCase):
         parts = multipart_parts(import_call[2], import_call[3])
         with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
             names = set(archive.namelist())
-            occurrence_path = "assembled_parts/stone_rook_a1.stl"
+            occurrence_path = "assembled_parts/stone_rook_a1.step"
             self.assertIn(occurrence_path, names)
             sidecar = json.loads(archive.read("assembled.step.json"))
             self.assertEqual(sidecar["parts"][0]["name"], "stone_rook_a1")
-            self.assertEqual(sidecar["parts"][0]["stlPath"], occurrence_path)
+            self.assertEqual(sidecar["parts"][0]["stepPath"], occurrence_path)
             project = json.loads(archive.read("project.json"))
             self.assertEqual(
                 project["parts"], [part["name"] for part in sidecar["parts"]]
@@ -1467,11 +1425,12 @@ class FactoryReleaseTest(unittest.TestCase):
         """Seal an occurrence family whose STEP carries one colour per part."""
 
         product = self.made.artifact_root
-        (product / "assembled.stl").write_bytes(TETRA_STL)
-        (product / "owl.stl").write_bytes(TETRA_STL)
-        (product / "chick.stl").write_bytes(TETRA_STL)
+        (product / "owl.step").write_bytes(step_solid_document([("owl", "#d8dee9")]))
+        (product / "chick.step").write_bytes(
+            step_solid_document([("chick", "#d89b3c")], start_index=1)
+        )
         (product / "assembled.step").write_bytes(
-            step_document([("owl", "#d8dee9"), ("chick", "#d89b3c")])
+            step_solid_document([("owl", "#d8dee9"), ("chick", "#d89b3c")])
         )
         (product / "assembled.step.json").write_bytes(
             canonical_json(
@@ -1480,8 +1439,8 @@ class FactoryReleaseTest(unittest.TestCase):
                     "entryKind": "assembly",
                     "primaryPose": "assembled",
                     "parts": [
-                        {"name": "owl", "stlPath": "owl.stl"},
-                        {"name": "chick", "stlPath": "chick.stl"},
+                        {"name": "owl", "stepPath": "owl.step"},
+                        {"name": "chick", "stepPath": "chick.step"},
                     ],
                 }
             )
@@ -1493,11 +1452,11 @@ class FactoryReleaseTest(unittest.TestCase):
         self._seal_two_coloured_parts()
         transport = FactoryTransport(
             assembly_parts=[
-                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
+                {"order": 0, "mesh_name": "owl", "part": "owl.step", "color": None},
                 {
                     "order": 1,
                     "mesh_name": "chick",
-                    "part": "chick.stl",
+                    "part": "chick.step",
                     "color": "#111111",
                 },
             ]
@@ -1510,8 +1469,13 @@ class FactoryReleaseTest(unittest.TestCase):
             transport.part_color_writes,
             [
                 [
-                    {"order": 0, "color": "#d8dee9"},
-                    {"order": 1, "color": "#d89b3c"},
+                    {"order": 0, "part": "owl.step", "mesh_name": "owl", "color": "#d8dee9"},
+                    {
+                        "order": 1,
+                        "part": "chick.step",
+                        "mesh_name": "chick",
+                        "color": "#d89b3c",
+                    },
                 ]
             ],
         )
@@ -1530,11 +1494,11 @@ class FactoryReleaseTest(unittest.TestCase):
         self._seal_two_coloured_parts()
         transport = FactoryTransport(
             assembly_parts=[
-                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": "#D8DEE9"},
+                {"order": 0, "mesh_name": "owl", "part": "owl.step", "color": "#D8DEE9"},
                 {
                     "order": 1,
                     "mesh_name": "chick",
-                    "part": "chick.stl",
+                    "part": "chick.step",
                     "color": "#d89b3c",
                 },
             ]
@@ -1554,24 +1518,34 @@ class FactoryReleaseTest(unittest.TestCase):
                 {
                     "order": 0,
                     "mesh_name": "owl",
-                    "part": "owl.stl",
+                    "part": "owl.step",
                     "color": "#d8dee9ff",
                 },
-                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+                {"order": 1, "mesh_name": "chick", "part": "chick.step", "color": None},
             ]
         )
 
         self.writer(transport)(self.context, self.release, self.manifest)
 
         self.assertEqual(
-            transport.part_color_writes, [[{"order": 1, "color": "#d89b3c"}]]
+            transport.part_color_writes,
+            [
+                [
+                    {
+                        "order": 1,
+                        "part": "chick.step",
+                        "mesh_name": "chick",
+                        "color": "#d89b3c",
+                    }
+                ]
+            ],
         )
 
     def test_one_rendered_mesh_takes_the_single_sealed_colour(self):
         product = self.made.artifact_root
-        (product / "assembled.stl").write_bytes(TETRA_STL)
+        (product / "assembled.step").write_bytes(TETRA_STEP)
         (product / "assembled.step").write_bytes(
-            step_document([("crescent_rocker", "#7c838c")])
+            step_solid_document([("crescent_rocker", "#7c838c")])
         )
         self._reseal_product()
         transport = FactoryTransport(
@@ -1579,7 +1553,7 @@ class FactoryReleaseTest(unittest.TestCase):
                 {
                     "order": 0,
                     "mesh_name": "assembled",
-                    "part": "assembled.stl",
+                    "part": "assembled.step",
                     "color": None,
                 }
             ]
@@ -1595,13 +1569,17 @@ class FactoryReleaseTest(unittest.TestCase):
         self._seal_two_coloured_parts()
         product = self.made.artifact_root
         (product / "assembled.step").write_bytes(
-            step_document([("owl", None), ("chick", None)])
+            step_solid_document([("owl", None), ("chick", None)])
+        )
+        (product / "owl.step").write_bytes(step_solid_document([("owl", None)]))
+        (product / "chick.step").write_bytes(
+            step_solid_document([("chick", None)], start_index=1)
         )
         self._reseal_product()
         transport = FactoryTransport(
             assembly_parts=[
-                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
-                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+                {"order": 0, "mesh_name": "owl", "part": "owl.step", "color": None},
+                {"order": 1, "mesh_name": "chick", "part": "chick.step", "color": None},
             ]
         )
 
@@ -1612,6 +1590,16 @@ class FactoryReleaseTest(unittest.TestCase):
 
     def test_a_design_with_no_addressable_mesh_owes_no_colour_write(self):
         self._seal_two_coloured_parts()
+        product = self.made.artifact_root
+        # No sealed colour anywhere, so the shop is owed no colour at all.
+        (product / "assembled.step").write_bytes(
+            step_solid_document([("owl", None), ("chick", None)])
+        )
+        (product / "owl.step").write_bytes(step_solid_document([("owl", None)]))
+        (product / "chick.step").write_bytes(
+            step_solid_document([("chick", None)], start_index=1)
+        )
+        self._reseal_product()
         transport = FactoryTransport()
 
         receipt = self.writer(transport)(self.context, self.release, self.manifest)
@@ -1624,8 +1612,8 @@ class FactoryReleaseTest(unittest.TestCase):
         self._seal_two_coloured_parts()
         transport = FactoryTransport(
             assembly_parts=[
-                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
-                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+                {"order": 0, "mesh_name": "owl", "part": "owl.step", "color": None},
+                {"order": 1, "mesh_name": "chick", "part": "chick.step", "color": None},
             ],
             part_colors_status=400,
         )
@@ -1643,8 +1631,8 @@ class FactoryReleaseTest(unittest.TestCase):
         self._seal_two_coloured_parts()
         transport = FactoryTransport(
             assembly_parts=[
-                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
-                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+                {"order": 0, "mesh_name": "owl", "part": "owl.step", "color": None},
+                {"order": 1, "mesh_name": "chick", "part": "chick.step", "color": None},
             ],
             part_colors_status=503,
         )
@@ -1658,7 +1646,7 @@ class FactoryReleaseTest(unittest.TestCase):
     def test_product_specific_sidecar_is_archived_but_not_used_for_transport(self):
         product = self.made.artifact_root
         (product / "cad").mkdir()
-        (product / "cad" / "star-arm.stl").write_bytes(TETRA_STL)
+        (product / "cad" / "star-arm.step").write_bytes(TETRA_STEP)
         (product / "assembled.step.json").write_bytes(
             canonical_json(
                 {
@@ -1668,7 +1656,7 @@ class FactoryReleaseTest(unittest.TestCase):
                     "occurrences": [
                         {
                             "id": "star-arm",
-                            "part_stl": "cad/star-arm.stl",
+                            "part_stl": "cad/star-arm.step",
                             "pose": {"rotation_degrees": 0},
                         }
                     ],
@@ -1689,9 +1677,9 @@ class FactoryReleaseTest(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
             names = set(archive.namelist())
             stls = sorted(
-                name for name in names if PurePosixPath(name).suffix == ".stl"
+                name for name in names if PurePosixPath(name).suffix == ".step"
             )
-            self.assertEqual(stls, ["assembled.stl", "cad/star-arm.stl"])
+            self.assertEqual(stls, ["assembled.step", "cad/star-arm.step"])
             self.assertNotIn("assembled.step.json", names)
             self.assertIn("_workshop/make/assembled.step.json", names)
             facts = json.loads(archive.read("workshop-product-facts.json"))
@@ -1699,7 +1687,7 @@ class FactoryReleaseTest(unittest.TestCase):
 
     def test_malformed_occurrence_metadata_is_archived_without_becoming_transport(self):
         product = self.made.artifact_root
-        (product / "component.stl").write_bytes(TETRA_STL)
+        (product / "component.step").write_bytes(TETRA_STEP)
         (product / "assembled.step.json").write_bytes(
             canonical_json(
                 {
@@ -1707,7 +1695,7 @@ class FactoryReleaseTest(unittest.TestCase):
                     "entryKind": "assembly",
                     "primaryPose": "assembled",
                     "parts": [
-                        {"name": "escape", "stlPath": "../../outside.stl"}
+                        {"name": "escape", "stepPath": "../../outside.step"}
                     ],
                 }
             )
@@ -1730,49 +1718,34 @@ class FactoryReleaseTest(unittest.TestCase):
             )
             self.assertNotIn("assembled.step.json", names)
             self.assertIn("_workshop/make/assembled.step.json", names)
-            self.assertIn("component.stl", names)
+            self.assertIn("component.step", names)
             self.assertEqual(
                 sorted(
                     name
                     for name in names
-                    if PurePosixPath(name).suffix == ".stl"
+                    if PurePosixPath(name).suffix == ".step"
                 ),
-                ["assembled.stl", "component.stl"],
+                ["assembled.step", "component.step"],
             )
 
     def test_multipart_import_derives_sidecar_from_sealed_product_inventory(self):
         product = self.made.artifact_root
-        (product / "assembled.stl").write_bytes(TETRA_STL)
+        lantern = step_solid_document([("lantern", "#d8dee9")])
+        (product / "assembled.step").write_bytes(lantern)
         (product / "cad").mkdir()
-        part = product / "cad" / "part_lantern.stl"
-        part.write_bytes(TETRA_STL)
-        (product / "assembled.3mf").write_bytes(b"alternate assembly 3MF")
+        part = product / "cad" / "part_lantern.step"
+        part.write_bytes(lantern)
         (product / "play_scene.step").write_bytes(b"non-production play pose")
-        (product / "cad" / "part_lantern.step").write_bytes(
-            b"alternate part STEP"
-        )
-        (product / "cad" / "part_lantern.3mf").write_bytes(
-            b"alternate part 3MF"
-        )
-        (product / "cad" / "part_lantern.gcode.3mf").write_bytes(
-            b"slicer project 3MF"
-        )
         step_content = (product / "assembled.step").read_bytes()
         step_ref = {
             "path": "assembled.step",
             "bytes": len(step_content),
             "sha256": hashlib.sha256(step_content).hexdigest(),
         }
-        mesh_ref = {
-            "path": "assembled.stl",
-            "bytes": len(TETRA_STL),
-            "sha256": hashlib.sha256(TETRA_STL).hexdigest(),
-        }
         descriptor = {
             "schema_version": 1,
             "kind": "native-cad.assembly-descriptor",
             "assembly": step_ref,
-            "mesh": mesh_ref,
             "occurrence_count": 1,
             "occurrences": ["lantern"],
         }
@@ -1781,7 +1754,6 @@ class FactoryReleaseTest(unittest.TestCase):
         made_product = dict(self.made.product)
         made_product["cad"] = {
             "assembled_step": step_ref,
-            "assembled_stl": mesh_ref,
             "assembly_descriptor": {
                 "path": "assembled.step.json",
                 "bytes": len(descriptor_content),
@@ -1793,10 +1765,10 @@ class FactoryReleaseTest(unittest.TestCase):
                 {
                     "id": "LANTERN",
                     "quantity": 1,
-                    "stl": {
-                        "path": "cad/part_lantern.stl",
-                        "bytes": len(TETRA_STL),
-                        "sha256": hashlib.sha256(TETRA_STL).hexdigest(),
+                    "step": {
+                        "path": "cad/part_lantern.step",
+                        "bytes": len(lantern),
+                        "sha256": hashlib.sha256(lantern).hexdigest(),
                     },
                 }
             ],
@@ -1823,27 +1795,20 @@ class FactoryReleaseTest(unittest.TestCase):
         parts = multipart_parts(import_call[2], import_call[3])
         with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
             names = set(archive.namelist())
-            occurrence_path = "assembled_parts/lantern.stl"
+            occurrence_path = "assembled_parts/lantern.step"
             self.assertIn(occurrence_path, names)
-            self.assertIn("cad/part_lantern.stl", names)
+            self.assertIn("cad/part_lantern.step", names)
             counted_geometry = sorted(
                 name
                 for name in names
-                if PurePosixPath(name).suffix.casefold()
-                in {".stl", ".step", ".stp", ".3mf", ".obj", ".glb", ".gltf"}
+                if PurePosixPath(name).suffix.casefold() in {".step", ".stp"}
             )
             self.assertEqual(
                 counted_geometry,
                 [
-                    "_workshop/make/assembled.step",
-                    "assembled.3mf",
                     "assembled.step",
-                    "assembled.stl",
                     occurrence_path,
-                    "cad/part_lantern.3mf",
-                    "cad/part_lantern.gcode.3mf",
                     "cad/part_lantern.step",
-                    "cad/part_lantern.stl",
                     "play_scene.step",
                 ],
             )
@@ -1855,7 +1820,7 @@ class FactoryReleaseTest(unittest.TestCase):
                     "entryKind": "assembly",
                     "primaryPose": "assembled",
                     "parts": [
-                        {"name": "lantern", "stlPath": occurrence_path, "index": 0}
+                        {"name": "lantern", "stepPath": occurrence_path, "index": 0}
                     ],
                 },
             )
@@ -1865,7 +1830,7 @@ class FactoryReleaseTest(unittest.TestCase):
                 1,
             )
             self.assertEqual(
-                facts["factory_assembly"]["production_stls"][0]["path"],
+                facts["factory_assembly"]["production_steps"][0]["path"],
                 occurrence_path,
             )
 
@@ -2431,7 +2396,7 @@ def _sidecar_occurrence_names(product_root):
 
 
 def perfect_kernel(product_root):
-    """Fake CAD kernel: every viewer group of assembled.stl is one occurrence.
+    """Fake CAD kernel: every viewer group of assembled.step is one occurrence.
 
     Names come from the sealed descriptor in slide order, so a fixture whose
     assembled mesh is the union of its parts poses exactly like the kernel.
@@ -2440,8 +2405,14 @@ def perfect_kernel(product_root):
     def provider(step_bytes):
         from workshop.make.cad.fe_parts import PosedOccurrence, fe_part_groups, read_stl_triangles
 
+        from workshop.release.renders import step_triangle_mesh
+
         names = _sidecar_occurrence_names(product_root)
-        groups = fe_part_groups(read_stl_triangles((product_root / "assembled.stl").read_bytes()))
+        groups = fe_part_groups(
+            read_stl_triangles(
+                step_triangle_mesh((product_root / "assembled.step").read_bytes())
+            )
+        )
         return tuple(
             PosedOccurrence(
                 name=name, bbox_min=group.bbox_min, bbox_max=group.bbox_max, points=group.sample
@@ -2463,17 +2434,22 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
 
     def _seal_package(self, *, parts=True, step_colours=True, package_colours=True):
         product = self.made.artifact_root
-        (product / "assembled.stl").write_bytes(TWO_SHELL_STL)
         if parts:
             (product / "parts").mkdir(exist_ok=True)
-            (product / "parts/owl.stl").write_bytes(
-                ("solid owl\n" + _closed_tetra(0.0) + "endsolid owl\n").encode("ascii")
+            # Part STEPs carry the same styling decision as the assembly: a
+            # sealed part colour would otherwise outvote the package's.
+            (product / "parts/owl.step").write_bytes(
+                step_solid_document(
+                    [("owl", "#d8dee9" if step_colours else None)]
+                )
             )
-            (product / "parts/chick.stl").write_bytes(
-                ("solid chick\n" + _closed_tetra(5.0) + "endsolid chick\n").encode("ascii")
+            (product / "parts/chick.step").write_bytes(
+                step_solid_document(
+                    [("chick", "#d89b3c" if step_colours else None)], start_index=1
+                )
             )
         (product / "assembled.step").write_bytes(
-            step_document(
+            step_solid_document(
                 [("owl", "#d8dee9"), ("chick", "#d89b3c")]
                 if step_colours
                 else [("owl", None), ("chick", None)]
@@ -2503,8 +2479,8 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
         self._seal_package()
         transport = FactoryTransport(
             assembly_parts=[
-                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
-                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+                {"order": 0, "mesh_name": "owl", "part": "owl.step", "color": None},
+                {"order": 1, "mesh_name": "chick", "part": "chick.step", "color": None},
             ]
         )
 
@@ -2513,17 +2489,17 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
         self.assertTrue(receipt.is_verified_draft)
         with self._import_archive(transport) as archive:
             names = set(archive.namelist())
-            self.assertIn("assembled_parts/owl.stl", names)
-            self.assertIn("assembled_parts/chick.stl", names)
+            self.assertIn("assembled_parts/owl.step", names)
+            self.assertIn("assembled_parts/chick.step", names)
             self.assertIn("assembled.step", names)
             # The complete Make tree ships beside the validated family.
-            self.assertIn("parts/owl.stl", names)
+            self.assertIn("parts/owl.step", names)
             sidecar = json.loads(archive.read("assembled.step.json"))
             self.assertEqual(sidecar["schemaVersion"], 1)
             self.assertEqual(sidecar["primaryPose"], "assembled")
             self.assertEqual(
-                [(item["name"], item["stlPath"], item["index"]) for item in sidecar["parts"]],
-                [("owl", "assembled_parts/owl.stl", 0), ("chick", "assembled_parts/chick.stl", 1)],
+                [(item["name"], item["stepPath"], item["index"]) for item in sidecar["parts"]],
+                [("owl", "assembled_parts/owl.step", 0), ("chick", "assembled_parts/chick.step", 1)],
             )
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(facts["factory_assembly"]["occurrence_count"], 2)
@@ -2535,8 +2511,8 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
             transport.part_color_writes,
             [
                 [
-                    {"order": 0, "part": "owl.stl", "mesh_name": "owl_sliver", "color": "#d8dee9"},
-                    {"order": 1, "part": "chick.stl", "mesh_name": "chick_sliver", "color": "#d89b3c"},
+                    {"order": 0, "part": "owl.step", "mesh_name": "owl", "color": "#d8dee9"},
+                    {"order": 1, "part": "chick.step", "mesh_name": "chick", "color": "#d89b3c"},
                 ]
             ],
         )
@@ -2550,19 +2526,19 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
         receipt = self.writer(transport)(self.context, self.release, self.manifest)
 
         with self._import_archive(transport) as archive:
-            stls = [name for name in archive.namelist() if name.endswith(".stl")]
-            self.assertEqual(stls, ["assembled.stl"])
+            stls = [name for name in archive.namelist() if name.endswith(".step")]
+            self.assertEqual(stls, ["assembled.step"])
         self.assertEqual(receipt.details["handoff_transport"], "single-mesh")
         self.assertEqual(receipt.details["occurrence_count"], 1)
-        self.assertIn("production STL", receipt.details["handoff_transport_reason"])
+        self.assertIn("production STEP", receipt.details["handoff_transport_reason"])
         self.assertIsNone(self.ledger.latest("verified-toy", "factory-part-colors"))
 
     def test_package_colours_apply_when_the_step_is_unstyled(self):
         self._seal_package(step_colours=False)
         transport = FactoryTransport(
             assembly_parts=[
-                {"order": 0, "mesh_name": "owl", "part": "owl.stl", "color": None},
-                {"order": 1, "mesh_name": "chick", "part": "chick.stl", "color": None},
+                {"order": 0, "mesh_name": "owl", "part": "owl.step", "color": None},
+                {"order": 1, "mesh_name": "chick", "part": "chick.step", "color": None},
             ]
         )
 
@@ -2572,8 +2548,8 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
             transport.part_color_writes,
             [
                 [
-                    {"order": 0, "part": "owl.stl", "mesh_name": "owl_sliver", "color": "#4d859e"},
-                    {"order": 1, "part": "chick.stl", "mesh_name": "chick_sliver", "color": "#d1822e"},
+                    {"order": 0, "part": "owl.step", "mesh_name": "owl", "color": "#4d859e"},
+                    {"order": 1, "part": "chick.step", "mesh_name": "chick", "color": "#d1822e"},
                 ]
             ],
         )
@@ -2588,7 +2564,7 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
         self.assertEqual(len(transport.part_color_writes), 1)
         self.assertEqual(
             [(p["order"], p["part"], p["color"]) for p in transport.assembly_parts],
-            [(0, "owl.stl", "#d8dee9"), (1, "chick.stl", "#d89b3c")],
+            [(0, "owl.step", "#d8dee9"), (1, "chick.step", "#d89b3c")],
         )
 
     def test_a_package_the_kernel_cannot_pose_degrades_visibly(self):
@@ -2609,7 +2585,7 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
 
     def test_a_single_occurrence_package_is_the_root_mesh(self):
         product = self.made.artifact_root
-        (product / "assembled.stl").write_bytes(TETRA_STL)
+        (product / "assembled.step").write_bytes(TETRA_STEP)
         (product / "assembled.step.json").write_bytes(
             canonical_json(assembly_package_document([("owl", [0.3, 0.52, 0.62, 1.0])]))
             + b"\n"
@@ -2617,7 +2593,7 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
         self._reseal_product()
         transport = FactoryTransport(
             assembly_parts=[
-                {"order": 0, "mesh_name": "assembled", "part": "assembled.stl", "color": None}
+                {"order": 0, "mesh_name": "assembled", "part": "assembled.step", "color": None}
             ]
         )
 
@@ -2625,7 +2601,7 @@ class AssemblyPackageHandoffTest(unittest.TestCase):
 
         self.assertEqual(receipt.details["handoff_transport"], "single-mesh")
         self.assertNotIn("handoff_transport_reason", receipt.details)
-        self.assertEqual(transport.part_color_writes, [[{"order": 0, "color": "#4d859e"}]])
+        self.assertEqual(transport.part_color_writes, [[{"order": 0, "color": "#4c859e"}]])
 
 
 class HostHandoffFilesTest(unittest.TestCase):
