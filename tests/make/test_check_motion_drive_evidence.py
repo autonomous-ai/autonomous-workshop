@@ -151,7 +151,7 @@ class DriveEvidenceContract:
                 with self.subTest(value=value, expect=expect):
                     parts, condition = self.fixture({'input': 0, 'output': 1}, {'output'})
                     condition['expect'] = expect
-                    with patch.dict(self.globals, surface_distance=lambda a, b: value):
+                    with patch.dict(self.globals, surface_distance=lambda a, b, **_: value):
                         result = self.run_pair(parts, condition)
                     self.assertEqual(result['status'], 'inconclusive', result)
 
@@ -187,7 +187,7 @@ class NumericDriveEvidenceTests(DriveEvidenceContract, unittest.TestCase):
 
         self.globals.update(
             overlap_volume=overlap,
-            surface_distance=lambda a, b: max(0., abs(a.center - b.center) - (a.size + b.size) / 2),
+            surface_distance=lambda a, b, **_: max(0., abs(a.center - b.center) - (a.size + b.size) / 2),
             resolve_parts=lambda names, parts, field: [
                 (name, parts[name]) for name in ([names] if isinstance(names, str) else names)],
             _pose_table=pose_table, _reach=lambda shape, point, direction: 0.)

@@ -84,6 +84,10 @@ Keep a Changelog and uses semantic versioning for released distributions.
   a pose only when every formulation agrees on the collision verdict, so
   accepted parts of thousands of mm3 and interpenetrating thin shells are no
   longer reported inconclusive; split verdicts still fail closed.
+- Make motion drive-evidence checks place each mover once per sample and run
+  the nominal contact query on the faces that can realize a contact, so a
+  published product's coupled cycle no longer takes minutes per condition;
+  witnesses, thresholds and fail-closed behaviour are unchanged.
 
 - Allow generated inventor commands to parse run options and positional Wish
   text in either order.

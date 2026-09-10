@@ -521,6 +521,31 @@ preserved defect. This checks documentation consistency only; it does not
 establish that a documented command reproduces the delivered geometry.
 Frozen runs keep their exact materialized tools.
 
+## Drive-evidence cost on accepted products (2026-09-10)
+
+The input-connected contact rule for driven parts made one published product's
+motion check exceed fifteen minutes (369 s for a single 120-sample coupled
+cycle; 133 s on the tree without the rule; 256 s for the whole manifest at
+publication). A profile attributed 244 s to 1,094 whole-part minimum-distance
+queries on mover pairs that collide when one is frozen but never touch in
+their nominal poses, and 70 s to deep-copying the same placements once per
+pair. Neither is part of what the rule measures.
+
+Placements are now made once per mover and sample and shared by every pair
+and both witnesses. The nominal contact query accepts a `within` tolerance:
+faces whose bounding boxes lie farther than that (plus a millimetre-scale
+margin for shape tolerance) from the other part cannot realize a closer
+point, so the extrema query runs on the near faces only. The answer stays
+exact whenever it is at most `within`, and otherwise only certifies that the
+distance exceeds it, which is all the witness uses. Without `within` the
+function is the exact whole-part distance it was.
+
+Contract tests cover single placement per mover and sample, exact contact
+through inner faces, far parts, a small gap inside overlapping bounding
+boxes, nested material with a thin gap, and invalid tolerances. The rule's
+witnesses, thresholds and fail-closed behaviour are unchanged; the cost is
+measured privately on the same product before and after.
+
 ## Consistency band at kernel precision (2026-09-10)
 
 The motion checker compared the direct intersection volume with

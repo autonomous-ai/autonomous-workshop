@@ -668,13 +668,21 @@ def _pose_table(spec: dict, steps: int, field: str):
     return place
 
 
-def surface_distance(a, b):
-    """Finite minimum distance between the actual placed solid materials."""
+def _box_gap(first, second) -> float:
+    """Euclidean gap between two bounding boxes; zero when they meet."""
+    gaps = (max(0.0, first.min.X - second.max.X, second.min.X - first.max.X),
+            max(0.0, first.min.Y - second.max.Y, second.min.Y - first.max.Y),
+            max(0.0, first.min.Z - second.max.Z, second.min.Z - first.max.Z))
+    return math.sqrt(sum(g * g for g in gaps))
+
+
+# Bounding boxes come without the shape tolerance; keep candidate faces that
+# are within this extra margin so a genuine contact is never filtered away.
+NEAR_FACE_MARGIN_MM = 1e-3
+
+
+def _extrema(a, b) -> float:
     from OCP.BRepExtrema import BRepExtrema_DistShapeShape
-    a, _ = _material(a)
-    b, _ = _material(b)
-    if not _is_valid(a) or not _is_valid(b):
-        raise ManifestError("drive contact distance has invalid geometry")
     # OCCT's shape-taking constructor performs the query immediately.
     # Calling Perform again repeats the same expensive distance search.
     measurement = BRepExtrema_DistShapeShape(a.wrapped, b.wrapped)
@@ -684,6 +692,37 @@ def surface_distance(a, b):
     if not math.isfinite(distance) or distance < 0:
         raise ManifestError("drive contact distance is not finite and nonnegative")
     return distance
+
+
+def surface_distance(a, b, within: float | None = None):
+    """Finite minimum distance between the actual placed solid materials.
+
+    With `within`, the answer is exact whenever it is at most `within`, and
+    otherwise only certifies that the distance exceeds `within`: faces whose
+    bounding boxes lie farther than that from the other part cannot realize a
+    closer point, so the expensive extrema query runs on the near faces only.
+    A whole-part query on an accepted product cost 0.22 s per sample, over a
+    thousand samples for pairs that never touch.
+    """
+    from build123d import Compound
+    a, _ = _material(a)
+    b, _ = _material(b)
+    if not _is_valid(a) or not _is_valid(b):
+        raise ManifestError("drive contact distance has invalid geometry")
+    if within is None:
+        return _extrema(a, b)
+    if not math.isfinite(within) or within < 0:
+        raise ManifestError("drive contact tolerance is not finite and nonnegative")
+    reach = within + NEAR_FACE_MARGIN_MM
+    box_a, box_b = a.bounding_box(), b.bounding_box()
+    bound = _box_gap(box_a, box_b)
+    if bound > reach:
+        return bound
+    near_a = [face for face in a.faces() if _box_gap(face.bounding_box(), box_b) <= reach]
+    near_b = [face for face in b.faces() if _box_gap(face.bounding_box(), box_a) <= reach]
+    if not near_a or not near_b:
+        return reach
+    return _extrema(Compound(near_a), Compound(near_b))
 
 
 def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
@@ -699,14 +738,24 @@ def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
     first_step = 1 if allow_seated else 0
     nominal = {}
     edges = []
+    # Every placement is a deep copy of the part; the same mover at the same
+    # sample is needed by several pairs, so place each once.
+    placements = {}
+
+    def posed(name, shape, place, step):
+        key = (name, step)
+        if key not in placements:
+            placements[key] = place(shape, step)
+        return placements[key]
+
     for target, target_shape, target_place, _ in targets:
-        frozen = target_place(target_shape, 0)
+        frozen = posed(target, target_shape, target_place, 0)
         for parent, parent_shape, parent_place, _ in placed:
             if parent == target:
                 continue
             frozen_hit = None
             for step in range(first_step, steps + 1):
-                volume = overlap_volume(parent_place(parent_shape, step), frozen)
+                volume = overlap_volume(posed(parent, parent_shape, parent_place, step), frozen)
                 if volume > overlap_tol:
                     frozen_hit = {"step": step, "overlapMm3": volume}
                     break
@@ -717,8 +766,9 @@ def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
                 nominal[pair] = None
                 for step in range(first_step, steps + 1):
                     distance = float(surface_distance(
-                        parent_place(parent_shape, step),
-                        target_place(target_shape, step)))
+                        posed(parent, parent_shape, parent_place, step),
+                        posed(target, target_shape, target_place, step),
+                        within=CONTACT_DISTANCE_MM))
                     # Keep validation at the decision boundary, before using
                     # a distance measurement as contact evidence.
                     if not math.isfinite(distance) or distance < 0:
