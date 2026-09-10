@@ -311,3 +311,20 @@ SHA-256: `b6126cc7dbb20b29cc541f102909a5f62e5be312b629e4906a5f824df0afd02e`.
 Acceptance log: `/private/tmp/workshop-mixed-material-final-e39df106-acceptance.log`.
 The earlier clean-PyPI-download limitation remains; this successful test used
 local dependencies without global installation changes.
+
+### Instruction clarification: hidden installed power components
+
+The generic power skill's validation-only option conflicted with mixed Make's
+complete assembly/BOM. Clarified that mixed Spark uses existing
+`cad.mode: assembly` / `rendered: true` for installed electrical components,
+including sourced approximate geometry; natural occlusion is fine. Separate
+clearance and service-space volumes remain private measurement references.
+This changes instructions only, preserving standalone/frozen behavior and all
+existing gates. It adds no power-to-BOM identity mapping.
+
+Atlas's current CAD power manifest already declares all seven carried
+electrical components in assembly mode; Cloudline's current handoff likewise
+requires full inclusion. Their combined power integration was still pending
+when inspected. No further interruption or tool refresh was needed for this
+clarification. All 16 registry checks, both skill validators and the actual
+agent byte scan across 157 registered Make files passed.

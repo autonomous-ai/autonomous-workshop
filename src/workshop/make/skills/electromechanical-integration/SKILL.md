@@ -85,17 +85,24 @@ CAD artifacts. Keep those moments explicit:
    inline component and size continuous and peak capacity against the load's
    worst case. Parallel lights get separate paths unless they are one
    manufacturer-rated module or strip.
-5. **Specify the physical handoff without polluting the product render.**
+5. **Specify the complete physical handoff.**
    Holders, hatches, channels, clips, strain relief, visible lenses, bezels and
-   diffusers are product geometry. A bought battery, hidden controller or
-   flexible wire loom may instead use
-   `cad.mode: validation_envelope`: keep each reference STEP out of the combined
-   assembly/render, but give it a `measure/mounts.json` declaration so
-   `check_mount` places the envelope into the real assembly and measures clashes
-   against the named parts. A wire envelope includes insulation diameter, bend
-   room, connector insertion/removal space and service loops; a centerline or
-   wiring diagram alone is not a collision check. Use catalog STEP where
-   available and a sourced, documented envelope when it is not. For a
+   diffusers are product geometry. **In mixed-material Spark, every installed
+   electrical component belongs in the complete assembly and internal BOM.**
+   Use `cad.mode: assembly` with `rendered: true`, including sourced approximate
+   component envelopes. Document their limits internally. Ordinary occlusion by
+   the enclosure is fine; `rendered` records assembly inclusion. A reference
+   under `ref/validation/` can still represent an installed assembly component.
+   Keep separate clearance, insertion/removal and service-space volumes private;
+   reserved empty space is not an installed BOM component.
+
+   Other standalone uses retain `cad.mode: validation_envelope` with
+   `rendered: false` for hidden reference components excluded from the combined
+   assembly/render. Both modes need a `measure/mounts.json` declaration for
+   `check_mount` to measure the source STEP against named parts. Model insulated
+   wire routes and service loops, and check bend room and connector access;
+   a centerline or wiring diagram alone is not a collision check. Use catalog
+   STEP where available and a sourced, documented envelope when it is not. For a
    removable lamp, prefer a purchased socket; CAD seats that socket rather than
    recreating uncertain contact geometry. A justified printed receiver still
    uses bought contacts, derives its mate through `cadfits`, declares the full

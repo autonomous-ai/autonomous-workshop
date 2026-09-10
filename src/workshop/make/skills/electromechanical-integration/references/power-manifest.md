@@ -229,6 +229,10 @@ otherwise a light can accidentally claim the motor's valid seat.
 
 ## Legacy schema version 1 example
 
+This standalone example retains validation-only components. For mixed-material
+Spark, apply the assembly-inclusion policy below instead of copying those
+`cad.mode` and `rendered` values.
+
 ```json
 {
   "schema_version": 1,
@@ -421,9 +425,10 @@ otherwise a light can accidentally claim the motor's valid seat.
 - Every carried component, including each wire envelope, has a `mount_id` found
   in `measure/mounts.json` and a `cad` declaration. `cad.mode` is `assembly`
   with `rendered: true`, or `validation_envelope` with `rendered: false` and a
-  project-local STEP/STP `source`. Validation-only sources stay out of the
-  combined assembly and render; `check_mount` inserts them only for clash and
-  clearance measurement.
+  project-local STEP/STP `source`. In standalone validation-only use, sources
+  stay out of the combined assembly and render; `check_mount` inserts them only
+  for clash and clearance measurement. Mixed-material Spark uses assembly mode
+  for every installed component, as described below.
 - A path names exactly one `actuator` or `load`, begins and ends at its source,
   and includes that target. Its source voltage interval must fit within every
   non-wire component's declared interval.
@@ -447,3 +452,34 @@ mount record. A catalog miss may use a documented envelope component, but it
 still needs a project-local mount declaration and must remain labeled as an
 envelope rather than a verified vendor shape. The product spec must record the
 same render policy and name `check_mount` as its collision gate.
+
+## Mixed-material Spark assembly inclusion
+
+Every installed electrical component, including hidden cells, protection and
+wiring, belongs in the complete assembly and internal manufacturing BOM. Use
+the existing assembly representation even when geometry is a sourced,
+documented approximation:
+
+```json
+{
+  "cad": {
+    "mode": "assembly",
+    "rendered": true,
+    "source": "ref/validation/battery-envelope.step"
+  }
+}
+```
+
+`rendered: true` means the installed shape participates in the assembly; the
+enclosure may naturally hide it in a beauty view. The `ref/validation/` path
+does not force exclusion. Preserve the source evidence, dimensions and
+approximation limits internally, and keep the source bound to its mount.
+
+Separate clearance, service-space and insertion/removal volumes are private
+measurement geometry representing reserved empty space. They do not become
+installed material or BOM components and do not replace the installed shape.
+Physical insulated wire routes and installed service loops remain components.
+
+This clarifies authoring for mixed-material Spark using existing schema fields.
+Standalone validation-only use and frozen run instructions retain their prior
+behavior. It adds no schema, gate or power-to-BOM identity mapping.

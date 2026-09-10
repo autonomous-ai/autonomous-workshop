@@ -13,7 +13,7 @@
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
     "electromechanical-integration": {
-      "sha256": "414343a556a6f5eaddaee9da025aeab2c3e2785d7b0c9867e5a542ce8c72a5f5",
+      "sha256": "cdb71d3d31377d785d6d3a49b572ebb0cea870c442ffbb171dfa7703a1ed3db6",
       "source_commit": "facbc582ceee2b73e655711afa112e9bf10d7592",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
@@ -28,7 +28,7 @@
       "source_url": "https://github.com/autonomous-ai/autonomous-workshop"
     },
     "mixed-materials": {
-      "sha256": "8a4d1277210976739a7fdd03dcad037f0be4233af0b2dc74f67167722667eabc",
+      "sha256": "5205bf4d033b6c0dc05d7307620abfa955c575593ee56a7495e45380c0f23158",
       "source_url": "https://github.com/autonomous-ai/autonomous-workshop"
     },
     "step-parts": {
