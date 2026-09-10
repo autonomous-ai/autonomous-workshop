@@ -1,6 +1,6 @@
 ---
 name: make-round
-description: Run each Make repair round with deterministic CAD checks and native visual inspection. Render the model, inspect placement and proportions, and record visual errors alongside likeness, build and motion results. Does not replace independent blind review or final verification.
+description: Run isolated component or assembled-object Make repair rounds with deterministic CAD checks and native visual inspection. Render the selected scope, inspect form and proportions, and record visual errors alongside likeness, build and motion results. Does not replace independent blind review or final verification.
 ---
 
 # Make round
@@ -32,9 +32,14 @@ calls were reassembling by hand.
   unresolved visibility as inconclusive rather than claiming a pass.
 - `make_round` never lowers a threshold, never edits source, and never
   replaces the final `verify_project` run the Make gate requires. It writes
-  round reports under `<project>/measure/rounds/` and the reusable state at
+  round reports under `<project>/measure/rounds/`, component histories under
+  `<project>/measure/component-rounds/<role>/`, and the reusable state at
   `<project>/measure/make-round-state.json`.
   CAD tools may update generated caches.
+- Spark uses two levels. Pass one isolated round history for every component,
+  then begin assembled-object rounds. Component feedback cannot stand in for
+  assembly feedback, and an assembly repair that changes component geometry
+  invalidates that component's prior pass.
 
 ## Usage
 
@@ -44,6 +49,27 @@ calls were reassembling by hand.
     [--min 0.90] [--nozzle 0.4] [--overhang-angle 45] \
     [--all-parts] [--no-motion] [--json]
 ```
+
+For a Spark component, select its own generator. This builds and renders only
+that component, keeps its evidence under
+`measure/component-rounds/<role>/`, skips project-level motion, and does not
+implicitly apply whole-object reference images:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+    --component part_<role>.step.py [--ref detail=<component-reference.png>]
+```
+
+After every component passes, start the assembled-object loop with:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+    --require-component-passes [--ref hero=<whole-object-reference.png>]
+```
+
+That assembly command freshly builds each component and refuses to render the
+assembly when any latest isolated round failed, is missing, or describes older
+component geometry.
 
 - `<project>/cad` is the directory holding the generator sources: exactly one
   entry `<name>.step.py` and any number of `part_<role>.step.py`.
@@ -102,7 +128,7 @@ Then run:
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
-    --record-visual <feedback.json>
+    [--component part_<role>.step.py] --record-visual <feedback.json>
 ```
 
 This updates the same round's summary with detected visual errors. It rejects
@@ -134,7 +160,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
 | likeness | `"$WORKSHOP_PYTHON" $I/render_views.py <entry>.step.py --match <ref.png> --label <L> --min 0.90 -o <dir> --shaded --json [--poses-from <prev poses.json>]` | `results[].iou`, `.ok`, `.az/.el/.roll/.fov` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
-| inspection views | `"$WORKSHOP_PYTHON" $C/render_review <entry.step.py> --view front --view top --view iso -o <round>/visual` | exact shaded PNGs for native Manager inspection |
+| inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view front --view top --view iso -o <round>/visual` | exact shaded PNGs for native Manager inspection of one component or the assembly |
 | final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit [--image-derived --likeness-ref L=PATH ...] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
 | motion sheet | `"$WORKSHOP_PYTHON" $C/motion_presentation.py` (see the cad skill) | presentation only, not a gate |
 

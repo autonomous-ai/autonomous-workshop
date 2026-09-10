@@ -382,6 +382,12 @@ repair-and-rereview cycles. Python performs no visual judgment or model calls.
   `cad` and `image-to-cad` tools without changing them; a resync of the
   upstream skills does not touch it.
 
+Spark component-first extension (2026-09-10, ADR 0063): `--component` gives
+each `part_<role>.step.py` an isolated round history and visual packet;
+`--require-component-passes` freshly builds every part and prevents assembly
+review until all current component STEP bytes have passing isolated evidence.
+The native Manager still supplies the visual judgment. Forge and Quest keep
+their prior whole-product round sequence.
 
 ## Local audit dependency transport (2026-09-08)
 

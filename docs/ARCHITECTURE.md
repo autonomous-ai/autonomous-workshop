@@ -10,8 +10,9 @@ of Workshop time, turn, retry or lifecycle-round spending caps (ADR 0049).
 Make keeps its own visual feedback, engineering checks and four-review policy
 (ADR 0060). New Spark runs select the inventor in Workshop setup, then Make;
 host-only Publish transfers Make's existing bytes without a duplicate CAD
-rebuild, new PDF or native Release turn (ADR 0061). Frozen older tools retain
-their own Make rules. The economics clocks described below are historical
+rebuild, new PDF or native Release turn (ADR 0061). New Spark Make baselines
+build and pass each component separately before assembly review (ADR 0062).
+Frozen older tools retain their own Make rules. The economics clocks described below are historical
 profiles, not execution limits for token-budget runs.
 
 ## Product scope
@@ -101,6 +102,12 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
   defects or Invent for concept defects.
 - **Spark Release** is host-only Publish of Make's existing files and metadata
   anchor, without new manual authoring or another native turn.
+- **Spark Make baseline** is component-first for newly materialized runs. Each
+  distinct physical component is authored in its own `part_<role>.step.py` and
+  receives isolated numeric plus native visual repair rounds. Only current
+  passing component meshes unlock the combined-object make round; an assembly
+  repair that changes a component sends that component through its loop again.
+  This remains Make-owned evidence and does not add a duplicate host CAD gate.
 - **Forge/Quest Release** creates and seals a self-contained printable `MANUAL.pdf`,
   revalidates the exact Made revision as full-tier print-ready CAD, and
   publishes both through Factory with authenticated public hash readback.

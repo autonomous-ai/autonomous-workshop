@@ -438,6 +438,71 @@ class MakeRoundTest(unittest.TestCase):
             self.assertIn("--nozzle", command)
             self.assertNotIn("--skip-thickness", command)
 
+
+    def test_component_rounds_are_isolated_and_gate_assembly_on_current_geometry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module = load_module()
+            (project / "toy.step.py").write_text("def gen_step(): return 'assembly'\n")
+            (project / "part_body.step.py").write_text("def gen_step(): return 'body'\n")
+            (project / "part_wheel.step.py").write_text("def gen_step(): return 'wheel'\n")
+            (project / "toy_spec.md").write_text("hero=ref/whole.png\n")
+
+            def fake_run(command, **kwargs):
+                tool = Path(command[1]).name
+                if tool == "gen":
+                    source = Path(command[2])
+                    source.with_name(source.name[:-len(".py")]).write_bytes(source.read_bytes())
+                if tool == "render_review":
+                    out = Path(command[command.index("-o") + 1])
+                    out.mkdir()
+                    for view in ("front", "top", "iso"):
+                        (out / (view + ".png")).write_bytes(view.encode())
+                return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
+
+            def run_component(name):
+                with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(
+                    module, "skills_root", return_value=project
+                ), mock.patch.object(module, "run", side_effect=fake_run):
+                    self.assertEqual(module.main([str(project), "--component", name]), 1)
+                role = name[len("part_"):-len(".step.py")]
+                summary_path = project / "measure/component-rounds" / role / "r0001/summary.json"
+                summary = json.loads(summary_path.read_text())
+                self.assertEqual(summary["scope"], "component:%s" % role)
+                self.assertEqual(summary["refs"], [])
+                feedback = project / "measure" / ("feedback-%s.json" % role)
+                feedback.write_text(json.dumps({
+                    "packet_sha256": summary["visual"]["packet_sha256"],
+                    "status": "pass",
+                    "findings": [],
+                    "observation": "The isolated component is coherent in all three views.",
+                }))
+                self.assertTrue(module.record_visual(project, feedback, component=name)["ok"])
+
+            run_component("part_body.step.py")
+            with contextlib.redirect_stderr(io.StringIO()) as stderr, mock.patch.object(
+                module, "skills_root", return_value=project
+            ), mock.patch.object(module, "run", side_effect=fake_run):
+                self.assertEqual(module.main([str(project), "--require-component-passes"]), 1)
+            self.assertIn("part_wheel.step.py has no isolated component round", stderr.getvalue())
+
+            run_component("part_wheel.step.py")
+            with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(
+                module, "skills_root", return_value=project
+            ), mock.patch.object(module, "run", side_effect=fake_run):
+                self.assertEqual(module.main([str(project), "--require-component-passes"]), 1)
+            assembly = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertEqual(assembly["scope"], "assembly")
+            self.assertEqual(assembly["visual"]["status"], "pending")
+
+            (project / "part_wheel.step.py").write_text("def gen_step(): return 'changed wheel'\n")
+            with contextlib.redirect_stderr(io.StringIO()) as stderr, mock.patch.object(
+                module, "skills_root", return_value=project
+            ), mock.patch.object(module, "run", side_effect=fake_run):
+                self.assertEqual(module.main([str(project), "--require-component-passes"]), 1)
+            self.assertIn("part_wheel.step.py changed after its component pass", stderr.getvalue())
+
+
     def test_visual_pass_cannot_unlock_full_verification_after_numeric_failure(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
@@ -453,6 +518,7 @@ class MakeRoundTest(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertEqual(result["build"]["wheel"]["verdict"], "FAIL")
 
+
     def test_skill_is_registered_with_its_tool_card(self):
         root = product_run_domain_skill_roots()["make-round"]
         text = (root / "SKILL.md").read_text(encoding="utf-8")
@@ -460,6 +526,8 @@ class MakeRoundTest(unittest.TestCase):
         for tool in ("gen", "render_views.py", "check_motion", "verify_project"):
             self.assertIn(tool, text)
         self.assertIn("at most once per round", text)
+        self.assertIn("--component", text)
+        self.assertIn("--require-component-passes", text)
         self.assertTrue(SCRIPT.is_file())
         self.assertTrue(SCRIPT.stat().st_mode & 0o100)
 

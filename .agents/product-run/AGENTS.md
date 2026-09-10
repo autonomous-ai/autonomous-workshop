@@ -189,6 +189,12 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   image-to-cad gate. Do not `cat`, `rg`, or `sed` through skill scripts to
   learn their flags, and open a full report only when a summary names a
   failure you cannot place.
+- For Spark, spend the baseline phase on the parts before the whole. Model each
+  distinct physical component in its own `part_<role>.step.py`, run and pass an
+  isolated `make_round --component part_<role>.step.py` visual review-and-fix
+  loop for every component, and only then create/review the combined entry with
+  `--require-component-passes`. If an assembly repair changes a component,
+  repeat that component's isolated loop before reviewing the assembly again.
 - Inspect each Make round's visual packet for misplaced parts, proportion and
   size mismatches, missing/extra geometry, visible intersections and form errors.
   Record concrete native observations through `make_round --record-visual` so

@@ -55,6 +55,7 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
                 project=str(project), entry=None, out=None, all_parts=False,
                 refs=[], min=0.90, nozzle=0.4, overhang_angle=45.0,
                 no_motion=False, full=False, json=True, record_visual=None,
+                component=None, require_component_passes=False,
             )
             output = io.StringIO()
             with (

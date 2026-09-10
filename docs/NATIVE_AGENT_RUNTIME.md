@@ -24,7 +24,11 @@ Workshop. It is authoritative together with
 [ADR 0044](adr/0044-scope-component-cad-network.md),
 [ADR 0045](adr/0045-own-agent-selected-dependencies.md),
 [ADR 0046](adr/0046-budgeted-spark-twenty-minute-turns.md),
-[ADR 0050](adr/0050-structured-terminal-failure-diagnostics.md), and the repository
+[ADR 0049](adr/0049-product-wide-token-budget.md),
+[ADR 0050](adr/0050-structured-terminal-failure-diagnostics.md),
+[ADR 0060](adr/0060-make-round-visual-feedback-and-three-repairs.md),
+[ADR 0061](adr/0061-spark-make-owned-verification.md),
+[ADR 0062](adr/0062-spark-component-first-make.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -56,6 +60,12 @@ isolation, exact file identity, and authenticated effect reconciliation remain
 required; they are not alternative spending budgets. Make retains its own
 frozen checks and review policy, including the current four-review allowance
 under [ADR 0060](adr/0060-make-round-visual-feedback-and-three-repairs.md).
+New Spark Make instructions also require a component-first baseline under
+[ADR 0062](adr/0062-spark-component-first-make.md): each distinct component has
+one `part_<role>.step.py` and its own passing isolated visual repair history
+before the combined entry is authored and reviewed. The make-round tool freshly
+exports the parts and refuses the requested assembly round when those passes
+are missing, failed, or stale. Forge and Quest retain their existing sequence.
 
 Spark accepts Make's output without repeating CAD verification, build-group
 validation, or production-part acceptance in the Workshop host. Make's own
@@ -630,6 +640,10 @@ their two-review bound. Make rounds also render inspection views and record
 native Manager feedback on placement, proportions and other visible defects
 through `make_round --record-visual`. Pending visual feedback cannot pass a
 round, and self-review never replaces the independent critic (ADR 0060).
+For new Spark work, `make_round --component part_<role>.step.py` keeps an
+isolated history for every component; assembled review begins with
+`--require-component-passes` only after every component's current STEP has
+passed its own round (ADR 0063).
 Before independent review, Make generates every declared entry with `--write`
 so each carries a fresh `.step`, then runs `verify_project --print-gates
 --nozzle 0.4`. The mesh, overhang and wall-thickness gates build each printable

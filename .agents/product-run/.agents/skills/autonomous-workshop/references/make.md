@@ -89,12 +89,43 @@ repair-and-rereview cycles after the initial independent review (four reviews
 total), within the run's remaining budget. Early-proof and manual-review limits
 are separate. Frozen older runs retain their materialized rules and tools.
 
-1. Write the smallest viable parametric baseline with exactly one non-part
-   combined `*.step.py` entry and one `part_<role>.step.py` per printable part.
-2. Generate explicit source targets with
+1. For Forge and Quest, write the smallest viable parametric baseline with
+   exactly one non-part combined `*.step.py` entry and one
+   `part_<role>.step.py` per printable part. For Spark, start with components
+   only: every distinct physical component, including the sole component of a
+   one-piece object, gets its own `part_<role>.step.py`. Do not author the
+   combined entry yet or hide component construction inside the assembly file.
+2. For Spark, review and repair every component separately before assembly.
+   For each `part_<role>.step.py`, run:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --component part_<role>.step.py
+   ```
+
+   Inspect its front, top, and isometric packet, record feedback with the same
+   `--component` argument plus `--record-visual`, and repair/repeat until that
+   isolated component round passes. Use explicit `--ref` only when a reference
+   depicts that component by itself; project-level likeness and motion checks
+   belong to the assembled object. A pass is component-specific evidence, not
+   permission to skip the combined review.
+3. Only after every component passes, author the non-part combined `*.step.py`
+   entry and begin assembled-object rounds with:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --require-component-passes
+   ```
+
+   This refuses assembly review when a component has no passing isolated round
+   or its freshly built STEP changed afterward. If an assembly repair
+   changes a component, rerun that component's isolated review-and-fix loop,
+   then return to the assembled object. Forge and Quest retain their existing
+   whole-product baseline sequence.
+4. Generate explicit source targets with
    `.agents/skills/cad/scripts/gen <entry.step.py> --write`, which writes the
    sibling `.step`. That STEP is the only geometry artifact.
-3. Run `make_round` after each source repair and inspect its exact visual packet.
+5. Run `make_round` after each source repair and inspect its exact visual packet.
    The Manager records misplaced, missing or extra parts, size/proportion
    mismatches, visible intersections, and form defects with image evidence and
    a concrete repair using `--record-visual`. Inspect the actual views even when
@@ -104,22 +135,22 @@ are separate. Frozen older runs retain their materialized rules and tools.
    every part that builds with `check_thickness` and `check_overhang` at the
    fixed 0.4 mm nozzle standard, so a wall or overhang defect surfaces in the
    round that caused it rather than at final verification.
-4. Render the exact STEP to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
+6. Render the exact STEP to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
    and `<cad-project>/snap/signature.png` (at least 1200×800 RGB). When the
    promise changes product geometry or state, generate distinct exact-state
    STEPs and use `render_product --state-sheet ... --state-source ...` at one
    fixed view. `--motion-sheet` rotates one unchanged shape and is only presentation
    viewpoint evidence; it can never prove a state transition. The signature
    sheet must show the promised states or interaction, not repeated angles.
-5. For a moving mechanism, also produce and review exact-state animation using
+7. For a moving mechanism, also produce and review exact-state animation using
    [motion review](motion-review-v1.md); still images cannot establish motion.
    Give one independent native critic only the images and that animation. Record its blind held
    object, volumetric form, subjects, action, and relationship. Then reveal the
    Wish and concept and check every positive and negative held-form constraint.
    Allow up to three focused repairs, each followed by regenerated preflight,
    images and an independent rereview. Stop as soon as the review passes.
-6. Run the integrated final verifier once. Do not use it as an iteration loop.
-7. Write product metadata and invoke the Make finalizer immediately.
+8. Run the integrated final verifier once. Do not use it as an iteration loop.
+9. Write product metadata and invoke the Make finalizer immediately.
 
 Complete the blind signature review and, if needed, up to three focused repairs before
 running the integrated final verifier once. The review must separately match the exact subjects,

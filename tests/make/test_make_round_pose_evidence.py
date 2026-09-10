@@ -35,6 +35,7 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
                 project=str(project), entry=None, out=None, all_parts=False,
                 refs=refs, min=0.9, nozzle=0.4, overhang_angle=45.0,
                 no_motion=True, full=False, json=True, record_visual=None,
+                component=None, require_component_passes=False,
             )
             cameras = {"hero": {"az": 10.0, "el": 5.0}, "side": {"az": 100.0, "el": 15.0}}
             control = {"replay_iou": 0.95, "search_iou": 0.95}
