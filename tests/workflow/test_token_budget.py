@@ -10,6 +10,10 @@ import pytest
 from cli.main import parser
 from workshop.errors import ContractError, StateConflict
 from workshop.runtime.codex_usage import UsageUnavailable, UsageNotReady, read_product_usage
+from workshop.workflow.budgets import (
+    LIFETIME_BUDGETS_CAPABILITY_PATH, TURN_BUDGETS_CAPABILITY_PATH,
+    LifetimeBudget, LifetimeTurnBudget,
+)
 from workshop.workflow.native_run import (
     _load_lifetime_budget, _save_lifetime_budget, _product_token_observer,
     _adopt_token_budget,
@@ -204,6 +208,77 @@ def test_cap_change_preserves_usage(tmp_path):
     loaded = _load_lifetime_budget(paths, checkpoint)
     assert loaded.limit == 2000
     assert loaded.to_dict()["used_tokens"] == 330
+
+
+def test_existing_token_cap_update_retains_new_pending_child_and_observed_usage(tmp_path):
+    paths, checkpoint = context(tmp_path)
+    budget = ProductTokenBudget(100_000_000)
+    budget.observe(observation(500))
+    _save_lifetime_budget(paths, checkpoint, budget)
+    sessions = tmp_path / "sessions"
+    write(sessions, records() + [usage(600)])
+    # An ancestry-bound child has started but has no completed token report.
+    write(sessions, records(CHILD, ROOT), CHILD)
+    recovered = read_product_usage(sessions, thread_id=ROOT, workspace=Path("/toy"))
+    pending = next(row for row in recovered["threads"] if row["thread_id"] == CHILD)
+    assert pending["status"] == "pending"
+    assert pending["tokens"] == counters(0)
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", return_value=recovered):
+        _adopt_token_budget(paths, checkpoint, 500_000_000)
+    loaded = _load_lifetime_budget(paths, checkpoint)
+    assert loaded.limit == 500_000_000
+    assert loaded.to_dict()["used_tokens"] == 660
+    assert loaded.observation == recovered
+    assert loaded.previous_budget is None
+
+
+@pytest.mark.parametrize("change", ["regression", "lost_child", "observed_child_becomes_pending"])
+def test_pending_cap_update_still_refuses_lost_or_regressing_history(tmp_path, change):
+    paths, checkpoint = context(tmp_path)
+    budget = ProductTokenBudget(100_000_000)
+    budget.observe(observation(500, child=True))
+    _save_lifetime_budget(paths, checkpoint, budget)
+    saved = (tmp_path / "native-budget.json").read_bytes()
+    if change == "regression":
+        recovered = observation(400, child=True)
+    else:
+        recovered = observation(600)
+        if change == "observed_child_becomes_pending":
+            recovered["threads"].append({"thread_id": CHILD, "status": "pending", "tokens": counters(0)})
+    recovered["threads"].append({
+        "thread_id": "01a07960-0efd-76e2-91a9-aa019980ede0",
+        "status": "pending", "tokens": counters(0),
+    })
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", return_value=recovered):
+        with pytest.raises(ContractError, match="lost prior usage"):
+            _adopt_token_budget(paths, checkpoint, 500_000_000)
+    assert (tmp_path / "native-budget.json").read_bytes() == saved
+
+
+@pytest.mark.parametrize("budget_type,capability", [
+    (LifetimeBudget, LIFETIME_BUDGETS_CAPABILITY_PATH),
+    (LifetimeTurnBudget, TURN_BUDGETS_CAPABILITY_PATH),
+])
+def test_legacy_budget_adoption_still_requires_all_threads_observed(tmp_path, budget_type, capability):
+    paths, checkpoint = context(tmp_path)
+    checkpoint.input_sha256s = {capability: "b" * 64}
+    budget = budget_type()
+    _save_lifetime_budget(paths, checkpoint, budget)
+    saved = (tmp_path / "native-budget.json").read_bytes()
+    pending = observation(500)
+    pending["threads"].append({"thread_id": CHILD, "status": "pending", "tokens": counters(0)})
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", return_value=pending):
+        with pytest.raises(ContractError, match="cannot adopt a token cap with unobserved native threads"):
+            _adopt_token_budget(paths, checkpoint, 500_000_000)
+    assert (tmp_path / "native-budget.json").read_bytes() == saved
+    observed = observation(500, child=True)
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", return_value=observed):
+        _adopt_token_budget(paths, checkpoint, 500_000_000)
+    loaded = _load_lifetime_budget(paths, checkpoint)
+    assert isinstance(loaded, ProductTokenBudget)
+    assert loaded.limit == 500_000_000
+    assert loaded.observation == observed
+    assert loaded.previous_budget == budget.to_dict()
 
 
 @pytest.mark.parametrize("saved_limit", [100_000_000, 200_000_000])

@@ -5019,7 +5019,10 @@ def _adopt_token_budget(paths, checkpoint, limit):
     if budget is not previous:
         budget.previous_budget = previous.to_dict()
     recovered = _read_product_token_usage(paths, checkpoint)
-    if any(thread.get("status") == "pending" for thread in recovered["threads"]):
+    # Legacy adoption needs complete history before replacing its accounting.
+    # An existing token ledger already retains that history; observe() permits
+    # new pending threads while refusing any lost or regressing prior usage.
+    if budget is not previous and any(thread.get("status") == "pending" for thread in recovered["threads"]):
         raise ContractError("cannot adopt a token cap with unobserved native threads")
     budget.observe(recovered)
     budget.limit = limit
