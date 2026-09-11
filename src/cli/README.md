@@ -43,7 +43,7 @@ enters browser JavaScript, a URL, run workspace, or native-agent environment.
 `workshop login <inventor-id>` explicitly repeats the same flow.
 
 `workshop start <inventor-id>` is the front door and a loop: it asks one
-Inventor to dream one brand-new idea through `workshop.daydream`, prints the
+Inventor to dream one fresh, Taste-fitting idea through `workshop.daydream`, prints the
 sealed concept card, seals it as a Wish, starts the same native session
 `workshop wish` would (Spark by default), and then dreams the next idea. It
 holds the Inventor's loop lease and checks the stop marker between steps, so

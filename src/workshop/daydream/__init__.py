@@ -1,4 +1,4 @@
-"""Daydream: one Inventor dreams one brand-new toy idea before any Wish exists."""
+"""Daydream: one Inventor dreams one distinct, Taste-fitting idea before a Wish."""
 
 from workshop.daydream.catalog import PriorWork, lint_novelty
 from workshop.daydream.contracts import (

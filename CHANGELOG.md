@@ -8,6 +8,10 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Fixed
 
+- Daydream no longer universally rejects classic games, faithful reskins, or
+  theme-led reinterpretations. Each Inventor's `TASTE.md` now defines the kind
+  of originality it owns, while the existing catalog and notebook checks still
+  reject repeats of prior Workshop work.
 - The full CAD-gate tier's command names the overhang angle beside the nozzle
   (`--print-gates --nozzle 0.4 --overhang-angle 45`), so the receipt records
   both thresholds the print-ready claim was measured against instead of
