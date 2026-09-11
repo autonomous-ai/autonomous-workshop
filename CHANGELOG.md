@@ -38,8 +38,8 @@ Keep a Changelog and uses semantic versioning for released distributions.
   for marked runs, with engineering and publication gates unchanged.
 - `workshop start`, `daydream`, and `wish` now expose `--agent`, `--model`,
   and model `--effort`; new runs freeze those choices in `MANAGER.json`.
-  Codex defaults to Sol/high and accepts the Astra alias, while Claude Code
-  defaults to Opus 5/high.
+  Codex accepts Astra and Sol aliases, while Claude Code accepts the Opus 5
+  alias.
 - The host CAD gate compares declared STEP files by their entity graph
   (`workshop.make.step_canonical`) instead of by bytes: Open CASCADE emits
   presentation-style entities in pointer order, so a faithful fresh re-export
@@ -61,6 +61,8 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Changed
 
+- New Codex runs default to Astra at medium effort. Explicit model selections
+  and the exact model frozen into existing runs are unchanged.
 - Resynced the vendored CAD skills to `autonomous-product-to-cad` `673a9fa`
   and adopted the restoration in full: **the print gates are back, fed from
   source instead of an exported mesh.** `check_mesh`, `check_overhang`,

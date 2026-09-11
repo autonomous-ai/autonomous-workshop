@@ -40,16 +40,17 @@ As of 2026-09-09, `ultra` is supported only with Codex `gpt-6-astra`
 catalog. It is passed literally, not mapped to `xhigh` or `max`. Frozen
 runtime selection and native launch validation both enforce this restriction.
 
-Codex defaults to `gpt-5.6-sol` at `medium`; `astra`, `sol`, `terra`, and `luna`
+Codex defaults to `gpt-6-astra` at `medium`; `astra`, `sol`, `terra`, and `luna`
 are friendly aliases for their exact Codex model ids. Claude Code defaults to
 `claude-opus-5` at `medium`; `opus` and `opus-5` resolve to that exact id. Grok
 Build retains its pinned `grok-4.6` model and exposes no reasoning-effort
 control until its CLI has an equivalent stable contract.
 
 On 2026-09-07 the new-selection reasoning default changed from high to medium.
-The model defaults are unchanged. Omitting `--effort` with `--model astra`
-now selects Astra/medium. Explicit overrides and frozen run selections retain
-their exact reasoning levels; this is not a migration of existing sessions.
+On 2026-09-11 the Codex model default changed from Sol to Astra. Omitting both
+`--model` and `--effort` now selects Astra/medium. Explicit overrides and frozen
+run selections retain their exact model and reasoning levels; this is not a
+migration of existing sessions.
 
 For each new product run, the host writes schema-v2 `MANAGER.json` containing
 the canonical agent, model, and reasoning effort. That file is immutable,

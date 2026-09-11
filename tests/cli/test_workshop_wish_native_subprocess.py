@@ -85,7 +85,7 @@ if not rollout_path.is_file():
     records.append({"type": "session_meta", "payload": {
         "id": thread_id, "cwd": str(run_root), "cli_version": "0.153.4"}})
 records.extend((
-    {"type": "turn_context", "payload": {"model": "gpt-5.6-sol"}},
+    {"type": "turn_context", "payload": {"model": "gpt-6-astra"}},
     {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "turn-%d" % turn}},
     {"type": "event_msg", "payload": {"type": "token_count", "info": {
         "total_token_usage": counters, "last_token_usage": counters}}},

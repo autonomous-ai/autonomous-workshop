@@ -207,7 +207,7 @@ class DaydreamNativeTest(unittest.TestCase):
         self.assertEqual(
             kwargs,
             {
-                "model": "gpt-5.6-sol",
+                "model": "gpt-6-astra",
                 "reasoning_effort": "medium",
                 "timeout_seconds": DAYDREAM_TURN_TIMEOUT_SECONDS,
             },
