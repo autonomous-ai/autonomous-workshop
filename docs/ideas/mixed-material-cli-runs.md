@@ -896,3 +896,71 @@ with the affected child's observation timestamp unchanged. No transcript was
 copied into the repository. Harbor was not resumed. Waterloo's already running
 host was not restarted or hot-patched; its subsequent ordinary CLI resume, if
 needed, will load the corrected host reader without changing the frozen Wish.
+
+### Waterloo checkpoint and tool repairs, 2026-09-11
+
+The original CLI stopped normally at **03:51:49 UTC**, preserving native root
+`01a08e54-55f5-7a93-aa25-872ffc105b3a`, Astra/medium, and the 500M allowance.
+Status reported `waiting` at Make with **32,866,528 tokens**. Its concrete need
+is an incompatible review contract: the installed final verifier requires
+schema 7 while Make's finalizer requires schema 8 and exact print-report hashes.
+
+```sh
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli status wish-20260911-023805-fe157910 --json
+```
+
+Two Make rounds produced all 11 printed families with passing thickness and
+nine with passing overhang evidence. Cavalry and commander horse geometry still
+needs local support repairs. Both whole-product visual packets timed out at
+900 seconds; no successful product preview, independent blind review or final
+integrated verification exists yet. The combined STEP on disk predates later
+source changes and must be regenerated. Rules version 1.1 has 63 passing
+digital assertions and bounded pass/termination fixtures; those do not establish
+tactical balance or human play. Customer guides/scenarios and private workshop
+drawings are drafted. Manufacturing manifest finalization and publication remain
+pending.
+
+The builder repaired the renderer's observed assembly-copy bottleneck. Both
+renderers now use the same native placement as before with detached wrappers,
+preserving every occurrence, topology, triangle and color. A synthetic 40-leaf
+case reduced Python shape copies from 2,440 to zero, placement traversal from
+0.6101 to 0.0005 seconds, and fresh-assembly loading from 1.4526 to 0.8389 seconds.
+All 10,480 triangle/color entries matched. These are synthetic measurements,
+not a successful Waterloo render.
+
+```sh
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -c 'import sys,unittest;sys.path.insert(0,"src");unittest.main(module=None)' tests.make.test_render_assembly_placement tests.make.test_render_review_occurrences tests.make.test_render_product_colors -q > /private/tmp/render-assembly-placement-tests.log 2>&1
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -c 'import sys,unittest;sys.path.insert(0,"src");unittest.main(module=None)' tests.make.test_render_assembly_placement tests.make.test_render_product_views tests.make.test_render_product_depth tests.make.test_render_product_transparency tests.make.test_render_product_state_opacity tests.make.test_render_review_depth tests.make.test_step_color -q > /private/tmp/render-assembly-regressions.log 2>&1
+PYTHONPATH="$PWD/src:/private/tmp/workshop-usage-test-deps" PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -B -m pytest -q tests/make/test_print_gate_reports.py
+```
+
+Renderer coverage passed 68 distinct tests (22 initial and 52 final, with six
+repeated after test-only cleanup). The three real print-report tests passed:
+thickness and overhang Markdown now carries the same computed `RESULT` as
+stdout, without changing a measurement, threshold or exit code. Real B-rep
+fixtures prove passing/failing verdict parity, repeated exact report bytes,
+and existing finalizer acceptance/refusal of the corresponding reports.
+
+The verifier's schema correction remains **unapplied**. Automatic approval
+review rejected the edit twice and then rejected staging a review-only patch
+artifact, classifying it as a central acceptance-gate change requiring explicit
+user approval. It specifically questioned the existing success phrase
+`prints unsupported`, which the unchanged overhang producer uses when its
+checks pass (meaning printing without supports). No rejected edit or substitute
+acceptance path was executed. Two canonical schema-8 fixtures pass the existing
+finalizer and reproduce the existing verifier's schema-7 refusal; 37 proposed
+verifier regression cases remain untracked pending approval of that correction.
+
+No Waterloo tool refresh or resume has occurred at this checkpoint. All six
+older pilots remain paused, and no physical manufacture or publication is
+claimed. The source renderer/report corrections alone do not resolve the
+remaining verifier incompatibility.
+
+The approved renderer/report source tree was resealed independently with CAD
+digest `ffef87a827ceee75071ff1d1838782986c48de51e546b444c163a7c026c96ec2`.
+The following 16 skill-registry checks passed; they do not include or imply
+approval of the still-proposed verifier correction:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" "$workshop_python" -m unittest tests.make.test_skill_registry -q
+```

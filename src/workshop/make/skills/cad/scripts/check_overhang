@@ -268,7 +268,8 @@ def main() -> int:
                   f"{r['gap']:.1f} mm of air below")
         if len(regions) > len(shown):
             print(f"        ... and {len(regions) - len(shown)} smaller region(s)")
-    print("RESULT:", "NEEDS SUPPORT" if failed else "prints unsupported")
+    result_label = "NEEDS SUPPORT" if failed else "prints unsupported"
+    print("RESULT:", result_label)
 
     if args.report:
         out = Path(args.report)
@@ -287,6 +288,7 @@ def main() -> int:
         out.write_text(
             f"# Overhang and support\n\n`{' '.join(sys.argv[1:])}`\n\n{head}\n\n"
             f"| check | status | detail |\n|---|---|---|\n{rows}\n{region_rows}\n\n"
+            f"RESULT: {result_label}\n\n"
             "Measured on the entry's tessellated solid, in the pose it is printed in. The\n"
             "fix belongs in\n"
             "the generator: reorient the part, replace a round horizontal bore with a\n"

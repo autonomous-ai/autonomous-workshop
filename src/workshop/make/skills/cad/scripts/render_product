@@ -99,25 +99,11 @@ def _build_shape(source: Path):
 
 
 def _colored_leaves(shape, parent_location=None, inherited_color=None):
-    """Yield world-placed leaves and effective colors without mutating CAD.
+    """Share exact world placement without copying assembly parent graphs."""
+    _runtime_paths()
+    from render_assembly import colored_leaves
 
-    Match render_review's assembly placement and color inheritance: tessellating
-    a parent would merge its children and erase their authored appearance.
-    """
-
-    color = getattr(shape, "color", None)
-    if color is None:
-        color = inherited_color
-    children = list(getattr(shape, "children", ()) or ())
-    if children:
-        location = shape.location
-        if parent_location is not None:
-            location = parent_location * location
-        for child in children:
-            yield from _colored_leaves(child, location, color)
-    else:
-        placed = shape if parent_location is None else shape.moved(parent_location)
-        yield placed, color
+    yield from colored_leaves(shape, parent_location, inherited_color)
 
 
 def _authored_rgb(color) -> tuple[int, int, int]:

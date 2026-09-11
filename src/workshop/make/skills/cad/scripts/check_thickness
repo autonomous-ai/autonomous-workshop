@@ -629,7 +629,8 @@ def main():
                   f"runs {r['extent']:.1f} mm, band {r['width']:.2f} mm")
         if region_count > len(shown):
             print(f"        ... and {region_count - len(shown)} smaller region(s)")
-    print("RESULT:", "WALL BELOW MINIMUM" if failed else "printable at this wall")
+    result_label = "WALL BELOW MINIMUM" if failed else "printable at this wall"
+    print("RESULT:", result_label)
 
     if args.report:
         out = Path(args.report)
@@ -653,6 +654,7 @@ def main():
         out.write_text(
             f"# Thickness and hollow\n\n`{' '.join(sys.argv[1:])}`\n\n{head}\n\n"
             f"| check | status | detail |\n|---|---|---|\n{rows}\n{region_rows}\n\n"
+            f"RESULT: {result_label}\n\n"
             "Measured on the entry's tessellated solid. The fix belongs in the\n"
             "generator --\n"
             "see `references/print-optimisation.md` and `scripts/cadprint.py`.\n",

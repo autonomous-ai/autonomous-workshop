@@ -1,5 +1,23 @@
 # Shared skill provenance
 
+## Exact assembly placement and complete print reports (2026-09-11)
+
+Both renderers share `render_assembly.py` to flatten colored occurrences using
+the same OCCT placement operation as before. Fresh detached shape wrappers keep
+each leaf's complete topology, native location, orientation and effective
+appearance without recursively copying Python assembly parents and siblings.
+No tessellation tolerance, triangle selection, raster behavior, detail or tool
+timeout changes. Synthetic regression checks compare exact triangle/color
+arrays and product/review PNG pixels, including nested transforms, bare
+compounds, inherited alpha, repeated leaves and source immutability.
+
+The thickness and overhang tools now include their already computed stdout
+`RESULT` verdict in the Markdown report too. Measurements, check statuses,
+thresholds and exit codes are unchanged. This supplies the actual result text
+that the existing signature-review contract requires in the exact cited report
+bytes. Source updates do not change frozen runs; an explicit normal host tool
+refresh is required before a stopped run uses these corrections.
+
 ## Workshop mixed-materials skill (2026-09-10)
 
 `mixed-materials` is implemented locally by Workshop, not vendored from the CAD
