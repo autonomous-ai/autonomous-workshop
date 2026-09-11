@@ -649,8 +649,9 @@ def key_parts(
 
     ``slide_order`` lists occurrence names in the sidecar's ``parts[]`` order;
     slide ``i`` is ``<name>.step``.  ``colours`` maps occurrence names to sealed
-    ``#rrggbb`` values.  ``part_meshes`` maps occurrence names to their sealed
-    production STL bytes, the shape identity that anchors ownership.
+    ``#rrggbb`` values.  ``part_meshes`` maps occurrence names to the STL bytes
+    tessellated in memory from their sealed STEP, the shape identity that
+    anchors ownership; nothing writes or ships them.
     """
 
     groups = fe_part_groups(read_stl_triangles(assembled_stl))

@@ -812,7 +812,7 @@ def _prune_derived_cad_caches(project_root: Path, label: str) -> None:
 
     ``verify_project --fresh`` deletes and rebuilds every ``__cadgen__`` tree.
     Sealing one therefore guarantees a byte-drift rejection even when all
-    stable geometry passes. Stable exported STEP/STL/GLB and render files live
+    stable geometry passes. Stable exported STEP and render files live
     outside this cache and remain in the exact product manifest.
     """
 
