@@ -5,6 +5,7 @@ import pytest
 
 from workshop.runtime.codex_usage import (
     COUNTERS, UsageUnavailable, read_product_usage, read_thread_usage,
+    supports_rollout_usage_version,
 )
 
 ROOT = "01a0795e-0efd-76e2-91a9-aa019980ede0"
@@ -40,6 +41,39 @@ def write(tmp_path, events, name=ROOT):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(json.dumps(event) + "\n" for event in events))
     return path
+
+
+@pytest.mark.parametrize(
+    "version", ["0.153.4", "0.153.5", "0.154.0", "0.154.0-alpha.1", "1.0.0"],
+)
+def test_rollout_usage_accepts_codex_01534_or_newer(version):
+    assert supports_rollout_usage_version(version)
+
+
+@pytest.mark.parametrize(
+    "version", ["0.153.3", "0.153", "v0.154.0", "current", None, True],
+)
+def test_rollout_usage_rejects_old_or_malformed_codex_versions(version):
+    assert not supports_rollout_usage_version(version)
+
+
+def test_newer_codex_rollout_is_read_with_the_same_strict_schema(tmp_path):
+    result = read_thread_usage(
+        write(tmp_path, records(version="0.154.0") + [usage()]),
+        thread_id=ROOT,
+        workspace=Path("/toy"),
+    )
+    assert result["tokens"] == counters(100)
+
+
+def test_newer_codex_rollout_with_incompatible_counters_fails_closed(tmp_path):
+    events = records(version="0.154.0") + [
+        usage(total_token_usage={**counters(), "input_tokens": "100"}),
+    ]
+    with pytest.raises(UsageUnavailable, match="invalid native token counters"):
+        read_thread_usage(
+            write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"),
+        )
 
 
 def test_counts_resumes_and_deduplicates_notifications(tmp_path):
@@ -196,7 +230,7 @@ def test_duplicate_selected_session_identity_fails_closed(
 
 
 @pytest.mark.parametrize("events", [
-    records(version="0.153.5") + [usage()],
+    records(version="0.153.3") + [usage()],
     records(cwd="/elsewhere") + [usage()],
     records() + [usage(200, last_token_usage=counters(100))],
     records() + [usage(200), usage(100)],

@@ -25,8 +25,11 @@ only when their complete observed native history can be recovered. Previous
 accounting remains preserved. Other runtimes retain their frozen policies.
 
 The trusted host reads bounded native rollout records using a compatibility
-adapter validated specifically for Codex 0.153.4. It binds root identity and
-workspace to private host state, follows native parent ancestry, deduplicates
+adapter introduced and live-validated with Codex 0.153.4. On 2026-09-10 the
+launcher gate was widened to 0.153.4 or newer; the reader continues to validate
+the exact identity, task-boundary, model, counter and record shapes, so an
+incompatible newer format fails closed instead of becoming zero usage. It binds
+root identity and workspace to private host state, follows native parent ancestry, deduplicates
 cumulative notifications and sums explicit task resets across process resumes.
 Continued tasks in the same process, including native child follow-ups, retain
 cumulative counters. At each task boundary, the adapter accepts only a reset

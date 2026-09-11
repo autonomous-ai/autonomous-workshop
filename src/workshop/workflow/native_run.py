@@ -204,7 +204,12 @@ from workshop.workflow.budgets import (
 from workshop.workflow.token_budget import (
     ProductTokenBudget, TOKEN_BUDGET_CAPABILITY_PATH, DEFAULT_PRODUCT_TOKENS, validate_limit,
 )
-from workshop.runtime.codex_usage import read_product_usage, UsageUnavailable, UsageNotReady
+from workshop.runtime.codex_usage import (
+    UsageNotReady,
+    UsageUnavailable,
+    read_product_usage,
+    supports_rollout_usage_version,
+)
 from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
@@ -9070,8 +9075,10 @@ def _run_native_session(
                     popen_factory=turn_launcher._popen_factory,
                     version_runner=turn_launcher._version_runner,
                 )
-                if turn_launcher.cli_version != "0.153.4":
-                    raise ContractError("token-budget rollout adapter requires validated Codex 0.153.4")
+                if not supports_rollout_usage_version(turn_launcher.cli_version):
+                    raise ContractError(
+                        "token-budget rollout adapter requires Codex CLI 0.153.4 or newer"
+                    )
                 turn_launcher.token_budget_observer = _product_token_observer(paths, checkpoint, budget)
             else:
                 turn_launcher = _budgeted_turn_launcher(
