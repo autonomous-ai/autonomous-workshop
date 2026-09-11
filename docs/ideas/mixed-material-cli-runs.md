@@ -1507,3 +1507,28 @@ The clean checkout resumed the exact same native session at
 **13:19:07.979 UTC**, without refreshing frozen Make tools or changing the
 Wish, medium effort, 500M allowance or accrued usage. This process includes
 the tested host reconnect fix and compressed mixed publication carrier.
+
+### Final engineering verification passes
+
+Round 13 passed its deterministic checks and Manager visual feedback. The
+repaired source's exact-STEP hero remained byte-identical to the independently
+reviewed image. Integrated verification recorded **PASS at 13:43:48 UTC**,
+exit 0, in 992.93 seconds. The former strict-fit and specification-format
+failures passed, including all 90 local fit/inventory checks. The 25-request
+geometry batch passed in 777.92 seconds. All 11 production families then passed
+source mesh, overhang and thickness checks at the declared 0.4 mm nozzle and
+220 × 220 × 220 mm bed. Static nonpowered scope still truthfully omits mount,
+power and joint-motion checks. This is digital engineering evidence.
+
+The native Manager wrote final product and manufacturing manifests at
+13:47:15 UTC, along with the five public render views. Product title is
+`Waterloo Command`; the internal manifest has 35 component definitions and
+retains workshop-only manufacturing data. Make finalization and authenticated
+publication were still pending at this checkpoint. No builder CAD execution
+or duplicate host geometry review was performed.
+
+A read-only follow-up identified the long batch's silent-progress boundary:
+`inspect batch` emits completed JSONL responses, and `verify_project` captures
+all child output until exit. A future opt-in, content-free per-request stderr
+diagnostic plus inherited verifier stderr could improve visibility; it is not
+implemented or applied to the current frozen tools.
