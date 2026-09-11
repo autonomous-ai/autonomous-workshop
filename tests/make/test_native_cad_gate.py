@@ -971,7 +971,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         (snap / "iso.png").write_bytes(iso)
         (snap / "signature.png").write_bytes(signature)
         review = {
-            "schema_version": 7,
+            "schema_version": 8,
             "kind": "autonomous-workshop.signature-experience-review",
             "concept_sha256": "0" * 64,
             "iso_sha256": _sha(iso),
@@ -1001,6 +1001,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
                 }
             ],
             "blocking_visual_defects": [],
+            "print_gate_sha256s": {},
             "largest_risk": "The relationship could be subtle.",
             "resolution": "The exact relationship is visible.",
         }
@@ -1085,6 +1086,50 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "one to four"):
             validate(self.project)
 
+    def test_schema_seven_signature_review_cannot_unlock_final_geometry(self):
+        self._write_signature_review(review_rounds=1)
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["schema_version"] = 7
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--fresh",
+                "--strict-fit",
+                "--no-report",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("signature review identity is invalid", completed.stderr)
+        self.assertNotIn("check_layout", completed.stdout)
+
+    def test_signature_review_requires_a_print_gate_hash_mapping(self):
+        import runpy
+
+        self._write_signature_review(review_rounds=1)
+        validate = runpy.run_path(str(self.verifier))["_required_signature_review"]
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["print_gate_sha256s"] = []
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "must map report paths"):
+            validate(self.project)
+
     def test_blocking_form_defect_cannot_unlock_final_geometry(self):
         self._write_signature_review(review_rounds=1)
         review_path = self.project / "snap/SIGNATURE-REVIEW.json"
@@ -1134,4 +1179,3 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         for retired in ("check_thickness", "check_mesh", "check_overhang", "export"):
             with self.subTest(retired=retired):
                 self.assertNotIn(retired, output)
-
