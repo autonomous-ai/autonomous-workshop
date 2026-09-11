@@ -1233,3 +1233,35 @@ blocker. The corrected CAD tree is
 and mixed-materials is
 `c3c659db1966d04942d2b227db2e4c68a604a6efb0b0c0cf55426068aa8541f4`.
 These source updates do not change the active run before a normal tool refresh.
+
+### Applying the large-assembly tools
+
+The native Manager stopped its redundant round-9 job while diagnosing the STEP
+face. The builder then used a normal interrupt on the verified CLI host. It
+exited 130 at **09:24:40 UTC**, preserving **72,836,834 / 500,000,000 tokens**.
+
+```sh
+"$workshop_python" - <<'PY'
+import psutil, signal
+p = psutil.Process(82101)
+a = p.cmdline()
+assert p.create_time() == 1789116326.087766
+assert all(v in a for v in ['wish-20260911-023805-fe157910', 'resume', 'cli', '-m'])
+p.send_signal(signal.SIGINT)
+print('Sent normal interrupt to verified Waterloo CLI host 82101.')
+PY
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli status wish-20260911-023805-fe157910
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli resume wish-20260911-023805-fe157910 --refresh-tools
+```
+
+The PID command is historical, with a process-identity check, not a reusable
+PID. At **09:24:54 UTC**, ordinary resume from `76022ab0` refreshed five files:
+the two renderers, their new `render_tessellation.py` helper, mixed-material
+manifest reference and validator. The same native session, Wish, Spark/mixed
+route, Astra model, medium effort and 500M budget remain active. All earlier
+pilots remain paused.
+
+The native resume packet contained the explicit changed-path notice. At
+**09:25:13 UTC**, the Manager reported that it would read the refreshed packet
+and guidance before retesting the exact STEP failure. Delivery of guidance is
+confirmed; a repaired STEP, final review and publication are still pending.
