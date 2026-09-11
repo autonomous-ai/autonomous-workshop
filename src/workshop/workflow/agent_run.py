@@ -102,7 +102,9 @@ AGENT_OUTCOME_STATUSES = ("ready", "waiting", "failed")
 MAX_AGENT_OUTCOME_BYTES = 64 * 1024
 MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
 MAX_AGENT_INPUT_BYTES = 4 * 1024 * 1024
-MAX_AGENT_INPUT_FILES = 256
+# The complete project-scoped Inventor roster and domain tools share this
+# count limit. Keep the independent 4 MiB byte and checkpoint bounds intact.
+MAX_AGENT_INPUT_FILES = 512
 MAX_AGENT_ARTIFACT_BYTES = MAX_FILE_BYTES
 # A four-round physical-product run may retain several immutable CAD, mesh,
 # slicer, and Playtest revisions. Keep a cumulative host budget while allowing

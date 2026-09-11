@@ -229,6 +229,37 @@ class AgentRunTest(unittest.TestCase):
                 checkpoint.input_sha256s[relative], hashlib.sha256(content).hexdigest()
             )
 
+    def test_input_file_capacity_accepts_exact_bound_and_refuses_one_more(self):
+        probe = self.create()
+        initial_count = len(probe.snapshot().input_sha256s)
+        for index in range(agent_run_module.MAX_AGENT_INPUT_FILES - initial_count):
+            (self.skill / "references" / ("extra-%04d.md" % index)).write_bytes(b"guidance\n")
+        self.run_root = self.root / "at-bound"
+        self.host_state_root = self.root / "at-bound-host"
+        run = self.create()
+        checkpoint = run.snapshot()
+        self.assertEqual(len(checkpoint.input_sha256s), 512)
+        self.assertEqual(AgentRun.open(
+            run.run_root, host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+        ).snapshot(), checkpoint)
+        (self.skill / "references" / "one-too-many.md").write_bytes(b"guidance\n")
+        self.run_root = self.root / "over-bound"
+        self.host_state_root = self.root / "over-bound-host"
+        with self.assertRaisesRegex(ArtifactError, "too many input files"):
+            self.create()
+        self.assertFalse(self.run_root.exists())
+        self.assertFalse(self.host_state_root.exists())
+
+    def test_larger_file_capacity_preserves_total_input_byte_limit(self):
+        half = b"guide\n" * (agent_run_module.MAX_AGENT_INPUT_BYTES // 12 + 1)
+        for name in ("first.md", "second.md"):
+            (self.skill / "references" / name).write_bytes(half)
+        with self.assertRaisesRegex(ArtifactError, "total byte limit"):
+            self.create()
+        self.assertFalse(self.run_root.exists())
+        self.assertFalse(self.host_state_root.exists())
+
     def test_create_materializes_wish_references_read_only_with_their_own_budget(self):
         big = b"\x89PNG" + b"\0" * (5 * 1024 * 1024)
         small = b"\xff\xd8\xff" + b"\0" * 64

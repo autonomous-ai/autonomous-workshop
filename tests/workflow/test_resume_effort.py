@@ -47,6 +47,7 @@ class ResumeEffortIntegrationTests(unittest.TestCase):
             "workshop.workflow.native_run._source_checkout_root", return_value=None,
         ))
         self.commands = []
+        self.turn_settings = []
         self.consumption = 0
         self.popen = mock.Mock(side_effect=AssertionError("no real native process permitted"))
 
@@ -71,6 +72,7 @@ class ResumeEffortIntegrationTests(unittest.TestCase):
 
     def native_stream(self, launcher, **arguments):
         self.commands.append(tuple(arguments["command"]))
+        self.turn_settings.append((launcher.timeout_seconds, launcher.protect_make_input))
         if arguments["bind_thread"] is not None:
             arguments["bind_thread"](ROOT)
         else:
@@ -82,13 +84,14 @@ class ResumeEffortIntegrationTests(unittest.TestCase):
             launcher.token_budget_observer()
         return False, ROOT, (100, 50, 0, 10, 5)
 
-    def initialize(self, workflow="spark"):
+    def initialize(self, workflow="spark", **run_options):
         self.product_id = "resume-profile-fixture"
         receipt = start_native_run(
             Wish.create(self.product_id, "A small mixed-material mechanical toy",
                         context={"inventor_id": "ivy"}),
             effort=workflow, manager_id="codex", manager_model="gpt-6-astra",
             manager_reasoning_effort="ultra", max_tokens=100_000_000,
+            **run_options,
         )
         self.assertEqual(receipt["status"], "waiting")
         self.paths = native_run_paths(self.product_id)
@@ -152,12 +155,55 @@ class ResumeEffortIntegrationTests(unittest.TestCase):
         self.assertEqual(len(self.commands), 2)
         self.popen.assert_not_called()
 
+    def test_mixed_token_run_preserves_explicit_turn_boundary_across_effort_changes(self):
+        before = self.initialize(make_mode="mixed", turn_seconds=7_200)
+        files = self.preserved_files()
+        make_bytes = (self.paths.workspace / "MAKE.json").read_bytes()
+        self.assertEqual(before.make_mode, "mixed")
+        self.assertEqual(self.turn_settings[-1], (7_200, True))
+
+        resume_native_run(
+            self.product_id, manager_reasoning_effort="medium",
+            max_tokens=500_000_000, turn_seconds=5_400,
+        )
+        after = _open_budgeted_agent_run(self.paths).snapshot()
+        self.assertEqual(after.turn_seconds, 5_400)
+        self.assertEqual(after.manager_reasoning_effort, "medium")
+        self.assertEqual(self.turn_settings[-1], (5_400, True))
+        resume_native_run(self.product_id)
+        self.assertEqual(self.turn_settings[-1], (5_400, True))
+        resume_native_run(self.product_id, turn_untimed=True)
+        self.assertEqual(self.turn_settings[-1], (None, True))
+        final = _open_budgeted_agent_run(self.paths).snapshot()
+        self.assertTrue(final.turn_untimed)
+        self.assertEqual(final.make_mode, "mixed")
+        self.assertEqual((self.paths.workspace / "MAKE.json").read_bytes(), make_bytes)
+        self.assertEqual((self.paths.workspace / "WISH.json").read_bytes(), files["wish"])
+        self.assertEqual((self.paths.host_state / "codex-session.json").read_bytes(), files["session"])
+        budget = _load_lifetime_budget(self.paths, final).to_dict()
+        self.assertEqual(budget["limit_tokens"], 500_000_000)
+        self.assertEqual(budget["used_tokens"], 880)
+        self.popen.assert_not_called()
+
+    def test_invalid_turn_boundary_cannot_mutate_a_mixed_token_run(self):
+        before = self.initialize(make_mode="mixed", turn_seconds=7_200)
+        files = self.preserved_files()
+        for invalid in (True, 0, 21_601):
+            with self.subTest(turn_seconds=invalid):
+                with self.assertRaises(ContractError):
+                    resume_native_run(self.product_id, turn_seconds=invalid)
+                self.assertEqual(_open_budgeted_agent_run(self.paths).snapshot(), before)
+                self.assertEqual(self.preserved_files(), files)
+        self.assertEqual(len(self.commands), 1)
+        self.popen.assert_not_called()
+
     def test_omitted_overrides_preserve_saved_profile_and_cap(self):
         before = self.initialize()
         files = self.preserved_files()
         receipt = resume_native_run(self.product_id)
         after = _open_budgeted_agent_run(self.paths).snapshot()
         self.assertEqual(after.manager_reasoning_effort, "ultra")
+        self.assertEqual(self.turn_settings[-1], (None, False))
         self.assertEqual(after.input_sha256s, before.input_sha256s)
         for name, path in (("manager", self.paths.workspace / "MANAGER.json"),
                            ("session", self.paths.host_state / "codex-session.json"),

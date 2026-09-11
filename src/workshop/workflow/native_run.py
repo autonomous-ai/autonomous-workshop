@@ -9125,11 +9125,15 @@ def _run_native_session(
             if isinstance(budget, ProductTokenBudget) and isinstance(turn_launcher, _CODEX_LAUNCHER_TYPE):
                 # Host-authorized product budget; preserve the existing native
                 # policy identity rather than silently upgrading frozen tools.
+                # Token-budget runs are untimed by default, but an explicit
+                # operator boundary must survive this final launcher rebuild.
+                override = _turn_override(checkpoint)
                 turn_launcher = CodexNativeSessionLauncher(
                     model=turn_launcher.model, reasoning_effort=turn_launcher.reasoning_effort,
                     auto_compact_token_limit=turn_launcher.auto_compact_token_limit,
                     runtime_profile_sha256=checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH),
-                    binary=turn_launcher.binary, timeout_seconds=None,
+                    binary=turn_launcher.binary,
+                    timeout_seconds=None if override is _NO_TURN_OVERRIDE else override,
                     cli_version=turn_launcher.cli_version,
                     popen_factory=turn_launcher._popen_factory,
                     version_runner=turn_launcher._version_runner,
