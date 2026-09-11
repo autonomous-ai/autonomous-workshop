@@ -1,0 +1,14 @@
+{
+  "schema_version": 8,
+  "id": "mara-masque",
+  "status": "experimental",
+  "source": {"kind": "local"},
+  "extensions": [
+    {
+      "kind": "codex-skill",
+      "name": "mara-masque-inventor",
+      "path": "skills/mara-masque-inventor",
+      "artifact_sha256": "ff3b620d958b6e3083044d3cc0cdfeb73424618018b0fb08def5122a6ad50e03"
+    }
+  ]
+}

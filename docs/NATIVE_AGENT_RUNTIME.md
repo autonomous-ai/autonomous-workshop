@@ -28,7 +28,7 @@ Workshop. It is authoritative together with
 [ADR 0050](adr/0050-structured-terminal-failure-diagnostics.md),
 [ADR 0060](adr/0060-make-round-visual-feedback-and-three-repairs.md),
 [ADR 0061](adr/0061-spark-make-owned-verification.md),
-[ADR 0062](adr/0062-spark-component-first-make.md), and the repository
+[ADR 0063](adr/0063-spark-component-first-make.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -61,7 +61,7 @@ required; they are not alternative spending budgets. Make retains its own
 frozen checks and review policy, including the current four-review allowance
 under [ADR 0060](adr/0060-make-round-visual-feedback-and-three-repairs.md).
 New Spark Make instructions also require a component-first baseline under
-[ADR 0062](adr/0062-spark-component-first-make.md): each distinct component has
+[ADR 0063](adr/0063-spark-component-first-make.md): each distinct component has
 one `part_<role>.step.py` and its own passing isolated visual repair history
 before the combined entry is authored and reviewed. The make-round tool freshly
 exports the parts and refuses the requested assembly round when those passes
@@ -123,7 +123,7 @@ a new stage attempt after the prior Goal is complete.
 New runs also freeze the canonical agent, model, and reasoning effort in a
 schema-v2 `MANAGER.json`. The CLI calls these `--agent`, `--model`, and
 `--effort`; Spark, Forge, and Quest are selected separately with `--workflow`.
-Codex defaults to `gpt-5.6-sol` at medium and Claude Code defaults to
+Codex defaults to `gpt-6-astra` at medium and Claude Code defaults to
 `claude-opus-5` at medium. The selected reasoning effort overrides the
 stage-shaped reasoning levels described below while leaving each workflow's
 compaction, turn boundaries, proof handoffs, and gates intact. Schema-v1
@@ -257,6 +257,15 @@ Codex authors run-local artifacts and finalizes one compact proposal
     v
 host independently validates exact bytes, seals artifacts, and advances
 ```
+
+`workshop fix <published-toy-directory> --prompt-file <brief>` starts a new
+Spark run from a manifest-verified public archive. It binds an immutable
+`revision-source.zip` baseline and creates independent editable files under
+`revision-work/`. The exact correction prompt is the new Wish; its context
+records source lineage. The original session and publication remain separate.
+Current Make checks and blind review apply to the corrected output. See
+[ADR 0065](adr/0065-published-toy-correction-runs.md) for the intake contract
+and current local-archive limitation.
 
 `workshop resume <wish-id>` resumes the recorded session UUID in the same toy
 project. Session memory is useful continuity, but the durable checkpoint,

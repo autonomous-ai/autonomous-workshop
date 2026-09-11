@@ -1,0 +1,10 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/part_tooth_4.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_4.md
+(2.1s, exit 0)
+--- stdout
+part_tooth_4.step.py: 26.3 cm2 of surface, grid 0.400 mm, 0 unsupported samples over 0 region(s)
+  PASS  no face under 45 deg needs support     23.4% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2
+  PASS  bridges within 12 mm                   0 region(s), longest span 0.0 mm
+RESULT: prints unsupported
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_4.md
+
+--- stderr

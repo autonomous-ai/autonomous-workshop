@@ -31,6 +31,8 @@ from workshop.daydream.contracts import (
     CREATED_AT_FORMAT,
     DaydreamError,
     Idea,
+    MAX_PARTS_ESTIMATE,
+    MIN_PARTS_ESTIMATE,
     NoveltyReport,
     SealedDaydream,
     canonical_json,
@@ -71,6 +73,7 @@ from workshop.wish import Wish, generate_wish_id
 
 
 DAYDREAM_TURN_TIMEOUT_SECONDS = 900
+UNBOUNDED_PARTS_INVENTOR_IDS = frozenset({"mara-masque"})
 DAYDREAM_REJECTION_KIND = "autonomous-workshop.daydream-rejection"
 IDEA_FILE_NAME = "IDEA.json"
 OUTCOME_FILE_NAME = "agent-outcome.json"
@@ -370,7 +373,7 @@ def _read_outcome(
     return raw
 
 
-def _read_idea(path: Path) -> Idea:
+def _read_idea(path: Path, *, maximum_parts: Optional[int] = MAX_PARTS_ESTIMATE) -> Idea:
     try:
         payload = read_regular_bytes(path, maximum=MAX_IDEA_FILE_BYTES, label="work/IDEA.json")
     except FileNotFoundError as exc:
@@ -382,9 +385,15 @@ def _read_idea(path: Path) -> Idea:
     if not isinstance(raw, dict):
         raise DaydreamError("work/IDEA.json must be a JSON object")
     try:
-        return Idea.parse(raw)
+        idea = Idea.parse(raw)
     except ContractError as exc:
         raise DaydreamError("work/IDEA.json is invalid: %s" % exc) from exc
+    if maximum_parts is not None and idea.parts_estimate > maximum_parts:
+        raise DaydreamError(
+            "work/IDEA.json is invalid: idea parts_estimate must be an integer from %d to %d"
+            % (MIN_PARTS_ESTIMATE, maximum_parts)
+        )
+    return idea
 
 
 def _remember(
@@ -506,7 +515,14 @@ def run_daydream(
     _existing_real_directory(paths.workspace, label="daydream workspace")
     _existing_real_directory(paths.work, label="daydream work directory", private=False)
     _read_outcome(paths.workspace, file_name=IDEA_FILE_NAME, who="Inventor", goal="Daydream")
-    idea = _read_idea(paths.work / IDEA_FILE_NAME)
+    idea = _read_idea(
+        paths.work / IDEA_FILE_NAME,
+        maximum_parts=(
+            None
+            if manifest.inventor_id in UNBOUNDED_PARTS_INVENTOR_IDS
+            else MAX_PARTS_ESTIMATE
+        ),
+    )
     latest_entries = read_notebook(paths.notebook, limit=NOTEBOOK_LINT_LIMIT)
     novelty = lint_novelty(
         idea, (*repository_prior, *prior_work_from_notebook(latest_entries))

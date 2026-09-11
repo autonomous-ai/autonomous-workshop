@@ -105,11 +105,14 @@ class IdeaTest(unittest.TestCase):
         self.assertEqual(Idea.parse(raw).what_happens, "line one\nline two")
 
     def test_parts_estimate_prior_art_and_keyword_bounds(self):
-        for parts in (0, 13, True, "2", 2.0):
+        for parts in (0, True, "2", 2.0):
             raw = sample_idea_dict()
             raw["parts_estimate"] = parts
             with self.subTest(parts=parts), self.assertRaises(ContractError):
                 Idea.parse(raw)
+        raw = sample_idea_dict()
+        raw["parts_estimate"] = 33
+        self.assertEqual(Idea.parse(raw).parts_estimate, 33)
         raw = sample_idea_dict()
         raw["prior_art"] = raw["prior_art"][:1]
         with self.assertRaises(ContractError):

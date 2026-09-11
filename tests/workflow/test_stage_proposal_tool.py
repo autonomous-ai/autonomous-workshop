@@ -1174,6 +1174,24 @@ class StageProposalToolTest(unittest.TestCase):
             "playtest",
         )
 
+    def test_make_review_contract_is_accepted_by_the_cad_verifier(self):
+        import runpy
+
+        product_root, _, _, _ = self.create_product()
+        project = product_root / "cad/project"
+        review_path = project / "snap/SIGNATURE-REVIEW.json"
+        verifier = runpy.run_path(
+            str(
+                REPOSITORY
+                / "src/workshop/make/skills/cad/scripts/verify_project"
+            )
+        )
+
+        self.assertEqual(
+            verifier["_required_signature_review"](project),
+            hashlib.sha256(review_path.read_bytes()).hexdigest(),
+        )
+
     def test_make_rejects_missing_required_root_delivery_files(self):
         product_root, _, _, _ = self.create_product()
         for required in ("assembled.step", "assembled.step.json"):

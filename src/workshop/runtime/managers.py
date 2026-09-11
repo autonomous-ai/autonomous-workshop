@@ -18,6 +18,11 @@ from workshop.errors import ContractError
 
 
 DEFAULT_MANAGER_ID = "codex"
+# The longest wall-clock one native turn may be bound to. Every concrete
+# launcher refuses a larger number, so this is the single source of truth for
+# the host-side turn ceiling; ``workshop --turn-minutes`` selects any value up
+# to it, and ``none`` removes the wall clock for that run entirely.
+MAX_NATIVE_TURN_SECONDS = 6 * 60 * 60
 MANAGER_PROJECT_KIND = "autonomous-workshop.manager-project"
 MANAGER_PROJECT_PATH = "MANAGER.json"
 SUPPORTED_REASONING_EFFORTS = ("low", "medium", "high", "xhigh", "ultra")
@@ -161,7 +166,7 @@ _SPECS = {
         agent_directory=".codex/agents",
         agent_suffix=".toml",
         session_checkpoint_name="codex-session.json",
-        default_model="gpt-5.6-sol",
+        default_model="gpt-6-astra",
         default_reasoning_effort="medium",
     ),
     "claude": ManagerRuntimeSpec(
@@ -371,6 +376,7 @@ def manager_launcher(manager_id: str, **kwargs: Any) -> NativeSessionLauncher:
 
 __all__ = [
     "DEFAULT_MANAGER_ID",
+    "MAX_NATIVE_TURN_SECONDS",
     "MANAGER_PROJECT_KIND",
     "MANAGER_PROJECT_PATH",
     "SUPPORTED_MANAGER_IDS",

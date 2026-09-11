@@ -793,6 +793,10 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertNotIn("Authorization", manual_call[2])
 
     def use_make_output_release(self):
+        hero = self.made.artifact_root / "cad/project/snap/iso.png"
+        hero.parent.mkdir(parents=True, exist_ok=True)
+        hero.write_bytes(PNG_COVER)
+        self._reseal_product()
         (self.release / "MANUAL.md").unlink()
         self.page = {
             "schema_version": 6, "kind": "workshop.release-package",
@@ -841,9 +845,32 @@ class FactoryReleaseTest(unittest.TestCase):
                 self.assertNotIn("MANUAL.pdf", archive.namelist())
                 self.assertNotIn("MANUAL.md", archive.namelist())
                 self.assertEqual(archive.read("workshop-release-page.json"), anchor)
+                self.assertEqual(
+                    archive.read(FACTORY_COVER_RENDER_PATH), PNG_COVER
+                )
                 facts = json.loads(archive.read("workshop-product-facts.json"))
                 for entry in facts["make_artifacts"]["files"]:
                     self.assertEqual(archive.read(entry["archive_path"]), (self.made.artifact_root / entry["source_path"]).read_bytes())
+            self.assertEqual(
+                receipt.details["cover_render_sha256"],
+                hashlib.sha256(PNG_COVER).hexdigest(),
+            )
+            self.assertEqual(
+                receipt.details["cover_render_source_path"],
+                "cad/project/snap/iso.png",
+            )
+
+    def test_make_output_requires_one_sealed_canonical_cover(self):
+        self.use_make_output_release()
+        (self.made.artifact_root / "cad/project/snap/iso.png").unlink()
+        self._reseal_product()
+
+        with self.assertRaisesRegex(
+            ContractError, "exactly one sealed snap/iso.png"
+        ):
+            self.writer(FactoryTransport(include_thumbnails=False))(
+                self.context, self.release, self.manifest
+            )
 
     def test_make_output_rejects_changed_public_anchor(self):
         self.use_make_output_release()

@@ -20,6 +20,9 @@ calls were reassembling by hand.
   deciding what to repair next. Then inspect the visual packet and record the
   Manager's findings using `--record-visual` without rebuilding. Read its summary; open a full report only
   when the summary names a failure you cannot place.
+- A round can take minutes. Start `make_round` with `yield_time_ms: 30000` and,
+  while it runs, continue it with `write_stdin` at the same yield. Never put a
+  `sleep` between polls: each poll re-sends the whole session.
 - Do not read the cad or image-to-cad scripts to learn their flags. The
   exact invocations are below; they are the same programs the host gates
   run, unchanged.

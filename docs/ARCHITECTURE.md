@@ -11,7 +11,7 @@ Make keeps its own visual feedback, engineering checks and four-review policy
 (ADR 0060). New Spark runs select the inventor in Workshop setup, then Make;
 host-only Publish transfers Make's existing bytes without a duplicate CAD
 rebuild, new PDF or native Release turn (ADR 0061). New Spark Make baselines
-build and pass each component separately before assembly review (ADR 0062).
+build and pass each component separately before assembly review (ADR 0063).
 Frozen older tools retain their own Make rules. The economics clocks described below are historical
 profiles, not execution limits for token-budget runs.
 
@@ -28,7 +28,7 @@ Every result must be materially shaped by its Wish, feel designed rather than
 decorated, and be represented no more strongly than its evidence permits.
 
 New projects freeze a schema-v2 `MANAGER.json` with the selected native agent,
-model, and reasoning effort. The CLI defaults are Codex `gpt-5.6-sol` at medium
+model, and reasoning effort. The CLI defaults are Codex `gpt-6-astra` at medium
 effort and Claude Code `claude-opus-5` at medium effort; `--model astra` resolves
 to `gpt-6-astra`. The selected reasoning effort remains fixed across the
 persistent daydream and product session. Historical workflow profiles own
@@ -105,7 +105,7 @@ Release -- handoff to Operations --> Printing -> Deliver -> Review
 - **Spark Make baseline** is component-first for newly materialized runs. Each
   distinct physical component is authored in its own `part_<role>.step.py` and
   receives isolated numeric plus native visual repair rounds. Only current
-  passing component meshes unlock the combined-object make round; an assembly
+  passing component STEPs unlock the combined-object make round; an assembly
   repair that changes a component sends that component through its loop again.
   This remains Make-owned evidence and does not add a duplicate host CAD gate.
 - **Forge/Quest Release** creates and seals a self-contained printable `MANUAL.pdf`,

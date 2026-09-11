@@ -17,7 +17,8 @@ SPEC.loader.exec_module(runner)
 class RunWishScriptsTest(unittest.TestCase):
     def config(self):
         return dict(wish='test object', agent='codex', model='gpt-6-astra',
-                    workflow='spark', effort='medium', max_tokens=None)
+                    workflow='spark', effort='medium', max_tokens=None,
+                    turn_minutes=None)
 
     def test_pinned_binary_is_used_without_overriding_explicit_selection(self):
         with mock.patch.dict(runner.os.environ, {}, clear=True), mock.patch.object(runner, "PINNED_CODEX_BINARY", Path(__file__)):
@@ -61,6 +62,33 @@ class RunWishScriptsTest(unittest.TestCase):
     def test_invalid_budgets_and_removed_provider_are_rejected(self):
         for extra in [{'max_tokens':999},{'max_tokens':True},{'max_tokens':100_000_001},{'agent':'claude','max_tokens':10000},{'use_openrouter':True}]:
             with self.subTest(extra=extra),self.assertRaises(runner.SetupError):runner.build_command({**self.config(),**extra},None)
+
+    def test_turn_boundary_reaches_both_wish_and_resume_commands(self):
+        for value, expected in ((240, 240 * 60), ('none', 'none')):
+            with self.subTest(value=value):
+                config = {**self.config(), 'turn_minutes': value}
+                wish_args = parser().parse_args(
+                    runner.build_command(config, None)[3:]
+                )
+                resume_args = parser().parse_args(
+                    runner.build_command(config, 'wish-test')[3:]
+                )
+                self.assertEqual(wish_args.turn_minutes, expected)
+                self.assertEqual(resume_args.turn_minutes, expected)
+
+    def test_no_turn_boundary_leaves_the_flag_off_both_commands(self):
+        for resume_id in (None, 'wish-test'):
+            with self.subTest(resume=resume_id):
+                command = runner.build_command(self.config(), resume_id)
+                self.assertNotIn('--turn-minutes', command)
+                self.assertIsNone(parser().parse_args(command[3:]).turn_minutes)
+
+    def test_invalid_turn_boundaries_are_rejected_before_launch(self):
+        for value in (0, 361, 'forever', 3.5, True):
+            with self.subTest(value=value), self.assertRaises(runner.SetupError):
+                runner.build_command(
+                    {**self.config(), 'turn_minutes': value}, None
+                )
 
     def test_dry_run_never_executes_or_prompts(self):
         with mock.patch.object(runner,'CONFIG',self.config()), mock.patch.object(sys,'argv',['run_wish.py','--dry-run']), mock.patch.object(runner.subprocess,'run') as launch, mock.patch.object(runner,'confirm_publication_risk') as confirm, contextlib.redirect_stdout(io.StringIO()):

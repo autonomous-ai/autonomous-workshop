@@ -1,0 +1,419 @@
+{
+  "assembly": "veinwake.step.py",
+  "conditions": [
+    {
+      "id": "tooth_1-withdraws",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Open vertical withdrawal",
+      "inputs": {
+        "moving_part": "tooth_1",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          55
+        ],
+        "steps": 55,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "tooth_1-floor-stop",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "inputs": {
+        "moving_part": "tooth_1",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          -3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "tooth_2-withdraws",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Open vertical withdrawal",
+      "inputs": {
+        "moving_part": "tooth_2",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          55
+        ],
+        "steps": 55,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "tooth_2-floor-stop",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "inputs": {
+        "moving_part": "tooth_2",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          -3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "tooth_3-withdraws",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Open vertical withdrawal",
+      "inputs": {
+        "moving_part": "tooth_3",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          55
+        ],
+        "steps": 55,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "tooth_3-floor-stop",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "inputs": {
+        "moving_part": "tooth_3",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          -3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "tooth_4-withdraws",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Open vertical withdrawal",
+      "inputs": {
+        "moving_part": "tooth_4",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          55
+        ],
+        "steps": 55,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "tooth_4-floor-stop",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "inputs": {
+        "moving_part": "tooth_4",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          -3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "tooth_5-withdraws",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Open vertical withdrawal",
+      "inputs": {
+        "moving_part": "tooth_5",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          55
+        ],
+        "steps": 55,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "tooth_5-floor-stop",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "inputs": {
+        "moving_part": "tooth_5",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          -3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "bubble_1-withdraws",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Open vertical withdrawal",
+      "inputs": {
+        "moving_part": "bubble_1",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          55
+        ],
+        "steps": 55,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "bubble_1-floor-stop",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "inputs": {
+        "moving_part": "bubble_1",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          -3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "bubble_2-withdraws",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Open vertical withdrawal",
+      "inputs": {
+        "moving_part": "bubble_2",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          55
+        ],
+        "steps": 55,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "bubble_2-floor-stop",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "inputs": {
+        "moving_part": "bubble_2",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          -3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "bubble_3-withdraws",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Open vertical withdrawal",
+      "inputs": {
+        "moving_part": "bubble_3",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          55
+        ],
+        "steps": 55,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "bubble_3-floor-stop",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "inputs": {
+        "moving_part": "bubble_3",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          -3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "bubble_4-withdraws",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Open vertical withdrawal",
+      "inputs": {
+        "moving_part": "bubble_4",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          55
+        ],
+        "steps": 55,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    },
+    {
+      "id": "bubble_4-floor-stop",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "inputs": {
+        "moving_part": "bubble_4",
+        "obstacle_parts": [
+          "rind"
+        ],
+        "translation": [
+          0,
+          0,
+          -3
+        ],
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.1
+      }
+    }
+  ]
+}

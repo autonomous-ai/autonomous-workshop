@@ -10,7 +10,7 @@ the installed `workshop` command.
 
 `workshop wish --workflow spark|forge|quest "..."` freezes the selected route;
 Spark is the default. `--agent`, `--model`, and `--effort` freeze the native
-runtime, model, and reasoning level. Codex defaults to `gpt-5.6-sol` at medium;
+runtime, model, and reasoning level. Codex defaults to `gpt-6-astra` at medium;
 Claude Code defaults to `claude-opus-5` at medium. Status and resume read those
 durable choices rather than accepting replacements.
 
@@ -43,7 +43,7 @@ enters browser JavaScript, a URL, run workspace, or native-agent environment.
 `workshop login <inventor-id>` explicitly repeats the same flow.
 
 `workshop start <inventor-id>` is the front door and a loop: it asks one
-Inventor to dream one brand-new idea through `workshop.daydream`, prints the
+Inventor to dream one fresh, Taste-fitting idea through `workshop.daydream`, prints the
 sealed concept card, seals it as a Wish, starts the same native session
 `workshop wish` would (Spark by default), and then dreams the next idea. It
 holds the Inventor's loop lease and checks the stop marker between steps, so
@@ -64,6 +64,18 @@ ideas. `workshop start --once` is the bounded autonomous-idea variant.
 Codex product, including all build stages, native children and resumes. The
 separate Daydream session is excluded. All revisions and retries share that
 allowance without a native-turn or wall-clock execution cap.
+`wish`, `start` and `resume` also accept `--turn-minutes M`, which bounds each
+native turn to `M` minutes (1 to 360), or `--turn-minutes none` to run with no
+Workshop wall clock at all. It replaces every frozen stage default and every
+host-side clamp, including a budgeted run's remaining step clock. Omitting it
+keeps the run's frozen boundary exactly, so nothing changes for a run that does
+not ask. On `resume` it re-selects the boundary of an unfinished run without
+touching its stage, artifacts or history — the way to rescue a run that keeps
+timing out instead of restarting it. An untimed run still needs the Manager's
+own bound, which today means a Codex token budget: Codex refuses to run untimed
+without one, while Claude Code and Grok Build have no token accounting and an
+untimed turn there is bounded by nothing Workshop owns. See ADR 0064.
+
 `--max-rounds` remains legacy metadata for token-budget products, not a stop
 condition. Engineering gates and failure-closed accounting remain mandatory.
 Input plus output includes cached input without counting reasoning output

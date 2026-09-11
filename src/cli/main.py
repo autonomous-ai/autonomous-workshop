@@ -95,6 +95,8 @@ from workshop.workflow import (
 from workshop.wish import Wish, generate_wish_id
 from workshop.workflow import native_run_status, resume_native_run, start_native_run
 from workshop.workflow.token_budget import DEFAULT_PRODUCT_TOKENS, MAX_PRODUCT_TOKENS
+from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
+from workshop.workflow.agent_run import MIN_AGENT_TURN_SECONDS
 from workshop.workflow.effort import (
     DEFAULT_WORKSHOP_EFFORT,
     WORKSHOP_EFFORTS,
@@ -505,6 +507,40 @@ def _token_budget(value: str) -> int:
     return parsed
 
 
+UNTIMED_TURN = "none"
+MAX_TURN_MINUTES = MAX_NATIVE_TURN_SECONDS // 60
+MIN_TURN_MINUTES = MIN_AGENT_TURN_SECONDS // 60
+
+
+def _turn_minutes(value: str):
+    """Parse one native turn boundary: exact minutes, or ``none`` for no clock."""
+
+    if value.strip().lower() in (UNTIMED_TURN, "off", "unlimited"):
+        return UNTIMED_TURN
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "turn minutes must be a whole number of minutes or '%s'" % UNTIMED_TURN
+        ) from exc
+    if not MIN_TURN_MINUTES <= parsed <= MAX_TURN_MINUTES:
+        raise argparse.ArgumentTypeError(
+            "turn minutes must be between %d and %d, or '%s'"
+            % (MIN_TURN_MINUTES, MAX_TURN_MINUTES, UNTIMED_TURN)
+        )
+    return parsed * 60
+
+
+def _turn_boundary_options(value) -> dict:
+    """Map one parsed ``--turn-minutes`` value to run keyword arguments."""
+
+    if value is None:
+        return {}
+    if value == UNTIMED_TURN:
+        return {"turn_untimed": True}
+    return {"turn_seconds": value}
+
+
 def _start_run(
     wish: Wish,
     *,
@@ -513,7 +549,9 @@ def _start_run(
     github: bool,
     max_rounds: int = DEFAULT_MAX_ROUNDS,
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
+    turn_minutes: Any = None,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
+    revision_snapshot: Optional[bytes] = None,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
 ) -> Mapping[str, Any]:
@@ -570,6 +608,18 @@ def _start_run(
     )
     if runtime.spec.manager_id == "codex":
         print("Product token cap: %s (all stages and resumes)" % format(max_tokens, ","), file=progress, flush=True)
+    if turn_minutes == UNTIMED_TURN:
+        print(
+            "Native turn boundary: none (this run has no Workshop wall clock)",
+            file=progress,
+            flush=True,
+        )
+    elif turn_minutes is not None:
+        print(
+            "Native turn boundary: %d minute(s) per turn" % (turn_minutes // 60),
+            file=progress,
+            flush=True,
+        )
     return start_native_run(
         wish,
         effort=workflow.name,
@@ -578,7 +628,9 @@ def _start_run(
         manager_reasoning_effort=runtime.reasoning_effort,
         max_rounds=max_rounds,
         **({"max_tokens": max_tokens} if max_tokens != DEFAULT_PRODUCT_TOKENS else {}),
+        **_turn_boundary_options(turn_minutes),
         wish_reference_files=wish_reference_files,
+        **({"revision_snapshot": revision_snapshot} if revision_snapshot is not None else {}),
         github_publish_requested=github,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
@@ -614,6 +666,7 @@ def _wish(args: argparse.Namespace) -> int:
         github=args.github,
         max_rounds=args.max_rounds,
         max_tokens=args.max_tokens,
+        turn_minutes=args.turn_minutes,
         wish_reference_files=wish_reference_files(loaded_references),
         progress=progress,
         live_progress=live_progress,
@@ -622,6 +675,34 @@ def _wish(args: argparse.Namespace) -> int:
         _print_json(receipt)
     else:
         _print_native_receipt(receipt, verb="Run")
+    return _native_exit_code(receipt, strict=args.strict)
+
+
+def _fix(args: argparse.Namespace) -> int:
+    from workshop.workflow.revision import prepare_revision
+
+    if args.prompt_file is not None:
+        try:
+            prompt = args.prompt_file.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            raise WorkshopError("cannot read correction prompt file") from exc
+    else:
+        prompt = args.prompt
+    wish, snapshot = prepare_revision(args.source, prompt)
+    runtime = manager_runtime_selection(
+        args.agent, model=args.model, reasoning_effort=args.effort,
+    )
+    progress = sys.stderr if args.json else sys.stdout
+    receipt = _start_run(
+        wish, workflow=workshop_effort("spark"), runtime=runtime,
+        github=args.github, max_tokens=args.max_tokens,
+        turn_minutes=args.turn_minutes, revision_snapshot=snapshot,
+        progress=progress, live_progress=_LiveWishProgress(progress, runtime.spec.display_name),
+    )
+    if args.json:
+        _print_json(receipt)
+    else:
+        _print_native_receipt(receipt, verb="Revision")
     return _native_exit_code(receipt, strict=args.strict)
 
 
@@ -884,6 +965,7 @@ def _start(args: argparse.Namespace) -> int:
                     github=args.github,
                     max_rounds=args.max_rounds,
                     max_tokens=args.max_tokens,
+                    turn_minutes=args.turn_minutes,
                     wish_reference_files=reference_files,
                     progress=progress,
                     live_progress=live_progress,
@@ -1032,6 +1114,7 @@ def _resume(args: argparse.Namespace) -> int:
         args.product_id,
         **({"adopt_turn_budget": True} if args.turn_budget else {}),
         **({"max_tokens": args.max_tokens} if args.max_tokens is not None else {}),
+        **_turn_boundary_options(args.turn_minutes),
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
@@ -1652,7 +1735,7 @@ def parser() -> argparse.ArgumentParser:
     start.add_argument(
         "--model",
         metavar="MODEL",
-        help="agent model (default: sol for Codex; opus 5 for Claude Code)",
+        help="agent model (default: astra for Codex; opus 5 for Claude Code)",
     )
     start.add_argument(
         "--effort",
@@ -1701,6 +1784,19 @@ def parser() -> argparse.ArgumentParser:
         "--strict", action="store_true", help="with --once: exit 1 when the run waits"
     )
     start.set_defaults(handler=_start)
+    start.add_argument(
+        "--turn-minutes",
+        type=_turn_minutes,
+        default=None,
+        metavar="MINUTES",
+        help=(
+            "bound each native turn to MINUTES (%d-%d), or '%s' to run with no "
+            "Workshop wall clock at all; replaces every stage default and "
+            "budgeted clamp. An untimed run still needs the Manager's own bound, "
+            "which today means a Codex token budget."
+            % (MIN_TURN_MINUTES, MAX_TURN_MINUTES, UNTIMED_TURN)
+        ),
+    )
     start.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
                        help="Codex token cap per product across all build steps and resumes (default: %(default)s); excludes the separate daydream")
 
@@ -1750,7 +1846,7 @@ def parser() -> argparse.ArgumentParser:
     daydream.add_argument(
         "--model",
         metavar="MODEL",
-        help="agent model (default: sol for Codex; opus 5 for Claude Code)",
+        help="agent model (default: astra for Codex; opus 5 for Claude Code)",
     )
     daydream.add_argument(
         "--effort",
@@ -1814,7 +1910,7 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument(
         "--model",
         metavar="MODEL",
-        help="agent model (default: sol for Codex; opus 5 for Claude Code)",
+        help="agent model (default: astra for Codex; opus 5 for Claude Code)",
     )
     wish.add_argument(
         "--effort",
@@ -1842,11 +1938,39 @@ def parser() -> argparse.ArgumentParser:
             "(default: disabled)"
         ),
     )
+    wish.add_argument(
+        "--turn-minutes",
+        type=_turn_minutes,
+        default=None,
+        metavar="MINUTES",
+        help=(
+            "bound each native turn to MINUTES (%d-%d), or '%s' to run with no "
+            "Workshop wall clock at all; replaces every stage default and "
+            "budgeted clamp. An untimed run still needs the Manager's own bound, "
+            "which today means a Codex token budget."
+            % (MIN_TURN_MINUTES, MAX_TURN_MINUTES, UNTIMED_TURN)
+        ),
+    )
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     wish.set_defaults(handler=_wish)
     wish.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
                       help="Codex input-plus-output token cap for the whole product (default: %(default)s)")
+
+    fix = subcommands.add_parser("fix", help="clone a published toy into a new Spark correction run")
+    fix.add_argument("source", type=Path, metavar="TOY_DIRECTORY")
+    correction = fix.add_mutually_exclusive_group(required=True)
+    correction.add_argument("--prompt", help="exact correction brief")
+    correction.add_argument("--prompt-file", type=Path, help="UTF-8 correction brief, preserved verbatim")
+    fix.add_argument("--agent", choices=tuple(SUPPORTED_MANAGER_IDS), default=DEFAULT_MANAGER_ID)
+    fix.add_argument("--model")
+    fix.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS)
+    fix.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS)
+    fix.add_argument("--turn-minutes", type=_turn_minutes, default=None)
+    fix.add_argument("--github", action="store_true", help="also commit and push the new public archive")
+    fix.add_argument("--json", action="store_true")
+    fix.add_argument("--strict", action="store_true")
+    fix.set_defaults(handler=_fix)
 
     status = subcommands.add_parser(
         "status", help="inspect one native Wish checkpoint without running a model"
@@ -1864,6 +1988,19 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument(
         "--turn-budget", action="store_true",
         help="explicitly adopt persistent 6-turn/stage, 12-turn/product accounting during the first creative stage; prior turns remain charged",
+    )
+    resume.add_argument(
+        "--turn-minutes",
+        type=_turn_minutes,
+        default=None,
+        metavar="MINUTES",
+        help=(
+            "bound each native turn to MINUTES (%d-%d), or '%s' to run with no "
+            "Workshop wall clock at all; replaces every stage default and "
+            "budgeted clamp. An untimed run still needs the Manager's own bound, "
+            "which today means a Codex token budget."
+            % (MIN_TURN_MINUTES, MAX_TURN_MINUTES, UNTIMED_TURN)
+        ),
     )
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")
     resume.add_argument("--strict", action="store_true", help="exit 1 when the run waits")

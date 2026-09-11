@@ -71,6 +71,10 @@
   back its claim (schema 7 -> 8, `print_gate_sha256s`), and new runs freeze
   `deep-economics-v15`, which routes a failed print gate into a targeted repair
   the way v13 did before v14 dropped it.
+- Workshop's verifier adaptation accepts that same schema-v8 review before its
+  final geometry work and checks that `print_gate_sha256s` is a report-to-digest
+  mapping. This keeps the vendored verifier's pre-geometry review guard aligned
+  with the run-local Make finalizer; schema 7 remains historical evidence only.
 - The **legacy full-tier replay path stays retired**. It would rerun a
   `final-fresh-exports-strict-fit` verifier, and `--exports` is still gone; the
   restored tier is a different command, so a pre-tier receipt cannot be replayed

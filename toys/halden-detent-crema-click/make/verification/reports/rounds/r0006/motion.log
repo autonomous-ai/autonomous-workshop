@@ -1,0 +1,160 @@
+$ <HOME>/workspaces/peterat617/autonomous-workshop.worktrees/feat/halden-detent-inventor/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click --manifest <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/motion.json --json
+(6.6s, exit 0)
+--- stdout
+{
+  "ok": true,
+  "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click",
+  "assembly": "crema_click.step.py",
+  "results": [
+    {
+      "id": "piston-press",
+      "check": "linear_motion_collision",
+      "description": "Crema disc travels 4.5 mm down the chimney for the click loop.",
+      "clear": true,
+      "steps": 16,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        -4.5
+      ],
+      "stepMm": 0.2812,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 16 steps (step 0.281 mm)"
+    },
+    {
+      "id": "piston-extract-blocked",
+      "check": "linear_motion_collision",
+      "description": "After seating, the flange cannot pass the chimney lip upward.",
+      "clear": false,
+      "step": 7,
+      "steps": 12,
+      "obstacle": "cup_body",
+      "overlapMm3": 6.591494,
+      "translation": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "stepMm": 0.6667,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by cup_body at step 7/12 (6.591494 mm3) - retained, as expected"
+    },
+    {
+      "id": "plug-extract-blocked",
+      "check": "linear_motion_collision",
+      "description": "After the 60 deg lock, foot-plug ramps cannot drop off the cup lugs.",
+      "clear": false,
+      "step": 1,
+      "steps": 12,
+      "obstacle": "cup_body",
+      "overlapMm3": 355.757232,
+      "translation": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "stepMm": 0.6667,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by cup_body at step 1/12 (355.757232 mm3) - retained, as expected"
+    },
+    {
+      "id": "retention-closure",
+      "check": "retention_closure",
+      "description": "Every removable retainer reaches an explicitly fixed assembly root.",
+      "memberEvidence": [
+        {
+          "part": "crema_piston",
+          "condition": "piston-extract-blocked",
+          "members": [
+            {
+              "memberIndex": 0,
+              "volumeMm3": 12362.96116112029,
+              "boundsMm": [
+                [
+                  -22.0,
+                  -22.0,
+                  15.1
+                ],
+                [
+                  22.0,
+                  22.0,
+                  54.0
+                ]
+              ],
+              "id": "piston-extract-blocked",
+              "check": "linear_motion_collision",
+              "description": "After seating, the flange cannot pass the chimney lip upward.",
+              "clear": false,
+              "step": 7,
+              "steps": 12,
+              "obstacle": "cup_body",
+              "overlapMm3": 6.591494,
+              "translation": [
+                0.0,
+                0.0,
+                8.0
+              ],
+              "stepMm": 0.6667,
+              "expect": "blocked",
+              "status": "pass",
+              "detail": "blocked by cup_body at step 7/12 (6.591494 mm3) - retained, as expected"
+            }
+          ],
+          "solidCount": 1,
+          "status": "pass",
+          "detail": "1 material member(s) blocked by declared supports"
+        },
+        {
+          "part": "foot_plug",
+          "condition": "plug-extract-blocked",
+          "members": [
+            {
+              "memberIndex": 0,
+              "volumeMm3": 14088.852490788797,
+              "boundsMm": [
+                [
+                  -28.0,
+                  -28.0,
+                  0.0
+                ],
+                [
+                  28.0,
+                  28.0,
+                  9.6
+                ]
+              ],
+              "id": "plug-extract-blocked",
+              "check": "linear_motion_collision",
+              "description": "After the 60 deg lock, foot-plug ramps cannot drop off the cup lugs.",
+              "clear": false,
+              "step": 1,
+              "steps": 12,
+              "obstacle": "cup_body",
+              "overlapMm3": 355.757232,
+              "translation": [
+                0.0,
+                0.0,
+                -8.0
+              ],
+              "stepMm": 0.6667,
+              "expect": "blocked",
+              "status": "pass",
+              "detail": "blocked by cup_body at step 1/12 (355.757232 mm3) - retained, as expected"
+            }
+          ],
+          "solidCount": 1,
+          "status": "pass",
+          "detail": "1 material member(s) blocked by declared supports"
+        }
+      ],
+      "status": "pass",
+      "detail": "2 retention proof(s) close at 1 fixed root(s); every material member has a blocked escape sweep"
+    }
+  ]
+}
+
+--- stderr

@@ -31,6 +31,13 @@ the exact uploaded `workshop-release-page.json` as the publication anchor and
 records anchor hashes instead of fabricated manual hashes. Existing PDF assets
 remain ordinary unchanged Make files.
 
+Factory requires a recognized cover for STEP-only imports. Release therefore
+copies the exact sealed `<cad-project>/snap/iso.png` bytes into Factory's
+reserved `assembled_review/_assembled.png` transport path and records the
+source path and hash in the effect receipt. This is a transport alias of the
+Make-owned canonical hero: it does not create a render, change the Made tree,
+or add a host visual or geometry judgment.
+
 New Spark projects also freeze Workshop inventor selection before Make. A
 Wish's explicit inventor override binds immediately; otherwise the native
 Manager selects and writes a roster-bound setup marker. The host preserves that

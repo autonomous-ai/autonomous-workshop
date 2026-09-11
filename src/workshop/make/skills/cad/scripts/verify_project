@@ -182,6 +182,7 @@ SIGNATURE_REVIEW_FIELDS = {
     "review_rounds",
     "critical_form_requirements",
     "blocking_visual_defects",
+    "print_gate_sha256s",
     "largest_risk",
     "resolution",
 }
@@ -244,8 +245,8 @@ def _required_signature_review(project: Path) -> str:
     if content != canonical or not isinstance(review, dict):
         raise ValueError("signature review must use canonical JSON encoding")
     if set(review) != SIGNATURE_REVIEW_FIELDS:
-        raise ValueError("signature review fields do not match schema 7")
-    if review.get("schema_version") != 7 or review.get("kind") != SIGNATURE_REVIEW_KIND:
+        raise ValueError("signature review fields do not match schema 8")
+    if review.get("schema_version") != 8 or review.get("kind") != SIGNATURE_REVIEW_KIND:
         raise ValueError("signature review identity is invalid")
     for key in (
         "reviewer",
@@ -303,6 +304,17 @@ def _required_signature_review(project: Path) -> str:
             raise ValueError("signature review critical form requirement must match")
     if review.get("blocking_visual_defects") != []:
         raise ValueError("signature review still has blocking visual defects")
+    print_gate_sha256s = review.get("print_gate_sha256s")
+    if not isinstance(print_gate_sha256s, dict) or any(
+        not isinstance(path, str)
+        or not path
+        or not isinstance(digest, str)
+        or not SHA256_TEXT.fullmatch(digest)
+        for path, digest in print_gate_sha256s.items()
+    ):
+        raise ValueError(
+            "signature review print_gate_sha256s must map report paths to sha256 digests"
+        )
     for filename, field in (("iso.png", "iso_sha256"), ("signature.png", "signature_sha256")):
         expected = review.get(field)
         if not isinstance(expected, str) or not SHA256_TEXT.fullmatch(expected):
@@ -1413,7 +1425,7 @@ def _sc_project(root: Path, extra: dict[str, str] | None = None) -> Path:
     (project / "snap" / "iso.png").write_bytes(iso)
     (project / "snap" / "signature.png").write_bytes(signature)
     review = {
-        "schema_version": 7,
+        "schema_version": 8,
         "kind": SIGNATURE_REVIEW_KIND,
         "concept_sha256": "0" * 64,
         "iso_sha256": hashlib.sha256(iso).hexdigest(),
@@ -1443,6 +1455,7 @@ def _sc_project(root: Path, extra: dict[str, str] | None = None) -> Path:
             }
         ],
         "blocking_visual_defects": [],
+        "print_gate_sha256s": {},
         "largest_risk": "Fixture risk.",
         "resolution": "Fixture resolution.",
     }

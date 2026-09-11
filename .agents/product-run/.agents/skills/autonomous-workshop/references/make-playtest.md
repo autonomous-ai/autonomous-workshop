@@ -74,7 +74,7 @@ While pursuing the Goal:
    create or repair the actual product artifact. Use native subagents for bounded mechanism, CAD, or
    review tasks when useful.
 3. **Evaluate:** Build the artifact, run narrow deterministic checkers, inspect
-   actual STEP/STL and rendered outputs, and compare observed behavior with the
+   actual STEP and rendered outputs, and compare observed behavior with the
    concept, dimensions, materials, tolerances, assembly, and prior feedback.
    Use an independent native reviewer for subjective or adversarial inspection
    where it adds evidence.
@@ -240,7 +240,7 @@ invalidate Invent and downstream stages and start a new Invent Goal. The
 revised Invent packet receives the prior concept and exact Make feedback.
 
 Leave the product tree at the exact `product_root` in `STAGE.json`. It must
-include the required root product metadata, CAD project, assembled STEP/STL
+include the required root product metadata, CAD project, assembled STEP
 outputs, and deterministic CAD verification file. Map mechanisms, rules,
 dimensions, materials, tolerances, and limitations to real artifact bytes
 rather than prose assertions.
@@ -249,13 +249,13 @@ The `--cad-project-path` value is the self-contained project Make verifies;
 Forge/Quest's host additionally copies it into isolation and rebuilds it.
 Spark does not repeat Make's verification. Put its combined generator/import entry,
 local helper source, `snap/` family, and final `measure/verification-pipeline.md`
-inside that exact directory. Root-level assembled STEP/STL files are delivery
+inside that exact directory. Root-level assembled STEP files are delivery
 copies, not a substitute for a build entry inside the declared project. Run the
 final verifier against that exact directory, and pass its in-project report as
 `--cad-verification-path`; the finalizer rejects a report outside the declared
 project, independently of whether the route repeats isolated host verification.
 
-Keep stable exported STEP/STL/GLB files, product PNG renders, source, and
+Keep stable exported STEP files, product PNG renders, source, and
 measurements in the product tree. Do not preserve `__cadgen__` runtime caches,
 generation locks/progress files, `__pycache__`, or temporary work trees there:
 the Forge/Quest host's `--fresh` verifier intentionally rebuilds those bytes. The Make
@@ -271,11 +271,11 @@ finalizing:
 
 - `<cad-project>/snap/iso.png` is the chromatic hero, at least 800×800 px;
 - `<cad-project>/snap/signature.png` is a chromatic signature-experience sheet,
-  at least 1200×800 px, showing two to five exact STL poses or views that make
+  at least 1200×800 px, showing two to five exact STEP poses or views that make
   the promised interaction, reveal, or anti-generic detail legible without its
   title.
 
-Use the CAD skill's `scripts/render_product` on an exact verified STL, or
+Use the CAD skill's `scripts/render_product` on an exact verified STEP, or
 another deterministic renderer that writes those exact paths. Choose a palette,
 views, and poses that expose the form and play affordance. If a reader cannot
 identify the signature experience from the sheet alone, distinguish missing

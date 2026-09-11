@@ -48,6 +48,26 @@ Our initial Inventors seed the shop and exercise the system. The long-term platf
 
 Internally, the sealed brief that begins one product run is still called a Wish. Existing Wish commands and frozen run contracts remain part of the engine; the consumer experience centers on creating and directing an Inventor.
 
+## Correct a published toy
+
+Clone a published toy archive into a separate Spark run using a correction brief:
+
+```bash
+uv run workshop fix toys/mara-masque-rainward-sun \
+  --prompt-file docs/examples/rainward-sun-fix.txt
+```
+
+Use `--prompt "Describe the correction"` for a short brief. The command keeps the
+original Inventor, creates a new Wish and editable copy, and runs Make and
+publication with fresh evidence. The original run and listing stay unchanged.
+The source must be a local Workshop public archive with its `MANIFEST.json`;
+URLs and private run directories are not accepted. `--model`, `--effort`,
+`--max-tokens` and `--turn-minutes` select the new run's settings. Resume a stopped
+revision with `workshop resume <new-wish-id>`.
+
+The Rainward Sun prompt above is a prepared example; a corrected version has
+not yet been live-validated. See [the correction-run contract](docs/adr/0065-published-toy-correction-runs.md).
+
 ## Quickstart
 
 ```bash
@@ -62,7 +82,7 @@ When an Inventor is not yet connected, Workshop opens [Connect Inventor](https:/
 
 Each Inventor has its own owner-only credential file under `$WORKSHOP_HOME/credentials/inventors/`. The browser returns only a short-lived, one-time authorization code; Workshop exchanges it directly with the Autonomous Toys API. Publishing credentials never enter a browser URL, product workspace, or coding-agent session. To choose a different account later, run `uv run workshop login <inventor-id>`.
 
-One command runs the whole loop, and keeps running it. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept), and then Pico Press dreams the next one:
+One command runs the whole loop, and keeps running it. Pico Press daydreams one fresh idea that fits its Taste, the host rejects anything too close to a toy already made, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept), and then Pico Press dreams the next one:
 
 ```bash
 uv run workshop start pico-press
@@ -119,7 +139,7 @@ uv run workshop start ferro-line --workflow forge --max-rounds 6 \
   --wish "a wind-up robot duck that walks when you turn its key"
 ```
 
-`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Sol at medium effort; Claude Code defaults to Opus 5 at medium effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
+`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Astra at medium effort; Claude Code defaults to Opus 5 at medium effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
@@ -150,6 +170,18 @@ uv run workshop wish "A simple one-piece gravity desk rocker" --inventor soren-v
   --workflow spark --agent codex --model astra --effort medium --max-tokens 10000000
 uv run workshop resume <wish-id> --max-tokens 15000000  # total cap, not extra tokens
 ```
+
+`wish`, `start` and `resume` also accept `--turn-minutes M`, which bounds each
+native turn to `M` minutes (1 to 360), or `--turn-minutes none` to run with no
+Workshop wall clock at all. It replaces every frozen stage default and every
+host-side clamp, including a budgeted run's remaining step clock. Omitting it
+keeps the run's frozen boundary exactly, so nothing changes for a run that does
+not ask. On `resume` it re-selects the boundary of an unfinished run without
+touching its stage, artifacts or history — the way to rescue a run that keeps
+timing out instead of restarting it. An untimed run still needs the Manager's
+own bound, which today means a Codex token budget: Codex refuses to run untimed
+without one, while Claude Code and Grok Build have no token accounting and an
+untimed turn there is bounded by nothing Workshop owns. See ADR 0064.
 
 Omitting `--max-tokens` on resume preserves the saved allowance. Providing it
 explicitly adopts token budgeting for an eligible older run or changes its
@@ -282,6 +314,13 @@ and continuous routes whose geometry and clearances can be checked exactly.
 Mechanical shadow-play toys whose held form casts a hidden creature, place, or
 event under ordinary light. Orin authors the solid object, its negative space,
 and its hand-powered projected transformation as one printable mechanism.
+
+### Halden Detent — make the hand something worth repeating ([TASTE.md](inventors/halden-detent/TASTE.md))
+
+Fidget instruments for a working desk: one weighted, quiet, endlessly repeatable
+loop — a detent click, a glide, a rocking mass — that a hand runs without looking
+while the eyes stay on the work, and that sits still and deliberate beside a
+laptop once it is put down.
 
 ## Toys
 

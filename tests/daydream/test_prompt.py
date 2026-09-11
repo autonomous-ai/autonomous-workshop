@@ -55,6 +55,7 @@ class PromptTest(unittest.TestCase):
             "parts_estimate",
             "keywords",
             "12",
+            "Taste hard rule may lower or remove",
             "0.4 mm nozzle",
             "0.8 mm minimum wall",
             "No electronics",
@@ -89,6 +90,17 @@ class PromptTest(unittest.TestCase):
                 notebook_count=0,
                 prior_work_count=0,
             )
+
+    def test_constitution_lets_taste_define_originality(self):
+        self.assertIn(
+            "Do not impose\n  mechanism novelty when the Taste calls for a rules-preserving reskin.",
+            DAYDREAM_CONSTITUTION,
+        )
+        self.assertIn("faithfully reinterpret", DAYDREAM_CONSTITUTION)
+        self.assertNotIn(
+            "Not a known mechanism wearing a new shell", DAYDREAM_CONSTITUTION
+        )
+        self.assertNotIn("theme are never newness", DAYDREAM_CONSTITUTION)
 
 
 if __name__ == "__main__":

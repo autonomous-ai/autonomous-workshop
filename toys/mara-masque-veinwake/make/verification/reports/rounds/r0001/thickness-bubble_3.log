@@ -1,0 +1,6 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/part_bubble_3.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-bubble_3.md
+(2.1s, exit 1)
+--- stdout
+
+--- stderr
+part_bubble_3.step.py: 12 open edges -- inside and outside are undefined on an open surface. Run check_mesh, then repair_mesh, and fix the solid in the generator.

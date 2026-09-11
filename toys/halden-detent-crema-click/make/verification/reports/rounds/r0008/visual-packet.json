@@ -1,0 +1,22 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0008/visual/front.png": "21d83b6a87f6593eead36f7624c15cda0ae3cbac7d2aa262d6f2a8bd9d05a05b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0008/visual/iso.png": "f0801fa1faca6b601e3109e3b06f84641f732a1cd3e4b2b3460e14e3b6170338",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0008/visual/top.png": "eed347eeac855af6b253ff19256b60c267ff551abe37c199e2298e3dfa18db63"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "README.md": "90132c44e75ca00150b31efcb47b7228f48ad0325583eaca92f78e17f05eb6df",
+    "crema_click.step": "e599cf70d1e869ca63cb4bc9c6df5c7430e345bff46ec83b37b67c85a45c744c",
+    "crema_click.step.py": "23daebb14d452945397fa20a6a13399bc6b3f4eae402e793172d5864f19cfccd",
+    "crema_click_lib.py": "72082bb4fa0c5d0c03337bc1686d89a15cf3a8f665bda15a2f3a96534a08472f",
+    "crema_click_spec.md": "b9f7f1d4b04d886fab4af7714abc3eb9b650e79d05cad66ecd245a281e094825",
+    "part_crema_piston.step": "ace4d97c5f24beff9a5690979f1bfc433fd818ce1f7fa8ccdbf8368212b391d5",
+    "part_crema_piston.step.py": "73b4db10b80edb5de3362a3066c2385d001df22743ac77c56902f0755b43f547",
+    "part_cup_body.step": "00d30e2417ce1780df00bcae618ba2935528714ace6e4c7080d7a6fc09d7b479",
+    "part_cup_body.step.py": "b5bb95cb003fef6e7abd45df5ac8e79192ea96052968d73e4b22253caec07d27",
+    "part_foot_plug.step": "1e29145178cd9bf117c29cc08d8deb25097e73ef1f61594c8fa5600ca2df55b8",
+    "part_foot_plug.step.py": "88b97c50219fffba8b03ffea6bb3e0af7b61dbd5709eec3b607448e18e68b72c"
+  }
+}

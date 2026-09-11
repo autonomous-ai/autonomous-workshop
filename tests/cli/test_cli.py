@@ -76,6 +76,7 @@ class NativeCommandTest(unittest.TestCase):
                 "login",
                 "daydream",
                 "wish",
+                "fix",
                 "status",
                 "resume",
                 "doctor",
@@ -194,7 +195,7 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "match")
         self.assertIn("Starting one native Codex session", stderr.getvalue())
         self.assertEqual(observed["manager_id"], "codex")
-        self.assertEqual(observed["manager_model"], "gpt-5.6-sol")
+        self.assertEqual(observed["manager_model"], "gpt-6-astra")
         self.assertEqual(observed["manager_reasoning_effort"], "medium")
         self.assertIn("reasoning about the current stage", stderr.getvalue())
         self.assertIn("process is still running", stderr.getvalue())
@@ -214,7 +215,7 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(observed["effort"], "spark")
         self.assertFalse(observed["github_publish_requested"])
         self.assertIn("Workflow: Spark", stderr.getvalue())
-        self.assertIn("Model: gpt-5.6-sol · effort medium", stderr.getvalue())
+        self.assertIn("Model: gpt-6-astra · effort medium", stderr.getvalue())
         native_start.assert_called_once()
 
     def test_custom_token_cap_and_exact_trial_params_reach_host(self):
@@ -255,7 +256,7 @@ class NativeCommandTest(unittest.TestCase):
         ):
             self.assertEqual(effort, "spark")
             self.assertEqual(manager_id, "codex")
-            self.assertEqual(manager_model, "gpt-5.6-sol")
+            self.assertEqual(manager_model, "gpt-6-astra")
             self.assertEqual(manager_reasoning_effort, "medium")
             self.assertFalse(github_publish_requested)
             del wish, activity_observer
@@ -427,7 +428,7 @@ class NativeCommandTest(unittest.TestCase):
 
     def test_wish_mock_covers_defaults_for_every_agent_and_workflow(self):
         defaults = {
-            "codex": ("gpt-5.6-sol", "medium"),
+            "codex": ("gpt-6-astra", "medium"),
             "claude": ("claude-opus-5", "medium"),
             "grok": ("grok-4.6", None),
         }
@@ -472,6 +473,71 @@ class NativeCommandTest(unittest.TestCase):
             result = main(("wish", "a moon", "--max-rounds", "8", "--json"))
         self.assertEqual(result, 0)
         self.assertEqual(start.call_args.kwargs["max_rounds"], 8)
+
+    def test_wish_passes_an_exact_turn_boundary_to_the_native_host(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-turn-minutes"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "a moon", "--turn-minutes", "180", "--json"))
+        self.assertEqual(result, 0)
+        self.assertEqual(start.call_args.kwargs["turn_seconds"], 180 * 60)
+        self.assertNotIn("turn_untimed", start.call_args.kwargs)
+
+    def test_wish_passes_an_untimed_turn_to_the_native_host(self):
+        for spelling in ("none", "NONE", "off", "unlimited"):
+            with self.subTest(spelling=spelling), mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-untimed"
+            ), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                result = main(("wish", "a moon", "--turn-minutes", spelling, "--json"))
+            self.assertEqual(result, 0)
+            self.assertIs(start.call_args.kwargs["turn_untimed"], True)
+            self.assertNotIn("turn_seconds", start.call_args.kwargs)
+
+    def test_wish_without_the_flag_leaves_the_frozen_boundary_alone(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-frozen-boundary"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "a moon", "--json"))
+        self.assertEqual(result, 0)
+        self.assertNotIn("turn_seconds", start.call_args.kwargs)
+        self.assertNotIn("turn_untimed", start.call_args.kwargs)
+
+    def test_wish_rejects_an_out_of_range_turn_boundary(self):
+        for value in ("0", "361", "forever", "", "1.5"):
+            with self.subTest(value=value), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(
+                StringIO()
+            ), self.assertRaises(SystemExit) as caught:
+                main(("wish", "a moon", "--turn-minutes", value, "--json"))
+            self.assertEqual(caught.exception.code, 2)
+            start.assert_not_called()
+
+    def test_resume_rebinds_the_turn_boundary_of_an_existing_run(self):
+        for argument, expected in (
+            ("240", {"turn_seconds": 240 * 60}),
+            ("none", {"turn_untimed": True}),
+        ):
+            with self.subTest(argument=argument), mock.patch(
+                "cli.main.resume_native_run", return_value=native_receipt()
+            ) as resume, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                main(("resume", "wish-one", "--turn-minutes", argument))
+            for key, value in expected.items():
+                self.assertEqual(resume.call_args.kwargs[key], value)
+
+    def test_resume_without_the_flag_rebinds_nothing(self):
+        with mock.patch(
+            "cli.main.resume_native_run", return_value=native_receipt()
+        ) as resume, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            main(("resume", "wish-one"))
+        self.assertNotIn("turn_seconds", resume.call_args.kwargs)
+        self.assertNotIn("turn_untimed", resume.call_args.kwargs)
 
     def test_wish_pins_an_explicit_inventor_in_the_immutable_wish(self):
         with mock.patch(
@@ -928,7 +994,7 @@ class DaydreamCommandTest(unittest.TestCase):
         start.assert_not_called()
         self.assertEqual(observed["inventor_id"], "sample")
         self.assertEqual(observed["manager_id"], "codex")
-        self.assertEqual(observed["manager_model"], "gpt-5.6-sol")
+        self.assertEqual(observed["manager_model"], "gpt-6-astra")
         self.assertEqual(observed["manager_reasoning_effort"], "medium")
         self.assertIsNone(observed["effort"])
         self.assertTrue(Path(observed["source_root"]).is_dir())
@@ -1003,7 +1069,7 @@ class DaydreamCommandTest(unittest.TestCase):
         run.assert_called_once()
         native_start.assert_called_once()
         self.assertEqual(run.call_args.kwargs["manager_id"], "codex")
-        self.assertEqual(run.call_args.kwargs["manager_model"], "gpt-5.6-sol")
+        self.assertEqual(run.call_args.kwargs["manager_model"], "gpt-6-astra")
         self.assertEqual(run.call_args.kwargs["manager_reasoning_effort"], "medium")
         self.assertEqual(run.call_args.kwargs["effort"], "spark")
         wish = observed["wish"]
@@ -1015,7 +1081,7 @@ class DaydreamCommandTest(unittest.TestCase):
         self.assertEqual(wish.context["inventor_id"], "sample")
         self.assertEqual(observed["effort"], "spark")
         self.assertEqual(observed["manager_id"], "codex")
-        self.assertEqual(observed["manager_model"], "gpt-5.6-sol")
+        self.assertEqual(observed["manager_model"], "gpt-6-astra")
         self.assertEqual(observed["manager_reasoning_effort"], "medium")
         self.assertFalse(observed["github"])
         payload = json.loads(stdout.getvalue())
@@ -1123,7 +1189,7 @@ class DaydreamCommandTest(unittest.TestCase):
     def test_start_mock_covers_defaults_for_every_agent_and_workflow(self):
         sealed = sample_sealed()
         defaults = {
-            "codex": ("gpt-5.6-sol", "medium"),
+            "codex": ("gpt-6-astra", "medium"),
             "claude": ("claude-opus-5", "medium"),
             "grok": ("grok-4.6", None),
         }

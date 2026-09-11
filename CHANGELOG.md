@@ -8,6 +8,22 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Fixed
 
+- Two STEP-only leftovers no longer ask a run for a mesh. The published
+  CAD project contract (`make/schemas/cad-project.schema.json`) required
+  `stl_path` on every part under `additionalProperties: false`, mandating
+  an export the toolchain removed in ADR 0062; the field is gone and the
+  document is schema version 2 (`$id` `cad-project-v2.json`). Nothing
+  validates against it, so no artifact changes shape. The orphaned
+  `references/make-playtest.md`, still materialized into every run even
+  though `SKILL.md` no longer routes to it, kept six STL instructions
+  including `render_product` "on an exact verified STL"; all six say STEP.
+  The frozen `deep-economics-v1..v13` references, the v5-v9 proof prompts,
+  and the in-memory tessellation three.js and Factory part keying consume
+  are unchanged. See ADR 0062.
+- Daydream no longer universally rejects classic games, faithful reskins, or
+  theme-led reinterpretations. Each Inventor's `TASTE.md` now defines the kind
+  of originality it owns, while the existing catalog and notebook checks still
+  reject repeats of prior Workshop work.
 - The full CAD-gate tier's command names the overhang angle beside the nozzle
   (`--print-gates --nozzle 0.4 --overhang-angle 45`), so the receipt records
   both thresholds the print-ready claim was measured against instead of
@@ -34,8 +50,8 @@ Keep a Changelog and uses semantic versioning for released distributions.
   for marked runs, with engineering and publication gates unchanged.
 - `workshop start`, `daydream`, and `wish` now expose `--agent`, `--model`,
   and model `--effort`; new runs freeze those choices in `MANAGER.json`.
-  Codex defaults to Sol/high and accepts the Astra alias, while Claude Code
-  defaults to Opus 5/high.
+  Codex accepts Astra and Sol aliases, while Claude Code accepts the Opus 5
+  alias.
 - The host CAD gate compares declared STEP files by their entity graph
   (`workshop.make.step_canonical`) instead of by bytes: Open CASCADE emits
   presentation-style entities in pointer order, so a faithful fresh re-export
@@ -57,6 +73,8 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Changed
 
+- New Codex runs default to Astra at medium effort. Explicit model selections
+  and the exact model frozen into existing runs are unchanged.
 - Resynced the vendored CAD skills to `autonomous-product-to-cad` `673a9fa`
   and adopted the restoration in full: **the print gates are back, fed from
   source instead of an exported mesh.** `check_mesh`, `check_overhang`,

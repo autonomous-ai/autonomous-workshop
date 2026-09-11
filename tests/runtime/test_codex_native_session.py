@@ -16,6 +16,7 @@ from unittest import mock
 
 import workshop.runtime.codex as codex_runtime
 from workshop.errors import ContractError
+from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
 from workshop.workflow.inventor_selection import INVENTOR_SELECTION_MARKER_NAME
 from workshop.runtime.codex import (
     DEFAULT_WORKSHOP_MODEL,
@@ -2640,18 +2641,32 @@ class CodexNativeSessionTest(unittest.TestCase):
                     auto_compact_token_limit=invalid,
                 )
 
-    def test_native_turn_defaults_to_the_maximum_supported_hour(self):
+    def test_native_turn_defaults_to_one_hour_and_is_capped_at_the_shared_ceiling(self):
+        """The default stays one hour; only an explicit request may exceed it."""
+
         self.assertEqual(DEFAULT_CODEX_TIMEOUT_SECONDS, 3_600)
         launcher = CodexNativeSessionLauncher(
             binary=TEST_CODEX_BINARY,
             cli_version="0.145.0",
         )
         self.assertEqual(launcher.timeout_seconds, 3_600)
-        with self.assertRaisesRegex(ValueError, "1 to 3,600"):
+        longer = CodexNativeSessionLauncher(
+            binary=TEST_CODEX_BINARY,
+            cli_version="0.145.0",
+            timeout_seconds=MAX_NATIVE_TURN_SECONDS,
+        )
+        self.assertEqual(longer.timeout_seconds, MAX_NATIVE_TURN_SECONDS)
+        with self.assertRaisesRegex(ValueError, "1 to %d" % MAX_NATIVE_TURN_SECONDS):
             CodexNativeSessionLauncher(
                 binary=TEST_CODEX_BINARY,
                 cli_version="0.145.0",
-                timeout_seconds=3_601,
+                timeout_seconds=MAX_NATIVE_TURN_SECONDS + 1,
+            )
+        with self.assertRaisesRegex(ValueError, "1 to %d" % MAX_NATIVE_TURN_SECONDS):
+            CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                cli_version="0.145.0",
+                timeout_seconds=0,
             )
 
     def test_every_host_turn_boundary_marker_is_accepted(self):
