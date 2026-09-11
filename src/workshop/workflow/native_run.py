@@ -213,7 +213,7 @@ from workshop.workflow.reasoning_override import (
     validate_reasoning_override,
     validate_reasoning_selection,
 )
-from workshop.runtime.codex_usage import read_product_usage, UsageUnavailable, UsageNotReady
+from workshop.runtime.codex_usage import COUNTERS, read_product_usage, UsageUnavailable, UsageNotReady
 from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
@@ -5074,6 +5074,11 @@ def _token_budget_launcher(paths, checkpoint, launcher, budget, reasoning_overri
     )
     if result.cli_version != "0.153.4":
         raise ContractError("token-budget rollout adapter requires validated Codex 0.153.4")
+    # Reconcile already completed work before capturing this turn's baseline.
+    # A richer native ledger can recover historical compaction spend; it must
+    # never masquerade as evidence that the upcoming request was accounted for.
+    # Brand-new roots retain the observer's normal UsageNotReady behavior.
+    _product_token_observer(paths, checkpoint, budget)()
     result.token_budget_observer = _product_token_observer(paths, checkpoint, budget)
     return result
 
@@ -5086,22 +5091,45 @@ def _root_token_counts(observation):
     return {key: root["tokens"][key] for key in ("input_tokens", "output_tokens")}
 
 
-def _record_token_accounting_need(paths, checkpoint, baseline, *, completed_turn=False, terminal_usage=None):
+def _root_token_accounting_source(observation):
+    if observation is None:
+        return "unobserved"
+    root = next(thread for thread in observation["threads"]
+                if thread["thread_id"] == observation["root_thread_id"])
+    if root.get("status") == "pending":
+        tokens = root.get("tokens")
+        if (not isinstance(tokens, dict) or set(tokens) != set(COUNTERS)
+                or any(type(value) is not int or value != 0 for value in tokens.values())):
+            raise StateConflict("pending native root accounting is invalid")
+        return "unobserved"
+    source = root.get("accounting_source", "token-count-v1")
+    if source not in ("token-count-v1", "response-ledger-v1"):
+        raise StateConflict("native root accounting source is invalid")
+    return source
+
+
+def _record_token_accounting_need(paths, checkpoint, baseline, *, completed_turn=False, terminal_usage=None, baseline_source=None):
     path = paths.host_state / "token-accounting-need.json"
     if path.exists() or path.is_symlink():
         previous = _read_stable_private_json(path, label="token accounting need", maximum_bytes=4096)
-        if not (set(previous) == {"schema_version", "product_id", "wish_sha256", "baseline_root_tokens", "completed_turn", "terminal_usage"}
-                and previous.get("schema_version") == 1 and type(previous.get("schema_version")) is int
+        expected = {"schema_version", "product_id", "wish_sha256", "baseline_root_tokens", "completed_turn", "terminal_usage"}
+        if previous.get("schema_version") == 2:
+            expected.add("baseline_source")
+        if not (set(previous) == expected
+                and previous.get("schema_version") in (1, 2) and type(previous.get("schema_version")) is int
                 and previous.get("terminal_usage") is None
                 and completed_turn and previous.get("completed_turn") is False
                 and previous.get("product_id") == checkpoint.product_id
                 and previous.get("wish_sha256") == checkpoint.wish_sha256
                 and previous.get("baseline_root_tokens") == baseline):
             return  # Never replace an unresolved completed-turn expectation.
+        # An unknown old baseline cannot acquire provenance during a retry.
+        baseline_source = previous.get("baseline_source")
     _write_private_json(path, {
-        "schema_version": 1, "product_id": checkpoint.product_id,
+        "schema_version": 1 if baseline_source is None else 2, "product_id": checkpoint.product_id,
         "wish_sha256": checkpoint.wish_sha256, "baseline_root_tokens": baseline,
         "completed_turn": completed_turn, "terminal_usage": terminal_usage,
+        **({"baseline_source": baseline_source} if baseline_source is not None else {}),
     })
 
 
@@ -5114,12 +5142,19 @@ def _reconcile_token_accounting_need(paths, checkpoint, budget):
     def counters(value):
         return (isinstance(value, dict) and set(value) == {"input_tokens", "output_tokens"}
                 and all(type(count) is int and 0 <= count <= 10**12 for count in value.values()))
-    if (set(need) != {"schema_version", "product_id", "wish_sha256", "baseline_root_tokens", "completed_turn", "terminal_usage"}
-            or need["schema_version"] != 1 or type(need["schema_version"]) is not int
+    expected = {"schema_version", "product_id", "wish_sha256", "baseline_root_tokens", "completed_turn", "terminal_usage"}
+    if need.get("schema_version") == 2:
+        expected.add("baseline_source")
+    if (set(need) != expected
+            or need["schema_version"] not in (1, 2) or type(need["schema_version"]) is not int
             or need["product_id"] != checkpoint.product_id or need["wish_sha256"] != checkpoint.wish_sha256
             or not counters(need["baseline_root_tokens"]) or type(need["completed_turn"]) is not bool
             or (need["terminal_usage"] is not None and not counters(need["terminal_usage"]))
-            or (not need["completed_turn"] and need["terminal_usage"] is not None)):
+            or (not need["completed_turn"] and need["terminal_usage"] is not None)
+            or (need["schema_version"] == 2 and (
+                need["baseline_source"] not in ("token-count-v1", "response-ledger-v1", "unobserved")
+                or (need["baseline_source"] == "unobserved" and any(need["baseline_root_tokens"].values()))
+            ))):
         raise StateConflict("token accounting need binding is invalid")
     value = _read_product_token_usage(paths, checkpoint)
     budget.observe(value)
@@ -5127,6 +5162,10 @@ def _reconcile_token_accounting_need(paths, checkpoint, budget):
     current = _root_token_counts(value)
     baseline = need["baseline_root_tokens"]
     terminal = need["terminal_usage"]
+    source = _root_token_accounting_source(value)
+    baseline_source = need.get("baseline_source", "token-count-v1")
+    if need["completed_turn"] and baseline_source not in (source, "unobserved"):
+        raise UsageUnavailable("completed native turn lacks a comparable accounting baseline")
     if need["completed_turn"] and (
         (terminal is not None and any(current[key] < baseline[key] + terminal[key] for key in current))
         or (terminal is None and all(current[key] <= baseline[key] for key in current))
@@ -5135,25 +5174,33 @@ def _reconcile_token_accounting_need(paths, checkpoint, budget):
     path.unlink()
 
 
+def _refresh_product_token_usage(paths, checkpoint, budget, *, baseline, baseline_source):
+    """Reconcile exact completed spend without changing host-effect eligibility."""
+    try:
+        value = _read_product_token_usage(paths, checkpoint)
+        budget.observe(value)
+        _save_lifetime_budget(paths, checkpoint, budget)
+    except UsageNotReady:
+        if budget.observation is None:
+            return  # Pre-identity startup, not fabricated zero-token usage.
+        _record_token_accounting_need(paths, checkpoint, baseline, baseline_source=baseline_source)
+        raise
+    except (WorkshopError, OSError, ValueError):
+        _record_token_accounting_need(paths, checkpoint, baseline, baseline_source=baseline_source)
+        _write_private_json(paths.host_state / "token-budget-stop.json", {
+            "reason": "native token usage unavailable or inconsistent",
+            "product_id": checkpoint.product_id,
+        })
+        raise
+
+
 def _product_token_observer(paths, checkpoint, budget):
     baseline = _root_token_counts(budget.observation)
+    baseline_source = _root_token_accounting_source(budget.observation)
     def observe():
-        try:
-            value = _read_product_token_usage(paths, checkpoint)
-            budget.observe(value)
-            _save_lifetime_budget(paths, checkpoint, budget)
-        except UsageNotReady:
-            if budget.observation is None:
-                return  # Pre-identity startup, not fabricated zero-token usage.
-            _record_token_accounting_need(paths, checkpoint, baseline)
-            raise
-        except (WorkshopError, OSError, ValueError):
-            _record_token_accounting_need(paths, checkpoint, baseline)
-            _write_private_json(paths.host_state / "token-budget-stop.json", {
-                "reason": "native token usage unavailable or inconsistent",
-                "product_id": checkpoint.product_id,
-            })
-            raise
+        _refresh_product_token_usage(
+            paths, checkpoint, budget, baseline=baseline, baseline_source=baseline_source,
+        )
         if budget.exhausted(checkpoint.stage):
             _write_private_json(paths.host_state / "token-budget-stop.json", {
                 "reason": "product token limit reached", "product_id": checkpoint.product_id,
@@ -5167,7 +5214,8 @@ def _product_token_observer(paths, checkpoint, budget):
     def reconcile_completed_turn(usage):
         terminal = None if usage is None else {"input_tokens": usage[0], "output_tokens": usage[3]}
         _record_token_accounting_need(
-            paths, checkpoint, baseline, completed_turn=True, terminal_usage=terminal
+            paths, checkpoint, baseline, completed_turn=True, terminal_usage=terminal,
+            baseline_source=baseline_source,
         )
         _reconcile_token_accounting_need(paths, checkpoint, budget)
 
@@ -10165,6 +10213,13 @@ def resume_native_run(
         budget = _load_lifetime_budget(paths, checkpoint)
         if isinstance(budget, ProductTokenBudget):
             _reconcile_token_accounting_need(paths, checkpoint, budget)
+            # A pending proposal or host-only publication can bypass the native
+            # launcher. Refresh its charged usage under the same lock as well.
+            _refresh_product_token_usage(
+                paths, checkpoint, budget,
+                baseline=_root_token_counts(budget.observation),
+                baseline_source=_root_token_accounting_source(budget.observation),
+            )
         if reasoning_effort is not None:
             _set_reasoning_override(paths, checkpoint, reasoning_effort)
         return _resume_native_run_locked(

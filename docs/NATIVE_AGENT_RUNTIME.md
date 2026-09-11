@@ -976,9 +976,15 @@ New Codex runs freeze `token-budget-v1.md`: `--max-tokens` defaults to
 30,000,000 input-plus-output tokens across all stages, native children and
 resumes. Cached input is included once; reasoning is already part of output.
 The host persists completed-request usage from a version-pinned Codex 0.153.4
-rollout adapter. A valid request awaiting its first usage report has no time
-limit and remains explicitly pending. Unavailable, malformed, or regressing
-established accounting fails closed. Oversized native compaction records are
+rollout adapter. Its top-level response ledger counts each unique completed
+response, including remote compaction, and requires exact thread and turn
+counter additivity. Notifications corroborate coverage; their restored
+cumulative baselines and post-compaction context-size estimates are not spend.
+Malformed or incomplete ledgers fail closed. Rollouts without ledger entries
+retain the strict legacy notification reader. A valid request awaiting its
+first usage report has no time limit and remains explicitly pending.
+Unavailable, malformed, or regressing established accounting fails closed.
+Oversized native compaction records are
 validated in bounded chunks without retaining their history or recounting
 embedded usage. Ancestry discovery reads only a bounded first metadata record
 from each candidate; unrelated bodies are never usage inputs. Selected files
@@ -986,8 +992,11 @@ are streamed to their observed size without an aggregate file-size spending cap;
 ordinary record bounds and identity validation remain.
 Completed root-turn input/output usage is reconciled against the native terminal
 event before a saved proposal or effect can advance; unresolved accounting
-survives resume in private host state. Canceled or still-in-flight descendants
-are not presented as completed usage. In-flight requests may overshoot the
+survives resume in private host state. Fresh prelaunch observations separate
+historical usage corrections from new-turn baselines. Completed expectations
+retain their metering source and fail closed across an incomparable source
+change. Canceled or still-in-flight descendants are not presented as completed
+usage. In-flight requests may overshoot the
 observed cap.
 `resume --max-tokens N` changes the total cap without resetting consumption.
 Normal twenty-minute splits and aggregate time/turn allowances are superseded;

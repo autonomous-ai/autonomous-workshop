@@ -85,6 +85,7 @@ def resume_context(paths, run, callback):
     stack = ExitStack()
     stack.enter_context(mock.patch.object(host, "native_run_paths", return_value=paths))
     stack.enter_context(mock.patch.object(host, "_open_budgeted_agent_run", return_value=run))
+    stack.enter_context(mock.patch.object(host, "_read_product_token_usage", return_value=observation(100)))
     stack.enter_context(mock.patch.object(host, "_resume_native_run_locked", side_effect=callback))
     return stack
 
@@ -356,7 +357,8 @@ def test_ordinary_profile_drift_still_fails_before_process_launch(saved):
     host._launcher_call(launcher, "start", paths=paths, checkpoint=checkpoint)
     host._set_reasoning_override(paths, checkpoint, "medium")
     override = host._read_reasoning_override(paths, checkpoint)
-    changed = host._token_budget_launcher(paths, checkpoint, launcher, budget, override)
+    with mock.patch.object(host, "_read_product_token_usage", return_value=observation(100)):
+        changed = host._token_budget_launcher(paths, checkpoint, launcher, budget, override)
     changed.runtime_profile_sha256 = "f" * 64
     with pytest.raises(ContractError, match="binding"):
         host._launcher_call(changed, "resume", paths=paths, checkpoint=checkpoint)

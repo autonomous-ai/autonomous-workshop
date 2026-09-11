@@ -26,8 +26,31 @@ accounting remains preserved. Other runtimes retain their frozen policies.
 
 The trusted host reads bounded native rollout records using a compatibility
 adapter validated specifically for Codex 0.153.4. It binds root identity and
-workspace to private host state, follows native parent ancestry, deduplicates
-cumulative notifications and sums explicit task resets across process resumes.
+workspace to private host state and follows native parent ancestry.
+
+As of 2026-09-11, rollouts containing top-level `token_usage_record` entries
+use that per-response ledger. Each unique response must bind its thread,
+native session and active task, and its five usage counters must add exactly
+to both the declared turn and thread totals. Declared `total_tokens` must
+equal input plus output. Identical response replays add nothing; conflicting
+identities or incomplete cumulative coverage fail closed. Top-level remote
+compaction responses are charged once; embedded compaction copies are ignored.
+
+`token_count` notifications corroborate ledger coverage without supplying
+spend. A changed notification requires a fresh current-task response whose
+usage equals its latest-request counters; within that task, cumulative changes
+must equal the fresh ordinary response usage. Identical notifications add
+nothing and cannot hide a later missing response. A compaction must name its
+exact already charged response before a zero-usage context-size notification
+with unchanged cumulative counters is accepted. That case never treats
+its context-size estimate as spend. Missing final responses, mixed legacy and
+ledger coverage, or malformed ledger records never fall back to guessed usage.
+This corrects two observed notification limitations: restored historical
+baselines on process resume and omitted remote-compaction usage. Recovered
+ledger totals remain charged through the existing monotonic product budget.
+
+Rollouts without any response-ledger entry retain the strict legacy reader,
+which deduplicates cumulative notifications and sums explicit task resets.
 Continued tasks in the same process, including native child follow-ups, retain
 cumulative counters. At each task boundary, the adapter accepts only a reset
 whose cumulative counters equal the latest request, or continuation whose
@@ -52,6 +75,18 @@ in-flight descendants remain pending rather than becoming fabricated completed
 usage. Crossing the cap or losing established accounting stops
 the supervised native process. In-flight requests can overshoot the allowance;
 this is an observed-usage stop, not provider-side hard preauthorization.
+
+Before each native launch, the host persists a fresh observation and only then
+captures that turn's accounting baseline. Historical compaction corrections
+cannot satisfy a later request's completion expectation. Resume also refreshes
+usage before dispatching existing proposals or host-only publication, retaining
+their existing effect policy. Schema-v2 accounting needs record the baseline's
+metering source. Established completed-turn baselines must use the same source
+as the observation that reconciles them; an older unknown or legacy baseline
+cannot be discharged by a richer ledger's historical correction. A truly
+unobserved root with zero usage may establish its first source normally.
+Schema-v1 nonterminal needs remain recoverable; an incomparable completed need
+remains blocked with its record intact and recovered consumption still charged.
 
 The ordinary twenty-minute split and aggregate time/turn limits no longer
 govern marked token-budget products. On 2026-09-09 the one-hour per-launch

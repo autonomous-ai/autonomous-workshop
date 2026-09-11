@@ -468,6 +468,14 @@ class NativeHostTest(unittest.TestCase):
     def setUp(self):
         self.gamevault = install_fake_gamevault(self)
 
+    def _install_fake_usage(self, input_tokens=100):
+        # Fake launchers do not write native rollouts; resume still refreshes usage.
+        from tests.workflow.test_token_budget import observation
+        self.enterContext(mock.patch(
+            "workshop.workflow.native_run._read_product_token_usage",
+            return_value=observation(input_tokens),
+        ))
+
     @staticmethod
     def _launcher_checkpoint(
         *,
@@ -2178,6 +2186,7 @@ class NativeHostTest(unittest.TestCase):
                 native_run_paths("ambiguous-wish")
 
     def test_live_source_checkout_legacy_run_stays_status_and_resume_compatible(self):
+        self._install_fake_usage()
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -2912,6 +2921,7 @@ class NativeHostTest(unittest.TestCase):
             self.assertIsNone(_repair_base(SimpleNamespace(run_root=root, host_state_root=root / "nowhere"), history))
 
     def test_resume_uses_exact_materialized_binding(self):
+        self._install_fake_usage()
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -3052,6 +3062,7 @@ class NativeHostTest(unittest.TestCase):
             )
 
     def test_resume_consumes_interrupted_finalized_stage_before_new_turn(self):
+        self._install_fake_usage()
         interrupted = _FinalizedMatchThenInterruptLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -3200,6 +3211,7 @@ class NativeHostTest(unittest.TestCase):
             )
 
     def test_token_cap_is_persisted_and_resume_never_grants_fresh_allowance(self):
+        self._install_fake_usage(1000)
         from workshop.workflow.token_budget import ProductTokenBudget
         from tests.workflow.test_token_budget import observation
 
@@ -3668,6 +3680,7 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(launcher.resumes, [])
 
     def test_status_reports_durable_safe_progress_and_attempted_turn_count(self):
+        self._install_fake_usage()
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -3738,6 +3751,7 @@ class NativeHostTest(unittest.TestCase):
                 self.assertNotIn(forbidden, private)
 
     def test_start_and_resume_surface_only_safe_non_authoritative_activity(self):
+        self._install_fake_usage()
         launcher = _ReportingFakeLauncher()
         observed = []
 
@@ -3776,6 +3790,7 @@ class NativeHostTest(unittest.TestCase):
         )
 
     def test_start_and_resume_emit_paired_timing_without_changing_turns(self):
+        self._install_fake_usage()
         launcher = _FakeLauncher()
         events = []
         with tempfile.TemporaryDirectory() as temporary:
@@ -3892,6 +3907,7 @@ class NativeHostTest(unittest.TestCase):
         self.assertEqual(tracker.progress.activity, "completed")
 
     def test_untrusted_progress_is_hidden_without_blocking_valid_status(self):
+        self._install_fake_usage()
         for case in ("tampered", "symlink"):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as temporary:
                 home = Path(temporary).resolve() / "workshop-home"
