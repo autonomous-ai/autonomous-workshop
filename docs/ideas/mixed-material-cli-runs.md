@@ -5,6 +5,11 @@ the ordinary CLI with Spark, Codex Astra, ultra reasoning, and a **100,000,000
 token total allowance per product**, including native children and resumes.
 This is a limit, not a target to spend. No Daydream, Forge or Quest is used.
 
+The user subsequently requested **500,000,000 total tokens and medium effort
+for each existing product**, retaining Astra. The initial commands below are
+historical; the explicit settings changes and continuation outcomes are recorded
+at the end of this document.
+
 Source branch: `make/mixed-material-products`.
 Isolated checkout: `/private/tmp/autonomous-workshop-mixed-material-products`.
 The source CLI uses the existing dependency environment without installing over
@@ -527,3 +532,106 @@ decreased from 164.9 to 28.6 square millimetres, but measured thin regions of
 had no motion result and pending visual feedback. Round two's motion log
 recorded only `TIMEOUT after 900s`, with no condition evidence. This proves
 neither a motion collision nor a motion pass; the round correctly failed.
+
+### Explicit 500M / medium continuation
+
+The user requested 500M total tokens for each existing product, then medium
+reasoning effort. All six active CLI processes were stopped cleanly at
+23:46:37–23:46:39 UTC on September 10, each exiting 130 with
+`workshop: interrupted.` Their sessions and prior usage remained saved.
+
+Revision `df727a0b` raised the selectable token ceiling from 200M to 500M,
+preserving the 30M default and saved limits. Revision `eed4633c` added explicit
+`resume --effort` support for the eligible Codex Spark token-budget profile,
+with exact Manager/input rebinding and interrupted-change recovery. The focused
+CLI, host, AgentRun, cap and effort suites passed 303 tests. One existing host
+test required a localhost socket and passed when rerun with that permission.
+
+The same continuation also refreshed two Make files from `e62f45a3`: motion
+checks now emit bounded condition/sample progress to stderr. A real short
+timeout test proved that the existing Make runner preserves this diagnostic
+while still returning 124 and accepting no partial condition evidence. The
+129 focused motion/retention/Make-round/registry checks passed. No geometry
+threshold, collision result or lifecycle rule changed.
+
+Actual commands from revision `eed4633c` on September 11 UTC:
+
+```sh
+"$workshop_python" -m cli resume wish-20260910-143655-4d851b36 --max-tokens 500000000 --effort medium --refresh-tools
+"$workshop_python" -m cli resume wish-20260910-143717-dbe8ad47 --max-tokens 500000000 --effort medium --refresh-tools
+"$workshop_python" -m cli resume wish-20260910-143721-492a87cb --max-tokens 500000000 --effort medium --refresh-tools
+"$workshop_python" -m cli resume wish-20260910-143744-c4614e19 --max-tokens 500000000 --effort medium --refresh-tools
+"$workshop_python" -m cli resume wish-20260910-143749-b20aacdc --max-tokens 500000000 --effort medium --refresh-tools
+"$workshop_python" -m cli resume wish-20260910-143753-a2e10997 --max-tokens 500000000 --effort medium --refresh-tools
+```
+
+All six saved medium effort and refreshed only the two named Make files. Five
+saved 500M and entered native resume. Rainmark retained its 100M cap and exited
+2 before native launch with `cannot adopt a token cap with unobserved native
+threads`; a known child still had pending usage. Harbor, Cloudline, Liltwing
+and Atlas then stopped with `native usage task baseline is ambiguous` after
+their native sessions resumed. Switchyard continued. These accounting failures
+remain fail-closed pending diagnosis; neither prior consumption nor native
+session identity was reset.
+
+Revision `e8048cb0` corrected Rainmark's cap-update edge case. Changing an
+existing token budget may preserve valid pending child records through the
+unchanged observation validator; converting a legacy time/turn budget still
+requires fully observed history. Tests cover exact pending-child retention,
+lost/regressing usage refusal without ledger changes, and both legacy cases.
+The 57 token-budget and six real-host resume tests passed.
+
+```sh
+# 2026-09-11 00:12:28 UTC
+"$workshop_python" -m cli resume wish-20260910-143744-c4614e19 --max-tokens 500000000 --effort medium
+```
+
+Rainmark saved 500M and resumed, then stopped on the same ambiguous native usage
+baseline at 00:12:48. At this point all six saved profiles were Astra/medium
+with 500M total caps and their original root sessions. Read-only native
+`turn_context` metadata also confirmed medium for all six resumed roots
+and Switchyard's three newly active child agents; this does not retroactively
+change historical ultra work.
+
+Revision `7c9eea10` repaired the second accounting issue. The native runtime can
+resume from the exact terminal counters of its most recently completed task
+after an intervening interrupted task. The reader now recognizes that case
+only when the completed task id and every baseline-plus-request counter match.
+All requests observed during the interrupted task remain charged. Pre-task
+parent completion metadata copied into a child supplies no accounting baseline.
+Unsupported histories, missing identities and counter regressions still stop
+the run. The fix passed 166 usage, compaction and budget tests.
+
+Read-only replay of all six full ancestry histories succeeded. The five stopped
+products retained their previous totals plus exactly the first new request:
+Harbor +167,426; Cloudline +153,334; Rainmark +158,848; Liltwing +107,298; Atlas
++111,964 tokens. Switchyard's concurrently observed total remained monotonic.
+This diagnoses native checkpoint restoration after interruption, not a network
+failure or an effect specific to medium reasoning.
+
+Switchyard was then stopped cleanly at 00:19:55 UTC, exiting 130, so all six
+could use the corrected host reader. Normal resumes preserved the already
+saved 500M/medium settings; no further tool refresh was needed:
+
+```sh
+# 2026-09-11 00:20:00 UTC
+"$workshop_python" -m cli resume wish-20260910-143655-4d851b36
+# 00:20:05 UTC
+"$workshop_python" -m cli resume wish-20260910-143717-dbe8ad47
+# 00:20:11 UTC
+"$workshop_python" -m cli resume wish-20260910-143721-492a87cb
+# 00:20:17 UTC
+"$workshop_python" -m cli resume wish-20260910-143744-c4614e19
+# 00:20:23 UTC
+"$workshop_python" -m cli resume wish-20260910-143749-b20aacdc
+# 00:20:29 UTC
+"$workshop_python" -m cli resume wish-20260910-143753-a2e10997
+```
+
+At 00:21:32 UTC, ordinary CLI status checks confirmed all six progressing in
+Make with `gpt-6-astra`, `medium`, 500,000,000-token caps and their original
+root thread ids. Each total had advanced beyond its recovered pre-resume
+history: Harbor 75,379,270; Cloudline 82,825,622; Switchyard 86,065,791;
+Rainmark 80,804,594; Liltwing 67,545,323; Atlas 88,783,246. Publication remained
+`not-created` for every pilot. These are running digital-product trials, not
+completed products or physical manufacturing evidence.
