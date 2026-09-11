@@ -1593,3 +1593,70 @@ mixed-materials tree is
 The exact Wish, native session, medium effort, 500M allowance and accrued usage
 remain preserved. The native Manager owns any resulting script repair and
 evidence reconciliation; source refresh itself is not acceptance or publication.
+
+
+### Waterloo Command completed and published
+
+The native Manager adopted `copy_subtree` through the normal tool refresh and
+completed all nine conceptual STEP exports. The coverage record accounts for
+614 root records and 1,858 leaf occurrences exactly once. The three required
+build groups were sealed, native Make completed at **14:16:03 UTC**, and its
+host gate passed. No product CAD script was executed or edited by the builder.
+
+Host-only Release began at **14:17:30 UTC**. Its authenticated Factory effect
+completed at **14:21:02 UTC**, and the Release outcome completed at
+**14:21:56.732 UTC**. The resume CLI exited 0 with:
+
+```text
+Wish: wish-20260911-023805-fe157910
+Agent: Codex
+Workflow: Spark
+Make: mixed
+Model: gpt-6-astra · effort medium
+Resume: complete at Release
+Tokens: 113,566,572 / 500,000,000 observed (in-flight usage excluded)
+Product page: https://www.autonomous.ai/toys/product/waterloo-command (public)
+```
+
+The private publication receipt records `public` with an active listing. The
+public projection's publication anchor and authenticated readback hashes match:
+`b0d9af1d9e9d2ec64900d4838318dfa7852981e90c5ce7a102a3acce42279d01`.
+An independent read-only HTTP request returned 200 from the exact customer URL
+and found `Waterloo Command` in the response. This verifies digital publication,
+not physical manufacture, shipping, or play testing.
+
+[Published Waterloo Command](https://www.autonomous.ai/toys/product/waterloo-command)
+shows the complete product. Private manufacturing files were not added to the
+public projection or committed to the repository. The generated public example
+is available locally at `toys/theo-fieldcraft-waterloo-command/`; it remains an
+untracked build output in this checkout.
+
+Workshop handoff is in the persistent run, under:
+
+```text
+/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260911-023805-fe157910/workspace/artifacts/make/r0001/product
+```
+
+- `internal/manufacturing.json`: 35 component definitions and material/process mapping.
+- `internal/manufacturing-guide.md`: sourcing, quantities, assembly, finishing and physical first-article plan.
+- `internal/fabrication-patterns.pdf`: workshop fabrication patterns.
+- `cad/part_*.step`: all 11 production families, totaling 64 printed copies (59 movable pieces and five fixed landmarks).
+- `cad/measure/verification-pipeline.md`: final digital engineering PASS, including all production families at the declared 0.4 mm nozzle and 220 × 220 × 220 mm bed.
+- `public/customer-guide.pdf`, `public/scenario-sheets.pdf`, `public/command-aids.pdf`: play and scenario handoff.
+
+Handoff audit found two stale pre-pass sentences in the sealed manufacturing
+guide (lines 13 and 113). The final verification report above records the later
+passing checks and is authoritative for digital gate status. Sealed bytes were
+not silently edited after publication. Physical first articles, paint clearance,
+bond qualification, complete assembly, handling and human play remain untested;
+the guide's physical trial plan remains applicable.
+
+Final read-only CLI status command:
+
+```sh
+cd /Users/ab/code/autonomous-workshop-mixed-material-products
+PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli status wish-20260911-023805-fe157910
+```
+
+The other six mixed-material pilots remain paused. No additional product was
+started or resumed after Waterloo completed.
