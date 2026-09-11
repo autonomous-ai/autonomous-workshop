@@ -32,6 +32,7 @@ BUNDLED_INVENTOR_IDS = (
     "kestrel-knot",
     "leo",
     "luma-vale",
+    "mara-masque",
     "mira-fold",
     "orin-shadow",
     "pico-press",

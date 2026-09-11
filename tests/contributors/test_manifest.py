@@ -53,6 +53,7 @@ class RegistryTest(unittest.TestCase):
                 "kestrel-knot",
                 "leo",
                 "luma-vale",
+                "mara-masque",
                 "mira-fold",
                 "orin-shadow",
                 "pico-press",
