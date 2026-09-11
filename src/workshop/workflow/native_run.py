@@ -6564,13 +6564,23 @@ def _launcher_call(
     if reasoning_override is not None:
         prompt += (
             "\n\nHost reasoning authority: the operator explicitly selected %s "
-            "reasoning effort for this and subsequent native Manager turns. "
-            "This overrides older per-stage reasoning guidance. MANAGER.json "
-            "preserves the original %s selection as provenance. Continue the "
-            "same session, Goal and existing work. The model, frozen tools, "
-            "engineering checks and stage finalizers are unchanged."
+            "reasoning effort for all subsequent Manager and native child work "
+            "on this product. This current choice supersedes earlier effort "
+            "requests in the Wish, MANAGER.json, frozen profile and stage "
+            "guidance. Their unchanged bytes preserve the original %s selection "
+            "as provenance. The host configures this root Manager turn at %s. "
+            "Existing native children can retain their earlier effort when "
+            "resumed; restoring a child does not establish that its setting "
+            "changed. Further child work must use %s. Codex owns orchestration "
+            "and how to honor this choice through supported native capabilities "
+            "while preserving completed child contributions. Do not rewrite "
+            "frozen inputs or native session state to change effort. Continue "
+            "the same root session, Goal and existing work. The model, frozen "
+            "tools, engineering checks and stage finalizers are unchanged."
             % (reasoning_override["changes"][-1]["effort"],
-               reasoning_override["binding"]["initial_effort"])
+               reasoning_override["binding"]["initial_effort"],
+               reasoning_override["changes"][-1]["effort"],
+               reasoning_override["changes"][-1]["effort"])
         )
     arguments = {
         "product_id": checkpoint.product_id,

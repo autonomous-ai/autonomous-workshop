@@ -123,10 +123,17 @@ An explicit `workshop resume ID --effort medium` changes subsequent Manager
 turns for a supported Codex token-budget product without replacing its native
 thread or rewriting the original `MANAGER.json`. The host retains a private,
 validated change history; later resumes without the flag keep that choice.
-Status and receipts expose the effective `effort` and original `initial_effort`,
-and the continuation prompt distinguishes both. This requires the originally
-frozen token-budget and whole-profile capabilities; unsupported older sessions
-are refused. Concurrent changes are refused by the run lock. See
+Status and receipts expose the configured Manager `effort` and original
+`initial_effort`. Every continuation relays the current operator choice for
+subsequent Manager and native child work, superseding earlier effort requests
+in frozen inputs without rewriting them. Codex owns how to honor that choice.
+Codex 0.153.4 can restore an existing child at its earlier effort; the native
+subagent default does not change that saved setting. The notice conveys intent,
+not deterministic child enforcement, and the receipt does not attest every
+child's actual setting. Native request metadata remains the evidence for that.
+This requires the originally frozen token-budget and whole-profile
+capabilities; unsupported older sessions are refused. Concurrent changes are
+refused by the run lock. See
 [ADR 0043](adr/0043-freeze-agent-model-and-effort.md#explicit-reasoning-override-on-resume).
 
 Codex Spark projects freeze `spark-economics-v3.md` and run that one

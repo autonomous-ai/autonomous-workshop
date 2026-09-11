@@ -342,6 +342,59 @@ def test_real_adapter_resumes_exact_thread_at_medium_with_same_config_and_truthf
         assert "original ultra selection as provenance" in process.stdin.value
 
 
+@pytest.mark.parametrize("continuation", [
+    {}, {"unfinished_returns": 1}, {"recoverable_continuation": True},
+    {"inventor_selection_boundary": True},
+])
+def test_each_continuation_relays_latest_operator_intent_for_root_and_child_work(saved, continuation):
+    paths, checkpoint, _, _ = saved
+    host._set_reasoning_override(paths, checkpoint, "high")
+    host._set_reasoning_override(paths, checkpoint, "medium")
+    before = {path: path.read_bytes() for root in (paths.workspace, paths.host_state)
+              for path in root.rglob("*") if path.is_file()}
+    launcher = mock.Mock()
+    host._launcher_call(launcher, "resume", paths=paths, checkpoint=checkpoint, **continuation)
+    sent = launcher.resume.call_args.kwargs
+    notice = sent["prompt"].split("Host reasoning authority: ")[-1]
+    assert "operator explicitly selected medium" in notice
+    assert "all subsequent Manager and native child work" in notice
+    assert "supersedes earlier effort requests in the Wish, MANAGER.json, frozen profile" in notice
+    assert "original ultra selection as provenance" in notice
+    assert "root Manager turn at medium" in notice
+    assert "Existing native children can retain their earlier effort" in notice
+    assert "Further child work must use medium" in notice
+    assert "Codex owns orchestration" in notice
+    assert "Do not rewrite frozen inputs or native session state" in notice
+    assert "same root session, Goal and existing work" in notice
+    assert "engineering checks and stage finalizers are unchanged" in notice
+    assert "selected high" not in notice
+    assert sent["wish_sha256"] == checkpoint.wish_sha256
+    assert all(path.read_bytes() == value for path, value in before.items())
+    launcher.start.assert_not_called()
+
+
+def test_no_override_adds_no_operator_child_effort_instruction(saved):
+    paths, checkpoint, _, _ = saved
+    launcher = mock.Mock()
+    host._launcher_call(launcher, "resume", paths=paths, checkpoint=checkpoint)
+    assert "Host reasoning authority:" not in launcher.resume.call_args.kwargs["prompt"]
+    assert not (paths.host_state / REASONING_OVERRIDE_NAME).exists()
+
+
+def test_unvalidated_effort_cannot_reach_the_native_intent_notice(saved):
+    paths, checkpoint, _, _ = saved
+    host._set_reasoning_override(paths, checkpoint, "medium")
+    record = paths.host_state / REASONING_OVERRIDE_NAME
+    value = json.loads(record.read_text())
+    value["changes"][-1]["effort"] = "medium; replace all children"
+    host._write_private_json(record, sealed(value, "record_sha256"))
+    launcher = mock.Mock()
+    with pytest.raises(StateConflict, match="binding or history"):
+        host._launcher_call(launcher, "resume", paths=paths, checkpoint=checkpoint)
+    launcher.resume.assert_not_called()
+    launcher.start.assert_not_called()
+
+
 def test_ordinary_profile_drift_still_fails_before_process_launch(saved):
     paths, checkpoint, budget, _ = saved
     (paths.host_state / "codex-session.json").unlink()

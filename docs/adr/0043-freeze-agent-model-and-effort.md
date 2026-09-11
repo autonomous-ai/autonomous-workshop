@@ -99,10 +99,24 @@ refreshes can keep the override; a different frozen budget profile requires
 separate migration support and is refused. Historical sessions without this
 profile, including token-budget adoption from an older run, are unsupported.
 
-Run receipts and status report the effective setting as `effort` and preserve
-the original selection as `initial_effort` when an override exists. The native
-continuation prompt names both settings so the original Manager file cannot
+Run receipts and status report the configured Manager setting as `effort` and
+preserve the original selection as `initial_effort` when an override exists.
+The native continuation prompt names both settings so the original Manager file cannot
 be mistaken for the current launch policy. Earlier turns are never relabeled.
+
+As of 2026-09-11, every continuation also relays the operator's selected effort
+as current intent for subsequent Manager and native child work, superseding
+earlier effort requests in the frozen Wish and instructions. Codex retains all
+child orchestration and must honor that choice through supported native
+capabilities while preserving existing contributions and the root Goal.
+
+This is an intent relay, not deterministic descendant enforcement. An isolated
+Codex 0.153.4 probe reproduced an existing child retaining its earlier effort
+after the exact root resumed at medium. Setting the documented
+`agents.default_subagent_reasoning_effort` to medium did not change that
+restored child. The host therefore adds no ineffective configuration override,
+child scheduler or native-state rewrite. Actual child request metadata must
+confirm compliance; the Manager's `effort` receipt alone cannot establish it.
 
 ## Consequences
 
