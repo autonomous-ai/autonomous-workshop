@@ -61,6 +61,7 @@ INVENTORS = (
     "sonora-reed",
     "soren-voss",
     "tess-loop",
+    "theo-fieldcraft",
     "vela-bloom",
 )
 # Fixed UUIDv7 identity for the isolated deterministic runtime, never a live session.

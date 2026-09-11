@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "c3a01536b205cb8bc9ce324e19842441b1a1057c4a538e151c882f977fc80ea3",
+      "kind": "codex-skill",
+      "name": "theo-fieldcraft-inventor",
+      "path": "skills/theo-fieldcraft-inventor"
+    }
+  ],
+  "id": "theo-fieldcraft",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

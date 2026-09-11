@@ -88,6 +88,7 @@ class RegistryTest(unittest.TestCase):
                 "sonora-reed",
                 "soren-voss",
                 "tess-loop",
+                "theo-fieldcraft",
                 "vela-bloom",
             ],
         )

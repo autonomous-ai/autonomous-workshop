@@ -132,6 +132,7 @@ class build_py(_build_py):
             "sonora-reed",
             "soren-voss",
             "tess-loop",
+            "theo-fieldcraft",
             "vela-bloom",
         ):
             source = project / "inventors" / inventor_id

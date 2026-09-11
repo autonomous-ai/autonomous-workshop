@@ -43,6 +43,7 @@ BUNDLED_INVENTOR_IDS = (
     "sonora-reed",
     "soren-voss",
     "tess-loop",
+    "theo-fieldcraft",
     "vela-bloom",
 )
 BUNDLED_INVENTOR_FILES = ("TASTE.md", "inventor.json")
