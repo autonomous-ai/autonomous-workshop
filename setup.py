@@ -114,6 +114,7 @@ class build_py(_build_py):
         for inventor_id in (
             "abo",
             "alice",
+            "axel-rake",
             "bob",
             "eve",
             "ferro-line",
