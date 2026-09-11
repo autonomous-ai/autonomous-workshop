@@ -1660,3 +1660,79 @@ PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli
 
 The other six mixed-material pilots remain paused. No additional product was
 started or resumed after Waterloo completed.
+
+
+### Rebase onto main and integration verification
+
+At the operator's request, all 58 branch commits were rebased onto fetched main
+`cdd192f4ebaff3588d4c98a4e48a5d76bafdabfb`. The original branch tip
+`d9354bb7a1b9ce3ad07d06353153d5f08a78ff06` is retained in the local backup
+`backup/mixed-material-before-main-rebase-20260911`. The original main worktree
+and untracked Waterloo public example were preserved.
+
+```sh
+cd /Users/ab/code/autonomous-workshop-mixed-material-products
+git fetch origin
+git branch backup/mixed-material-before-main-rebase-20260911 HEAD
+git rebase origin/main
+```
+
+Conflicts were resolved by retaining both branches' behavior: Astra defaults,
+main's explicit turn boundary, mixed Make identity protection, supported newer
+Codex rollout versions, exact schema-8 print-report checks, the complete
+Inventor roster, and distinct sealed cover paths for print and mixed products.
+The rebased commit series was reviewed with `git range-diff`.
+
+Integration verification found and repaired these issues:
+
+- The token-budget launcher rebuilt an explicitly timed launcher as untimed.
+  It now preserves the operator's boundary while default token-budget runs
+  remain untimed. New tests cover mixed-mode start, effort/cap corrections,
+  ordinary resume, explicit untimed resume, unchanged session/input identities,
+  retained usage, and invalid-boundary refusal without mutation.
+- The combined 22-Inventor roster exceeded the old 256-file input limit.
+  Capacity is now 512, with the independent 4 MiB input budget and all existing
+  checkpoint, identity and privacy checks intact. Exact-bound/reopen succeeds,
+  the 513th input is refused before workspace creation, and byte overflow is
+  still refused. The real CLI with a fake native subprocess now initializes.
+- The compressed carrier imported private archive helpers across components.
+  Its unchanged codec and unit tests now belong to `workshop.artifacts` and
+  `tests/artifacts/test_factory_carrier.py`; effects remain integration-owned.
+- Main and the branch both used ADR 0064. Main retains that number; the mixed
+  manufacturing decision is now ADR 0067 with updated links. The combined
+  Make-round guidance has a fresh exact lock fingerprint.
+
+These fixes were committed as `c460d8db`, `5ffd6f7e`, and `482d88bb`.
+The full deterministic test run against that source passed **2,024 tests**,
+with **19 skipped** and eight existing Pillow deprecation warnings, in
+414.88 seconds. The first diagnostic run had exposed the integration problems;
+its PDF failure also came from giving the isolated worker a multi-directory
+`PYTHONPATH`. The final command uses its required single package directory and
+adds source/test-runner imports only to the test process:
+
+```sh
+/Users/ab/code/autonomous-workshop/.venv/bin/python -m pip install --target /private/tmp/workshop-rebase-test-deps 'pytest==8.4.2'
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/ab/code/autonomous-workshop/.venv/lib/python3.11/site-packages /Users/ab/code/autonomous-workshop/.venv/bin/python -c 'import sys; sys.path[:0] = ["/Users/ab/code/autonomous-workshop-mixed-material-products/src", "/private/tmp/workshop-rebase-test-deps"]; import pytest; raise SystemExit(pytest.main(["tests", "-q", "-p", "no:cacheprovider"]))'
+PYTHONDONTWRITEBYTECODE=1 /Users/ab/code/autonomous-workshop/.venv/bin/python tests/packaging/installed_wheel_cli_acceptance.py --with-dependencies
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli check --json
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli wish --help
+git diff --check
+```
+
+Installed-wheel acceptance returned `installed-wheel-cli: ok`, including
+resolved dependencies, exact skill/inventor assets and fake-native print/mixed
+Spark CLI runs outside the source checkout. Static CLI validation passed all
+22 Inventors. No live product, model session or publication effect was launched.
+The shared virtual environment was not modified; pytest was isolated in `/private/tmp`.
+
+Before updating GitHub, `git ls-remote --heads origin main make/mixed-material-products`
+confirmed main still at `cdd192f4` and the remote branch still at `d9354bb7`.
+The rebased branch update uses an exact lease, so an intervening remote change
+cannot be overwritten:
+
+```sh
+git push --force-with-lease=refs/heads/make/mixed-material-products:d9354bb7a1b9ce3ad07d06353153d5f08a78ff06 origin HEAD:refs/heads/make/mixed-material-products
+```
+
+Waterloo's published assets and frozen run remain unchanged by this source
+rebase. The other six pilots remain paused.
