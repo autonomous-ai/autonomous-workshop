@@ -41,6 +41,14 @@ These matches require the complete message within the existing diagnostic
 bound; surrounding prose or a truncated prefix cannot select them. They add no
 retry authority and do not identify the cause of historical unclassified errors.
 
+The bounded native sentence `You've hit your usage limit.` also maps to
+`usage-limit` / `usage-limit-exceeded`, with optional following reset guidance.
+The sentence must begin the normalized terminal message; quoted or embedded
+mentions and messages beyond the diagnostic bound do not select this diagnosis.
+Account-specific URLs and reset times are discarded with the remaining text.
+This distinguishes the native account limit from Workshop's product-token
+budget without changing retry policy or either limit.
+
 The adapter includes safe category, signature, and code fields in the raised
 terminal-failure summary and writes the complete structured diagnosis to the
 host-private `0600` `codex-turn-failure.json` record. That record advances to

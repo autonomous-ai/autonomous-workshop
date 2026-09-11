@@ -4358,6 +4358,13 @@ def _terminal_failure_diagnosis(
     exact_diagnosis = None
     if message is not None and len(message) <= _MAX_NATIVE_FAILURE_MESSAGE_CHARS:
         exact_diagnosis = _EXACT_TERMINAL_ERROR_DIAGNOSES.get(normalized)
+        # Codex appends account-specific reset guidance to this fixed sentence.
+        # Diagnose only a complete, anchored sentence; retain none of its suffix.
+        usage_limit_head = "you've hit your usage limit."
+        if normalized == usage_limit_head or normalized.startswith(
+            usage_limit_head + " "
+        ):
+            exact_diagnosis = ("usage-limit", "usage-limit-exceeded")
     signature = "unclassified"
     for candidate, needles in _TERMINAL_ERROR_SIGNATURES:
         if any(needle in normalized for needle in needles):

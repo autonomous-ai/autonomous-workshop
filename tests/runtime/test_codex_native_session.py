@@ -3911,6 +3911,108 @@ class CodexNativeSessionTest(unittest.TestCase):
             )
             self.assertNotIn(secret, raw)
 
+    def test_native_usage_limit_persists_safe_diagnosis_without_recovery(self):
+        head = "You've hit your usage limit."
+        private = "ACCOUNT_PRIVATE_TEST_SENTINEL"
+        messages = (
+            head,
+            head + " Visit https://example.test/" + private
+            + " to purchase more credits or try again tomorrow.",
+            "\tYOU'VE  HIT YOUR\nUSAGE LIMIT.\n" + private,
+        )
+        for event_type in ("error", "turn.failed"):
+            for message in messages:
+                with self.subTest(
+                    event_type=event_type, message=message
+                ), tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary).resolve() / "run"
+                    root.mkdir()
+                    state_root = self.host_state(root)
+                    failure = (
+                        {"type": event_type, "message": message}
+                        if event_type == "error" else
+                        {"type": event_type, "error": {"message": message}}
+                    )
+                    launcher, factory = self.launcher([
+                        {"stdout": [
+                            event({"type": "thread.started", "thread_id": THREAD_ID}),
+                            event(failure),
+                        ]},
+                    ])
+
+                    with self.assertRaises(CodexInvocationError) as caught:
+                        self.start(launcher, root, host_state_root=state_root)
+
+                    self.assertNotIsInstance(
+                        caught.exception, CodexRecoverableInvocationError
+                    )
+                    self.assertEqual(len(factory.calls), 1)
+                    self.assertTrue(caught.exception.diagnostic.process_tree_reaped)
+                    self.assertFalse(caught.exception.diagnostic.turn_completed)
+                    self.assertFalse(
+                        codex_runtime._is_explicit_transient_event_failure(failure)
+                    )
+                    self.assertFalse(codex_runtime._is_retryable_service_failure(failure))
+                    raw = (state_root / CODEX_FAILURE_DIAGNOSTIC_FILENAME).read_text()
+                    persisted = json.loads(raw)
+                    self.assertEqual(persisted["schema_version"], 2)
+                    self.assertEqual(persisted["diagnostic"]["terminal_error"], {
+                        "event_type": event_type,
+                        "category": "usage-limit",
+                        "signature": "usage-limit-exceeded",
+                        "code": None,
+                        "message_bytes": len(message.encode("utf-8")),
+                    })
+                    rendered = str(caught.exception)
+                    self.assertIn("category=usage-limit", rendered)
+                    self.assertIn("signature=usage-limit-exceeded", rendered)
+                    for value in (raw, rendered):
+                        self.assertNotIn(private, value)
+                        self.assertNotIn("example.test", value)
+                        self.assertNotIn(head.casefold(), value.casefold())
+
+    def test_native_usage_limit_requires_bounded_anchored_terminal_sentence(self):
+        head = "You've hit your usage limit."
+        messages = (
+            "tool failed: " + head,
+            '"' + head + '"',
+            head + "extra",
+            head[:-1],
+            head.replace("'", "\N{RIGHT SINGLE QUOTATION MARK}"),
+            head + " " * (4097 - len(head)),
+        )
+        for event_type in ("error", "turn.failed"):
+            for message in messages:
+                with self.subTest(event_type=event_type, message=message):
+                    failure = (
+                        {"type": event_type, "message": message}
+                        if event_type == "error" else
+                        {"type": event_type, "error": {"message": message}}
+                    )
+                    diagnosis = codex_runtime._terminal_failure_diagnosis(failure)
+                    self.assertEqual(diagnosis.category, "unclassified")
+                    self.assertEqual(diagnosis.signature, "unclassified")
+            message = head + " " * (4096 - len(head))
+            failure = (
+                {"type": event_type, "message": message}
+                if event_type == "error" else
+                {"type": event_type, "error": {"message": message}}
+            )
+            self.assertEqual(
+                codex_runtime._terminal_failure_diagnosis(failure).signature,
+                "usage-limit-exceeded",
+            )
+        for failure in (
+            {"type": "error", "error": {"message": head}},
+            {"type": "turn.failed", "message": head},
+            {"type": "item.completed", "message": head},
+        ):
+            with self.subTest(failure=failure):
+                self.assertEqual(
+                    codex_runtime._terminal_failure_diagnosis(failure).signature,
+                    "unclassified",
+                )
+
     def test_fixed_native_failures_persist_safe_diagnoses_without_recovery(self):
         for literal, category, signature in FIXED_NATIVE_FAILURE_DIAGNOSES:
             for event_type in ("error", "turn.failed"):
