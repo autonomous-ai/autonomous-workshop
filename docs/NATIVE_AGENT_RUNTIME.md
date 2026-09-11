@@ -283,12 +283,13 @@ checkpointed. The disconnect may arrive either on the private launcher
 diagnostic channel or in Codex's documented `turn.failed` / top-level `error`
 JSONL shape. The launcher reports only those two cases through the typed
 `CodexRecoverableInvocationError` boundary, and only after proving that the
-previous launcher's dedicated POSIX process session is empty. This includes
-Codex's built-in code-mode host even though that helper creates a separate
-process group inside the session. Product-run agents and custom tools are
-forbidden from daemonizing, detaching, creating a new process session, or
-intentionally leaving background work behind; the portable host boundary
-cannot prove quiescence for a process that deliberately escapes it. While
+previous launcher's dedicated POSIX process session is empty and every
+creation-bound descendant observed by its guard has stopped. This includes
+Codex's built-in code-mode host and ordinary native exec commands. Codex
+0.153.4 automatically gives exec commands separate POSIX sessions; that native
+tool behavior is supported and is not custom daemonization by the product agent.
+Custom tools remain forbidden from daemonizing, deliberately detaching or
+creating new sessions, or intentionally leaving background work behind. While
 retaining the same exclusive run lock, the host counts the
 failed attempt, preserves the unchanged stage packet, waits a bounded
 exponential delay with deterministic per-run jitter, and resumes that exact
@@ -351,11 +352,23 @@ collision, not evidence of an omitted terminal event. See
 
 The launched process session is owned by an idempotent guard outside the event
 parser's ordinary `Exception` classification. A graceful host unwind such as
-Ctrl-C (`KeyboardInterrupt`) or `SystemExit` therefore terminates and reaps the
-dedicated Codex process session across all of its process groups before
-propagating the interruption. The host binds the session leader to its
-launch-time process creation identity; ambiguous identity or numeric SID reuse
-fails closed without signaling the replacement session. User cancellation is
+Ctrl-C (`KeyboardInterrupt`) or `SystemExit` therefore requests native SIGINT
+shutdown first, allowing a bounded grace for Codex to cancel its exec sessions.
+The guard observes creation-bound descendants during the native stream and
+immediately before shutdown; already-bound surviving owners remain discovery
+roots after reparenting, including during grace and escalation. Remaining
+owned identities and original-session members receive TERM/KILL escalation.
+Successful cleanup requires the original session and observed ownership set to
+be empty. Enumeration, identity or signal uncertainty remains unsafe even if
+the original SID is empty, and a failed cleanup overrides an otherwise normal
+return or operator unwind. Reused PIDs and SIDs never authorize signals to a
+replacement process; cwd and command text never establish orphan ownership.
+
+This is an observational boundary, not OS-enforced universal containment. A
+descendant born and reparented entirely between observations cannot be
+identified retrospectively. The custom-detachment prohibition remains; the
+guard does not claim to recover arbitrary daemons or work already orphaned by
+an earlier host. User cancellation is
 not converted into an automatic transport retry: if the exact
 session identity was already checkpointed, a later explicit `workshop resume`
 continues it; otherwise the run remains fail-closed. No portable subprocess

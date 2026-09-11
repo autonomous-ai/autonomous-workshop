@@ -48,7 +48,8 @@ processes or schedule a parallel agent system in Python.
 The host may automatically continue a native stage turn only for a typed
 launcher timeout or explicitly recognized provider-transport interruption
 from the private launcher channel or Codex's documented terminal-error event,
-only after the launcher's dedicated POSIX process session is proven empty, and
+only after the launcher's dedicated POSIX process session and its observed,
+creation-bound descendant ownership set are proven empty, and
 only when the exact session UUID is already durably checkpointed. It keeps the
 exclusive run lock, applies bounded deterministic-jitter backoff, resumes that
 same UUID against the unchanged stage subject, and charges the attempt to the
@@ -63,11 +64,23 @@ control: reuse existing bytes, avoid restarting broad exploration, do not make
 finalization depend on a child agent, and prioritize the remaining checks and
 stage finalizer.
 
-The portable cleanup guarantee covers every process group inside the launcher's
-dedicated POSIX process session, including Codex's built-in code-mode helper.
-Product-run instructions therefore forbid custom tools from daemonizing,
-detaching, creating a new process session, or intentionally leaving background
-work behind. The Codex adapter accepts only anchored recognized provider
+The portable cleanup boundary covers every process group inside the launcher's
+dedicated POSIX process session and descendants bound by observed ancestry and
+process creation identity. An isolated credential-free Codex 0.153.4 fixture
+on 2026-09-11 showed that an ordinary native exec command automatically creates
+a new SID and survives the old session-only TERM cleanup. Native SIGINT cancels
+that exec session cooperatively. The guard now requests SIGINT first, keeps
+observing retained owners through its bounded grace and escalation, and verifies
+both ownership sets before reporting cleanup. PID reuse and failed observation
+cannot authorize a replacement signal or a successful cleanup result.
+
+Polling cannot prove universal containment: a descendant born and reparented
+entirely between observations has no retained ownership proof. Cwd and argv
+matching are not substitutes. Product-run instructions still forbid custom
+daemonization, deliberate detachment/new sessions and abandoned background
+work; native exec's automatic session creation is distinct from those actions.
+This change is host lifecycle supervision, not native tool scheduling or an
+agent orchestration layer. The Codex adapter accepts only anchored recognized provider
 diagnostics from private, bounded launcher or native-event fields. Those bytes
 select a typed category and are immediately discarded. Generic diagnostics
 remain an unknown failure and fail closed.

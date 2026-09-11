@@ -2930,6 +2930,100 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(caught.exception.code, 7)
             self.assertTrue(factory.processes[0].terminated)
 
+    def test_unsafe_cleanup_cannot_hide_behind_success_or_operator_unwind(self):
+        for interruption in (None, KeyboardInterrupt(), SystemExit(7)):
+            with self.subTest(interruption=type(interruption).__name__), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                launcher, factory = self.launcher([{"stdout": self.start_events()}])
+                with mock.patch.object(
+                    codex_runtime._NativeProcessGuard, "reap", return_value=False,
+                ), mock.patch.object(
+                    codex_runtime._NativeActivityReporter, "start", side_effect=interruption,
+                ), self.assertRaisesRegex(
+                    CodexInvocationError, "could not be terminated safely",
+                ) as caught:
+                    self.start(launcher, root)
+                self.assertNotIsInstance(caught.exception, CodexRecoverableInvocationError)
+                self.assertFalse(factory.processes[0].stdout.closed)
+
+    def test_unsafe_cleanup_reports_failure_without_closing_a_blocked_stderr_reader(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            read_fd, write_fd = os.pipe()
+            reader = os.fdopen(read_fd, "r", encoding="utf-8")
+            writer = os.fdopen(write_fd, "w", encoding="utf-8")
+            launcher, factory = self.launcher([{"stdout": self.start_events()}])
+            failures = []
+
+            def popen(*args, **kwargs):
+                process = factory(*args, **kwargs)
+                process.stderr = reader
+                return process
+
+            def launch():
+                try:
+                    self.start(launcher, root)
+                except BaseException as error:
+                    failures.append(error)
+
+            launcher._popen_factory = popen
+            with mock.patch.object(codex_runtime._NativeProcessGuard, "reap", return_value=False):
+                worker = threading.Thread(target=launch, daemon=True)
+                worker.start()
+                try:
+                    worker.join(timeout=3)
+                    self.assertFalse(worker.is_alive(), "cleanup blocked in buffered stream.close()")
+                    self.assertEqual(len(failures), 1)
+                    self.assertIsInstance(failures[0], CodexInvocationError)
+                    self.assertIn("could not be terminated safely", str(failures[0]))
+                finally:
+                    writer.close()
+                    worker.join(timeout=3)
+                    reader.close()
+
+    def test_untimed_stream_failure_skips_indefinite_wait_and_keeps_safe_diagnostics(self):
+        for record in (
+            "not-json\n",
+            json.dumps({"type": "turn.failed", "error": {"message": "provider stream disconnected"}}) + "\n",
+        ):
+            with self.subTest(record=record), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                launcher, factory = self.launcher([
+                    {"stdout": [*self.start_events(terminal=False), record]},
+                ])
+                launcher.timeout_seconds = None
+                launcher.token_budget_observer = mock.Mock()
+                waits = []
+
+                def popen(*args, **kwargs):
+                    process = factory(*args, **kwargs)
+                    original_wait = process.wait
+
+                    def bounded_wait(timeout=None):
+                        waits.append(timeout)
+                        if timeout is None:
+                            raise AssertionError("unsafe cleanup reached indefinite wait")
+                        return original_wait(timeout=timeout)
+
+                    process.wait = bounded_wait
+                    return process
+
+                launcher._popen_factory = popen
+                with mock.patch.object(codex_runtime._NativeProcessGuard, "reap", return_value=False), \
+                     self.assertRaisesRegex(CodexInvocationError, "could not be terminated safely") as caught:
+                    self.start(launcher, root)
+                self.assertNotIn(None, waits)
+                self.assertNotIsInstance(caught.exception, CodexRecoverableInvocationError)
+                diagnostic = caught.exception.diagnostic
+                self.assertIsNotNone(diagnostic)
+                self.assertEqual(diagnostic.reason, "unsafe-process-reap")
+                self.assertFalse(diagnostic.process_tree_reaped)
+                self.assertGreater(diagnostic.event_records, 0)
+                self.assertEqual(diagnostic.terminal_error is not None, record != "not-json\n")
+
     def test_agent_message_does_not_infer_turn_completion(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -3164,6 +3258,42 @@ class CodexNativeSessionTest(unittest.TestCase):
                 caught.exception,
                 CodexFinalizedWithoutTerminalError,
             )
+
+    def test_untimed_failed_marker_cleanup_never_waits_indefinitely(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            marker = root / "agent-outcome.json"
+            launcher, factory = self.launcher([{
+                "stdout": self.start_events(terminal=False),
+                "stdout_callbacks": {2: lambda: marker.write_text("{}\n", encoding="utf-8")},
+                "ignore_termination": True,
+            }])
+            launcher.timeout_seconds = None
+            launcher.token_budget_observer = mock.Mock()
+            waits = []
+
+            def popen(*args, **kwargs):
+                process = factory(*args, **kwargs)
+                original_wait = process.wait
+
+                def bounded_wait(timeout=None):
+                    waits.append(timeout)
+                    if timeout is None:
+                        raise AssertionError("failed marker cleanup reached indefinite wait")
+                    return original_wait(timeout=timeout)
+
+                process.wait = bounded_wait
+                return process
+
+            launcher._popen_factory = popen
+            with mock.patch.object(codex_runtime, "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS", 0.02), \
+                 mock.patch.object(codex_runtime, "_CODEX_FINALIZATION_MARKER_POLL_SECONDS", 0.002), \
+                 self.assertRaisesRegex(CodexInvocationError, "could not be terminated safely") as caught:
+                self.start(launcher, root, finalization_marker=marker)
+            self.assertNotIn(None, waits)
+            self.assertNotIsInstance(caught.exception, CodexRecoverableInvocationError)
+            self.assertFalse(caught.exception.diagnostic.process_tree_reaped)
 
     def test_only_new_exact_regular_in_run_marker_can_trigger_reap(self):
         with tempfile.TemporaryDirectory() as temporary:

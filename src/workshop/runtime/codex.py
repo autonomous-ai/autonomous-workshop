@@ -18,7 +18,7 @@ import tempfile
 import threading
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping, Optional
 
@@ -1966,8 +1966,176 @@ class _ProcessSessionIdentity:
             raise ValueError("invalid process session identity")
 
 
+class _NativeProcessOwnership:
+    """Retain observed ancestry without treating polling as OS containment.
+
+    Process discovery runs only on the watcher. Callers request a fresh sample
+    with a bounded wait; a stalled process API cannot hold the state lock or
+    prevent the guard from reporting unsafe cleanup.
+    """
+
+    def __init__(self, identity: _ProcessSessionIdentity) -> None:
+        self.identity = identity
+        self._members: dict[tuple[int, float], Any] = {}
+        self._seeded = False
+        self._uncertain = False
+        self._stalled = False
+        self._inflight = False
+        self._requested = 0
+        self._completed = 0
+        self._condition = threading.Condition()
+        self._stopped = False
+        self._thread: Optional[threading.Thread] = None
+
+    def start(self) -> None:
+        self.observe()
+
+    def observe(self) -> None:
+        with self._condition:
+            if self._stopped or (self._stalled and self._inflight):
+                return
+            if self._thread is threading.current_thread():
+                self._uncertain = True
+                return
+            if self._thread is None:
+                self._thread = threading.Thread(
+                    target=self._watch, name="workshop-native-processes", daemon=True,
+                )
+                self._thread.start()
+            self._requested += 1
+            target = self._requested
+            self._condition.notify_all()
+            deadline = time.monotonic() + 0.5
+            while self._completed < target and not self._stopped:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    self._uncertain = self._stalled = True
+                    return
+                self._condition.wait(timeout=remaining)
+
+    def _watch(self) -> None:
+        while True:
+            with self._condition:
+                if self._requested == self._completed and not self._stopped:
+                    self._condition.wait(timeout=0.25)
+                if self._stopped:
+                    return
+                target = self._requested
+                members = dict(self._members)
+                self._inflight = True
+            try:
+                uncertain = self._capture(members)
+            except Exception:
+                # Unknown discovery failures are supervision failures, never
+                # a silently dead watcher or permission to infer ownership.
+                uncertain = True
+            with self._condition:
+                self._members = members
+                self._uncertain = self._uncertain or uncertain
+                self._stalled = self._inflight = False
+                self._completed = target
+                self._condition.notify_all()
+
+    def stop(self) -> bool:
+        with self._condition:
+            self._stopped = True
+            self._condition.notify_all()
+            thread = self._thread
+        if thread is not None and thread.ident is not None:
+            if thread is threading.current_thread():
+                return False
+            thread.join(timeout=1.0)
+            if thread.is_alive():
+                return False
+        return True
+
+    @property
+    def healthy(self) -> bool:
+        with self._condition:
+            return not self._uncertain
+
+    def _capture(self, members: dict[tuple[int, float], Any]) -> bool:
+        psutil = _psutil_api()
+        if psutil is None:
+            return True
+        uncertain = False
+        if not self._seeded:
+            self._seeded = True
+            root = psutil.Process(self.identity.session_id)
+            created = root.create_time()
+            if created != self.identity.leader_create_time:
+                return True
+            members[(root.pid, created)] = root
+        # Retained owners remain discovery roots after their own reparenting.
+        pending = list(members.items())
+        seen: set[tuple[int, float]] = set()
+        while pending:
+            key, owner = pending.pop()
+            if key in seen:
+                continue
+            seen.add(key)
+            try:
+                if not owner.is_running() or owner.status() == psutil.STATUS_ZOMBIE:
+                    members.pop(key, None)
+                    continue
+                for child in owner.children():
+                    try:
+                        created = child.create_time()
+                        child_key = (child.pid, created)
+                        if child_key in members:
+                            continue
+                        if not child.is_running() or child.status() == psutil.STATUS_ZOMBIE:
+                            continue
+                        if (
+                            child.ppid() != owner.pid
+                            or not owner.is_running()
+                            or created < key[1]
+                        ):
+                            uncertain = True
+                            continue
+                        members[child_key] = child
+                        pending.append((child_key, child))
+                    except psutil.NoSuchProcess:
+                        continue
+                    except (OSError, ValueError, RuntimeError, psutil.Error):
+                        uncertain = True
+            except psutil.NoSuchProcess:
+                members.pop(key, None)
+            except (OSError, ValueError, RuntimeError, psutil.Error):
+                uncertain = True
+        return uncertain
+
+    def alive_members(self) -> tuple[Any, ...]:
+        self.observe()
+        with self._condition:
+            return tuple(self._members.values())
+
+    def signal(self, number: int, *, leader_only: bool = False) -> None:
+        members = self.alive_members()
+        with self._condition:
+            if self._stalled:
+                return
+        psutil = _psutil_api()
+        if psutil is None:
+            return
+        for member in members:
+            try:
+                if leader_only and (
+                    member.pid != self.identity.session_id
+                    or member.create_time() != self.identity.leader_create_time
+                ):
+                    continue
+                # psutil rechecks the cached creation identity before signaling.
+                member.send_signal(number)
+            except psutil.NoSuchProcess:
+                continue
+            except (OSError, ValueError, RuntimeError, psutil.Error):
+                with self._condition:
+                    self._uncertain = True
+
+
 class _NativeProcessGuard:
-    """Own one launched Codex process session until it is proven quiescent.
+    """Own one native session and its observed creation-bound descendants.
 
     The launcher may be unwound by ``KeyboardInterrupt`` or ``SystemExit``,
     neither of which is an ``Exception``.  Keep cleanup outside the event
@@ -1987,16 +2155,41 @@ class _NativeProcessGuard:
         self.process_session_identity = process_session_identity
         self._lock = threading.Lock()
         self._reaped = False
+        self._cleanup_requested = threading.Event()
+        self._ownership = (
+            _NativeProcessOwnership(process_session_identity)
+            if isinstance(process, subprocess.Popen)
+            and process_session_identity is not None
+            else None
+        )
+
+    def start_supervision(self) -> None:
+        if self._ownership is not None:
+            self._ownership.start()
+
+    @property
+    def cleanup_requested(self) -> bool:
+        return self._cleanup_requested.is_set()
 
     def reap(self) -> bool:
+        self._cleanup_requested.set()
         with self._lock:
             if self._reaped:
                 return True
-            reaped = _terminate_safely(
-                self.process,
-                process_group_id=self.process_group_id,
-                process_session_identity=self.process_session_identity,
-            )
+            stopped = True
+            try:
+                reaped = _terminate_safely(
+                    self.process,
+                    process_group_id=self.process_group_id,
+                    process_session_identity=self.process_session_identity,
+                    process_ownership=self._ownership,
+                )
+            finally:
+                if self._ownership is not None:
+                    stopped = self._ownership.stop()
+            reaped = reaped and stopped
+            if self._ownership is not None:
+                reaped = reaped and self._ownership.healthy
             if reaped:
                 self._reaped = True
             return reaped
@@ -3146,6 +3339,7 @@ class CodexNativeSessionLauncher:
                         process_guard.reap()
                         return
             try:
+                process_guard.start_supervision()
                 if self.token_budget_observer is not None:
                     usage_thread = threading.Thread(target=watch_usage, name="workshop-token-budget", daemon=True)
                     usage_thread.start()
@@ -3183,13 +3377,14 @@ class CodexNativeSessionLauncher:
                 # follows the normal terminal-event and checkpoint path below.
                 if finalization_watch is not None:
                     finalization_watch.close()
-                process_guard.reap()
+                process_tree_reaped = process_guard.reap()
                 usage_stop.set()
                 final_usage_failed = False
                 if usage_thread is not None:
                     usage_thread.join(timeout=10)
                     if usage_thread.is_alive():
-                        _close_process_streams(process_guard.process)
+                        if process_tree_reaped:
+                            _close_process_streams(process_guard.process)
                         raise CodexInvocationError("token budget monitor did not stop safely")
                     # Recover the final observed requests even after timeout or
                     # cancellation. The ledger is already durable per sample.
@@ -3201,6 +3396,23 @@ class CodexNativeSessionLauncher:
                         self.token_budget_observer()
                     except Exception:
                         final_usage_failed = True
+                if not process_tree_reaped:
+                    # An unreaped writer can leave a drain thread inside a
+                    # buffered read. close() would wait on that reader's lock
+                    # and hide this unsafe-cleanup failure indefinitely.
+                    failure = CodexInvocationError(
+                        "Codex native session could not be terminated safely"
+                    )
+                    previous = sys.exc_info()[1]
+                    if isinstance(previous, CodexInvocationError) and isinstance(
+                        previous.diagnostic, CodexFailureDiagnostic,
+                    ):
+                        failure.diagnostic = replace(
+                            previous.diagnostic,
+                            reason="unsafe-process-reap",
+                            process_tree_reaped=False,
+                        )
+                    raise failure from None
                 _close_process_streams(process_guard.process)
                 if final_usage_failed and sys.exc_info()[0] is None:
                     raise CodexInvocationError("product token budget stopped native execution; inspect Workshop status")
@@ -3398,6 +3610,14 @@ class CodexNativeSessionLauncher:
                 stream_failure = CodexInvocationError(
                     "Codex native session could not be reaped"
                 )
+        elif (
+            stream_failure is not None
+            or timed_out.is_set()
+            or process_guard.cleanup_requested
+        ):
+            # Cleanup was already requested. If it failed, an untimed wait
+            # would hide the unsafe result before the outer guard can report it.
+            returncode = getattr(process, "returncode", None)
         else:
             try:
                 returncode = process.wait(
@@ -3948,8 +4168,30 @@ def _terminate_safely(
     *,
     process_group_id: Optional[int] = None,
     process_session_identity: Optional[_ProcessSessionIdentity] = None,
+    process_ownership: Optional[_NativeProcessOwnership] = None,
 ) -> bool:
-    """Reap the launcher and prove its dedicated process session is empty."""
+    """Reap the launcher and verify its session and observed owned identities."""
+
+    if process_ownership is not None:
+        # Native SIGINT cancels Codex's exec sessions, including their separate
+        # SIDs. Observe before signaling; keep the watcher alive throughout the
+        # grace and escalation so surviving owners can reveal new children.
+        process_ownership.signal(signal.SIGINT, leader_only=True)
+        _wait_for_process(process, 0.5)
+        process_ownership.signal(signal.SIGTERM)
+        session_reaped = _terminate_safely(
+            process,
+            process_group_id=process_group_id,
+            process_session_identity=process_session_identity,
+        )
+        deadline = time.monotonic() + 0.5
+        while True:
+            if not process_ownership.alive_members():
+                return session_reaped and process_ownership.healthy
+            process_ownership.signal(signal.SIGKILL)
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.01)
 
     if process_session_identity is not None:
         process_session_id = process_session_identity.session_id
