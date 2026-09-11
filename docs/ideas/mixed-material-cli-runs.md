@@ -1102,10 +1102,11 @@ round continues with its existing frozen tools.
 ### Applying the grouped-print correction after repeated coating failure
 
 Round 6 again passed its print checks but failed complete-scene construction
-at `substrate subtraction 'metal'`, after 132.7 seconds. At this failed-round
-checkpoint, the builder sent the ordinary interrupt signal to the verified
-Waterloo CLI host; its PID, creation time and exact resume/run arguments were
-checked first. The host reaped its native process session and exited 130 at
+at `substrate subtraction 'metal'`, after 132.7 seconds. The Manager saved
+another repair and began round 7; the builder's ordinary interrupt arrived
+during its early regeneration. The verified Waterloo CLI host's PID, creation
+time and exact resume/run arguments were checked first. The host reaped its
+native process session and exited 130 at
 **08:44:47 UTC**. Status retained the original checkpoint, root and
 **64,444,370 / 500,000,000 tokens**.
 
@@ -1131,6 +1132,9 @@ mixed-material files: `SKILL.md`, `references/manifest.md`, and
 `6d9ca74f` is now available to the same native Manager, which owns any product
 representation change and all new evidence. The builder did not edit product
 geometry or inject a stage proposal. All six earlier pilots remain paused.
+The Manager reconciled interrupted round 7 and started round 8 from its saved
+coating repair. Availability of the new grouping option does not mean the toy
+has adopted it; its representation remains the native Manager's decision.
 
 At the operator's request, the latest successful full-product preview was
 opened with:
@@ -1141,3 +1145,39 @@ open -a Preview '/Users/ab/Library/Application Support/Autonomous Workshop/runs/
 
 This image predates the refined figures; later full-scene renders had not yet
 succeeded. It is not final reviewed appearance or publication evidence.
+
+### Explicit native handoff of refreshed guidance
+
+The resumed Manager continued its saved coating repair before reading the new
+mixed-material guidance. A source audit found that `resume --refresh-tools`
+printed changed paths to the operator but did not include them in the native
+resume prompt. Updated hashes alone did not tell the Manager which guidance
+to reopen. The builder added a bounded notice derived from the latest completed
+refresh record and current input manifest. It names exact relative paths and
+hashes/removals, asks for changed guidance to be reread when necessary, and
+preserves the same Wish, session, Goal, skill deferrals and gates.
+
+The notice writes no acknowledgement, starts no model session and exposes no
+private ledger contents, reasons or source-file contents. Interrupted native
+continuations receive it again. No-refresh runs keep the existing prompt.
+This change handles completed recorded refreshes; it does not reconstruct the
+existing crash gap before a refresh's correction record is appended.
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:/private/tmp/workshop-usage-test-deps" "$workshop_python" -m pytest tests/workflow/test_tool_refresh_notice.py tests/workflow/test_native_host.py tests/workflow/test_make_mode.py tests/workflow/test_token_budget.py -q
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:/private/tmp/workshop-usage-test-deps" "$workshop_python" -m pytest tests/workflow/test_native_host.py::NativeHostTest::test_wish_runs_vault_bypassed_with_real_config_and_transport -q
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:/private/tmp/workshop-usage-test-deps" "$workshop_python" -m pytest tests/workflow/test_tool_refresh_notice.py -q
+```
+
+The initial combined run passed 215 cases; one existing loopback transport case
+was denied a localhost bind by the sandbox and passed separately with the
+appropriate permission. Independent review caught a skill-name compatibility
+edge; the reader now uses the existing host grammar, and all 41 final notice
+cases passed. In total, 179 existing and 41 final notice cases passed. No
+persistent test logs were retained.
+
+A read-only check against Waterloo's saved state produced the exact notice for
+its three files refreshed at 08:45, with notice SHA-256
+`fb862fb8d1aaf8bef39ca751beb9dd40d12ae03ea00219e0482cb37a12ceeb89`.
+This check did not resume or mutate the toy. The currently running CLI retains
+its loaded host code; the notice will be delivered on its next ordinary resume.

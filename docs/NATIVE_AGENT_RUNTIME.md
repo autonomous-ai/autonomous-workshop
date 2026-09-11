@@ -142,6 +142,20 @@ The host records the exact Manager/input correction; the original model,
 session, workflow, tool bytes and token consumption remain intact. Omitting the
 flag keeps the saved setting. Other profiles retain their frozen behavior.
 
+A completed explicit `resume --refresh-tools` also informs the native Manager
+about the latest recorded domain-skill changes. The host adds a bounded notice
+of exact relative paths and current manifest-bound hashes (or removals), asking
+the Manager to reread changed guidance if that refresh revision is not yet
+known. Frozen phase deferrals still apply. The notice preserves the same Wish,
+session and stage Goal; it does not grant new effect authority or replace checks.
+Private ledger contents, operator reasons and file contents are not forwarded.
+
+The notice reads the existing completed-refresh ledger without writing an
+acknowledgement. Interrupted native continuations receive it again. Runs with
+no recorded refresh keep the original prompt. Malformed or stale bindings are
+refused; missing records are not reconstructed, including the existing crash
+gap between writing a refresh checkpoint and appending its correction record.
+
 Codex Spark projects freeze `spark-economics-v3.md` and run that one
 session with a 64k automatic context-compaction ceiling
 across Make and Release. Budgeted v3 runs now cap each native turn at 20

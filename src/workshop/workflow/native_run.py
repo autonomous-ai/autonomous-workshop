@@ -6416,6 +6416,9 @@ def _launcher_call(
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
     prompt = selection_prompt() if inventor_selection_boundary else native_stage_prompt(checkpoint.stage)
+    from workshop.workflow.tool_refresh import native_tool_refresh_notice
+
+    prompt += native_tool_refresh_notice(paths.host_state, checkpoint.input_sha256s)
     if inventor_selection_boundary and checkpoint.make_mode is not None:
         prompt += (
             "\n\nThe immutable MAKE.json and STAGE.json inputs.make_mode select "
