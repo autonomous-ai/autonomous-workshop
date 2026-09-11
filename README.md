@@ -302,6 +302,13 @@ loop — a detent click, a glide, a rocking mass — that a hand runs without lo
 while the eyes stay on the work, and that sits still and deliberate beside a
 laptop once it is put down.
 
+### Axel Rake — design the vehicle that comes next ([TASTE.md](inventors/axel-rake/TASTE.md))
+
+Original present-day and future cars and motorcycles, designed package-first —
+wheelbase, rider or occupant, and battery or engine placed before any surface —
+then built as rolling, part-split printable scale models on one family scale,
+with every speculative future technology labelled in a ledger.
+
 ## Toys
 
 Toys that already left the Workshop. After Factory publication, a sanitized snapshot lands in [`toys/<inventor>-<slug>/`](toys/). These are public examples, not private run workspaces.

@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "5411a38ca22ad21fdbbf1675760673de6f74ac4f8625b8e66f169971bef84713",
+      "kind": "codex-skill",
+      "name": "axel-rake-inventor",
+      "path": "skills/axel-rake-inventor"
+    }
+  ],
+  "id": "axel-rake",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}
