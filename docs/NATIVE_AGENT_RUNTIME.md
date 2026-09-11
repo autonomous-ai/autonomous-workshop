@@ -119,6 +119,16 @@ stage-shaped reasoning levels described below while leaving each workflow's
 compaction, turn boundaries, proof handoffs, and gates intact. Schema-v1
 Manager projects retain those historical stage-shaped reasoning levels.
 
+An explicit `workshop resume ID --effort medium` changes subsequent Manager
+turns for a supported Codex token-budget product without replacing its native
+thread or rewriting the original `MANAGER.json`. The host retains a private,
+validated change history; later resumes without the flag keep that choice.
+Status and receipts expose the effective `effort` and original `initial_effort`,
+and the continuation prompt distinguishes both. This requires the originally
+frozen token-budget and whole-profile capabilities; unsupported older sessions
+are refused. Concurrent changes are refused by the run lock. See
+[ADR 0043](adr/0043-freeze-agent-model-and-effort.md#explicit-reasoning-override-on-resume).
+
 Codex Spark projects freeze `spark-economics-v3.md` and run that one
 session with a 64k automatic context-compaction ceiling
 across Make and Release. Budgeted v3 runs now cap each native turn at 20
@@ -941,7 +951,8 @@ private Wish demonstrate that:
     while older exact runs retain
     their original profile.
 13. a schema-v2 Manager project freezes the selected agent, model, and
-    reasoning effort; resume reconstructs that exact choice, while schema-v1
+    initial reasoning effort; resume preserves that choice unless an operator
+    explicitly records a supported host reasoning override, while schema-v1
     projects retain their historical stage-shaped reasoning behavior.
 
 ## Engine portability

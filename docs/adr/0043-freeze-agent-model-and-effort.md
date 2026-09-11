@@ -54,9 +54,10 @@ their exact reasoning levels; this is not a migration of existing sessions.
 For each new product run, the host writes schema-v2 `MANAGER.json` containing
 the canonical agent, model, and reasoning effort. That file is immutable,
 included in the run input manifest, and revalidated on every checkpoint read.
-Resume accepts no replacement flags and reconstructs the launcher from those
-exact bytes. Schema-v1 `MANAGER.json` remains readable and continues through
-the historical stage-shaped Codex reasoning profiles.
+Resume reconstructs the launcher from those exact bytes unless the operator
+has explicitly recorded the supported reasoning override below. Schema-v1
+`MANAGER.json` remains readable and continues through the historical
+stage-shaped Codex reasoning profiles.
 
 The selected reasoning effort is Wish-wide for new schema-v2 projects. It
 overrides the low/medium/high reasoning values in the older Codex economics
@@ -71,6 +72,37 @@ one-session rule for the subsequent Wish-wide product run.
 Codex receives `--model` plus `model_reasoning_effort`; Claude Code receives
 `--model` plus `--effort`. Their private native session checkpoints bind the
 selection under each adapter's compatibility rules.
+
+### Explicit reasoning override on resume
+
+As of 2026-09-10, `workshop resume ID --effort medium` can change subsequent
+native Manager turns of an unfinished Codex product that originally froze
+`token-budget-v1.md`, `budgets-v1.md`, and schema-v2 `MANAGER.json`. Other
+supported reasoning values use the same frozen-model validation as new runs.
+The operator must wait until the current host invocation stops; the exclusive
+run lock rejects a concurrent change. There is no automatic effort change.
+
+The host atomically stores an owner-only `reasoning-effort.json` history,
+bound to the exact product, Wish, initial Manager bytes, model, initial effort,
+budget profile, workspace, private state root and native thread. Each change
+records its previous and new effort, UTC request time, lifecycle checkpoint
+and native runtime configuration hash. Repeating the current choice is
+idempotent. Omitting the flag preserves the most recent explicit choice,
+including after a failed launch. Invalid history or session bindings fail
+closed on status and resume.
+
+The original `MANAGER.json`, Wish, materialized instructions, stage evidence,
+usage and saved token cap are unchanged. The existing profile-bound native
+configuration already allows per-turn reasoning changes, so the override
+does not rebind or replace the Codex session. Later instruction-only host tool
+refreshes can keep the override; a different frozen budget profile requires
+separate migration support and is refused. Historical sessions without this
+profile, including token-budget adoption from an older run, are unsupported.
+
+Run receipts and status report the effective setting as `effort` and preserve
+the original selection as `initial_effort` when an override exists. The native
+continuation prompt names both settings so the original Manager file cannot
+be mistaken for the current launch policy. Earlier turns are never relabeled.
 
 ## Consequences
 
@@ -92,5 +124,8 @@ selection under each adapter's compatibility rules.
 - Claude checkpoint tests reject model drift on resume.
 - Workflow tests prove schema-v2 `MANAGER.json` is hash-bound and that a new
   run's selected effort overrides a legacy stage reasoning default.
+- Override tests prove an ultra-to-medium change resumes the exact thread with
+  the same native configuration hash, survives retries and instruction-only
+  rebinds, preserves usage and frozen bytes, and rejects invalid private records.
 - Schema-v1 parser coverage proves historical runtime configuration remains
   represented as legacy rather than silently defaulted.
