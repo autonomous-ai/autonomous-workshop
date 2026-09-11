@@ -188,6 +188,15 @@ mechanism must include every other installed component it uses.
   before 4,096 occurrences. Duplicate JSON keys, nonfinite numeric values,
   traversal and symlinks fail closed.
 
+The final host Factory carrier has a separate 50 MiB limit and stores ZIP
+members without compression. It contains the declared public assets plus
+additional exact copies of the selected STEP and hero, together with host
+metadata. Measure `sum(public asset bytes) + selected STEP bytes + selected
+hero bytes` before final independent review as a necessary lower-bound check,
+with headroom for metadata and ZIP headers. This is not an exact host pack
+preview or a new acceptance gate. Per-file compliance alone does not ensure
+transport fit. The complete sealed Make tree also retains its 512 MiB bound.
+
 ## Physical units and colored CAD parts
 
 A purchased motor can be one procurement unit represented by several colored

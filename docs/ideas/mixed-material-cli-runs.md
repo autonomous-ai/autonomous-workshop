@@ -1301,3 +1301,43 @@ open -a Preview '/Users/ab/Library/Application Support/Autonomous Workshop/runs/
 The actual generated assembly still requires final inspection, independent
 review, final verification, manufacturing-package validation and authenticated
 publication. Passing intermediate renders do not establish those outcomes.
+
+### Publication-size preflight
+
+Round 9's Manager visual feedback passed. Later preparation found label-height
+and touching color-region defects under the stricter geometry checks, so the
+Manager repaired those and started round 10. Its subsequent complete STEP
+export succeeded, but read-only file inspection found 166,720,236 bytes. The
+earlier export had been 186,505,213 bytes; neither fits current publication.
+
+A source audit confirmed that this is not just the mixed manifest's 95 MiB
+file bound. Make artifacts retain 95 MiB per file and 512 MiB total. Factory's
+current canonical Pack is a 50 MiB ZIP stored without compression; the mixed
+carrier includes all public paths plus exact root STEP and selected-hero
+aliases. Thus public asset bytes plus STEP bytes plus hero bytes are already
+a necessary lower bound before metadata and ZIP overhead. Merely fitting one
+STEP below 95 MiB is insufficient.
+
+The locally available backend source at clean revision `3142920c` also enforces
+95 MiB per published imported file in both initial and version imports, with a
+100 MiB uploaded-ZIP bound. Its documented reason is the existing remix/LFS
+transport. The deployed revision was not verified. No backend changes, uploads,
+limit increases, compressed-Pack substitution or private-asset exposure were
+attempted. Current host readers also materialize several full byte copies;
+larger transport would require coordinated contract and memory work.
+
+Mixed-material guidance now asks native Make to measure these existing bounds
+before final independent review, clearly distinguishing a lower-bound/headroom
+check from exact host packaging or acceptance. This adds no gate or new limit
+and preserves the full scene and required review. Independent review found no
+issue in the text; all 16 registry checks passed after sealing.
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" "$workshop_python" -m unittest tests.make.test_skill_registry -q
+```
+
+The mixed-materials guidance hash is
+`869d18140bd2002b1530d5c59e693ac1d8a934ecb2bedd2451a4f36ae3ac80a8`.
+The native run retains its previous text until an ordinary explicit refresh.
+An independent synthetic investigation is checking topology reuse for repeated
+assembly instances; no safe product-size reduction is claimed from that study.

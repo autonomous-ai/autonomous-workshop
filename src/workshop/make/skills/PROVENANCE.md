@@ -1,5 +1,16 @@
 # Shared skill provenance
 
+## Early publication-size accounting (2026-09-11)
+
+Mixed-material guidance now explains the existing 95 MiB per-file, 512 MiB
+sealed-tree and 50 MiB stored-ZIP carrier limits before final independent
+review. The current carrier preserves every declared public path and adds
+root STEP and hero aliases, so public bytes plus those two asset sizes are a
+necessary lower bound with metadata/header headroom. This advisory accounting
+neither builds a host pack nor certifies acceptance. No limit, format, identity,
+privacy, engineering or lifecycle gate changed. Frozen runs receive the text
+through the ordinary explicit tool refresh.
+
 ## Stateless renderer tessellation extraction (2026-09-11)
 
 Both renderers now extract arrays directly from the same native triangulations

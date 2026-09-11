@@ -103,6 +103,20 @@ the render or a CAD script.
 
 ## Present the finished product
 
+Before final independent review, measure the generated complete STEP and the
+files selected for publication. Each Make artifact must fit the existing
+95 MiB per-file limit, and the sealed product tree must fit 512 MiB. The current
+Factory carrier is a 50 MiB ZIP stored without compression. It contains every
+public asset, an additional exact complete STEP at root `assembled.step`, and
+an additional copy of the selected hero. Calculate
+`public asset bytes + selected STEP bytes + selected hero bytes` as a transport
+lower bound, leaving room for host metadata and ZIP headers. A lower bound at
+or above 50 MiB cannot fit; a smaller value alone does not prove acceptance.
+Resolve oversize in Make before binding final review bytes. Preserve the full
+assembled scene, reviewed-asset identity and all required checks. These are
+existing transport constraints, not permission to omit components, expose
+private files or weaken verification.
+
 Render the complete assembled geometry with its intended colors and material
 appearance. Preserve card thickness, textile volume, visible cords and hardware,
 and the bought components that contribute to the silhouette. Use the existing
