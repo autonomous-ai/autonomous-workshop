@@ -1033,3 +1033,33 @@ All 23 focused renderer tests passed, including real timeout-log retention,
 failure propagation and exact output compatibility. The diagnostic source tree
 is sealed with CAD digest
 `796a9c0c5d7d61c6c9f8a877c1670d745b0bfb4ae573b4df7b3c11750d2d83f1`.
+
+### Refined miniatures and native-turn recovery
+
+The Manager's round-3 visual feedback required earth-colored courtyard finishes
+and less blocklike figures. Theo supplied a bounded refinement of coats, limbs,
+headgear, muskets, horses and the cannon carriage. Round 4 regenerated all 11
+printed families; all six revised miniature families passed fresh thickness and
+overhang checks, with the five unchanged landmark results reused under the
+existing exact-source rules. Its summary records `checks_ok: true`.
+
+The round-4 visual render failed after 94.7 seconds while the product's paint
+source fused finish surfaces: `ValueError: Null TopoDS_Shape object`. No images
+were produced. This is a product-source Boolean failure, not passing visual
+evidence. The native turn subsequently ended at **06:06:54 UTC** with the host's
+structured `unclassified` failed-turn diagnostic. The checkpoint preserved
+**52,676,941 / 500,000,000 tokens** and the original root session.
+
+After the operator reiterated continuation, the builder resumed normally at
+**2026-09-11 08:12:25 UTC**:
+
+```sh
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli status wish-20260911-023805-fe157910 --json
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli resume wish-20260911-023805-fe157910 --refresh-tools
+```
+
+Exactly one frozen file changed: `render_review` received the already tested
+phase diagnostics from commit `a0004a88`. The same Manager owns the finish
+repair, new visual evidence and finalization. Profile, original Wish, budget,
+credential isolation and publication requirements remain intact. No older pilot
+was resumed, and no product CAD was edited by the repository builder.
