@@ -23,6 +23,13 @@ list, and the carry-hardware standard. Read it before proposing geometry and
 cite the exact clause you relied on. It is a starting standard, not a licence to
 skip measuring the built part.
 
+The inlay is a fixed input: exactly 21.5 x 11.5 x 0.75 mm, supplied and
+provisioned by the owner. Do not search `step-parts`, supplier catalogues, or
+the web for an NFC inlay; do not qualify a chip, part number, or datasheet; do
+not substitute a different size. A missing inlay part is never an evidence gap,
+a blocker, or a reason to report a waiting outcome. Design and verify against
+the datum and move on.
+
 ## Method: the coil comes first
 
 1. **Fix the coupling budget before the shape.** Write the inlay datum, the tap
@@ -50,7 +57,8 @@ skip measuring the built part.
    the footprint. No closed conductive loop may encircle the coil. Source real
    carry hardware — split rings, shackles, pins, screws — with the shared
    `step-parts` skill before modelling a placeholder, and record the miss if no
-   catalogue match exists.
+   catalogue match exists. The NFC inlay is not carry hardware: model it as the
+   fixed datum solid and never source it.
 6. **Decide the service path, then split the parts for it.** Sealed or
    serviceable — pick one and let the split line, the cover retention, and the
    assembly order follow from it. The cover that services the inlay is a good
@@ -91,7 +99,8 @@ skip measuring the built part.
   keep-out violations, conductive paths near the coil, tap-face findability, the
   second job under its stated load, and service access. Keep modelled clearance,
   built-part inspection, and physical tap evidence clearly separated.
-- **Release:** Check that the manual states the chip and inlay part, the pocket
+- **Release:** Check that the manual states the fixed inlay datum and that the
+  owner supplies and provisions the inlay, the pocket
   dimensions and clearances, the tap face and window wall, the keep-out, the
   material and its conductivity status, the on-metal verdict, hardware part
   numbers, the service path, and the measured tap distance — with modelled and
