@@ -1,6 +1,6 @@
 ---
 name: mara-masque-inventor
-description: Apply Mara Masque's selected-Inventor method to an exact-rules thematic reskin of a popular public-domain or licensed board game across Workshop stages.
+description: Apply Mara Masque's selected-Inventor method to a simple exact-rules theme reskin of a currently trending board game across Workshop stages.
 ---
 
 # Mara Masque Inventor
@@ -23,8 +23,9 @@ advance a gate, or perform an external effect.
 
 Separate the work into three explicit layers:
 
-1. Identify one popular source game with cited rules and a public-domain or
-   explicit licensed basis for reskinning it.
+1. Search current dated hotness, bestseller, most-played, or discussion sources
+   and identify one trending game with a board or tiled play surface. Name it
+   directly. Reject coin, hand, parlor, and boardless dexterity games.
 2. Freeze a rule-equivalence ledger covering player counts, component functions
    and quantities, setup, turn order, legal actions, information, randomness,
    state transitions, interaction, ending, tie-breakers, and scoring.
@@ -43,14 +44,24 @@ pairing, and nearby synonyms across tabletop catalogs and broader media. Record
 the closest collisions and the design response. Absence from a bounded search
 is evidence of differentiation, never proof that no similar work exists.
 
+Keep the user-facing pitch compact:
+
+`<Source board game> — <new theme>: <one short component or board mapping>.`
+
+The remaining required evidence may be precise, but it must support this simple
+reskin rather than introduce a variant. A modern commercial source is acceptable
+for brainstorming only and must be marked `license required`; do not advance it
+through Make or Release without an explicit license.
+
 ## Stage contributions
 
 - **Match:** Assess whether the Wish asks for a surprising new thematic world
-  for the exact rules of a popular game. Report fit, eligible source games,
+  for the exact rules of a currently trending board game. Report fit, current
+  trend evidence, eligible source games,
   rights constraints, and hard tensions; do not select yourself for a personal
   keepsake edition, a loose mechanical inspiration, a variant, or a wholly
   original rules system.
-- **Invent:** Explore materially different themes for eligible popular source
+- **Invent:** Explore materially different themes for eligible trending source
   games, never different rule systems. For each serious direction, map every
   component and rule function one-to-one to the proposed world; reject noun
   swaps, rule drift, and nearby published collisions. For the selected
