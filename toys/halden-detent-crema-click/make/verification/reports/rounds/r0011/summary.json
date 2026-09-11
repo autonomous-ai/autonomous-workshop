@@ -1,0 +1,135 @@
+{
+ "build": {
+  "crema_piston": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "cup_body": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "foot_plug": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "checked": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "checks_ok": true,
+ "entry": "crema_click.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": {
+  "conditions": [
+   {
+    "detail": "clear across 16 steps (step 0.281 mm)",
+    "id": "piston-press",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by cup_body at step 7/12 (6.591494 mm3) - retained, as expected",
+    "id": "piston-extract-blocked",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by cup_body at step 1/12 (21.955534 mm3) - retained, as expected",
+    "id": "plug-extract-blocked",
+    "status": "pass"
+   },
+   {
+    "detail": "2 retention proof(s) close at 1 fixed root(s); every material member has a blocked escape sweep",
+    "id": "retention-closure",
+    "status": "pass"
+   }
+  ],
+  "detail": "4 condition(s): all pass",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011",
+ "overhang_angle": 45.0,
+ "parts": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "print": {
+  "crema_piston": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/overhang-crema_piston.log": "a601cd321ac6b0ed1d25b4733447341ec89d66b3f3a825da86090ad98975c1c4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/thickness-crema_piston.log": "de29702dc2fb39f308e6e18a5813499922342b4dc58978ec5ee44e89a406b1b2"
+   },
+   "measured_round": 11,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "cup_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/overhang-cup_body.log": "2ee3f10e3329908c1c7c45b6555d6538f8cbb0f12bf26c7bc56b962d35b063df",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/thickness-cup_body.log": "c17f9dac719dcd469f54d868f5c7fc919806e2840359fad7402dae0353bec785"
+   },
+   "measured_round": 11,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.28,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "foot_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/overhang-foot_plug.log": "4b46f148f5293b9323fc0ea7ca58f5b9a7fa25158374ff404bc6d97048a1bfd2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/thickness-foot_plug.log": "8b52c7c8fc03b763c18f6a33f0f951a1a6a9df3f770d30fb4dff64ab64c025b8"
+   },
+   "measured_round": 11,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click",
+ "refs": [],
+ "reused": [],
+ "round": 11,
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Cocoa demitasse with an attached C-handle and a beige crema disc proud of the rim. Foot on the desk. No missing parts, no visible intersections.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/visual-packet.json",
+  "packet_sha256": "8f755c57c6dd134f4f987df4622abe469248c9375f78403daaafd7b09558bfed",
+  "status": "pass"
+ }
+}

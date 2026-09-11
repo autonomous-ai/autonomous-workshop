@@ -151,6 +151,18 @@ uv run workshop wish "A simple one-piece gravity desk rocker" --inventor soren-v
 uv run workshop resume <wish-id> --max-tokens 15000000  # total cap, not extra tokens
 ```
 
+`wish`, `start` and `resume` also accept `--turn-minutes M`, which bounds each
+native turn to `M` minutes (1 to 360), or `--turn-minutes none` to run with no
+Workshop wall clock at all. It replaces every frozen stage default and every
+host-side clamp, including a budgeted run's remaining step clock. Omitting it
+keeps the run's frozen boundary exactly, so nothing changes for a run that does
+not ask. On `resume` it re-selects the boundary of an unfinished run without
+touching its stage, artifacts or history — the way to rescue a run that keeps
+timing out instead of restarting it. An untimed run still needs the Manager's
+own bound, which today means a Codex token budget: Codex refuses to run untimed
+without one, while Claude Code and Grok Build have no token accounting and an
+untimed turn there is bounded by nothing Workshop owns. See ADR 0064.
+
 Omitting `--max-tokens` on resume preserves the saved allowance. Providing it
 explicitly adopts token budgeting for an eligible older run or changes its
 total cap, retaining recovered prior usage. Token-budgeted runs no longer split
@@ -282,6 +294,13 @@ and continuous routes whose geometry and clearances can be checked exactly.
 Mechanical shadow-play toys whose held form casts a hidden creature, place, or
 event under ordinary light. Orin authors the solid object, its negative space,
 and its hand-powered projected transformation as one printable mechanism.
+
+### Halden Detent — make the hand something worth repeating ([TASTE.md](inventors/halden-detent/TASTE.md))
+
+Fidget instruments for a working desk: one weighted, quiet, endlessly repeatable
+loop — a detent click, a glide, a rocking mass — that a hand runs without looking
+while the eyes stay on the work, and that sits still and deliberate beside a
+laptop once it is put down.
 
 ## Toys
 

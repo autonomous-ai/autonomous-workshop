@@ -43,6 +43,7 @@ INVENTORS = (
     "alice",
     "bob",
     "eve",
+    "halden-detent",
     "ivy",
     "kestrel-knot",
     "leo",

@@ -1,0 +1,17 @@
+$ <HOME>/workspaces/peterat617/autonomous-workshop.worktrees/feat/halden-detent-inventor/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/part_cup_body.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0002/thickness-cup_body.md
+(6.4s, exit 1)
+--- stdout
+part_cup_body.step.py: 103.09 cm3 solid, grid 0.291 mm (300x225x158), 241319 surface samples, thickness resolved to 0.146 mm
+  FAIL  wall >= 0.80 mm (+/-0.15)      0.1% of surface below (236 of 241319 samples); thinnest 0.29 mm at (11.1, -19.9, 0.0) in 4 region(s); 3 wall(s) (widest band 1.05 mm), 1 taper(s) at feature edges (0.00% of surface, budget 2%); 38 more within measurement error of the limit
+  PASS  thickness distribution         median 20.66 mm, p95 44.39 mm, max 64.47 mm
+  WARN  hollowable at 1.20 mm wall     77.23 of 103.09 cm3 (75%) in 1 pocket(s), 6 too small to shell
+  PASS  filament that would save       11.58 cm3, 14.4 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.29 mm at (-22.8, -4.2, 0.0)     97 samples, 9.5 mm2, runs 9.8 mm, band 0.97 mm
+        2. [wall ] 0.29 mm at (12.8, 18.7, 0.0)     76 samples, 7.5 mm2, runs 7.2 mm, band 1.05 mm
+        3. [wall ] 0.29 mm at (11.1, -19.9, 0.0)     58 samples, 5.6 mm2, runs 6.6 mm, band 0.85 mm
+        4. [taper] 0.58 mm at (9.9, 17.1, 2.3)      5 samples, 0.4 mm2, runs 1.1 mm, band 0.37 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0002/thickness-cup_body.md
+
+--- stderr

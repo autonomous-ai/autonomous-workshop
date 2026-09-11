@@ -477,6 +477,8 @@ class NativeHostTest(unittest.TestCase):
         manager_id="codex",
         manager_model=None,
         manager_reasoning_effort=None,
+        turn_seconds=None,
+        turn_untimed=False,
     ):
         capability_paths = {
             "deep-v1": DEEP_ECONOMICS_V1_CAPABILITY_PATH,
@@ -606,6 +608,8 @@ class NativeHostTest(unittest.TestCase):
             manager_id=manager_id,
             manager_model=manager_model,
             manager_reasoning_effort=manager_reasoning_effort,
+            turn_seconds=turn_seconds,
+            turn_untimed=turn_untimed,
         )
 
     def test_grid_keepalive_service_cannot_create_repeating_wishes(self):
@@ -680,6 +684,114 @@ class NativeHostTest(unittest.TestCase):
                     3600,
                 )
                 self.assertEqual(bounded.timeout_seconds, 1200)
+
+    def test_selected_turn_boundary_replaces_the_frozen_stage_default(self):
+        """One operator boundary outranks every stage-shaped default."""
+
+        for effort, capability in (
+            ("spark", "v4"),
+            ("spark", "v3"),
+            ("forge", "deep-v14"),
+            ("quest", "deep-v13"),
+        ):
+            with self.subTest(effort=effort, capability=capability):
+                checkpoint = self._launcher_checkpoint(
+                    effort=effort,
+                    economics_capability=capability,
+                    turn_seconds=3 * 60 * 60,
+                )
+                with mock.patch(
+                    "workshop.workflow.native_run.CodexNativeSessionLauncher"
+                ) as launcher_type:
+                    _native_launcher(checkpoint)
+                self.assertEqual(
+                    launcher_type.call_args.kwargs["timeout_seconds"], 3 * 60 * 60
+                )
+
+    def test_selected_turn_boundary_survives_the_short_make_proof_branch(self):
+        """The shortest frozen boundary is still replaced, not merely widened."""
+
+        checkpoint = self._launcher_checkpoint(
+            effort="forge", economics_capability="deep-v14", turn_seconds=7_200
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(checkpoint, initial_make_proof_boundary=True)
+        self.assertEqual(launcher_type.call_args.kwargs["timeout_seconds"], 7_200)
+
+    def test_untimed_selection_removes_the_host_wall_clock(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v4", turn_untimed=True
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(checkpoint)
+        self.assertIsNone(launcher_type.call_args.kwargs["timeout_seconds"])
+
+    def test_selected_turn_boundary_reaches_a_non_codex_manager(self):
+        for options, expected in (
+            ({"turn_seconds": 5_400}, 5_400),
+            ({"turn_untimed": True}, None),
+        ):
+            with self.subTest(**options):
+                checkpoint = self._launcher_checkpoint(
+                    effort="spark",
+                    economics_capability="v4",
+                    manager_id="claude",
+                    **options,
+                )
+                with mock.patch(
+                    "workshop.workflow.native_run.manager_launcher"
+                ) as registry:
+                    _native_launcher(checkpoint)
+                self.assertEqual(
+                    registry.call_args.kwargs["timeout_seconds"], expected
+                )
+
+    def test_selected_turn_boundary_outranks_the_budgeted_spark_clamp(self):
+        """Without this the flag reads as accepted and silently does nothing."""
+
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v3", turn_seconds=4 * 60 * 60
+        )
+        checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+        with mock.patch(
+            "workshop.runtime.codex._resolved_codex_binary", return_value=None
+        ):
+            bounded = _budgeted_turn_launcher(
+                checkpoint, _native_launcher(checkpoint), 3600
+            )
+        self.assertEqual(bounded.timeout_seconds, 4 * 60 * 60)
+
+    def test_untimed_selection_outranks_a_remaining_step_clock(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v3", turn_untimed=True
+        )
+        checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+        with mock.patch(
+            "workshop.runtime.codex._resolved_codex_binary", return_value=None
+        ):
+            bounded = _budgeted_turn_launcher(
+                checkpoint, _native_launcher(checkpoint), 600
+            )
+        self.assertIsNone(bounded.timeout_seconds)
+
+    def test_an_unselected_turn_boundary_changes_nothing(self):
+        """Every frozen run without the flag keeps its exact original policy."""
+
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v3"
+        )
+        checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+        with mock.patch(
+            "workshop.runtime.codex._resolved_codex_binary", return_value=None
+        ):
+            bounded = _budgeted_turn_launcher(
+                checkpoint, _native_launcher(checkpoint), 3600
+            )
+        self.assertEqual(bounded.timeout_seconds, 1200)
 
     def test_new_runtime_choice_overrides_legacy_stage_reasoning_profile(self):
         checkpoint = self._launcher_checkpoint(

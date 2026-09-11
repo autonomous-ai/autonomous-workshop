@@ -1203,6 +1203,96 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaisesRegex(StateConflict, "unavailable"):
             host._open_budgeted_agent_run(paths)
 
+    def test_an_unselected_boundary_is_absent_from_the_checkpoint(self):
+        run = self.create()
+        checkpoint = run.snapshot()
+        self.assertIsNone(checkpoint.turn_seconds)
+        self.assertFalse(checkpoint.turn_untimed)
+        payload = json.loads(
+            (run.host_state_root / "agent-run.json").read_text(encoding="utf-8")
+        )
+        self.assertNotIn("turn_seconds", payload)
+
+    def test_a_selected_boundary_survives_reopen(self):
+        run = self.create(turn_seconds=3 * 60 * 60)
+        checkpoint = run.snapshot()
+        self.assertEqual(checkpoint.turn_seconds, 3 * 60 * 60)
+        self.assertFalse(checkpoint.turn_untimed)
+        reopened = AgentRun.open(
+            run.run_root,
+            host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+        )
+        self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_an_untimed_selection_is_distinct_from_no_selection(self):
+        run = self.create(turn_untimed=True)
+        checkpoint = run.snapshot()
+        self.assertTrue(checkpoint.turn_untimed)
+        self.assertIsNone(checkpoint.turn_seconds)
+        payload = json.loads(
+            (run.host_state_root / "agent-run.json").read_text(encoding="utf-8")
+        )
+        self.assertIn("turn_seconds", payload)
+        self.assertIsNone(payload["turn_seconds"])
+
+    def test_an_invalid_boundary_is_refused_before_any_run_exists(self):
+        for kwargs in (
+            {"turn_seconds": 59},
+            {"turn_seconds": agent_run_module.MAX_NATIVE_TURN_SECONDS + 1},
+            {"turn_seconds": 60.0},
+            {"turn_seconds": True},
+            {"turn_untimed": "yes"},
+            {"turn_seconds": 600, "turn_untimed": True},
+        ):
+            with self.subTest(**kwargs), self.assertRaises(ContractError):
+                self.create(**kwargs)
+            self.assertFalse(self.run_root.exists())
+
+    def test_a_tampered_boundary_is_refused_on_reopen(self):
+        run = self.create(turn_seconds=7_200)
+        checkpoint_path = run.host_state_root / "agent-run.json"
+        payload = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+        payload.pop("checkpoint_sha256")
+        payload["turn_seconds"] = agent_run_module.MAX_NATIVE_TURN_SECONDS + 1
+        agent_run_module.AgentRun._write_checkpoint_file(checkpoint_path, payload)
+        with self.assertRaisesRegex(StateConflict, "native turn boundary is invalid"):
+            AgentRun.open(run.run_root, host_state_root=run.host_state_root)
+
+    def test_rebinding_replaces_the_boundary_and_keeps_the_lifecycle(self):
+        run = self.create(turn_seconds=1_800)
+        before = run.snapshot()
+        after = run.rebind_turn_boundary(turn_untimed=True)
+        self.assertTrue(after.turn_untimed)
+        self.assertIsNone(after.turn_seconds)
+        self.assertEqual(after.revision, before.revision + 1)
+        self.assertEqual(after.stage, before.stage)
+        self.assertEqual(after.status, before.status)
+        self.assertEqual(after.max_rounds, before.max_rounds)
+        self.assertEqual(after.round_index, before.round_index)
+        exact = run.rebind_turn_boundary(turn_seconds=5_400)
+        self.assertEqual(exact.turn_seconds, 5_400)
+        self.assertFalse(exact.turn_untimed)
+
+    def test_rebinding_to_the_same_boundary_writes_no_revision(self):
+        run = self.create(turn_seconds=1_800)
+        before = run.snapshot()
+        self.assertEqual(
+            run.rebind_turn_boundary(turn_seconds=1_800).revision, before.revision
+        )
+
+    def test_rebinding_refuses_an_invalid_boundary(self):
+        run = self.create()
+        for kwargs in (
+            {"turn_seconds": 59},
+            {"turn_seconds": agent_run_module.MAX_NATIVE_TURN_SECONDS + 1},
+            {"turn_seconds": 600, "turn_untimed": True},
+            {"turn_untimed": "yes"},
+        ):
+            with self.subTest(**kwargs), self.assertRaises(ContractError):
+                run.rebind_turn_boundary(**kwargs)
+        self.assertIsNone(run.snapshot().turn_seconds)
+
     def test_effort_checkpoint_rejects_a_disabled_active_stage(self):
         marker = self.skill / "references" / "effort-routes-v1.md"
         marker.write_bytes(b"selectable effort routes\n")

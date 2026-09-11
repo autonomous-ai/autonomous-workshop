@@ -1,0 +1,20 @@
+$ <HOME>/workspaces/peterat617/autonomous-workshop.worktrees/feat/halden-detent-inventor/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/part_cup_body.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0004/overhang-cup_body.md
+(4.3s, exit 1)
+--- stdout
+part_cup_body.step.py: 211.7 cm2 of surface, grid 0.400 mm, 5188 unsupported samples over 10 region(s)
+  FAIL  no face under 45 deg needs support     11.5% of the surface faces down that steeply; 1 region(s) need support, 9 bridge, 0 below 1 mm2; worst 136.7 mm2 spanning 54.6 mm
+  PASS  bridges within 12 mm                   9 region(s), longest span 10.1 mm
+        every unsupported region, largest first:
+        1. [overhang]   136.7 mm2 at (-2.1, -0.1, 0.8)  span  54.6 mm of 55x55, 2.8 mm of air below
+        2. [bridge  ]    89.8 mm2 at (-22.9, 0.2, 4.6)  span   7.8 mm of 8x11, 5.6 mm of air below
+        3. [bridge  ]    79.0 mm2 at (-13.3, 13.6, 10.4)  span   9.7 mm of 10x10, 11.6 mm of air below
+        4. [bridge  ]    78.9 mm2 at (13.5, -13.3, 10.4)  span  10.1 mm of 10x10, 11.6 mm of air below
+        5. [bridge  ]    78.8 mm2 at (-13.2, -13.2, 10.4)  span  10.1 mm of 10x10, 11.6 mm of air below
+        6. [bridge  ]    78.2 mm2 at (13.5, 13.6, 10.4)  span   9.7 mm of 10x10, 11.6 mm of air below
+        7. [bridge  ]    69.8 mm2 at (11.1, 21.0, 4.6)  span   9.0 mm of 12x9, 5.6 mm of air below
+        8. [bridge  ]    67.3 mm2 at (11.2, -20.9, 4.6)  span   8.7 mm of 13x9, 5.6 mm of air below
+        ... and 2 smaller region(s)
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0004/overhang-cup_body.md
+
+--- stderr

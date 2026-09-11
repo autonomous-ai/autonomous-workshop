@@ -1,0 +1,86 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011",
+ "likeness": {},
+ "parts": {
+  "crema_piston": "ace4d97c5f24beff9a5690979f1bfc433fd818ce1f7fa8ccdbf8368212b391d5",
+  "cup_body": "6eed35a012e0f29a5416ad257d534a5606aeac7e1ba4653e6750a46907f6dfaa",
+  "foot_plug": "79d953b82d75e5ac410a4d9ead0e2fed74b21cc249bbc35e3a67559fbb5a976c"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "crema_piston": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/overhang-crema_piston.log": "a601cd321ac6b0ed1d25b4733447341ec89d66b3f3a825da86090ad98975c1c4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/thickness-crema_piston.log": "de29702dc2fb39f308e6e18a5813499922342b4dc58978ec5ee44e89a406b1b2"
+   },
+   "measured_round": 11,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "cup_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/overhang-cup_body.log": "2ee3f10e3329908c1c7c45b6555d6538f8cbb0f12bf26c7bc56b962d35b063df",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/thickness-cup_body.log": "c17f9dac719dcd469f54d868f5c7fc919806e2840359fad7402dae0353bec785"
+   },
+   "measured_round": 11,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.28,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "foot_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/overhang-foot_plug.log": "4b46f148f5293b9323fc0ea7ca58f5b9a7fa25158374ff404bc6d97048a1bfd2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/thickness-foot_plug.log": "8b52c7c8fc03b763c18f6a33f0f951a1a6a9df3f770d30fb4dff64ab64c025b8"
+   },
+   "measured_round": 11,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1"
+  },
+  "platform": "darwin",
+  "python": "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+  "python_version": "3.11.12 (main, Apr  9 2025, 03:49:53) [Clang 20.1.0 ]",
+  "sources": {
+   "check_overhang": "023717b7fef568061fc4808d9c53597821f2a32d0c985ac3574389e9c32c1c40",
+   "check_thickness": "6f68affa79e7053701100ce938dbf25b4fe498642a6f7befdecbf0606d35d2bb",
+   "make_round": "9af9ea5c8d5a81483fa9d2f095ce1d013e6eeb35f1ebbc411b0c20df36496516",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 11
+}
