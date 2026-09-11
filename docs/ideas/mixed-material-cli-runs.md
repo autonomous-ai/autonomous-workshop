@@ -1736,3 +1736,62 @@ git push --force-with-lease=refs/heads/make/mixed-material-products:d9354bb7a1b9
 
 Waterloo's published assets and frozen run remain unchanged by this source
 rebase. The other six pilots remain paused.
+
+
+### Second-product selection: resume original Atlas Vault
+
+The operator clarified that preserving prior work is essential, hand assembly
+of many components is acceptable, and the next choice should minimize moving
+dynamics. All six original builds were reviewed from saved briefs, source
+specifications, handoffs and round summaries; no builder CAD execution occurred.
+
+| Existing product | Remaining dynamic complexity | Decision |
+| --- | --- | --- |
+| Atlas Vault | Hand-operated dials, short captive slide and hatch; simple clue light | Resume original run: controlled motion without timed chains or free flight |
+| Liltwing Flight Garden | Elastic launcher plus aircraft trim, payload and flight response | Keep paused despite only five printed production definitions |
+| Harbor Relay Pinball | Ball/flipper impacts, sprung launcher and coupled dock/gate signals | Keep paused |
+| Cloudline Coaster | Powered lift, rolling routes and resetting bascule | Keep paused |
+| Rainmark Studio | Coupled cam/gear rhythm, striking and sand-marking/reset | Keep paused |
+| Switchyard Relay | Elastic/spring transfers and linked route timing; saved tooling need | Keep paused |
+
+Atlas's saved continuity records a source-stable integration diagnostic with
+351 leaves, 1,613 checked pairs, 66 joints, no invalid leaves and no clashes.
+Its latest main round is r0002, with `marker_back` and `marker_handle` still
+failing print checks and visual feedback pending. Final motion, integrated
+verification, manufacturing/public manifests, independent review and publication
+are not established by this selection. Atlas is more involved to assemble than
+Liltwing; its advantage here is controlled hand-operated behavior, not fewer
+physical pieces. Its existing lock and clue light remain in the original Wish.
+
+Before this clarification, a new static derivative was mistakenly launched at
+15:10:00.776 UTC using the committed `08-atlas-expedition-static.txt` brief:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli wish "$(cat docs/ideas/mixed-material-pilots/08-atlas-expedition-static.txt)" --inventor neri-wonder --workflow spark --make mixed --agent codex --model astra --effort medium --max-tokens 500000000
+```
+
+That new run is `wish-20260911-151000-eafe45c0`. After the operator objected to
+starting over, its CLI received SIGINT and exited 130 at 15:10:33.468 UTC.
+It remains paused and is not the selected second product. Its new allowance
+does not reset, replace or merge with the original Atlas accounting.
+
+The actual continuation is the original Atlas Vault run, with its original
+Wish, product workspace, Neri Wonder selection and native session retained:
+
+```sh
+cd /Users/ab/code/autonomous-workshop-mixed-material-products
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli resume wish-20260910-143753-a2e10997 --max-tokens 500000000 --effort medium --refresh-tools
+```
+
+The saved budget before resume recorded **180,829,778 / 500,000,000 tokens**,
+leaving 319,170,222 before further work. Normal resume retains this consumption.
+The explicit tool refresh rebound 21 host-owned files from the tested branch,
+including current Make guidance and CAD/verification/performance fixes. It did
+not replace the Wish or relabel the original unselected Make mode.
+
+At **15:13:41.690 UTC**, native `session.resume` began and reported reasoning
+and tool activity. Saved Manager selection is **gpt-6-astra / medium**; exact
+native thread is **01a08bc0-f6df-7d03-a6e7-72a4db27f449**. Spark and the 500M
+total allowance remain preserved. This is an actual resume, not a new product
+or a claim that Make has passed. Only original Atlas is being advanced; the
+other five original pilots and the new static derivative remain paused.
