@@ -163,11 +163,8 @@ def posed_occurrences(shape, condition, indices):
             faces = np.asarray(triangles, dtype=np.int64)
             if not len(points) or not len(faces) or not np.isfinite(points).all():
                 raise ValueError("motion occurrence has no finite triangulated geometry")
-            if colour is None:
-                rgb = renderer["FALLBACK_COLOURS"][index % len(renderer["FALLBACK_COLOURS"])]
-            else:
-                rgb = tuple(renderer["_linear_to_srgb"](float(c)) for c in tuple(colour)[:3])
-            occurrences.append((points, faces, rgb))
+            material = renderer["_colour_channels"](colour, index)
+            occurrences.append((points, faces, material))
         if not occurrences:
             raise ValueError("motion assembly has no drawable leaves")
         yield sample, occurrences

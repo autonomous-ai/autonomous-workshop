@@ -753,6 +753,26 @@ cube, count all valid silhouette and visible-face draws above the former cap,
 and retain failure checks for empty or non-finite geometry. Saved runs require
 the normal audited host tool refresh to adopt the corrected renderer.
 
+## Review and motion opacity (2026-09-11)
+
+Still review and declared-motion presentation each discarded source RGBA
+alpha, so even a fully transparent modeled cover hid its interior. Both paths
+now retain inherited opacity. The existing opaque depth pass and RGB output
+are unchanged; transparent triangles are binned by row tile and depth-peeled
+in strict per-pixel depth/occurrence order before compositing. Half-open edge
+coverage avoids double opacity at shared triangle edges. Every distinct depth
+layer is processed without a layer cap; fixed tile pixel workspaces bound
+memory independently of layer count, while geometry storage and rendering time
+still grow with the transparent scene.
+
+Tests cover analytic blending, crossing and tied layers, sub-nanometre depth
+ordering and termination, shell faces, nested alpha, unchanged opaque pixels,
+bounded pixel workspaces, and actual motion GIF generation/reconstruction with
+stale and rehashed-tampered evidence rejected. This is surface-opacity
+presentation rather than optical or physical proof. Geometry, poses, evidence
+schemas and gates are unchanged. Saved runs adopt it only through the normal
+audited host tool refresh and must regenerate affected presentation evidence.
+
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead

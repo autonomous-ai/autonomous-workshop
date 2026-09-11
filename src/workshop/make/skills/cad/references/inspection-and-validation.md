@@ -23,6 +23,19 @@ every edit round.
 
 ## Tool
 
+`render_review` retains source occurrence RGB and RGBA materials, including
+inherited opacity. Alpha 1 is opaque; alpha 0 contributes no visible surface
+but remains in the assembly's framing. Intermediate values composite every
+surface in per-pixel depth order, including both faces of a transparent shell.
+Opaque objects still hide surfaces behind them. This is surface-opacity
+visualization, not refraction, optical transmission measurement or physical
+proof that a real enclosure provides the required visibility.
+
+Transparent shared triangle edges contribute once. Distinct occurrences at
+exactly tied depths use a deterministic material/geometry order. The renderer
+does not discard deeper layers or simplify geometry to make the picture fit a
+cost cap; deeply overlapping transparent geometry can take longer to render.
+
 The launcher lives in the CAD skill directory:
 
 ```bash

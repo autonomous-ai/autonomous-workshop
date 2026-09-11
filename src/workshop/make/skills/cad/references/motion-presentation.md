@@ -16,6 +16,14 @@ sequences. Give each one a unique `id`. All animation states share one camera,
 scale and world frame; source occurrence colors are retained. `--view` accepts
 the named views from `render_review` or an `AZ,EL` pair.
 
+Source RGBA opacity is retained through motion generation and exact GIF
+reconstruction, including inherited materials and the complete enclosure.
+Transparent surfaces use `render_review`'s per-pixel surface-opacity compositing;
+this does not simulate refraction or prove a physical material's visibility.
+An older opaque GIF cannot be rebound to the corrected renderer: regenerate
+the presentation and obtain its existing required review. Frozen runs retain
+their renderer until the operator performs the normal audited tool refresh.
+
 The default selects eight increasing indices from each condition's table,
 including its endpoints. For an indexed display or a nonuniform cycle, select
 the exact meaningful indices from that same table:
