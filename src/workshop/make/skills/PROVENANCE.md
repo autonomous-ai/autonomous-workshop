@@ -1,5 +1,30 @@
 # Shared skill provenance
 
+## Detached subtree snapshots for assembly handoff (2026-09-11)
+
+`cadgen.assembly.copy_subtree` copies only a selected geometry/appearance
+subtree into fresh wrappers. Installed build123d's ordinary shallow copy first
+deep-copies its Python parent graph, so repeatedly selecting parented children
+can retain many full-assembly clones. A small isolated assembly reproduces that
+behavior without executing product CAD. The new helper avoids both deepcopy
+and external-parent copying; it shares existing native topology without
+repairing or simplifying geometry.
+
+Local root and descendant placements, hierarchy, labels and RGBA are retained.
+The root's inherited appearance is resolved without the source-mutating color
+getter, and copied RGBA values are independent. External ancestor transforms,
+joints, topology-parent links and unrelated custom metadata are not copied.
+The helper is a geometry snapshot API, not a general parametric object copy.
+It does not write STEP, seal groups, validate geometry, waive evidence or patch
+third-party copy behavior. The CAD instructions document this local-frame
+contract and the parent-copy trap. Frozen runs receive it only through normal
+explicit tool refresh; product scripts remain the native Manager's work.
+
+Seventeen focused and adjacent regression tests passed, including exact render
+arrays/PNG, independent appearance mutation, native topology sharing, source
+immutability and STEP roundtrip beneath an identity export root. Independent
+review found no blocker. Existing STEP root-frame semantics are unchanged.
+
 ## Compound STEP color interoperability (2026-09-11)
 
 The STEP writer now repeats a uniformly colored Compound leaf's existing RGBA

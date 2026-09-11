@@ -23,6 +23,16 @@ A request for an STL, a 3MF, a GLB, or any sliced/printable mesh has no workflow
 
 Do not use this skill for render-only concept art, CAM toolpaths, engineering certification, FEA conclusions, architectural BIM, or freehand illustration unless the user also needs CAD geometry.
 
+## Copying assembly subsets for handoff
+
+Do not use `copy.copy()` or `deepcopy()` on already-parented build123d
+components to collect STEP handoff groups. Their copy implementation can clone
+and retain the whole parent assembly for every selected child. Use
+`cadgen.assembly.copy_subtree()` for a geometry-only snapshot of the selected
+subtree; read the local-coordinate and metadata contract in
+`references/positioning.md` before grouping those snapshots. This does not
+replace production-part definitions, required exports, verification or seals.
+
 ## Default assumptions
 
 Use these defaults unless the user specifies otherwise. These are first-pass modeling defaults, not manufacturability, tolerance, or certification claims:

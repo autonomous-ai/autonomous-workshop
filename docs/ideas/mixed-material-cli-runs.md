@@ -1532,3 +1532,45 @@ A read-only follow-up identified the long batch's silent-progress boundary:
 all child output until exit. A future opt-in, content-free per-request stderr
 diagnostic plus inherited verifier stderr could improve visibility; it is not
 implemented or applied to the current frozen tools.
+
+### Native conceptual handoff export and parent-copy diagnosis
+
+The manufacturing validator passed all 35 component definitions. Native Make's
+finalizer then required nine conceptual STEP snapshots and three sealed build
+groups (`fixed_landscape`, `loose_armies`, `rules_and_aids`). These are distinct
+from the 11 physical production families. They remain a frozen Make-internal
+traceability requirement; no duplicate Spark host CAD check was added.
+
+The native export script copied each of 614 already-parented assembly roots
+before creating its output directory. A read-only source audit and tiny
+synthetic fixture confirmed that installed build123d shallow copy traverses
+and retains the entire parent graph. Copying one child in an eight-Box
+assembly deep-copied nine shape objects. The product script was observed
+computing without output; no builder ran or edited that product script.
+
+The authorized CLI host was interrupted with SIGINT at **14:04:15 UTC** and
+exited 130. Process inspection confirmed its export child was cleaned up.
+The final engineering PASS, exact assembly, images and validated manufacturing
+manifest remain saved. Observed usage was 112,001,696 / 500,000,000 tokens.
+The next repair supplies a reusable, tested subtree-copy helper and guidance
+through ordinary explicit tool refresh; native Make owns its script repair
+and required handoff finalization.
+
+The new `cadgen.assembly.copy_subtree` helper copies only selected wrappers
+and descendants, preserving local placement, exact native topology and RGBA
+without parent graphs. It does not alter geometry or existing API behavior.
+The source documents an identity STEP export root around retained local poses.
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m unittest tests.make.test_copy_subtree tests.make.test_render_assembly_placement tests.make.test_step_compound_color -q
+```
+
+All 17 focused/adjacent tests passed in 1.171 seconds, including exact render
+arrays/PNG, source immutability and STEP roundtrip. Independent review found
+no blocker. The new source CAD tree is `773511fdb30be1de2eeb31754c0cccf2c8d25e80dc94a3972ecf5280c1cb9cf4`.
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m unittest tests.make.test_skill_registry -q
+```
+
+All 16 resealed skill-registry tests passed in 24.990 seconds.

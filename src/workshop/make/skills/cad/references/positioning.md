@@ -6,6 +6,39 @@ Read this file when geometry has mating interfaces, repeated features, assembly 
 
 Positioning is authored in source and validated after generation. Do not position parts by visually dragging or by editing exported STEP geometry. Use build123d parameters, local coordinate systems, `Location` transforms, `Plane`/`Axis` datums, `cadgen.assembly.AssemblyHelper` relationships, source-level `Joint` objects when useful, and labeled assembly children.
 
+## Copying assembly subsets without parent graphs
+
+Use `cadgen.assembly.copy_subtree(shape)` when collecting existing components
+into a STEP handoff snapshot. Ordinary `copy.copy()` on a parented build123d
+shape first deep-copies its parent graph. Repeating it over assembly children
+can retain a whole assembly clone for every child before any export starts.
+
+```python
+from build123d import Compound
+from cadgen.assembly import copy_subtree
+
+# The parent coordinate frame here is identity.
+selected = [copy_subtree(child) for child in assembly.children]
+handoff = Compound(children=selected, label="handoff_group")
+```
+
+The helper creates fresh wrappers for only the selected root and descendants,
+sharing their existing native geometry. It preserves hierarchy, labels, local
+placements and appearance; the root receives its effective inherited RGBA
+without copying or mutating ancestors. It excludes external parents, siblings,
+joint graphs and unrelated custom metadata. This is a geometry/appearance
+snapshot, not a general copy of a parametric source object.
+
+The root retains its **local** placement. External ancestor transforms are not
+applied: if those frames are nonidentity, compose the required ancestor
+transform explicitly before placing the snapshot in a new assembly. Do not
+apply the root's own placement twice. For STEP handoff, place these snapshots
+beneath a fresh identity Compound export root: the existing STEP writer treats
+its root as the definition frame. Continue through the normal STEP writer
+and verify the required exported evidence. Copying a subtree neither exports
+nor validates geometry, and does not seal a concept group or replace a
+separately defined printable production part.
+
 ## Terminology
 
 Use these terms carefully:

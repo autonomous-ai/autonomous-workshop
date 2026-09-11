@@ -47,6 +47,55 @@ def label_shape(
     return shape
 
 
+def copy_subtree(shape: Any) -> Any:
+    """Copy a shape's selected assembly subtree into detached geometry wrappers.
+
+    Preserve local root/descendant placements, child order, labels and RGBA,
+    including the root's effective inherited color. Ancestor transforms are not
+    applied. External parents, siblings, joints, topology-parent links and other
+    Python metadata are not copied. Native topology is shared, not duplicated or
+    repaired; do not mutate that shared topology in place. Wrapper placement,
+    orientation, color and hierarchy may be changed without changing the source.
+    The wrapper class follows the native topology; empty shapes become empty
+    Compounds.
+
+    Unlike build123d Shape.__copy__, this never deep-copies the parent graph.
+    """
+    build123d = _import_build123d()
+    if not isinstance(shape, build123d.Shape):
+        raise TypeError("copy_subtree requires a build123d Shape")
+
+    # Shape.color memoizes an inherited color on the source. Read the declared
+    # field instead so even resolving the selected root's appearance is read-only.
+    root_color = shape._color
+    ancestor = shape.parent
+    while root_color is None and ancestor is not None:
+        root_color = ancestor._color
+        ancestor = ancestor.parent
+
+    def copy_node(source: Any, *, is_root: bool = False) -> Any:
+        wrapped = source._wrapped
+        # Located returns a distinct TopoDS handle with the same TShape, local
+        # placement and orientation; changing a clone's pose cannot move source.
+        detached = None if wrapped is None else wrapped.Located(wrapped.Location())
+        cloned = build123d.Compound() if detached is None else build123d.Compound.cast(detached)
+        # cast also downcasts the generic TopoDS handle to its native subtype.
+        detached = cloned._wrapped
+        cloned.label = source.label
+        color = root_color if is_root else source._color
+        cloned.color = None if color is None else tuple(color)
+        children = tuple(getattr(source, "children", ()))
+        if children:
+            cloned.children = tuple(copy_node(child) for child in children)
+            # build123d's child-attachment hooks rebuild the compound and reset
+            # its placement. Restore the exact original native handle after the
+            # new Python hierarchy has been connected, retaining topology sharing.
+            cloned.wrapped = detached
+        return cloned
+
+    return copy_node(shape, is_root=True)
+
+
 def mate_label(name: str) -> str:
     """Return the native joint label used for named mate frames."""
 
