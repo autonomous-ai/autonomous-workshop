@@ -773,6 +773,43 @@ presentation rather than optical or physical proof. Geometry, poses, evidence
 schemas and gates are unchanged. Saved runs adopt it only through the normal
 audited host tool refresh and must regenerate affected presentation evidence.
 
+## Schema-8 signature review and print reports (2026-09-11)
+
+ADR 0063 advanced the finalizer to signature-review schema 8, but the CAD
+verifier still required schema 7 and neither gate writer put its stdout
+`RESULT:` in the report bytes the finalizer validates. The verifier now accepts
+the same exact canonical schema-8 review, checks bounded real in-project
+thickness and overhang reports against their recorded hashes, headings and
+passing results, and retains the empty-map no-claim case. The two writers
+serialize their already-computed result on both success and failure; their
+measurement algorithms, stdout verdicts and exit codes are unchanged.
+
+Real tiny-source gate tests pass the same review bytes through both validators,
+prove byte-identical same-command reruns, and preserve host relocation's
+directory-prefix-only comparison. Failure tests cover invalid review schemas,
+unsafe or missing reports, changed digests, failed measurements and byte bounds.
+The finalizer still checks exact bindings after native verification; host
+isolated replay retains its existing normalized report comparison. No new
+post-run raw-hash gate is added. Saved runs require an audited tool refresh,
+fresh reports under the new gate hashes and the existing required review;
+historical report or review bytes are not rewritten into passing evidence.
+
+## Full motion-state digest without a duplicate encoded blob (2026-09-11)
+
+Motion generation alone rejected canonical in-memory states above 20 MiB,
+although reconstruction had no corresponding geometry limit. Both paths now
+hash the same canonical v2 encoding in chunks of at most 65,536 facet records.
+Every facet, normal, sorted record and header byte is preserved; `state_bytes`
+retains its compatibility encoding. No mesh is written and no geometry is
+sampled. Global sorting and rendering still hold full tessellated geometry in
+memory; the existing input-file, GIF and state-count bounds remain in force.
+
+Golden hashes and a 419,429-facet synthetic state prove byte compatibility and
+bounded record encoding beyond the former limit. Real eight-state generation
+and reconstruction still reject geometry and animation mismatches. This is a
+host-versioned deterministic tool correction, adopted by saved runs only
+through their normal audited refresh.
+
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead

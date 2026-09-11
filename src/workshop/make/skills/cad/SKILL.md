@@ -142,12 +142,14 @@ printable. Quick iteration never substitutes for the final gate.
 12. **Repair and rerun.** If a check fails, change the smallest responsible source section, regenerate, and rerun the failed validation **in the same model round**.
 13. **Render before the expensive final gate.** Once exact draft geometry is
     plausible, generate every declared entry with `--write` so each carries a
-    fresh `.step`. Run `verify_project --print-gates --nozzle <mm>` here rather
-    than at the end: at roughly 7-12 s per part per gate it is cheap beside
-    `validate` and `interfere`, and a wall or overhang defect found now costs
-    one source edit instead of a repair cycle after review. Until that run has
-    passed, printability is unverified — say so rather than calling the result
-    printable. Then use `scripts/render_product
+    fresh `.step`. Run the standalone mesh, overhang and thickness gates for
+    every printable entry before review, using the final nozzle, angle and
+    canonical report paths. The exact commands and schema-8 report bindings
+    are in `references/inspection-and-validation.md`. Final `verify_project`
+    requires that completed review first; it is not the pre-review gate
+    command. Early measurements expose defects before a review repair cycle;
+    only the passing integrated `--print-gates` run supports a print-ready
+    claim. Then use `scripts/render_product
     <assembled-or-primary.step> -o <project>/snap/iso.png` and inspect the PNG
     at full size; it tessellates the exact STEP in memory and writes no mesh.
     When the promise changes product geometry or state, write two to five

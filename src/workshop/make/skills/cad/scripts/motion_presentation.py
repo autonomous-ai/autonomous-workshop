@@ -173,7 +173,7 @@ def validate(project, signature_review):
     for row, (identity, occurrences) in zip(states, expected):
         if any(row[key] != value for key, value in identity.items()):
             raise ValueError("motion states are not in declared condition/sample order")
-        if row["sha256"] != hashlib.sha256(tool["state_bytes"](occurrences)).hexdigest():
+        if row["sha256"] != tool["state_digest"](occurrences):
             raise ValueError(f"motion state {row['condition_id']}[{row['sample_index']}] differs from the checked poses; regenerate the presentation")
     if evidence["animation_sha256"] != hashlib.sha256(tool["animation_bytes"](expected, evidence["render"])).hexdigest():
         raise ValueError("motion animation differs from its reconciled geometry and camera")
@@ -215,10 +215,7 @@ def generate(project, *, selections=None, frames=8, view="iso", size=600):
     for identity, occurrences in states:
         # Bound by hash only: the state never reaches disk, and validation
         # rebuilds it from the same declared poses.
-        data = tool["state_bytes"](occurrences)
-        if len(data) > 20 * 1024 * 1024:
-            raise ValueError("motion state exceeds the 20 MiB reconciliation limit")
-        rows.append({**identity, "sha256": hashlib.sha256(data).hexdigest()})
+        rows.append({**identity, "sha256": tool["state_digest"](occurrences)})
     evidence = {"schema_version": 2, "kind": "declared-cad-motion-animation", "sources": source_hashes,
                 "assembly_entry": entry, "states": rows, "render": render,
                 "animation_sha256": hashlib.sha256(animation).hexdigest(), "motion_sha256": motion_hash}

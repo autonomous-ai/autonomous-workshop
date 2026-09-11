@@ -99,6 +99,41 @@ meant to be solid, or a clash from `interfere`, blocks the work from being calle
 done: repair the source and rerun the check that failed. Neither question can be
 answered by reading the generator or by looking at a render.
 
+### Print reports before the final review
+
+Workshop final verification requires canonical schema-8
+`snap/SIGNATURE-REVIEW.json` before it starts. Its `print_gate_sha256s` maps
+direct `measure/thickness-<role>.md` and `measure/overhang-<role>.md` paths to
+their exact SHA-256 digests. A nonempty map must cite passing reports from
+both gates; bind every printable part's reports for a print-ready claim. An
+empty map is the explicit no-claim case, not passing print evidence.
+
+Prepare the reports with the standalone gates before review. For example,
+from the CAD project directory, repeat these commands for each printable part
+with the actual bed, nozzle and overhang angle:
+
+```bash
+python "$CAD_SKILL_ROOT/scripts/check_mesh" part_body.step.py --bed 220x220x220
+python "$CAD_SKILL_ROOT/scripts/check_overhang" part_body.step.py --angle 45.0 --report measure/overhang-body.md
+python "$CAD_SKILL_ROOT/scripts/check_thickness" part_body.step.py --nozzle 0.4 --report measure/thickness-body.md
+```
+
+After reviewing and hashing those reports and the exact images, run
+`verify_project . --strict-fit --print-gates --nozzle 0.4 --overhang-angle 45.0`
+from that same directory, retaining every other required final option. The
+verifier writes reports again. Identical geometry, gate bytes and arguments
+produce identical report bytes; even option formatting or a different command
+directory changes their embedded argument line. Copying a round report into a
+canonical path does not change that line. Never edit measured reports or
+rewrite a review's hashes to disguise a changed run. The finalizer checks exact
+bindings again; host isolated replay separately permits only the known report
+directory-prefix changes and compares all measurements, options and results.
+
+The gate report includes its actual `RESULT:` on both success and failure.
+After an audited tool refresh, regenerate reports with the new gate bytes and
+obtain the required review. Historical reports missing that result and cached
+passes bound to older gate hashes cannot be reused as current evidence.
+
 ### `refs --facts` "ok" is not a geometry claim
 
 `refs --facts` reports counts, bounds, labels and references. Its `ok` field is

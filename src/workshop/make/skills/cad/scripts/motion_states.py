@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import functools
+import hashlib
 import io
 import math
 import runpy
@@ -170,11 +171,11 @@ def posed_occurrences(shape, condition, indices):
         yield sample, occurrences
 
 
-def state_bytes(occurrences):
-    """Stable canonical triangle encoding for hashing a posed state.
+def _state_chunks(occurrences):
+    """Yield the unchanged canonical encoding in bounded record chunks.
 
-    Binary-STL layout, held in memory only: nothing writes it to disk, because
-    STEP is the only geometry format this toolchain writes.
+    Global triangle ordering still uses the full geometry. Only the final
+    Binary-STL record encoding is chunked; no facets are sampled or written.
     """
     triangles = np.concatenate([p[f] for p, f, _ in occurrences]).astype("<f4")
     if not np.isfinite(triangles).all():
@@ -185,15 +186,31 @@ def state_bytes(occurrences):
     triangles = np.take_along_axis(triangles, indices[:, :, None], axis=1)
     flat = triangles.reshape(-1, 9)
     triangles = triangles[np.lexsort(tuple(flat[:, i] for i in range(8, -1, -1)))]
-    records = np.zeros(len(triangles), dtype=[("normal", "<f4", 3), ("points", "<f4", (3, 3)), ("attribute", "<u2")])
-    normals = np.cross(triangles[:, 1].astype(float) - triangles[:, 0],
-                       triangles[:, 2].astype(float) - triangles[:, 0])
-    lengths = np.linalg.norm(normals, axis=1)
-    valid = lengths > 0
-    normals[valid] /= lengths[valid, None]
-    records["normal"] = normals
-    records["points"] = triangles
-    return b"Workshop declared motion state v2".ljust(80, b"\0") + struct.pack("<I", len(records)) + records.tobytes()
+    yield b"Workshop declared motion state v2".ljust(80, b"\0") + struct.pack("<I", len(triangles))
+    for start in range(0, len(triangles), 65536):
+        chunk = triangles[start:start + 65536]
+        records = np.zeros(len(chunk), dtype=[("normal", "<f4", 3), ("points", "<f4", (3, 3)), ("attribute", "<u2")])
+        normals = np.cross(chunk[:, 1].astype(float) - chunk[:, 0],
+                           chunk[:, 2].astype(float) - chunk[:, 0])
+        lengths = np.linalg.norm(normals, axis=1)
+        valid = lengths > 0
+        normals[valid] /= lengths[valid, None]
+        records["normal"] = normals
+        records["points"] = chunk
+        yield memoryview(records).cast("B")
+
+
+def state_bytes(occurrences):
+    """Return the canonical in-memory encoding for compatibility callers."""
+    return b"".join(_state_chunks(occurrences))
+
+
+def state_digest(occurrences):
+    """Hash every canonical state record without allocating the full blob."""
+    digest = hashlib.sha256()
+    for chunk in _state_chunks(occurrences):
+        digest.update(chunk)
+    return digest.hexdigest()
 
 
 def validate_render(settings):

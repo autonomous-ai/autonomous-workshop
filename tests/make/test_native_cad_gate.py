@@ -960,7 +960,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         (snap / "iso.png").write_bytes(iso)
         (snap / "signature.png").write_bytes(signature)
         review = {
-            "schema_version": 7,
+            "schema_version": 8,
             "kind": "autonomous-workshop.signature-experience-review",
             "concept_sha256": "0" * 64,
             "iso_sha256": _sha(iso),
@@ -990,6 +990,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
                 }
             ],
             "blocking_visual_defects": [],
+            "print_gate_sha256s": {},
             "largest_risk": "The relationship could be subtle.",
             "resolution": "The exact relationship is visible.",
         }
