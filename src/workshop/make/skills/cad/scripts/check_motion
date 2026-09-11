@@ -73,6 +73,8 @@ for _runtime_path in (SCRIPTS_DIR, PACKAGES_DIR, CADPY_SRC_DIR):
     if _runtime_path.is_dir() and _text not in sys.path:
         sys.path.insert(0, _text)
 
+from assembly_copy import placed_subtree_copy  # noqa: E402
+
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
 GEN_FUNC = "gen_" + "step"
@@ -165,8 +167,8 @@ def index_parts(shape) -> dict[str, object]:
         label = getattr(node, "label", "") or ""
         path = trail + ([label] if label else [])
         pose = parent_pose * node.location
-        placed = node.located(pose)
-        colour = getattr(node, "color", None)
+        placed = placed_subtree_copy(node, pose)
+        colour = getattr(placed, "color", None)
         if colour is None:
             colour = inherited_colour
         if label and key:

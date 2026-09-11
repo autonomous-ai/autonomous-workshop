@@ -61,6 +61,11 @@ solids reach its descendants, so `fuselage_nose` moves as one body rather than
 as 60 windows. Where a label repeats, use its dotted path; `--list-parts` marks
 which ones need it.
 
+Motion and bought-part mount checks copy selected nodes at their complete
+world pose without retaining assembly ancestors. A selected group keeps its
+children; moving one leaf does not copy unrelated siblings on every sample.
+The source assembly, part names, and collision thresholds are unchanged.
+
 ## Schema
 
 ```json
