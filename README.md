@@ -119,7 +119,7 @@ uv run workshop start ferro-line --workflow forge --max-rounds 6 \
   --wish "a wind-up robot duck that walks when you turn its key"
 ```
 
-`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Sol at medium effort; Claude Code defaults to Opus 5 at medium effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
+`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Astra at medium effort; Claude Code defaults to Opus 5 at medium effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login

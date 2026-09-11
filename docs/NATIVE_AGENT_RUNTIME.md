@@ -113,7 +113,7 @@ a new stage attempt after the prior Goal is complete.
 New runs also freeze the canonical agent, model, and reasoning effort in a
 schema-v2 `MANAGER.json`. The CLI calls these `--agent`, `--model`, and
 `--effort`; Spark, Forge, and Quest are selected separately with `--workflow`.
-Codex defaults to `gpt-5.6-sol` at medium and Claude Code defaults to
+Codex defaults to `gpt-6-astra` at medium and Claude Code defaults to
 `claude-opus-5` at medium. The selected reasoning effort overrides the
 stage-shaped reasoning levels described below while leaving each workflow's
 compaction, turn boundaries, proof handoffs, and gates intact. Schema-v1

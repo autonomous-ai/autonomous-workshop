@@ -10,7 +10,7 @@ the installed `workshop` command.
 
 `workshop wish --workflow spark|forge|quest "..."` freezes the selected route;
 Spark is the default. `--agent`, `--model`, and `--effort` freeze the native
-runtime, model, and reasoning level. Codex defaults to `gpt-5.6-sol` at medium;
+runtime, model, and reasoning level. Codex defaults to `gpt-6-astra` at medium;
 Claude Code defaults to `claude-opus-5` at medium. Status and resume read those
 durable choices rather than accepting replacements.
 

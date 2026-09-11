@@ -27,7 +27,7 @@ Every result must be materially shaped by its Wish, feel designed rather than
 decorated, and be represented no more strongly than its evidence permits.
 
 New projects freeze a schema-v2 `MANAGER.json` with the selected native agent,
-model, and reasoning effort. The CLI defaults are Codex `gpt-5.6-sol` at medium
+model, and reasoning effort. The CLI defaults are Codex `gpt-6-astra` at medium
 effort and Claude Code `claude-opus-5` at medium effort; `--model astra` resolves
 to `gpt-6-astra`. The selected reasoning effort remains fixed across the
 persistent daydream and product session. Historical workflow profiles own

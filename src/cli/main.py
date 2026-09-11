@@ -1652,7 +1652,7 @@ def parser() -> argparse.ArgumentParser:
     start.add_argument(
         "--model",
         metavar="MODEL",
-        help="agent model (default: sol for Codex; opus 5 for Claude Code)",
+        help="agent model (default: astra for Codex; opus 5 for Claude Code)",
     )
     start.add_argument(
         "--effort",
@@ -1750,7 +1750,7 @@ def parser() -> argparse.ArgumentParser:
     daydream.add_argument(
         "--model",
         metavar="MODEL",
-        help="agent model (default: sol for Codex; opus 5 for Claude Code)",
+        help="agent model (default: astra for Codex; opus 5 for Claude Code)",
     )
     daydream.add_argument(
         "--effort",
@@ -1814,7 +1814,7 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument(
         "--model",
         metavar="MODEL",
-        help="agent model (default: sol for Codex; opus 5 for Claude Code)",
+        help="agent model (default: astra for Codex; opus 5 for Claude Code)",
     )
     wish.add_argument(
         "--effort",

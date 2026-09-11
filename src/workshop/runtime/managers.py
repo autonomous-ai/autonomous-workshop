@@ -161,7 +161,7 @@ _SPECS = {
         agent_directory=".codex/agents",
         agent_suffix=".toml",
         session_checkpoint_name="codex-session.json",
-        default_model="gpt-5.6-sol",
+        default_model="gpt-6-astra",
         default_reasoning_effort="medium",
     ),
     "claude": ManagerRuntimeSpec(

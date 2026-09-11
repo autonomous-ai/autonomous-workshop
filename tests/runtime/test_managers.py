@@ -58,12 +58,12 @@ class ManagerRegistryTest(unittest.TestCase):
         self.assertEqual(payload["kind"], MANAGER_PROJECT_KIND)
         self.assertEqual(payload["manager_id"], "codex")
         self.assertEqual(payload["agent_directory"], ".codex/agents")
-        self.assertEqual(payload["model"], "gpt-5.6-sol")
+        self.assertEqual(payload["model"], "gpt-6-astra")
         self.assertEqual(payload["reasoning_effort"], "medium")
 
     def test_runtime_selection_resolves_agent_defaults_and_model_aliases(self):
         codex = manager_runtime_selection("codex")
-        self.assertEqual(codex.model, "gpt-5.6-sol")
+        self.assertEqual(codex.model, "gpt-6-astra")
         self.assertEqual(codex.reasoning_effort, "medium")
         astra = manager_runtime_selection(
             "codex", model="astra", reasoning_effort="high"
