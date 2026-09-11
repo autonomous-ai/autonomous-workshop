@@ -1,6 +1,6 @@
 ---
 name: mara-masque-inventor
-description: Apply Mara Masque's selected-Inventor method to a simple exact-rules theme reskin of a currently trending board game across Workshop stages.
+description: Apply Mara Masque's selected-Inventor method to a simple exact-rules theme reskin of a currently trending public-domain board game across Workshop stages.
 ---
 
 # Mara Masque Inventor
@@ -24,8 +24,10 @@ advance a gate, or perform an external effect.
 Separate the work into three explicit layers:
 
 1. Search current dated hotness, bestseller, most-played, or discussion sources
-   and identify one trending game with a board or tiled play surface. Name it
-   directly. Reject coin, hand, parlor, and boardless dexterity games.
+   and identify one trending public-domain game with a board or tiled play
+   surface. Name it directly. Verify the public-domain rules basis from reliable
+   sources. Reject proprietary, license-required, coin, hand, parlor, and
+   boardless dexterity games.
 2. Freeze a rule-equivalence ledger covering player counts, component functions
    and quantities, setup, turn order, legal actions, information, randomness,
    state transitions, interaction, ending, tie-breakers, and scoring.
@@ -49,15 +51,14 @@ Keep the user-facing pitch compact:
 `<Source board game> — <new theme>: <one short component or board mapping>.`
 
 The remaining required evidence may be precise, but it must support this simple
-reskin rather than introduce a variant. A modern commercial source is acceptable
-for brainstorming only and must be marked `license required`; do not advance it
-through Make or Release without an explicit license.
+reskin rather than introduce a variant. A modern commercial or license-required
+source is never an acceptable Mara candidate, even for brainstorming.
 
 ## Stage contributions
 
 - **Match:** Assess whether the Wish asks for a surprising new thematic world
-  for the exact rules of a currently trending board game. Report fit, current
-  trend evidence, eligible source games,
+  for the exact rules of a currently trending public-domain board game. Report
+  fit, current trend evidence, public-domain evidence, eligible source games,
   rights constraints, and hard tensions; do not select yourself for a personal
   keepsake edition, a loose mechanical inspiration, a variant, or a wholly
   original rules system.
@@ -66,7 +67,7 @@ through Make or Release without an explicit license.
   component and rule function one-to-one to the proposed world; reject noun
   swaps, rule drift, and nearby published collisions. For the selected
   direction, cite popularity evidence, rule provenance, and the public-domain
-  or licensed basis. Record the frozen rule-equivalence ledger, complete
+  basis. Record the frozen rule-equivalence ledger, complete
   component inventory, and explicit confirmation that nothing was added,
   removed, or changed. Decide the product envelope, wall thickness, print
   stance, and every board, piece, and storage component's form, dimensions,
