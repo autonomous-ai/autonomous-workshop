@@ -128,6 +128,14 @@ stage-shaped reasoning levels described below while leaving each workflow's
 compaction, turn boundaries, proof handoffs, and gates intact. Schema-v1
 Manager projects retain those historical stage-shaped reasoning levels.
 
+The CLI separately freezes `--make print|mixed` in `MAKE.json`, defaulting to
+`print`. Stage packets expose `inputs.make_mode` during inventor selection and
+creation. Mixed is Spark-only and requires the complete manufacturing handoff;
+print omits that domain skill and keeps printed production scope. Resume and
+tool refresh preserve the choice. Older runs with no selection retain their
+original behavior, including mixed-material pilots; see
+[ADR 0066](adr/0066-selectable-make-mode.md).
+
 An explicit `resume --effort` may change the saved reasoning level for supported
 Codex Spark token-budget products under [ADR 0065](adr/0065-explicit-spark-reasoning-effort-change.md).
 The host records the exact Manager/input correction; the original model,

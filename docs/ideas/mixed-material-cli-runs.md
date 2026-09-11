@@ -658,3 +658,66 @@ model work or publication.
 Wheel: `/private/tmp/workshop-mixed-material-final-7c9eea10/autonomous_workshop-0.6.0-py3-none-any.whl`.
 SHA-256: `becb18f73664f4c516bd24924ef1b9ca71a8f3f4ad522e805ab0d7f586400546`.
 Byte proof: `/private/tmp/workshop-mixed-material-final-7c9eea10-wheel-proof.json`.
+
+### Explicit Make selection: print by default, mixed by choice
+
+On 2026-09-11 the operator requested separate Make modes, then shortened their
+names to `print` and `mixed`. New `wish` and `start` products default to
+`--make print`; mixed-material products require `--make mixed` with Spark.
+`MAKE.json` freezes the selection. Existing pilots have no selection file and
+retain their original mixed-material protocol, sessions and tools. No pilot
+was restarted or migrated for this change.
+
+The following help/status commands were run from this worktree using the same
+source CLI environment as the pilot commands above:
+
+```sh
+"$workshop_python" -m cli wish --help
+"$workshop_python" -m cli status wish-20260910-143655-4d851b36 --json
+"$workshop_python" -m cli status wish-20260910-143717-dbe8ad47 --json
+"$workshop_python" -m cli status wish-20260910-143721-492a87cb --json
+"$workshop_python" -m cli status wish-20260910-143744-c4614e19 --json
+"$workshop_python" -m cli status wish-20260910-143749-b20aacdc --json
+"$workshop_python" -m cli status wish-20260910-143753-a2e10997 --json
+```
+
+All six status receipts retained Astra, medium effort, 500M total tokens and
+the original root thread id. They reported `make_mode: null`, meaning their
+historical scope is preserved, not that the new print default applies.
+Five were active; Switchyard was waiting on its existing deforming-motion
+tooling need. None was published at this observation.
+
+Focused checks passed: 96 CLI tests; 54 Make-finalizer tests; 40 mode/effort
+integration tests; 38 CLI subprocess, package and skill checks; and 98 Codex
+native-session tests with one existing skip. An overlapping workflow regression
+suite passed 185 tests, plus its loopback transport test passed separately
+outside the sandbox, which forbids local socket binding.
+
+Built and tested a fresh installed wheel with these commands:
+
+```sh
+UV_CACHE_DIR=/private/tmp/workshop-make-mode-selector-uv-cache PYTHONDONTWRITEBYTECODE=1 uv build --offline --no-build-isolation --python /private/tmp/workshop-mixed-material-final-7c9eea10-build-env/bin/python --wheel --out-dir /private/tmp/workshop-make-mode-selector > /private/tmp/workshop-make-mode-selector-build.log 2>&1
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -B /private/tmp/workshop-make-mode-selector-acceptance.py > /private/tmp/workshop-make-mode-selector-acceptance.log 2>&1
+```
+
+The installed fixture exercised the ordinary CLI twice in separate temporary
+Workshop and Codex homes: one Wish without `--make` and one with `--make mixed`.
+Both passed exact mode/input binding, pre-Make inventor selection, status,
+skill inventory and relative/absolute read-only sandbox-rule checks. The first
+sandboxed attempt could not establish subprocess supervision; the same
+deterministic fixture passed outside the sandbox. It uses fake native output,
+never a real model or publication. Dependencies were read from the existing
+environment; clean dependency resolution was not tested.
+
+Wheel: `/private/tmp/workshop-make-mode-selector/autonomous_workshop-0.6.0-py3-none-any.whl`.
+SHA-256: `783df6e9f4a07b24fe241ef57edfd868815378c56145834337d10e37983f66d4`.
+Exact CLI, mode contract, AgentRun, native host and adapter bytes match the
+source checkout; proof is `/private/tmp/workshop-make-mode-selector-wheel-proof.json`.
+
+For future products, these are usage examples, not additional launched pilots:
+
+```sh
+workshop wish "a rotating desktop toy"                    # default: print
+workshop wish "a rotating desktop toy" --make print
+workshop wish "a wooden marble toy with printed cams" --make mixed
+```

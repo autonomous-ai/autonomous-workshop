@@ -108,6 +108,12 @@ from workshop.workflow.inventor_selection import (
     selection_prompt,
     selection_receipt,
 )
+from workshop.workflow.make_mode import (
+    MAKE_PROJECT_PATH,
+    make_mode_document,
+    validate_make_mode,
+    validate_make_product,
+)
 from workshop.playtest.native import NativePlaytested
 from workshop.playtest.vault_evidence import (
     build_rows,
@@ -2048,7 +2054,7 @@ def materialized_agent_instructions_sha256(
     selected = {
         path: digest
         for path, digest in checkpoint.input_sha256s.items()
-        if path == "AGENTS.md"
+        if path in ("AGENTS.md", MAKE_PROJECT_PATH)
         or path.startswith(".agents/skills/")
         or path.startswith(".codex/agents/")
     }
@@ -4331,6 +4337,8 @@ def _prepare_effort_stage_input(
         else:  # pragma: no cover - effort membership is checked above
             raise TransitionError("effort route cannot prepare this stage")
 
+    if checkpoint.make_mode is not None:
+        inputs["make_mode"] = make_mode_document(checkpoint.make_mode)
     packet = {
         "schema_version": 1,
         "kind": _STAGE_INPUT_KIND,
@@ -4806,6 +4814,8 @@ def _prepare_stage_input(
                             )
                         subject = _stage_subject("release", subject_inputs)
 
+    if checkpoint.make_mode is not None:
+        inputs["make_mode"] = make_mode_document(checkpoint.make_mode)
     packet = {
         "schema_version": 1,
         "kind": _STAGE_INPUT_KIND,
@@ -5237,6 +5247,7 @@ def _budgeted_turn_launcher(
         cli_version=launcher.cli_version,
         popen_factory=launcher._popen_factory,
         version_runner=launcher._version_runner,
+        **({"protect_make_input": True} if checkpoint.make_mode is not None else {}),
     )
 
 
@@ -5255,6 +5266,8 @@ def _codex_launcher_for(
     if override is not _NO_TURN_OVERRIDE:
         # One operator boundary replaces every stage-shaped default below.
         runtime_kwargs["timeout_seconds"] = override
+    if checkpoint.make_mode is not None:
+        runtime_kwargs["protect_make_input"] = True
     return CodexNativeSessionLauncher(
         reasoning_effort=(
             checkpoint.manager_reasoning_effort or reasoning_effort
@@ -6403,6 +6416,12 @@ def _launcher_call(
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
     prompt = selection_prompt() if inventor_selection_boundary else native_stage_prompt(checkpoint.stage)
+    if inventor_selection_boundary and checkpoint.make_mode is not None:
+        prompt += (
+            "\n\nThe immutable MAKE.json and STAGE.json inputs.make_mode select "
+            "%s. Choose an Inventor within that frozen Make scope; selection "
+            "cannot change it." % checkpoint.make_mode
+        )
     budget = _load_lifetime_budget(paths, checkpoint)
     if isinstance(budget, ProductTokenBudget):
         prompt += (
@@ -6968,6 +6987,7 @@ def _evaluate_make_stage(
         made.assert_context(
             assignment, invented, expected_round=checkpoint.round_index
         )
+        validate_make_product(checkpoint.make_mode, made.product)
         canonical = made.validate_product_tree(run.run_root)
         # Spark consumes Make's accepted output, not another engineering
         # acceptance pass. Keep only exact-byte and upstream identity checks.
@@ -9110,6 +9130,7 @@ def _run_native_session(
                     cli_version=turn_launcher.cli_version,
                     popen_factory=turn_launcher._popen_factory,
                     version_runner=turn_launcher._version_runner,
+                    **({"protect_make_input": True} if checkpoint.make_mode is not None else {}),
                 )
                 if not supports_rollout_usage_version(turn_launcher.cli_version):
                     raise ContractError(
@@ -9609,6 +9630,7 @@ def _native_receipt(
     receipt: dict[str, Any] = {
         "schema_version": 1,
         "kind": "native-agent-run",
+        "make_mode": checkpoint.make_mode,
         "rounds": rounds,
         "product_id": checkpoint.product_id,
         "status": visible_status,
@@ -9733,6 +9755,7 @@ def start_native_run(
     wish: Wish,
     *,
     effort: Optional[str] = None,
+    make_mode: Optional[str] = None,
     manager_id: Optional[str] = None,
     manager_model: Optional[str] = None,
     manager_reasoning_effort: Optional[str] = None,
@@ -9751,6 +9774,10 @@ def start_native_run(
     ``effort`` freezes one selectable route for a new run. ``None`` retains the
     schema-v3 lifecycle only for source-compatible programmatic callers; the
     public CLI always passes its named default.
+
+    ``make_mode`` freezes print or mixed fabrication independently of the
+    lifecycle. ``None`` retains existing programmatic behavior; new CLI runs
+    explicitly select print by default. Mixed Make currently requires Spark.
 
     ``manager_id``, ``manager_model``, and ``manager_reasoning_effort`` freeze
     the native Manager runtime. ``None`` selects each Manager's current default.
@@ -9792,6 +9819,9 @@ def start_native_run(
     validate_limit(max_tokens)
 
     selected_effort = workshop_effort(effort) if effort is not None else None
+    selected_make_mode = validate_make_mode(
+        make_mode, workflow=selected_effort.name if selected_effort is not None else None
+    )
     selected_runtime = manager_runtime_selection(
         DEFAULT_MANAGER_ID if manager_id is None else manager_id,
         model=manager_model,
@@ -9849,6 +9879,7 @@ def start_native_run(
                 required_inventor_id=required_inventor_id,
                 max_rounds=max_rounds,
                 effort=(selected_effort.name if selected_effort is not None else None),
+                make_mode=selected_make_mode,
                 manager_id=selected_manager.manager_id,
                 manager_model=selected_runtime.model,
                 manager_reasoning_effort=selected_runtime.reasoning_effort,

@@ -17,7 +17,11 @@ Do not create a separate Goal or another root native session for selection.
    the immutable `.codex/agents/` roster named in that packet. An explicit
    `--inventor` already narrows this roster to that exact inventor: use it and
    do not search for a replacement.
-2. Without an override, identify the Wish's hardest creative problem and rank
+2. If `inputs.make_mode` exists, respect its frozen mode when evaluating fit:
+   `print` requires 3D-printed product components; `mixed` supports the complete
+   mixed-material workshop handoff. An inventor's favorite materials cannot
+   expand the selected mode. With no selection, keep the run's existing scope.
+   Without an override, identify the Wish's hardest creative problem and rank
    every eligible inventor by that problem. Read the relevant full custom-agent
    files to understand their Taste and primary methods. The Manager makes this
    choice natively; Python does not choose, score, or rerank it.

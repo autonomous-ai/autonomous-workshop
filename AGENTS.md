@@ -131,7 +131,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0063-print-gates-on-source.md`, and
 `docs/adr/0064-operator-selected-turn-boundary.md`, and
 `docs/adr/0064-spark-mixed-material-products.md`, and
-`docs/adr/0065-explicit-spark-reasoning-effort-change.md` before changing the CLI, runtime,
+`docs/adr/0065-explicit-spark-reasoning-effort-change.md`, and
+`docs/adr/0066-selectable-make-mode.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -192,6 +193,9 @@ publishes the explicit public presentation. Never upload the private BOM,
 sourcing, fabrication instructions, source or old internal attempts merely
 because they belong to the accepted Made tree. Unmarked runs retain their
 existing behavior, and digital evidence never establishes physical production.
+ADR 0066 makes `--make print` the new CLI default and `--make mixed` an explicit
+Spark choice, frozen across resumes and refreshes. Existing runs without a
+selection retain their original scope; do not relabel them print-only.
 
 ## Repository ownership
 

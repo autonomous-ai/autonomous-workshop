@@ -97,15 +97,31 @@ early-proof or recovery turn, takes precedence over them.
 
 ## Ownership and pipeline
 
-For a new Spark product that combines printed parts with paperboard, wood,
-fabric, cord, springs, motors, or other stock and purchased components, read
-`.agents/skills/mixed-materials/SKILL.md` alongside CAD. Use its manufacturing
-manifest to describe the complete assembled object and the internal workshop
-handoff. Autonomous staff fabricate, assemble, inspect, and ship the finished
-product; the customer does not receive an assembly kit or the internal BOM.
+New CLI runs freeze their Make choice in `MAKE.json`, exposed as
+`STAGE.json.inputs.make_mode` with `schema_version: 1` and `mode`:
+
+- `print` is the default. Design the product's functional components for 3D
+  printing. Use the existing CAD and print checks and supply the printable
+  production entries. Do not introduce stock, cut-sheet, textile or purchased
+  functional components, invoke `mixed-materials`, or add a `manufacturing`
+  marker. Combined assembly/reference geometry can be nonprintable; production
+  `part_*.step.py` entries cannot be marked nonprintable. At least one printable
+  production entry must exist. This choice does not waive any print check.
+- `mixed` is Spark-only. Read `.agents/skills/mixed-materials/SKILL.md`
+  alongside CAD. Its manufacturing manifest and `product.json.manufacturing`
+  binding are required, even when the resulting design happens to use mostly
+  printed parts. Combine printed parts with paperboard, wood, fabric, cord,
+  springs, motors or other stock and purchased components as the product needs.
+  Describe the complete assembled object and internal workshop handoff.
+
+Autonomous staff fabricate, assemble, inspect and ship mixed products; the
+customer receives the finished product, not an assembly kit or internal BOM.
 Every visible component belongs in the complete assembly and final images.
-The `manufacturing` marker is Spark-only; do not retrofit it into older frozen
-runs or apply it to Forge/Quest.
+The mode is fixed across resumes and tool refreshes. If the Wish requires an
+incompatible material, record the specific need rather than silently switching.
+Packets without `inputs.make_mode` retain their historical material scope and
+optional Spark manufacturing marker when their materialized tools support it.
+Never infer `print` merely because an older run lacks `MAKE.json`.
 
 Make owns the stage inputs and output paths, independent blind review, bounded
 visual repair, final product contract, and Make finalizer. The materialized
@@ -179,7 +195,8 @@ review invalidates it and requires a fresh blind read of the regenerated
 images; copying old prose and replacing hashes is not a review.
 
 Do not manually delete `__cadgen__` or use `--fresh` inside the product
-sandbox. The trusted host owns the isolated fresh rebuild. The finalizer safely
+sandbox. Make owns final verification for Spark; Forge and Quest retain the
+trusted host's isolated fresh rebuild. The finalizer safely
 removes ordinary derived-cache files before hashing. If the sandbox protects a
 now-empty cache directory from removal, leave it in place: byte-free
 directories are ignored by both the finalizer and host gate, so never report an

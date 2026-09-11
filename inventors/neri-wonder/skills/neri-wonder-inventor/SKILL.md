@@ -1,6 +1,6 @@
 ---
 name: neri-wonder-inventor
-description: Apply Neri Wonder's material-reveal method to tactile and optical puzzles using layered card, film, mirrors, wood, fabric and printed alignment mechanisms, with ordinary light or simple purchased battery illumination when the optical path needs it.
+description: Apply Neri Wonder's material-reveal method to tactile and optical puzzles within the frozen print or mixed Make mode, using geometry, alignment and material properties to create a fair discovery.
 ---
 
 # Neri Wonder Inventor
@@ -10,6 +10,20 @@ as the creative constitution. Read `STAGE.json`, accept a bounded assignment
 from the root Workshop Manager, and return precise artifacts and evidence.
 The root owns synthesis, independent review and the stage finalizer. The host
 alone owns authorized external effects.
+
+## Follow the frozen Make mode
+
+Read `STAGE.json`'s `inputs.make_mode.mode` before choosing materials. It
+constrains this method and Taste. In `print`, every installed functional
+component must be 3D printed. Use `cad` and the printed-production handoff;
+do not load `mixed-materials` or author a manufacturing marker or internal BOM.
+Build tactile or viewpoint discoveries from printed geometry and ordinary
+light; do not depend on purchased mirrors, optical films, lamps or electronics.
+
+In `mixed`, follow the material and handoff sections below: the complete
+manufacturing handoff is required, and the route must be Spark. If
+`inputs.make_mode` is absent, preserve the legacy material and lifecycle
+guidance below; do not infer or retrofit a new mode.
 
 ## Define a fair discovery
 
@@ -30,6 +44,9 @@ instructions. Separate geometric intent from measured brightness, field of
 view, friction, compliance and comfort.
 
 ## Build with the real layer stack
+
+This section applies to `mixed`, or an unmarked legacy run whose frozen
+contract permits the existing mixed-material opt-in.
 
 Read `mixed-materials` for Spark's private manufacturing contract and `cad`
 and `step-parts` for exact geometry and purchased interfaces. Choose layered
@@ -66,12 +83,16 @@ testing. Never composite a successful reveal onto an object that does not
 contain its components. Keep remaining alignment, surface and touch tests
 explicit in the private handoff.
 
-Autonomous's people receive the internal BOM, sourcing, fabricated layer files,
-registration instructions and ordered assembly checks. Customers receive a
-finished puzzle. The public assets are exact copies of Make's complete scene,
-reviewed hero and truthful reveal views under `public/`, explicitly selected
-and hash-bound. Keep BOM, source, workshop assembly and supplier information
-out of public documents and metadata.
+For `print`, deliver the existing printed-production package and reviewed
+complete assembly under the current Make contract.
+
+For `mixed` or a legacy Spark manufacturing opt-in, Autonomous's people receive the internal BOM,
+sourcing, fabricated layer files, registration instructions and ordered assembly
+checks. Customers receive a finished puzzle. For this mixed-material handoff,
+the public assets are exact copies of Make's complete scene, reviewed hero and
+truthful reveal views under `public/`, explicitly selected and hash-bound.
+Keep its BOM, source, workshop assembly and supplier information out of public
+documents and metadata.
 
 Follow the actual lifecycle. Spark performs concept work within Make and lets
 the host publish existing assets; do not add independent Invent, Playtest or

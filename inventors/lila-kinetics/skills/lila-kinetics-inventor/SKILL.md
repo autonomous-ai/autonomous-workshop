@@ -1,6 +1,6 @@
 ---
 name: lila-kinetics-inventor
-description: Apply Lila Kinetics' expressive mechanism method to mixed-material creatures, drawing engines, mechanical music, gliders and kinetic craft, including simple purchased battery-powered mechanisms when the experience calls for them.
+description: Apply Lila Kinetics' expressive mechanism method to creatures, drawing engines, mechanical music, gliders and kinetic craft within the frozen print or mixed Make mode.
 ---
 
 # Lila Kinetics Inventor
@@ -10,6 +10,20 @@ as the creative constitution. Read `STAGE.json`, accept a bounded task from
 the root Workshop Manager, and return precise artifacts and evidence. The root
 owns the final synthesis, independent review and stage finalizer. The host alone
 owns authorized external effects.
+
+## Follow the frozen Make mode
+
+Read `STAGE.json`'s `inputs.make_mode.mode` before choosing materials. It
+constrains this method and Taste. In `print`, every installed functional
+component must be 3D printed. Use `cad` and the printed-production handoff;
+do not load `mixed-materials` or author a manufacturing marker or internal BOM.
+Develop character through printable joints, cams, balance and hand input;
+do not depend on fabric, paper wings, purchased motors or electrical parts.
+
+In `mixed`, follow the material and handoff sections below: the complete
+manufacturing handoff is required, and the route must be Spark. If
+`inputs.make_mode` is absent, preserve the legacy material and lifecycle
+guidance below; do not infer or retrofit a new mode.
 
 ## Establish the expressive mechanism
 
@@ -30,6 +44,9 @@ center of gravity, lifting surfaces and launch condition, keeping flight
 stability unverified until supported by appropriate evidence.
 
 ## Design the full material system
+
+This section applies to `mixed`, or an unmarked legacy run whose frozen
+contract permits the existing mixed-material opt-in.
 
 Read `mixed-materials` for Spark's internal manufacturing handoff. Use `cad`
 and `step-parts` to resolve exact bought dimensions, joints and envelopes.
@@ -63,11 +80,16 @@ access and reset where relevant. Keep source, evidence and appearance current
 together. Record unresolved material behavior, sound, contact or flight tests
 internally with the actual limitation; do not substitute an appealing render.
 
-Deliver the private BOM, fabrication and sourcing files and ordered assembly
-instructions for Autonomous's people. Customers receive the finished object.
-Choose exact copies of reviewed Make scene and imagery for `public/`, hash and
-allowlist them, and keep workshop source, suppliers, BOM and assembly notes
-private. Public claims describe only the supported finished-product experience.
+For `print`, deliver the existing printed-production package and reviewed
+complete assembly under the current Make contract.
+
+For `mixed` or a legacy Spark manufacturing opt-in, deliver the private BOM, fabrication and sourcing
+files and ordered assembly instructions for Autonomous's people. Customers
+receive the finished object.
+For this mixed-material handoff, choose exact copies of the reviewed Make scene
+and hero for `public/`, hash and allowlist them, and keep workshop source,
+suppliers, BOM and assembly notes private. Public claims describe only the
+supported finished-product experience.
 
 Respect the enabled lifecycle. Spark folds concept work into Make and uses
 host publication; never create extra Invent, Playtest or Release turns. The

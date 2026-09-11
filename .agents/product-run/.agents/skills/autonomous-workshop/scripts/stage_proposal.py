@@ -2105,6 +2105,30 @@ def _validate_signature_review(
             raise ProposalError("Make motion presentation is invalid: %s" % exc) from exc
 
 
+def _validate_print_mode_sources(run_root: Path, project: Path) -> None:
+    """Check print scope with Make's canonical discovery, without executing CAD."""
+    relative = ".agents/skills/cad/scripts/printlib.py"
+    _read_regular(run_root, relative, "Make print source discovery", maximum=512 * 1024)
+    try:
+        helpers = runpy.run_path(str(run_root / relative))
+        entries = helpers["iter_printable_entries"](project)
+        if not any(entries.values()):
+            raise ProposalError("Make print mode requires at least one printable production entry")
+        for source in project.rglob("part_*.step.py"):
+            if any(
+                part in helpers["IGNORED_DIR_NAMES"]
+                for part in source.relative_to(project).parts[:-1]
+            ):
+                continue
+            if helpers["declared_printable"](source) is False:
+                raise ProposalError(
+                    "Make print mode cannot include a nonprinted production entry: %s"
+                    % source.relative_to(project).as_posix()
+                )
+    except (OSError, ValueError, SyntaxError, KeyError, TypeError) as exc:
+        raise ProposalError("Make print source declarations are invalid: %s" % exc) from exc
+
+
 def _validate_manufacturing_manifest(
     run_root: Path,
     product_root: Path,
@@ -2112,7 +2136,23 @@ def _validate_manufacturing_manifest(
     inputs: Mapping[str, Any],
     cad_project_path: str,
 ) -> None:
-    """Validate an explicitly opted-in Spark build with its frozen Make tool."""
+    """Enforce the frozen Make choice and validate a mixed manufacturing handoff."""
+    if "make_mode" in inputs:
+        selection = _mapping(inputs["make_mode"], "Make mode")
+        if (
+            set(selection) != {"schema_version", "mode"}
+            or type(selection["schema_version"]) is not int
+            or selection["schema_version"] != 1
+            or selection["mode"] not in ("print", "mixed")
+        ):
+            raise ProposalError("Make mode must select print or mixed with schema_version 1")
+        if selection["mode"] == "print" and "manufacturing" in product:
+            raise ProposalError("Make print mode does not accept mixed-material manufacturing")
+        if selection["mode"] == "mixed" and "manufacturing" not in product:
+            raise ProposalError("Make mixed mode requires the manufacturing manifest")
+        if selection["mode"] == "print":
+            _validate_print_mode_sources(run_root, product_root / cad_project_path)
+    # A packet without a frozen choice retains its historical marker opt-in.
     if "manufacturing" not in product:
         return
     if inputs.get("creative_source_required") is not True:

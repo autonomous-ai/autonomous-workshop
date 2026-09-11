@@ -62,6 +62,13 @@ from workshop.workflow.effort import (
     EFFORT_ROUTE_CAPABILITY_PATH,
     workshop_effort,
 )
+from workshop.workflow.make_mode import (
+    MAKE_PROJECT_PATH,
+    MIXED_MATERIAL_SKILL,
+    make_project_bytes,
+    parse_make_project_bytes,
+    validate_make_mode,
+)
 
 
 BudgetAuthority = Callable[[Mapping[str, Any]], bool]
@@ -745,6 +752,7 @@ class AgentRunCheckpoint:
     # with an exact number. Neither set means the run keeps its frozen policy.
     turn_seconds: Optional[int] = None
     turn_untimed: bool = False
+    make_mode: Optional[str] = None  # Derived from the immutable MAKE.json input.
 
     @property
     def complete(self) -> bool:
@@ -782,6 +790,7 @@ class AgentRun:
         required_inventor_id: Optional[str] = None,
         max_rounds: int = 4,
         effort: Optional[str] = None,
+        make_mode: Optional[str] = None,
         manager_id: str = DEFAULT_MANAGER_ID,
         manager_model: Optional[str] = None,
         manager_reasoning_effort: Optional[str] = None,
@@ -806,6 +815,9 @@ class AgentRun:
                 % (MIN_AGENT_TURN_SECONDS, MAX_NATIVE_TURN_SECONDS)
             )
         selected_effort = workshop_effort(effort) if effort is not None else None
+        selected_make_mode = validate_make_mode(
+            make_mode, workflow=selected_effort.name if selected_effort is not None else None
+        )
         selected_runtime = manager_runtime_selection(
             manager_id,
             model=manager_model,
@@ -911,7 +923,11 @@ class AgentRun:
         selected_domain_skills = domain_skill_roots or {}
         if not isinstance(selected_domain_skills, Mapping):
             raise ContractError("domain skill roots must be a mapping")
+        if selected_make_mode == "mixed" and MIXED_MATERIAL_SKILL not in selected_domain_skills:
+            raise ContractError("mixed Make mode requires the mixed-materials skill")
         for name, source_root in sorted(selected_domain_skills.items()):
+            if selected_make_mode == "print" and name == MIXED_MATERIAL_SKILL:
+                continue
             if (
                 not isinstance(name, str)
                 or _AGENT_SKILL_NAME.fullmatch(name) is None
@@ -1064,6 +1080,10 @@ class AgentRun:
             ),
         ]
         skill_target = PurePosixPath(".agents/skills/autonomous-workshop")
+        if selected_make_mode is not None:
+            all_input_files.append(
+                (PurePosixPath(MAKE_PROJECT_PATH), make_project_bytes(selected_make_mode), 0o400)
+            )
         all_input_files.extend(
             (skill_target / relative, content, mode)
             for relative, content, mode in skill_files
@@ -1492,6 +1512,18 @@ class AgentRun:
         }
         if not required <= set(observed_paths):
             raise StateConflict("agent run required inputs are missing")
+        if MAKE_PROJECT_PATH in input_content:
+            try:
+                mode = parse_make_project_bytes(
+                    input_content[MAKE_PROJECT_PATH], workflow=payload.get("effort")
+                )
+            except ContractError as exc:
+                raise StateConflict("agent run Make input is invalid") from exc
+            mixed_prefix = ".agents/skills/%s/" % MIXED_MATERIAL_SKILL
+            mixed_paths = {path for path in observed_paths if path.startswith(mixed_prefix)}
+            if ((mode == "print" and mixed_paths)
+                    or (mode == "mixed" and mixed_prefix + "SKILL.md" not in mixed_paths)):
+                raise StateConflict("agent run domain skills differ from its frozen Make mode")
         _verify_wish_reference_inputs(input_content, observed_paths)
         if any(path == "catalog" or path.startswith("catalog/") for path in observed_paths):
             raise StateConflict("product projects must not contain an Inventor catalog")
@@ -2099,6 +2131,15 @@ class AgentRun:
             raise StateConflict("agent run Manager project is invalid") from exc
         if manager.manager_id != payload.get("manager_id", DEFAULT_MANAGER_ID):
             raise StateConflict("agent run Manager project differs from checkpoint")
+        make_mode = None
+        make_input = next(
+            (item for item in payload["inputs"] if item["path"] == MAKE_PROJECT_PATH), None
+        )
+        if make_input is not None:
+            make_source = _read_regular(self.run_root / MAKE_PROJECT_PATH, "Make input", 1024)
+            if _sha256(make_source) != make_input["sha256"]:
+                raise StateConflict("agent run Make input changed while reading its snapshot")
+            make_mode = parse_make_project_bytes(make_source, workflow=payload.get("effort"))
         return AgentRunCheckpoint(
             product_id=payload["product_id"],
             stage=payload["stage"],
@@ -2126,6 +2167,7 @@ class AgentRun:
             token_budgeted=_uses_token_budget(payload, self._budget_authority),
             turn_seconds=payload.get("turn_seconds"),
             turn_untimed="turn_seconds" in payload and payload["turn_seconds"] is None,
+            make_mode=make_mode,
         )
 
     def expected_gate_subject_sha256(self) -> str:

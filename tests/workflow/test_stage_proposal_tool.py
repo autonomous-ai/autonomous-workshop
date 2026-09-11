@@ -845,8 +845,9 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("manufacturing", result.stderr)
         self.assertFalse((self.run_root / "artifacts/make/r0001/made.json").exists())
 
-    def finalize_mixed_make(self, *, expected=0):
+    def finalize_mixed_make(self, *, expected=0, mode=None):
         self.write_stage("make", {**self.match_inputs(), "creative_source_required": True,
+            **({"make_mode": mode} if mode is not None else {}),
             "assignment_contract_path": "artifacts/make/r0001/assignment.json",
             "invented_contract_path": "artifacts/make/r0001/invented.json"}, round_index=1)
         self.write_json("drafts/spark-make.json", {
@@ -855,6 +856,93 @@ class StageProposalToolTest(unittest.TestCase):
         return self.run_tool("make", "--source", "drafts/spark-make.json",
             "--product-root", "artifacts/make/r0001/product", "--cad-project-path", "cad/project",
             "--cad-verification-path", "cad/project/validation/cad-build.json", expected=expected)
+
+    def test_selected_mixed_make_requires_manufacturing_before_sealing(self):
+        self.create_product()
+
+        result = self.finalize_mixed_make(
+            expected=2, mode={"schema_version": 1, "mode": "mixed"}
+        )
+
+        self.assertIn("mixed mode requires the manufacturing manifest", result.stderr)
+        self.assertFalse((self.run_root / "artifacts/make/r0001/made.json").exists())
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_selected_print_make_cannot_switch_to_mixed_manufacturing(self):
+        self.mixed_product()
+
+        result = self.finalize_mixed_make(
+            expected=2, mode={"schema_version": 1, "mode": "print"}
+        )
+
+        self.assertIn("print mode does not accept mixed-material manufacturing", result.stderr)
+        self.assertFalse((self.run_root / "artifacts/make/r0001/made.json").exists())
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_selected_print_make_seals_existing_print_contract(self):
+        self.print_mode_product()
+
+        self.finalize_mixed_make(mode={"schema_version": 1, "mode": "print"})
+
+        made, _ = self.assert_canonical_file("artifacts/make/r0001/made.json")
+        self.assertNotIn("manufacturing", made["product"])
+
+    def print_mode_product(self):
+        root, _, _, _ = self.create_product()
+        helper = self.run_root / ".agents/skills/cad/scripts/printlib.py"
+        helper.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(REPOSITORY / "src/workshop/make/skills/cad/scripts/printlib.py", helper)
+        (root / "cad/project/moon.step.py").write_text(
+            "PRINTABLE = True\ndef gen_step():\n    raise RuntimeError('must not execute CAD')\n"
+        )
+        return root
+
+    def test_selected_print_make_refuses_an_entirely_nonprinted_assembly(self):
+        root = self.print_mode_product()
+        entry = root / "cad/project/moon.step.py"
+        entry.write_text(entry.read_text().replace("True", "False"))
+
+        result = self.finalize_mixed_make(
+            expected=2, mode={"schema_version": 1, "mode": "print"}
+        )
+
+        self.assertIn("requires at least one printable production entry", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_selected_print_make_refuses_nonprinted_production_parts(self):
+        root = self.print_mode_product()
+        (root / "cad/project/part_wood.step.py").write_text(
+            "PRINTABLE = False\ndef gen_step():\n    raise RuntimeError('must not execute CAD')\n"
+        )
+
+        result = self.finalize_mixed_make(
+            expected=2, mode={"schema_version": 1, "mode": "print"}
+        )
+
+        self.assertIn("cannot include a nonprinted production entry", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_selected_mixed_make_seals_complete_manufacturing_contract(self):
+        _, product, _, _ = self.mixed_product()
+
+        self.finalize_mixed_make(mode={"schema_version": 1, "mode": "mixed"})
+
+        made, _ = self.assert_canonical_file("artifacts/make/r0001/made.json")
+        self.assertEqual(made["product"]["manufacturing"], product["manufacturing"])
+
+    def test_make_refuses_malformed_mode_instead_of_assuming_legacy(self):
+        self.create_product()
+        for mode in (
+            "mixed", {}, {"schema_version": True, "mode": "print"},
+            {"schema_version": 2, "mode": "mixed"},
+            {"schema_version": 1, "mode": "automatic"},
+            {"schema_version": 1, "mode": "print", "fallback": "mixed"},
+        ):
+            with self.subTest(mode=mode):
+                result = self.finalize_mixed_make(expected=2, mode=mode)
+                self.assertIn("Make mode", result.stderr)
+                self.assertFalse((self.run_root / "artifacts/make/r0001/made.json").exists())
+                self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_spark_make_rejects_unreviewed_public_hero_even_when_resealed(self):
         root, _, _, _ = self.mixed_product()

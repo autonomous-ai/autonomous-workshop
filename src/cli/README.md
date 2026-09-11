@@ -14,6 +14,21 @@ runtime, model, and reasoning level. Codex defaults to `gpt-6-astra` at medium;
 Claude Code defaults to `claude-opus-5` at medium. Status and resume read those
 durable choices rather than accepting replacements.
 
+`wish` and `start` accept `--make print|mixed`, independently of the workflow.
+The default is explicitly `print` (3D printing). `mixed` selects mixed-material
+Make and requires Spark; the CLI rejects a Forge/Quest combination before
+reference downloads, account setup, or run creation. For example:
+
+```sh
+workshop wish --workflow spark --make mixed "a hand-cranked marble toy"
+workshop start <inventor-id> --wish "a hand-cranked marble toy" --make mixed
+```
+
+The selected Make mode is frozen for the product and appears as `Make: print`
+or `Make: mixed` in startup and status output, and as `make_mode` in JSON run
+receipts. `resume` has no Make override. Historical receipts with an absent or
+null mode keep their saved behavior and are not relabeled as print runs.
+
 `--agent codex --model astra --effort ultra` enables native Astra Ultra.
 Ultra is rejected for other models and agents; the default remains medium.
 
@@ -66,6 +81,10 @@ Three consecutive failures stop it; `--once` and `--max-ideas` bound it.
 `workshop start <inventor-id> --idea <daydream-id>` builds a saved idea. The
 CLI never judges or edits the idea; novelty and Taste fit are the Daydream
 component's job.
+
+`start --idea`, `start --once`, and the continuous `start` loop also forward
+`--make` to each product build. This option does not change the separate
+Daydream's creative scope; `daydream` itself has no Make option.
 
 The two product commands therefore share one build path but express different
 sources and cardinality: `workshop wish` makes one product from a human-provided

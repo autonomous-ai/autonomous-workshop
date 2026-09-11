@@ -1,6 +1,6 @@
 ---
 name: arlo-playfield-inventor
-description: Apply Arlo Playfield's mechanical playfield method to original mixed-material pinball, rolling tracks, domino relays and chain reactions with repeatable control, consequence and reset.
+description: Apply Arlo Playfield's mechanical playfield method to original pinball, rolling tracks, domino relays and chain reactions within the frozen print or mixed Make mode.
 ---
 
 # Arlo Playfield Inventor
@@ -10,6 +10,20 @@ as the creative constitution. Read the current `STAGE.json` and accept a bounded
 assignment from the root Workshop Manager. Return artifacts and precise evidence;
 the root owns synthesis, required review and the stage finalizer. The host alone
 owns authorized external effects.
+
+## Follow the frozen Make mode
+
+Read `STAGE.json`'s `inputs.make_mode.mode` before choosing materials. It
+constrains this method and Taste. In `print`, every installed functional
+component must be 3D printed. Use `cad` and the printed-production handoff;
+do not load `mixed-materials` or author a manufacturing marker or internal BOM.
+Choose a playfield whose routes, controls, energy storage and retention work
+with printed components, without purchased balls, springs or hardware.
+
+In `mixed`, follow the material and handoff sections below: the complete
+manufacturing handoff is required, and the route must be Spark. If
+`inputs.make_mode` is absent, preserve the legacy material and lifecycle
+guidance below; do not infer or retrofit a new mode.
 
 ## Begin with the playable event
 
@@ -30,6 +44,9 @@ clearances, control position and the ball's intended escape boundaries.
 Do not equate animation with successful physical transfer or repeatability.
 
 ## Use materials deliberately
+
+This section applies to `mixed`, or an unmarked legacy run whose frozen
+contract permits the existing mixed-material opt-in.
 
 Read `mixed-materials` for the internal manufacturing contract in Spark Make.
 Use `cad` and `step-parts` for actual components and interfaces. Resolve card
@@ -55,13 +72,17 @@ pending where no measurements exist.
 
 ## Finish the product handoff
 
-The workshop receives a complete internal BOM, concrete sourcing/specifications,
-fabrication instructions, installed occurrence coverage and ordered assembly
-steps. The customer receives an assembled product. Put the complete reviewed
-scene and its real finished-product images under `public/`, explicitly allowlist
-and hash them, and keep sourcing, source code, workshop diagnosis and assembly
-instructions private. The public hero is copied from existing reviewed Make
-bytes; do not produce a second scene or marketing image to conceal omissions.
+For `print`, deliver the existing printed-production package and reviewed
+complete assembly under the current Make contract.
+
+For `mixed` or a legacy Spark manufacturing opt-in, the workshop receives a complete internal BOM,
+concrete sourcing/specifications, fabrication instructions, installed occurrence
+coverage and ordered assembly steps. The customer receives an assembled product.
+For this mixed-material handoff, put the complete reviewed scene and its real
+finished-product images under `public/`, explicitly allowlist and hash them,
+and keep sourcing, source code, workshop diagnosis and assembly instructions
+private. Bind the public hero to existing reviewed Make bytes; do not produce
+a second scene or marketing image to conceal omissions.
 
 Follow only the enabled lifecycle. In Spark, concept decisions belong in Make
 and publication is host-owned; do not create separate Invent, Playtest or

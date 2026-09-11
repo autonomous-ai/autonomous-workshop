@@ -98,6 +98,7 @@ from workshop.workflow import native_run_status, resume_native_run, start_native
 from workshop.workflow.token_budget import DEFAULT_PRODUCT_TOKENS, MAX_PRODUCT_TOKENS
 from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
 from workshop.workflow.agent_run import MIN_AGENT_TURN_SECONDS
+from workshop.workflow.make_mode import DEFAULT_MAKE_MODE, MAKE_MODES
 from workshop.workflow.effort import (
     DEFAULT_WORKSHOP_EFFORT,
     WORKSHOP_EFFORTS,
@@ -363,6 +364,9 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
     workflow = receipt.get("workflow")
     if isinstance(workflow, str) and workflow:
         print("Workflow: %s" % workflow.title())
+    make_mode = receipt.get("make_mode")
+    if isinstance(make_mode, str) and make_mode:
+        print("Make: %s" % make_mode)
     model = receipt.get("model")
     effort = receipt.get("effort")
     if isinstance(model, str) and model:
@@ -540,12 +544,16 @@ def _turn_boundary_options(value) -> dict:
     if value == UNTIMED_TURN:
         return {"turn_untimed": True}
     return {"turn_seconds": value}
+def _validate_make_workflow(make_mode: str, workflow: str) -> None:
+    if make_mode == "mixed" and workflow != "spark":
+        raise WorkshopError("--make mixed requires --workflow spark")
 
 
 def _start_run(
     wish: Wish,
     *,
     workflow,
+    make_mode: str,
     runtime,
     github: bool,
     max_rounds: int = DEFAULT_MAX_ROUNDS,
@@ -563,6 +571,7 @@ def _start_run(
         file=progress,
         flush=True,
     )
+    print("Make: %s" % make_mode, file=progress, flush=True)
     print(
         "Agent: %s%s"
         % (
@@ -623,6 +632,7 @@ def _start_run(
     return start_native_run(
         wish,
         effort=workflow.name,
+        make_mode=make_mode,
         manager_id=runtime.spec.manager_id,
         manager_model=runtime.model,
         manager_reasoning_effort=runtime.reasoning_effort,
@@ -638,6 +648,7 @@ def _start_run(
 
 def _wish(args: argparse.Namespace) -> int:
     workflow = workshop_effort(args.workflow)
+    _validate_make_workflow(args.make_mode, workflow.name)
     loaded_references = load_wish_references(list(args.references or ()))
     context: dict = {"source": "workshop-cli"}
     if args.inventor is not None:
@@ -661,6 +672,7 @@ def _wish(args: argparse.Namespace) -> int:
     receipt = _start_run(
         wish,
         workflow=workflow,
+        make_mode=args.make_mode,
         runtime=runtime,
         github=args.github,
         max_rounds=args.max_rounds,
@@ -842,13 +854,14 @@ def _start(args: argparse.Namespace) -> int:
     Inventor for the run and Release publishes with its credential.
     """
 
+    workflow = workshop_effort(args.workflow)
+    _validate_make_workflow(args.make_mode, workflow.name)
     root = _inventor_source_root(args.root)
     runtime = manager_runtime_selection(
         args.agent,
         model=args.model,
         reasoning_effort=args.effort,
     )
-    workflow = workshop_effort(args.workflow)
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress, runtime.spec.display_name)
     typed = args.wish is not None
@@ -936,6 +949,7 @@ def _start(args: argparse.Namespace) -> int:
                 receipt = _start_run(
                     wish,
                     workflow=workflow,
+                    make_mode=args.make_mode,
                     runtime=runtime,
                     github=args.github,
                     max_rounds=args.max_rounds,
@@ -1703,6 +1717,13 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     start.add_argument(
+        "--make",
+        dest="make_mode",
+        choices=MAKE_MODES,
+        default=DEFAULT_MAKE_MODE,
+        help="Make mode for each product: print (3D printing; default) or mixed (mixed materials; Spark only); does not change Daydream",
+    )
+    start.add_argument(
         "--agent",
         choices=tuple(SUPPORTED_MANAGER_IDS),
         default=DEFAULT_MANAGER_ID,
@@ -1880,6 +1901,13 @@ def parser() -> argparse.ArgumentParser:
             "forge (Wish->Invent->Make->Release), or "
             "quest (Wish->Invent->Make->Playtest->Release)"
         ),
+    )
+    wish.add_argument(
+        "--make",
+        dest="make_mode",
+        choices=MAKE_MODES,
+        default=DEFAULT_MAKE_MODE,
+        help="Make mode: print (3D printing; default) or mixed (mixed materials; Spark only); frozen for the run",
     )
     wish.add_argument(
         "--agent",

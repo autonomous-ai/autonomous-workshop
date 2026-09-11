@@ -14,6 +14,13 @@ Quest: Wish -> Invent -> Make -> Playtest -> Release
 ```
 
 Use the selected model and reasoning effort in the host's immutable stage packet.
+When `inputs.make_mode` is present, its frozen `mode` is a product constraint:
+`print` means a product made from 3D-printed components; `mixed` permits stock,
+handcraft and purchased components and requires the mixed-material workshop
+handoff. Apply this choice during inventor selection, concept design and Make.
+Inventor preferences do not override it. Do not change modes to resolve a Wish
+conflict. A missing selection preserves this run's historical material scope;
+do not assume that an older run is print-only.
 Token-budget runs have no Workshop wall-clock, native-turn or lifecycle-round
 spending cap; Make's frozen internal checks and review allowance still apply.
 The historical economics profiles below govern only settings not superseded

@@ -1,7 +1,7 @@
 {
   "extensions": [
     {
-      "artifact_sha256": "52cea9d38ff54d28b06de1c9f3398efe49e131ff0cdd805f8a4bd060af3718f3",
+      "artifact_sha256": "a2a8361eee341bc8485a2d5ed6acb9098fff729d9749ec3723515c2efd63ff32",
       "kind": "codex-skill",
       "name": "neri-wonder-inventor",
       "path": "skills/neri-wonder-inventor"

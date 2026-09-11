@@ -349,12 +349,13 @@ def _json(command, *, cwd: Path, environment) -> object:
     return json.loads(_run(command, cwd=cwd, environment=environment).stdout)
 
 
-def _write_fake_codex(path: Path, python: Path) -> None:
+def _write_fake_codex(path: Path, python: Path, *, make_mode: str) -> None:
     source = """#!%s
 import json
 import hashlib
 import os
 import re
+import stat
 import sys
 import tomllib
 from datetime import datetime, timezone
@@ -368,6 +369,20 @@ if sys.argv[1:] == ["--version"]:
 run_root = Path.cwd()
 wish = json.loads((run_root / "WISH.json").read_text(encoding="utf-8"))
 stage = json.loads((run_root / "STAGE.json").read_text(encoding="utf-8"))
+expected_make_mode = %r
+expected_make_input = {"schema_version": 1, "mode": expected_make_mode}
+make_path = run_root / "MAKE.json"
+make_bytes = make_path.read_bytes()
+if (
+    make_path.is_symlink()
+    or stat.S_IMODE(make_path.stat().st_mode) != 0o400
+    or make_bytes != (json.dumps(expected_make_input, sort_keys=True, separators=(",", ":")) + chr(10)).encode("utf-8")
+    or stage["inputs"].get("make_mode") != expected_make_input
+):
+    raise RuntimeError("Make mode must be immutable and bound before every native turn")
+mixed_skill = run_root / ".agents" / "skills" / "mixed-materials"
+if mixed_skill.exists() != (expected_make_mode == "mixed") or mixed_skill.is_symlink():
+    raise RuntimeError("Make skill materialization differs from selected mode")
 agent_root = run_root / ".codex" / "agents"
 agent_entries = tuple(agent_root.iterdir())
 if any(path.is_symlink() or not path.is_file() for path in agent_entries):
@@ -518,6 +533,12 @@ if selection["status"] == "pending":
     if turn != 1:
         raise RuntimeError("Inventor selection setup ran more than once")
     roster = stage["inputs"]["inventor_roster"]["inventors"]
+    (run_root / "native-packaging-setup-probe.json").write_text(json.dumps({
+        "make_input": json.loads(make_bytes),
+        "stage_make_mode": stage["inputs"]["make_mode"],
+        "mixed_materials": mixed_skill.is_dir(),
+        "custom_agent_ids": inventor_ids,
+    }, sort_keys=True) + chr(10), encoding="utf-8")
     (run_root / selection["marker_path"]).write_text(json.dumps({
         "schema_version": 1,
         "kind": "autonomous-workshop.inventor-selection-ready",
@@ -560,6 +581,8 @@ if selection["status"] != "selected" or turn != 2:
             "arguments": sys.argv[1:],
             "custom_agent_ids": inventor_ids,
             "factory_visible": "FACTORY_PASSWORD" in os.environ,
+            "make_input": json.loads(make_bytes),
+            "stage_make_mode": stage["inputs"]["make_mode"],
             "prelaunch": {
                 "agents": (run_root / "AGENTS.md").is_file(),
                 "cad": (run_root / ".agents" / "skills" / "cad" / "SKILL.md").is_file(),
@@ -601,7 +624,7 @@ if selection["status"] != "selected" or turn != 2:
 print(json.dumps({"type": "thread.started", "thread_id": thread_id}))
 print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": "agent_message", "text": "fixture waiting"}}))
 print(json.dumps({"type": "turn.completed", "usage": {}}))
-""" % (str(python), INVENTORS, CODEX_THREAD_ID, CODEX_MODEL)
+""" % (str(python), make_mode, INVENTORS, CODEX_THREAD_ID, CODEX_MODEL)
     path.write_text(source, encoding="utf-8")
     path.chmod(0o700)
 
@@ -656,13 +679,16 @@ def _native_wish_smoke(
     repository: Path,
     away: Path,
     environment: dict[str, str],
+    make_mode: str,
+    explicit_make: bool,
 ) -> None:
     fake_codex = root / "fake-codex"
-    _write_fake_codex(fake_codex, python)
+    _write_fake_codex(fake_codex, python, make_mode=make_mode)
     environment = dict(environment)
     environment.update(
         {
             "WORKSHOP_CODEX_BIN": str(fake_codex),
+            "WORKSHOP_HOME": str(root / "workshop-home"),
             "CODEX_HOME": str(root / "codex-home"),
             "FACTORY_PASSWORD": "must-not-reach-native-codex",
         }
@@ -675,6 +701,7 @@ def _native_wish_smoke(
             "--model", CODEX_MODEL,
             "--effort", "ultra",
             "--max-tokens", "100000",
+            *(("--make", make_mode) if explicit_make else ()),
             "--json",
         ),
         cwd=away,
@@ -685,6 +712,7 @@ def _native_wish_smoke(
         or receipt.get("status") != "waiting"
         or receipt.get("stage") != "make"
         or receipt.get("workflow") != "spark"
+        or receipt.get("make_mode") != make_mode
         or receipt.get("native_turns") != 2
         or receipt.get("action") != "started"
     ):
@@ -725,6 +753,7 @@ def _native_wish_smoke(
         threads = observation.get("threads", [])
         if (
             record.get("model") != CODEX_MODEL
+            or record.get("make_mode") != make_mode
             or record.get("effort") != "ultra"
             or budget.get("limit_tokens") != 100000
             or budget.get("used_tokens") != 4620
@@ -755,6 +784,35 @@ def _native_wish_smoke(
     agent_checkpoint = json.loads(
         agent_checkpoint_path.read_text(encoding="utf-8")
     )
+    expected_make_input = {"schema_version": 1, "mode": make_mode}
+    expected_make_bytes = (json.dumps(expected_make_input, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    make_path = workspace / "MAKE.json"
+    expected_make_binding = {
+        "path": "MAKE.json",
+        "sha256": hashlib.sha256(expected_make_bytes).hexdigest(),
+        "size": len(expected_make_bytes),
+        "mode": 0o400,
+    }
+    make_bindings = [item for item in agent_checkpoint["inputs"] if item["path"] == "MAKE.json"]
+    if (
+        make_path.is_symlink()
+        or make_path.read_bytes() != expected_make_bytes
+        or stat.S_IMODE(make_path.stat().st_mode) != 0o400
+        or make_bindings != [expected_make_binding]
+        or json.loads((workspace / "STAGE.json").read_text())["inputs"].get("make_mode") != expected_make_input
+    ):
+        raise AssertionError("installed Wish lost its immutable Make mode binding")
+    mixed_inputs = [item for item in agent_checkpoint["inputs"] if item["path"].startswith(".agents/skills/mixed-materials/")]
+    if bool(mixed_inputs) != (make_mode == "mixed"):
+        raise AssertionError("installed Wish input manifest has the wrong Make skill inventory")
+    setup_probe = json.loads((workspace / "native-packaging-setup-probe.json").read_text())
+    if setup_probe != {
+        "make_input": expected_make_input,
+        "stage_make_mode": expected_make_input,
+        "mixed_materials": make_mode == "mixed",
+        "custom_agent_ids": list(INVENTORS),
+    }:
+        raise AssertionError("installed Wish setup did not receive its selected Make mode")
     roster = agent_checkpoint.get("inventor_roster")
     if (
         agent_checkpoint.get("schema_version") != 4
@@ -805,6 +863,7 @@ def _native_wish_smoke(
             and '"."="write"' in argument
             and '".agents"="read"' in argument
             and '".codex"="read"' in argument
+            and '"MAKE.json"="read"' in argument
             and '"**/.env*"="deny"' in argument
             and json.dumps(str(expected_workspace.parent)) + '="deny"'
             in argument
@@ -812,6 +871,8 @@ def _native_wish_smoke(
             and json.dumps(str(expected_workspace / ".agents")) + '="read"'
             in argument
             and json.dumps(str(expected_workspace / ".codex")) + '="read"'
+            in argument
+            and json.dumps(str(expected_workspace / "MAKE.json")) + '="read"'
             in argument
             and json.dumps(str(expected_workspace / "**/.env*")) + '="deny"'
             in argument
@@ -822,7 +883,14 @@ def _native_wish_smoke(
         raise AssertionError("installed native Codex boundary is incorrect")
     if tuple(probe["custom_agent_ids"]) != INVENTORS:
         raise AssertionError("installed toy has no complete custom Inventor roster")
-    if probe["product_id"] != product_id or not all(probe["prelaunch"].values()):
+    prelaunch = probe["prelaunch"]
+    if (
+        probe["product_id"] != product_id
+        or not all(value for key, value in prelaunch.items() if key != "mixed_materials")
+        or prelaunch.get("mixed_materials") is not (make_mode == "mixed")
+        or probe.get("make_input") != expected_make_input
+        or probe.get("stage_make_mode") != expected_make_input
+    ):
         raise AssertionError("toy project was not populated before Codex launched")
     if "current make stage" not in probe["prompt"]:
         raise AssertionError("installed native Codex received the wrong stage prompt")
@@ -865,12 +933,13 @@ def _native_wish_smoke(
         ),
         workspace / ".agents" / "skills" / "autonomous-workshop",
     )
-    for skill_name in SKILLS:
+    materialized_skills = tuple(name for name in SKILLS if make_mode == "mixed" or name != "mixed-materials")
+    for skill_name in materialized_skills:
         _assert_materialized_tree(
             repository / "src" / "workshop" / SKILL_PATHS[skill_name],
             workspace / ".agents" / "skills" / skill_name,
         )
-    expected_skill_names = {"autonomous-workshop", *SKILLS}
+    expected_skill_names = {"autonomous-workshop", *materialized_skills}
     if (workspace / "catalog").exists() or (workspace / "catalog").is_symlink():
         raise AssertionError("product run contains the removed Inventor catalog")
     agent_root = workspace / ".codex" / "agents"
@@ -1011,7 +1080,7 @@ def acceptance(
         if not all(
             token in wish_help for token in (
                 "--workflow", "--agent", "--model", "--effort", "--inventor",
-                "spark", "forge", "quest",
+                "--make", "print", "mixed", "spark", "forge", "quest",
             )
         ):
             raise AssertionError("installed Wish help lacks runtime and workflow selectors")
@@ -1033,14 +1102,19 @@ def acceptance(
             environment=environment,
         )
         if with_dependencies:
-            _native_wish_smoke(
-                workshop=workshop,
-                python=python,
-                root=root,
-                repository=repository,
-                away=away,
-                environment=environment,
-            )
+            for mode, explicit in (("print", False), ("mixed", True)):
+                smoke_root = root / ("native-" + mode)
+                smoke_root.mkdir()
+                _native_wish_smoke(
+                    workshop=workshop,
+                    python=python,
+                    root=smoke_root,
+                    repository=repository,
+                    away=away,
+                    environment=environment,
+                    make_mode=mode,
+                    explicit_make=explicit,
+                )
 
 
 def main(argv=None) -> int:

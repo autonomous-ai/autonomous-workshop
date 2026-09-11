@@ -372,6 +372,7 @@ class CodexNativeSessionTest(unittest.TestCase):
         binary=TEST_CODEX_BINARY,
         timeout_seconds=DEFAULT_CODEX_TIMEOUT_SECONDS,
         auto_compact_token_limit=None,
+        protect_make_input=False,
     ):
         factory = FakePopenFactory(scripts)
         return (
@@ -379,6 +380,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 model=model,
                 reasoning_effort=effort,
                 auto_compact_token_limit=auto_compact_token_limit,
+                protect_make_input=protect_make_input,
                 binary=binary,
                 timeout_seconds=timeout_seconds,
                 popen_factory=factory,
@@ -454,6 +456,84 @@ class CodexNativeSessionTest(unittest.TestCase):
         }
         values.update(overrides)
         return launcher.resume(**values)
+
+    @staticmethod
+    def filesystem_rules(arguments):
+        value = next(value for value in arguments
+                     if value.startswith("permissions.workshop-product-run.filesystem="))
+        return tomllib.loads(value)["permissions"]["workshop-product-run"]["filesystem"]
+
+    def test_make_input_protection_is_explicit_and_legacy_policy_stays_exact(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            original = codex_runtime._codex_run_policy(root, TEST_CODEX_BINARY)
+            self.assertEqual(original.permission_config_arguments, permission_arguments(root))
+            (root / "MAKE.json").write_text('{"mode":"mixed","schema_version":1}\n')
+            after_rogue_file = codex_runtime._codex_run_policy(root, TEST_CODEX_BINARY)
+            self.assertEqual(after_rogue_file, original)
+            protected = codex_runtime._codex_run_policy(
+                root, TEST_CODEX_BINARY, protect_make_input=True,
+            )
+            rules = self.filesystem_rules(protected.permission_config_arguments)
+            self.assertEqual(rules.pop(str(root / "MAKE.json")), "read")
+            self.assertEqual(rules[":workspace_roots"].pop("MAKE.json"), "read")
+            self.assertEqual(rules, self.filesystem_rules(original.permission_config_arguments))
+            self.assertNotEqual(
+                codex_runtime._runtime_config_sha256("0.153.4", "gpt-6-astra", "medium", original),
+                codex_runtime._runtime_config_sha256("0.153.4", "gpt-6-astra", "medium", protected),
+            )
+
+    def test_make_input_read_rules_survive_start_resume_and_policy_predecessors(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [{"stdout": self.start_events()}, {"stdout": self.start_events()}],
+                protect_make_input=True,
+            )
+            first = self.start(launcher, root)
+            second = self.resume(launcher, root)
+            self.assertEqual(first.binding, second.binding)
+            for command, _ in factory.calls:
+                rules = self.filesystem_rules(command)
+                self.assertEqual(rules[str(root / "MAKE.json")], "read")
+                self.assertEqual(rules[":workspace_roots"]["MAKE.json"], "read")
+            policy = codex_runtime._codex_run_policy(root, TEST_CODEX_BINARY, protect_make_input=True)
+            for transform in (
+                codex_runtime._run_policy_before_reference_images,
+                codex_runtime._run_policy_before_supplier_drawings,
+                codex_runtime._run_policy_before_component_network,
+                codex_runtime._run_policy_before_canonical_workshop_runtime,
+                codex_runtime._run_policy_before_private_cache,
+                codex_runtime._run_policy_before_venv_launcher_directory,
+                codex_runtime._run_policy_before_codex_fs_helper,
+            ):
+                predecessor = transform(root, policy)
+                if predecessor is None:
+                    continue
+                policy = predecessor
+                rules = self.filesystem_rules(policy.permission_config_arguments)
+                self.assertEqual(rules[str(root / "MAKE.json")], "read")
+                self.assertEqual(rules[":workspace_roots"]["MAKE.json"], "read")
+
+    def test_make_protection_cannot_be_changed_on_resume(self):
+        for protected in (False, True):
+            with self.subTest(protected=protected), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                launcher, factory = self.launcher(
+                    [{"stdout": self.start_events()}], protect_make_input=protected,
+                )
+                self.start(launcher, root)
+                launcher.protect_make_input = not protected
+                with self.assertRaises(ContractError):
+                    self.resume(launcher, root)
+                self.assertEqual(len(factory.calls), 1)
+
+    def test_make_input_protection_requires_an_explicit_boolean(self):
+        for value in (None, 0, 1, "true", []):
+            with self.subTest(value=value), self.assertRaisesRegex(ContractError, "must be boolean"):
+                CodexNativeSessionLauncher(protect_make_input=value)
 
     def test_rebind_session_constitution_moves_only_the_instruction_hash(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -42,9 +42,11 @@ skill is your workflow playbook, not a separate agent process.
    After that accepted handoff, or when there is no setup packet, read only the
    reference for the current stage:
    - Invent: [references/invent.md](references/invent.md)
-   - Make: [references/make.md](references/make.md). For Spark products with
-     stock or purchased components, also use the materialized `mixed-materials`
-     skill for the complete assembly and internal manufacturing handoff.
+   - Make: [references/make.md](references/make.md). Follow the frozen
+     `inputs.make_mode.mode`: `print` uses 3D-printed components; `mixed` also
+     requires the materialized `mixed-materials` skill for the complete assembly
+     and internal manufacturing handoff. With no selection, retain the legacy
+     Spark opt-in for stock or purchased components when that skill is present.
    - Playtest: [references/playtest.md](references/playtest.md)
    - Release: inspect `inputs.release_contract.native_release_schema_version`.
      Version `4` is host-owned Spark Publish: return control without a Release

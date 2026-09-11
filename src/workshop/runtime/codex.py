@@ -298,6 +298,15 @@ class _CodexRunPolicy:
     environment_allowlist: tuple[str, ...]
     environment_overrides: tuple[tuple[str, str], ...]
 
+    @property
+    def protects_make_input(self) -> bool:
+        """Carry the exact generated input rule through policy predecessors."""
+        prefix = "permissions.%s.filesystem=" % CODEX_PERMISSION_PROFILE
+        return any(
+            value.startswith(prefix) and '"MAKE.json"="read"' in value
+            for value in self.permission_config_arguments
+        )
+
     def environment(
         self,
         source: Optional[Mapping[str, str]] = None,
@@ -751,6 +760,7 @@ def _run_policy_before_component_network(
             run_policy.trusted_python_runtime_paths,
             run_policy.trusted_codex_runtime_paths,
             component_network=False,
+            protect_make_input=run_policy.protects_make_input,
         ),
         trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
         trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
@@ -796,6 +806,7 @@ def _rolled_back_network_domains(
             run_policy.trusted_python_runtime_paths,
             run_policy.trusted_codex_runtime_paths,
             component_network_domains=predecessor,
+            protect_make_input=run_policy.protects_make_input,
         ),
         trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
         trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
@@ -922,6 +933,7 @@ def _run_policy_before_canonical_workshop_runtime(
             previous_paths,
             run_policy.trusted_codex_runtime_paths,
             component_network=_run_policy_has_component_network(run_policy),
+            protect_make_input=run_policy.protects_make_input,
         ),
         trusted_python_runtime_paths=previous_paths,
         trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
@@ -983,6 +995,7 @@ def _run_policy_before_codex_fs_helper(
             run_policy.trusted_python_runtime_paths,
             (),
             component_network=_run_policy_has_component_network(run_policy),
+            protect_make_input=run_policy.protects_make_input,
         ),
         trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
         trusted_codex_runtime_paths=(),
@@ -1031,6 +1044,7 @@ def _run_policy_before_venv_launcher_directory(
             predecessor_paths,
             run_policy.trusted_codex_runtime_paths,
             component_network=_run_policy_has_component_network(run_policy),
+            protect_make_input=run_policy.protects_make_input,
         ),
         trusted_python_runtime_paths=predecessor_paths,
         trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,
@@ -1409,6 +1423,7 @@ def _permission_config_arguments(
     *,
     component_network: bool = True,
     component_network_domains: Optional[tuple[str, ...]] = None,
+    protect_make_input: bool = False,
 ) -> tuple[str, ...]:
     """Build one non-composable, exact-root Codex permission profile.
 
@@ -1419,11 +1434,14 @@ def _permission_config_arguments(
     """
 
     root = str(run_root)
+    immutable_paths = _IMMUTABLE_PRODUCT_RUN_PATHS + (
+        ("MAKE.json",) if protect_make_input else ()
+    )
     workspace_rules = [
         '"."="write"',
         *(
             "%s=\"read\"" % _toml_string(relative)
-            for relative in _IMMUTABLE_PRODUCT_RUN_PATHS
+            for relative in immutable_paths
         ),
         "%s=\"deny\"" % _toml_string("**/.env*"),
     ]
@@ -1453,7 +1471,7 @@ def _permission_config_arguments(
     )
     entries.extend(
         "%s=\"read\"" % _toml_string(str(run_root / relative))
-        for relative in _IMMUTABLE_PRODUCT_RUN_PATHS
+        for relative in immutable_paths
     )
     entries.append(
         "%s=\"deny\"" % _toml_string(str(run_root / "**/.env*"))
@@ -1500,7 +1518,9 @@ def _permission_config_arguments(
     return tuple(arguments)
 
 
-def _codex_run_policy(run_root: Path, binary: str) -> _CodexRunPolicy:
+def _codex_run_policy(
+    run_root: Path, binary: str, *, protect_make_input: bool = False,
+) -> _CodexRunPolicy:
     """Generate once the exact sandbox/environment policy used by a turn."""
 
     trusted_python_paths = _python_runtime_permission_identities()
@@ -1521,6 +1541,7 @@ def _codex_run_policy(run_root: Path, binary: str) -> _CodexRunPolicy:
             run_root,
             trusted_python_paths,
             trusted_codex_paths,
+            protect_make_input=protect_make_input,
         ),
         trusted_python_runtime_paths=trusted_python_paths,
         trusted_codex_runtime_paths=trusted_codex_paths,
@@ -2277,6 +2298,7 @@ class CodexNativeSessionLauncher:
         reasoning_effort: str = "high",
         auto_compact_token_limit: Optional[int] = None,
         runtime_profile_sha256: Optional[str] = None,
+        protect_make_input: bool = False,
         binary: Optional[str] = None,
         timeout_seconds: Optional[int] = DEFAULT_CODEX_TIMEOUT_SECONDS,
         popen_factory: Any = subprocess.Popen,
@@ -2315,6 +2337,9 @@ class CodexNativeSessionLauncher:
                 "Codex timeout_seconds must be from 1 to %d or None"
                 % MAX_NATIVE_TURN_SECONDS
             )
+        if type(protect_make_input) is not bool:
+            raise ContractError("Codex Make input protection must be boolean")
+        self.protect_make_input = protect_make_input
         self.binary = _resolved_codex_binary(
             binary or os.environ.get("WORKSHOP_CODEX_BIN") or shutil.which("codex")
         )
@@ -2400,7 +2425,9 @@ class CodexNativeSessionLauncher:
         )
         if not self.binary:
             raise CodexInvocationError("Codex CLI is not installed or on PATH")
-        run_policy = _codex_run_policy(root, self.binary)
+        run_policy = _codex_run_policy(
+            root, self.binary, protect_make_input=self.protect_make_input,
+        )
         runtime_config_sha256 = _runtime_config_sha256(
             self.cli_version,
             self.model,
@@ -2517,7 +2544,9 @@ class CodexNativeSessionLauncher:
         )
         if not self.binary:
             raise CodexInvocationError("Codex CLI is not installed or on PATH")
-        run_policy = _codex_run_policy(root, self.binary)
+        run_policy = _codex_run_policy(
+            root, self.binary, protect_make_input=self.protect_make_input,
+        )
         runtime_config_sha256 = _runtime_config_sha256(
             self.cli_version,
             self.model,
@@ -2570,6 +2599,7 @@ class CodexNativeSessionLauncher:
         pre_framework_policy = _CodexRunPolicy(
             permission_config_arguments=_permission_config_arguments(
                 root, pre_framework_paths, run_policy.trusted_codex_runtime_paths,
+                protect_make_input=run_policy.protects_make_input,
             ),
             trusted_python_runtime_paths=pre_framework_paths,
             trusted_codex_runtime_paths=run_policy.trusted_codex_runtime_paths,

@@ -1,7 +1,7 @@
 {
   "extensions": [
     {
-      "artifact_sha256": "a7c44038ad396285bf4773fafa50e150e165853bd12199e98003378519fc3932",
+      "artifact_sha256": "381e76ac15aaf64e6fba4e952c74ef944bee0f9aedd6a51a86f061b081fcde0c",
       "kind": "codex-skill",
       "name": "lila-kinetics-inventor",
       "path": "skills/lila-kinetics-inventor"

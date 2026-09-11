@@ -7,6 +7,13 @@ Make.
 
 Public API: `workshop.make`.
 
+New CLI products select `--make print` (the default) or `--make mixed`.
+Print mode keeps product components within 3D printing; mixed mode adds stock,
+handcraft and purchased components plus the required private manufacturing
+manifest and complete public presentation. Mixed is Spark-only in this MVP.
+The selection is frozen for the run, while existing unselected runs keep their
+historical behavior. Both modes share CAD tools and Make's engineering checks.
+
 Reusable Codex-native creation capabilities live once in `skills/`. The host
 materializes their exact locked bytes into each private product run; Inventors
 use those shared capabilities without copying or wrapping them in Python.

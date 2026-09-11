@@ -62,6 +62,65 @@ CODEX_MODEL_ALIASES = {
 
 
 class NativeCommandTest(unittest.TestCase):
+    def test_make_choices_default_to_print_and_do_not_exist_on_resume_or_daydream(self):
+        command = parser()
+        for prefix in (("wish", "a toy"), ("start", "sample", "--wish", "a toy")):
+            self.assertEqual(command.parse_args(prefix).make_mode, "print")
+            for mode in ("print", "mixed"):
+                self.assertEqual(command.parse_args((*prefix, "--make", mode)).make_mode, mode)
+            for mode in ("automatic", "3d-print", "mixed-material"):
+                with self.subTest(prefix=prefix, mode=mode), redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+                    command.parse_args((*prefix, "--make", mode))
+        for prefix in (("resume", "wish-one"), ("daydream", "sample")):
+            with self.subTest(prefix=prefix), redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+                command.parse_args((*prefix, "--make", "mixed"))
+
+    def test_wish_forwards_explicit_make_choice_and_reports_it(self):
+        for mode in ("print", "mixed"):
+            receipt = dict(native_receipt(), make_mode=mode)
+            stdout, stderr = StringIO(), StringIO()
+            with self.subTest(mode=mode), mock.patch(
+                "cli.main.start_native_run", return_value=receipt
+            ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
+                result = main(("wish", "a toy", "--make", mode, "--json"))
+            self.assertEqual(result, 0)
+            self.assertEqual(start.call_args.kwargs["make_mode"], mode)
+            self.assertEqual(json.loads(stdout.getvalue())["make_mode"], mode)
+            self.assertIn("Make: %s" % mode, stderr.getvalue())
+
+    def test_wish_refuses_mixed_non_spark_before_references_or_run_creation(self):
+        for workflow in ("forge", "quest"):
+            stderr = StringIO()
+            with self.subTest(workflow=workflow), mock.patch(
+                "cli.main.load_wish_references"
+            ) as references, mock.patch("cli.main.generate_wish_id") as identifier, mock.patch(
+                "cli.main.start_native_run"
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(stderr):
+                result = main(("wish", "a toy", "--make", "mixed", "--workflow", workflow,
+                               "--ref", "https://example.com/reference.png"))
+            self.assertEqual(result, 2)
+            self.assertIn("--make mixed requires --workflow spark", stderr.getvalue())
+            references.assert_not_called()
+            identifier.assert_not_called()
+            start.assert_not_called()
+
+    def test_receipts_show_saved_make_mode_without_relabeling_legacy_runs(self):
+        for command, host in (("status", "native_run_status"), ("resume", "resume_native_run")):
+            for mode in ("print", "mixed", None, "absent"):
+                receipt = native_receipt()
+                if mode != "absent":
+                    receipt["make_mode"] = mode
+                stdout = StringIO()
+                with self.subTest(command=command, mode=mode), mock.patch(
+                    "cli.main." + host, return_value=receipt
+                ) as call, redirect_stdout(stdout), redirect_stderr(StringIO()):
+                    self.assertEqual(main((command, "wish-one")), 0)
+                if mode in ("print", "mixed"):
+                    self.assertIn("Make: %s" % mode, stdout.getvalue())
+                else:
+                    self.assertNotIn("Make:", stdout.getvalue())
+                self.assertNotIn("make_mode", call.call_args.kwargs)
+
     def test_surface_contains_only_the_lean_supported_commands(self):
         command = parser()
         subparsers = next(
@@ -150,6 +209,7 @@ class NativeCommandTest(unittest.TestCase):
             wish,
             *,
             effort,
+            make_mode,
             manager_id,
             manager_model,
             manager_reasoning_effort,
@@ -161,6 +221,7 @@ class NativeCommandTest(unittest.TestCase):
         ):
             observed["wish"] = wish
             observed["effort"] = effort
+            observed["make_mode"] = make_mode
             observed["manager_id"] = manager_id
             observed["manager_model"] = manager_model
             observed["manager_reasoning_effort"] = manager_reasoning_effort
@@ -213,9 +274,11 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(observed["wish"].objective, "a moon that waddles")
         self.assertEqual(observed["wish"].context, {"source": "workshop-cli"})
         self.assertEqual(observed["effort"], "spark")
+        self.assertEqual(observed["make_mode"], "print")
         self.assertFalse(observed["github_publish_requested"])
         self.assertIn("Workflow: Spark", stderr.getvalue())
         self.assertIn("Model: gpt-6-astra · effort medium", stderr.getvalue())
+        self.assertIn("Make: print", stderr.getvalue())
         native_start.assert_called_once()
 
     def test_custom_token_cap_and_exact_trial_params_reach_host(self):
@@ -264,6 +327,7 @@ class NativeCommandTest(unittest.TestCase):
             wish,
             *,
             effort,
+            make_mode,
             manager_id,
             manager_model,
             manager_reasoning_effort,
@@ -274,6 +338,7 @@ class NativeCommandTest(unittest.TestCase):
             wish_reference_files=None,
         ):
             self.assertEqual(effort, "spark")
+            self.assertEqual(make_mode, "print")
             self.assertEqual(manager_id, "codex")
             self.assertEqual(manager_model, "gpt-6-astra")
             self.assertEqual(manager_reasoning_effort, "medium")
@@ -987,10 +1052,62 @@ class DaydreamCommandTest(unittest.TestCase):
         ready.start()
         self.addCleanup(ready.stop)
 
+    def test_start_forwards_make_choice_for_typed_saved_and_fresh_ideas(self):
+        sealed = sample_sealed()
+        entries = (("--wish", "a toy"), ("--idea", sealed.daydream_id), ("--once",))
+        for entry in entries:
+            for selection, expected in (((), "print"), (("--make", "print"), "print"), (("--make", "mixed"), "mixed")):
+                receipt = dict(native_receipt(), make_mode=expected)
+                stdout, stderr = StringIO(), StringIO()
+                with self.subTest(entry=entry, selection=selection), mock.patch(
+                    "cli.main.run_daydream", return_value=sealed
+                ) as dream, mock.patch(
+                    "cli.main.load_sealed_daydream", return_value=sealed
+                ) as load, mock.patch(
+                    "cli.main.start_native_run", return_value=receipt
+                ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
+                    result = main(("start", "sample", *entry, *selection, "--json"))
+                self.assertEqual(result, 0)
+                start.assert_called_once()
+                self.assertEqual(start.call_args.kwargs["make_mode"], expected)
+                self.assertEqual(json.loads(stdout.getvalue())["run"]["make_mode"], expected)
+                self.assertIn("Make: %s" % expected, stderr.getvalue())
+                if entry[0] == "--once":
+                    dream.assert_called_once()
+                    self.assertNotIn("make_mode", dream.call_args.kwargs)
+                    load.assert_not_called()
+                elif entry[0] == "--idea":
+                    dream.assert_not_called()
+                    load.assert_called_once()
+                else:
+                    dream.assert_not_called()
+                    load.assert_not_called()
+
+    def test_start_refuses_mixed_non_spark_before_any_setup(self):
+        for workflow in ("forge", "quest"):
+            for entry in (("--wish", "a toy", "--ref", "https://example.com/reference.png"),
+                          ("--idea", "saved-idea"), ("--once",)):
+                stderr = StringIO()
+                with self.subTest(workflow=workflow, entry=entry), mock.patch(
+                    "cli.main._inventor_source_root"
+                ) as source, mock.patch("cli.main._ensure_publishing_account") as account, mock.patch(
+                    "cli.main.acquire_loop"
+                ) as lease, mock.patch("cli.main.load_wish_references") as references, mock.patch(
+                    "cli.main.run_daydream"
+                ) as dream, mock.patch("cli.main.load_sealed_daydream") as load, mock.patch(
+                    "cli.main.start_native_run"
+                ) as start, redirect_stdout(StringIO()), redirect_stderr(stderr):
+                    result = main(("start", "sample", *entry, "--make", "mixed", "--workflow", workflow))
+                self.assertEqual(result, 2)
+                self.assertIn("--make mixed requires --workflow spark", stderr.getvalue())
+                for operation in (source, account, lease, references, dream, load, start):
+                    operation.assert_not_called()
+
     def test_parser_defaults(self):
         args = parser().parse_args(("start", "pico-press"))
         self.assertEqual(args.inventor, "pico-press")
         self.assertEqual(args.workflow, "spark")
+        self.assertEqual(args.make_mode, "print")
         self.assertEqual(args.agent, "codex")
         self.assertIsNone(args.model)
         self.assertIsNone(args.effort)
@@ -1093,6 +1210,7 @@ class DaydreamCommandTest(unittest.TestCase):
             wish,
             *,
             effort,
+            make_mode,
             manager_id,
             manager_model,
             manager_reasoning_effort,
@@ -1104,6 +1222,7 @@ class DaydreamCommandTest(unittest.TestCase):
         ):
             observed["wish"] = wish
             observed["effort"] = effort
+            observed["make_mode"] = make_mode
             observed["manager_id"] = manager_id
             observed["manager_model"] = manager_model
             observed["manager_reasoning_effort"] = manager_reasoning_effort
@@ -1410,6 +1529,7 @@ class DaydreamCommandTest(unittest.TestCase):
         calls = []
 
         def start(wish, **kwargs):
+            self.assertEqual(kwargs["make_mode"], "mixed")
             calls.append(wish.product_id)
             if len(calls) == 2:
                 (self._loop_folder() / "STOP").write_text("stop\n")
@@ -1419,9 +1539,11 @@ class DaydreamCommandTest(unittest.TestCase):
         with mock.patch("cli.main.run_daydream", return_value=sealed) as run, mock.patch(
             "cli.main.start_native_run", side_effect=start
         ), redirect_stdout(stdout), redirect_stderr(StringIO()):
-            result = main(("start", "sample"))
+            result = main(("start", "sample", "--make", "mixed"))
         self.assertEqual(result, 0)
         self.assertEqual(run.call_count, 2)
+        for call in run.call_args_list:
+            self.assertNotIn("make_mode", call.kwargs)
         self.assertEqual(len(calls), 2)
         output = stdout.getvalue()
         self.assertIn("Loop: sample dreams and builds until you stop it", output)

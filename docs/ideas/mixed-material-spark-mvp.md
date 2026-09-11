@@ -10,6 +10,12 @@ prototype work remain pending. Live commands and outcomes are tracked in
 [the CLI run record](mixed-material-cli-runs.md). The material study is
 [KiwiCo materials research](kiwico-materials-research.md).
 
+New products opt in with `workshop wish "..." --make mixed`; the CLI defaults
+to `--make print` for creators who want 3D-printed products. This choice is
+frozen for each run. The six existing pilots predate the selector and retain
+their mixed-material scope and original sessions. See
+[ADR 0066](../adr/0066-selectable-make-mode.md).
+
 ## Accepted product brief
 
 Autonomous is an AI × human collaboration workshop that creates original
