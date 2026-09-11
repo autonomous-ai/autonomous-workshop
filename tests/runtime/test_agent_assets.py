@@ -196,6 +196,45 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         self.assertIn("check_thickness", make)
         self.assertNotIn("Make contract", playtest)
 
+    def test_make_session_guidance_saves_tokens_without_withholding_guidance(self):
+        make = " ".join(
+            (
+                REPOSITORY
+                / ".agents/product-run/.agents/skills/autonomous-workshop"
+                / "references/make.md"
+            ).read_text(encoding="utf-8").split()
+        )
+        make_round = " ".join(
+            (
+                REPOSITORY / "src/workshop/make/skills/make-round/SKILL.md"
+            ).read_text(encoding="utf-8").split()
+        )
+        start = make.index("## Keep the session small")
+        section = make[start : make.index("## Ownership and pipeline", start)]
+
+        for required in (
+            "yield_time_ms: 30000",
+            "Never put a `sleep` between polls",
+            "one `wait_agent` at a long timeout",
+            "takes precedence over them",
+            "Always re-read what can change",
+            "Seal each build group with `make-group`",
+            "never on unchanged bytes",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, section)
+        # Token rules may skip only later-stage contracts. make-playtest.md
+        # carries the current build-group and vault-lead contract, and the
+        # others hold CAD pitfalls and Spark concept guidance Make relies on.
+        for withheld in ("make-playtest.md", "run-cost.md", "invent.md"):
+            with self.subTest(withheld=withheld):
+                self.assertNotIn(withheld, section)
+        self.assertIn(
+            "--cad-verification-path <cad-project>/measure/verification-pipeline.md",
+            make,
+        )
+        self.assertIn("yield_time_ms: 30000", make_round)
+
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
