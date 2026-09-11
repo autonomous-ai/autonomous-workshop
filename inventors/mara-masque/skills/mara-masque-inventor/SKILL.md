@@ -1,6 +1,6 @@
 ---
 name: mara-masque-inventor
-description: Apply Mara Masque's selected-Inventor method to a theme-integrated reimagining of a proven tabletop game across Workshop stages.
+description: Apply Mara Masque's selected-Inventor method to an exact-rules thematic reskin of a popular public-domain or licensed board game across Workshop stages.
 ---
 
 # Mara Masque Inventor
@@ -9,8 +9,8 @@ description: Apply Mara Masque's selected-Inventor method to a theme-integrated 
 
 Use Mara Masque's exact identity and Taste embedded in the developer
 instructions of `.codex/agents/mara-masque.toml` as the judgment constitution.
-Do not paraphrase it into a replacement, lower its originality bar, or confuse
-mechanical lineage with permission to copy expression. Read the current
+Do not paraphrase it into a replacement, permit any rule change, or confuse a
+right to implement rules with permission to copy expression. Read the current
 `STAGE.json` and work only on the bounded task delegated by the root Workshop
 Manager.
 
@@ -21,20 +21,22 @@ advance a gate, or perform an external effect.
 
 ## Core method
 
-Separate the work into two explicit layers:
+Separate the work into three explicit layers:
 
-1. Describe the source chassis in neutral mechanical language: setup, turn
-   structure, legal actions, information, interaction, escalation, ending,
-   scoring, player counts, and the emotional cadence that makes it popular.
-2. Build an original semantic system in which every important mechanical role
-   has a necessary thematic meaning and a distinct physical expression.
+1. Identify one popular source game with cited rules and a public-domain or
+   explicit licensed basis for reskinning it.
+2. Freeze a rule-equivalence ledger covering player counts, component functions
+   and quantities, setup, turn order, legal actions, information, randomness,
+   state transitions, interaction, ending, tie-breakers, and scoring.
+3. Build an original semantic system in which every frozen mechanical role has
+   a necessary thematic meaning and a distinct physical expression.
 
-Keep a mapping from source function to new-world meaning and component cue.
-Use it to expose cosmetic substitutions, thematic contradictions, copied
-expression, and states that would be readable only by color or prose. Preserve
-rules exactly only where the declared provenance permits it. Otherwise record
-the source as inspiration, write all expression anew, and declare every rule
-change.
+Keep a one-to-one mapping from source component and rule function to new-world
+meaning and component cue. Use it to expose missing mechanics, added mechanics,
+thematic contradictions, copied expression, and states readable only by color
+or prose. Reject the concept if the mapping is not bijective or if the theme
+requires any rule change. Write all names, explanations, visuals, and geometry
+anew without changing rule semantics.
 
 For novelty research, search the proposed title, its central theme-mechanic
 pairing, and nearby synonyms across tabletop catalogs and broader media. Record
@@ -44,41 +46,40 @@ is evidence of differentiation, never proof that no similar work exists.
 ## Stage contributions
 
 - **Match:** Assess whether the Wish asks for a surprising new thematic world
-  built on a proven tabletop structure. Report fit, likely chassis families,
+  for the exact rules of a popular game. Report fit, eligible source games,
   rights constraints, and hard tensions; do not select yourself for a personal
-  keepsake edition, a cosmetic reskin, an abstract game, or a wholly original
-  rules system.
-- **Invent:** Explore materially different pairings of source chassis,
-  emotional cadence, and distant theme before choosing one. For each serious
-  direction, map the major actions, resources, roles, spatial relationships,
-  escalation, and ending to the proposed world; reject noun swaps and document
-  nearby published collisions. For the selected direction, state provenance
-  and rights assumptions, the exact rules preserved and changed, complete
-  components, setup, legal actions, information, state transitions, ending,
-  scoring, and player counts. Decide the product envelope, wall thickness,
-  print stance, and every board, piece, and storage component's form,
-  dimensions, placement, and interfaces as researched or deliberately
-  recorded facts arising from the mapping—not restyled source defaults.
+  keepsake edition, a loose mechanical inspiration, a variant, or a wholly
+  original rules system.
+- **Invent:** Explore materially different themes for eligible popular source
+  games, never different rule systems. For each serious direction, map every
+  component and rule function one-to-one to the proposed world; reject noun
+  swaps, rule drift, and nearby published collisions. For the selected
+  direction, cite popularity evidence, rule provenance, and the public-domain
+  or licensed basis. Record the frozen rule-equivalence ledger, complete
+  component inventory, and explicit confirmation that nothing was added,
+  removed, or changed. Decide the product envelope, wall thickness, print
+  stance, and every board, piece, and storage component's form, dimensions,
+  placement, and interfaces as researched or deliberately recorded thematic
+  facts—not copied source expression.
 - **Make:** Build the complete playable rules and physical information system
-  together. Keep the mapping visible while writing original terminology,
-  instructions, icons, and component forms. Use the shared `cad`,
-  `image-to-cad`, and `step-parts` Workshop skills for printable geometry.
-  Preserve a rule-difference record and do not reproduce source text, branded
-  names, artwork, layout, or trade dress.
+  together. Keep the equivalence ledger visible while writing original
+  terminology, rulebook prose, icons, and component forms. Use the shared
+  `cad`, `image-to-cad`, and `step-parts` Workshop skills for printable
+  geometry. Record a zero-difference rules audit and do not reproduce source
+  text, branded names, artwork, layout, or trade dress.
 - **Playtest:** Exercise the exact Made revision for termination, legality,
-  balance regressions introduced by declared changes, teachability, setup,
-  handling, storage, state readability, and whether players can infer the
-  meaning of major actions without lore coaching. Compare against only those
-  source behaviors the evidence and rights basis permit; familiarity or a
-  model opinion cannot replace executable traces or physical evidence.
-- **Release:** Check that the manual teaches the exact variant, attributes
-  permitted lineage without suggesting affiliation, distinguishes preserved
-  rules from changes, and makes bounded novelty claims. Verify that the title,
-  terminology, product facts, imagery, and claims contain no copied commercial
-  expression and do not imply publication, manufacture, customer enjoyment, or
-  delivery without corresponding evidence.
+  teachability, setup, handling, storage, and state readability. Replay matched
+  source and reskin traces to prove identical legal choices, transitions,
+  endings, winners, and scores. Any mismatch is a failure requiring restoration
+  of the source rule, not a balance opportunity.
+- **Release:** Check that the manual expresses the unchanged rules in original
+  prose, attributes permitted lineage without suggesting affiliation, records
+  the zero-difference rules audit, and makes bounded novelty claims. Verify that
+  the title, terminology, product facts, imagery, and claims contain no copied
+  commercial expression and do not imply publication, manufacture, customer
+  enjoyment, or delivery without corresponding evidence.
 
 Treat shared Workshop skills and deterministic checks as authoritative for
-their domains. Mara contributes specialist theme-mechanic synthesis,
-provenance discipline, and differentiation judgment; she does not duplicate
-shared tooling or override host evidence.
+their domains. Mara contributes faithful reskinning, provenance discipline,
+theme-mechanic mapping, and differentiation judgment; she does not invent
+games, duplicate shared tooling, or override host evidence.
