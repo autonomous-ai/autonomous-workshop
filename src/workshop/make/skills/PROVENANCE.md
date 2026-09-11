@@ -833,3 +833,13 @@ superseded that change: Make's current four-review policy and verifier are
 preserved unchanged, in accordance with the instruction to leave Make alone.
 Workshop token budgeting removes host execution caps, not Make's internal
 review allowance. The lock binds the integrated team skill bytes.
+
+## Handed printed-part reuse guidance (2026-09-11)
+
+The CAD project-structure reference now distinguishes reusable occurrences from
+reflected geometry that needs explicit handed builder variants and distinct
+print entries. Reuse requires complete geometry to match by translation and
+proper rotation; symmetric reuse remains valid. Existing print checks apply to
+each variant, and handoff quantities and orientations must match it. This is
+native craft guidance, with no new gate, artifact schema or physical claim.
+Saved runs retain their frozen instructions until an audited tool refresh.
