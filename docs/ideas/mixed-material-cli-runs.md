@@ -1574,3 +1574,22 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-worksh
 ```
 
 All 16 resealed skill-registry tests passed in 24.990 seconds.
+
+The helper and evidence were committed as `117ffe8f`. The stopped run then
+received the tested tools through the ordinary explicit refresh:
+
+```sh
+cd /Users/ab/code/autonomous-workshop-mixed-material-products
+PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli resume wish-20260911-023805-fe157910 --refresh-tools
+```
+
+At **14:13:02.304 UTC**, the same native session resumed after seven host-owned
+tool/guidance files were rebound. Besides the new subtree helper and guidance,
+this delivers the earlier tested Compound face-color interoperability fix and
+compressed-carrier guidance. CAD tree is
+`773511fdb30be1de2eeb31754c0cccf2c8d25e80dc94a3972ecf5280c1cb9cf4`;
+mixed-materials tree is
+`c2915639bed988a87b8c98812469fae4aebbf40af54c0219ea56b6c34ad292be`.
+The exact Wish, native session, medium effort, 500M allowance and accrued usage
+remain preserved. The native Manager owns any resulting script repair and
+evidence reconciliation; source refresh itself is not acceptance or publication.
