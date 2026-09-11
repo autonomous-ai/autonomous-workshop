@@ -636,6 +636,36 @@ def _host_cover_render(context: Any) -> Optional[bytes]:
     return value
 
 
+def _sealed_make_output_cover(
+    root: Path, manifest: ArtifactManifest
+) -> Tuple[bytes, str]:
+    """Return the one canonical Make-owned hero for a Spark handoff.
+
+    Current Make finalizers bind exactly one ``<cad-project>/snap/iso.png``.
+    Factory does not discover that nested evidence path as a cover for a
+    STEP-only import, so Release aliases the same sealed bytes into its
+    reserved transport cover path. This does not render or alter Made.
+    """
+
+    candidates = [
+        entry
+        for entry in manifest.entries
+        if PurePosixPath(entry.path).parts[-2:] == ("snap", "iso.png")
+    ]
+    if len(candidates) != 1:
+        raise ContractError(
+            "Make-output Factory handoff requires exactly one sealed snap/iso.png"
+        )
+    entry = candidates[0]
+    content = _read_bound_file(root, manifest, entry.path)
+    if (
+        not content.startswith(_PNG_SIGNATURE)
+        or len(content) > MAX_FACTORY_COVER_RENDER_BYTES
+    ):
+        raise ContractError("Make-output Factory cover must be a bounded PNG")
+    return content, entry.path
+
+
 def _bounded_reason(value: Optional[str]) -> Optional[str]:
     if value is None:
         return None
@@ -663,6 +693,11 @@ def _handoff_proof_details(handoff: Mapping[str, Any]) -> Dict[str, Any]:
         details["cover_render_sha256"] = require_sha256(
             value, "Factory handoff cover_render_sha256"
         )
+    source_path = handoff.get("cover_render_source_path")
+    if source_path is not None:
+        details["cover_render_source_path"] = _safe_factory_archive_path(
+            source_path, "Factory handoff cover render source path"
+        ).as_posix()
     return details
 
 
@@ -1479,7 +1514,13 @@ def _build_model_handoff(
             for path in FACTORY_HOST_HANDOFF_PATHS
         ):
             raise ContractError("Made contains a reserved Factory handoff path")
-        cover_render = None if make_output else _host_cover_render(context)
+        cover_render_source_path = None
+        if make_output:
+            cover_render, cover_render_source_path = _sealed_make_output_cover(
+                root, manifest
+            )
+        else:
+            cover_render = _host_cover_render(context)
         if cover_render is not None:
             assert_packable_content(FACTORY_COVER_RENDER_PATH, cover_render)
             target = staging.joinpath(*PurePosixPath(FACTORY_COVER_RENDER_PATH).parts)
@@ -1530,6 +1571,7 @@ def _build_model_handoff(
                 if cover_render is not None
                 else None
             ),
+            "cover_render_source_path": cover_render_source_path,
         }
     )
     return result
