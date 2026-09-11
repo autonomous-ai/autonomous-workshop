@@ -3,7 +3,7 @@
   "schema_version": 1,
   "skills": {
     "cad": {
-      "sha256": "7727c075fc2d4c88083ed26cb4b8d6d95ed7b8cab1593dae4b1e633cc2dacf3d",
+      "sha256": "0558555303e3f01646a5b4ebde9876e6089ad93e01626e0c705df1515f49b451",
       "source_commit": "facbc582ceee2b73e655711afa112e9bf10d7592",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },

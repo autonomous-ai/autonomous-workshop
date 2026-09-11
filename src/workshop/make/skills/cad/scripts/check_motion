@@ -61,6 +61,7 @@ import io
 import json
 import math
 import sys
+import time
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
@@ -101,6 +102,71 @@ def consistency_tolerance(*volumes: float) -> float:
 
 class ManifestError(Exception):
     """The manifest asks for something this gate cannot answer."""
+
+
+class Progress:
+    """Optional diagnostics only; a failed observer never changes a gate."""
+
+    def __init__(self, stream, clock=None):
+        self.stream = stream
+        self.clock = clock if clock is not None else time.monotonic
+        self.last = None
+        self.enabled = True
+        self.condition = ""
+        self.total_conditions = None
+        self.phase = "conditions"
+
+    def emit(self, message: str, *, force: bool = False):
+        if not self.enabled:
+            return
+        try:
+            now = self.clock()
+            if not force and self.last is not None and now - self.last < 5.0:
+                return
+            prefix = self.condition + ": " if self.condition else ""
+            print("check_motion progress: " + prefix + message,
+                  file=self.stream, flush=True)
+            self.last = now
+        except Exception:
+            # Closed pipes, failed flushes and observer errors are not CAD
+            # evidence. Stop diagnostics while preserving the computation.
+            self.enabled = False
+
+
+_PROGRESS: ContextVar[Progress | None] = ContextVar("motion_progress", default=None)
+
+
+def progress(message: str, *, force: bool = False):
+    observer = _PROGRESS.get()
+    if observer is not None:
+        observer.emit(message, force=force)
+
+
+def sample_progress(phase: str, index: int, steps: int):
+    observer = _PROGRESS.get()
+    if observer is not None:
+        observer.emit(f"{phase} sample index {index}/{steps}")
+
+
+@contextlib.contextmanager
+def condition_progress(index: int):
+    observer = _PROGRESS.get()
+    if observer is None:
+        yield
+        return
+    previous = observer.condition
+    total = f"/{observer.total_conditions}" if observer.total_conditions is not None else ""
+    observer.condition = (
+        f"{previous}, nested step {index + 1}" if previous else
+        f"retention member {index + 1}" if observer.phase == "retention" else
+        f"condition {index + 1}{total}"
+    )
+    try:
+        progress("evaluating")
+        yield
+        progress("evaluation completed")
+    finally:
+        observer.condition = previous
 
 
 # --- loading the assembly -------------------------------------------------
@@ -455,6 +521,7 @@ def sweep(moving, obstacles, place, steps: int, tol: float, allow_seated: bool) 
     """
     first = 1 if allow_seated else 0
     for step in range(first, steps + 1):
+        sample_progress("sweep", step, steps)
         moved = place(moving, step / steps)
         for name, obstacle in obstacles:
             volume = overlap_volume(moved, obstacle)
@@ -757,6 +824,7 @@ def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
                 continue
             frozen_hit = None
             for step in range(first_step, steps + 1):
+                sample_progress("drive frozen-contact", step, steps)
                 volume = overlap_volume(posed(parent, parent_shape, parent_place, step), frozen)
                 if volume > overlap_tol:
                     frozen_hit = {"step": step, "overlapMm3": volume}
@@ -767,6 +835,7 @@ def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
             if pair not in nominal:
                 nominal[pair] = None
                 for step in range(first_step, steps + 1):
+                    sample_progress("drive nominal-contact", step, steps)
                     distance = float(surface_distance(
                         posed(parent, parent_shape, parent_place, step),
                         posed(target, target_shape, target_place, step),
@@ -860,6 +929,7 @@ def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
     def sweep_cycle():
         """First collision in the declared nominal poses, or None."""
         for step in range(1 if allow_seated else 0, steps + 1):
+            sample_progress("coupled sweep", step, steps)
             posed = [
                 (name, place(shape, step))
                 for name, shape, place, driven in placed
@@ -930,7 +1000,7 @@ def run_condition(condition: dict, parts: dict, index: int) -> dict:
     # operations. Nested assembly-sequence conditions share this cache; it is
     # discarded when the outer condition returns or raises.
     threshold = (condition.get("thresholds") or {}).get("maxOverlapMm3", DEFAULT_OVERLAP_TOL)
-    with validation_scope(), decision_scope(threshold):
+    with condition_progress(index), validation_scope(), decision_scope(threshold):
         return _run_condition(condition, parts, index)
 
 
@@ -1344,6 +1414,7 @@ def check_retention_closure(manifest: dict, parts: dict, results: list[dict]) ->
     proof_by_part = {}
     supports_by_part = {}
     for index, proof in enumerate(proofs):
+        sample_progress("retention proof", index, len(proofs) - 1)
         field = f"retention.proofs[{index}]"
         if not isinstance(proof, dict):
             errors.append(f"{field} must be an object")
@@ -1531,10 +1602,26 @@ def main() -> int:
     parser.add_argument("--allow-inconclusive", action="store_true",
                         help="do not fail on conditions that could not run")
     parser.add_argument("--json", action="store_true", help="emit results as JSON")
+    parser.add_argument("--progress", action="store_true",
+                        help="emit rate-limited phase and sample counters on stderr")
     parser.add_argument("--self-check", action="store_true",
                         help="run the coupled-motion and retention fixtures, and exit")
     args = parser.parse_args()
 
+    observer = Progress(sys.stderr) if args.progress else None
+    token = _PROGRESS.set(observer)
+    try:
+        result = run_main(args, parser)
+        progress(f"finished with exit code {result}", force=True)
+        return result
+    except BaseException:
+        progress("stopped before a result", force=True)
+        raise
+    finally:
+        _PROGRESS.reset(token)
+
+
+def run_main(args, parser) -> int:
     if args.self_check:
         # Both suites, always: a fixture set that stops running does not fail,
         # it just stops appearing.
@@ -1550,9 +1637,14 @@ def main() -> int:
         return 2
 
     try:
+        progress("loading manifest", force=True)
         manifest = load_manifest(args.manifest)
         entry = find_assembly_entry(project, manifest.get("assembly"))
-        parts = index_parts(build_assembly(entry))
+        progress("building assembly", force=True)
+        assembly = build_assembly(entry)
+        progress("indexing assembly", force=True)
+        parts = index_parts(assembly)
+        del assembly
     except ManifestError as error:
         print(f"check_motion: {error}", file=sys.stderr)
         return 2
@@ -1569,8 +1661,16 @@ def main() -> int:
         print("check_motion: manifest has no conditions", file=sys.stderr)
         return 2
 
+    observer = _PROGRESS.get()
+    if observer is not None:
+        observer.total_conditions = len(conditions)
+    progress(f"evaluating {len(conditions)} conditions", force=True)
     results = [run_condition(condition, parts, index)
                for index, condition in enumerate(conditions)]
+    if observer is not None:
+        observer.phase = "retention"
+    progress(f"evaluated {len(results)}/{len(conditions)} conditions; checking retention",
+             force=True)
     retention_result = check_retention_closure(manifest, parts, results)
     if retention_result is not None:
         results.append(retention_result)

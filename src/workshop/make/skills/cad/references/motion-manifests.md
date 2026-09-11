@@ -15,7 +15,19 @@ says a connector actually holds. A motion manifest checks both claims.
 python "$CAD_SKILL_ROOT/scripts/check_motion" <project-dir> --manifest <file.json>
 python "$CAD_SKILL_ROOT/scripts/check_motion" <project-dir> --manifest - < m.json
 python "$CAD_SKILL_ROOT/scripts/check_motion" <project-dir> --manifest m.json --list-parts
+python "$CAD_SKILL_ROOT/scripts/check_motion" <project-dir> --manifest m.json --json --progress > result.json 2> progress.log
 ```
+
+`--progress` optionally writes flushed phase and counter messages to stderr.
+Sample indices identify the sample about to run, including index zero; they
+are not completed-sample counts, percentages or time estimates. Repeated
+condition and sample updates share a five-second throttle. The bounded setup,
+retention and terminal notices bypass that throttle. Long individual CAD kernel
+operations can remain silent until the next sample. Progress does not change
+stdout results, measurement order, verdicts or exit codes; an unavailable
+progress stream disables diagnostics without affecting the gate. Without the
+flag, output is unchanged. Saved runs require the normal audited tool refresh
+before using the option; an already-running check cannot acquire it.
 
 A manifest belongs at `<project-dir>/measure/motion.json` next to the other
 verification artifacts. Exit 0 when every condition holds, 1 on any failure and

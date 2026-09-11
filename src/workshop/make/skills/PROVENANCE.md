@@ -825,6 +825,24 @@ and a complete mixed scene against crops of a larger reference rendering.
 Source geometry remains unchanged. Saved runs adopt this correction through
 the normal audited tool refresh.
 
+## Optional motion-check progress (2026-09-11)
+
+`check_motion --progress` adds flushed stderr phase and sample-index notices
+for assembly preparation, conditions, collision sweeps, drive-contact searches
+and retention. Repeated updates share a five-second throttle; the bounded
+setup and terminal notices bypass it. Fixed labels and numeric indices report
+the work being attempted, without manifest prose, percentages or estimated
+finish times. A long individual kernel operation can still remain silent.
+
+The default output, JSON and human results, sample order, numerical gates and
+exit codes are unchanged. Ordinary observer or stream failures disable only
+progress; invocation-scoped state is restored on return and interruption.
+Deterministic-clock tests cover throttling, nested counters, long sweeps,
+early collisions and diagnostic failures. A real tiny-source CLI fixture
+checks byte-identical result output with and without the flag. Saved runs
+can use this option only after the normal audited tool refresh; running
+checks are not changed or restarted.
+
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead
