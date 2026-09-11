@@ -64,6 +64,37 @@ printability is checkable again without a mesh deliverable. Call a product
 print-ready only behind a passing `--print-gates` run at the nozzle the print
 will use.
 
+## Keep the session small
+
+Every tool call re-sends the whole session, and the product budget counts that
+re-sent input. A document read once is paid again on every later request, and
+so is each empty poll. On 2026-09-11 one Spark Make spent 16 of its 75 tool
+calls on empty polls of a running command, each re-sending 100-140k tokens.
+These rules change how information is fetched, never which guidance applies.
+A host turn prompt or frozen profile that narrows reading, such as an
+early-proof or recovery turn, takes precedence over them.
+
+- Do not re-read or re-slice a stable reference already in this session unless
+  a compaction dropped it. Always re-read what can change: the newest
+  `STAGE.json` after a resume or host rejection, your own sources, and fresh
+  reports.
+- `playtest.md` and `release-deliver.md` belong to later stages; Make does not
+  need them.
+- Learn a tool's flags from its documentation and `--help`, and a finalizer
+  requirement from its error message. Open tool, `cadgen` or
+  `stage_proposal.py` source only for the function a failure names when those
+  do not answer. Seal each build group with `make-group` as its parts are
+  ready; run the `make` finalizer only on the complete product tree. Repair
+  everything a finalizer error names before rerunning it, never on unchanged
+  bytes.
+- Start a long command (`make_round`, `verify_project`, a multi-part `gen`, a
+  state or motion sheet) with `yield_time_ms: 30000`. If it is still running,
+  continue it with `write_stdin` at the same yield. Never put a `sleep` between
+  polls. Wait for a child with one `wait_agent` at a long timeout rather than
+  repeated 10-second waits.
+- Keep tool output bounded: read round summaries, not full logs, and open a
+  log only for the failure the summary cannot place.
+
 ## Ownership and pipeline
 
 Make owns the stage inputs and output paths, independent blind review, bounded
@@ -221,8 +252,11 @@ Then run:
   --run-root . make \
   --product-root <STAGE product_root> \
   --cad-project-path <path inside product root> \
-  --cad-verification-path <path inside product root>
+  --cad-verification-path <cad-project>/measure/verification-pipeline.md
 ```
+
+The verification path is the report `verify_project --report` wrote, relative
+to the product root and inside the declared CAD project.
 
 For Spark only, also pass `--source <spark-source.json>`. Do not pass it when
 `STAGE.json` already contains sealed assignment and Invented inputs. Complete
