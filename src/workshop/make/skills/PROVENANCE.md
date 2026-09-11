@@ -176,7 +176,7 @@ standalone CLI are materialized into new runs alongside the skill.
 The local `make-round` adaptation uses CAD's existing printable-source discovery
 for its print subset, retains building and visually inspecting nonprinted parts,
 and includes source hashes in print-result reuse. An all-nonprinted project keeps
-a geometry-only final verification and makes no print-ready claim. See ADR 0064.
+a geometry-only final verification and makes no print-ready claim. See ADR 0067.
 The local Make-round tool card documents that subset explicitly. CAD's
 step-generation reference distinguishes Spark's real Markdown verification
 report from older host-owned JSON evidence; it no longer asks Spark agents to
@@ -1003,3 +1003,12 @@ superseded that change: Make's current four-review policy and verifier are
 preserved unchanged, in accordance with the instruction to leave Make alone.
 Workshop token budgeting removes host execution caps, not Make's internal
 review allowance. The lock binds the integrated team skill bytes.
+
+
+### Main integration, 2026-09-11
+
+Rebased the mixed-material branch onto main `cdd192f4`. The combined CAD tree
+retains main's STEP-only verifier/documentation changes and the branch's exact
+review, rendering, motion and subtree-copy fixes. Make-round retains main's
+native-session token-discipline guidance. The lock fingerprints were recomputed
+from the combined source trees; frozen product workspaces were not refreshed.

@@ -176,7 +176,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "independent native critic",
             "blind held",
             ".make-proof-ready",
-            "The trusted host owns the isolated fresh rebuild",
+            "Make owns final verification for Spark; Forge and Quest retain the trusted host's isolated fresh rebuild",
             "Spark and Forge truthfully record Playtest as not run",
         ):
             with self.subTest(reference="make", required=required):

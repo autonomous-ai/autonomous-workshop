@@ -1,4 +1,4 @@
-# ADR 0064: Spark Make describes and publishes complete mixed-material products
+# ADR 0067: Spark Make describes and publishes complete mixed-material products
 
 - Status: Accepted
 - Date: 2026-09-10

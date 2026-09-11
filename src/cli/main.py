@@ -544,6 +544,8 @@ def _turn_boundary_options(value) -> dict:
     if value == UNTIMED_TURN:
         return {"turn_untimed": True}
     return {"turn_seconds": value}
+
+
 def _validate_make_workflow(make_mode: str, workflow: str) -> None:
     if make_mode == "mixed" and workflow != "spark":
         raise WorkshopError("--make mixed requires --workflow spark")

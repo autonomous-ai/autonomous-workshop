@@ -50,6 +50,8 @@ def supports_rollout_usage_version(version):
         match
         and tuple(int(part) for part in match.groups()) >= MINIMUM_SUPPORTED_VERSION
     )
+
+
 class _IncompleteIdentity(UsageUnavailable):
     """The first metadata record may still be in its native append."""
 

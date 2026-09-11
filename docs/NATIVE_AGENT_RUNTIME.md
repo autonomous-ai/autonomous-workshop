@@ -70,7 +70,7 @@ sourcing references, and the explicitly printed subset. The full package stays
 private; Spark Publish transports only its hash-bound public presentation,
 including exact complete-scene and hero copies. This is a finished-product
 workflow for Autonomous's workshop staff. See
-[ADR 0064](adr/0064-spark-mixed-material-products.md) for the compatibility and
+[ADR 0067](adr/0067-spark-mixed-material-products.md) for the compatibility and
 disclosure boundary. Digital checks do not establish physical assembly or play.
 
 New marked Spark runs select the inventor in Workshop setup before Make. A user
@@ -1196,3 +1196,13 @@ that reason in its private checkpoint; both the immediate command receipt and
 later `workshop status` calls print it as `Need:`. Chat prose is never treated
 as a durable need, and agents are explicitly forbidden from using this path
 for ordinary unfinished or repairable work.
+
+
+### Input inventory capacity after main integration
+
+The complete frozen input inventory is bounded at 512 files. This accommodates
+the combined 22-Inventor roster and Make tools; the previous 256-file limit
+could reject normal startup before Make. The independent 4 MiB guidance/input
+budget, reference-image budget, checkpoint size, path/privacy checks and exact
+hash bindings remain unchanged. Creation, checkpoint reads and tool refreshes
+use the same fixed count limit; existing runs retain their exact input bytes.

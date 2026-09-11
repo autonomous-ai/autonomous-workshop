@@ -3,7 +3,7 @@
 - Status: Accepted
 - Date: 2026-09-11
 - Owners: Make, CLI, runtime packaging and Workflow
-- Refines: ADR 0064 for newly selected runs; existing runs retain its opt-in contract
+- Refines: ADR 0067 for newly selected runs; existing runs retain its opt-in contract
 
 ## Context
 

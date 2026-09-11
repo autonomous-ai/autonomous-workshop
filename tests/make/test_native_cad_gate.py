@@ -1127,7 +1127,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             json.dumps(review, sort_keys=True, separators=(",", ":")),
             encoding="utf-8",
         )
-        with self.assertRaisesRegex(ValueError, "must map report paths"):
+        with self.assertRaisesRegex(ValueError, "print_gate_sha256s must be a report-to-digest map"):
             validate(self.project)
 
     def test_blocking_form_defect_cannot_unlock_final_geometry(self):
