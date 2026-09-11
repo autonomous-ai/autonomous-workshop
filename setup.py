@@ -117,6 +117,7 @@ class build_py(_build_py):
             "bob",
             "eve",
             "ferro-line",
+            "halden-detent",
             "ivy",
             "kestrel-knot",
             "leo",

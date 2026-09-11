@@ -1,0 +1,135 @@
+{
+ "build": {
+  "crema_piston": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "cup_body": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "foot_plug": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "checked": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "checks_ok": true,
+ "entry": "crema_click.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": {
+  "conditions": [
+   {
+    "detail": "clear across 16 steps (step 0.281 mm)",
+    "id": "piston-press",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by cup_body at step 7/12 (6.591494 mm3) - retained, as expected",
+    "id": "piston-extract-blocked",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by cup_body at step 1/12 (355.757232 mm3) - retained, as expected",
+    "id": "plug-extract-blocked",
+    "status": "pass"
+   },
+   {
+    "detail": "2 retention proof(s) close at 1 fixed root(s); every material member has a blocked escape sweep",
+    "id": "retention-closure",
+    "status": "pass"
+   }
+  ],
+  "detail": "4 condition(s): all pass",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "print": {
+  "crema_piston": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0005/overhang-crema_piston.log": "522fd6c435d0e20972a5227ce90c6b73a4c02f191f1e21defba0fdd17a09f5f1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0005/thickness-crema_piston.log": "1ae76821562b0dd6dc7eeb2f18a32b3b0581b196c0aca9ba71f2eb5e9382b683"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "cup_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0005/overhang-cup_body.log": "7a4bb56c133231aada45e4c88c00fb8405ef3765fbac23fbb12fa46a4ea8a355",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0005/thickness-cup_body.log": "5681dc57d70224c5f1cdc5802f765210c74675969e2f55dc27fbea7c655e7fad"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.29,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "foot_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0005/overhang-foot_plug.log": "17966979e95ed0f40c34ba29837fd19eb7db9fb50d100be0de4aa3abf81e393d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0005/thickness-foot_plug.log": "c56abf026fc2c61e1f9abb470c99d84da449a8826f228d89c83a1cc19474a547"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Cocoa demitasse with a beige crema disc sitting proud of the rim and a D-handle on +X. Foot on the desk. Disc is centered in the mouth. No missing parts, no visible intersections, proportions read as a small espresso cup.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0005/visual-packet.json",
+  "packet_sha256": "1f6106a089fb28e1ad02ad4b6b7c967c310780cac31b6096953f866545b3ca0f",
+  "status": "pass"
+ }
+}

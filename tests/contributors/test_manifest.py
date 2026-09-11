@@ -49,6 +49,7 @@ class RegistryTest(unittest.TestCase):
                 "bob",
                 "eve",
                 "ferro-line",
+                "halden-detent",
                 "ivy",
                 "kestrel-knot",
                 "leo",

@@ -1,0 +1,1 @@
+{"files":{"crema_piston":"ace4d97c5f24beff9a5690979f1bfc433fd818ce1f7fa8ccdbf8368212b391d5","cup_body":"3c0259a2b0b9afdfcc6f42c7fd584b576cf29eb692da66de5d737bdbdc8c5f87","foot_plug":"79d953b82d75e5ac410a4d9ead0e2fed74b21cc249bbc35e3a67559fbb5a976c"},"group":"core","kind":"autonomous-workshop.make-group","parts":["cup_body","crema_piston","foot_plug"],"schema_version":1}

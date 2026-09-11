@@ -45,6 +45,7 @@ INVENTORS = (
     "bob",
     "eve",
     "ferro-line",
+    "halden-detent",
     "ivy",
     "kestrel-knot",
     "leo",

@@ -1,0 +1,138 @@
+{
+ "build": {
+  "crema_piston": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "cup_body": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "foot_plug": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "checked": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "checks_ok": false,
+ "entry": "crema_click.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": {
+  "conditions": [
+   {
+    "detail": "clear across 16 steps (step 0.281 mm)",
+    "id": "piston-press",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by cup_body at step 7/12 (6.591494 mm3) - retained, as expected",
+    "id": "piston-extract-blocked",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by cup_body at step 1/12 (355.757232 mm3) - retained, as expected",
+    "id": "plug-extract-blocked",
+    "status": "pass"
+   },
+   {
+    "detail": "2 retention proof(s) close at 1 fixed root(s); every material member has a blocked escape sweep",
+    "id": "retention-closure",
+    "status": "pass"
+   }
+  ],
+  "detail": "4 condition(s): all pass",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "print": {
+  "crema_piston": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0004/overhang-crema_piston.log": "a3c86dbdc8c84e6c578f10160dd5682cfae85bc25eff6b775bb403c47a79481c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0004/thickness-crema_piston.log": "15263cea2b17c36a813b3f80b954e62ced9a4c370e8c1e2ad130c753efbb48ca"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "cup_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0004/overhang-cup_body.log": "174940b51438ea73cd8431f30956062976ab933154cdddb624f4183fe29767f2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0004/thickness-cup_body.log": "4be2e355a97b81c39159b96181970c6c37126c825cf278b0554e257b9d7204d9"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 11.5% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 136.7,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.15) 0.3% of surface below (472 of 237614 samples); thinnes"
+    ],
+    "thinnest_mm": 0.29,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  },
+  "foot_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0004/overhang-foot_plug.log": "32e52b5301d7c3faf5da6840c55b98d91f17cf5abcf56349f8da4f7d50f47316",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0004/thickness-foot_plug.log": "b11a2d59d2fcbb9f9ef00f439f66acb047e32b2add7cf43f26a06d1b792868db"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0004/visual-packet.json",
+  "packet_sha256": "2101b1664dafacb2d1e25a39dd5dd0753e50b94eff0d4aa13f067ccd910218c6",
+  "status": "pending"
+ }
+}
