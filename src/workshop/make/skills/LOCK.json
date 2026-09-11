@@ -23,7 +23,7 @@
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
     "make-round": {
-      "sha256": "1cf23e5ae004a8b4719a0dc8b735a835cc7380a7a70f647f4d9530af7528d912",
+      "sha256": "ecc66562ba138c122d4290ff5c5620b3806740e4521faed1e60ff0ab6ee30680",
       "source_commit": "db64280a9ee12f3d3e8a728c64906f00a456c150",
       "source_url": "https://github.com/autonomous-ai/autonomous-workshop"
     },

@@ -327,11 +327,41 @@ def parse_refs(values, spec_paths) -> list[tuple[str, str]]:
     return refs
 
 
+def failed_part_checks(summary: dict) -> dict:
+    """Project explicit build/print failures across all recorded part results."""
+    build = summary.get("build") or {}
+    printing = summary.get("print") or {}
+    failed = {}
+    for role in sorted(set(build) | set(printing)):
+        gates = ["build"] if build.get(role, {}).get("verdict") == "FAIL" else []
+        printed = printing.get(role) or {}
+        print_gates = [gate for gate in ("thickness", "overhang")
+                       if (printed.get(gate) or {}).get("verdict") == "FAIL"]
+        if printed.get("verdict") == "FAIL" and not print_gates:
+            # Older records may expose only the aggregate print verdict.
+            print_gates = ["print"]
+        if gates or print_gates:
+            failed[role] = gates + print_gates
+    return failed
+
+
+def render_json_summary(summary: dict) -> str:
+    """Put a derived failure index first without changing the saved summary."""
+    projection = {"failed_part_checks": failed_part_checks(summary)}
+    projection.update((key, value) for key, value in sorted(summary.items())
+                      if key != "failed_part_checks")
+    return json.dumps(projection)
+
+
 def render_summary(summary: dict) -> str:
     lines = [
         "make_round r%04d  %s  changed %d/%d part(s)"
         % (summary["round"], summary["project"], len(summary["changed"]), len(summary["parts"]))
     ]
+    failed = failed_part_checks(summary)
+    lines.append("  failed build/print parts (%d): %s" % (
+        len(failed), "; ".join("%s [%s]" % (role, ", ".join(gates))
+                               for role, gates in failed.items()) or "none"))
     for role in summary["checked"]:
         item = summary["build"][role]
         extra = ("  " + "; ".join(item["failures"])) if item["verdict"] == "FAIL" and item["failures"] else ""
@@ -549,7 +579,7 @@ def make_round(args) -> int:
         except (ValueError, KeyError, OSError, TypeError) as exc:
             print("make_round: %s" % exc, file=sys.stderr)
             return 2
-        print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
+        print(render_json_summary(summary) if args.json else render_summary(summary))
         return 0 if summary["ok"] else 1
     if args.full:
         print("make_round: --full requires --record-visual after inspection and independent blind review", file=sys.stderr)
@@ -780,7 +810,7 @@ def make_round(args) -> int:
         "last_out": str(out),
     }
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
+    print(render_json_summary(summary) if args.json else render_summary(summary))
     return 1  # pending or failed visual evidence cannot report a complete round
 
 

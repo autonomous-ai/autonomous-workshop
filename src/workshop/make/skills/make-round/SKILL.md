@@ -89,6 +89,12 @@ calls were reassembling by hand.
   (parts with a fresh build verdict, including build failures), `print` (the
   per-part wall and overhang verdicts with their measurements) and `reused`
   (parts whose gate evidence was carried forward).
+- Console output begins with a complete failed build/print part index, derived
+  from all recorded part verdicts, including reused entries. Human output puts
+  it immediately after the header; `--json` puts `failed_part_checks` first.
+  An older aggregate-only print failure is labeled `print`. This display-only
+  index leaves saved summaries and reports unchanged; it excludes warnings,
+  visual feedback and other gates, which retain their separate results.
 - The initial command returns exit 1 with visual status `pending` until native
   feedback is recorded, even if all numeric checks pass. A renderer failure
   produces visual status `error`; never fabricate feedback for missing images.
@@ -148,7 +154,7 @@ blind review, the final `--record-visual` may also use
 the integrated verifier directly after blind review; never start a new round
 just to run it. The host alone performs the authoritative `--fresh` rebuild.
 
-The summary names, in order: the changed parts and their build verdicts, the
+After the failed-part index, the summary names the changed parts and their build verdicts, the
 likeness score per view with the change since
 the previous round and the pose it was scored at, the motion gate verdict,
 the native visual findings, and the `--full` verdict when requested. Everything the tools printed is kept

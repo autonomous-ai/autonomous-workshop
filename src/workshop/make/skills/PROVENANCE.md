@@ -843,3 +843,13 @@ proper rotation; symmetric reuse remains valid. Existing print checks apply to
 each variant, and handoff quantities and orientations must match it. This is
 native craft guidance, with no new gate, artifact schema or physical claim.
 Saved runs retain their frozen instructions until an audited tool refresh.
+
+## Make-round failed-part display index (2026-09-11)
+
+Make-round console output now starts with a complete index of explicit failed
+build and print checks, derived from all recorded parts, including reused
+entries. Human output puts it after the header and JSON output puts
+`failed_part_checks` first. Older summaries derive the same display without
+rewriting saved evidence. Detailed fields, reports, verdicts, cache rules and
+exit behavior are unchanged; warnings and non-part gates keep their separate
+results. Synthetic large-round and feedback-path tests cover the projection.
