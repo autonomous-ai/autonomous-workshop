@@ -26,6 +26,12 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from assembly_copy import placed_subtree_copy  # noqa: E402
+
 
 ENTRY_SUFFIX = ".step.py"
 GEN_FUNC = "gen_" + "step"
@@ -136,7 +142,8 @@ def _leaves(shape, parent_location=None, inherited_colour=None):
     Children retain local placements, so descend with the accumulated parent
     transform rather than tessellating unplaced leaves directly.
     """
-    colour = getattr(shape, "color", None)
+    # The public color getter caches inherited values on the source node.
+    colour = getattr(shape, "_color", None)
     if colour is None:
         colour = inherited_colour
     children = list(getattr(shape, "children", ()) or ())
@@ -147,7 +154,12 @@ def _leaves(shape, parent_location=None, inherited_colour=None):
         for child in children:
             yield from _leaves(child, location, colour)
     else:
-        placed = shape if parent_location is None else shape.moved(parent_location)
+        location = shape.location
+        if parent_location is not None:
+            location = parent_location * location
+        # An attached leaf's moved() copies its entire assembly through parent.
+        # Copy only this occurrence, including its effective inherited color.
+        placed = placed_subtree_copy(shape, location)
         if getattr(placed, "color", None) is None and colour is not None:
             placed.color = colour
         yield placed

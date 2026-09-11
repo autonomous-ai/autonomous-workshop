@@ -726,6 +726,18 @@ output failures, and actual CLI regeneration with geometry round trips. Saved
 runs retain their materialized tool bytes unless the operator uses the normal
 audited host tool refresh.
 
+## Bounded review-render occurrence copies (2026-09-11)
+
+`render_review` now uses the shared placed-subtree copy helper for each leaf
+at its accumulated world pose. The previous `moved()` call followed the parent
+link and copied the entire assembly for every leaf: nested synthetic scenes
+with 1, 5 and 17 leaves copied 3, 35 and 323 shape nodes. They now copy 1, 5
+and 17. Inherited colors are preserved without populating source color caches.
+Regression tests retain exact nested geometry, colors and rendered pixels,
+and check source immutability on successful and failed copies. Camera settings,
+tessellation tolerance, visual evidence and gates are unchanged. This fixes
+avoidable copy work; it does not establish the cause of a product render timeout.
+
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead
