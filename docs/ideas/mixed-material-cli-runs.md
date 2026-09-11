@@ -635,3 +635,26 @@ history: Harbor 75,379,270; Cloudline 82,825,622; Switchyard 86,065,791;
 Rainmark 80,804,594; Liltwing 67,545,323; Atlas 88,783,246. Publication remained
 `not-created` for every pilot. These are running digital-product trials, not
 completed products or physical manufacturing evidence.
+
+### Installed CLI after the profile and accounting fixes
+
+Built executable revision `7c9eea10` and reran the unchanged installed CLI
+acceptance fixture in a fresh temporary environment. Only the wrapper's
+artifact paths and completion label changed:
+
+```sh
+UV_CACHE_DIR=/private/tmp/workshop-mixed-material-final-7c9eea10-uv-cache PYTHONDONTWRITEBYTECODE=1 uv build --offline --no-build-isolation --python /private/tmp/workshop-mixed-material-final-7c9eea10-build-env/bin/python --wheel --out-dir /private/tmp/workshop-mixed-material-final-7c9eea10 > /private/tmp/workshop-mixed-material-final-7c9eea10-build.log 2>&1
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -B /private/tmp/workshop-mixed-material-final-7c9eea10-acceptance.py > /private/tmp/workshop-mixed-material-final-7c9eea10-acceptance.log 2>&1
+```
+
+Acceptance exited zero. CLI, Workshop and distribution metadata loaded from
+the fresh wheel installation. Exact byte comparison against the committed
+revision passed for the CLI, native workflow, AgentRun, token reader/budget,
+motion checker, product renderer and Make lock. Existing dependencies were
+accessed read-only; clean dependency resolution remains untested. The original
+dependency environment had no modified files. This fixture performs no real
+model work or publication.
+
+Wheel: `/private/tmp/workshop-mixed-material-final-7c9eea10/autonomous_workshop-0.6.0-py3-none-any.whl`.
+SHA-256: `becb18f73664f4c516bd24924ef1b9ca71a8f3f4ad522e805ab0d7f586400546`.
+Byte proof: `/private/tmp/workshop-mixed-material-final-7c9eea10-wheel-proof.json`.
