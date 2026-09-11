@@ -139,7 +139,7 @@ mechanism must include every other installed component it uses.
   `cut-to-length`, `purchased`, `handcraft`. These describe responsibility and
   preparation, not a claim that a CAM toolchain exists.
 - Component `quantity` is a positive integer equal to the number of names in
-  `occurrences`, unless a purchased component uses the optional
+  `occurrences`, unless a purchased or printed component uses the optional
   `assembly_unit_ids` representation below. Each complete-assembly leaf still
   belongs to exactly one component definition; no missing, extra or multiply
   claimed occurrences.
@@ -180,14 +180,14 @@ mechanism must include every other installed component it uses.
   referenced file is a nonempty regular file no larger than 95 MiB. Duplicate
   JSON keys, nonfinite numeric values, traversal and symlinks fail closed.
 
-## Purchased subassemblies: physical units and colored CAD parts
+## Physical units and colored CAD parts
 
 A purchased motor can be one procurement unit represented by several colored
 CAD leaves. Preserve its complete imported hierarchy and colors. Do not report
 two motors because its body and terminal appear separately, or flatten the
 geometry just to satisfy the BOM count.
 
-For a `purchased` component only, optionally add `assembly_unit_ids`:
+For a `purchased` component, optionally add `assembly_unit_ids`:
 
 ```json
 {
@@ -209,7 +209,8 @@ be named "motor" but have different occurrence IDs.
   IDs are refused. IDs contain positive numeric path segments and are bounded
   to 128 characters.
 - `quantity` equals the number of selected physical units. Two placed bought
-  motors use two distinct subassembly IDs, even when their geometry is shared.
+  motors (or two printed copies, as described below) use two distinct
+  subassembly IDs, even when their geometry is shared.
 - The union of each selected unit's descendant leaves must equal the
   component's existing `occurrences` list exactly. Units cannot overlap or
   include both an ancestor and its descendant. Every product leaf remains
@@ -219,13 +220,70 @@ be named "motor" but have different occurrence IDs.
   cover all rendered leaves exactly once. The opt-in hierarchy check is bounded
   to 64 levels and 2,048 nodes. It reads data only; it never runs CAD.
 - Without `assembly_unit_ids`, existing manifests keep the original leaf-count
-  rule and do not require hierarchy/occurrence-ID fields. Printed and fabricated
-  components retain that rule; this option does not change their print subset.
+  rule and do not require hierarchy/occurrence-ID fields. Other fabrication
+  processes retain that rule. Grouping does not change the print subset.
 
 The supplier specification still establishes what is bought as a unit. Exact
 CAD grouping is structural identity, not proof of supplier packaging, physical
 assembly, pricing or performance. The public projection remains unchanged and
 never includes these internal procurement relationships.
+
+### One printed part with several display colors
+
+The CAD `organic-lofts` reference supports a fused printable source and a
+combined scene that partitions that same solid into disjoint colored regions.
+Those regions need not inflate the physical part count. For `3d-print` only,
+`assembly_unit_ids` may name one non-root subassembly per physical copy, with
+the same exact hierarchy, leaf coverage and quantity rules above. Nest each
+copy's regions under its own subassembly in the generated scene; do not invent
+descriptor IDs or group several separately manufactured parts into one unit.
+
+Every grouped printed component adds `production_part` with exactly
+`source_path` and `step_path`, alongside its unit references and existing files:
+
+```json
+{
+  "quantity": 2,
+  "occurrences": ["body_first", "detail_first", "body_second", "detail_second"],
+  "assembly_unit_ids": ["o1.1", "o1.2"],
+  "production_part": {
+    "source_path": "cad/part_figure.step.py",
+    "step_path": "cad/part_figure.step"
+  },
+  "files": [
+    {"path": "cad/part_figure.step.py", "sha256": "<sha256>"},
+    {"path": "cad/part_figure.step", "sha256": "<sha256>"}
+  ]
+}
+```
+
+These are fields within an otherwise complete `3d-print` component. Both
+`production_part` paths must reference exact hash-bound entries in that same
+component's private `files`. It has exactly one `*.step.py` source, named
+`part_<role>.step.py`, with a nonempty role and literal `PRINTABLE = True`.
+The STEP is that source's generated sibling with only `.py` removed; an
+unrelated filename or another directory is refused. Both remain inside the
+declared CAD project. Additional private instructions/helper files are allowed,
+but another `*.step.py` is not. One source still belongs to one component
+definition; repeated copies use its multiple assembly unit IDs.
+
+`production_part` is required for grouped printed components and forbidden on
+purchased components, other fabrication processes and ungrouped components.
+Neither grouping nor this object runs CAD. The binding establishes declared
+production identity, not proof that the colored regions equal the fused part.
+Native Make derives the display regions from that same fused source and owns
+equivalence, validity, noninterference, print gates and visual review. The
+fused production source retains its nozzle-specific checks; the combined
+display entry remains `PRINTABLE = False`. Public asset selection and the
+host's byte-only publication boundary are unchanged.
+
+Paint and applied finishes belong in consumables and finishing steps, with
+quantities, preparation and application details. Where adequate, an authored
+color on the real part's leaf shows the finish without changing geometry;
+record the underlying printing stock separately. Fine coating solids are not
+required. If several colors require display regions, use the disjoint-source
+pattern above rather than extra overlapping material volumes. The canonical
+renderer currently colors whole leaves, not separate faces within one leaf.
 
 ## Print subset and fabrication representations
 

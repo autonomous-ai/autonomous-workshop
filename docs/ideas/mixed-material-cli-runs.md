@@ -1063,3 +1063,38 @@ phase diagnostics from commit `a0004a88`. The same Manager owns the finish
 repair, new visual evidence and finalization. Profile, original Wish, budget,
 credential isolation and publication requirements remain intact. No older pilot
 was resumed, and no product CAD was edited by the repository builder.
+
+### Painted printed units: representation compatibility
+
+Waterloo's resumed Manager repaired individual coating builds, then found more
+Boolean failures when those coatings were built in the complete scene. Round 5
+still had passing print checks but failed visual source construction after
+121 seconds at `substrate subtraction 'metal'`. The new renderer diagnostics
+correctly identified `source-load-build` as the failed phase. The Manager
+continued its own repairs into round 6; no successful revised preview or final
+review is claimed at this checkpoint.
+
+A source audit found a separate representation gap. CAD's `organic-lofts`
+reference already supports one fused production part displayed as several
+disjoint colored regions, while mixed-material physical-unit grouping accepted
+only purchased components. The builder added the corresponding narrow printed
+unit binding: grouped `3d-print` components require `production_part` paths to
+one explicit printable source and its generated sibling STEP, both hash-bound
+in the same component's private files. Existing hierarchy, quantity, ownership,
+print selection and publication checks remain intact. Paint is a finishing
+consumable, not a requirement to construct thin coating solids.
+
+```sh
+PYTHONPATH=/Users/ab/code/autonomous-workshop/.venv/lib/python3.11/site-packages "$workshop_python" -c 'import sys, unittest; from pathlib import Path; sys.path.insert(0, str(Path.cwd() / "src")); unittest.main(module=None, argv=["unittest", "tests.make.test_manufacturing_manifest", "tests.workflow.test_stage_proposal_tool"])'
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" "$workshop_python" -m unittest tests.make.test_skill_registry -q
+```
+
+All 110 manifest/finalizer tests passed in 11.493 seconds, including 15 new
+grouped-print contract tests. Their synthetic source deliberately cannot run;
+the tests prove structural behavior, not geometry equivalence. Test output was
+captured by the CLI tool session; no separate logfile was retained. Independent
+review found no blocker, and all 16 registry tests passed after resealing the
+mixed-materials tree as
+`6ff491de31d4b7dc280e2ce939bd7a6d023a376433f50d2ebb73aaea636aff81`.
+The active toy has not yet received this optional capability; its current
+round continues with its existing frozen tools.

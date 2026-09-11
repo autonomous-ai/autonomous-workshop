@@ -353,7 +353,7 @@ def _assembly_node_ids(value: Any, label: str) -> list[str]:
 def _assembly_unit_leaves(descriptor: Mapping[str, Any]) -> dict[str, set[str]]:
     """Resolve physical-unit subassemblies against the exact rendered leaf tree.
 
-    This runs only for the optional purchased-unit representation. Historical
+    This runs only for the optional physical-unit representation. Historical
     descriptors without hierarchy or occurrence IDs keep their original rules.
     """
     leaf_names: dict[str, str] = {}
@@ -419,6 +419,31 @@ def _files(root: Path, value: Any, label: str, *, nonempty: bool = False) -> lis
         _bound_file(root, binding, label)
         paths.append(binding["path"])
     return paths
+
+
+def _production_part(component: Mapping[str, Any], files: list[str]) -> None:
+    """Bind a colored printed unit to its production files, without building CAD."""
+    grouped_print = component["process"] == "3d-print" and "assembly_unit_ids" in component
+    if not grouped_print:
+        if "production_part" in component:
+            _error("production_part is supported only for grouped 3d-print components")
+        return
+    if "production_part" not in component:
+        _error("grouped 3d-print components require production_part")
+    production = _object(component["production_part"], "production_part", {"source_path", "step_path"})
+    source = _path(production["source_path"], "production_part source_path")
+    step = _path(production["step_path"], "production_part step_path")
+    if not source.name.startswith("part_") or not source.name.endswith(".step.py") or source.name == "part_.step.py":
+        _error("production_part source_path must name part_<role>.step.py")
+    if step != source.with_suffix(""):
+        _error("production_part step_path must name the production source's generated sibling STEP")
+    sources = [path for path in files if path.endswith(".step.py")]
+    if sources != [source.as_posix()]:
+        _error("grouped 3d-print components require exactly one bound production source in component files")
+    if step.as_posix() not in files:
+        _error("production_part STEP must be bound in the same component files")
+    # _files has checked both exact hashes. _print_scope checks the literal
+    # PRINTABLE flag, source ownership and declared CAD scope for this source.
 
 
 def _printable(root: Path, relative: str) -> bool | None:
@@ -498,7 +523,7 @@ def validate_manifest(product_root: Path, product: Mapping[str, Any], *, cad_pro
     covered: set[str] = set()
     components = _list(document["components"], "components", nonempty=True)
     for component in components:
-        _object(component, "component", {"id", "name", "material", "process", "quantity", "occurrences", "specification", "files", "stock_ids"}, {"sourcing", "dimensions_mm", "assembly_unit_ids"})
+        _object(component, "component", {"id", "name", "material", "process", "quantity", "occurrences", "specification", "files", "stock_ids"}, {"sourcing", "dimensions_mm", "assembly_unit_ids", "production_part"})
         component_id = _id(component["id"], "component id")
         if component_id in component_ids or component_id in stock_ids | consumable_ids | tool_ids:
             _error("component IDs must be globally unique")
@@ -515,11 +540,11 @@ def validate_manifest(product_root: Path, product: Mapping[str, Any], *, cad_pro
         quantity = _number(component["quantity"], "component quantity", integer=True)
         occurrences = _identifiers(component["occurrences"], "component occurrences", occurrence_names, nonempty=True)
         if "assembly_unit_ids" in component:
-            if process != "purchased":
-                _error("assembly_unit_ids are supported only for purchased components")
+            if process not in {"purchased", "3d-print"}:
+                _error("assembly_unit_ids are supported only for purchased or 3d-print components")
             unit_ids = _assembly_node_ids(component["assembly_unit_ids"], "component assembly_unit_ids")
             if quantity != len(unit_ids):
-                _error("purchased component quantity must equal its assembly unit count")
+                _error("component quantity must equal its assembly unit count")
             if assembly_units is None:
                 assembly_units = _assembly_unit_leaves(descriptor)
             unit_occurrences: set[str] = set()
@@ -528,17 +553,18 @@ def validate_manifest(product_root: Path, product: Mapping[str, Any], *, cad_pro
                     _error("assembly_unit_ids must identify exact non-root CAD subassemblies")
                 leaves = assembly_units[unit_id]
                 if unit_occurrences & leaves:
-                    _error("purchased assembly units overlap leaf occurrences")
+                    _error("assembly units overlap leaf occurrences")
                 unit_occurrences.update(leaves)
             if unit_occurrences != set(occurrences):
-                _error("purchased assembly units must exactly cover the component occurrences")
+                _error("assembly units must exactly cover the component occurrences")
         elif quantity != len(occurrences):
             _error("component quantity must equal its assembly occurrence count")
         if covered & set(occurrences):
             _error("an assembly occurrence cannot belong to two components")
         covered.update(occurrences)
         _identifiers(component["stock_ids"], "component stock_ids", stock_ids, nonempty=process != "purchased")
-        _files(root, component["files"], "component files", nonempty=process != "purchased")
+        files = _files(root, component["files"], "component files", nonempty=process != "purchased")
+        _production_part(component, files)
         if process == "purchased" and ("sourcing" not in component or "dimensions_mm" not in component):
             _error("purchased components require sourcing specifications and dimensions_mm")
         if "sourcing" in component:

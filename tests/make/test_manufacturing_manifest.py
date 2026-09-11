@@ -248,6 +248,204 @@ class PurchasedAssemblyUnitTests(unittest.TestCase):
                 self.validate()
 
 
+class PrintedAssemblyUnitTests(unittest.TestCase):
+    """Structural unit/source identity only; the source deliberately cannot run."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        _, self.document = make_purchased_subassembly(self.root)
+        self.printed = self.document["components"][0]
+        self.source = "cad/part_body.step.py"
+        self.step = "cad/part_body.step"
+        self.printed.update(
+            id="printed_body", name="Painted body", process="3d-print",
+            material={"family": "polymer", "specification": "PLA body; paint is a finishing consumable"},
+            specification="One fused production part per unit; two display regions. Synthetic contract fixture only.",
+            files=[
+                bind_file(self.root, self.source, b"PRINTABLE = True\nraise RuntimeError('CAD MUST NOT EXECUTE')\n"),
+                bind_file(self.root, self.step, b"ISO-10303-21;\n/* SYNTHETIC PRODUCTION FIXTURE */\nEND-ISO-10303-21;\n"),
+            ],
+            stock_ids=["pla_stock"],
+            production_part={"source_path": self.source, "step_path": self.step},
+        )
+        self.printed.pop("sourcing")
+        self.printed.pop("dimensions_mm")
+        self.document["assembly_steps"][0]["components"] = ["printed_body"]
+        self.descriptor = json.loads((self.root / "assembled.step.json").read_bytes())
+
+    def validate(self):
+        content = encoded(self.descriptor)
+        bind_file(self.root, "assembled.step.json", content)
+        self.document["assembly"]["occurrences"] = bind_file(self.root, "internal/assembled.step.json", content)
+        self.product = seal_manifest(self.root, self.document)
+        return validate_manifest(self.root, self.product, cad_project_path="cad")
+
+    def repeat_unit(self):
+        second = copy.deepcopy(self.descriptor["assembly"]["root"]["children"][0])
+        def relocate(node):
+            node["id"] = node["id"].replace("o1.1", "o1.2", 1)
+            node["leafPartIds"] = [value.replace("o1.1", "o1.2", 1) for value in node["leafPartIds"]]
+            if node["nodeType"] == "part":
+                node["name"] += "_second"
+            for child in node["children"]:
+                relocate(child)
+        relocate(second)
+        root = self.descriptor["assembly"]["root"]
+        root["children"].append(second)
+        root["leafPartIds"].extend(second["leafPartIds"])
+        for row in list(self.descriptor["occurrences"]):
+            repeated = copy.deepcopy(row)
+            repeated["id"] = repeated["id"].replace("o1.1", "o1.2", 1)
+            repeated["name"] += "_second"
+            repeated["transform"][3] += 30
+            self.descriptor["occurrences"].append(repeated)
+        self.descriptor["stats"]["occurrenceCount"] = 4
+
+    def test_one_printed_unit_binds_one_source_and_step_without_executing_cad(self):
+        before = {row["path"]: (self.root / row["path"]).read_bytes() for row in self.printed["files"]}
+        self.assertEqual(self.validate(), self.document)
+        self.assertEqual(self.printed["quantity"], 1)
+        self.assertEqual(len(self.printed["occurrences"]), 2)
+        self.assertEqual(public_asset_paths(self.root, self.product), ("public/assembled.step", "public/hero.png"))
+        self.assertEqual({path: (self.root / path).read_bytes() for path in before}, before)
+
+    def test_repeated_physical_units_share_one_production_definition(self):
+        self.repeat_unit()
+        self.printed.update(quantity=2, assembly_unit_ids=["o1.1", "o1.2"],
+                            occurrences=[row["name"] for row in self.descriptor["occurrences"]])
+        self.assertEqual(self.validate(), self.document)
+        self.printed["quantity"] = 4
+        with self.assertRaisesRegex(ManufacturingManifestError, "assembly unit count"):
+            self.validate()
+
+    def test_instruction_and_helper_files_do_not_become_extra_print_sources(self):
+        self.printed["files"].reverse()
+        self.printed["files"].extend([
+            bind_file(self.root, "cad/finish.py", b"raise RuntimeError('HELPERS MUST NOT EXECUTE')\n"),
+            bind_file(self.root, "internal/finish.md", b"Apply the specified paint; preserve the fused production shape.\n"),
+        ])
+        self.assertEqual(self.validate(), self.document)
+
+    def test_grouped_print_requires_explicit_production_part(self):
+        del self.printed["production_part"]
+        with self.assertRaisesRegex(ManufacturingManifestError, "require production_part"):
+            self.validate()
+
+    def test_production_part_has_strict_fields_and_paths(self):
+        original = copy.deepcopy(self.printed["production_part"])
+        cases = [None, [], {}, {"source_path": self.source},
+                 dict(original, sha256="0" * 64), dict(original, source_path=True),
+                 dict(original, source_path="../cad/part_body.step.py"),
+                 dict(original, step_path="/tmp/part_body.step")]
+        for value in cases:
+            self.printed["production_part"] = value
+            with self.subTest(value=value), self.assertRaises(ManufacturingManifestError):
+                self.validate()
+
+    def test_production_part_is_forbidden_on_purchased_ungrouped_and_other_processes(self):
+        original = copy.deepcopy(self.printed)
+        for process, grouped in (("purchased", True), ("3d-print", False), ("handcraft", False), ("laser-cut", False)):
+            self.printed.clear()
+            self.printed.update(copy.deepcopy(original))
+            self.printed["process"] = process
+            if not grouped:
+                del self.printed["assembly_unit_ids"]
+                self.printed["quantity"] = len(self.printed["occurrences"])
+            with self.subTest(process=process, grouped=grouped), self.assertRaisesRegex(ManufacturingManifestError, "only for grouped 3d-print"):
+                self.validate()
+
+    def test_only_a_part_source_and_its_exact_generated_sibling_are_supported(self):
+        original = copy.deepcopy(self.printed["production_part"])
+        for source in ("cad/assembled.step.py", "cad/part_.step.py", "cad/body.step.py", "cad/part_body.py"):
+            self.printed["production_part"] = {"source_path": source, "step_path": source.removesuffix(".py")}
+            with self.subTest(source=source), self.assertRaisesRegex(ManufacturingManifestError, "part_<role>"):
+                self.validate()
+        for step in ("cad/part_other.step", "internal/part_body.step", "cad/part_body.stp"):
+            self.printed["production_part"] = dict(original, step_path=step)
+            with self.subTest(step=step), self.assertRaisesRegex(ManufacturingManifestError, "generated sibling"):
+                self.validate()
+
+    def test_both_production_files_must_be_hash_bound_in_this_component(self):
+        original = copy.deepcopy(self.printed["files"])
+        for omitted in (self.source, self.step):
+            self.printed["files"] = [row for row in original if row["path"] != omitted]
+            with self.subTest(omitted=omitted), self.assertRaisesRegex(ManufacturingManifestError, "bound"):
+                self.validate()
+        self.printed["files"] = copy.deepcopy(original)
+        del self.printed["files"][1]["sha256"]
+        with self.assertRaisesRegex(ManufacturingManifestError, "invalid fields"):
+            self.validate()
+
+    def test_changed_missing_and_symlinked_production_bytes_are_refused(self):
+        for relative in (self.source, self.step):
+            path = self.root / relative
+            content = path.read_bytes()
+            for change in ("changed", "missing", "symlink"):
+                if change == "changed":
+                    path.write_bytes(content + b"\nchanged\n")
+                else:
+                    path.unlink()
+                    if change == "symlink":
+                        target = self.root / "internal/aliased-production"
+                        target.write_bytes(content)
+                        path.symlink_to(target)
+                with self.subTest(relative=relative, change=change), self.assertRaises(ManufacturingManifestError):
+                    self.validate()
+                if path.is_symlink():
+                    path.unlink()
+                path.write_bytes(content)
+
+    def test_grouped_print_requires_exactly_one_source(self):
+        self.printed["files"].append(bind_file(self.root, "cad/part_other.step.py", b"PRINTABLE = True\n"))
+        with self.assertRaisesRegex(ManufacturingManifestError, "exactly one bound production source"):
+            self.validate()
+
+    def test_grouping_does_not_bypass_literal_print_selection(self):
+        for declaration in ("False", "bool(1)", "1"):
+            self.printed["files"][0] = bind_file(self.root, self.source, f"PRINTABLE = {declaration}\n".encode())
+            with self.subTest(declaration=declaration), self.assertRaisesRegex(ManufacturingManifestError, "PRINTABLE"):
+                self.validate()
+
+    def test_unclaimed_print_sources_are_still_refused(self):
+        bind_file(self.root, "cad/part_extra.step.py", b"PRINTABLE = True\n")
+        with self.assertRaisesRegex(ManufacturingManifestError, "absent from the manufacturing print subset"):
+            self.validate()
+
+    def test_grouping_cannot_reuse_another_components_print_source(self):
+        self.repeat_unit()
+        other = copy.deepcopy(self.printed)
+        other.update(id="second_body", assembly_unit_ids=["o1.2"], occurrences=["body_second", "terminal_second"])
+        self.document["components"].append(other)
+        self.document["assembly_steps"][0]["components"].append("second_body")
+        with self.assertRaisesRegex(ManufacturingManifestError, "one component definition"):
+            self.validate()
+
+    def test_production_files_remain_private_and_inside_the_declared_cad_scope(self):
+        original_files = copy.deepcopy(self.printed["files"])
+        for directory, expected in (("public", "internal production"), ("other-cad", "outside the declared CAD project")):
+            source, step = f"{directory}/part_body.step.py", f"{directory}/part_body.step"
+            self.printed["production_part"] = {"source_path": source, "step_path": step}
+            self.printed["files"] = [bind_file(self.root, target, (self.root / old["path"]).read_bytes())
+                                     for target, old in zip((source, step), original_files)]
+            with self.subTest(directory=directory), self.assertRaisesRegex(ManufacturingManifestError, expected):
+                self.validate()
+
+    def test_grouped_print_preserves_exact_hierarchy_and_leaf_coverage(self):
+        original = copy.deepcopy(self.printed)
+        for ids, occurrences in ((["o1"], ["body", "terminal"]), (["o1.1.1"], ["body", "terminal"]),
+                                 (["o1.1", "o1.1"], ["body", "terminal"]), (["o1.1"], ["body"])):
+            self.printed.update(assembly_unit_ids=ids, quantity=len(ids), occurrences=occurrences)
+            with self.subTest(ids=ids, occurrences=occurrences), self.assertRaises(ManufacturingManifestError):
+                self.validate()
+        self.printed.clear()
+        self.printed.update(original)
+        del self.descriptor["assembly"]
+        with self.assertRaisesRegex(ManufacturingManifestError, "exact CAD assembly hierarchy"):
+            self.validate()
+
+
 class ManufacturingManifestTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()

@@ -34,6 +34,11 @@ named occurrence. A bought subassembly may contain several colored CAD leaves
 while remaining one purchased unit. Preserve that hierarchy and use the optional
 `assembly_unit_ids` binding in the manifest contract; do not inflate procurement
 quantity to the leaf count or erase colors by flattening the assembly.
+One fused printed part may likewise have several disjoint colored display
+regions. Put those regions under one CAD subassembly per physical copy, use
+`assembly_unit_ids`, and bind its single printable source and generated STEP
+with `production_part` as specified in the manifest reference. These regions
+are appearance divisions of that same part, not separately printed pieces.
 Model the full assembled shape, including nonprinted parts,
 cord routes, springs, fabric/card shapes, hardware, and purchased components.
 Use documented approximate envelopes when exact geometry is unavailable and
@@ -55,6 +60,14 @@ Keep the part's identity, material/specification, fabrication method, stock,
 and placed occurrences distinct. One sheet can make several panels; a cord
 spool can supply several cut lengths. Record stock totals, waste/spares when
 needed, consumed adhesives, and reusable tools separately from installed parts.
+Put paint and other applied finishes in consumables with preparation/application
+instructions. Coatings do not need thin physical solids merely to show color.
+Where one color per real leaf conveys the intended finish, use its authored
+surface color (`cadgen.color.srgb` for the finish) and preserve the actual stock
+specification independently. Finer display divisions must be disjoint regions
+derived from the same fused production geometry; native Make owns their
+equivalence and appearance through its existing checks and review. The
+manifest's source binding does not prove geometric equivalence or waive gates.
 
 ## Produce the workshop handoff
 

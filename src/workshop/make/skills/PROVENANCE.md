@@ -1,5 +1,24 @@
 # Shared skill provenance
 
+## Printed units with colored display regions (2026-09-11)
+
+The mixed-material manifest's optional physical-unit grouping now also supports
+`3d-print` components. Each grouped printed definition binds exactly one
+explicit printable `part_<role>.step.py` and its generated sibling STEP through
+its own private file hashes and `production_part` paths. Quantity counts exact
+subassembly IDs; their descendant leaves still require unique complete coverage.
+Purchased-unit behavior, source ownership, print selection and public projection
+remain intact. Other fabrication processes retain the original leaf-count rule.
+
+This makes CAD's existing disjoint color-region representation compatible with
+the internal BOM. Paint is a consumable and need not add tiny coating solids.
+The structural validator neither executes CAD nor proves region equivalence;
+native Make retains geometry, interference, nozzle and visual verification.
+Regression fixtures cannot execute their synthetic CAD and cover repetition,
+unsafe or stale bindings, extra sources, wrong declarations, ownership, hierarchy
+and privacy. Frozen products need an explicit normal host tool refresh to use
+the new optional binding; source changes do not alter a running product.
+
 ## Review-render phase diagnostics (2026-09-11)
 
 `render_review` reports flushed CLI-only phase starts and completions on stderr

@@ -27,6 +27,22 @@ reusable tools and workshop assembly steps. Components have a material family,
 specification, process, quantity and fabrication files or sourced dimensions.
 Its assembly binds the canonical complete STEP and assembly descriptor.
 
+Optional `assembly_unit_ids` separate physical unit counts from their colored
+CAD leaves. Purchased subassemblies retain their existing sourcing contract.
+A grouped `3d-print` component additionally declares `production_part`, binding
+one explicit printable `part_<role>.step.py` and its generated sibling STEP
+through that component's exact file hashes. Each selected subassembly is one
+repetition of that production definition. All of its leaves must be covered
+exactly once, and source ownership and the normal print subset remain enforced.
+Other fabrication processes do not gain grouped-unit support.
+
+This aligns mixed-material inventories with CAD's existing disjoint color-region
+representation of a single fused printed part. The binding proves file identity,
+hierarchy and declared quantities; it does not prove that the displayed regions
+reconstruct the production solid. Make derives those regions from the same
+source and retains its geometry, interference, print and visual checks. Paint
+remains a finishing consumable; the BOM does not require tiny coating solids.
+
 The Make finalizer validates this specification before sealing the complete
 private product tree. Printed entries explicitly declare `PRINTABLE = True`;
 nonprinted and display entries declare `False`. Source print checks apply only
