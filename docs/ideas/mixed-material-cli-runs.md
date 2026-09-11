@@ -1435,3 +1435,16 @@ no blocker. Source CAD hash:
 `fff03a811e9dc5b4cee544b47c55331f9dc17ac9e46b9f28749c8d5717a690a4`.
 The product retains
 `820690202cee050ce2c88e5a26769ed82d94744ccf44d569ca9b6730db830acd`.
+
+At **12:36:51 UTC**, another ordinary plain resume (same command above)
+started successfully from committed host revision `8d72235e`. Frozen product
+tools remained unchanged; the 102,287,628 observed tokens stayed charged
+against the same 500M allowance. This is a resumed attempt, not completion.
+
+The 12:36 resume failed at **12:42:42.729 UTC** after 351,420 ms, now with
+structured `category=provider-transport` and `signature=stream-disconnected`.
+This identifies a transport interruption for this attempt; it does not
+retroactively classify prior unclassified failures. Final verification and
+publication remain incomplete. A read-only audit of the preceding attempt's
+last tool found a 300-second dispatch/result gap despite reported shell
+execution of 0.2 seconds; that was not a long-running CAD check.
