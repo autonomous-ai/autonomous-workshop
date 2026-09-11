@@ -774,3 +774,57 @@ self-check; a final cache/skill-registry run passed 25 tests. A synthetic
 40-step sweep produced identical results with 246 normalizations in 24.121 s
 uncached and 44 normalizations in 4.873 s cached. These measurements are a tool
 benchmark, not evidence about Liltwing's physical performance or final gates.
+
+### Theo Fieldcraft and the Waterloo pilot
+
+The operator authorized building the Waterloo set and requested a new Inventor
+who researches and relives historical battles. Theo Fieldcraft was created
+through the ordinary CLI, then given a specialist Taste and exact hashed skill:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src "$workshop_python" -m cli create inventor theo-fieldcraft --taste /private/tmp/theo-fieldcraft-seed/TASTE.md --root "$PWD" --local-only --json
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli check inventors/theo-fieldcraft --json
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli check --json
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src "$workshop_python" -m unittest tests.contributors.test_manifest tests.packaging.test_package_data
+```
+
+Creation returned `experimental` / `static-passed`. The final bundle and all
+20 Inventors passed CLI validation; all 17 contributor and packaging tests
+passed. Commit `a0972a42` contains the Inventor, its packaging inventory and the
+exact [Waterloo Wish](mixed-material-pilots/07-waterloo-1815.txt).
+
+The first attempt to reuse the `bob` connection was rejected by automatic
+approval review because the prior authorization named Dee. The operator then
+explicitly authorized either Dee or Bob. Retrying the same ordinary CLI command
+succeeded; no alternate credential path or manual credential copy was used:
+
+```sh
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli login theo-fieldcraft --reuse-from bob
+```
+
+Authenticated output was `Connected theo-fieldcraft to @dee.` Here `bob` is
+the saved source Inventor connection; its authenticated publishing account is
+Dee. No credential values entered the source tree, this log or the native run.
+
+At **2026-09-11 02:38:05 UTC**, the following command launched the only active
+product, **`wish-20260911-023805-fe157910`**:
+
+```sh
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli wish "$(cat docs/ideas/mixed-material-pilots/07-waterloo-1815.txt)" --inventor theo-fieldcraft --workflow spark --make mixed --agent codex --model astra --effort medium --max-tokens 500000000
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli status wish-20260911-023805-fe157910
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli status wish-20260911-023805-fe157910 --json
+```
+
+The initial status confirmed Spark, explicit `mixed` Make, `gpt-6-astra`,
+medium effort, a 500,000,000-token total cap and Make attempt 1. The original
+root native session is `01a08e54-55f5-7a93-aa25-872ffc105b3a`. The first observed
+status reported 49,932 tokens; this excludes in-flight usage and is not a final
+cost or completion estimate. Publication is requested and remains incomplete
+until normal host Release obtains authenticated public readback.
+
+The Wish assumes a 0.4 mm FDM nozzle and production parts fitting a 220 × 220 mm
+usable bed pending actual workshop specifications. It requires one finite
+roster, a main battle and three shorter alternatives, fixed finished landscape
+and complete hand-positioned formations. Physical fabrication and play remain
+unperformed. All six earlier pilots stay paused; none was resumed for this
+launch.
