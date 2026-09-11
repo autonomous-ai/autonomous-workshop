@@ -48,7 +48,7 @@ calls were reassembling by hand.
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
     --ref hero=<project>/cad/ref/hero.png [--ref side=...] \
     [--min 0.90] [--nozzle 0.4] [--overhang-angle 45] \
-    [--all-parts] [--no-motion] [--json]
+    [--all-parts] [--no-motion] [--render-timeout SECONDS] [--json]
 ```
 
 - `<project>/cad` is the directory holding the generator sources: exactly one
@@ -57,6 +57,12 @@ calls were reassembling by hand.
   read from the `LABEL=ref/<file>` lines of the project's `*_spec.md`.
 - `--nozzle` is the diameter the print will use and sets the minimum wall;
   `--overhang-angle` is the slope from vertical the printer bridges unsupported.
+- `--render-timeout SECONDS` sets a positive finite timeout for the combined
+  front/top/iso rendering subprocess (default 900 seconds, maximum 2,147,483
+  seconds to stay within portable subprocess polling limits). It changes only
+  how long that subprocess may run; rendering quality, required views, other
+  tool timeouts and visual feedback checks stay the same. The selected limit
+  is recorded in `summary.json` as `visual.timeout_seconds`.
 - Only parts whose written STEP bytes changed since the previous round are
   reported; `--all-parts` reports every part. The first round reports all.
 - Every part that builds is gated from source by `check_thickness` and
@@ -77,6 +83,15 @@ calls were reassembling by hand.
 - The initial command returns exit 1 with visual status `pending` until native
   feedback is recorded, even if all numeric checks pass. A renderer failure
   produces visual status `error`; never fabricate feedback for missing images.
+  After a render timeout, inspect `visual-render.log`, then start a new normal
+  round with an explicit longer `--render-timeout` when appropriate. Keep the
+  failed round intact. Valid unchanged print PASS evidence can be reused under
+  the conditions above; failed checks run again. The new round must generate
+  its own current hash-bound visual packet and receive native inspection and
+  feedback. An error round cannot accept feedback or external replacement PNGs.
+  Existing runs retain their frozen tool bytes unless explicitly refreshed
+  through the supported host operation; a source checkout update alone does
+  not add this option to a saved run.
 - Exit 0 means numeric checks and recorded visual feedback pass; 1 means failed,
   inconclusive or pending; 2 means invalid input or the round could not run.
 

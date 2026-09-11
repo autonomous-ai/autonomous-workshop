@@ -3,7 +3,8 @@
 
     make_round <project>/cad [--ref LABEL=PATH ...] [--min 0.90] [--nozzle 0.4]
                [--overhang-angle 45] [--all-parts] [--no-motion] [--full]
-               [--out DIR] [--json] [--record-visual FEEDBACK.json]
+               [--out DIR] [--json] [--render-timeout SECONDS]
+               [--record-visual FEEDBACK.json]
                [--self-check]
 
 Every verdict comes from the original cad and image-to-cad tools, run
@@ -26,6 +27,7 @@ import argparse
 import hashlib
 from importlib.metadata import PackageNotFoundError, version as package_version
 import json
+import math
 import os
 import re
 import subprocess
@@ -37,6 +39,8 @@ from pathlib import Path
 STATE_NAME = "make-round-state.json"
 ROUNDS_DIR = "rounds"
 TOOL_TIMEOUT_SECONDS = 900
+# Keep subprocess poll timeouts representable as signed 32-bit milliseconds.
+MAX_RENDER_TIMEOUT_SECONDS = 2_147_483
 FULL_TIMEOUT_SECONDS = 1800
 MAX_TAIL_CHARS = 600
 
@@ -58,16 +62,19 @@ def source_hashes(project):
     }
 
 
-def prepare_visual(project, entry, out, cad, refs):
+def prepare_visual(project, entry, out, cad, refs, *, timeout=TOOL_TIMEOUT_SECONDS):
     """Render evidence for native inspection; never infer a visual verdict."""
     before = source_hashes(project)
     views = out / "visual"
     done = run([sys.executable, str(cad / "render_review"), str(entry),
                 "--view", "front", "--view", "top", "--view", "iso", "-o", str(views)],
-               cwd=project, log=out / "visual-render.log")
+               cwd=project, log=out / "visual-render.log", timeout=timeout)
     paths = [views / (v + ".png") for v in ("front", "top", "iso")]
     if done.returncode or not all(p.is_file() for p in paths) or before != source_hashes(project):
-        return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}
+        detail = "Visual render failed or source changed; inspect visual-render.log"
+        if done.returncode == 124:
+            detail = "Visual render timed out after %ss; inspect visual-render.log and retry a new round with --render-timeout SECONDS" % timeout
+        return {"status": "error", "findings": [], "timeout_seconds": timeout, "detail": detail}
     references = {}
     for label, ref in refs:
         path = resolve_reference(ref, project)
@@ -78,7 +85,7 @@ def prepare_visual(project, entry, out, cad, refs):
               "references": references}
     packet_path = out / "visual-packet.json"
     packet_path.write_text(json.dumps(packet, sort_keys=True, indent=2) + "\n", encoding="utf-8")
-    return {"status": "pending", "findings": [], "packet": str(packet_path),
+    return {"status": "pending", "findings": [], "timeout_seconds": timeout, "packet": str(packet_path),
             "packet_sha256": file_hash(packet_path),
             "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"}
 
@@ -382,8 +389,11 @@ def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS) -> subprocess.
     try:
         done = subprocess.run(command, cwd=str(cwd), capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
-        log.write_text("TIMEOUT after %ds\n%s\n%s" % (timeout, exc.stdout or "", exc.stderr or ""), encoding="utf-8")
-        return subprocess.CompletedProcess(command, 124, exc.stdout or "", exc.stderr or "")
+        # TimeoutExpired may carry bytes even when subprocess.run uses text=True.
+        stdout = exc.stdout.decode("utf-8", errors="replace") if isinstance(exc.stdout, bytes) else exc.stdout or ""
+        stderr = exc.stderr.decode("utf-8", errors="replace") if isinstance(exc.stderr, bytes) else exc.stderr or ""
+        log.write_text("TIMEOUT after %ss\n%s\n%s" % (timeout, stdout, stderr), encoding="utf-8")
+        return subprocess.CompletedProcess(command, 124, stdout, stderr)
     log.write_text(
         "$ %s\n(%.1fs, exit %d)\n--- stdout\n%s\n--- stderr\n%s"
         % (" ".join(str(c) for c in command), time.monotonic() - started, done.returncode, done.stdout, done.stderr),
@@ -726,7 +736,7 @@ def make_round(args) -> int:
         motion = parse_motion(done.stdout, done.returncode, done.stderr)
 
     # 5. Native visual inspection is a separate evidence submission, not a model call.
-    visual = prepare_visual(project, entry, out, cad, refs)
+    visual = prepare_visual(project, entry, out, cad, refs, timeout=args.render_timeout)
     full = None
 
     ok = (
@@ -898,6 +908,15 @@ def self_check() -> int:
     return 0 if ok else 1
 
 
+def positive_timeout(value):
+    seconds = float(value)
+    if not math.isfinite(seconds) or not 0 < seconds <= MAX_RENDER_TIMEOUT_SECONDS:
+        raise argparse.ArgumentTypeError(
+            "must be positive finite seconds, at most %d" % MAX_RENDER_TIMEOUT_SECONDS
+        )
+    return seconds
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("project", nargs="?", help="the cad directory holding *.step.py sources")
@@ -908,6 +927,8 @@ def main(argv=None) -> int:
     parser.add_argument("--overhang-angle", type=float, default=45.0, help="slope from vertical the printer bridges unsupported (default 45 deg)")
     parser.add_argument("--all-parts", action="store_true", help="report every built part, not only the changed ones")
     parser.add_argument("--no-motion", action="store_true", help="skip check_motion even when measure/motion.json exists")
+    parser.add_argument("--render-timeout", type=positive_timeout, default=TOOL_TIMEOUT_SECONDS,
+                        metavar="SECONDS", help="timeout for the front/top/iso render subprocess only (default 900 seconds)")
     parser.add_argument("--record-visual", help="record native Manager feedback for the last round without rebuilding")
     parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
