@@ -1090,6 +1090,7 @@ def _resume(args: argparse.Namespace) -> int:
         **({"adopt_turn_budget": True} if args.turn_budget else {}),
         **({"max_tokens": args.max_tokens} if args.max_tokens is not None else {}),
         **_turn_boundary_options(args.turn_minutes),
+        **({"manager_reasoning_effort": args.effort} if args.effort is not None else {}),
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
@@ -1953,6 +1954,10 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument("product_id", help="saved Wish id")
     resume.add_argument("--max-tokens", type=_token_budget, default=None, metavar="N",
                         help="explicit total Codex token cap; prior usage remains charged; omitted keeps the saved budget")
+    resume.add_argument(
+        "--effort", choices=SUPPORTED_REASONING_EFFORTS, default=None,
+        help="explicit reasoning effort for a supported Codex Spark token-budget run; omitted keeps the saved effort",
+    )
     resume.add_argument(
         "--turn-budget", action="store_true",
         help="explicitly adopt persistent 6-turn/stage, 12-turn/product accounting during the first creative stage; prior turns remain charged",

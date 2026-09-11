@@ -10121,6 +10121,7 @@ def resume_native_run(
     max_tokens: Optional[int] = None,
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
+    manager_reasoning_effort: Optional[str] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -10150,8 +10151,20 @@ def resume_native_run(
     timing_observer = _validated_timing_observer(timing_observer)
     paths = native_run_paths(product_id)
     with _native_run_mutation_lock(paths):
+        AgentRun.recover_manager_effort_change(
+            paths.workspace, host_state_root=paths.host_state,
+            budget_authority=_persistent_token_budget_authority(paths),
+        )
         run = _open_budgeted_agent_run(paths)
         checkpoint = run.snapshot()
+        if manager_reasoning_effort is not None:
+            # The explicit operator correction changes only the selected
+            # reasoning setting. It cannot select a different model, workflow,
+            # session, tool tree or token ledger.
+            run.set_manager_reasoning_effort(
+                manager_reasoning_effort, reason="workshop resume --effort",
+            )
+            checkpoint = run.snapshot()
         if adopt_turn_budget:
             _adopt_turn_budget(paths, checkpoint)
         if max_tokens is not None:
@@ -10229,6 +10242,10 @@ def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, An
 
     paths = native_run_paths(product_id)
     with _native_run_mutation_lock(paths):
+        AgentRun.recover_manager_effort_change(
+            paths.workspace, host_state_root=paths.host_state,
+            budget_authority=_persistent_token_budget_authority(paths),
+        )
         run = _open_budgeted_agent_run(paths)
         before = run.snapshot()
         # Finish an interrupted prior refresh before creating another input

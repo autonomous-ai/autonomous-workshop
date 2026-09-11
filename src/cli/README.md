@@ -72,7 +72,7 @@ sources and cardinality: `workshop wish` makes one product from a human-provided
 idea, while `workshop start` continuously makes products from an Inventor's own
 ideas. `workshop start --once` is the bounded autonomous-idea variant.
 
-`start` and `wish` accept `--max-tokens N` (maximum `200000000`, default `30000000`) for the whole
+`start` and `wish` accept `--max-tokens N` (maximum `500000000`, default `30000000`) for the whole
 Codex product, including all build stages, native children and resumes. The
 separate Daydream session is excluded. All revisions and retries share that
 allowance without a native-turn or wall-clock execution cap.
@@ -101,3 +101,11 @@ verified publication at 6,893,962 observed tokens. Other combinations retain
 their deterministic test coverage, not a claim of live acceptance.
 Request-completion reporting allows in-flight overshoot and is not an exact
 billing cap.
+
+For a marked Codex Spark token-budget product with an explicit saved runtime,
+`workshop resume ID --effort medium --max-tokens 500000000` changes its saved
+reasoning effort and total token cap. Stop the active CLI before resuming.
+The host records the effort correction and preserves the original model,
+native session, Wish, workflow, tools, artifacts and consumed tokens. Omitting
+`--effort` preserves the current saved setting. Other workflows and older
+runtime profiles retain their frozen effort.

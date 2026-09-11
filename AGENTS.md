@@ -51,6 +51,10 @@ All implementation and product-run work must preserve these boundaries:
   Make retains its own frozen engineering checks and review allowance.
   Pending usage is not subject to a first-report timer; completed usage must
   still be accounted for. Other runtime adapters retain their frozen policy.
+  An explicit `resume --max-tokens` may change the total allowance while retaining
+  prior usage. Supported Codex Spark token-budget runs also permit an explicit
+  `resume --effort` host correction under ADR 0065; ordinary resumes retain the
+  saved setting, and the model, workflow and engineering checks stay fixed.
 - Spark accepts Make's output as-is: no duplicate host CAD rebuild, geometry
   acceptance pass, or new manual review. Host-only Release publishes existing
   Make assets with deterministic site metadata; it creates no native Release

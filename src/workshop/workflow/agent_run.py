@@ -140,6 +140,11 @@ _DIRECT_RELEASE_MARKER = (
 )
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 HOST_CORRECTIONS_FILE = "host-corrections.jsonl"
+MANAGER_EFFORT_CHANGE_FILE = "manager-effort-change.json"
+_MANAGER_EFFORT_CAPABILITIES = {
+    ".agents/skills/autonomous-workshop/references/token-budget-v1.md",
+    ".agents/skills/autonomous-workshop/references/budgets-v1.md",
+}
 _AGENT_SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _KEYED_SECRET = re.compile(
     rb"(?i)(?:password|passwd|api[_-]?key|access[_-]?token|refresh[_-]?token|"
@@ -511,11 +516,11 @@ def _read_relative_regular(root: Path, relative: PurePosixPath) -> tuple[bytes, 
             os.close(directory)
 
 
-def _atomic_private_write(path: Path, content: bytes) -> None:
+def _atomic_private_write(path: Path, content: bytes, *, mode: int = 0o600) -> None:
     descriptor, temporary_name = tempfile.mkstemp(prefix=".%s." % path.name, dir=path.parent)
     temporary = Path(temporary_name)
     try:
-        os.fchmod(descriptor, 0o600)
+        os.fchmod(descriptor, mode)
         written = 0
         while written < len(content):
             written += os.write(descriptor, content[written:])
@@ -1661,6 +1666,187 @@ class AgentRun:
             )
             for stage, paths in payload["stage_artifacts"].items()
         }
+
+    @staticmethod
+    def _manager_effort_input(payload, content):
+        """Validate the narrow runtime whose existing profile permits an override."""
+        paths = {item["path"] for item in payload["inputs"]}
+        manager, model, effort = parse_manager_project_bytes(content)
+        if (
+            payload.get("manager_id") != "codex" or manager.manager_id != "codex"
+            or payload.get("effort") != "spark" or not _uses_effort_routes(payload)
+            or not _MANAGER_EFFORT_CAPABILITIES <= paths
+            or MANAGER_PROJECT_PATH not in paths
+            or payload.get("status") not in ("active", "waiting")
+            or model is None or effort is None
+        ):
+            raise ContractError("reasoning-effort correction requires an unfinished explicit-runtime Codex Spark token-budget run")
+        canonical = manager_project_bytes(manager_runtime_selection("codex", model=model, reasoning_effort=effort))
+        if content != canonical:
+            raise StateConflict("Manager effort correction requires canonical explicit runtime bytes")
+        return model, effort
+
+    @staticmethod
+    def _manager_effort_checkpoint(payload, content):
+        updated = dict(payload)
+        updated["inputs"] = [
+            {**item, "sha256": _sha256(content), "size": len(content)}
+            if item["path"] == MANAGER_PROJECT_PATH else dict(item)
+            for item in payload["inputs"]
+        ]
+        updated["revision"] = payload["revision"] + 1
+        updated["previous_checkpoint_sha256"] = payload["checkpoint_sha256"]
+        updated.pop("checkpoint_sha256", None)
+        updated["checkpoint_sha256"] = _sha256(_canonical_json(updated))
+        return updated
+
+    def set_manager_reasoning_effort(self, effort: str, *, reason: str) -> Mapping[str, Any]:
+        """Host-authorized one-file correction; caller must hold the native run lock.
+
+        The existing budget profile binds runtime policy independently of effort.
+        No session, workflow, model, Inventor, artifact or budget is rewritten.
+        A private write-ahead record permits only this exact interrupted change.
+        """
+        if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 512:
+            raise ContractError("reasoning-effort correction reason must be a short string")
+        pending = self.host_state_root / MANAGER_EFFORT_CHANGE_FILE
+        if pending.exists() or pending.is_symlink():
+            raise StateConflict("recover the pending Manager effort correction before another change")
+        payload = self._load()
+        before = _read_regular(self.run_root / MANAGER_PROJECT_PATH, "Manager project", MAX_AGENT_INPUT_BYTES)
+        model, previous_effort = self._manager_effort_input(payload, before)
+        if not isinstance(effort, str):
+            raise ContractError("reasoning effort must be an explicit supported string")
+        after = manager_project_bytes(manager_runtime_selection("codex", model=model, reasoning_effort=effort))
+        result = {
+            "changed": before != after, "previous_reasoning_effort": previous_effort,
+            "reasoning_effort": effort, "previous_checkpoint_sha256": payload["checkpoint_sha256"],
+            "checkpoint_sha256": payload["checkpoint_sha256"],
+        }
+        if before == after:
+            return result
+        updated = self._manager_effort_checkpoint(payload, after)
+        journal = {
+            "schema_version": 1, "kind": "autonomous-workshop.manager-effort-change",
+            "product_id": payload["product_id"], "wish_sha256": self._wish_sha256(payload),
+            "run_root_sha256": payload["run_root_sha256"],
+            "host_state_root_sha256": payload["host_state_root_sha256"],
+            "previous_checkpoint_sha256": payload["checkpoint_sha256"],
+            "checkpoint_sha256": updated["checkpoint_sha256"],
+            "previous_revision": payload["revision"],
+            "previous_previous_checkpoint_sha256": payload["previous_checkpoint_sha256"],
+            "previous_manager": before.decode("utf-8"), "manager": after.decode("utf-8"),
+            "reason": reason.strip(),
+        }
+        _atomic_private_write(pending, _canonical_json(journal) + b"\n")
+        self.recover_manager_effort_change(self.run_root, self.host_state_root,
+                                          budget_authority=self._budget_authority)
+        self._expected_checkpoint_sha256 = updated["checkpoint_sha256"]
+        result["checkpoint_sha256"] = updated["checkpoint_sha256"]
+        return result
+
+    @classmethod
+    def recover_manager_effort_change(cls, run_root, host_state_root, budget_authority=None) -> None:
+        """Finish an exact host journal only under the native run mutation lock.
+
+        Deliberately not called by open(): status reads cannot mutate a run.
+        No historical journal or arbitrary replacement Manager is accepted.
+        """
+        root, state = Path(run_root), Path(host_state_root)
+        pending = state / MANAGER_EFFORT_CHANGE_FILE
+        if not pending.exists() and not pending.is_symlink():
+            return
+        try:
+            for path in (root, state):
+                if (not path.is_absolute() or path.is_symlink() or path.resolve(strict=True) != path
+                        or not path.is_dir() or stat.S_IMODE(path.stat().st_mode) != 0o700):
+                    raise StateConflict("Manager effort recovery requires canonical private roots")
+        except (OSError, RuntimeError) as exc:
+            raise StateConflict("Manager effort recovery roots are unavailable") from exc
+        if root == state or root in state.parents or state in root.parents:
+            raise StateConflict("Manager effort recovery roots must not overlap")
+        if stat.S_IMODE(pending.lstat().st_mode) != 0o600:
+            raise StateConflict("Manager effort journal mode must be 0600")
+        try:
+            journal = json.loads(_read_regular(pending, "Manager effort journal", 32768).decode("utf-8"),
+                                 object_pairs_hook=_strict_object)
+            expected = {"schema_version", "kind", "product_id", "wish_sha256", "run_root_sha256",
+                        "host_state_root_sha256", "previous_checkpoint_sha256", "checkpoint_sha256",
+                        "previous_revision", "previous_previous_checkpoint_sha256", "previous_manager", "manager", "reason"}
+            if (not isinstance(journal, dict) or set(journal) != expected
+                    or type(journal["schema_version"]) is not int or journal["schema_version"] != 1
+                    or journal["kind"] != "autonomous-workshop.manager-effort-change"
+                    or type(journal["previous_revision"]) is not int or journal["previous_revision"] < 0
+                    or not isinstance(journal["reason"], str) or not 1 <= len(journal["reason"]) <= 512
+                    or journal["run_root_sha256"] != _sha256(str(root).encode())
+                    or journal["host_state_root_sha256"] != _sha256(str(state).encode())):
+                raise ValueError("invalid journal identity")
+            before = journal["previous_manager"].encode("utf-8")
+            after = journal["manager"].encode("utf-8")
+            payload = cls._read_checkpoint_file(state / "agent-run.json", budget_authority=budget_authority)
+            # Reconstruct the exact predecessor even after its atomic replacement.
+            old = dict(payload)
+            old["revision"] = journal["previous_revision"]
+            old["previous_checkpoint_sha256"] = journal["previous_previous_checkpoint_sha256"]
+            old["inputs"] = [{**item, "sha256": _sha256(before), "size": len(before)}
+                             if item["path"] == MANAGER_PROJECT_PATH else dict(item) for item in payload["inputs"]]
+            old.pop("checkpoint_sha256")
+            old["checkpoint_sha256"] = _sha256(_canonical_json(old))
+            new = cls._manager_effort_checkpoint(old, after)
+            if (old["checkpoint_sha256"] != journal["previous_checkpoint_sha256"]
+                    or new["checkpoint_sha256"] != journal["checkpoint_sha256"]
+                    or payload not in (old, new) or before == after
+                    or payload["product_id"] != journal["product_id"]
+                    or payload["run_root_sha256"] != journal["run_root_sha256"]
+                    or payload["host_state_root_sha256"] != journal["host_state_root_sha256"]
+                    or cls._wish_sha256(payload) != journal["wish_sha256"]):
+                raise ValueError("journal does not bind this exact checkpoint transition")
+            model, previous_effort = cls._manager_effort_input(old, before)
+            new_model, effort = cls._manager_effort_input(new, after)
+            if model != new_model:
+                raise ValueError("Manager model changed")
+            manager_path = root / MANAGER_PROJECT_PATH
+            present = _read_regular(manager_path, "Manager project", MAX_AGENT_INPUT_BYTES)
+            if (stat.S_IMODE(manager_path.stat().st_mode) != 0o400 or present not in (before, after)
+                    or (payload == new and present != after)):
+                raise ValueError("Manager bytes differ from the interrupted change")
+        except (KeyError, TypeError, AttributeError, ValueError, UnicodeError, ContractError) as exc:
+            raise StateConflict("Manager effort correction journal or binding is invalid") from exc
+        if payload == old and present == after:
+            # Restore the manifest-bound predecessor solely to run all normal
+            # input, artifact and private-root checks before finishing the change.
+            _atomic_private_write(manager_path, before, mode=0o400)
+        run = cls.open(root, host_state_root=state, budget_authority=budget_authority)
+        if payload == old:
+            _atomic_private_write(manager_path, after, mode=0o400)
+            run._write_next(old, dict(new))
+        run.snapshot()
+        record = {
+            "kind": "autonomous-workshop.host-correction", "schema_version": 1,
+            "correction": "manager-reasoning-effort", "reason": journal["reason"],
+            "previous_reasoning_effort": previous_effort, "reasoning_effort": effort,
+            "previous_checkpoint_sha256": old["checkpoint_sha256"],
+            "checkpoint_sha256": new["checkpoint_sha256"],
+        }
+        ledger = state / HOST_CORRECTIONS_FILE
+        existing = []
+        ledger_bytes = b""
+        if ledger.exists() or ledger.is_symlink():
+            if stat.S_IMODE(ledger.lstat().st_mode) != 0o600:
+                raise StateConflict("host correction ledger mode must be 0600")
+            ledger_bytes = _read_regular(ledger, "host corrections", None)
+            existing = [json.loads(line, object_pairs_hook=_strict_object)
+                        for line in ledger_bytes.splitlines() if line]
+        if record not in existing:
+            # A partial append would leave an unreadable ledger after a crash.
+            separator = b"\n" if ledger_bytes and not ledger_bytes.endswith(b"\n") else b""
+            _atomic_private_write(ledger, ledger_bytes + separator + _canonical_json(record) + b"\n")
+        pending.unlink()
+        directory = os.open(str(state), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
 
     def refresh_domain_skill_tools(
         self,

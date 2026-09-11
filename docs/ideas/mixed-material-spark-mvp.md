@@ -5,7 +5,7 @@ Date: 2026-09-10.
 **Implementation status: initial code implemented in `make/mixed-material-products`,
 with deterministic contract tests and a real CAD tool smoke check.** The
 manufacturing manifest, printed-subset checks and private/public handoff are
-implemented. All six live CLI pilots are running; completed products and human
+implemented. All six live CLI pilots are under evaluation; completed products and human
 prototype work remain pending. Live commands and outcomes are tracked in
 [the CLI run record](mixed-material-cli-runs.md). The material study is
 [KiwiCo materials research](kiwico-materials-research.md).
@@ -319,18 +319,20 @@ infrastructure but cannot stand in for this original product collection.
 
 ## Authorized CLI launch recipes
 
-The user has authorized launching all six pilots through the CLI with Spark,
-Codex Astra, ultra reasoning effort and a 100,000,000-token allowance **per
-product**. The six allowances total 600,000,000 tokens; usage remains accounted
-per run rather than as one shared allowance. No pilot was launched while these
-Wish files were authored; all six were subsequently launched. The authoritative
+The six pilots were originally launched through the CLI with Spark, Codex Astra,
+ultra reasoning effort and a 100,000,000-token allowance per product. The user
+subsequently authorized **medium effort and a 500,000,000-token total allowance
+per existing product**, preserving the original sessions and consumed tokens.
+The six updated allowances total 3,000,000,000 tokens; usage is accounted per
+run, and these are ceilings rather than targets. The authoritative
 [CLI pilot record](mixed-material-cli-runs.md) contains the exact commands,
 selected Inventors, Dee account connections, run IDs, failures and resumes.
 
 The operator launches and monitors all runs; the recipes add no scheduler or
 workflow route. Use the documented `status` and `resume` commands to inspect
-or continue an existing session. Keep the frozen per-run model, effort and
-token allowance. Fix observed
+or continue an existing session. Ordinary resumes keep the saved settings;
+apply explicit operator changes with `resume --effort medium --max-tokens
+500000000` through the host, as described in ADR 0065. Fix observed
 Make implementation failures in the builder checkout with focused validation;
 a repository edit does not silently rewrite a running product's frozen skill
 bytes. Monitor the real runs for contract, engineering, complete-product visual

@@ -231,6 +231,25 @@ class NativeCommandTest(unittest.TestCase):
             main(("resume", "wish-one", "--max-tokens", "3000000"))
         self.assertEqual(resume.call_args.kwargs["max_tokens"], 3000000)
 
+    def test_resume_explicit_effort_and_500m_total_reach_host(self):
+        with mock.patch("cli.main.resume_native_run", return_value=native_receipt()) as resume, redirect_stdout(StringIO()):
+            result = main(("resume", "wish-one", "--effort", "medium", "--max-tokens", "500000000"))
+        self.assertEqual(result, 0)
+        self.assertEqual(resume.call_args.kwargs["manager_reasoning_effort"], "medium")
+        self.assertEqual(resume.call_args.kwargs["max_tokens"], 500000000)
+
+    def test_resume_omitted_effort_keeps_saved_selection(self):
+        with mock.patch("cli.main.resume_native_run", return_value=native_receipt()) as resume, redirect_stdout(StringIO()):
+            main(("resume", "wish-one"))
+        self.assertNotIn("manager_reasoning_effort", resume.call_args.kwargs)
+        self.assertNotIn("max_tokens", resume.call_args.kwargs)
+
+    def test_resume_refuses_unsupported_effort_before_host(self):
+        with mock.patch("cli.main.resume_native_run") as resume, redirect_stderr(StringIO()):
+            with self.assertRaises(SystemExit):
+                main(("resume", "wish-one", "--effort", "automatic"))
+        resume.assert_not_called()
+
     def test_wish_strict_wait_exits_one_without_a_publication_flag(self):
         stdout = StringIO()
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
