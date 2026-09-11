@@ -55,6 +55,7 @@ class PromptTest(unittest.TestCase):
             "parts_estimate",
             "keywords",
             "12",
+            "Taste hard rule may lower or remove",
             "0.4 mm nozzle",
             "0.8 mm minimum wall",
             "No electronics",

@@ -38,6 +38,25 @@ def _manifest(inventor_id: str = "sample"):
 
 
 class RegistryTest(unittest.TestCase):
+    def test_mara_has_no_trend_or_printed_part_eligibility_requirement(self):
+        root = Path(__file__).resolve().parents[2]
+        taste = (root / "inventors" / "mara-masque" / "TASTE.md").read_text(
+            encoding="utf-8"
+        )
+        skill = (
+            root
+            / "inventors"
+            / "mara-masque"
+            / "skills"
+            / "mara-masque-inventor"
+            / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("currently trending", taste.casefold())
+        self.assertNotIn("currently trending", skill.casefold())
+        self.assertIn("trend evidence are not\n  eligibility requirements", taste)
+        self.assertIn("Mara has no printed-part-count limit", taste)
+        self.assertIn("Mara has no printed-part-count limit", skill)
+
     def test_bundled_inventors_are_valid_v8_skill_bundles(self):
         root = Path(__file__).resolve().parents[2]
         manifests = discover_inventors(root)

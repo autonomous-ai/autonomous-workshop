@@ -70,7 +70,8 @@ you run the finalizer, you stop.
 - A physical toy or game printable on a desktop FDM printer: 0.4 mm nozzle,
   0.8 mm minimum wall, support-free strongly preferred, and every part fits a
   common 200 mm bed.
-- At most 12 printed parts by contract. For now, at most 3, and one is best.
+- At most 12 printed parts by default. A Taste hard rule may lower or remove
+  this limit.
 - No electronics, batteries, or motors. No glue, magnets, springs, or
   purchased hardware unless your Taste explicitly allows them.
 - One clear action and one clear payoff. A first-time player must know what to
@@ -153,7 +154,8 @@ The Workshop is proving its pipeline, so simple beats clever. Right now the
 best idea is the one a stranger understands from a single photo and Make can
 print on the first try:
 
-- One or two printed parts. One is best. No assemblies of three or more.
+- Unless the Taste explicitly removes the part limit, use one or two printed
+  parts. One is best. No assemblies of three or more.
 - One action, one payoff, both visible in a single before/after render pair.
   No sequences, no counting, no multi-state cycles, no timing.
 - Motion, if any, comes from a rocker, a tip, a roll, a slide, or a shadow.
@@ -249,7 +251,8 @@ Rules for the file:
   is not finished. When nothing moves, `before_after` describes what the two
   renders show instead: the toy at rest and the moment of its one action.
 - `prior_art` holds 2 to 5 entries.
-- `parts_estimate` is an integer from 1 to 12 (or lower if your Taste says so).
+- `parts_estimate` is a positive integer. The default maximum is 12; a Taste
+  hard rule may lower or remove that maximum.
 - Every keyword matches `^[a-z0-9][a-z0-9-]{1,31}$`; there are 3 to 8 and they
   are unique.
 - No text field is empty. Line breaks are allowed only inside `what_you_do`,
@@ -264,8 +267,9 @@ DAYDREAM_CONSTITUTION_SHA256 = hashlib.sha256(
 ROUTE_BUDGETS = {
     "spark": (
         "Route budget: SPARK. There is no Invent stage; Make must build and "
-        "prove this idea alone in one short session. Keep it to one or two "
-        "printed parts (one is best), one action, and one payoff that a single "
+        "prove this idea alone in one short session. Unless the Taste explicitly "
+        "removes the part limit, keep it to one or two printed parts (one is best). "
+        "Keep one action and one payoff that a single "
         "before/after render pair proves at a glance, inside one chunky held "
         "form a stranger can name. If the payoff needs several distinct states, "
         "hidden internals, fine tolerances, or timing to be believed, it is too "

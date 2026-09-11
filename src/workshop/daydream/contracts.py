@@ -321,12 +321,9 @@ class Idea:
             raise ContractError("idea taste_fit must be a TasteFit")
         if (
             type(self.parts_estimate) is not int
-            or not MIN_PARTS_ESTIMATE <= self.parts_estimate <= MAX_PARTS_ESTIMATE
+            or self.parts_estimate < MIN_PARTS_ESTIMATE
         ):
-            raise ContractError(
-                "idea parts_estimate must be an integer from %d to %d"
-                % (MIN_PARTS_ESTIMATE, MAX_PARTS_ESTIMATE)
-            )
+            raise ContractError("idea parts_estimate must be a positive integer")
         if isinstance(self.keywords, str) or not isinstance(self.keywords, Sequence):
             raise ContractError("idea keywords must be a list of slugs")
         keywords = tuple(self.keywords)

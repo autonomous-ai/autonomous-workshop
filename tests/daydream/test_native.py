@@ -246,6 +246,26 @@ class DaydreamNativeTest(unittest.TestCase):
         self.assertEqual(entries[0].idea_sha256, sealed.idea_sha256)
         self.assertEqual(load_sealed_daydream("sample", FIRST_ID), sealed)
 
+    def test_only_mara_masque_is_exempt_from_the_default_parts_limit(self):
+        raw = sample_idea_dict()
+        raw["parts_estimate"] = 33
+        with self.assertRaisesRegex(DaydreamError, "integer from 1 to 12"):
+            self._run(idea=raw)
+
+        factory, _ = self._factory(idea=raw)
+        repository = Path(__file__).resolve().parents[2]
+        sealed = run_daydream(
+            "mara-masque",
+            source_root=repository,
+            repository_root=self.catalog,
+            launcher_factory=factory,
+            seed=SEED,
+            moment=MOMENT,
+            daydream_id=SECOND_ID,
+            effort="spark",
+        )
+        self.assertEqual(sealed.idea.parts_estimate, 33)
+
     def test_second_daydream_sees_the_first_and_may_not_repeat_it(self):
         self._run(idea=sample_idea_dict())
         raw = sample_idea_dict()
