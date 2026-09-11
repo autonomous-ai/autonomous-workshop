@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "909b0373429f19b31bd8bcc5880050f969705df6e262a3073cfdb22358fb4e2c",
+      "kind": "codex-skill",
+      "name": "wren-coil-inventor",
+      "path": "skills/wren-coil-inventor"
+    }
+  ],
+  "id": "wren-coil",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

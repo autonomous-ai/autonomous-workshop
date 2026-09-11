@@ -44,6 +44,14 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Added
 
+- Wren Coil joins the bundled Inventor roster: everyday-carry objects that
+  carry a standard 21.5 x 11.5 x 0.75 mm NFC inlay inside a tool with a real,
+  load-bearing second job. Its `wren-coil-inventor` skill puts the coupling
+  budget before the silhouette, and `references/nfc-carrier-standard.md`
+  carries the house numbers -- inlay datum, pocket and clearance table by
+  process, tap window, keep-out volume checked against a named obstruction
+  set, conductivity material list, on-metal ferrite rule, and a nine-point
+  Make checklist that separates measured geometry from untested radio claims.
 - Codex products accept `--max-tokens` (default 10,000,000), persisted across
   stages, native children and resumes; `resume --max-tokens N` changes the
   total cap without resetting usage. Normal time/turn limits are superseded

@@ -41,6 +41,7 @@ BUNDLED_INVENTOR_IDS = (
     "soren-voss",
     "tess-loop",
     "vela-bloom",
+    "wren-coil",
 )
 BUNDLED_INVENTOR_FILES = ("TASTE.md", "inventor.json")
 _PRODUCT_RUN_DOMAIN_SKILL_PATHS = (
