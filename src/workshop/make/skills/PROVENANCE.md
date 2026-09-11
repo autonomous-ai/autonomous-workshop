@@ -854,6 +854,17 @@ camera and shared framing, then produces the required final-resolution,
 hash-bound evidence. This is craft guidance, with no tool, gate, review-budget
 or Python camera-selection change. Frozen running projects are untouched.
 
+## Recheck nearby mounts before expensive downstream work (2026-09-11)
+
+The CAD cost reference now places affected fit, mount and targeted clearance
+checks before long standalone motion checks, final presentation and delivery
+export after a geometry or placement repair. The check scope includes nearby
+components reached by changed geometry, even when their own parts and mount
+manifest are unchanged. Native Make determines that scope and repairs; this
+adds no Python scheduler, per-edit full interference pass, gate or evidence
+exception. Final review and integrated verification remain required, and frozen
+running projects are untouched.
+
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead
