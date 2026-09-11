@@ -155,7 +155,7 @@ class RenderAssemblyPlacementTests(unittest.TestCase):
 
     def test_tessellation_failure_is_not_replaced_with_partial_scene(self):
         assembly = scene(2)
-        with mock.patch.object(Shape, 'tessellate', side_effect=RuntimeError('injected failure')):
+        with mock.patch.object(Shape, 'mesh', side_effect=RuntimeError('injected failure')):
             for load in (self.product_scene, self.review_scene):
                 with self.assertRaisesRegex(RuntimeError, 'injected failure'):
                     load(assembly)

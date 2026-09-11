@@ -446,6 +446,213 @@ class PrintedAssemblyUnitTests(unittest.TestCase):
             self.validate()
 
 
+class GeometryInstanceLimitTests(unittest.TestCase):
+    """Large synthetic scenes retain small BOMs and independently bounded data."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        _, self.document = make_purchased_subassembly(self.root)
+        self.component = self.document["components"][0]
+        self.flat_scene(513)
+
+    def flat_scene(self, count):
+        names = [f"copy_{index}" for index in range(1, count + 1)]
+        self.descriptor = {
+            "kind": "assembly-package", "schemaVersion": 2, "entryKind": "assembly",
+            "occurrences": [{"name": name} for name in names],
+            "stats": {"occurrenceCount": count},
+        }
+        self.component.pop("assembly_unit_ids", None)
+        self.component.update(quantity=count, occurrences=names)
+
+    def grouped_scene(self, unit_count, *, leaves_per_unit=1, extra_first_wrappers=0):
+        occurrences, units = [], []
+        for index in range(1, unit_count + 1):
+            unit_id = f"o1.{index}"
+            wrappers = extra_first_wrappers if index == 1 else 0
+            parent_id = unit_id + ".1" * wrappers
+            leaves = []
+            for leaf_index in range(1, leaves_per_unit + 1):
+                leaf_id, name = f"{parent_id}.{leaf_index}", f"piece_{index}_{leaf_index}"
+                occurrences.append({"id": leaf_id, "name": name})
+                leaves.append({"id": leaf_id, "name": name, "nodeType": "part", "leafPartIds": [leaf_id], "children": []})
+            leaf_ids = [leaf["id"] for leaf in leaves]
+            children = leaves
+            for wrapper in range(wrappers, 0, -1):
+                children = [{"id": unit_id + ".1" * wrapper, "name": "display_group",
+                             "nodeType": "subassembly", "leafPartIds": leaf_ids, "children": children}]
+            units.append({"id": unit_id, "name": "repeated_unit", "nodeType": "subassembly",
+                          "leafPartIds": leaf_ids, "children": children})
+        self.descriptor = {
+            "kind": "assembly-package", "schemaVersion": 2, "entryKind": "assembly",
+            "occurrences": occurrences, "stats": {"occurrenceCount": len(occurrences)},
+            "assembly": {"root": {"id": "o1", "name": "synthetic_scene", "nodeType": "assembly",
+                                  "leafPartIds": [row["id"] for row in occurrences], "children": units}},
+        }
+        self.component.update(quantity=unit_count, occurrences=[row["name"] for row in occurrences],
+                              assembly_unit_ids=[unit["id"] for unit in units])
+
+    def validate(self):
+        content = encoded(self.descriptor)
+        bind_file(self.root, "assembled.step.json", content)
+        self.document["assembly"]["occurrences"] = bind_file(self.root, "internal/assembled.step.json", content)
+        self.product = seal_manifest(self.root, self.document)
+        return validate_manifest(self.root, self.product, cad_project_path="cad")
+
+    def test_513_and_larger_flat_scenes_have_one_bom_definition_and_exact_quantity(self):
+        for count in (513, 1024, 4096):
+            self.flat_scene(count)
+            with self.subTest(count=count):
+                self.assertEqual(self.validate(), self.document)
+                self.assertEqual(len(self.document["components"]), 1)
+                self.assertEqual(self.component["quantity"], count)
+                self.assertEqual(public_asset_paths(self.root, self.product), ("public/assembled.step", "public/hero.png"))
+
+    def test_descriptor_occurrence_count_stops_at_4096(self):
+        self.flat_scene(4097)
+        with self.assertRaisesRegex(ManufacturingManifestError, "assembly occurrences must be a bounded"):
+            self.validate()
+
+    def test_component_occurrence_list_stops_at_4096(self):
+        self.flat_scene(4096)
+        self.component["occurrences"].append("extra")
+        self.component["quantity"] = 4097
+        with self.assertRaisesRegex(ManufacturingManifestError, "component occurrences must be a bounded"):
+            self.validate()
+
+    def test_repeated_colored_units_cover_more_than_512_leaves_without_inflating_quantity(self):
+        self.grouped_scene(513, leaves_per_unit=2)
+        self.assertEqual(self.validate(), self.document)
+        self.assertEqual(self.component["quantity"], 513)
+        self.assertEqual(len(self.component["occurrences"]), 1026)
+        self.assertEqual(len(self.document["components"]), 1)
+        self.component["quantity"] = 1026
+        with self.assertRaisesRegex(ManufacturingManifestError, "assembly unit count"):
+            self.validate()
+
+    def test_hierarchy_children_and_leaf_ids_accept_4096_actual_leaves(self):
+        self.grouped_scene(1, leaves_per_unit=4096)
+        self.assertEqual(self.validate(), self.document)
+
+    def test_unit_selection_list_has_its_own_4096_bound(self):
+        # A tree must also fit the independent node cap; 4096 selected units
+        # each containing a leaf would require 8193 nodes including the root.
+        ids = [f"o1.{index}" for index in range(1, 4097)]
+        self.assertEqual(API["_assembly_node_ids"](ids, "component assembly_unit_ids"), ids)
+        self.grouped_scene(1)
+        self.component.update(assembly_unit_ids=ids + ["o1.4097"], quantity=4097)
+        with self.assertRaisesRegex(ManufacturingManifestError, "component assembly_unit_ids must be a bounded"):
+            self.validate()
+
+    def test_exact_8192_hierarchy_nodes_pass_and_8193_fail(self):
+        # root + 4095 units + 4095 leaves + one wrapper = 8192 nodes.
+        self.grouped_scene(4095, extra_first_wrappers=1)
+        self.assertLess(len(encoded(self.descriptor)), API["MAX_JSON_BYTES"])
+        self.assertEqual(self.validate(), self.document)
+        self.grouped_scene(4095, extra_first_wrappers=2)
+        with self.assertRaisesRegex(ManufacturingManifestError, "depth or node limit"):
+            self.validate()
+
+    def test_deep_hierarchy_is_still_refused(self):
+        self.grouped_scene(1, extra_first_wrappers=64)
+        with self.assertRaises(ManufacturingManifestError):
+            self.validate()
+
+    def test_geometry_hierarchy_lists_refuse_more_than_4096_items(self):
+        self.grouped_scene(1)
+        root = self.descriptor["assembly"]["root"]
+        root["children"] *= 4097
+        with self.assertRaisesRegex(ManufacturingManifestError, "assembly unit children must be a bounded"):
+            self.validate()
+        self.grouped_scene(1)
+        self.descriptor["assembly"]["root"]["leafPartIds"] *= 4097
+        with self.assertRaisesRegex(ManufacturingManifestError, "assembly node leafPartIds must be a bounded"):
+            self.validate()
+
+    def test_large_scene_still_rejects_duplicate_malformed_and_uncovered_occurrences(self):
+        for defect in ("duplicate", "malformed", "uncovered", "quantity"):
+            self.flat_scene(513)
+            if defect == "duplicate":
+                self.descriptor["occurrences"][-1] = self.descriptor["occurrences"][0]
+            elif defect == "malformed":
+                self.descriptor["occurrences"][-1] = True
+            elif defect == "uncovered":
+                self.component["occurrences"].pop()
+                self.component["quantity"] -= 1
+            else:
+                self.component["quantity"] -= 1
+            with self.subTest(defect=defect), self.assertRaises(ManufacturingManifestError):
+                self.validate()
+        self.grouped_scene(513)
+        self.component["assembly_unit_ids"][-1] = self.component["assembly_unit_ids"][0]
+        with self.assertRaisesRegex(ManufacturingManifestError, "duplicate IDs"):
+            self.validate()
+
+    def test_stock_consumable_and_tool_inventories_retain_512_limit(self):
+        original = copy.deepcopy(self.document)
+        for key in ("stock", "consumables", "tools"):
+            self.document = copy.deepcopy(original)
+            rows = [copy.deepcopy(self.document[key][0]) for _ in range(512)]
+            for index, row in enumerate(rows[1:], 1):
+                row["id"] = f"{key}_{index}"
+            self.document[key] = rows
+            with self.subTest(key=key):
+                self.assertEqual(self.validate(), self.document)
+                self.document[key].append(dict(rows[-1], id=f"{key}_512"))
+                with self.assertRaisesRegex(ManufacturingManifestError, f"{key} must be a bounded"):
+                    self.validate()
+
+    def test_bom_definitions_and_assembly_steps_retain_512_limit(self):
+        self.flat_scene(512)
+        components = []
+        for index, occurrence in enumerate(self.component["occurrences"]):
+            component = copy.deepcopy(self.component)
+            component.update(id=f"unit_{index}", quantity=1, occurrences=[occurrence])
+            components.append(component)
+        self.document["components"] = components
+        self.document["assembly_steps"][0]["components"] = [row["id"] for row in components]
+        self.assertEqual(self.validate(), self.document)
+        self.document["components"].append(copy.deepcopy(components[-1]))
+        with self.assertRaisesRegex(ManufacturingManifestError, "components must be a bounded"):
+            self.validate()
+        self.document["components"].pop()
+        self.document["assembly_steps"] = [dict(self.document["assembly_steps"][0], id=f"step_{index}") for index in range(512)]
+        # Keep this a bounded small handoff: each step references one of the
+        # existing components rather than repeating 512 IDs in every step.
+        for index, step in enumerate(self.document["assembly_steps"]):
+            step["components"] = [components[index]["id"]]
+        self.assertEqual(self.validate(), self.document)
+        self.document["assembly_steps"].append(dict(self.document["assembly_steps"][-1], id="step_512"))
+        with self.assertRaisesRegex(ManufacturingManifestError, "assembly_steps must be a bounded"):
+            self.validate()
+
+    def test_public_assets_files_and_component_reference_lists_keep_default_limit(self):
+        original = copy.deepcopy(self.document)
+        mutations = (
+            ("public_assets", lambda: self.document.update(public_assets=self.document["public_assets"] * 257)),
+            ("component files", lambda: self.document["components"][0].update(files=self.document["components"][0]["files"] * 513)),
+            ("assembly step components", lambda: self.document["assembly_steps"][0].update(components=["motor"] * 513)),
+        )
+        for label, mutate in mutations:
+            self.document = copy.deepcopy(original)
+            mutate()
+            with self.subTest(label=label), self.assertRaisesRegex(ManufacturingManifestError, "bounded"):
+                self.validate()
+
+    def test_descriptor_and_manifest_byte_caps_are_unchanged(self):
+        self.assertEqual(API["MAX_JSON_BYTES"], 2 * 1024 * 1024)
+        self.assertEqual(API["MAX_FILE_BYTES"], 95 * 1024 * 1024)
+        self.descriptor["padding"] = "x" * API["MAX_JSON_BYTES"]
+        with self.assertRaisesRegex(ManufacturingManifestError, "bounded non-empty regular file"):
+            self.validate()
+        self.flat_scene(513)
+        self.document["stock"][0]["specification"] = "x" * API["MAX_JSON_BYTES"]
+        with self.assertRaisesRegex(ManufacturingManifestError, "bounded non-empty regular file"):
+            self.validate()
+
+
 class ManufacturingManifestTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()

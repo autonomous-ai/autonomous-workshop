@@ -1,5 +1,36 @@
 # Shared skill provenance
 
+## Stateless renderer tessellation extraction (2026-09-11)
+
+Both renderers now extract arrays directly from the same native triangulations
+using indexed triangle access and transformed native points. This removes OCP
+array-iterator overhead and temporary build123d Vector wrappers. Meshing calls,
+tolerances, face order, orientation, placement, vertex offsets, colors and PNG
+output remain unchanged. There is no additional cache, sampling, omitted face,
+geometry substitution or changed timeout. Missing native triangulation still
+raises the original failure instead of returning partial geometry.
+
+Tests compare exact arrays and serialized PNG bytes against the installed
+Shape.tessellate implementation on curves, nested transforms, repeated and
+independent topology, reversed faces, alpha and imported STEP. Further tests
+preserve native failures and source identity. Synthetic timing measurements
+show lower extraction cost; they are not a measured Waterloo speedup. Frozen
+runs receive the helper and renderer changes only through normal tool refresh.
+
+## Geometry instance bounds for mixed assemblies (2026-09-11)
+
+The mixed-material validator separates repeated geometry from manufacturing
+definitions: geometry lists allow 4,096 items and the optional hierarchy allows
+8,192 total nodes. Components, stock, consumables, tools, assembly steps, public
+assets and other lists retain their 512-item bound. Existing JSON/file byte
+bounds, hierarchy depth, uniqueness, complete coverage, quantity, source hashes
+and private/public ownership checks remain intact. All limits apply together.
+
+Synthetic tests cover large scenes with a small BOM, the exact geometry and
+hierarchy boundaries, unchanged nongeometry bounds and malformed coverage.
+No product CAD is executed by this validator. Frozen runs require the ordinary
+explicit tool refresh to receive the corrected limits.
+
 ## Printed units with colored display regions (2026-09-11)
 
 The mixed-material manifest's optional physical-unit grouping now also supports

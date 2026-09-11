@@ -103,7 +103,7 @@ class ReviewOccurrencesTest(unittest.TestCase):
         self.assertEqual(occurrences[0][2], self.renderer["FALLBACK_COLOURS"][0])
 
     def test_nested_tessellation_failure_is_not_silently_dropped(self):
-        with mock.patch.object(Shape, "tessellate", side_effect=RuntimeError("kernel tessellation failed")):
+        with mock.patch.object(Shape, "mesh", side_effect=RuntimeError("kernel tessellation failed")):
             with self.assertRaisesRegex(RuntimeError, "kernel tessellation failed"):
                 self.occurrences(self.scene())
 

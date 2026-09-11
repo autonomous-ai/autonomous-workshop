@@ -25,6 +25,8 @@ KIND = "workshop.manufacturing"
 MAX_JSON_BYTES = 2 * 1024 * 1024
 MAX_FILE_BYTES = 95 * 1024 * 1024
 MAX_ITEMS = 512
+MAX_GEOMETRY_OCCURRENCES = 4096
+MAX_ASSEMBLY_NODES = 8192
 PROCESSES = frozenset({"3d-print", "laser-cut", "cnc", "cut-fold", "sew", "cut-to-length", "purchased", "handcraft"})
 MATERIAL_FAMILIES = frozenset({"polymer", "paper", "paperboard", "wood", "elastomer", "foam", "textile", "metal", "glass", "ceramic", "composite", "mixed", "other"})
 PUBLIC_SUFFIXES = frozenset({".step", ".stp", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".webm", ".pdf", ".md", ".txt", ".html"})
@@ -62,8 +64,8 @@ def _id(value: Any, label: str) -> str:
     return value
 
 
-def _list(value: Any, label: str, *, nonempty: bool = False) -> list[Any]:
-    if not isinstance(value, list) or not int(nonempty) <= len(value) <= MAX_ITEMS:
+def _list(value: Any, label: str, *, nonempty: bool = False, maximum: int = MAX_ITEMS) -> list[Any]:
+    if not isinstance(value, list) or not int(nonempty) <= len(value) <= maximum:
         _error(f"{label} must be a bounded {'non-empty ' if nonempty else ''}list")
     return value
 
@@ -284,8 +286,8 @@ def public_asset_paths(product_root: Path, product: Mapping[str, Any]) -> tuple[
     return _public_paths(_root(product_root), document, product)
 
 
-def _identifiers(value: Any, label: str, known: set[str] | None = None, *, nonempty: bool = False) -> list[str]:
-    result = [_id(item, label) for item in _list(value, label, nonempty=nonempty)]
+def _identifiers(value: Any, label: str, known: set[str] | None = None, *, nonempty: bool = False, maximum: int = MAX_ITEMS) -> list[str]:
+    result = [_id(item, label) for item in _list(value, label, nonempty=nonempty, maximum=maximum)]
     if len(result) != len(set(result)):
         _error(f"{label} contains duplicate IDs")
     if known is not None and set(result) - known:
@@ -320,7 +322,7 @@ def _occurrence_inventory(root: Path, assembly: Mapping[str, Any]) -> tuple[set[
     if descriptor.get("kind") != "assembly-package" or type(descriptor.get("schemaVersion")) is not int or descriptor["schemaVersion"] != 2 or descriptor.get("entryKind") != "assembly":
         _error("occurrences must describe a schemaVersion 2 CAD assembly-package")
     names: set[str] = set()
-    for row in _list(descriptor.get("occurrences"), "assembly occurrences", nonempty=True):
+    for row in _list(descriptor.get("occurrences"), "assembly occurrences", nonempty=True, maximum=MAX_GEOMETRY_OCCURRENCES):
         if not isinstance(row, dict):
             _error("assembly occurrence must be an object")
         name = _id(row.get("name"), "assembly occurrence name")
@@ -344,7 +346,7 @@ def _assembly_node_id(value: Any) -> str:
 
 
 def _assembly_node_ids(value: Any, label: str) -> list[str]:
-    result = [_assembly_node_id(item) for item in _list(value, label, nonempty=True)]
+    result = [_assembly_node_id(item) for item in _list(value, label, nonempty=True, maximum=MAX_GEOMETRY_OCCURRENCES)]
     if len(result) != len(set(result)):
         _error(f"{label} contains duplicate IDs")
     return result
@@ -369,7 +371,7 @@ def _assembly_unit_leaves(descriptor: Mapping[str, Any]) -> dict[str, set[str]]:
     units: dict[str, set[str]] = {}
 
     def walk(node: Any, depth: int, parent: str | None = None) -> set[str]:
-        if depth > 64 or len(seen) >= MAX_ITEMS * 4:
+        if depth > 64 or len(seen) >= MAX_ASSEMBLY_NODES:
             _error("assembly unit hierarchy exceeds its depth or node limit")
         if not isinstance(node, Mapping):
             _error("assembly unit hierarchy node must be an object")
@@ -379,7 +381,7 @@ def _assembly_unit_leaves(descriptor: Mapping[str, Any]) -> dict[str, set[str]]:
         if parent is not None and node_id.rpartition(".")[0] != parent:
             _error("assembly unit hierarchy node ID differs from its parent path")
         seen.add(node_id)
-        children = _list(node.get("children"), "assembly unit children")
+        children = _list(node.get("children"), "assembly unit children", maximum=MAX_GEOMETRY_OCCURRENCES)
         node_type = node.get("nodeType")
         declared = set(_assembly_node_ids(node.get("leafPartIds"), "assembly node leafPartIds"))
         if node_type == "part" and depth > 0:
@@ -538,7 +540,7 @@ def validate_manifest(product_root: Path, product: Mapping[str, Any], *, cad_pro
         if not isinstance(process, str) or process not in PROCESSES:
             _error("component process is unsupported")
         quantity = _number(component["quantity"], "component quantity", integer=True)
-        occurrences = _identifiers(component["occurrences"], "component occurrences", occurrence_names, nonempty=True)
+        occurrences = _identifiers(component["occurrences"], "component occurrences", occurrence_names, nonempty=True, maximum=MAX_GEOMETRY_OCCURRENCES)
         if "assembly_unit_ids" in component:
             if process not in {"purchased", "3d-print"}:
                 _error("assembly_unit_ids are supported only for purchased or 3d-print components")

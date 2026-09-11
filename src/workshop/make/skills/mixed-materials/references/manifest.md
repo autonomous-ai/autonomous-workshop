@@ -176,9 +176,17 @@ mechanism must include every other installed component it uses.
   least one known component, every component appears in at least one step,
   and consumable/tool references must resolve. Step `files` bind any additional
   private instructions or evidence. No network fetch is performed.
-- Lists are bounded to 512 items; manifest JSON is bounded to 2 MiB; each
-  referenced file is a nonempty regular file no larger than 95 MiB. Duplicate
-  JSON keys, nonfinite numeric values, traversal and symlinks fail closed.
+- Geometry instances have a separate 4,096-item bound: descriptor
+  `occurrences`, each component's `occurrences` and `assembly_unit_ids`, and
+  hierarchy `children`/`leafPartIds`. This allows many repeated parts or colored
+  display regions without adding that many manufacturing definitions.
+  Component definitions, stock, consumables, tools, assembly steps, public
+  assets and all other lists remain bounded to 512 items.
+- Manifest JSON and the occurrence descriptor are each bounded to 2 MiB;
+  other referenced files are nonempty regular files no larger than 95 MiB.
+  All bounds apply independently: detailed descriptors may reach the byte cap
+  before 4,096 occurrences. Duplicate JSON keys, nonfinite numeric values,
+  traversal and symlinks fail closed.
 
 ## Physical units and colored CAD parts
 
@@ -218,7 +226,10 @@ be named "motor" but have different occurrence IDs.
 - The hierarchy must agree with the descriptor's leaf IDs/names and each
   node's `leafPartIds`, have unique node IDs with consistent parent paths, and
   cover all rendered leaves exactly once. The opt-in hierarchy check is bounded
-  to 64 levels and 2,048 nodes. It reads data only; it never runs CAD.
+  to 64 levels and 8,192 nodes, including the root and leaves. These bounds
+  also apply alongside the 4,096-item geometry-list and 2 MiB descriptor caps;
+  for example, 4,096 separate subassemblies each containing a leaf would exceed
+  the node cap once the root is counted. It reads data only; it never runs CAD.
 - Without `assembly_unit_ids`, existing manifests keep the original leaf-count
   rule and do not require hierarchy/occurrence-ID fields. Other fabrication
   processes retain that rule. Grouping does not change the print subset.

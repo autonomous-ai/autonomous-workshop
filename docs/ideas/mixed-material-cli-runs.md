@@ -1181,3 +1181,55 @@ its three files refreshed at 08:45, with notice SHA-256
 `fb862fb8d1aaf8bef39ca751beb9dd40d12ae03ea00219e0482cb37a12ceeb89`.
 This check did not resume or mutate the toy. The currently running CLI retains
 its loaded host code; the notice will be delivered on its next ordinary resume.
+
+### Revised full scene and large-assembly corrections
+
+The interrupted round directory was reused as round 7 despite the Manager's
+`r8-round.log` filename. That attempt failed on an artillery coating Boolean.
+The next completed attempt is the actual **round 8**. At **09:07:31 UTC**, its
+complete source-built render succeeded: 862 occurrences, 1,184,865 vertices and
+825,674 triangles. Rendering took 854.3 seconds: source build 180.316 seconds,
+tessellation 592.993 seconds, and the three raster/save phases approximately
+81 seconds. All 11 printed families had passing round checks, using fresh
+artillery evidence and exact-source reuse for unchanged families. Visual
+feedback, final verification and publication had not yet completed.
+
+The revised latest preview was opened with:
+
+```sh
+open -a Preview '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260911-023805-fe157910/workspace/artifacts/make/r0001/product/cad/measure/rounds/r0008/visual/iso.png'
+```
+
+The Manager then exported a miniature close-up STEP. Its source rendering had
+worked, but a face lacked triangulation after STEP round-trip. The Manager is
+repairing that product defect; the builder did not execute or alter toy CAD.
+No successful final STEP verification is claimed from the source render.
+
+Two separately reviewed source corrections address large assemblies. Geometry
+lists now allow 4,096 instances and the optional hierarchy 8,192 nodes, while
+BOM definitions and other lists retain 512. JSON/file byte limits, depth,
+coverage, quantities, source identity and privacy checks remain unchanged. A
+read-only inspection found even the earlier Waterloo descriptor had 730 leaves,
+so the former 512-instance cap would reject this small-BOM scene.
+
+The renderer now extracts the same native triangulations with indexed triangle
+access and native point coordinates. It retains exact arrays and PNG bytes,
+with no new cache, omitted faces or tolerance changes. Missing triangulation
+continues to fail. A synthetic 16-instance curved fixture measured 1.071 seconds
+before and 0.236 seconds after; this is not a Waterloo performance measurement.
+
+```sh
+PYTHONPATH=/Users/ab/code/autonomous-workshop/.venv/lib/python3.11/site-packages "$workshop_python" -c 'import sys, unittest; from pathlib import Path; sys.path.insert(0, str(Path.cwd() / "src")); unittest.main(module=None, argv=["unittest", "tests.make.test_manufacturing_manifest", "tests.workflow.test_stage_proposal_tool"])' > /private/tmp/workshop-mixed-material-geometry-limits-tests.log 2>&1
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -c 'import sys,unittest;sys.path.insert(0,"src");unittest.main(module=None)' tests.make.test_render_tessellation tests.make.test_render_review_occurrences tests.make.test_render_assembly_placement -q > /private/tmp/render-tessellation-parity-tests.log 2>&1
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -c 'import sys,unittest;sys.path.insert(0,"src");unittest.main(module=None)' tests.make.test_render_review_progress tests.make.test_render_review_depth tests.make.test_render_product_colors tests.make.test_render_product_depth tests.make.test_render_product_views tests.make.test_render_product_transparency tests.make.test_render_product_state_opacity tests.make.test_step_color -q > /private/tmp/render-tessellation-regression-tests.log 2>&1
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" /private/tmp/renderer-tessellation-implemented-benchmark.py > /private/tmp/renderer-tessellation-implemented-benchmark.jsonl
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" "$workshop_python" -m unittest tests.make.test_skill_registry -q
+```
+
+The manifest/finalizer suite passed 124 cases; renderer suites passed 77 cases;
+all 16 registry checks passed after sealing. Independent review found no
+blocker. The corrected CAD tree is
+`820690202cee050ce2c88e5a26769ed82d94744ccf44d569ca9b6730db830acd`
+and mixed-materials is
+`c3c659db1966d04942d2b227db2e4c68a604a6efb0b0c0cf55426068aa8541f4`.
+These source updates do not change the active run before a normal tool refresh.

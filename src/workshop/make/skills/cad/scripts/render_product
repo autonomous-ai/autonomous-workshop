@@ -132,15 +132,17 @@ def _authored_rgba(color) -> tuple[int, int, int, float]:
 def load_scene(source: Path) -> tuple[np.ndarray, np.ndarray]:
     """Tessellate exact CAD into aligned vertices, sRGBs and linear alpha."""
 
+    _runtime_paths()
+    from render_tessellation import tessellate_arrays
+
     shape = _build_shape(source)
     facets = []
     colors = []
     for child, color in _colored_leaves(shape):
-        vertices, faces = child.tessellate(TESSELLATION_TOLERANCE)
-        if not len(vertices) or not len(faces):
+        points, faces = tessellate_arrays(child, TESSELLATION_TOLERANCE)
+        if not len(points) or not len(faces):
             continue
-        points = np.asarray([[p.X, p.Y, p.Z] for p in vertices], dtype=np.float64)
-        facets.append(points[np.asarray(faces, dtype=np.int64)])
+        facets.append(points[faces])
         colors.append(np.tile(_authored_rgba(color), (len(faces), 1)))
     if not facets:
         raise ValueError(f"{source} tessellated to no triangles")

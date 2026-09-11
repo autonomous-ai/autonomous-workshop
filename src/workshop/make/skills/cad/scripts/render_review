@@ -141,11 +141,12 @@ def _leaves(shape, parent_location=None, inherited_colour=None):
 
 
 def tessellate_occurrences(shape, tolerance: float):
+    _runtime_paths()
+    from render_tessellation import tessellate_arrays
+
     occurrences = []
     for index, child in enumerate(_leaves(shape)):
-        vertices, triangles = child.tessellate(tolerance)
-        points = np.asarray([[p.X, p.Y, p.Z] for p in vertices], dtype=float)
-        faces = np.asarray(triangles, dtype=np.int64)
+        points, faces = tessellate_arrays(child, tolerance)
         if len(points) and len(faces):
             occurrences.append((points, faces, _shape_colour(child, index)))
     if not occurrences:

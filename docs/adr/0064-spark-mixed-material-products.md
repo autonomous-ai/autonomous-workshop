@@ -36,6 +36,12 @@ repetition of that production definition. All of its leaves must be covered
 exactly once, and source ownership and the normal print subset remain enforced.
 Other fabrication processes do not gain grouped-unit support.
 
+Geometry lists allow up to 4,096 occurrences and the optional hierarchy allows
+8,192 nodes, independently of the 512-item bound on component definitions,
+stock, consumables, tools, steps and other lists. The existing 2 MiB JSON,
+95 MiB referenced-file and 64-level hierarchy limits still apply. Repeated
+display regions therefore need not become separate manufacturing definitions.
+
 This aligns mixed-material inventories with CAD's existing disjoint color-region
 representation of a single fused printed part. The binding proves file identity,
 hierarchy and declared quantities; it does not prove that the displayed regions
