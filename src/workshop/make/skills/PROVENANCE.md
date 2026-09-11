@@ -843,6 +843,17 @@ checks byte-identical result output with and without the flag. Saved runs
 can use this option only after the normal audited tool refresh; running
 checks are not changed or restarted.
 
+## Preview endpoint visibility before final rendering (2026-09-11)
+
+The CAD inspection reference now recommends small diagnostic camera previews
+of both exact endpoint states before expensive final pairs or animation for
+enclosed mechanisms. Repeated `render_review --view` arguments batch camera
+directions; only pixel resolution is reduced. Occurrences, enclosures,
+materials, poses and tessellation remain unchanged. Native Make selects the
+camera and shared framing, then produces the required final-resolution,
+hash-bound evidence. This is craft guidance, with no tool, gate, review-budget
+or Python camera-selection change. Frozen running projects are untouched.
+
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead

@@ -36,6 +36,17 @@ exactly tied depths use a deterministic material/geometry order. The renderer
 does not discard deeper layers or simplify geometry to make the picture fit a
 cost cap; deeply overlapping transparent geometry can take longer to render.
 
+For an enclosed mechanism, preview a small set of camera directions at a low
+pixel resolution before rendering a full-size endpoint pair or animation.
+`render_review --size 256` supports diagnostic previews (minimum 128); repeat
+`--view` to batch directions for each exact endpoint state. Inspect both
+endpoints: a camera that reveals the resting mechanism can hide its moved
+parts behind a post or rail. Keep every occurrence, enclosure, material, pose
+and tessellation setting unchanged; reduce only pixel resolution. Settle the
+camera and required shared framing, then render the final evidence at its
+normal required resolution and perform all hash-bound reviews. Previews are
+camera-selection aids, not final visual or mechanical evidence.
+
 The launcher lives in the CAD skill directory:
 
 ```bash
