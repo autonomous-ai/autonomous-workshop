@@ -1,7 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://autonomous.ai/schemas/inventor/cad-project-v1.json",
+  "$id": "https://autonomous.ai/schemas/inventor/cad-project-v2.json",
   "title": "Engine-neutral CAD project manifest",
+  "description": "STEP is the only geometry format Workshop writes, seals or ships (ADR 0062), so a part declares step_path and no mesh path. Schema version 2 drops the required stl_path of version 1.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -19,7 +20,7 @@
     "physical_claims"
   ],
   "properties": {
-    "schema_version": {"const": 1},
+    "schema_version": {"const": 2},
     "project_id": {
       "type": "string", "minLength": 1,
       "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
@@ -54,7 +55,7 @@
         "additionalProperties": false,
         "required": [
           "part_id", "name", "quantity", "source_path", "step_path",
-          "stl_path", "material", "print_orientation", "expected_solids",
+          "material", "print_orientation", "expected_solids",
           "expected_shells"
         ],
         "properties": {
@@ -63,7 +64,6 @@
           "quantity": {"type": "integer", "minimum": 1},
           "source_path": {"$ref": "#/$defs/safePath"},
           "step_path": {"$ref": "#/$defs/safePath"},
-          "stl_path": {"$ref": "#/$defs/safePath"},
           "material": {"type": "string", "minLength": 1},
           "print_orientation": {
             "type": "array", "minItems": 3, "maxItems": 3,

@@ -8,6 +8,18 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Fixed
 
+- Two STEP-only leftovers no longer ask a run for a mesh. The published
+  CAD project contract (`make/schemas/cad-project.schema.json`) required
+  `stl_path` on every part under `additionalProperties: false`, mandating
+  an export the toolchain removed in ADR 0062; the field is gone and the
+  document is schema version 2 (`$id` `cad-project-v2.json`). Nothing
+  validates against it, so no artifact changes shape. The orphaned
+  `references/make-playtest.md`, still materialized into every run even
+  though `SKILL.md` no longer routes to it, kept six STL instructions
+  including `render_product` "on an exact verified STL"; all six say STEP.
+  The frozen `deep-economics-v1..v13` references, the v5-v9 proof prompts,
+  and the in-memory tessellation three.js and Factory part keying consume
+  are unchanged. See ADR 0062.
 - Daydream no longer universally rejects classic games, faithful reskins, or
   theme-led reinterpretations. Each Inventor's `TASTE.md` now defines the kind
   of originality it owns, while the existing catalog and notebook checks still

@@ -937,7 +937,7 @@ def _occurrence_transport(
         # Native Make may place a richer CAD assembly descriptor beside its
         # STEP. Translate only the exact, fully bound descriptor+inventory
         # shape into Factory's narrow sidecar. The descriptor owns occurrence
-        # identity; product inventory owns the printable STL paths.
+        # identity; product inventory owns the sealed STEP paths.
         product = _read_json_file(root / "product.json", "Made product.json")
         cad = product.get("cad")
         inventory = product.get("inventory")
@@ -1076,7 +1076,7 @@ def _occurrence_transport(
             or pure.suffix.casefold() != ".step"
             or source_path == primary_source
         ):
-            raise ContractError("Factory occurrence STL path is unsafe")
+            raise ContractError("Factory occurrence STEP path is unsafe")
         content = _read_bound_file(root, manifest, source_path)
         names.add(name)
         target = "%s/%s.step" % (parts_directory, name)
