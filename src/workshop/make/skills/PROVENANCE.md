@@ -1,5 +1,22 @@
 # Shared skill provenance
 
+## Compound STEP color interoperability (2026-09-11)
+
+The STEP writer now repeats a uniformly colored Compound leaf's existing RGBA
+on its unlocated faces, with edges as a fallback for faceless shapes. Its prior
+solid styles were valid STEP but were missed by the installed build123d reader,
+which could replace authored appearance with the renderer's fallback palette.
+Geometry, occurrence hierarchy, placement, alpha and same-color definition
+sharing remain intact. No loader, mesh, repair or geometry substitution was
+added. Differently colored occurrences sharing one native definition retain a
+separate existing limitation; use independent definitions for different colors.
+
+Seventy-six focused and STEP/renderer regression tests passed, including exact
+array/PNG comparisons, round-trip geometry and source immutability. Independent
+review found no blocker. The current Waterloo run keeps its frozen tools: its
+native Manager already authored explicit colored solids and passed visual
+review, so this general compatibility fix does not require a live refresh.
+
 ## Compressed mixed Factory carrier guidance (2026-09-11)
 
 Mixed-material guidance now distinguishes the explicit compressed host carrier

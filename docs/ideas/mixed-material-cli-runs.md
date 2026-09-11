@@ -1385,3 +1385,53 @@ The updated mixed guidance tree is
 `c2915639bed988a87b8c98812469fae4aebbf40af54c0219ea56b6c34ad292be`.
 The earlier stored-only lower-bound guidance is superseded for new compressed
 mixed imports; it remains applicable to stored carriers.
+
+### Final review and interrupted verification
+
+At 10:22:20 UTC the independent visual review passed without blocking defects.
+The sealed schema-8 review hash is
+`d7588a10d354b3fe5827719511152347b72904684fb500f73c140410bbce7296`.
+The Manager's explicit colored solids preserve appearance; the full STEP is
+59,453,359 bytes. Physical printing, assembly and play remain untested.
+
+Integrated verification stopped in preflight at 10:25:33 UTC: all 11 printed
+entries fit the declared 220 × 220 mm bed, but the product-specific fit audit
+was missing and two `2mm` dimensions lacked confidence tags. Expensive final
+checks did not start. Native turns reported unclassified terminal failures at
+10:27:07, 10:54:07 and 12:07:07 UTC. No cause has been established. The earlier
+structured diagnosis showed no host timeout or exhausted token allowance.
+
+After committing the compressed carrier as `b996b70d`, ordinary plain resumes
+loaded the new host code while preserving reviewed assets and frozen Make tools:
+
+```sh
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli resume wish-20260911-023805-fe157910
+```
+
+This exact command resumed at 10:48:33 UTC (after an automatic approval-review
+timeout and a successful allowed retry) and again at 11:55:28 UTC. Both kept
+the same native session, Wish, medium effort and 500M-token allowance. Neither
+completed Make or published the product. Observed usage before the latter was
+101,974,575 tokens. Source documentation apply_patch calls also encountered
+two approval-review timeouts; no rejection reason was returned.
+
+### Compound STEP color interoperability
+
+The source writer repeats uniformly colored Compound leaves' existing RGBA on
+unlocated faces, with edge fallback. Valid solid styles had been missed by the
+installed build123d reader. Geometry, hierarchy, alpha and same-color definition
+sharing are preserved. Different colors sharing one native definition remain
+a separate limitation. Waterloo already uses its Manager's explicit-solid
+workaround; its reviewed tools are intentionally not refreshed for this fix.
+
+```sh
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -c 'import sys,unittest;sys.path.insert(0,"src");unittest.main(module=None)' tests.make.test_step_compound_color tests.make.test_render_product_colors tests.make.test_render_review_occurrences tests.make.test_assembly_package -q > /private/tmp/step-compound-color-tests.log 2>&1
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -c 'import sys,unittest;sys.path.insert(0,"src");unittest.main(module=None)' tests.make.test_step_color tests.make.test_step_canonical tests.make.test_render_product_transparency tests.make.test_render_product_state_opacity tests.make.test_render_assembly_placement tests.make.test_render_tessellation -q > /private/tmp/step-compound-color-render-regressions.log 2>&1
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" "$workshop_python" -m unittest tests.make.test_skill_registry -q
+```
+
+These suites passed 28, 48 and 16 tests respectively. Independent review found
+no blocker. Source CAD hash:
+`fff03a811e9dc5b4cee544b47c55331f9dc17ac9e46b9f28749c8d5717a690a4`.
+The product retains
+`820690202cee050ce2c88e5a26769ed82d94744ccf44d569ca9b6730db830acd`.

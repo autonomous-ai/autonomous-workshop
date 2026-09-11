@@ -201,10 +201,26 @@ def _create_bin_xcaf_doc(to_export: Any) -> Any:
                 set_label_color(child_component, getattr(child, "color", None))
             return definition_label
 
-        definition_label = shape_tool.AddShape(shape_without_location(shape), False)
+        definition_shape = shape_without_location(shape)
+        definition_label = shape_tool.AddShape(definition_shape, False)
         shape_definitions[key] = definition_label
         set_label_name(definition_label, getattr(shape, "label", None))
-        set_label_color(definition_label, getattr(shape, "color", None))
+        color = getattr(shape, "color", None)
+        set_label_color(definition_label, color)
+        if color is not None and isinstance(shape, Compound):
+            # Compound colors survive STEP as valid solid styles, but readers
+            # such as build123d's fallback inspect face styles instead. Bind
+            # the same uniform leaf color to faces for interoperability, using
+            # the unlocated definition without changing geometry or instances.
+            for kind in (ta.TopAbs_FACE, ta.TopAbs_EDGE):
+                explorer = TopExp_Explorer(definition_shape, kind)
+                if not explorer.More():
+                    continue
+                while explorer.More():
+                    sub_label = shape_tool.AddSubShape(definition_label, explorer.Current())
+                    set_label_color(sub_label, color)
+                    explorer.Next()
+                break
         return definition_label
 
     if is_assembly:

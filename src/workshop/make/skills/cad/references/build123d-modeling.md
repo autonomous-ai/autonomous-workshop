@@ -179,6 +179,12 @@ export path to retain that alpha in STEP. All geometry remains in the model and
 its framing. Transparent faces receive no opaque silhouette outline; fully
 invisible faces contribute no fill, outline or shadow.
 
+Uniformly colored Compound leaves export matching face styles so STEP readers
+that inspect faces retain their RGBA. Repeated occurrences may share a native
+definition when their appearance is the same. Use independent definitions for
+different colors: occurrence-level colors on one shared definition are not
+reliably retained by every reader. Inspect the exported STEP views.
+
 The product renderer retains every triangle from each occurrence's in-memory
 tessellation, including scenes above 75,000 triangles. It never reduces cost
 by discarding triangles or components. Larger assemblies take more rendering
