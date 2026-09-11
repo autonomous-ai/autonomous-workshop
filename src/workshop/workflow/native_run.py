@@ -161,7 +161,7 @@ from workshop.runtime import (
     manager_runtime_selection,
     manager_spec,
 )
-from workshop.runtime.managers import NativeSessionLauncher
+from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS, NativeSessionLauncher
 from workshop.runtime.agent_assets import (
     parse_inventor_custom_agent_bytes,
     product_run_agent_assets,
@@ -189,6 +189,7 @@ from workshop.workflow.agent_run import (
     AgentRun,
     AgentRunCheckpoint,
     DeterministicGateReceipt,
+    MIN_AGENT_TURN_SECONDS,
 )
 from workshop.workflow.budgets import (
     BUDGETS_CAPABILITY_PATH,
@@ -197,6 +198,7 @@ from workshop.workflow.budgets import (
     LifetimeTurnBudget,
     TURN_BUDGETS_CAPABILITY_PATH,
     MAX_BUDGETED_TURNS,
+    MAX_TURN_SECONDS,
     SPARK_BUDGETED_TURN_SECONDS,
     CommandBudget,
     uses_command_budget,
@@ -5160,6 +5162,24 @@ def _uses_command_budget(checkpoint: AgentRunCheckpoint) -> bool:
     return uses_command_budget(checkpoint.input_sha256s)
 
 
+_NO_TURN_OVERRIDE = object()
+
+
+def _turn_override(checkpoint: AgentRunCheckpoint) -> Any:
+    """Return the operator-selected turn boundary frozen into this run.
+
+    ``_NO_TURN_OVERRIDE`` means the run keeps its frozen policy boundary.
+    ``None`` means the operator removed the host wall clock entirely. An int is
+    an exact number of seconds that outranks every host-side clamp, including
+    the budgeted Spark boundary and a remaining step clock.
+    """
+
+    if getattr(checkpoint, "turn_untimed", False):
+        return None
+    seconds = getattr(checkpoint, "turn_seconds", None)
+    return _NO_TURN_OVERRIDE if seconds is None else seconds
+
+
 def _budgeted_turn_launcher(
     checkpoint: AgentRunCheckpoint,
     launcher: NativeSessionLauncher,
@@ -5183,16 +5203,22 @@ def _budgeted_turn_launcher(
         # construction is used exactly as the caller built it.
         return launcher
     frozen_turn_ceiling = getattr(launcher, "timeout_seconds", None)
-    effective_seconds = (
-        min(seconds, frozen_turn_ceiling)
-        if type(frozen_turn_ceiling) is int
-        else seconds
-    )
-    if checkpoint.effort == "spark" and (
-        SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
-        or SPARK_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
-    ):
-        effective_seconds = min(effective_seconds, SPARK_BUDGETED_TURN_SECONDS)
+    override = _turn_override(checkpoint)
+    if override is not _NO_TURN_OVERRIDE:
+        # An explicit operator boundary outranks both clamps below. The clocks
+        # keep accounting for what this turn spends; they no longer cut it short.
+        effective_seconds = override
+    else:
+        effective_seconds = (
+            min(seconds, frozen_turn_ceiling)
+            if type(frozen_turn_ceiling) is int
+            else seconds
+        )
+        if checkpoint.effort == "spark" and (
+            SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or SPARK_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            effective_seconds = min(effective_seconds, SPARK_BUDGETED_TURN_SECONDS)
     if (
         frozen_turn_ceiling == effective_seconds
         and getattr(launcher, "runtime_profile_sha256", None) == digest
@@ -5222,6 +5248,10 @@ def _codex_launcher_for(
     runtime_kwargs = dict(kwargs)
     if checkpoint.manager_model is not None:
         runtime_kwargs["model"] = checkpoint.manager_model
+    override = _turn_override(checkpoint)
+    if override is not _NO_TURN_OVERRIDE:
+        # One operator boundary replaces every stage-shaped default below.
+        runtime_kwargs["timeout_seconds"] = override
     return CodexNativeSessionLauncher(
         reasoning_effort=(
             checkpoint.manager_reasoning_effort or reasoning_effort
@@ -5445,6 +5475,9 @@ def _native_launcher(
         launcher_kwargs["model"] = checkpoint.manager_model
     if checkpoint.manager_reasoning_effort is not None:
         launcher_kwargs["reasoning_effort"] = checkpoint.manager_reasoning_effort
+    override = _turn_override(checkpoint)
+    if override is not _NO_TURN_OVERRIDE:
+        launcher_kwargs["timeout_seconds"] = override
     return manager_launcher(checkpoint.manager_id, **launcher_kwargs)
 
 
@@ -9089,9 +9122,13 @@ def _run_native_session(
         turn_mark = None if budget is None else budget.started()
         reserved_seconds = None
         if isinstance(budget, LifetimeBudget):
-            reserved_seconds = 0 if isinstance(budget, ProductTokenBudget) else min(
-                budget.turn_timeout_seconds(checkpoint.stage),
-                getattr(turn_launcher, "timeout_seconds", 60 * 60),
+            launcher_ceiling = getattr(turn_launcher, "timeout_seconds", MAX_TURN_SECONDS)
+            reserved_seconds = 0 if isinstance(budget, ProductTokenBudget) else (
+                # An untimed launcher has no boundary to reserve against, so the
+                # step clock alone decides what this turn may hold.
+                budget.turn_timeout_seconds(checkpoint.stage)
+                if launcher_ceiling is None
+                else min(budget.turn_timeout_seconds(checkpoint.stage), launcher_ceiling)
             )
             budget.reserve(checkpoint.stage, reserved_seconds)
             _save_lifetime_budget(paths, checkpoint, budget)
@@ -9700,6 +9737,8 @@ def start_native_run(
     github_publish_requested: bool = False,
     max_rounds: int = 4,
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
+    turn_seconds: Optional[int] = None,
+    turn_untimed: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
@@ -9729,6 +9768,12 @@ def start_native_run(
     ``max_rounds`` freezes the Invent-Make-Playtest round budget (1-100). Every
     Make revision request and every Playtest ``improve`` verdict spends one
     round, so a mechanism-heavy Wish may need more than the default four.
+
+    ``turn_seconds`` and ``turn_untimed`` freeze one operator-selected native
+    turn boundary that replaces every stage-shaped default and host-side clamp.
+    ``turn_untimed`` removes the Workshop wall clock for this run; the selected
+    Manager must still bound the turn some other way, which today means a Codex
+    token budget. Neither option changes any gate, review, or round allowance.
 
     ``wish_reference_files`` maps every reference image the Wish declares to
     its exact bytes; the run materializes them read-only under
@@ -9760,6 +9805,18 @@ def start_native_run(
         raise ContractError("round budget must be an integer between 1 and 100")
     if wish_reference_files is not None and not isinstance(wish_reference_files, Mapping):
         raise ContractError("Wish reference files must map reference names to bytes")
+    if type(turn_untimed) is not bool:
+        raise ContractError("untimed turn option must be boolean")
+    if turn_untimed and turn_seconds is not None:
+        raise ContractError("choose an exact turn boundary or an untimed turn, not both")
+    if turn_seconds is not None and (
+        type(turn_seconds) is not int
+        or not MIN_AGENT_TURN_SECONDS <= turn_seconds <= MAX_NATIVE_TURN_SECONDS
+    ):
+        raise ContractError(
+            "native turn boundary must be from %d to %d seconds"
+            % (MIN_AGENT_TURN_SECONDS, MAX_NATIVE_TURN_SECONDS)
+        )
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
@@ -9792,6 +9849,8 @@ def start_native_run(
                 manager_id=selected_manager.manager_id,
                 manager_model=selected_runtime.model,
                 manager_reasoning_effort=selected_runtime.reasoning_effort,
+                turn_seconds=turn_seconds,
+                turn_untimed=turn_untimed,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.
@@ -10060,6 +10119,8 @@ def resume_native_run(
     publish_requested: Optional[bool] = None,
     adopt_turn_budget: bool = False,
     max_tokens: Optional[int] = None,
+    turn_seconds: Optional[int] = None,
+    turn_untimed: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -10080,6 +10141,10 @@ def resume_native_run(
         validate_limit(max_tokens)
     if max_tokens is not None and adopt_turn_budget:
         raise ContractError("choose token budget or legacy turn-budget adoption, not both")
+    if type(turn_untimed) is not bool:
+        raise ContractError("untimed turn option must be boolean")
+    if turn_untimed and turn_seconds is not None:
+        raise ContractError("choose an exact turn boundary or an untimed turn, not both")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
@@ -10092,6 +10157,10 @@ def resume_native_run(
         if max_tokens is not None:
             _adopt_token_budget(paths, checkpoint, max_tokens)
             checkpoint = run.snapshot()
+        if turn_untimed or turn_seconds is not None:
+            checkpoint = run.rebind_turn_boundary(
+                turn_seconds=turn_seconds, turn_untimed=turn_untimed
+            )
         budget = _load_lifetime_budget(paths, checkpoint)
         if isinstance(budget, ProductTokenBudget):
             _reconcile_token_accounting_need(paths, checkpoint, budget)

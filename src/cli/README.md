@@ -64,6 +64,18 @@ ideas. `workshop start --once` is the bounded autonomous-idea variant.
 Codex product, including all build stages, native children and resumes. The
 separate Daydream session is excluded. All revisions and retries share that
 allowance without a native-turn or wall-clock execution cap.
+`wish`, `start` and `resume` also accept `--turn-minutes M`, which bounds each
+native turn to `M` minutes (1 to 360), or `--turn-minutes none` to run with no
+Workshop wall clock at all. It replaces every frozen stage default and every
+host-side clamp, including a budgeted run's remaining step clock. Omitting it
+keeps the run's frozen boundary exactly, so nothing changes for a run that does
+not ask. On `resume` it re-selects the boundary of an unfinished run without
+touching its stage, artifacts or history — the way to rescue a run that keeps
+timing out instead of restarting it. An untimed run still needs the Manager's
+own bound, which today means a Codex token budget: Codex refuses to run untimed
+without one, while Claude Code and Grok Build have no token accounting and an
+untimed turn there is bounded by nothing Workshop owns. See ADR 0064.
+
 `--max-rounds` remains legacy metadata for token-budget products, not a stop
 condition. Engineering gates and failure-closed accounting remain mandatory.
 Input plus output includes cached input without counting reasoning output
