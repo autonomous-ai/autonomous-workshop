@@ -46,6 +46,11 @@ operations share the same CAD kernel; agreement does not certify arbitrary
 geometry or the motion between samples. The default exit status remains
 nonzero for inconclusive conditions.
 
+Within one condition, successful material unions may be reused only for the
+same exact topology, location and orientation. The cache holds at most 32 placed
+shapes and never reuses an error or substitutes another pose's union. This
+reduces repeated work without changing the declared samples or proof rules.
+
 Run `python "$CAD_SKILL_ROOT/scripts/check_motion" --self-check` after changing
 this gate. Its regression fixture includes a shaft apparently held by a gate
 which can itself leave; that manifest must fail until the gate and its key both

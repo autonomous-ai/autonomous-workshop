@@ -35,6 +35,25 @@ geometry, or changes the final JSON schema. Regression coverage includes real
 subprocess timeout capture, unchanged completed results, nested conditions,
 throttling and bounds. No live pilot files or frozen tools are changed.
 
+## Exact placed material reuse (2026-09-11)
+
+`check_motion` reuses successful grouped-material normalization within one
+immutable outer condition. A bounded 32-entry LRU avoids fusing a fixed
+multipart obstacle again for each sample or a mover again for each obstacle.
+Every cache hit requires identical OCCT topology, location and orientation via
+`IsEqual`; independent TopoDS key values preserve the original placement.
+Unlike the validity cache, material reuse never removes or changes a placement.
+Pose-sensitive Boolean failures still run at every new pose and errors are not
+cached. Nested conditions share the bounded scope, discarded on return or error.
+
+Collision operations, samples, consistency checks, thresholds, results and exit
+behavior are unchanged. Synthetic regressions compare complete results and
+sampled pairs against uncached normalization, including first collision and
+overlapping-child material volume; they also cover identity collisions, key
+mutation, failure, scope cleanup and eviction. This is an implementation cost
+reduction, not new physical evidence or a repair for invalid geometry. Frozen
+tools and live products are not changed by the source update.
+
 ## Complete-product authored colors (2026-09-10)
 
 Workshop's `cad/scripts/render_product` now descends to leaf occurrences with

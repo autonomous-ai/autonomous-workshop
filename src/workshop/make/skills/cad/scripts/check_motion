@@ -238,6 +238,7 @@ def index_parts(shape) -> dict[str, object]:
 
 
 _MAX_VALIDITY_CACHE_ENTRIES = 256
+_MAX_MATERIAL_CACHE_ENTRIES = 32
 
 
 class ValidityCache:
@@ -295,7 +296,42 @@ class ValidityCache:
         return valid
 
 
+class MaterialCache:
+    """Reuse successful normalization at an identical immutable placed shape.
+
+    Unlike validity, material Booleans are pose-sensitive: neither location nor
+    orientation is canonicalized. The independent TopoDS value keeps the key
+    stable if a caller later changes its wrapper's placement. Non-destructive
+    operations preserve the shared topology during this condition.
+    """
+    def __init__(self):
+        self.entries = []
+        self.hits = 0
+        self.misses = 0
+
+    def material(self, shape):
+        wrapped = shape.wrapped
+        if wrapped is None or wrapped.IsNull():
+            return _normalize_material(shape)
+        digest = hash(wrapped)
+        for index, (previous_hash, previous, result) in enumerate(self.entries):
+            if previous_hash == digest and previous.IsEqual(wrapped):
+                self.hits += 1
+                self.entries.append(self.entries.pop(index))
+                return result
+        self.misses += 1
+        key = wrapped.Located(wrapped.Location())
+        result = _normalize_material(shape)
+        # Retain only successes. A bounded LRU keeps fixed obstacles hot without
+        # holding a multipart normalized solid for every transient sampled pose.
+        if len(self.entries) >= _MAX_MATERIAL_CACHE_ENTRIES:
+            self.entries.pop(0)
+        self.entries.append((digest, key, result))
+        return result
+
+
 _VALIDATION = ContextVar('motion_validation', default=None)
+_MATERIALS = ContextVar('motion_materials', default=None)
 # The collision threshold of the condition being measured, so a pose whose
 # Boolean volumes disagree can still be judged when every formulation gives the
 # same threshold verdict. Absent outside a condition.
@@ -314,16 +350,18 @@ def decision_scope(threshold):
 
 @contextmanager
 def validation_scope():
-    """Share bounded validity work inside one immutable outer condition."""
+    """Share bounded validity and material work in one immutable condition."""
     existing = _VALIDATION.get()
     if existing is not None:
         yield existing
         return
     cache = ValidityCache()
     token = _VALIDATION.set(cache)
+    material_token = _MATERIALS.set(MaterialCache())
     try:
         yield cache
     finally:
+        _MATERIALS.reset(material_token)
         _VALIDATION.reset(token)
 
 
@@ -373,6 +411,11 @@ def _boolean_shape(kind, arguments, tool_shapes):
 
 
 def _material(shape):
+    cache = _MATERIALS.get()
+    return _normalize_material(shape) if cache is None else cache.material(shape)
+
+
+def _normalize_material(shape):
     """Fuse placed solids so overlapping children count as material once."""
     from OCP.BRepAlgoAPI import BRepAlgoAPI_Fuse
 
