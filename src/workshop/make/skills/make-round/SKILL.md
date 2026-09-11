@@ -16,6 +16,15 @@ calls were reassembling by hand.
 
 ## Rules
 
+- Before expensive or final verification, mentally walk the complete ordinary
+  user cycle against the Wish and actual design: use/play, finish, reload/reset,
+  and repeat, as applicable. Distinguish one-time assembly and occasional service
+  from repeated actions. Check modeled access and instructions for tools, loose
+  fasteners, hand effort and repeated disassembly; judge whether that burden fits
+  the promised experience. Repair conflicts through native design judgment.
+  Revisit the cycle in the existing final review after its blind observation,
+  without adding a review round or artifact. Tool use may be appropriate; judge
+  it against the Wish. This design assessment is not physical Playtest evidence.
 - Run `make_round` once per repair round, after editing source and before
   deciding what to repair next. Then inspect the visual packet and record the
   Manager's findings using `--record-visual` without rebuilding. Read its summary; open a full report only
