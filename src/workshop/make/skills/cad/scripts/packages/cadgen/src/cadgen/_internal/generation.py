@@ -564,9 +564,6 @@ def _generate_part_outputs(
     # descriptor. There is no monolithic GLB and no file-vs-dir split.
     source_compound = getattr(scene, "source_compound", None)
     single_component = spec.kind != "assembly"
-    package_provenance = _assembly_provenance_manifest(
-        scene, selector_options=selector_options, step_path=spec.step_path, entry_kind=spec.kind
-    )
 
     def component_package_job() -> dict[str, object]:
         # Lazy import: component_package imports from this module, so a top-level
@@ -574,6 +571,12 @@ def _generate_part_outputs(
         from cadgen._internal.component_package import build_package_from_compound
         from cadgen._internal.legacy_artifacts import prune_legacy_artifacts
 
+        # Jobs run in order: the optional STEP export has completed before this
+        # package job starts. Read its bytes now, not while queuing the jobs, so
+        # a sibling STEP replacement cannot leave the previous hash in the package.
+        package_provenance = _assembly_provenance_manifest(
+            scene, selector_options=selector_options, step_path=spec.step_path, entry_kind=spec.kind
+        )
         shape = source_compound
         if shape is None:
             # Imported STEP (no generator compound): package its geometry directly. An

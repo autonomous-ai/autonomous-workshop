@@ -710,6 +710,22 @@ at the corrected tree and recorded privately. Frozen runs keep their exact
 materialized tools; this is measurement calibration, not a product-quality
 claim, and it does not change the necessary-contact rule for driven parts.
 
+## STEP provenance after export (2026-09-11)
+
+The generated render package captured its STEP hash before the queued STEP
+export ran. A single `gen source.step.py --write` invocation could therefore
+leave `assembly.json` with the previous sibling STEP hash, or no hash on the
+first write. Package provenance is now read inside the package job, after the
+sequential STEP export completes. Alternate export destinations retain the
+package's canonical STEP path and hash; geometry, source provenance and gates
+are unchanged. Export failures still stop before package creation.
+
+Regression tests cover fresh and replaced STEP files, identical size and
+timestamp with different bytes, alternate exports, package-only generation,
+output failures, and actual CLI regeneration with geometry round trips. Saved
+runs retain their materialized tool bytes unless the operator uses the normal
+audited host tool refresh.
+
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead
