@@ -1098,3 +1098,46 @@ mixed-materials tree as
 `6ff491de31d4b7dc280e2ce939bd7a6d023a376433f50d2ebb73aaea636aff81`.
 The active toy has not yet received this optional capability; its current
 round continues with its existing frozen tools.
+
+### Applying the grouped-print correction after repeated coating failure
+
+Round 6 again passed its print checks but failed complete-scene construction
+at `substrate subtraction 'metal'`, after 132.7 seconds. At this failed-round
+checkpoint, the builder sent the ordinary interrupt signal to the verified
+Waterloo CLI host; its PID, creation time and exact resume/run arguments were
+checked first. The host reaped its native process session and exited 130 at
+**08:44:47 UTC**. Status retained the original checkpoint, root and
+**64,444,370 / 500,000,000 tokens**.
+
+```sh
+"$workshop_python" - <<'PY'
+import psutil, signal
+p = psutil.Process(40446)
+a = p.cmdline()
+assert p.create_time() == 1789114344.342091
+assert 'wish-20260911-023805-fe157910' in a and 'resume' in a and 'cli' in a and '-m' in a
+p.send_signal(signal.SIGINT)
+print('Sent normal interrupt to verified Waterloo CLI host 40446.')
+PY
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli status wish-20260911-023805-fe157910 --json
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli resume wish-20260911-023805-fe157910 --refresh-tools
+```
+
+This historical command performed the equivalent of Ctrl-C after checking the
+live process identity; its PID and creation time are not reusable instructions.
+At **2026-09-11 08:45:26 UTC**, normal resume refreshed exactly three
+mixed-material files: `SKILL.md`, `references/manifest.md`, and
+`scripts/manufacturing_manifest.py`. The optional grouped-print contract from
+`6d9ca74f` is now available to the same native Manager, which owns any product
+representation change and all new evidence. The builder did not edit product
+geometry or inject a stage proposal. All six earlier pilots remain paused.
+
+At the operator's request, the latest successful full-product preview was
+opened with:
+
+```sh
+open -a Preview '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260911-023805-fe157910/workspace/artifacts/make/r0001/product/cad/measure/rounds/r0003/visual/iso.png'
+```
+
+This image predates the refined figures; later full-scene renders had not yet
+succeeded. It is not final reviewed appearance or publication evidence.
