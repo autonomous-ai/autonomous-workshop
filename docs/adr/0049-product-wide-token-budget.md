@@ -36,12 +36,20 @@ incompatible newer format fails closed instead of becoming zero usage. It binds
 root identity and workspace to private host state, follows native parent ancestry, deduplicates
 cumulative notifications and sums explicit task resets across process resumes.
 Continued tasks in the same process, including native child follow-ups, retain
-cumulative counters. At each task boundary, the adapter accepts only a reset
-whose cumulative counters equal the latest request, or continuation whose
-counters exactly equal the previous observation plus the latest request for
-every counter. It preserves prior consumption in either case.
-This case was missed by the first acceptance: Crosscurrent stopped when Leo
-received a follow-up task. Regression tests cover child follow-ups, subsequent
+cumulative counters. At each task boundary, the adapter accepts a reset whose
+cumulative counters equal the latest request, or continuation whose counters
+exactly equal the previous observation plus the latest request for every
+counter. After an unfinished task, Codex 0.153.4 can instead restore the most
+recent completed task's terminal counters. This third case requires a
+`task_complete` bound to that task's exact `turn_id`, observed terminal counters,
+and a first request whose cumulative counters equal that snapshot plus the
+latest request in every counter. Arbitrary historical samples and orphan
+completions copied into a child's pre-task history supply no baseline. Only the
+native baseline changes: all observed usage from every interrupted task remains
+charged in the aggregate ledger. Duplicate usage notifications add nothing,
+and a mid-task counter regression still fails closed.
+Continued-task accounting was missed by the first acceptance: Crosscurrent
+stopped when Leo received a follow-up task. Regression tests cover child follow-ups, subsequent
 process resets, duplicate notifications, and unexplained boundary counters.
 Unrelated conversation payloads are not read. Unsupported formats, counter
 regression, disappearing usage and ambiguous history fail closed. Native

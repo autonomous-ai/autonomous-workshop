@@ -169,6 +169,10 @@ def read_thread_usage(path, *, thread_id, workspace):
     totals = {key: 0 for key in COUNTERS}
     task_totals = None
     task_start = False
+    active_task = None
+    task_completed = False
+    completed_totals = None
+    may_restore_completed = False
     tasks = set()
     model = None
     models = set()
@@ -185,7 +189,22 @@ def read_thread_usage(path, *, thread_id, workspace):
             if not isinstance(turn_id, str) or not turn_id or turn_id in tasks:
                 raise UsageUnavailable("ambiguous native usage task boundary")
             tasks.add(turn_id)
+            may_restore_completed = active_task is not None and not task_completed
+            active_task = turn_id
+            task_completed = False
             task_start = True
+        if record.get("type") == "event_msg" and payload.get("type") == "task_complete":
+            if active_task is None:
+                # Forked rollouts can start with a copied parent completion.
+                # Without a task/counter binding it supplies no usage baseline.
+                continue
+            if payload.get("turn_id") != active_task:
+                raise UsageUnavailable("ambiguous native usage task completion")
+            # A completion without an observed request cannot establish a
+            # terminal counter snapshot. Repeated completion notifications
+            # for this same task are harmless and do not charge usage.
+            completed_totals = None if task_start else dict(task_totals)
+            task_completed = True
         if record.get("type") != "event_msg" or payload.get("type") != "token_count":
             continue
         info = payload.get("info")
@@ -193,20 +212,30 @@ def read_thread_usage(path, *, thread_id, workspace):
             continue
         if not isinstance(info, dict) or not isinstance(model, str) or not 1 <= len(model) <= 128:
             raise UsageUnavailable("native usage model or counters are unsupported")
+        if task_completed:
+            raise UsageUnavailable("native usage follows a completed task")
         current = _counters(info.get("total_token_usage"))
         if not tasks:
             raise UsageUnavailable("native usage lacks a task boundary")
         if task_start:
-            # exec 0.153.4+ resets counters on process resume, but a continued
-            # task in the same process (including a child follow-up) retains
-            # them. Require an exact first-request baseline for either case;
-            # never infer a reset merely from a decreasing counter.
+            # exec 0.153.4+ can reset counters, continue the latest counters,
+            # or restore its last completed task after an interrupted task.
+            # Require an exact first-request baseline; never infer a reset
+            # merely from decreasing counters or an arbitrary older sample.
             last = _counters(info.get("last_token_usage"))
             if current == last:
                 task_totals = {key: 0 for key in COUNTERS}
-            elif task_totals is None or any(
-                current[key] != task_totals[key] + last[key] for key in COUNTERS
+            elif task_totals is not None and all(
+                current[key] == task_totals[key] + last[key] for key in COUNTERS
             ):
+                pass
+            elif may_restore_completed and completed_totals is not None and all(
+                current[key] == completed_totals[key] + last[key] for key in COUNTERS
+            ):
+                # Only the native baseline changes. Aggregate totals retain
+                # every observed request from the interrupted task(s).
+                task_totals = dict(completed_totals)
+            else:
                 raise UsageUnavailable("native usage task baseline is ambiguous")
             task_start = False
         delta = {key: current[key] - task_totals[key] for key in COUNTERS}

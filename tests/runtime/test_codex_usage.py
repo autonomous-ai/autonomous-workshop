@@ -115,6 +115,149 @@ def test_followup_task_keeps_cumulative_usage_then_process_resume_resets(tmp_pat
     assert result["tokens"] == counters(500)
 
 
+def task(turn_id):
+    return {"type": "event_msg", "payload": {"type": "task_started", "turn_id": turn_id}}
+
+
+def complete(turn_id):
+    return {"type": "event_msg", "payload": {"type": "task_complete", "turn_id": turn_id}}
+
+
+@pytest.mark.parametrize("interruptions", [1, 2, 4])
+@pytest.mark.parametrize("target_thread,parent", [(ROOT, None), (CHILD, ROOT)])
+def test_interrupted_resume_restores_completed_baseline_without_losing_usage(
+    tmp_path, interruptions, target_thread, parent,
+):
+    from workshop.workflow.token_budget import ProductTokenBudget
+
+    write(tmp_path, records() + [usage(100)])
+    events = records(target_thread, parent) + [usage(200), complete("first"), complete("first")]
+    for index in range(interruptions):
+        events += [task("interrupted-%d" % index),
+                   usage(300, last_token_usage=counters(100)),
+                   usage(300, last_token_usage=counters(100)),
+                   usage(400, last_token_usage=counters(100))]
+    write(tmp_path, events, target_thread)
+    budget = ProductTokenBudget()
+    budget.observe(read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy")))
+    restored = ProductTokenBudget()
+    restored.restore(budget.to_dict())
+
+    events += [task("resume"), usage(250, last_token_usage=counters(50)),
+               usage(250, last_token_usage=counters(50)),
+               usage(300, last_token_usage=counters(50))]
+    write(tmp_path, events, target_thread)
+    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    restored.observe(result)
+
+    expected = 200 + interruptions * 200 + 100 + (100 if parent else 0)
+    assert result["tokens"] == counters(expected)
+    assert result["total_tokens"] == expected + expected // 10  # Cache/reasoning included once.
+    assert restored.to_dict()["used_tokens"] == result["total_tokens"]
+    assert read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy")) == result
+
+
+@pytest.mark.parametrize("terminal,interrupted,current,last", [
+    # Sanitized five-counter observations from four interrupted 0.153.4 roots.
+    ((2437090, 2301440, 0, 10194, 2855), (4593414, 4303872, 0, 18043, 5091),
+     (2604080, 2308480, 0, 10630, 3129), (166990, 7040, 0, 436, 274)),
+    ((2411710, 2343168, 0, 8026, 3238), (4211295, 3985664, 0, 13203, 5015),
+     (2564796, 2350208, 0, 8274, 3238), (153086, 7040, 0, 248, 0)),
+    ((2253977, 2228480, 0, 6309, 2668), (4079000, 3951872, 0, 11776, 3228),
+     (2361209, 2228480, 0, 6375, 2668), (107232, 0, 0, 66, 0)),
+    ((1331319, 1275264, 0, 4774, 1163), (3236034, 3113728, 0, 10160, 3007),
+     (1443173, 1275264, 0, 4884, 1163), (111854, 0, 0, 110, 0)),
+    # Nonzero cache writes and reasoning must also survive independently.
+    ((2000, 1000, 100, 300, 80), (2600, 1200, 170, 400, 120),
+     (2250, 1100, 130, 340, 90), (250, 100, 30, 40, 10)),
+])
+def test_completed_baseline_matches_every_counter_exactly(
+    tmp_path, terminal, interrupted, current, last,
+):
+    terminal, interrupted, current, last = [dict(zip(COUNTERS, row))
+                                          for row in (terminal, interrupted, current, last)]
+    events = records() + [usage(total_token_usage=terminal, last_token_usage=terminal),
+        complete("first"), task("interrupted"),
+        usage(total_token_usage=interrupted,
+              last_token_usage={k: interrupted[k] - terminal[k] for k in COUNTERS}),
+        task("resume"), usage(total_token_usage=current, last_token_usage=last),
+        usage(total_token_usage=current, last_token_usage=last)]
+    result = read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+    assert result["tokens"] == {key: interrupted[key] + last[key] for key in COUNTERS}
+
+
+@pytest.mark.parametrize("terminal_event", [
+    None,
+    {"type": "event_msg", "payload": {"type": "task_complete"}},
+    complete("another-task"),
+    complete(True),
+])
+def test_restored_baseline_requires_bound_terminal_identity(tmp_path, terminal_event):
+    events = records() + [usage(200)] + ([terminal_event] if terminal_event else [])
+    events += [task("interrupted"), usage(400, last_token_usage=counters(200)),
+               task("resume"), usage(250, last_token_usage=counters(50))]
+    with pytest.raises(UsageUnavailable, match="ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("key", COUNTERS)
+def test_restored_baseline_with_one_mismatched_counter_fails(tmp_path, key):
+    current = counters(250)
+    current[key] += 1
+    events = records() + [usage(200), complete("first"), task("interrupted"),
+        usage(400, last_token_usage=counters(200)), task("resume"),
+        usage(total_token_usage=current, last_token_usage=counters(50))]
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("completion", [True, False])
+def test_only_most_recent_completed_task_can_supply_restored_baseline(tmp_path, completion):
+    events = records() + [usage(200), complete("first"), task("second")]
+    if completion:
+        events += [usage(400, last_token_usage=counters(200))]
+    events += [complete("second"), task("interrupted"), usage(600, last_token_usage=counters(
+        200 if completion else 400)), task("resume"), usage(250, last_token_usage=counters(50))]
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_restored_baseline_cannot_reclassify_mid_task_counter_regression(tmp_path):
+    events = records() + [usage(200), complete("first"), task("interrupted"),
+        usage(400, last_token_usage=counters(200)),
+        usage(250, last_token_usage=counters(50))]
+    with pytest.raises(UsageUnavailable, match="regressed"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_completion_cannot_be_rebound_to_an_older_task(tmp_path):
+    events = records() + [usage(200), task("interrupted"),
+        usage(400, last_token_usage=counters(200)), complete("first")]
+    with pytest.raises(UsageUnavailable, match="ambiguous native usage task completion"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_usage_after_completion_without_task_start_is_rejected(tmp_path):
+    events = records() + [usage(200), complete("first"), usage(300)]
+    with pytest.raises(UsageUnavailable, match="follows a completed task"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_forked_child_copied_parent_completion_is_not_a_usage_baseline(tmp_path):
+    write(tmp_path, records() + [usage(200), complete("first")])
+    child_events = records(CHILD, ROOT)[:1] + records()[:1] + [
+        complete("parent-completed"), task("parent-interrupted"),
+        task("child-first"), records()[2], usage(100)]
+    write(tmp_path, child_events, CHILD)
+    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    assert result["tokens"] == counters(300)
+
+    child_events[-1] = usage(300, last_token_usage=counters(100))
+    write(tmp_path, child_events, CHILD)
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+
+
 def test_product_counts_child_followup_without_reset_or_double_charge(tmp_path):
     write(tmp_path, records() + [usage(100)])
     write(tmp_path, records(CHILD, ROOT) + [usage(200),
