@@ -123,6 +123,147 @@ def complete(turn_id):
     return {"type": "event_msg", "payload": {"type": "task_complete", "turn_id": turn_id}}
 
 
+@pytest.mark.parametrize("echoes", [1, 3])
+@pytest.mark.parametrize("target_thread,parent", [(ROOT, None), (CHILD, ROOT)])
+@pytest.mark.parametrize("fresh,expected", [(300, 300), (50, 250)])
+def test_completed_notification_defers_until_exact_fresh_baseline(
+    tmp_path, echoes, target_thread, parent, fresh, expected,
+):
+    from workshop.workflow.token_budget import ProductTokenBudget
+
+    write(tmp_path, records() + [usage(100)])
+    events = records(target_thread, parent) + [
+        usage(100), usage(200, last_token_usage=counters(100)), complete("first"),
+    ]
+    write(tmp_path, events, target_thread)
+    original = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    budget = ProductTokenBudget()
+    budget.observe(original)
+    restored = ProductTokenBudget()
+    restored.restore(budget.to_dict())
+
+    echo = usage(200, last_token_usage=counters(100))
+    echo["timestamp"] = "2026-09-07T02:00:00Z"
+    events += [task("followup"), *([echo] * echoes)]
+    write(tmp_path, events, target_thread)
+    # The old observed total and timestamp survive; no fresh usage is invented.
+    pending = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    assert pending == original
+    restored.observe(pending)
+
+    events += [usage(fresh, last_token_usage=counters(100 if fresh == 300 else 50)),
+               complete("followup")]
+    write(tmp_path, events, target_thread)
+    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    restored.observe(result)
+    assert result["tokens"] == counters(expected + (100 if parent else 0))
+    assert restored.to_dict()["used_tokens"] == result["total_tokens"]
+    assert read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy")) == result
+
+
+def test_completed_notification_matches_sanitized_01534_harbor_sequence(tmp_path):
+    # Harbor child 01a08dde-13a9-75e2-8327-5ce3b568f4b0, 2026-09-11:
+    # token_count at 01:25:52.534Z, matching task_complete .539Z;
+    # task_started 01:32:05.048Z, astra/medium context, identical count
+    # at 01:32:54.094Z. No later fresh count or completion was recorded.
+    terminal = dict(zip(COUNTERS, (2117717, 2037632, 0, 11380, 2829)))
+    last = dict(zip(COUNTERS, (80965, 80640, 0, 80, 0)))
+    prefix = {key: terminal[key] - last[key] for key in COUNTERS}
+    events = records(CHILD, ROOT) + [
+        usage(total_token_usage=prefix, last_token_usage=prefix),
+        usage(total_token_usage=terminal, last_token_usage=last), complete("first"),
+        task("followup"),
+        {"type": "turn_context", "payload": {"model": "gpt-6-astra", "effort": "medium"}},
+        usage(total_token_usage=terminal, last_token_usage=last),
+    ]
+    result = read_thread_usage(write(tmp_path, events, CHILD),
+                               thread_id=CHILD, workspace=Path("/toy"))
+    assert result["tokens"] == terminal
+    assert result["models"] == ["gpt-6-astra"]
+
+
+@pytest.mark.parametrize("echoes", [1, 3])
+def test_completed_task_with_only_old_notifications_fails_closed(tmp_path, echoes):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        complete("first"), task("followup")]
+    events += [usage(200, last_token_usage=counters(100))] * echoes
+    events += [complete("followup")]
+    with pytest.raises(UsageUnavailable, match="completed native task lacks fresh token usage"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("field", ["total_token_usage", "last_token_usage"])
+@pytest.mark.parametrize("key", COUNTERS)
+def test_completed_notification_requires_every_counter_exactly(tmp_path, field, key):
+    echo = usage(200, last_token_usage=counters(100))
+    echo["payload"]["info"][field][key] += 1
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        complete("first"), task("followup"), echo]
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_completed_notification_requires_same_model(tmp_path):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        complete("first"), task("followup"),
+        {"type": "turn_context", "payload": {"model": "gpt-5.6-sol"}},
+        usage(200, last_token_usage=counters(100))]
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("completion", [None, complete("wrong-task"), complete(True)])
+def test_completed_notification_requires_bound_completion(tmp_path, completion):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100))]
+    events += ([completion] if completion else []) + [task("followup"),
+        usage(200, last_token_usage=counters(100))]
+    with pytest.raises(UsageUnavailable, match="ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("observe_interrupted", [True, False])
+def test_older_completed_notification_cannot_skip_an_interrupted_task(
+    tmp_path, observe_interrupted,
+):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        complete("first"), task("interrupted")]
+    if observe_interrupted:
+        events += [usage(300, last_token_usage=counters(100))]
+    else:
+        events += [usage(200, last_token_usage=counters(100))]
+    events += [task("followup"), usage(200, last_token_usage=counters(100))]
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_completed_notification_does_not_admit_an_inexact_fresh_sample(tmp_path):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        complete("first"), task("followup"), usage(200, last_token_usage=counters(100)),
+        usage(250, last_token_usage=counters(100))]
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("last", [None, {"input_tokens": 100}])
+def test_completed_notification_needs_valid_last_counters_in_terminal_sample(tmp_path, last):
+    events = records() + [usage(100), usage(200, last_token_usage=last), complete("first")]
+    # Cumulative accounting remains valid without mid-task last-request counters.
+    result = read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+    assert result["tokens"] == counters(200)
+    events += [task("followup"), usage(200, last_token_usage=counters(100))]
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_identical_single_request_pair_retains_explicit_reset_accounting(tmp_path):
+    # total == last cannot distinguish a stale notification from a real reset
+    # request of identical size. Preserve existing conservative reset accounting.
+    events = records() + [usage(100), complete("first"), task("followup"),
+                         usage(100), complete("followup")]
+    result = read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+    assert result["tokens"] == counters(200)
+
+
 @pytest.mark.parametrize("interruptions", [1, 2, 4])
 @pytest.mark.parametrize("target_thread,parent", [(ROOT, None), (CHILD, ROOT)])
 def test_interrupted_resume_restores_completed_baseline_without_losing_usage(

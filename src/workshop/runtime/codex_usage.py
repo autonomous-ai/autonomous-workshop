@@ -172,6 +172,11 @@ def read_thread_usage(path, *, thread_id, workspace):
     active_task = None
     task_completed = False
     completed_totals = None
+    completed_notification = None
+    task_last = None
+    task_model = None
+    may_repeat_completed = False
+    deferred_completed = False
     may_restore_completed = False
     tasks = set()
     model = None
@@ -190,9 +195,11 @@ def read_thread_usage(path, *, thread_id, workspace):
                 raise UsageUnavailable("ambiguous native usage task boundary")
             tasks.add(turn_id)
             may_restore_completed = active_task is not None and not task_completed
+            may_repeat_completed = task_completed and completed_notification is not None
             active_task = turn_id
             task_completed = False
             task_start = True
+            deferred_completed = False
         if record.get("type") == "event_msg" and payload.get("type") == "task_complete":
             if active_task is None:
                 # Forked rollouts can start with a copied parent completion.
@@ -200,10 +207,17 @@ def read_thread_usage(path, *, thread_id, workspace):
                 continue
             if payload.get("turn_id") != active_task:
                 raise UsageUnavailable("ambiguous native usage task completion")
+            if task_start and deferred_completed:
+                # An echoed old snapshot does not prove fresh consumption.
+                # It cannot qualify a completed task as having zero usage.
+                raise UsageUnavailable("completed native task lacks fresh token usage")
             # A completion without an observed request cannot establish a
             # terminal counter snapshot. Repeated completion notifications
             # for this same task are harmless and do not charge usage.
             completed_totals = None if task_start else dict(task_totals)
+            completed_notification = None if task_start else (
+                dict(task_totals), task_last, task_model
+            )
             task_completed = True
         if record.get("type") != "event_msg" or payload.get("type") != "token_count":
             continue
@@ -224,7 +238,20 @@ def read_thread_usage(path, *, thread_id, workspace):
             # merely from decreasing counters or an arbitrary older sample.
             last = _counters(info.get("last_token_usage"))
             if current == last:
+                # Keep the explicit reset interpretation even if a previous
+                # single-request task had identical values: that echo cannot
+                # be distinguished safely from a real new reset request.
                 task_totals = {key: 0 for key in COUNTERS}
+            elif may_repeat_completed and (current, last, model) == completed_notification:
+                # Codex 0.153.4 token_count can re-emit unchanged token info
+                # for a rate-limit update (session/mod.rs update_rate_limits
+                # and send_token_count_event). It is a snapshot, not a request:
+                # https://github.com/openai/codex/blob/rust-v0.153.4/codex-rs/core/src/session/mod.rs
+                # Defer only this immediately completed, exactly bound pair.
+                # Keep task_start pending for the first fresh reset/continued
+                # sample; never charge the echo or adopt an older baseline.
+                deferred_completed = True
+                continue
             elif task_totals is not None and all(
                 current[key] == task_totals[key] + last[key] for key in COUNTERS
             ):
@@ -244,6 +271,14 @@ def read_thread_usage(path, *, thread_id, workspace):
         _counters(delta)
         totals = {key: totals[key] + delta[key] for key in COUNTERS}
         task_totals = current
+        # Last-request counters are not needed for ordinary cumulative deltas.
+        # Retain a validated pair only to recognize a later terminal echo;
+        # malformed/missing optional mid-task last counters grant no exception.
+        try:
+            task_last = _counters(info.get("last_token_usage"))
+        except UsageUnavailable:
+            task_last = None
+        task_model = model
         models.add(model)
         observations += 1
         last_at = record.get("timestamp")

@@ -828,3 +828,71 @@ roster, a main battle and three shorter alternatives, fixed finished landscape
 and complete hand-positioned formations. Physical fabrication and play remain
 unperformed. All six earlier pilots stay paused; none was resumed for this
 launch.
+
+The full Wish was opened for the operator without changing the frozen run:
+
+```sh
+open -a TextEdit /private/tmp/autonomous-workshop-mixed-material-products/docs/ideas/mixed-material-pilots/07-waterloo-1815.txt
+```
+
+A read-only integration audit confirmed the new run's `MAKE.json` is mode 0400,
+matches the mixed selection in `STAGE.json`, and carries the exact Theo, mixed
+manufacturing, finalizer and updated motion-tool bytes. The static set does not
+require invented mechanism animation; the existing applicable assembly checks
+remain required. This audit does not qualify unfinished geometry or publication.
+
+Theo was also verified in a fresh wheel built from committed revision
+`e686073da3b990463aed080b42ae2deb598bb724`, using a temporary `git archive`
+snapshot. Build working directory was
+`/private/tmp/workshop-theo-fieldcraft-e686073d-wheel-check/source`:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 /private/tmp/workshop-mixed-material-final-7c9eea10-build-env/bin/python -B -c "from setuptools.build_meta import build_wheel; print(build_wheel('/private/tmp/workshop-theo-fieldcraft-e686073d-wheel-check'))"
+PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -B /private/tmp/workshop-theo-fieldcraft-e686073d-wheel-check/verify.py
+/private/tmp/workshop-theo-fieldcraft-e686073d-wheel-check/venv/bin/workshop inventors --json
+/private/tmp/workshop-theo-fieldcraft-e686073d-wheel-check/venv/bin/workshop check /private/tmp/workshop-theo-fieldcraft-e686073d-wheel-check/venv/lib/python3.11/site-packages/workshop/contributors/_inventors/theo-fieldcraft --json
+/private/tmp/workshop-theo-fieldcraft-e686073d-wheel-check/venv/bin/workshop check /private/tmp/workshop-theo-fieldcraft-e686073d-wheel-check/venv/lib/python3.11/site-packages/workshop/contributors/_inventors --json
+```
+
+The last three commands were invoked by `verify.py`; the exact argument arrays
+and origin checks are in its adjacent `proof.json`. The complete wheel asset
+audit passed, as did installed CLI checks for Theo and all 20 Inventors. Theo's
+Taste, manifest and skill match source, wheel and installed bytes exactly.
+Dependencies were reused read-only, not freshly resolved. This wheel excludes
+the later concurrent usage-parser fix.
+
+Wheel: `/private/tmp/workshop-theo-fieldcraft-e686073d-wheel-check/autonomous_workshop-0.6.0-py3-none-any.whl`.
+SHA-256: `8a0f9370ca84ed714ee963c4577cfbed322124b657fa38df8f45413d5122b84b`.
+
+### Usage-notification repair during Waterloo Make
+
+While Waterloo progressed through Theo's design handoff into CAD, the builder
+diagnosed Harbor's earlier accounting stop. Its child completed a task with
+observed usage, then emitted exactly the same cumulative and last-request
+counters after the next task started. Codex 0.153.4 can resend unchanged token
+information on a rate-limit update; a notification is not necessarily a fresh
+request. The previous parser required the first notification to contain a new
+request and rejected this repeated terminal snapshot.
+
+The narrow repair defers only an exact, immediately completed non-reset
+notification with matching model and all five total/last counter fields. It
+retains observed usage and the prior observation timestamp while requiring the
+next fresh sample to establish its exact reset or continuation baseline.
+Completion after only deferred snapshots fails closed. The existing explicit
+`total == last` reset interpretation stays first because a repeated
+single-request snapshot cannot be distinguished from an identical new reset
+request. Other ambiguous or regressing records remain errors.
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:/private/tmp/workshop-usage-test-deps" "$workshop_python" -m pytest tests/runtime/test_codex_usage.py tests/workflow/test_token_budget.py -q
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli status wish-20260910-143655-4d851b36
+```
+
+All 185 usage/token-budget tests passed, including compaction cases and new
+root/child, restored-budget, repeated-notification and failure-path cases.
+Independent source/test review found no blocker. A read-only replay of Harbor's
+19 ancestry-bound threads returned exactly its saved **98,485,036** tokens,
+with the affected child's observation timestamp unchanged. No transcript was
+copied into the repository. Harbor was not resumed. Waterloo's already running
+host was not restarted or hot-patched; its subsequent ordinary CLI resume, if
+needed, will load the corrected host reader without changing the frozen Wish.
