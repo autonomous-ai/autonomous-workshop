@@ -180,6 +180,35 @@ positive-volume checks owned by `check_fit` and `validate`. Keep the final
 per-artifact validation sequence above; make it cheap through one batch process,
 not by silently dropping a geometry gate.
 
+### Imported solids that fail only after placement
+
+If a supplier solid passes locally but fails after placement, isolate the
+reported occurrence with the unchanged validator. Reproduce its actual source
+transform chain, including parent transforms and mirrors; an equivalent-looking
+final pose or a few arbitrary rotations do not cover that construction. Keep
+the original supplier STEP and checksum under `ref/` unchanged, as required by
+`bought-parts.md`.
+
+A representation-only conversion, such as converting surfaces to NURBS, is a
+candidate to qualify, not an automatic repair. Preserve the original and
+candidate, then compare both Boolean differences, bounds, solid/shell counts
+and topology. Record numerical tolerances and Boolean failures; an empty result
+from a failed Boolean is not zero difference. Check the actual assembly
+placements and relevant operating states, then export and re-import the
+candidate STEP and validate it again. Surface samples can diagnose a mismatch
+but cannot establish global equality. A passing conversion of one imported
+part says nothing about a different part.
+
+If conversion changes the default reported volume, resolve that discrepancy
+before claiming preserved geometry or using the result for mass and balance.
+Compare sufficiently converged volume properties with accurate or adaptive
+integration, recording error settings and convergence on both representations.
+Matching bounds or zero Boolean differences alone do not resolve conflicting
+mass properties. Keep any accepted conversion in reproducible product source;
+it must preserve the supplier's geometry and interfaces and pass the unchanged
+assembly checks. Neither conversion nor this diagnosis permits skipping a
+finding, loosening the validator, or claiming physical performance.
+
 ## Interference checks
 
 Nothing else in the toolchain answers "do any two parts occupy the same space?".
