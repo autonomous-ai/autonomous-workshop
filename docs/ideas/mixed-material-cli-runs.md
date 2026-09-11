@@ -1490,3 +1490,20 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-worksh
 
 The suite ran 106 tests successfully with one skipped; its seven targeted
 reconnect tests also passed separately and are included in that total.
+
+### Persistent coding checkout
+
+After committing the tested reconnect fix as `2d386022`, the stopped coding
+worktree was moved out of temporary storage. The product workspace and host
+state were not moved or rewritten. Commands:
+
+```sh
+git worktree move /private/tmp/autonomous-workshop-mixed-material-products /Users/ab/code/autonomous-workshop-mixed-material-products
+cd /Users/ab/code/autonomous-workshop-mixed-material-products
+PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli resume wish-20260911-023805-fe157910
+```
+
+The clean checkout resumed the exact same native session at
+**13:19:07.979 UTC**, without refreshing frozen Make tools or changing the
+Wish, medium effort, 500M allowance or accrued usage. This process includes
+the tested host reconnect fix and compressed mixed publication carrier.
