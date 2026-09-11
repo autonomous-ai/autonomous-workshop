@@ -1,0 +1,9 @@
+{
+  "status": "pass",
+  "step_sha256": "2385415b012378743fcd5e46844cd43072ec43a681d5768f29650e204e6572fb",
+  "minimum_top_rind_mm": 2.99999505042553,
+  "required_mm": 3,
+  "kernel_tolerance_mm": 0.0001,
+  "method": "Exact minimum distance between inner and outer wires of the written z14 top face. Lower outer surface expands downward and lower openings contract, so this is the limiting outer rind section.",
+  "limits": "Digital geometry; no physical wall or print measurement."
+}

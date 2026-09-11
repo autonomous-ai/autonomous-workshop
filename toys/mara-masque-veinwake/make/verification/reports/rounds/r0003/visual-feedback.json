@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Cavity floor and terrace faces missing from exact STEP presentation despite coherent source view.",
+      "evidence": "Canonical signature shows background through the cavity; round iso source view shows expected solid floor. Independent import confirms zero rind solids.",
+      "part": "rind",
+      "repair": "Convert offset cavity profiles to portable NURBS before extrusion/cuts, then regenerate and verify written STEP."
+    }
+  ],
+  "observation": "Front/top/iso source views show ten correctly located parts and the deeper rounded rind. However exact written-STEP canonical views lose the cavity floor and terrace surfaces; written rind imports with zero solids. This exported form cannot pass.",
+  "packet_sha256": "c0f82b1f2bc9bef20b95904366d5f13577963f774317192e8da9cd29d02a87d3",
+  "status": "fail"
+}

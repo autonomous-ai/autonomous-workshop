@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/part_rind.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-rind.md
+(7.4s, exit 0)
+--- stdout
+part_rind.step.py: 123.50 cm3 solid, grid 0.264 mm (535x497x43), 382431 surface samples, thickness resolved to 0.132 mm
+  PASS  wall >= 0.80 mm (+/-0.13)      0.0% of surface below (0 of 382431 samples)
+  PASS  thickness distribution         median 7.92 mm, p95 136.48 mm, max 151.00 mm
+  WARN  hollowable at 1.20 mm wall     74.80 of 123.50 cm3 (61%) in 1 pocket(s)
+  PASS  filament that would save       11.22 cm3, 13.9 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-rind.md
+
+--- stderr

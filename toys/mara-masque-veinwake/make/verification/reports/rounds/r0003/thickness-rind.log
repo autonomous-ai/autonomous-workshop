@@ -1,0 +1,16 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/part_rind.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0003/thickness-rind.md
+(9.9s, exit 0)
+--- stdout
+part_rind.step.py: 142.52 cm3 solid, grid 0.291 mm (486x451x53), 378584 surface samples, thickness resolved to 0.146 mm
+  PASS  wall >= 0.80 mm (+/-0.15)      0.0% of surface below (3 of 378584 samples); thinnest 0.29 mm at (-53.1, 55.3, 0.0) in 3 region(s); no region is a wall, 3 taper(s) at feature edges (0.00% of surface, budget 2%)
+  PASS  thickness distribution         median 7.86 mm, p95 84.67 mm, max 154.98 mm
+  WARN  hollowable at 1.20 mm wall     93.66 of 142.52 cm3 (66%) in 1 pocket(s)
+  PASS  filament that would save       14.05 cm3, 17.4 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.29 mm at (-53.1, 55.3, 0.0)      1 samples, 0.2 mm2, runs 0.0 mm, band 0.64 mm
+        2. [taper] 0.58 mm at (-59.4, -13.2, 14.0)      1 samples, 0.1 mm2, runs 0.0 mm, band 0.38 mm
+        3. [taper] 0.58 mm at (-64.5, -42.4, 0.1)      1 samples, 0.1 mm2, runs 0.0 mm, band 0.37 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0003/thickness-rind.md
+
+--- stderr

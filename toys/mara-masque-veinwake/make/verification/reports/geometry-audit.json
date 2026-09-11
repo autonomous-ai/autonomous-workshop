@@ -1,0 +1,283 @@
+{
+  "status": "pass",
+  "units": "mm",
+  "normal_envelope": [
+    140,
+    130,
+    32
+  ],
+  "printable_parts": 10,
+  "cluster_envelope": [
+    28,
+    28,
+    26
+  ],
+  "measured_seat_floor_centers": [
+    [
+      -36.0,
+      -36.0,
+      6.0
+    ],
+    [
+      -36.0,
+      0.0,
+      6.0
+    ],
+    [
+      -36.0,
+      36.0,
+      6.0
+    ],
+    [
+      0.0,
+      -36.0,
+      6.0
+    ],
+    [
+      0.0,
+      0.0,
+      6.0
+    ],
+    [
+      0.0,
+      36.0,
+      6.0
+    ],
+    [
+      36.0,
+      -36.0,
+      6.0
+    ],
+    [
+      36.0,
+      0.0,
+      6.0
+    ],
+    [
+      36.0,
+      36.0,
+      6.0
+    ]
+  ],
+  "seat_diameter": 30,
+  "radial_clearance": 1,
+  "seat_depth": 2,
+  "floor_thickness": 6,
+  "nearest_pocket_wall": 6,
+  "tooth_tip_across_flats": 4.330127018922193,
+  "all_seat_fits": [
+    {
+      "habit": "tooth",
+      "seat": [
+        36.0,
+        36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "tooth",
+      "seat": [
+        0.0,
+        36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "tooth",
+      "seat": [
+        -36.0,
+        36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "tooth",
+      "seat": [
+        36.0,
+        0.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "tooth",
+      "seat": [
+        0.0,
+        0.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "tooth",
+      "seat": [
+        36.0,
+        -36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "tooth",
+      "seat": [
+        0.0,
+        -36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "tooth",
+      "seat": [
+        -36.0,
+        0.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "tooth",
+      "seat": [
+        -36.0,
+        -36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "bubble",
+      "seat": [
+        36.0,
+        36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "bubble",
+      "seat": [
+        0.0,
+        36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "bubble",
+      "seat": [
+        -36.0,
+        36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "bubble",
+      "seat": [
+        36.0,
+        0.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "bubble",
+      "seat": [
+        0.0,
+        0.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "bubble",
+      "seat": [
+        36.0,
+        -36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "bubble",
+      "seat": [
+        0.0,
+        -36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "bubble",
+      "seat": [
+        -36.0,
+        0.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    },
+    {
+      "habit": "bubble",
+      "seat": [
+        -36.0,
+        -36.0,
+        6.0
+      ],
+      "overlap_mm3": 0.0
+    }
+  ],
+  "signature_changes": [
+    {
+      "part": "rind",
+      "delta_mm": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "part": "tooth_1",
+      "delta_mm": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "part": "tooth_2",
+      "delta_mm": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "part": "tooth_3",
+      "delta_mm": [
+        0.0,
+        0.0,
+        -55.0
+      ]
+    },
+    {
+      "part": "bubble_1",
+      "delta_mm": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "part": "bubble_2",
+      "delta_mm": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "limitation": "Exact digital geometry only; no print, handling or durability test."
+}

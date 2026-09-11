@@ -1,0 +1,22 @@
+{
+  "status": "pass",
+  "scope": "Exhaustive digital rules audit only; no human or physical playtest.",
+  "distinct_reachable_states": 5478,
+  "legal_trace_edges": 549945,
+  "terminal_traces": {
+    "X": 131184,
+    "O": 77904,
+    "draw": 46080
+  },
+  "differences": 0,
+  "signature_trace": [
+    0,
+    3,
+    1,
+    4,
+    2
+  ],
+  "before": "XX.OO....",
+  "after": "XXXOO....",
+  "full_inventory_draw": "XOXXOOOXX"
+}

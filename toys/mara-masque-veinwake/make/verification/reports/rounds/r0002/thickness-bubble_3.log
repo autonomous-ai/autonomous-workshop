@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/part_bubble_3.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0002/thickness-bubble_3.md
+(6.3s, exit 0)
+--- stdout
+part_bubble_3.step.py: 10.12 cm3 solid, grid 0.133 mm (215x215x200), 169822 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 169822 samples)
+  PASS  thickness distribution         median 22.13 mm, p95 27.93 mm, max 32.87 mm
+  WARN  hollowable at 1.20 mm wall     6.70 of 10.12 cm3 (66%) in 1 pocket(s)
+  PASS  filament that would save       1.01 cm3, 1.2 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0002/thickness-bubble_3.md
+
+--- stderr
