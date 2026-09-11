@@ -13,7 +13,9 @@ import hashlib
 import io
 import json
 import mimetypes
+import os
 import re
+import stat
 import tempfile
 import time
 import urllib.error
@@ -28,6 +30,7 @@ from typing import Any, Callable, Dict, Mapping, MutableMapping, Optional, Seque
 from workshop._validation import require_sha256
 from workshop.artifacts import (
     ArtifactManifest,
+    MAX_PACK_BYTES,
     assert_packable_content,
     build_artifact_manifest,
     build_pack,
@@ -39,6 +42,11 @@ from workshop.errors import (
     EffectError,
     ReceiptError,
     StateConflict,
+)
+from workshop.integrations.factory_carrier import (
+    MIXED_CARRIER_FORMAT,
+    build_mixed_carrier,
+    validate_mixed_carrier,
 )
 from workshop.make.cad.step_color import read_step_part_colors
 from workshop.make.cad.fe_parts import FePartsError, PartKeying, key_parts
@@ -1201,9 +1209,23 @@ def _validated_occurrence_transport(
         return None, _bounded_reason(str(exc))
 
 
-def _assert_factory_handoff(content: bytes) -> None:
+def _carrier_format(values: Mapping[str, Any]) -> Optional[str]:
+    """Absence alone preserves the historical stored transport contract."""
+    if "carrier_format" not in values:
+        return None
+    if values["carrier_format"] != MIXED_CARRIER_FORMAT:
+        raise ContractError("Factory carrier_format is unsupported")
+    return MIXED_CARRIER_FORMAT
+
+
+def _assert_factory_handoff(content: bytes, *, carrier_format: Optional[str] = None) -> None:
+    if carrier_format is not None:
+        _carrier_format({"carrier_format": carrier_format})
+        validate_mixed_carrier(content)
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            if carrier_format is None and any(info.compress_type != zipfile.ZIP_STORED for info in archive.infolist()):
+                raise ContractError("Factory compressed carrier requires its explicit format")
             names = archive.namelist()
             if len(names) != len(set(names)):
                 raise ContractError("Factory model handoff contains duplicate paths")
@@ -1288,6 +1310,11 @@ def _assert_factory_handoff(content: bytes) -> None:
                     "Factory handoff Release product facts are not canonical"
                 )
             projection = release_page.get("public_projection")
+            if carrier_format is not None and (
+                release_page.get("schema_version") != MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
+                or projection is None
+            ):
+                raise ContractError("Factory compressed carrier requires a mixed Make-output projection")
             if projection is not None:
                 expected_paths = {item["path"] for item in projection["files"]}
                 expected_primary = projection["primary_model"]
@@ -1359,6 +1386,113 @@ def _assert_factory_handoff(content: bytes) -> None:
         raise ContractError("Factory model handoff is not a readable ZIP") from exc
 
 
+def _persisted_mixed_carrier(
+    staging: Path, destination: Path, cache: Path, *,
+    expected_pack_sha256: Optional[str] = None,
+    expected_artifact_sha256: Optional[str] = None,
+) -> Tuple[Mapping[str, Any], bytes, str, str]:
+    """Keep the first exact transport, including a crash before ledger.prepare.
+
+    The expanded identity keys the private cache. DEFLATE bytes can differ
+    across zlib versions, so even an unbound orphan is reused, never replaced.
+    An existing intent requires both of its identities and its saved file.
+    """
+    manifest = build_artifact_manifest(staging, created_at="content-addressed")
+    artifact_sha256 = manifest.artifact_sha256
+    if (expected_pack_sha256 is None) != (expected_artifact_sha256 is None):
+        raise ContractError("Factory cached carrier requires both intent identities")
+    if expected_artifact_sha256 is not None:
+        require_sha256(expected_pack_sha256, "Factory cached carrier sha256")
+        require_sha256(expected_artifact_sha256, "Factory cached artifact sha256")
+        if artifact_sha256 != expected_artifact_sha256:
+            raise ContractError("Factory cached carrier differs from current handoff bytes")
+    cache = Path(cache)
+    try:
+        try:
+            cache.mkdir(mode=0o700)
+        except FileExistsError:
+            pass
+        else:
+            parent = os.open(cache.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                os.fsync(parent)
+            finally:
+                os.close(parent)
+        directory = os.open(cache, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    except OSError as exc:
+        raise ContractError("Factory carrier cache must be a private real directory") from exc
+    name = artifact_sha256 + ".zip"
+    try:
+        identity = os.fstat(directory)
+        if stat.S_IMODE(identity.st_mode) != 0o700:
+            raise ContractError("Factory carrier cache permissions must be 0700")
+
+        def read_saved() -> Optional[Tuple[bytes, str, str]]:
+            try:
+                fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+            except FileNotFoundError:
+                return None
+            except OSError as exc:
+                raise ContractError("Factory cached carrier is not a private regular file") from exc
+            try:
+                before = os.fstat(fd)
+                if (not stat.S_ISREG(before.st_mode) or stat.S_IMODE(before.st_mode) != 0o600
+                        or not 0 < before.st_size <= MAX_PACK_BYTES):
+                    raise ContractError("Factory cached carrier has invalid type, permissions or size")
+                chunks = []
+                remaining = before.st_size
+                while remaining:
+                    chunk = os.read(fd, min(1024 * 1024, remaining))
+                    if not chunk:
+                        raise ContractError("Factory cached carrier was truncated")
+                    chunks.append(chunk)
+                    remaining -= len(chunk)
+                after = os.fstat(fd)
+                if (before.st_size, before.st_mtime_ns, before.st_ctime_ns) != (after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+                    raise ContractError("Factory cached carrier changed while reading")
+                result = validate_mixed_carrier(b"".join(chunks))
+                if result[2] != artifact_sha256:
+                    raise ContractError("Factory cached carrier expanded identity differs")
+                if expected_pack_sha256 is not None and result[1] != expected_pack_sha256:
+                    raise ContractError("Factory cached carrier differs from its intent sha256")
+                return result
+            finally:
+                os.close(fd)
+
+        saved = read_saved()
+        if saved is None:
+            if expected_pack_sha256 is not None:
+                raise ContractError("Factory intent's exact cached carrier is missing")
+            build_mixed_carrier(staging, destination)
+            # The builder's destination is a bounded private temporary file.
+            content, _, built_artifact_sha256 = validate_mixed_carrier(destination.read_bytes())
+            if built_artifact_sha256 != artifact_sha256:
+                raise ContractError("Factory handoff bytes changed during carrier construction")
+            temporary = "." + uuid.uuid4().hex + ".tmp"
+            fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=directory)
+            try:
+                with os.fdopen(fd, "wb") as handle:
+                    handle.write(content)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                try:
+                    os.link(temporary, name, src_dir_fd=directory, dst_dir_fd=directory, follow_symlinks=False)
+                except FileExistsError:
+                    pass  # Another first writer won; validate and reuse its bytes.
+                os.fsync(directory)
+            finally:
+                os.unlink(temporary, dir_fd=directory)
+            saved = read_saved()
+            if saved is None:
+                raise ContractError("Factory carrier disappeared before intent preparation")
+        content, pack_sha256, artifact_sha256 = saved
+        return ({"path": str(cache / name), "bytes": len(content),
+                 "entries": len(manifest.entries) + 1, "pack_sha256": pack_sha256,
+                 "artifact_sha256": artifact_sha256}, *saved)
+    finally:
+        os.close(directory)
+
+
 def _build_model_handoff(
     context: Any,
     destination: Path,
@@ -1367,6 +1501,10 @@ def _build_model_handoff(
     manual_content: bytes,
     *,
     preserve_import_root: bool = False,
+    carrier_format: Optional[str] = None,
+    carrier_cache: Optional[Path] = None,
+    expected_pack_sha256: Optional[str] = None,
+    expected_artifact_sha256: Optional[str] = None,
 ) -> Mapping[str, Any]:
     """Create the exact model-and-page ZIP that crosses Factory's boundary."""
 
@@ -1380,6 +1518,12 @@ def _build_model_handoff(
         raise ContractError("Made bytes changed before Factory handoff")
     make_output = facts.get("release", {}).get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
     projection = make_public_projection(root, context.made.product) if make_output else None
+    if carrier_format is not None:
+        _carrier_format({"carrier_format": carrier_format})
+        if not make_output or projection is None or carrier_cache is None:
+            raise ContractError("Factory compressed carrier requires a mixed Make-output projection and private cache")
+    elif carrier_cache is not None or expected_pack_sha256 is not None or expected_artifact_sha256 is not None:
+        raise ContractError("Factory stored carrier cannot adopt compressed cache bindings")
     if make_output and facts["release"].get("public_projection") != projection:
         raise ContractError("Factory public projection differs from sealed Make assets")
     sealed_primary = _sealed_primary(context, public_projection=projection)
@@ -1594,14 +1738,22 @@ def _build_model_handoff(
         (staging / "project.json").write_bytes(project_payload)
         if preserve_import_root:
             (staging / FACTORY_IMPORT_ROOT_PATH).write_bytes(FACTORY_IMPORT_ROOT_CONTENT)
-        result = dict(build_pack(staging, destination))
-    content, pack_sha256, handoff_artifact_sha256 = load_artifact_payload(destination)
+        if carrier_format is None:
+            result = dict(build_pack(staging, destination))
+            content, pack_sha256, handoff_artifact_sha256 = load_artifact_payload(destination)
+        else:
+            result, content, pack_sha256, handoff_artifact_sha256 = _persisted_mixed_carrier(
+                staging, destination, carrier_cache,
+                expected_pack_sha256=expected_pack_sha256,
+                expected_artifact_sha256=expected_artifact_sha256,
+            )
+            result = dict(result)
     if (
         result.get("pack_sha256") != pack_sha256
         or result.get("artifact_sha256") != handoff_artifact_sha256
     ):
         raise ContractError("Factory handoff Pack changed after construction")
-    _assert_factory_handoff(content)
+    _assert_factory_handoff(content, carrier_format=carrier_format)
     result.update(
         {
             "content": content,
@@ -1928,11 +2080,12 @@ class FactoryClient:
         content: bytes,
         metadata: Mapping[str, Any],
         idempotency_key: str,
+        carrier_format: Optional[str] = None,
     ) -> HttpResponse:
         filename = _safe_filename(filename)
         if not isinstance(content, bytes) or not content:
             raise ContractError("Factory model ZIP must be non-empty bytes")
-        _assert_factory_handoff(content)
+        _assert_factory_handoff(content, carrier_format=carrier_format)
         normalized = _normalize_import(metadata)
         fields = [("status", "draft")]
         for name in ("title", "description", "category"):
@@ -1960,13 +2113,14 @@ class FactoryClient:
         )
 
     def import_model_version(
-        self, slug: str, *, content: bytes, idempotency_key: str
+        self, slug: str, *, content: bytes, idempotency_key: str,
+        carrier_format: Optional[str] = None,
     ) -> HttpResponse:
         """Append content to an existing owner draft, never create a design."""
 
         if not isinstance(slug, str) or not slug:
             raise ContractError("Factory design slug is required")
-        _assert_factory_handoff(content)
+        _assert_factory_handoff(content, carrier_format=carrier_format)
         body, content_type = _multipart(
             (), (("file", "model-handoff.zip", "application/zip", content),)
         )
@@ -2575,8 +2729,10 @@ def _factory_content_state(value: Mapping[str, Any]) -> Mapping[str, Any]:
 
 
 def _effect_details(intent: EffectIntent, values: Mapping[str, Any]) -> Mapping[str, Any]:
+    carrier_format = _carrier_format(intent.request)
     return {
         **dict(values),
+        **({"carrier_format": carrier_format} if carrier_format is not None else {}),
         "product_id": intent.product_id,
         "effect_request_sha256": intent.request_sha256,
         "effect_idempotency_key": intent.idempotency_key,
@@ -2682,6 +2838,15 @@ class FactoryReleaseWriter:
         if not receipt.is_verified_draft:
             raise ReceiptError("Factory import requires authenticated private readback")
         details = receipt.details
+        carrier_format = _carrier_format(intent.request)
+        if _carrier_format(details) != carrier_format:
+            raise ReceiptError("Factory Receipt carrier format differs from its intent")
+        if carrier_format is not None and (
+            intent.request.get("publication_mode") != MAKE_OUTPUT_PUBLICATION_MODE
+            or not isinstance(details.get("public_primary_mapping"), Mapping)
+            or not isinstance(details.get("public_cover_mapping"), Mapping)
+        ):
+            raise ReceiptError("Factory compressed Receipt lacks its mixed public projection")
         if details.get("product_id") != intent.product_id:
             raise ReceiptError("Factory Receipt belongs to a different product")
         make_output = intent.request.get("publication_mode") == MAKE_OUTPUT_PUBLICATION_MODE
@@ -2894,10 +3059,20 @@ class FactoryReleaseWriter:
             "previous_project_url": old.project_url,
         }
         repair_facts = {**facts, "import_root_repair": provenance}
+        carrier_format = _carrier_format(original.request)
+        previous_version = self.ledger.latest(original.product_id, "factory-import-version")
+        if previous_version is not None and _carrier_format(previous_version.request) != carrier_format:
+            raise StateConflict("Factory root repair cannot change its carrier format")
         with tempfile.TemporaryDirectory(prefix="workshop-root-repair-") as temporary:
             handoff = _build_model_handoff(
                 context, Path(temporary) / "model-handoff.zip", repair_facts,
                 page_content, manual_content, preserve_import_root=True,
+                **({
+                    "carrier_format": carrier_format,
+                    "carrier_cache": self.ledger.path.parent / "factory-carriers",
+                    "expected_pack_sha256": previous_version.pack_sha256 if previous_version is not None else None,
+                    "expected_artifact_sha256": previous_version.handoff_artifact_sha256 if previous_version is not None else None,
+                } if carrier_format is not None else {}),
             )
         request = {
             **original.request,
@@ -2973,7 +3148,8 @@ class FactoryReleaseWriter:
         assert sending.effect_token is not None
         imported_design = None
         try:
-            response = client.import_model_version(old.slug, content=handoff["content"], idempotency_key=sending.idempotency_key)
+            response = client.import_model_version(old.slug, content=handoff["content"], idempotency_key=sending.idempotency_key,
+                **({"carrier_format": carrier_format} if carrier_format is not None else {}))
             if response.status != 200:
                 if response.status in PROVEN_NO_EFFECT_STATUSES:
                     self.ledger.mark_rejected(sending.intent_id, sending.effect_token, "Factory root repair returned HTTP %s" % response.status)
@@ -3708,6 +3884,10 @@ class FactoryReleaseWriter:
         identity = self.session.login()
         client = FactoryClient(self.session.authenticated_transport)
         previous_import = self.ledger.latest(context.wish.product_id, "factory-import")
+        carrier_format = (
+            _carrier_format(previous_import.request) if previous_import is not None
+            else MIXED_CARRIER_FORMAT if projection is not None else None
+        )
         preserve_import_root = make_output and (
             previous_import is None
             or previous_import.request.get("import_root_mapping") == FACTORY_IMPORT_ROOT_MAPPING
@@ -3740,6 +3920,12 @@ class FactoryReleaseWriter:
                 page_content,
                 manual_content,
                 preserve_import_root=preserve_import_root,
+                **({
+                    "carrier_format": carrier_format,
+                    "carrier_cache": self.ledger.path.parent / "factory-carriers",
+                    "expected_pack_sha256": previous_import.pack_sha256 if previous_import is not None else None,
+                    "expected_artifact_sha256": previous_import.handoff_artifact_sha256 if previous_import is not None else None,
+                } if carrier_format is not None else {}),
             )
         primary = handoff["primary_model"]
         made_root = Path(context.made.artifact_root).resolve(strict=True)
@@ -3789,6 +3975,8 @@ class FactoryReleaseWriter:
                            publication_anchor_sha256=handoff["manual_sha256"])
             if preserve_import_root:
                 request["import_root_mapping"] = FACTORY_IMPORT_ROOT_MAPPING
+            if carrier_format is not None:
+                request["carrier_format"] = carrier_format
         elif manual_path == FACTORY_RELEASE_PDF_MANUAL_PATH:
             request["manual_path"] = manual_path
         intent = self.ledger.prepare(
@@ -3870,6 +4058,7 @@ class FactoryReleaseWriter:
                 content=handoff["content"],
                 metadata=metadata,
                 idempotency_key=sending.idempotency_key,
+                **({"carrier_format": carrier_format} if carrier_format is not None else {}),
             )
         except Exception as exc:
             self.ledger.mark_unknown(
@@ -4100,6 +4289,13 @@ class FactoryPublicTransition:
         product_id = draft.details.get("product_id")
         if not isinstance(product_id, str) or not product_id:
             raise ReceiptError("Factory draft does not identify its Workshop product")
+        carrier_format = _carrier_format(draft.details)
+        source_import = self.ledger.latest(product_id, "factory-import-version") or self.ledger.latest(product_id, "factory-import")
+        source_format = _carrier_format(source_import.request) if source_import is not None else None
+        if carrier_format is not None or source_format is not None:
+            if source_import is None or carrier_format != source_format or source_import.state != "succeeded":
+                raise ReceiptError("Factory publication carrier differs from its completed import")
+            FactoryReleaseWriter._assert_private_receipt(draft, source_import)
         request = {
             "method": "POST",
             "api_origin": _api_origin(DEFAULT_FACTORY_API),
@@ -4120,6 +4316,8 @@ class FactoryPublicTransition:
             request.update(publication_mode=MAKE_OUTPUT_PUBLICATION_MODE,
                            publication_anchor_path=FACTORY_RELEASE_PAGE_PATH,
                            publication_anchor_sha256=manual_sha256)
+            if carrier_format is not None:
+                request["carrier_format"] = carrier_format
         elif pdf_first:
             request["manual_path"] = FACTORY_RELEASE_PDF_MANUAL_PATH
         else:
@@ -4137,6 +4335,8 @@ class FactoryPublicTransition:
         if intent.state == "succeeded":
             if intent.receipt is None or not intent.receipt.is_verified_public:
                 raise StateConflict("completed Factory publication has no public Receipt")
+            if _carrier_format(intent.receipt.details) != carrier_format:
+                raise ReceiptError("Factory public Receipt carrier format differs from its intent")
             if category_slug is not None and intent.receipt.details.get(
                 "factory_category_slug"
             ) != category_slug:

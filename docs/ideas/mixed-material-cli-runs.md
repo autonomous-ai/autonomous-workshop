@@ -1341,3 +1341,47 @@ The mixed-materials guidance hash is
 The native run retains its previous text until an ordinary explicit refresh.
 An independent synthetic investigation is checking topology reuse for repeated
 assembly instances; no safe product-size reduction is claimed from that study.
+
+### Separate compressed carrier for new mixed imports
+
+The native Manager independently found nested placement copies and changed its
+authored assembly to share geometry within each family/color definition. The
+next full STEP was 57,452,800 bytes, below the backend's per-file limit but too
+large for the stored carrier. Native geometry, color and placement checks still
+apply to that authored change; no automatic geometry deduplication was added to
+Workshop.
+
+The builder implemented a separate host `factory-mixed-deflate-v1` carrier for
+new mixed Make-output imports. It preserves every public file and exact STEP
+and hero aliases, with the existing 50 MiB compressed, 95 MiB member and 512 MiB
+expanded bounds. Canonical Packs and print transport remain stored ZIPs. The
+backend's existing ZIP reader supports this compression, so no backend change
+or larger limit is required; deployment was not independently verified.
+
+Before preparing an import intent, the host atomically saves the first exact
+validated ZIP in private state with mode 0600 under a 0700 directory. Current
+handoff inventory, ZIP hash, expanded artifact hash and explicit codec identity
+must match on reuse. This also preserves an orphan written before an intent.
+Missing or changed bound files refuse rather than regenerate bytes. Existing
+intents without a codec retain stored transport. Unknown outcomes retain normal
+reconciliation. Fixed ZIP metadata and compression level are not a claim of
+cross-zlib byte reproducibility.
+
+```sh
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -c 'import sys,unittest;sys.path.insert(0,"src");unittest.main(module=None)' tests.integrations.test_factory_carrier tests.artifacts.test_artifacts tests.artifacts.test_pack_plan -q > /private/tmp/factory-carrier-regressions.log 2>&1
+PYTHONPATH="$PWD/src:/private/tmp/workshop-usage-test-deps" "$workshop_python" -m pytest tests/integrations/test_factory_mixed_carrier.py tests/integrations/test_factory.py tests/integrations/test_factory_carrier.py tests/artifacts/test_artifacts.py tests/artifacts/test_pack_plan.py -q > /private/tmp/workshop-mixed-factory-carrier-tests.log 2>&1
+```
+
+The first command passed 39 cases. The final combined suite passed 130 cases,
+including those earlier cases, with independent review finding no blocker.
+Coverage includes malformed/compression-bomb archives, exact privacy/alias
+bindings, interrupted and completed effect states, altered valid DEFLATE bytes
+with the same expanded inventory, stale handoffs, cache permissions and classic
+stored compatibility. No live product packaging or upload was used as test
+evidence. A read-only check found no existing Waterloo Factory effects ledger;
+its running CLI still has the previous host code loaded.
+
+The updated mixed guidance tree is
+`c2915639bed988a87b8c98812469fae4aebbf40af54c0219ea56b6c34ad292be`.
+The earlier stored-only lower-bound guidance is superseded for new compressed
+mixed imports; it remains applicable to stored carriers.

@@ -188,14 +188,16 @@ mechanism must include every other installed component it uses.
   before 4,096 occurrences. Duplicate JSON keys, nonfinite numeric values,
   traversal and symlinks fail closed.
 
-The final host Factory carrier has a separate 50 MiB limit and stores ZIP
-members without compression. It contains the declared public assets plus
-additional exact copies of the selected STEP and hero, together with host
-metadata. Measure `sum(public asset bytes) + selected STEP bytes + selected
-hero bytes` before final independent review as a necessary lower-bound check,
-with headroom for metadata and ZIP headers. This is not an exact host pack
-preview or a new acceptance gate. Per-file compliance alone does not ensure
-transport fit. The complete sealed Make tree also retains its 512 MiB bound.
+Before final independent review, check the generated complete STEP against the
+95 MiB per-file bound and the sealed Make tree against its 512 MiB bound. New
+mixed Factory imports use the explicit host `factory-mixed-deflate-v1` carrier:
+50 MiB compressed, 512 MiB expanded, with the same 95 MiB member limit. It
+contains the public assets, extra exact STEP and hero aliases, and host metadata.
+Raw totals alone cannot establish its compressed size or acceptance. The host
+persists its first exact bytes before import and reuses those bytes on retries;
+existing import intents retain their original format. Canonical `workshop pack`
+and print carriers remain stored ZIPs with the existing 50 MiB limit. The native
+manifest and public projection schemas, asset identities and checks are unchanged.
 
 ## Physical units and colored CAD parts
 

@@ -65,6 +65,23 @@ alias is an exact copy of the selected scene and its source mapping is recorded.
 The public archive uses the same selection and omits private BOMs, source,
 supplier specifications, full Wish facts and prior internal attempts.
 
+New mixed Make-output imports with no existing Factory import intent use the
+explicit host carrier `factory-mixed-deflate-v1`. It retains every public path
+and the exact STEP/hero aliases while compressing the transport. The existing
+50 MiB transport, 95 MiB member and 512 MiB expanded limits remain. Canonical
+Packs and print publication remain ZIP_STORED. Native Made/Release and public
+projection schemas do not change; this is host carrier handling under ADR 0061.
+
+The host atomically persists the first validated carrier in its private state
+before preparing the effect intent, including a crash before intent preparation.
+It binds the carrier format, exact ZIP digest and expanded artifact digest to
+the intent and receipts. Resumes reuse the saved bytes after checking current
+handoff identity. Missing, changed or mismatched bytes fail closed. Existing
+intents with no format retain stored transport. Fixed initial ZIP settings do
+not imply byte reproducibility across zlib versions, so compressed bytes are
+never regenerated for an existing intent. Unknown outcomes retain normal
+authenticated reconciliation and cannot cause an unproven repeated upload.
+
 The complete Made contract remains local. The publication anchor binds its
 opaque identity and the selected public file identities, allowing readback
 reconciliation without exposing the manufacturing package. Customer copy and

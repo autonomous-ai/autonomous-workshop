@@ -1,5 +1,21 @@
 # Shared skill provenance
 
+## Compressed mixed Factory carrier guidance (2026-09-11)
+
+Mixed-material guidance now distinguishes the explicit compressed host carrier
+for new mixed imports from canonical stored Packs and print uploads. Existing
+50 MiB transport, 95 MiB member and 512 MiB expanded bounds remain. Public
+paths, STEP/hero aliases, manifest/public-projection schemas and engineering
+checks are unchanged. The host persists and binds the first exact carrier before
+import, reuses pre-intent orphan bytes and prepared payloads, and preserves
+stored historical intents. No cross-zlib compressed-byte identity is promised.
+
+This supersedes the earlier stored-only size-accounting advice for new mixed
+imports; that accounting remains applicable to stored carriers. Per-file and
+sealed-tree checks still belong before final review, while the host validates
+actual compressed transport size and exact asset identity. The skill text does
+not authorize new effects or perform a second product verification.
+
 ## Early publication-size accounting (2026-09-11)
 
 Mixed-material guidance now explains the existing 95 MiB per-file, 512 MiB
