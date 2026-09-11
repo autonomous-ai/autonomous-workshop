@@ -1007,3 +1007,29 @@ Observed prior usage stayed exactly 32,866,528 tokens; the in-flight resumed
 request was not counted as completed usage. No new Wish, native root, separate
 Release turn, manual review waiver or physical operation was introduced.
 All six earlier pilots remain paused. Publication is still pending.
+
+### First complete Waterloo preview after correction
+
+Make round 3 passed thickness and overhang for all 11 printed families (22
+passing reports). The native Manager's full-scene review renderer completed in
+418.8 seconds with exit 0 and produced front, top and isometric PNGs. Its round
+summary records `checks_ok: true`; Manager visual feedback is still pending at
+this checkpoint. These are digital engineering and appearance results, not
+physical print or play evidence. Final review, verification and publication
+remain required.
+
+While that render ran, the builder added flushed CLI-only renderer phase
+diagnostics to source. They distinguish source building, tessellation and each
+view's raster/save in timeout logs without changing stdout paths, PNG bytes,
+geometry or timeouts. The successfully running product keeps its frozen tools;
+it was not restarted solely to receive diagnostics.
+
+```sh
+env -u PYTHONPATH PYTHONDONTWRITEBYTECODE=1 "$workshop_python" -c 'import sys,unittest;sys.path.insert(0,"src");unittest.main(module=None)' tests.make.test_render_review_progress tests.make.test_render_review_occurrences tests.make.test_render_review_depth tests.make.test_render_assembly_placement -q > /private/tmp/render-review-progress-tests.log 2>&1
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" "$workshop_python" -m unittest tests.make.test_skill_registry -q
+```
+
+All 23 focused renderer tests passed, including real timeout-log retention,
+failure propagation and exact output compatibility. The diagnostic source tree
+is sealed with CAD digest
+`796a9c0c5d7d61c6c9f8a877c1670d745b0bfb4ae573b4df7b3c11750d2d83f1`.

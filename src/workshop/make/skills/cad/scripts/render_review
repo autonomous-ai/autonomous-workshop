@@ -18,9 +18,11 @@ import argparse
 import contextlib
 import importlib.util
 import io
+import json
 import math
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 import numpy as np
@@ -276,6 +278,21 @@ def self_check() -> int:
     return 0
 
 
+@contextlib.contextmanager
+def _cli_phase(phase: str, **details):
+    """Keep flushed CLI diagnostics separate from paths and rendered evidence."""
+    def report(event, **fields):
+        print("render_review progress: " + json.dumps(
+            {"phase": phase, "event": event, **details, **fields}, sort_keys=True),
+            file=sys.stderr, flush=True)
+
+    report("start")
+    started = time.monotonic()
+    completed = {}
+    yield completed
+    report("complete", elapsed_seconds=round(time.monotonic() - started, 3), **completed)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", nargs="?", type=Path)
@@ -295,14 +312,20 @@ def main(argv=None) -> int:
     if not 0.0 <= args.pad < 0.4:
         parser.error("--pad must be in [0, 0.4)")
 
-    source, shape = build_shape(args.source)
-    occurrences = tessellate_occurrences(shape, args.tolerance)
+    with _cli_phase("source-load-build"):
+        source, shape = build_shape(args.source)
+    with _cli_phase("tessellation") as counts:
+        occurrences = tessellate_occurrences(shape, args.tolerance)
+        counts.update(occurrences=len(occurrences),
+                      vertices=sum(len(points) for points, _faces, _colour in occurrences),
+                      triangles=sum(len(faces) for _points, faces, _colour in occurrences))
     views = [parse_view(value) for value in (args.view or ["iso"])]
     out = args.out or source.parent / "snap" / "review"
     out.mkdir(parents=True, exist_ok=True)
     for label, azimuth, elevation in views:
         path = out / f"{label}.png"
-        render(occurrences, azimuth, elevation, args.size, args.pad).save(path)
+        with _cli_phase("raster-save", view=label):
+            render(occurrences, azimuth, elevation, args.size, args.pad).save(path)
         print(path)
     return 0
 

@@ -1,5 +1,17 @@
 # Shared skill provenance
 
+## Review-render phase diagnostics (2026-09-11)
+
+`render_review` reports flushed CLI-only phase starts and completions on stderr
+for source loading/building, tessellation, and each view's raster/save. Completed
+tessellation includes occurrence, vertex and triangle counts. Existing Make
+timeout logs retain the last started phase, while failed phases propagate their
+original exception without a false completion. Imported library calls stay quiet;
+stdout paths, exact PNG bytes, geometry, tolerances and timeouts are unchanged.
+Regression coverage exercises real timeout capture and each failure boundary.
+The active Waterloo render completed before this change and retains its frozen
+tool bytes; no restart or refresh is needed solely for diagnostics.
+
 ## Compatible signature-review verification (2026-09-11)
 
 `verify_project` now consumes the schema-8 review already required by ADR 0063
