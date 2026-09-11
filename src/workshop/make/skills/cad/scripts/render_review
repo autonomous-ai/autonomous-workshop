@@ -386,6 +386,8 @@ def render(occurrences, azimuth: float, elevation: float, size: int, pad: float,
             rightmost = min(size - 1, int(np.ceil(xs.max())))
             top = max(0, int(np.floor(ys.min())))
             bottom = min(size - 1, int(np.ceil(ys.max())))
+            if left > rightmost or top > bottom:
+                continue
             fill = _shade(colour, normal, light, toward_viewer)
             # Bound temporary arrays for large projected faces. Pixel-centre
             # barycentric coordinates interpolate this orthographic depth.

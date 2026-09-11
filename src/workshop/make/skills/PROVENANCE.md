@@ -810,6 +810,21 @@ and reconstruction still reject geometry and animation mismatches. This is a
 host-versioned deterministic tool correction, adopted by saved runs only
 through their normal audited refresh.
 
+## Fixed-frame review clipping (2026-09-11)
+
+A close-up of a complete assembly could crash when an opaque triangle lay
+wholly left of the image: the empty pixel-coordinate range disagreed with a
+NumPy depth slice whose negative endpoint wrapped into the image. The opaque
+raster loop now uses the same disjoint clipped-bounds guard as transparency.
+Only triangles with no on-image pixel bounds are skipped; intersecting
+triangles retain their existing coverage, shading and depth behavior.
+
+Synthetic tests reproduce the original failure, cover all sides and corners
+for opaque, transparent and invisible materials, and compare partial triangles
+and a complete mixed scene against crops of a larger reference rendering.
+Source geometry remains unchanged. Saved runs adopt this correction through
+the normal audited tool refresh.
+
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead
