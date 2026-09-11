@@ -988,3 +988,22 @@ All 94 focused tests passed, including the 37 shared-contract/failure cases;
 the verifier self-check passed. Independent source review found no blocker.
 The previously blocked schema correction is now implemented, rather than a
 waiver or a plan to switch review files between checks.
+
+The refreshed tree also passed all 16 skill-registry checks. Commit `66046964`
+contains the verifier correction, tests and exact tool fingerprint. At
+**2026-09-11 05:27:11 UTC**, the ordinary CLI resumed Waterloo:
+
+```sh
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli resume wish-20260911-023805-fe157910 --refresh-tools
+PYTHONPATH="$PWD/src" "$workshop_python" -m cli status wish-20260911-023805-fe157910 --json
+```
+
+The host refreshed six files: `check_overhang`, `check_thickness`,
+`render_assembly.py`, `render_product`, `render_review` and `verify_project`.
+It rebound the instruction digest through the normal journaled correction and
+resumed root `01a08e54-55f5-7a93-aa25-872ffc105b3a`. Status confirmed active Make,
+Spark, mixed materials, `gpt-6-astra`, medium effort and the original 500M cap.
+Observed prior usage stayed exactly 32,866,528 tokens; the in-flight resumed
+request was not counted as completed usage. No new Wish, native root, separate
+Release turn, manual review waiver or physical operation was introduced.
+All six earlier pilots remain paused. Publication is still pending.
