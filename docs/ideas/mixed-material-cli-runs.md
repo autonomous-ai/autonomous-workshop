@@ -721,3 +721,56 @@ workshop wish "a rotating desktop toy"                    # default: print
 workshop wish "a rotating desktop toy" --make print
 workshop wish "a wooden marble toy with printed cams" --make mixed
 ```
+
+### Sequential completion: Liltwing first
+
+The operator then requested one completed product before continuing the next.
+Liltwing Flight Garden (`wish-20260910-143749-b20aacdc`) remains the sole active
+pilot. Its fifth Make round passed all five printed-part checks and the
+Manager's assembly visual review, but the motion subprocess reached its
+900-second limit. Final integrated verification, blind review and publication
+were still outstanding. Round six was already running when the schedule changed.
+
+At 2026-09-11 01:52:52 UTC, Ctrl+C was sent to the existing Cloudline, Rainmark
+and Atlas CLI terminals. Each exited cleanly with code 130. These are pauses of
+the original runs, not replacement Wishes. Harbor had already stopped at
+01:32:54 on another ambiguous native usage baseline; Switchyard was already
+waiting on its recorded motion-tooling limitation. No other pilot was resumed.
+
+Liltwing's existing CLI command continues unchanged:
+
+```sh
+# Already running since 2026-09-11 00:20:23 UTC; not launched a second time.
+"$workshop_python" -m cli resume wish-20260910-143749-b20aacdc
+```
+
+All six preserve their original native sessions and consumed usage, with Astra,
+medium effort and 500M total token caps. The remaining five will stay paused
+while Liltwing completes. A read-only process check confirmed Liltwing was the
+only active CLI among these six run ids. No publication or physical fabrication
+is implied by the digital checks above.
+
+### Static battlefield direction; all six existing pilots paused
+
+At 2026-09-11 02:05:10 UTC, the operator requested a static mixed-material first
+product. Ctrl+C stopped Liltwing's existing terminal cleanly with exit 130.
+All six original pilots are now paused, with their work and saved profiles
+preserved. No tool refresh was applied to Liltwing and no new Wish was launched.
+
+A static seaside miniature was briefly drafted but not launched. The operator
+then requested historical battlefield research, a widely recognized battle,
+varied terrain and forces, and manual replay with formations, flanks, orders
+and tempo. The resulting recommendation is Waterloo, with permanently assembled
+terrain and complete troop stands repositioned by hand. Research and proposed
+materials are recorded in [historical-battlefield-selection.md](historical-battlefield-selection.md).
+This remains product selection and design discussion; it is not a completed
+toy, a new native run or a publication.
+
+The previously started motion performance fix was completed independently as
+`dbbd91d2`. It caches at most 32 successful exact placed-material results per
+condition without changing samples, pose checks, collision decisions or time
+limits. The focused motion regression run passed 122 tests and the retention
+self-check; a final cache/skill-registry run passed 25 tests. A synthetic
+40-step sweep produced identical results with 246 normalizations in 24.121 s
+uncached and 44 normalizations in 4.873 s cached. These measurements are a tool
+benchmark, not evidence about Liltwing's physical performance or final gates.
