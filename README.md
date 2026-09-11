@@ -139,7 +139,7 @@ uv run workshop resume <wish-id>
 Codex Astra also supports `--effort ultra`, passed unchanged to native Codex.
 Ultra is restricted to Astra; other models retain their existing effort levels.
 
-`start` and `wish` accept `--max-tokens N` up to **200,000,000**, default **30,000,000** per Codex
+`start` and `wish` accept `--max-tokens N` up to **500,000,000**, default **30,000,000** per Codex
 product. Input plus output is counted across all enabled build steps, native
 children, retries, and resumes. Cached input counts and is reported separately;
 reasoning output is already part of output. `start` gives each product its own

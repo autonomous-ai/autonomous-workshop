@@ -60,7 +60,7 @@ sources and cardinality: `workshop wish` makes one product from a human-provided
 idea, while `workshop start` continuously makes products from an Inventor's own
 ideas. `workshop start --once` is the bounded autonomous-idea variant.
 
-`start` and `wish` accept `--max-tokens N` (maximum `200000000`, default `30000000`) for the whole
+`start` and `wish` accept `--max-tokens N` (maximum `500000000`, default `30000000`) for the whole
 Codex product, including all build stages, native children and resumes. The
 separate Daydream session is excluded. All revisions and retries share that
 allowance without a native-turn or wall-clock execution cap.
