@@ -1265,3 +1265,39 @@ The native resume packet contained the explicit changed-path notice. At
 **09:25:13 UTC**, the Manager reported that it would read the refreshed packet
 and guidance before retesting the exact STEP failure. Delivery of guidance is
 confirmed; a repaired STEP, final review and publication are still pending.
+
+### Native repair clears the STEP blocker
+
+At **09:29:47 UTC**, the Manager confirmed the refreshed renderer correctly
+retained the old paint-film failure. It then adopted the grouped printed-unit
+representation: internal colored regions of the unchanged fused production
+parts, with physical-copy quantities preserved. Native checks on all six
+miniature families found valid STEP round-trips, no pairwise region overlap,
+successful rendering and volume differences below 0.000003 mm³, within the
+recorded numerical comparison tolerance. These are digital geometry results.
+The builder neither changed product CAD nor ran these product checks.
+
+All 11 production families passed fresh canonical source print reports. At
+**09:36:40 UTC**, the combined six-family colored close-up also rendered from
+exported STEP. Its file was approximately 15.9 MB, versus approximately 79 MB
+for the failed coating-based close-up. It was opened with:
+
+```sh
+open -a Preview '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260911-023805-fe157910/workspace/artifacts/engineering/solid-color-detail/views/iso.png'
+```
+
+The previously interrupted round-9 directory was reused. Its complete render
+succeeded at **09:40:25 UTC** in **74.5 seconds**, with 803 occurrences,
+454,144 vertices and 387,539 triangles. Source build took 30.391 seconds,
+tessellation 6.763 seconds, and the three raster/save phases 36.882 seconds.
+Both representation and renderer changed since round 8; this is the observed
+combined improvement, not an isolated renderer benchmark. Checks passed and
+the fresh visual packet awaited Manager feedback at this checkpoint.
+
+```sh
+open -a Preview '/Users/ab/Library/Application Support/Autonomous Workshop/runs/wish-20260911-023805-fe157910/workspace/artifacts/make/r0001/product/cad/measure/rounds/r0009/visual/iso.png'
+```
+
+The actual generated assembly still requires final inspection, independent
+review, final verification, manufacturing-package validation and authenticated
+publication. Passing intermediate renders do not establish those outcomes.
