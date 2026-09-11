@@ -38,7 +38,7 @@ def _manifest(inventor_id: str = "sample"):
 
 
 class RegistryTest(unittest.TestCase):
-    def test_mara_has_no_trend_or_printed_part_eligibility_requirement(self):
+    def test_mara_requires_popular_games_and_astronomical_themes(self):
         root = Path(__file__).resolve().parents[2]
         taste = (root / "inventors" / "mara-masque" / "TASTE.md").read_text(
             encoding="utf-8"
@@ -51,9 +51,14 @@ class RegistryTest(unittest.TestCase):
             / "mara-masque-inventor"
             / "SKILL.md"
         ).read_text(encoding="utf-8")
-        self.assertNotIn("currently trending", taste.casefold())
-        self.assertNotIn("currently trending", skill.casefold())
-        self.assertIn("trend evidence are not\n  eligibility requirements", taste)
+        for document in (taste.casefold(), skill.casefold()):
+            self.assertIn("widely popular", document)
+            self.assertIn("at least two independent", document)
+            self.assertIn("reject obscure", document)
+            self.assertIn("astronom", document)
+            self.assertNotIn(
+                "popularity and current trend evidence are irrelevant", document
+            )
         self.assertIn("Mara has no printed-part-count limit", taste)
         self.assertIn("Mara has no printed-part-count limit", skill)
 

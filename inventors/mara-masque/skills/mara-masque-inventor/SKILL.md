@@ -1,6 +1,6 @@
 ---
 name: mara-masque-inventor
-description: Apply Mara Masque's selected-Inventor method to an exact-rules theme reskin of a public-domain board game across Workshop stages.
+description: Apply Mara Masque's method to an astronomy-first exact-rules reskin of a widely popular public-domain board game across Workshop stages.
 ---
 
 # Mara Masque Inventor
@@ -23,16 +23,20 @@ advance a gate, or perform an external effect.
 
 Separate the work into three explicit layers:
 
-1. Identify one public-domain game with a board or tiled play surface. Name it
-   directly and verify the public-domain rules basis from reliable sources.
-   Popularity and current trend evidence are irrelevant to eligibility. Reject
-   proprietary, license-required, coin, hand, parlor, and boardless dexterity
-   games.
+1. Identify one widely popular public-domain game with a board or tiled play
+   surface. Name it directly and verify both the public-domain rules basis and
+   broad popularity from reliable sources. Require at least two independent
+   sources supporting widespread, enduring recognition or a large active
+   player base; age, a rules listing, or a BoardGameGeek entry alone is not
+   enough. Reject obscure or specialist-only games, as well as proprietary,
+   license-required, coin, hand, parlor, and boardless dexterity games.
 2. Freeze a rule-equivalence ledger covering player counts, component functions
    and quantities, setup, turn order, legal actions, information, randomness,
    state transitions, interaction, ending, tie-breakers, and scoring.
-3. Build an original semantic system in which every frozen mechanical role has
-   a necessary thematic meaning and a distinct physical expression.
+3. Build an original astronomical semantic system in which every frozen
+   mechanical role has a necessary thematic meaning and a distinct physical
+   expression. Use specific celestial bodies, observable phenomena, astronomy
+   practices, or orbital relationships—not generic sci-fi or star decoration.
 
 Keep a one-to-one mapping from source component and rule function to new-world
 meaning and component cue. Use it to expose missing mechanics, added mechanics,
@@ -40,6 +44,10 @@ thematic contradictions, copied expression, and states readable only by color
 or prose. Reject the concept if the mapping is not bijective or if the theme
 requires any rule change. Write all names, explanations, visuals, and geometry
 anew without changing rule semantics.
+
+For source-game research, record the evidence that makes the game broadly
+recognizable, not merely old or documented. If popularity remains ambiguous,
+reject it and choose a better-known public-domain game.
 
 For novelty research, search the proposed title, its central theme-mechanic
 pairing, and nearby synonyms across tabletop catalogs and broader media. Record
@@ -62,13 +70,13 @@ by the frozen source rules.
 ## Stage contributions
 
 - **Match:** Assess whether the Wish asks for a surprising new thematic world
-  for the exact rules of a public-domain board game. Report fit,
-  public-domain evidence, eligible source games,
-  rights constraints, and hard tensions; do not select yourself for a personal
-  keepsake edition, a loose mechanical inspiration, a variant, or a wholly
-  original rules system.
-- **Invent:** Explore materially different themes for eligible source
-  games, never different rule systems. For each serious direction, map every
+  grounded in astronomy for the exact rules of a widely popular public-domain
+  board game. Report fit, popularity evidence, public-domain evidence,
+  eligible source games, rights constraints, and hard tensions; do not select
+  yourself for a personal keepsake edition, a loose mechanical inspiration, a
+  variant, or a wholly original rules system.
+- **Invent:** Explore materially different astronomical themes for eligible
+  source games, never different rule systems. For each serious direction, map every
   component and rule function one-to-one to the proposed world; reject noun
   swaps, rule drift, and nearby published collisions. For the selected
   direction, cite rule provenance and the public-domain basis. Record the
