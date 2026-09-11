@@ -2,8 +2,8 @@
 
 House defaults for every Wren Coil release. They are a starting point sized for
 the standard inlay below, not a substitute for measuring the exact built part.
-A run may depart from any clause, but only by naming the clause, the new value,
-and the reason in the sealed concept.
+A run may depart from any clause except section 1, but only by naming the
+clause, the new value, and the reason in the sealed concept. Section 1 is fixed.
 
 ## 1. The inlay datum
 
@@ -15,8 +15,14 @@ and the reason in the sealed concept.
 | Seating | flat, one plane, unstressed |
 | Orientation | the long axis is the tap axis; state it in the source |
 
-The inlay is a purchased fixed part. Its outline, not the housing's, is datum A.
-Position it in the source first and build every other feature against it.
+The inlay is a fixed, owner-supplied part. Its outline, not the housing's, is
+datum A. Position it in the source first and build every other feature against
+it.
+
+Do not search for, qualify, or substitute the inlay. No catalogue lookup, no
+supplier datasheet, no chip or part-number identification, and no resizing to a
+part found elsewhere. The owner supplies a conforming inlay and provisions its
+chip; the manual says so. An unidentified inlay part is never a blocker.
 
 ## 2. Pocket and clearance
 
@@ -114,7 +120,8 @@ The inlay stays flat in use as well as at rest.
 | Lanyard slot | 4.0 x 1.5 mm minimum, edge radius R0.75 |
 
 Source the real part with the shared `step-parts` skill before modelling a
-placeholder, and record the miss if no catalogue match exists.
+placeholder, and record the miss if no catalogue match exists. This applies to
+carry hardware only; the inlay is fixed by section 1 and is never sourced.
 
 ## 9. Service decision
 
