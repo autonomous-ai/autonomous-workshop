@@ -1,0 +1,136 @@
+{
+ "build": {
+  "crema_piston": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "cup_body": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "foot_plug": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "checked": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "checks_ok": false,
+ "entry": "crema_click.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": {
+  "conditions": [
+   {
+    "detail": "clear across 16 steps (step 0.281 mm)",
+    "id": "piston-press",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by cup_body at step 7/12 (6.591494 mm3) - retained, as expected",
+    "id": "piston-extract-blocked",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by cup_body at step 1/12 (36.499928 mm3) - retained, as expected",
+    "id": "plug-extract-blocked",
+    "status": "pass"
+   },
+   {
+    "detail": "2 retention proof(s) close at 1 fixed root(s); every material member has a blocked escape sweep",
+    "id": "retention-closure",
+    "status": "pass"
+   }
+  ],
+  "detail": "4 condition(s): all pass",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0010",
+ "overhang_angle": 45.0,
+ "parts": [
+  "crema_piston",
+  "cup_body",
+  "foot_plug"
+ ],
+ "print": {
+  "crema_piston": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0010/overhang-crema_piston.log": "af4fa1235b1a7c3bdfd5069f838b45a46112fc5402d7a23b0c11d689cbefc22e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0010/thickness-crema_piston.log": "85ccce15cebd66e1c40ae8c74e79c28ae521d5ac8fb2f36be4545f1716bd405d"
+   },
+   "measured_round": 10,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "cup_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0010/overhang-cup_body.log": "f6729b235e1b5e31cf0f7f985ea00d0b370376d6c418b084a47bcfd2fcb7c6fa",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0010/thickness-cup_body.log": "b4fba8854f0f4cadfa93b90b342f2009b109c7215e340e01e24b3530366b78e5"
+   },
+   "measured_round": 10,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.28,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "foot_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0010/overhang-foot_plug.log": "36eca4f087d1c2066a9802d730d56532d0956a2475a450485b09fa7df2c1efd9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0010/thickness-foot_plug.log": "386a20e86abd9881dfec6497c89517923f474f230b682b49727a0d93b9f979bf"
+   },
+   "measured_round": 10,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.5% of surface below (1331 of 289366 samples); thinne"
+    ],
+    "thinnest_mm": 0.15,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click",
+ "refs": [],
+ "reused": [],
+ "round": 10,
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0010/visual-packet.json",
+  "packet_sha256": "41c42e877d60e496f1e5ac78b020f5094546869a802c3583439da0440b8e68a8",
+  "status": "pending"
+ }
+}

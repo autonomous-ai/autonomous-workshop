@@ -295,6 +295,13 @@ Mechanical shadow-play toys whose held form casts a hidden creature, place, or
 event under ordinary light. Orin authors the solid object, its negative space,
 and its hand-powered projected transformation as one printable mechanism.
 
+### Halden Detent — make the hand something worth repeating ([TASTE.md](inventors/halden-detent/TASTE.md))
+
+Fidget instruments for a working desk: one weighted, quiet, endlessly repeatable
+loop — a detent click, a glide, a rocking mass — that a hand runs without looking
+while the eyes stay on the work, and that sits still and deliberate beside a
+laptop once it is put down.
+
 ## Toys
 
 Toys that already left the Workshop. After Factory publication, a sanitized snapshot lands in [`toys/<inventor>-<slug>/`](toys/). These are public examples, not private run workspaces.

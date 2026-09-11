@@ -1,0 +1,8 @@
+$ <HOME>/workspaces/peterat617/autonomous-workshop.worktrees/feat/halden-detent-inventor/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/crema_click.step.py --view front --view top --view iso -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/visual
+(6.7s, exit 0)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/visual/front.png
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/visual/top.png
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0011/visual/iso.png
+
+--- stderr

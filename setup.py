@@ -116,6 +116,7 @@ class build_py(_build_py):
             "alice",
             "bob",
             "eve",
+            "halden-detent",
             "ivy",
             "kestrel-knot",
             "leo",
