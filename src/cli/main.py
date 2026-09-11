@@ -1978,9 +1978,20 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    args = None
     try:
         args = parser().parse_args(argv)
         return int(args.handler(args))
+    except KeyboardInterrupt:
+        message = "workshop: interrupted."
+        if args is not None and args.command == "resume":
+            message += " Continue the saved run with: %s" % _shell_command(
+                "workshop", "resume", args.product_id
+            )
+        elif args is not None and args.command == "wish":
+            message += " If the Wish was saved, continue it with: workshop resume WISH_ID"
+        print(message, file=sys.stderr)
+        return 130
     except (WorkshopError, OSError, ValueError, KeyError) as exc:
         print("workshop: %s" % exc, file=sys.stderr)
         return 2
