@@ -1,0 +1,62 @@
+{
+  "assembly": "crema_click.step.py",
+  "retention": {
+    "fixed_parts": ["cup_body"],
+    "proofs": [
+      {
+        "part": "crema_piston",
+        "condition": "piston-extract-blocked",
+        "supports": ["cup_body"]
+      },
+      {
+        "part": "foot_plug",
+        "condition": "plug-extract-blocked",
+        "supports": ["cup_body"]
+      }
+    ]
+  },
+  "conditions": [
+    {
+      "id": "piston-press",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Crema disc travels 4.5 mm down the chimney for the click loop.",
+      "inputs": {
+        "moving_part": "crema_piston",
+        "obstacle_parts": ["cup_body", "foot_plug"],
+        "translation": [0, 0, -4.5],
+        "steps": 16,
+        "allow_seated_contact": true
+      },
+      "thresholds": { "maxOverlapMm3": 0.05, "maxStepMm": 0.4 }
+    },
+    {
+      "id": "piston-extract-blocked",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "After seating, the flange cannot pass the chimney lip upward.",
+      "inputs": {
+        "moving_part": "crema_piston",
+        "obstacle_parts": ["cup_body"],
+        "translation": [0, 0, 8.0],
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": { "maxOverlapMm3": 0.05 }
+    },
+    {
+      "id": "plug-extract-blocked",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "After the 60 deg lock, foot-plug ramps cannot drop off the cup lugs.",
+      "inputs": {
+        "moving_part": "foot_plug",
+        "obstacle_parts": ["cup_body"],
+        "translation": [0, 0, -8.0],
+        "steps": 12,
+        "allow_seated_contact": true
+      },
+      "thresholds": { "maxOverlapMm3": 0.05 }
+    }
+  ]
+}

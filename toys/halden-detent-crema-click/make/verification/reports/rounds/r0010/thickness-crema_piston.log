@@ -1,0 +1,12 @@
+$ <HOME>/workspaces/peterat617/autonomous-workshop.worktrees/feat/halden-detent-inventor/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/part_crema_piston.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0010/thickness-crema_piston.md
+(4.8s, exit 0)
+--- stdout
+part_crema_piston.step.py: 12.22 cm3 solid, grid 0.197 mm (228x228x202), 132291 surface samples, thickness resolved to 0.098 mm
+  PASS  wall >= 0.80 mm (+/-0.10)      0.0% of surface below (0 of 132291 samples)
+  PASS  thickness distribution         median 4.92 mm, p95 43.93 mm, max 44.03 mm
+  WARN  hollowable at 1.20 mm wall     6.28 of 12.22 cm3 (51%) in 1 pocket(s)
+  PASS  filament that would save       0.94 cm3, 1.2 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0010/thickness-crema_piston.md
+
+--- stderr

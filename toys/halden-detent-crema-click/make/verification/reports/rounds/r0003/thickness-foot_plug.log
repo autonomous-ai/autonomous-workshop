@@ -1,0 +1,12 @@
+$ <HOME>/workspaces/peterat617/autonomous-workshop.worktrees/feat/halden-detent-inventor/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/part_foot_plug.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0003/thickness-foot_plug.md
+(6.4s, exit 0)
+--- stdout
+part_foot_plug.step.py: 13.96 cm3 solid, grid 0.140 mm (404x405x73), 317299 surface samples, thickness resolved to 0.070 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 317299 samples)
+  PASS  thickness distribution         median 5.46 mm, p95 55.93 mm, max 56.00 mm
+  WARN  hollowable at 1.20 mm wall     6.68 of 13.96 cm3 (48%) in 4 pocket(s)
+  PASS  filament that would save       1.00 cm3, 1.2 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/measure/rounds/r0003/thickness-foot_plug.md
+
+--- stderr
