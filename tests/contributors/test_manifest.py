@@ -86,6 +86,7 @@ class RegistryTest(unittest.TestCase):
                 "soren-voss",
                 "tess-loop",
                 "vela-bloom",
+                "wren-coil",
             ],
         )
         for manifest in manifests:
