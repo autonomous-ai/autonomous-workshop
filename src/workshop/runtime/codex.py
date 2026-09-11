@@ -73,6 +73,11 @@ _TRANSIENT_DIAGNOSTIC_HEADS = frozenset(
     )
 )
 _MAX_NATIVE_FAILURE_MESSAGE_CHARS = 4 * 1024
+_NATIVE_RECONNECT_NOTICE = re.compile(
+    r"Reconnecting\.\.\. ([1-9][0-9]*)/([1-9][0-9]*) "
+    r"\(stream disconnected before completion: "
+    r"(?:stream closed before response\.completed|idle timeout waiting for SSE)\)"
+)
 _SAFE_TERMINAL_ERROR_CODE = re.compile(r"^[A-Za-z][A-Za-z0-9_.-]{0,127}$")
 _TERMINAL_ERROR_SIGNATURES = (
     (
@@ -2181,6 +2186,8 @@ def _safe_activity_for_event(event: Mapping[str, Any]) -> Optional[str]:
     """Classify a decoded event without forwarding any event-owned bytes."""
 
     event_type = event.get("type")
+    if _is_native_reconnect_notice(event):
+        return None
     if event_type in ("turn.failed", "error"):
         return "failed"
     if event_type == "turn.completed":
@@ -2232,7 +2239,9 @@ class _NativeEventStats:
     def observe_event(self, event: Mapping[str, Any]) -> None:
         self.decoded_event_records += 1
         event_type = event.get("type")
-        if event_type == "thread.started":
+        if _is_native_reconnect_notice(event):
+            self.last_event_class = "native-reconnecting"
+        elif event_type == "thread.started":
             self.last_event_class = "thread-started"
         elif event_type == "turn.started":
             self.last_event_class = "turn-started"
@@ -3309,6 +3318,11 @@ class CodexNativeSessionLauncher:
                 if activity is not None:
                     event_stats.last_activity = activity
                     activity_reporter.observe(activity)
+                if _is_native_reconnect_notice(event):
+                    # Codex owns this retry inside the current process/turn.
+                    # Completion, identity and usage still require their usual
+                    # evidence; EOF or a later terminal error is not success.
+                    continue
                 if event_type in ("turn.failed", "error"):
                     if _is_explicit_transient_event_failure(event):
                         raise CodexRecoverableInvocationError(
@@ -4099,6 +4113,22 @@ def _terminal_failure_message(event: Mapping[str, Any]) -> Optional[str]:
     if event_type == "error" and isinstance(event.get("message"), str):
         return event["message"]
     return None
+
+
+def _is_native_reconnect_notice(event: Mapping[str, Any]) -> bool:
+    """Recognize the exact nonterminal transport notice observed in Codex exec.
+
+    A 0.153.4 loopback fixture emitted this top-level error, retried inside the
+    same process and completed the turn. Other messages and error shapes keep
+    their terminal behavior; no provider text or retry authority is retained.
+    """
+    if set(event) != {"type", "message"} or event.get("type") != "error":
+        return False
+    message = event.get("message")
+    if not isinstance(message, str) or len(message) > _MAX_NATIVE_FAILURE_MESSAGE_CHARS:
+        return False
+    match = _NATIVE_RECONNECT_NOTICE.fullmatch(message)
+    return match is not None and int(match[1]) <= int(match[2])
 
 
 def _terminal_failure_code(event: Mapping[str, Any]) -> Optional[str]:

@@ -44,6 +44,15 @@ CONSTITUTION_SHA256 = "b" * 64
 ROOT_MARKER = ".workshop-product-run-root"
 TEST_CODEX_BINARY = str(Path("/bin/sh").resolve(strict=True))
 
+NATIVE_RECONNECT_MESSAGE = (
+    "Reconnecting... 1/2 (stream disconnected before completion: "
+    "stream closed before response.completed)"
+)
+NATIVE_RECONNECT_IDLE_MESSAGE = (
+    "Reconnecting... 1/2 (stream disconnected before completion: "
+    "idle timeout waiting for SSE)"
+)
+
 
 def permission_arguments(root, binary=TEST_CODEX_BINARY):
     immutable = (
@@ -3720,6 +3729,195 @@ class CodexNativeSessionTest(unittest.TestCase):
                 self.resume(launcher, root)
 
             self.assertTrue(factory.processes[1].terminated)
+
+    def test_native_reconnect_notice_continues_same_process_and_session(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            notices = [event({"type": "error", "message": message}) for message in (
+                NATIVE_RECONNECT_MESSAGE, NATIVE_RECONNECT_IDLE_MESSAGE,
+            )]
+            records = self.start_events()
+            records[1:1] = notices * 3
+            records[-1] = event({"type": "turn.completed", "usage": {
+                "input_tokens": 100, "cached_input_tokens": 50,
+                "cache_write_input_tokens": 0, "output_tokens": 10,
+                "reasoning_output_tokens": 3,
+            }})
+            launcher, factory = self.launcher([
+                {"stdout": self.start_events()}, {"stdout": records},
+            ], timeout_seconds=None)
+            launcher.token_budget_observer = mock.Mock()
+            original = self.start(launcher, root)
+            observer = launcher.token_budget_observer
+            observer.reset_mock()
+
+            def reconcile(usage):
+                self.assertIsNotNone(factory.processes[1].returncode)
+                self.assertEqual(usage, (100, 50, 0, 10, 3))
+
+            observer.reconcile_completed_turn.side_effect = reconcile
+            activities = []
+            outcome = self.resume(launcher, root, activity_observer=activities.append)
+            self.assertEqual(outcome.status, "completed")
+            self.assertEqual(outcome.binding, original.binding)
+            self.assertEqual(len(factory.calls), 2)  # one start, one resume
+            self.assertIn(THREAD_ID, factory.calls[1][0])
+            self.assertNotIn("failed", activities)
+            self.assertIn("completed", activities)
+            observer.reconcile_completed_turn.assert_called_once()
+            observer.assert_called()
+            self.assertFalse((self.host_state(root) / CODEX_FAILURE_DIAGNOSTIC_FILENAME).exists())
+
+    def test_native_reconnect_preserves_marker_handoff_and_terminal_failure(self):
+        for terminal_failure in (False, True):
+            with self.subTest(terminal_failure=terminal_failure), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                marker = root / "agent-outcome.json"
+                records = [
+                    event({"type": "thread.started", "thread_id": THREAD_ID}),
+                    event({"type": "error", "message": NATIVE_RECONNECT_MESSAGE}),
+                    event({"type": "error", "message": NATIVE_RECONNECT_IDLE_MESSAGE}),
+                ]
+                if terminal_failure:
+                    records.append(event({"type": "turn.failed", "error": {"message": "unauthorized"}}))
+                launcher, factory = self.launcher([{
+                    "stdout": records,
+                    "stdout_callbacks": {1: lambda: marker.write_text("{}\n", encoding="utf-8")},
+                    "block_stdout_after_values": True,
+                    "hang_until_terminated": True,
+                }], timeout_seconds=None)
+                observer = mock.Mock()
+                launcher.token_budget_observer = observer
+                with mock.patch.object(codex_runtime, "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS", 0.05), \
+                     mock.patch.object(codex_runtime, "_CODEX_FINALIZATION_MARKER_POLL_SECONDS", 0.005):
+                    if terminal_failure:
+                        with self.assertRaises(CodexInvocationError) as caught:
+                            self.start(launcher, root, finalization_marker=marker)
+                        self.assertEqual(caught.exception.diagnostic.reason, "explicit-terminal-failure")
+                    else:
+                        # The existing marker boundary returns control only;
+                        # the host still owns proposal validation and gates.
+                        outcome = self.start(launcher, root, finalization_marker=marker)
+                        self.assertEqual(outcome.status, "completed")
+                observer.reconcile_completed_turn.assert_not_called()
+                observer.assert_called()
+                self.assertTrue(factory.processes[0].terminated)
+                self.assertEqual(len(factory.calls), 1)
+
+    def test_native_reconnect_stats_are_nonterminal_and_content_free(self):
+        stats = codex_runtime._NativeEventStats()
+        stats.last_activity = "tool"
+        notice = {"type": "error", "message": NATIVE_RECONNECT_MESSAGE}
+        stats.observe_event(notice)
+        self.assertEqual(stats.last_event_class, "native-reconnecting")
+        self.assertEqual(stats.last_activity, "tool")
+        self.assertIsNone(stats.terminal_error)
+        self.assertIsNone(codex_runtime._safe_activity_for_event(notice))
+        self.assertNotIn(NATIVE_RECONNECT_MESSAGE, repr(stats))
+        self.assertFalse(codex_runtime._is_explicit_transient_event_failure(notice))
+        self.assertFalse(codex_runtime._is_retryable_service_failure(notice))
+        stats.observe_event({"type": "turn.failed", "error": {"message": "failed"}})
+        self.assertEqual(stats.last_event_class, "terminal-error")
+        self.assertIsNotNone(stats.terminal_error)
+
+    def test_native_reconnect_notice_requires_exact_bounded_transport_shape(self):
+        for message in (NATIVE_RECONNECT_MESSAGE, NATIVE_RECONNECT_IDLE_MESSAGE):
+            for counter in ("1/1", "2/5", "123/456"):
+                notice = {"type": "error", "message": message.replace("1/2", counter)}
+                self.assertTrue(codex_runtime._is_native_reconnect_notice(notice))
+        rejected = [
+            {"type": "turn.failed", "error": {"message": NATIVE_RECONNECT_MESSAGE}},
+            {"type": "item.completed", "item": {"type": "agent_message", "text": NATIVE_RECONNECT_MESSAGE}},
+            {"type": "error", "message": NATIVE_RECONNECT_MESSAGE, "code": "unauthorized"},
+            {"type": "error", "message": NATIVE_RECONNECT_MESSAGE, "error": {"code": "bad_request"}},
+            {"type": "error", "message": None},
+        ]
+        for counter in ("0/2", "1/0", "3/2", "01/2", "-1/2", "1.0/2", "١/2", "1/" + "9" * 4100):
+            rejected.append({"type": "error", "message": NATIVE_RECONNECT_MESSAGE.replace("1/2", counter)})
+        for message in (
+            "prefix " + NATIVE_RECONNECT_MESSAGE, NATIVE_RECONNECT_MESSAGE + " suffix",
+            NATIVE_RECONNECT_MESSAGE + "\n", NATIVE_RECONNECT_MESSAGE.lower(),
+            NATIVE_RECONNECT_MESSAGE.replace("Reconnecting...", "Reconnecting…"),
+            NATIVE_RECONNECT_MESSAGE.replace("1/2", "1 / 2"),
+            "Reconnecting... 1/2 (unauthorized)",
+            "Reconnecting... 1/2 (You've hit your usage limit.)",
+            "Reconnecting... 1/2 (invalid encrypted content)",
+            "Reconnecting... 1/2 (bad request)",
+            "Reconnecting... 1/2 (request timed out)",
+            NATIVE_RECONNECT_MESSAGE.replace("response.completed)", "response.completed: secret)"),
+            NATIVE_RECONNECT_IDLE_MESSAGE + " private sentinel",
+            NATIVE_RECONNECT_IDLE_MESSAGE.replace("SSE)", "SSE: unauthorized)"),
+        ):
+            rejected.append({"type": "error", "message": message})
+        for notice in rejected:
+            with self.subTest(notice=notice):
+                self.assertFalse(codex_runtime._is_native_reconnect_notice(notice))
+
+    def test_native_reconnect_lookalikes_and_turn_failure_still_stop_and_reap(self):
+        for terminal in (
+            {"type": "turn.failed", "error": {"message": NATIVE_RECONNECT_MESSAGE}},
+            {"type": "turn.failed", "error": {"message": NATIVE_RECONNECT_IDLE_MESSAGE}},
+            {"type": "error", "message": "Reconnecting... 1/2 (unauthorized)"},
+            {"type": "error", "message": NATIVE_RECONNECT_MESSAGE + " private sentinel"},
+        ):
+            with self.subTest(terminal=terminal), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                records = self.start_events()
+                records[1:1] = [event({"type": "error", "message": NATIVE_RECONNECT_MESSAGE}), event(terminal)]
+                launcher, factory = self.launcher([{"stdout": records, "hang_until_terminated": True}])
+                with self.assertRaises(CodexInvocationError) as caught:
+                    self.start(launcher, root)
+                self.assertNotIsInstance(caught.exception, CodexRecoverableInvocationError)
+                self.assertEqual(caught.exception.diagnostic.reason, "explicit-terminal-failure")
+                self.assertEqual(caught.exception.diagnostic.terminal_error.event_type, terminal["type"])
+                self.assertTrue(factory.processes[0].terminated)
+                self.assertEqual(len(factory.calls), 1)
+                persisted = (self.host_state(root) / CODEX_FAILURE_DIAGNOSTIC_FILENAME).read_text()
+                self.assertNotIn(NATIVE_RECONNECT_MESSAGE, persisted)
+                self.assertNotIn("private sentinel", persisted)
+
+    def test_native_reconnect_eof_or_exhaustion_never_completes(self):
+        for exit_code in (0, 1):
+            with self.subTest(exit_code=exit_code), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                launcher, factory = self.launcher([{"stdout": [
+                    event({"type": "thread.started", "thread_id": THREAD_ID}),
+                    event({"type": "error", "message": NATIVE_RECONNECT_MESSAGE}),
+                    event({"type": "error", "message": NATIVE_RECONNECT_IDLE_MESSAGE.replace("1/2", "2/2")}),
+                ], "returncode": exit_code}], timeout_seconds=None)
+                launcher.token_budget_observer = mock.Mock()
+                with self.assertRaises(CodexInvocationError) as caught:
+                    self.start(launcher, root)
+                self.assertFalse(caught.exception.diagnostic.turn_completed)
+                self.assertEqual(caught.exception.diagnostic.last_event_class, "native-reconnecting")
+                self.assertIsNone(caught.exception.diagnostic.terminal_error)
+                self.assertTrue(caught.exception.diagnostic.process_tree_reaped)
+                self.assertEqual(len(factory.calls), 1)
+
+    def test_native_reconnect_preserves_thread_usage_and_cleanup_requirements(self):
+        for defect in ("identity", "usage", "cleanup"):
+            with self.subTest(defect=defect), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                records = self.start_events()
+                records[1:1] = [event({"type": "error", "message": NATIVE_RECONNECT_MESSAGE})]
+                if defect == "identity":
+                    records.pop(0)
+                if defect == "usage":
+                    records[-1] = event({"type": "turn.completed", "usage": {"input_tokens": -1, "output_tokens": 1}})
+                launcher, factory = self.launcher([{"stdout": records}])
+                if defect == "usage":
+                    observer = mock.Mock()
+                    observer.reconcile_completed_turn.side_effect = ContractError("completed request has no counters")
+                    launcher.token_budget_observer = observer
+                with mock.patch.object(codex_runtime._NativeProcessGuard, "reap",
+                                       return_value=defect != "cleanup"), self.assertRaises(CodexInvocationError):
+                    self.start(launcher, root)
+                self.assertEqual(len(factory.calls), 1)
 
     def test_terminal_failure_events_fail_closed(self):
         for event_type in ("turn.failed", "error"):

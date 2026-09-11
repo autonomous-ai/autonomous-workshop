@@ -1448,3 +1448,45 @@ retroactively classify prior unclassified failures. Final verification and
 publication remain incomplete. A read-only audit of the preceding attempt's
 last tool found a 300-second dispatch/result gap despite reported shell
 execution of 0.2 seconds; that was not a long-running CAD check.
+
+### Restored coding worktree and continued the same Wish
+
+At 13:10 UTC, the temporary coding worktree directory was absent. Git still
+retained branch `make/mixed-material-products` at `5c409f15`; the independent
+persistent Waterloo run and private host state were present. The directory's
+disappearance has no established cause. The original main worktree contained
+unrelated changes and was left intact. Recovery used the preserved branch:
+
+```sh
+git worktree add --force /private/tmp/autonomous-workshop-mixed-material-products make/mixed-material-products
+cd /private/tmp/autonomous-workshop-mixed-material-products
+PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli status wish-20260911-023805-fe157910
+PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli resume wish-20260911-023805-fe157910
+```
+
+The restored checkout was clean. The exact native session resumed at
+**13:11:55.042 UTC**, keeping medium effort, the 500M allowance, prior usage,
+reviewed assets and frozen Make tools. The saved final-verification failure
+remained present; restoring source did not complete that verification.
+
+### Native reconnect notices and interrupted operator turn
+
+The 13:11 resume saved its two preflight repairs: an updated specification and
+a product-specific fit/inventory audit, whose recorded result passed 90 checks.
+The operator conversation was interrupted around 13:15 UTC. The exec handle
+was no longer available afterward; a read-only process check found no remaining
+process for this exact Wish or native session. No duplicate resume was launched.
+
+A narrow existing reconnect fix from main commit `41fd7b2f` was integrated into
+this branch without copying unrelated main changes. Codex's two exact bounded
+top-level reconnect notices now continue reading the same process and thread.
+This adds no host retry and preserves terminal failure, identity, usage,
+completion, marker-handoff and process-cleanup requirements. The earlier
+95-byte transport diagnosis does not prove either recognized notice form.
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m unittest tests.runtime.test_codex_native_session -v > /private/tmp/workshop-native-reconnect-session-tests.log 2>&1
+```
+
+The suite ran 106 tests successfully with one skipped; its seven targeted
+reconnect tests also passed separately and are included in that total.

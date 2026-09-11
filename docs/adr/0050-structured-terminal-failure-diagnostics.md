@@ -42,6 +42,23 @@ transport allowlist can make a native turn automatically recoverable. A new
 classification cannot advance a stage, alter a gate, or authorize an external
 effect.
 
+Codex 0.153.4 also emits top-level `error` events during its own transport
+reconnection. A credential-free loopback fixture returned a truncated response,
+observed `Reconnecting... 1/2 (stream disconnected before completion: stream
+closed before response.completed)`, then saw the same process and thread retry,
+complete and exit zero. A second fixture verified the same behavior with the
+suffix `idle timeout waiting for SSE`. Workshop now continues reading only
+these exact bounded notice forms, with positive decimal attempt/limit counters
+and attempt no greater than limit. Extra error fields, other reasons and `turn.failed` remain
+terminal. The notice records only `native-reconnecting` as its event class;
+it creates no terminal diagnosis or failed activity and persists no message.
+
+This adds no host retry: Codex owns the reconnection within its current turn.
+The existing identity, completion, usage, cleanup and failure requirements still
+apply, including when the stream ends without completion. The synthetic
+100-byte and 89-byte notices prove the event-handling defect; they do not
+identify the discarded messages of historical 39-byte unclassified failures.
+
 ## Consequences
 
 Operators can distinguish common access, request, context, rate-limit,
