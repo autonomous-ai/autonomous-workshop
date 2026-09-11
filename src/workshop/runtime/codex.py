@@ -27,6 +27,7 @@ from workshop.runtime.execution import (
     CODEX_SUBPROCESS_ENVIRONMENT_ALLOWLIST,
     codex_subprocess_environment,
 )
+from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
 from workshop.runtime.project_boundary import PRODUCT_RUN_ROOT_MARKER
 from workshop.wish.contracts import WISH_REFERENCES_DIRECTORY
 from workshop.runtime.progress import SAFE_NATIVE_ACTIVITY_CLASSES
@@ -2307,9 +2308,13 @@ class CodexNativeSessionLauncher:
                 "Codex runtime profile sha256",
             )
         if timeout_seconds is not None and (
-            type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3_600
+            type(timeout_seconds) is not int
+            or not 1 <= timeout_seconds <= MAX_NATIVE_TURN_SECONDS
         ):
-            raise ValueError("Codex timeout_seconds must be from 1 to 3,600 or None")
+            raise ValueError(
+                "Codex timeout_seconds must be from 1 to %d or None"
+                % MAX_NATIVE_TURN_SECONDS
+            )
         self.binary = _resolved_codex_binary(
             binary or os.environ.get("WORKSHOP_CODEX_BIN") or shutil.which("codex")
         )

@@ -124,7 +124,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0060-make-round-visual-feedback-and-three-repairs.md`, and
 `docs/adr/0061-spark-make-owned-verification.md`, and
 `docs/adr/0062-step-only-cad-toolchain.md`, and
-`docs/adr/0063-print-gates-on-source.md` before changing the CLI, runtime,
+`docs/adr/0063-print-gates-on-source.md`, and
+`docs/adr/0064-operator-selected-turn-boundary.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -171,6 +172,10 @@ again. A product is print-ready only behind a passing `verify_project
 product status `full-with-thickness` **and** `print_ready_claim: true` — and
 reproduced by the host's own rerun. A half-declared claim is refused, not
 downgraded, and the legacy `--exports` full-tier replay path stays retired.
+ADR 0064 adds one opt-in `--turn-minutes` override above the frozen turn
+boundaries of ADR 0019, ADR 0023 and the deep-economics profiles, and supersedes
+none of them: a run that does not ask keeps the exact boundary it froze. It
+bounds a wall clock only; no gate, review, round or token allowance moves.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

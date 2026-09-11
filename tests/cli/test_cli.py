@@ -473,6 +473,71 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(start.call_args.kwargs["max_rounds"], 8)
 
+    def test_wish_passes_an_exact_turn_boundary_to_the_native_host(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-turn-minutes"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "a moon", "--turn-minutes", "180", "--json"))
+        self.assertEqual(result, 0)
+        self.assertEqual(start.call_args.kwargs["turn_seconds"], 180 * 60)
+        self.assertNotIn("turn_untimed", start.call_args.kwargs)
+
+    def test_wish_passes_an_untimed_turn_to_the_native_host(self):
+        for spelling in ("none", "NONE", "off", "unlimited"):
+            with self.subTest(spelling=spelling), mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-untimed"
+            ), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                result = main(("wish", "a moon", "--turn-minutes", spelling, "--json"))
+            self.assertEqual(result, 0)
+            self.assertIs(start.call_args.kwargs["turn_untimed"], True)
+            self.assertNotIn("turn_seconds", start.call_args.kwargs)
+
+    def test_wish_without_the_flag_leaves_the_frozen_boundary_alone(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-frozen-boundary"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            result = main(("wish", "a moon", "--json"))
+        self.assertEqual(result, 0)
+        self.assertNotIn("turn_seconds", start.call_args.kwargs)
+        self.assertNotIn("turn_untimed", start.call_args.kwargs)
+
+    def test_wish_rejects_an_out_of_range_turn_boundary(self):
+        for value in ("0", "361", "forever", "", "1.5"):
+            with self.subTest(value=value), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(
+                StringIO()
+            ), self.assertRaises(SystemExit) as caught:
+                main(("wish", "a moon", "--turn-minutes", value, "--json"))
+            self.assertEqual(caught.exception.code, 2)
+            start.assert_not_called()
+
+    def test_resume_rebinds_the_turn_boundary_of_an_existing_run(self):
+        for argument, expected in (
+            ("240", {"turn_seconds": 240 * 60}),
+            ("none", {"turn_untimed": True}),
+        ):
+            with self.subTest(argument=argument), mock.patch(
+                "cli.main.resume_native_run", return_value=native_receipt()
+            ) as resume, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                main(("resume", "wish-one", "--turn-minutes", argument))
+            for key, value in expected.items():
+                self.assertEqual(resume.call_args.kwargs[key], value)
+
+    def test_resume_without_the_flag_rebinds_nothing(self):
+        with mock.patch(
+            "cli.main.resume_native_run", return_value=native_receipt()
+        ) as resume, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            main(("resume", "wish-one"))
+        self.assertNotIn("turn_seconds", resume.call_args.kwargs)
+        self.assertNotIn("turn_untimed", resume.call_args.kwargs)
+
     def test_wish_pins_an_explicit_inventor_in_the_immutable_wish(self):
         with mock.patch(
             "cli.main.generate_wish_id", return_value="wish-pinned-inventor"
