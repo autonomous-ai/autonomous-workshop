@@ -210,11 +210,6 @@ def render(
 
     triangles = _posed_triangles(triangles, pose_degrees)
 
-    # Bound presentation cost without changing the STEP or its geometry gates.
-    if len(triangles) > 75_000:
-        indices = np.linspace(0, len(triangles) - 1, 75_000, dtype=np.int64)
-        triangles = triangles[indices]
-
     scale_factor = 2
     canvas_size = size * scale_factor
     right, up, forward = _camera(view)

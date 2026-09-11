@@ -738,6 +738,21 @@ and check source immutability on successful and failed copies. Camera settings,
 tessellation tolerance, visual evidence and gates are unchanged. This fixes
 avoidable copy work; it does not establish the cause of a product render timeout.
 
+## Complete product-render surfaces (2026-09-11)
+
+`render_product` previously sampled 75,000 individual triangles from larger
+meshes. That removed faces instead of simplifying the closed surface, producing
+holes and isolated panels in an otherwise valid STEP model. The presentation
+renderer now retains every input triangle; normal degenerate-face and camera
+visibility handling still applies. Camera framing, geometry state comparison,
+CLI validation and engineering gates are unchanged. Rendering cost now scales
+with the actual tessellation instead of silently discarding surface geometry.
+
+Synthetic regressions compare coarse and dense tessellations of the same closed
+cube, count all valid silhouette and visible-face draws above the former cap,
+and retain failure checks for empty or non-finite geometry. Saved runs require
+the normal audited host tool refresh to adopt the corrected renderer.
+
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead
