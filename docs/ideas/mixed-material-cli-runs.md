@@ -941,7 +941,7 @@ stdout, without changing a measurement, threshold or exit code. Real B-rep
 fixtures prove passing/failing verdict parity, repeated exact report bytes,
 and existing finalizer acceptance/refusal of the corresponding reports.
 
-The verifier's schema correction remains **unapplied**. Automatic approval
+At this checkpoint, the verifier's schema correction was **unapplied**. Automatic approval
 review rejected the edit twice and then rejected staging a review-only patch
 artifact, classifying it as a central acceptance-gate change requiring explicit
 user approval. It specifically questioned the existing success phrase
@@ -949,10 +949,10 @@ user approval. It specifically questioned the existing success phrase
 checks pass (meaning printing without supports). No rejected edit or substitute
 acceptance path was executed. Two canonical schema-8 fixtures pass the existing
 finalizer and reproduce the existing verifier's schema-7 refusal; 37 proposed
-verifier regression cases remain untracked pending approval of that correction.
+verifier regression cases remained untracked pending approval of that correction.
 
-No Waterloo tool refresh or resume has occurred at this checkpoint. All six
-older pilots remain paused, and no physical manufacture or publication is
+No Waterloo tool refresh or resume had occurred at this checkpoint. All six
+older pilots remained paused, and no physical manufacture or publication was
 claimed. The source renderer/report corrections alone do not resolve the
 remaining verifier incompatibility.
 
@@ -964,3 +964,27 @@ approval of the still-proposed verifier correction:
 ```sh
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" "$workshop_python" -m unittest tests.make.test_skill_registry -q
 ```
+
+### Authorized verifier correction and continuation
+
+The operator explicitly instructed the builder to complete the work and decide
+the necessary actions, in direct response to the specific verifier-correction
+approval request. The same `apply_patch` mechanism then accepted the prepared
+correction; no alternate acceptance or editing path was used.
+
+The final CAD verifier now requires canonical schema 8, including exact hashes
+of its cited passing thickness/overhang reports. Existing engineering checks,
+nozzle selection, review findings and image hashes remain intact. Its SHA-256
+is `aa9883fb9909d8cfb9b57fd0f656960a001080b3dca7863c8b116ca7a06b0067`.
+The combined CAD tree is resealed as
+`3164af81305ca229302abcaf73e2360f576b8fd59071f88e72d07034cd97977d`.
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:/private/tmp/workshop-usage-test-deps" "$workshop_python" -m pytest tests/make/test_verify_project_review.py tests/make/test_verify_project_cache.py tests/make/test_verify_project_documented_entries.py tests/make/test_verify_project_audits.py tests/make/test_native_cad_gate.py -q
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" "$workshop_python" src/workshop/make/skills/cad/scripts/verify_project --self-check
+```
+
+All 94 focused tests passed, including the 37 shared-contract/failure cases;
+the verifier self-check passed. Independent source review found no blocker.
+The previously blocked schema correction is now implemented, rather than a
+waiver or a plan to switch review files between checks.

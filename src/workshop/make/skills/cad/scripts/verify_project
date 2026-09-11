@@ -68,7 +68,7 @@ import stat
 import subprocess
 import sys
 import time
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Sequence
 
 
@@ -187,6 +187,11 @@ SIGNATURE_REVIEW_FIELDS = {
     "resolution",
 }
 SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
+PRINT_GATE_RESULTS = {
+    "thickness": ("# Thickness and hollow\n", "RESULT: printable at this wall"),
+    "overhang": ("# Overhang and support\n", "RESULT: prints unsupported"),
+}
+MAX_PRINT_GATE_REPORT_BYTES = 1_000_000
 
 
 def _path_arg(path: Path, cwd: Path) -> str:
@@ -211,6 +216,92 @@ def _resolve_inside_project(raw: str | None, project: Path, cwd: Path) -> Path |
     except ValueError as exc:
         raise ValueError(f"path must stay inside {project}: {candidate}") from exc
     return candidate
+
+
+def _read_review_print_report(project: Path, relative: PurePosixPath) -> bytes:
+    """Read one bounded report without following links or accepting a torn read."""
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    directory_flags = flags | getattr(os, "O_DIRECTORY", 0)
+    descriptors = []
+    try:
+        directory = os.open(project, directory_flags)
+        descriptors.append(directory)
+        directory = os.open("measure", directory_flags, dir_fd=directory)
+        descriptors.append(directory)
+        descriptor = os.open(relative.name, flags, dir_fd=directory)
+        descriptors.append(descriptor)
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or not 1 <= before.st_size <= MAX_PRINT_GATE_REPORT_BYTES:
+            raise ValueError("signature review print gate must be one bounded regular report")
+        chunks = []
+        length = 0
+        while length <= MAX_PRINT_GATE_REPORT_BYTES:
+            chunk = os.read(descriptor, min(64 * 1024, MAX_PRINT_GATE_REPORT_BYTES + 1 - length))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            length += len(chunk)
+        after = os.fstat(descriptor)
+        if (
+            length != before.st_size
+            or after.st_size != before.st_size
+            or after.st_mtime_ns != before.st_mtime_ns
+            or (after.st_dev, after.st_ino) != (before.st_dev, before.st_ino)
+        ):
+            raise ValueError("signature review print gate report changed while reading")
+        return b"".join(chunks)
+    except OSError as exc:
+        raise ValueError(f"signature review requires a real in-project report: {relative}") from exc
+    finally:
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
+
+
+def _required_review_print_gates(project: Path, review: dict) -> None:
+    """Match stage_proposal's schema-8 review/report binding before final CAD.
+
+    Empty bindings make no print-ready claim. Nonempty bindings name the exact
+    passing reports reviewed before this run; they do not replace the final
+    source-built gates or choose their nozzle and other measurement settings.
+    """
+    bindings = review["print_gate_sha256s"]
+    if not isinstance(bindings, dict) or any(not isinstance(key, str) for key in bindings):
+        raise ValueError("signature review print_gate_sha256s must be a report-to-digest map")
+    if not bindings:
+        return
+    covered = set()
+    for relative, digest in sorted(bindings.items()):
+        candidate = PurePosixPath(relative)
+        if (
+            candidate.is_absolute()
+            or ".." in candidate.parts
+            or candidate.as_posix() != relative
+            or "\\" in relative
+            or any(ord(character) < 32 or ord(character) == 127 for character in relative)
+            or candidate.parent != PurePosixPath("measure")
+            or not candidate.name.endswith(".md")
+        ):
+            raise ValueError("signature review print gate must be a project measure/*.md report")
+        gate = candidate.name.split("-", 1)[0]
+        if gate not in PRINT_GATE_RESULTS:
+            raise ValueError("signature review print gate is not a thickness or overhang report")
+        if not isinstance(digest, str) or not SHA256_TEXT.fullmatch(digest):
+            raise ValueError("signature review print gate digest must be a lowercase SHA-256")
+        content = _read_review_print_report(project, candidate)
+        if hashlib.sha256(content).hexdigest() != digest:
+            raise ValueError(f"signature review is not bound to the exact {gate} report")
+        try:
+            text = content.decode("utf-8")
+        except UnicodeError as exc:
+            raise ValueError("signature review print gate report must be UTF-8 text") from exc
+        title, passing = PRINT_GATE_RESULTS[gate]
+        if not text.startswith(title):
+            raise ValueError(f"signature review print gate report is not a {gate} report")
+        if passing not in text:
+            raise ValueError(f"signature review cites a failing {gate} report")
+        covered.add(gate)
+    if covered != set(PRINT_GATE_RESULTS):
+        raise ValueError("signature review print evidence must cover both the wall and the overhang gate")
 
 
 def _required_signature_review(project: Path) -> str:
@@ -246,7 +337,11 @@ def _required_signature_review(project: Path) -> str:
         raise ValueError("signature review must use canonical JSON encoding")
     if set(review) != SIGNATURE_REVIEW_FIELDS:
         raise ValueError("signature review fields do not match schema 8")
-    if review.get("schema_version") != 8 or review.get("kind") != SIGNATURE_REVIEW_KIND:
+    if (
+        type(review.get("schema_version")) is not int
+        or review.get("schema_version") != 8
+        or review.get("kind") != SIGNATURE_REVIEW_KIND
+    ):
         raise ValueError("signature review identity is invalid")
     for key in (
         "reviewer",
@@ -304,17 +399,7 @@ def _required_signature_review(project: Path) -> str:
             raise ValueError("signature review critical form requirement must match")
     if review.get("blocking_visual_defects") != []:
         raise ValueError("signature review still has blocking visual defects")
-    print_gate_sha256s = review.get("print_gate_sha256s")
-    if not isinstance(print_gate_sha256s, dict) or any(
-        not isinstance(path, str)
-        or not path
-        or not isinstance(digest, str)
-        or not SHA256_TEXT.fullmatch(digest)
-        for path, digest in print_gate_sha256s.items()
-    ):
-        raise ValueError(
-            "signature review print_gate_sha256s must map report paths to sha256 digests"
-        )
+    _required_review_print_gates(project, review)
     for filename, field in (("iso.png", "iso_sha256"), ("signature.png", "signature_sha256")):
         expected = review.get(field)
         if not isinstance(expected, str) or not SHA256_TEXT.fullmatch(expected):
@@ -2309,7 +2394,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if signature_review_sha256 is not None:
         runner.note(
             "signature review",
-            f"schema=6 sha256={signature_review_sha256}",
+            f"schema=8 sha256={signature_review_sha256}",
         )
     workflow_started = time.perf_counter()
     result = runner.command([sys.executable, SCRIPTS_DIR / "check_layout", _path_arg(project, cwd)])

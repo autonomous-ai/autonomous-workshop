@@ -1,5 +1,21 @@
 # Shared skill provenance
 
+## Compatible signature-review verification (2026-09-11)
+
+`verify_project` now consumes the schema-8 review already required by ADR 0063
+and Make's finalizer. Its exact field set includes `print_gate_sha256s`; cited
+thickness and overhang reports must be bounded regular in-project files whose
+bytes match the reviewed digests and contain their passing result. Empty
+bindings retain the existing no-claim case. Canonical JSON, image identity,
+review findings and the final source-built print gates remain required.
+
+This repairs an incompatible schema-7 verifier that could not consume any
+current valid Make review. It does not change printable-source selection,
+nozzle, measurements, thresholds, review allowance or the final gate sweep.
+Regression fixtures exercise the same bytes against both validators and reject
+stale/missing reports, changed settings, malformed identities, unsafe paths and
+changed images. Existing frozen runs require an explicit host tool refresh.
+
 ## Exact assembly placement and complete print reports (2026-09-11)
 
 Both renderers share `render_assembly.py` to flatten colored occurrences using
