@@ -6400,6 +6400,9 @@ def _launcher_call(
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
     prompt = selection_prompt() if inventor_selection_boundary else native_stage_prompt(checkpoint.stage)
+    if "revision-source.zip" in checkpoint.input_sha256s:
+        from workshop.workflow.revision import REVISION_GUIDANCE
+        prompt += "\n\n" + REVISION_GUIDANCE
     budget = _load_lifetime_budget(paths, checkpoint)
     if isinstance(budget, ProductTokenBudget):
         prompt += (
@@ -9740,6 +9743,7 @@ def start_native_run(
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
+    revision_snapshot: Optional[bytes] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -9780,6 +9784,10 @@ def start_native_run(
     ``wish-references/`` and re-verifies them at every checkpoint. A Wish that
     declares references without their bytes, or bytes without a declaration,
     is rejected before any workspace exists.
+
+    ``revision_snapshot`` carries a manifest-verified public archive baseline,
+    bound to Wish context and materialized as immutable input plus an editable
+    clone. It never restores the source run's session or effect state.
 
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
@@ -9839,6 +9847,7 @@ def start_native_run(
                 product_id=wish.product_id,
                 wish_bytes=wish_bytes,
                 wish_reference_files=wish_reference_files,
+                revision_snapshot=revision_snapshot,
                 product_run_constitution_source=assets.constitution,
                 skill_root=assets.skill_root,
                 domain_skill_roots=domain_skill_roots,

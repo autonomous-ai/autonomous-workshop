@@ -63,6 +63,12 @@ from workshop.workflow.effort import (
     workshop_effort,
 )
 
+from workshop.workflow.revision import (
+    MAX_REVISION_BYTES,
+    REVISION_INPUT,
+    materialize_revision,
+    revision_input,
+)
 
 BudgetAuthority = Callable[[Mapping[str, Any]], bool]
 
@@ -783,6 +789,7 @@ class AgentRun:
         turn_seconds: Optional[int] = None,
         turn_untimed: bool = False,
         wish_reference_files: Optional[Mapping[str, bytes]] = None,
+        revision_snapshot: Optional[bytes] = None,
     ) -> "AgentRun":
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
@@ -820,6 +827,7 @@ class AgentRun:
             )
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
         wish_reference_inputs = _wish_reference_inputs(wish_bytes, wish_reference_files)
+        revision_inputs = revision_input(wish_bytes, revision_snapshot)
         try:
             requested = Path(run_root)
         except TypeError as exc:
@@ -1067,6 +1075,7 @@ class AgentRun:
         all_input_files.extend(inventor_skill_files)
         all_input_files.extend(inventor_agent_files)
         all_input_files.extend(wish_reference_inputs)
+        all_input_files.extend(revision_inputs)
         all_input_files.sort(key=lambda item: item[0].as_posix())
         input_paths = [relative.as_posix() for relative, _, _ in all_input_files]
         if len(input_paths) != len(set(input_paths)):
@@ -1081,6 +1090,7 @@ class AgentRun:
         total_input_bytes = (
             sum(len(content) for _, content, _ in all_input_files)
             - reference_input_bytes
+            - sum(len(content) for _, content, _ in revision_inputs)
         )
         if total_input_bytes > MAX_AGENT_INPUT_BYTES:
             raise ArtifactError("agent run inputs exceed their total byte limit")
@@ -1172,6 +1182,8 @@ class AgentRun:
         references_root = selected / WISH_REFERENCES_DIRECTORY
         if references_root.exists():
             os.chmod(references_root, 0o500)
+        if revision_snapshot is not None:
+            materialize_revision(selected, revision_snapshot)
         core: dict[str, Any] = {
             "schema_version": 4 if selected_effort is not None else 3,
             "kind": AGENT_RUN_CHECKPOINT_KIND,
@@ -1454,6 +1466,7 @@ class AgentRun:
             size_limit = (
                 MAX_WISH_REFERENCE_BYTES
                 if _is_wish_reference_path(item["path"])
+                else MAX_REVISION_BYTES if item["path"] == REVISION_INPUT
                 else MAX_AGENT_INPUT_BYTES
             )
             if type(item["size"]) is not int or not 0 <= item["size"] <= size_limit:
@@ -1471,7 +1484,7 @@ class AgentRun:
             input_content[relative.as_posix()] = content
             if _is_wish_reference_path(relative.as_posix()):
                 reference_total += size
-            else:
+            elif relative.as_posix() != REVISION_INPUT:
                 total += size
         if (
             len(observed_paths) != len(set(observed_paths))
@@ -1488,6 +1501,7 @@ class AgentRun:
         if not required <= set(observed_paths):
             raise StateConflict("agent run required inputs are missing")
         _verify_wish_reference_inputs(input_content, observed_paths)
+        revision_input(input_content["WISH.json"], input_content.get(REVISION_INPUT))
         if any(path == "catalog" or path.startswith("catalog/") for path in observed_paths):
             raise StateConflict("product projects must not contain an Inventor catalog")
         legacy_catalog = self.run_root / "catalog"
@@ -1768,7 +1782,8 @@ class AgentRun:
         if len(inputs) > MAX_AGENT_INPUT_FILES:
             raise ContractError("domain skill refresh exceeds the agent input file limit")
         total = sum(
-            item["size"] for item in inputs if not _is_wish_reference_path(item["path"])
+            item["size"] for item in inputs
+            if not _is_wish_reference_path(item["path"]) and item["path"] != REVISION_INPUT
         )
         if total > MAX_AGENT_INPUT_BYTES:
             raise ContractError("domain skill refresh exceeds the agent input byte budget")

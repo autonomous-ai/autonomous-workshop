@@ -76,6 +76,7 @@ class NativeCommandTest(unittest.TestCase):
                 "login",
                 "daydream",
                 "wish",
+                "fix",
                 "status",
                 "resume",
                 "doctor",

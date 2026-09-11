@@ -248,6 +248,15 @@ Codex authors run-local artifacts and finalizes one compact proposal
 host independently validates exact bytes, seals artifacts, and advances
 ```
 
+`workshop fix <published-toy-directory> --prompt-file <brief>` starts a new
+Spark run from a manifest-verified public archive. It binds an immutable
+`revision-source.zip` baseline and creates independent editable files under
+`revision-work/`. The exact correction prompt is the new Wish; its context
+records source lineage. The original session and publication remain separate.
+Current Make checks and blind review apply to the corrected output. See
+[ADR 0065](adr/0065-published-toy-correction-runs.md) for the intake contract
+and current local-archive limitation.
+
 `workshop resume <wish-id>` resumes the recorded session UUID in the same toy
 project. Session memory is useful continuity, but the durable checkpoint,
 sealed manifests, and reconciled receipts remain authoritative. If memory and

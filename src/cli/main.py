@@ -551,6 +551,7 @@ def _start_run(
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     turn_minutes: Any = None,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
+    revision_snapshot: Optional[bytes] = None,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
 ) -> Mapping[str, Any]:
@@ -629,6 +630,7 @@ def _start_run(
         **({"max_tokens": max_tokens} if max_tokens != DEFAULT_PRODUCT_TOKENS else {}),
         **_turn_boundary_options(turn_minutes),
         wish_reference_files=wish_reference_files,
+        **({"revision_snapshot": revision_snapshot} if revision_snapshot is not None else {}),
         github_publish_requested=github,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
@@ -673,6 +675,34 @@ def _wish(args: argparse.Namespace) -> int:
         _print_json(receipt)
     else:
         _print_native_receipt(receipt, verb="Run")
+    return _native_exit_code(receipt, strict=args.strict)
+
+
+def _fix(args: argparse.Namespace) -> int:
+    from workshop.workflow.revision import prepare_revision
+
+    if args.prompt_file is not None:
+        try:
+            prompt = args.prompt_file.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            raise WorkshopError("cannot read correction prompt file") from exc
+    else:
+        prompt = args.prompt
+    wish, snapshot = prepare_revision(args.source, prompt)
+    runtime = manager_runtime_selection(
+        args.agent, model=args.model, reasoning_effort=args.effort,
+    )
+    progress = sys.stderr if args.json else sys.stdout
+    receipt = _start_run(
+        wish, workflow=workshop_effort("spark"), runtime=runtime,
+        github=args.github, max_tokens=args.max_tokens,
+        turn_minutes=args.turn_minutes, revision_snapshot=snapshot,
+        progress=progress, live_progress=_LiveWishProgress(progress, runtime.spec.display_name),
+    )
+    if args.json:
+        _print_json(receipt)
+    else:
+        _print_native_receipt(receipt, verb="Revision")
     return _native_exit_code(receipt, strict=args.strict)
 
 
@@ -1926,6 +1956,21 @@ def parser() -> argparse.ArgumentParser:
     wish.set_defaults(handler=_wish)
     wish.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
                       help="Codex input-plus-output token cap for the whole product (default: %(default)s)")
+
+    fix = subcommands.add_parser("fix", help="clone a published toy into a new Spark correction run")
+    fix.add_argument("source", type=Path, metavar="TOY_DIRECTORY")
+    correction = fix.add_mutually_exclusive_group(required=True)
+    correction.add_argument("--prompt", help="exact correction brief")
+    correction.add_argument("--prompt-file", type=Path, help="UTF-8 correction brief, preserved verbatim")
+    fix.add_argument("--agent", choices=tuple(SUPPORTED_MANAGER_IDS), default=DEFAULT_MANAGER_ID)
+    fix.add_argument("--model")
+    fix.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS)
+    fix.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS)
+    fix.add_argument("--turn-minutes", type=_turn_minutes, default=None)
+    fix.add_argument("--github", action="store_true", help="also commit and push the new public archive")
+    fix.add_argument("--json", action="store_true")
+    fix.add_argument("--strict", action="store_true")
+    fix.set_defaults(handler=_fix)
 
     status = subcommands.add_parser(
         "status", help="inspect one native Wish checkpoint without running a model"

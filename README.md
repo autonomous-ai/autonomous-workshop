@@ -48,6 +48,26 @@ Our initial Inventors seed the shop and exercise the system. The long-term platf
 
 Internally, the sealed brief that begins one product run is still called a Wish. Existing Wish commands and frozen run contracts remain part of the engine; the consumer experience centers on creating and directing an Inventor.
 
+## Correct a published toy
+
+Clone a published toy archive into a separate Spark run using a correction brief:
+
+```bash
+uv run workshop fix toys/mara-masque-rainward-sun \
+  --prompt-file docs/examples/rainward-sun-fix.txt
+```
+
+Use `--prompt "Describe the correction"` for a short brief. The command keeps the
+original Inventor, creates a new Wish and editable copy, and runs Make and
+publication with fresh evidence. The original run and listing stay unchanged.
+The source must be a local Workshop public archive with its `MANIFEST.json`;
+URLs and private run directories are not accepted. `--model`, `--effort`,
+`--max-tokens` and `--turn-minutes` select the new run's settings. Resume a stopped
+revision with `workshop resume <new-wish-id>`.
+
+The Rainward Sun prompt above is a prepared example; a corrected version has
+not yet been live-validated. See [the correction-run contract](docs/adr/0065-published-toy-correction-runs.md).
+
 ## Quickstart
 
 ```bash
