@@ -11,7 +11,7 @@ from tests.integrations import test_factory as fixtures
 from workshop.artifacts import build_artifact_manifest, validate_artifact_payload
 from workshop.errors import AmbiguousEffectError, ContractError, EffectError, ReceiptError
 from workshop.integrations import factory
-from workshop.integrations.factory_carrier import MIXED_CARRIER_FORMAT, validate_mixed_carrier
+from workshop.artifacts.factory_carrier import MIXED_CARRIER_FORMAT, validate_mixed_carrier
 from workshop.runtime import Receipt
 
 

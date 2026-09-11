@@ -17,7 +17,7 @@ from workshop.artifacts import build_artifact_manifest, build_pack
 from workshop.artifacts.core import _canonical
 from workshop.artifacts.pack import validate_artifact_payload
 from workshop.errors import ContractError
-from workshop.integrations import factory_carrier as codec
+from workshop.artifacts import factory_carrier as codec
 
 
 MANIFEST = "_inventor-artifact.json"

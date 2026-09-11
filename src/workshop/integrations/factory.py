@@ -43,7 +43,7 @@ from workshop.errors import (
     ReceiptError,
     StateConflict,
 )
-from workshop.integrations.factory_carrier import (
+from workshop.artifacts.factory_carrier import (
     MIXED_CARRIER_FORMAT,
     build_mixed_carrier,
     validate_mixed_carrier,
