@@ -1,0 +1,7 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_07.step.py --write --json
+(10.0s, exit 0)
+--- stdout
+{"ok":true,"sourceRef":"part_fork_07.step.py","cadPath":"part_fork_07","kind":"part","outcome":"built","packagePath":"__cadgen__/models/part_fork_07.step.py"}
+
+--- stderr
+[scripts/gen] generated part GLB/topology artifact: __cadgen__/models/part_fork_07.step.py

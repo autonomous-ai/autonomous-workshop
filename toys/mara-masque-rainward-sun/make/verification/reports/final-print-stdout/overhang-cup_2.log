@@ -1,0 +1,7 @@
+part_cup_2.step.py: 95.6 cm2 of surface, grid 0.400 mm, 0 unsupported samples over 0 region(s)
+  PASS  no face under 45 deg needs support     14.5% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2
+  PASS  bridges within 12 mm                   0 region(s), longest span 0.0 mm
+RESULT: prints unsupported
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/overhang-cup_2.md
+
+--- stderr ---

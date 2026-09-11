@@ -1,0 +1,20 @@
+{
+  "banks": 4,
+  "bar_capacity_layout": 30,
+  "capacity_each_point": 15,
+  "cup_pair_diagonal_mm": 35.77708763999664,
+  "lane_count": 24,
+  "minimum_adjacent_drop_gap_mm": 0.6831697955329198,
+  "parts": 35,
+  "points_per_bank": 6,
+  "scope": "Algebraic and exact planar geometry; no physical test.",
+  "signature_displacement_mm": 80.00000000000001,
+  "status": "PASS",
+  "sun_mm": [
+    190,
+    190,
+    28
+  ],
+  "victim_centroid_supported": true,
+  "victim_supported_fraction": 0.934193525038463
+}

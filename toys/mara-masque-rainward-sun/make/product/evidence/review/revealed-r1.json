@@ -1,0 +1,108 @@
+{
+  "review_round": 1,
+  "review_type": "independent_revealed_visual_comparison",
+  "verdict": "PASS_WITH_DISCLOSED_AMBIGUITIES",
+  "blind_record": "artifacts/make/r0001/review/blind-r1.json",
+  "blind_record_preserved": true,
+  "held_object_unmistakable": true,
+  "form_matches_wish": true,
+  "subjects_match_wish": true,
+  "action_matches_wish": true,
+  "relationship_matches_wish": true,
+  "anti_generic_signature_visible": true,
+  "signature_experience_unmistakable": true,
+  "finished_product_desirable": true,
+  "boolean_scope": "Visual design and the specified abstract tabletop interaction. These booleans do not assert spontaneous recognition of coronal-rain physics, completed ink finishing, manufactured dice fairness, print success, tactile suitability, or physical testing.",
+  "critical_form_requirements": [
+    {
+      "requirement": "Drop bodies are flat-ended, stackable 12 x 8 x 4 mm parts; every individual printed part is below 200 mm.",
+      "blind_evidence": "The preserved blind read describes small flat extruded polygonal counters with visible thickness and planar faces. It establishes the low counter form, not exact dimensions or a physical stacking test.",
+      "nonvisual_constraint": "The concept and README declare drops 12 x 8 x 4 mm, dice 16 mm, cups 42 x 42 x 28 mm and Sun 190 x 190 x 28 mm. The read fit audit corroborates only the Sun envelope among those component dimensions. Exact drop, dice, cup and per-part maximum dimensions require the Manager's CAD verification; declared dimensions are not substituted for measured evidence.",
+      "verification_scope": "matches records visible form consistency. Numeric completion remains a separate deterministic gate.",
+      "matches": true
+    },
+    {
+      "requirement": "One flat-bottomed Sun, 35 support-free parts, walls at least 2 mm, and no hardware or fragile spectacle.",
+      "blind_evidence": "The preserved blind read identifies a thick low disk, substantial visible vertical side faces, thick open cup walls, low solid-looking counters, and no linkage or captured mechanism. It reports no missing major board section, floating major assembly, or unintended large overlap. No underside was visible in the supplied views.",
+      "nonvisual_constraint": "The README specifies flat undersides, open-side-up cups, 2 mm cup walls and floors, and no support structures or hardware. The read fit audit reports 35 parts. Flatness, minimum material thickness throughout, overhang support and print suitability are separate CAD/print gates; the two images cannot certify these numerical or manufacturing requirements. No physical robustness claim is made.",
+      "verification_scope": "matches records visibly consistent thick, simple open geometry with no visible hardware or delicate added spectacle. The hidden underside and print-gate requirements remain explicitly unverified by this visual review.",
+      "matches": true
+    },
+    {
+      "requirement": "No modern doubling cube, extra events, currencies, powers or scenarios; use the two ordinary dice and ordinary historical game functions.",
+      "blind_evidence": "The preserved blind read identified two cubes, two cups, one radial board and two counter groups. It found no additional object category or visibly different mechanism, and read the pictured change as capture to a central holding area.",
+      "nonvisual_constraint": "The README explicitly excludes a doubling cube and special solar powers. Its finishing guide gives both cubes faces 1 through 6. The concept assigns all 35 parts to the board, 30 drops, two ordinary dice and two cups. Blank render faces alone cannot establish die values; the rules documents and the Manager's rules verification carry that constraint.",
+      "verification_scope": "matches records visible component inventory consistency; it does not certify the entire historical ruleset.",
+      "matches": true
+    },
+    {
+      "requirement": "A chunky 190 x 190 x 28 mm Sun with rounded rays.",
+      "blind_evidence": "The blind read identified a thick golden sunburst-like disk with rounded scalloped perimeter lobes and visible vertical sidewalls.",
+      "numeric_corroboration": "fit-audit.json reports sun_mm [190,190,28]. Image appearance alone cannot establish millimeters.",
+      "matches": true
+    },
+    {
+      "requirement": "Four banks of six open plasma lanes, each holding five drops in a row and three layers without reducing point capacity.",
+      "blind_evidence": "The blind read identified repeated open radial lanes and rows; the full view visibly includes five-counter rows. Exact bank count, widths and stacking capacity were not established in the blind pass.",
+      "numeric_corroboration": "fit-audit.json reports 24 lanes, 4 banks, 6 points per bank, capacity 15 each and minimum adjacent drop gap 0.6831697955329198 mm; its scope is algebraic and exact planar geometry.",
+      "matches": true
+    },
+    {
+      "requirement": "An exposed raised central flare serving as the bar.",
+      "blind_evidence": "The blind pass recognized a raised central platform and interpreted the displaced piece's new position as a central holding area. The full image has two small raised projections on its far side. The near platform is visibly unobstructed.",
+      "interpretation": "The raised hub and far projections provide a simplified flare-bar. Flame recognition is weak without context, but the Wish prescribes an abstract solar object, not a realistic flame sculpture. Its raised exposed holding function is legible.",
+      "matches": true
+    },
+    {
+      "requirement": "Thirty visible, stackable flat-ended single-tail or fork-tail plasma drops, distinguished without color.",
+      "blind_evidence": "The blind pass identified planar extruded polygonal counters with one tapered projection versus paired prongs. It explicitly could not confidently name their representational subjects.",
+      "interpretation": "The Wish asks for abstract plasma-tail footprints, not an identifiable animal or creature. Those two prescribed silhouettes are present, and ownership can be distinguished by their geometry. Lack of creature recognition is therefore not a mismatch. Recognizing the objects specifically as plasma still requires the analogy's explanation.",
+      "numeric_corroboration": "rules-check.json reports 30 drops and 15 per side in each checked state; presentation.json reports 35 exact-solid occurrences per complete set state. Stack capacity is corroborated by fit-audit.json, not by a physically tested stack.",
+      "matches": true
+    },
+    {
+      "requirement": "Two fair cubic dice and two open cups complete a 35-part set.",
+      "blind_evidence": "Two open thick-walled cups and two pale cubes were independently identified. Their visible cube faces were blank.",
+      "interpretation": "README explicitly requires marking every cube face 1 through 6 with thin ink before play and provides opposite-face and pip instructions. Plain symmetric CAD cubes with that explicit finishing step are acceptable for this printable set; the render depicts unmarked parts, not ready-to-roll finished dice. The Wish does not require integral engraved pips or forbid finishing. Geometric symmetry and instructions do not prove fairness after printing.",
+      "numeric_corroboration": "fit-audit.json reports 35 parts. rules-check.json expressly reports printed dice fairness as not physically tested.",
+      "matches": true
+    },
+    {
+      "requirement": "Fixed high three-quarter before/after views: a lone fork-tail overhangs the near rim, an attacker six points away takes that position, and the victim moves fully exposed onto the flare-bar 80 mm away.",
+      "blind_evidence": "Without the reveal, the reviewer read precisely a light counter replacing the lower-left dark counter, that dark counter newly occupying the raised center, the upper attacking row losing one counter, and adjacent pieces remaining in place. The dark counter's near-rim overhang was observed as a clearance ambiguity. Its after-state silhouette is fully visible.",
+      "numeric_corroboration": "presentation.json records fixed azimuth -75 degrees and elevation 55 degrees. fit-audit.json reports displacement 80.00000000000001 mm, supported victim centroid and supported fraction 0.934193525038463. rules-check.json records A's legal 7->1 six-point hit, exactly two changed drop occurrences and the remaining die 2 as playable.",
+      "matches": true
+    },
+    {
+      "requirement": "Use the ordinary game interaction, with no added astronomical mode, hidden paths, captured assembly, or color-dependent state.",
+      "blind_evidence": "The blind read saw loose individually liftable counters on uninterrupted open lanes and a discrete capture-to-center move, with no mechanical linkage or enclosed path. Counter silhouettes distinguish sides independently of their colors.",
+      "corroboration": "README describes the pictured action as one legal submove and retains a remaining die; rules-check.json checks that state trace. A visual review does not certify every historical rule or source-license claim.",
+      "matches": true
+    },
+    {
+      "requirement": "Avoid merely a round conventional board with generic space decoration or celestial names pasted onto ordinary pieces.",
+      "blind_evidence": "The sunburst perimeter, radial lane organization, raised central destination and single-versus-fork silhouettes were all visible before the reveal. The actual move relocates a piece from the outer rim to the exposed center.",
+      "interpretation": "The design changes the physical subjects and spatial expression while retaining the game's verbs. It exceeds a theme expressed only through names or color. Its coronal-rain meaning is an explained abstract mapping rather than an unmistakable scientific depiction, which is consistent with the Wish's stated analogy.",
+      "matches": true
+    }
+  ],
+  "blocking_visual_defects": [],
+  "nonblocking_ambiguities": [
+    "Single and fork projections distinguish ownership clearly but are not independently recognizable as plasma; the blind record must not be recast as having recognized coronal rain.",
+    "The central flare reads primarily as a raised circular holding platform with small far-side projections. Its fiery subject is less legible than its game function.",
+    "Visible dice remain unmarked in these CAD renders. Thin-ink numbering is required before the set is playable; physical fairness remains untested.",
+    "Some incised lane lines appear dotted at render scale, and the wider bank separators are subtle. The README orientation diagram and counting instructions remain relevant.",
+    "Near-rim piece overhang is intentional in the signature scene. The algebraic support audit resolves gross unsupported placement, but finger handling and stability have not been physically tested."
+  ],
+  "largest_risk": "The scientific identity is weaker than the board-game action: viewers can reliably read a sunburst-shaped game and a capture to a raised center, but may initially read the counters as abstract pronged tokens or little heads rather than plasma drops. The exact Wish permits abstraction, so this is a communication and desirability risk rather than a concrete geometry violation.",
+  "resolution": "Accept the current visual design for this Make review. Preserve the blind ambiguity record and the README's required dice finishing. No blocking visual repair is identified. The Wish's deliberately abstract single/fork-tail shapes, rounded solar body and exposed raised bar are present, and the specified rim-to-bar displacement is independently readable. Any later claim of manufactured fit, fair rolling, durability or playtesting needs separate physical evidence.",
+  "sources_read_after_reveal": [
+    "WISH.json",
+    "artifacts/make/r0001/spark-source.json",
+    "artifacts/make/r0001/product/README.md",
+    "artifacts/make/r0001/product/cad/measure/presentation.json",
+    "artifacts/make/r0001/product/cad/measure/fit-audit.json",
+    "artifacts/make/r0001/product/cad/measure/rules-check.json"
+  ],
+  "verification_limit": "Audits were read as numeric corroboration; their check source was not independently reimplemented or inspected. Canonical images were viewed once in the blind phase and not replaced by description-driven alternate imagery. No physical work occurred."
+}

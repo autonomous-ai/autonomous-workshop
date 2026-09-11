@@ -1,0 +1,636 @@
+{
+  "status": "PASS",
+  "failures": [],
+  "results": [
+    {
+      "part": "cup_1",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "3d950a6f11937b5556d9b3a0b1a657684e7f465d05f183d155a00ddc733df583",
+      "stdout_log": "measure/final-print-stdout/overhang-cup_1.log",
+      "stdout_log_sha256": "dded1e5d115c0eaa12e6220df39689816b844513fdb6ce09350faa39c096bd67",
+      "report_sha256": "0a8a49fb258010c98c1a69a9c3ede289026888543f4f866e58f968d9860ed999"
+    },
+    {
+      "part": "cup_1",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "3d950a6f11937b5556d9b3a0b1a657684e7f465d05f183d155a00ddc733df583",
+      "stdout_log": "measure/final-print-stdout/thickness-cup_1.log",
+      "stdout_log_sha256": "09831968fc92e01cf50a6f9031d47ca2aaf5e3d3b82b2b5b69f220b688c40299",
+      "report_sha256": "ece76d83e1f83c1039b6e1193e33c895dafda49fb8c5a8e66899434bf7577ba0"
+    },
+    {
+      "part": "cup_2",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "4a1826411218ae688a250201e8a885fa4858a5c46cee15367f54db265676c50d",
+      "stdout_log": "measure/final-print-stdout/overhang-cup_2.log",
+      "stdout_log_sha256": "1942e24bb0f86aabd7b931df470a75047121866840ae5a011c9d3975a24e85b6",
+      "report_sha256": "e2fa3bd34937a627e18084c431b446252ca41c6e7820e5ead06911e4bece36c2"
+    },
+    {
+      "part": "cup_2",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "4a1826411218ae688a250201e8a885fa4858a5c46cee15367f54db265676c50d",
+      "stdout_log": "measure/final-print-stdout/thickness-cup_2.log",
+      "stdout_log_sha256": "50b38fdedc994079bfceee65e47dfe13c37db225a10165868b9d5689738bee95",
+      "report_sha256": "ad180e866639d4a5cb96aed4f92f65d86bf999878e95138ef7b1e68b284b22c1"
+    },
+    {
+      "part": "die_1",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "f05d89270dffd84c9db19b85dbf32a2dbcd1174dcc6dcf35e1937d426a57dbea",
+      "stdout_log": "measure/final-print-stdout/overhang-die_1.log",
+      "stdout_log_sha256": "ce5fa924ca8bda4e24d1c9f9ec9b122d93d3dc4cac98a0762059b7bc0fb34ea5",
+      "report_sha256": "4f92854f34be41d08df3247082d7dd3d07536ce7bb37fa0a83346e5126fca1ba"
+    },
+    {
+      "part": "die_1",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "f05d89270dffd84c9db19b85dbf32a2dbcd1174dcc6dcf35e1937d426a57dbea",
+      "stdout_log": "measure/final-print-stdout/thickness-die_1.log",
+      "stdout_log_sha256": "e3a5c82482750656288a5554a193d3c24f64e5e0253203aca1dfb006290f8b9b",
+      "report_sha256": "9f1e66e9671503963a23816aa53df1a7f3dcc2156ee051d0de1509f636cb8b9e"
+    },
+    {
+      "part": "die_2",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "92e8d706104147c5791c01a783e78ecb278bf4c46fdc28792bdca00ac66bcab4",
+      "stdout_log": "measure/final-print-stdout/overhang-die_2.log",
+      "stdout_log_sha256": "22d41a9a893777e2a5e6b41faa62d98e4202e753871d25d4b9b8c200eac49bb2",
+      "report_sha256": "7c73ef2aa5614f2d5f6846c5661a7ed2c0091304013a57fa1a492d90f280be14"
+    },
+    {
+      "part": "die_2",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "92e8d706104147c5791c01a783e78ecb278bf4c46fdc28792bdca00ac66bcab4",
+      "stdout_log": "measure/final-print-stdout/thickness-die_2.log",
+      "stdout_log_sha256": "7cc6c68986c5fb2a2146f519aa4f5440474d8ed715f9fcb259873c9c482ffd81",
+      "report_sha256": "25b9739b75ae05c56b0982efbb66fe7e4ee9b99a2bb9565949d7d4eba7486eb9"
+    },
+    {
+      "part": "fork_01",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "858904c330887772687b731a6c730fee07d1699acf5d5cd302f7ee1d86640d60",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_01.log",
+      "stdout_log_sha256": "5783264cf1f821359f78ed1c73397c460a1b3823bd1f051e6dce9b293bdf4c14",
+      "report_sha256": "7adbf9f5f4f39126c8086d8b8397a5efddcf7ec36be4ffa6353bb94a21dd1da2"
+    },
+    {
+      "part": "fork_01",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "858904c330887772687b731a6c730fee07d1699acf5d5cd302f7ee1d86640d60",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_01.log",
+      "stdout_log_sha256": "a5c9de74acc350efb2660017554c17f42372b17d0235205b1a6a8870ea97c59b",
+      "report_sha256": "3c860d16c9c7abf244db9993b09e5717794676ff76ded4af7fb61f61eae43a10"
+    },
+    {
+      "part": "fork_02",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "e1072d773fbad806e14d8c3f5e7a5d30b6542abc1b268f3a69995f98ec39597b",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_02.log",
+      "stdout_log_sha256": "7657e836fa97672e3a38d1a37676e7ac7b59182cd0c6ebee01f3eb7c8bb2d540",
+      "report_sha256": "b2f54ef1ee8aa03bdd63d71a94f1d10c59b71c811814c35c46a84ac855209067"
+    },
+    {
+      "part": "fork_02",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "e1072d773fbad806e14d8c3f5e7a5d30b6542abc1b268f3a69995f98ec39597b",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_02.log",
+      "stdout_log_sha256": "905ddaa31e4f9c929a5c051935ebd6afed6568aef280593dfc000fbb3bd2bba4",
+      "report_sha256": "37a566749e5978ebcac27dc3e7aaf57f6956421c5bfc1a1e76d2ea473cb74aff"
+    },
+    {
+      "part": "fork_03",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "8a0c8620e8ddd960f355f5283c31a272d146cafcbe23c2840b0f7180b19bcbe0",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_03.log",
+      "stdout_log_sha256": "1926fe1d60f72e3db34b9ae556ef8c7c3a3c42bdbfdb119f88d7dab66ec831b0",
+      "report_sha256": "39b518135cd0ac611cda6330def3ecc38d1599e29418173b093a8df1323d5d23"
+    },
+    {
+      "part": "fork_03",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "8a0c8620e8ddd960f355f5283c31a272d146cafcbe23c2840b0f7180b19bcbe0",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_03.log",
+      "stdout_log_sha256": "53058195696e8411ffe6ae7a929cc6b78bbe9bc8515d52c08b77a0834dc24dd0",
+      "report_sha256": "7708c0902d8bd0d0148e9d0234531e2cb239df45a178ceb1f31e20a0d7e0b4af"
+    },
+    {
+      "part": "fork_04",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "4f17bdacd053fb78d04e68ed64ba4fe47b70f422ce64ec223b41086e3ab3f4dc",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_04.log",
+      "stdout_log_sha256": "683be74fcec96ab03da22a4ec3d2c4f322e20ad632c6ccd0b3d3d8c6718bb5e0",
+      "report_sha256": "a1d9d56f115dfaabed99b7f7ed4b59567460663b39bdf70a93f0c094b2e5908f"
+    },
+    {
+      "part": "fork_04",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "4f17bdacd053fb78d04e68ed64ba4fe47b70f422ce64ec223b41086e3ab3f4dc",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_04.log",
+      "stdout_log_sha256": "2bd690e80a764a4c117a8f16aeff7cdf10e960f202a19ff883b223aa9916eef9",
+      "report_sha256": "553deb098dd4c14afbd225de12ee447fe0aef7d3a9a705e939bb4591b7503763"
+    },
+    {
+      "part": "fork_05",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "4ff666793a0bbc5a0cd8158425dca45e60a4d0932c88f13df7ba6e49d21d78aa",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_05.log",
+      "stdout_log_sha256": "192860eb594fc2094253637ae97f62c301c9d26be2ad46fba21e815442ec34e7",
+      "report_sha256": "d74d2b29eb7b28c40475eb5d8377a67915387610dffdaa1306b68eb67a93484c"
+    },
+    {
+      "part": "fork_05",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "4ff666793a0bbc5a0cd8158425dca45e60a4d0932c88f13df7ba6e49d21d78aa",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_05.log",
+      "stdout_log_sha256": "f5e5e5131e1285d65d9bd19a2355a0360c73ebf58407f7c1558f72d8357119f6",
+      "report_sha256": "814718bda3a9067dff9e045dcad02ae384565e84714e0a4415e2a59d04520e4e"
+    },
+    {
+      "part": "fork_06",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "a8960e4d2b9f9f4f82c8f8215ab0513480f3a5ff5d7ae2d23dab1662cb9322c0",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_06.log",
+      "stdout_log_sha256": "fdbfe2eadf5a78265194a9b27f3421b54d9d3f90d29f7d6e5279064d002bbe1f",
+      "report_sha256": "65c0752a4cf011162a9dff8c8967e933741f32011e7e504ce77c16469291bc6b"
+    },
+    {
+      "part": "fork_06",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "a8960e4d2b9f9f4f82c8f8215ab0513480f3a5ff5d7ae2d23dab1662cb9322c0",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_06.log",
+      "stdout_log_sha256": "23bb4e9d2ee8c7e56bca73d5648b616e56eccc3b1ecd8893a03b03c001a55e35",
+      "report_sha256": "941dec28311d1ad9da3fe7f5a47bf9ca1372eb52958133c3b0d45e17259871f3"
+    },
+    {
+      "part": "fork_07",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "6cbabf6bba9c44729d60e7a142f87c2df9b28d906f313d19df4fa47aad1cc4ee",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_07.log",
+      "stdout_log_sha256": "5f1d9a46f2166fdfe44db84eda7c5ed133647ea7173a0b9832812b265f2a1d22",
+      "report_sha256": "3ab5d315785cc34af55cccec5a68c01103d1a59e32b0dd0d8edfe37df5d09394"
+    },
+    {
+      "part": "fork_07",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "6cbabf6bba9c44729d60e7a142f87c2df9b28d906f313d19df4fa47aad1cc4ee",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_07.log",
+      "stdout_log_sha256": "f77d43f0548e0952e2acff963f9e0c667f34ad353d88e1f911f0f49230a6a40b",
+      "report_sha256": "604af2dd4a3a189e38bfd32d03a834de8b829825797097bf7b6ca3ffe7da8375"
+    },
+    {
+      "part": "fork_08",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "82db394b82149b7444df59a5230be86b4389f60497fa079b2a85b9e11222053d",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_08.log",
+      "stdout_log_sha256": "061af99473b2960c38031b022c9d58255947f4e7385ce8f54f61c2c9ff135be7",
+      "report_sha256": "5ae0c7a2e6c692d631efae005fc1c53f35492d92cf8bf483b92e7e7563138475"
+    },
+    {
+      "part": "fork_08",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "82db394b82149b7444df59a5230be86b4389f60497fa079b2a85b9e11222053d",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_08.log",
+      "stdout_log_sha256": "bb5e1a124416c67944dd454e5004aa64380991e0aa71c4c93b16e7e0a02cf783",
+      "report_sha256": "f8055ba2dfc6a6ef307be77cc236abf005bacc8eaea0e7b8afba069722e2f748"
+    },
+    {
+      "part": "fork_09",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "189d6c13d66fbddca3ea54f8261c0441a8b186e645500f61c9f78d72529f78ce",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_09.log",
+      "stdout_log_sha256": "1f8417aacb965d8237315a4b978b76f54b88a8b8327223bf1ead508661b246fb",
+      "report_sha256": "03e50f878122f31d51a157898735d027f5d92918f06290f4e9110482f6839ecb"
+    },
+    {
+      "part": "fork_09",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "189d6c13d66fbddca3ea54f8261c0441a8b186e645500f61c9f78d72529f78ce",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_09.log",
+      "stdout_log_sha256": "9ecc7438f939d23c1366eee825cac812b312d811c2f30df37f6d504e4201ca91",
+      "report_sha256": "16535f0515d084de67d502eb2f42995b851b0d600104f7c60c68a58c789fac02"
+    },
+    {
+      "part": "fork_10",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "397a842c973ad41ae75d88e2d8319501c623d645dc22c7624f3f7dc6fd026460",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_10.log",
+      "stdout_log_sha256": "4f5e547862ac0dccb8bbf89c46fd6adc4a09268be8fe14298635f6a35c19ab08",
+      "report_sha256": "f6c8af7982d6071767ce9e62edaca5800691391ea3f4d4094c060850e89e0d27"
+    },
+    {
+      "part": "fork_10",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "397a842c973ad41ae75d88e2d8319501c623d645dc22c7624f3f7dc6fd026460",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_10.log",
+      "stdout_log_sha256": "fe931b1a5e3cc77025b84e12471d265b61f8a41209bab545055e58083179bc7f",
+      "report_sha256": "034bdf9b319445fb471e5fb8e06510e8bfe7b95e2b67ff70ff4d24ef8e87e673"
+    },
+    {
+      "part": "fork_11",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "eb7628283b03ca1c231188991b7a8f87d68b598918e3d7be20ca79c7ef087b19",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_11.log",
+      "stdout_log_sha256": "91d65425b7e62379d82840ecde795a5dcb83b9df450be2c019c99719e5f4da69",
+      "report_sha256": "bb146a305ce4dbfbcb9cdff8f1c35e64fb0fc463cc3c030d582991dc48479ab5"
+    },
+    {
+      "part": "fork_11",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "eb7628283b03ca1c231188991b7a8f87d68b598918e3d7be20ca79c7ef087b19",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_11.log",
+      "stdout_log_sha256": "e70e6e1bcbe1dd20ad5bb11719da47a8dcfa3b834f45d180dea8c59480c37695",
+      "report_sha256": "5d837299f25837742088d8dfa82a91fc322f352d4406ffb8ea34f0c6124785e2"
+    },
+    {
+      "part": "fork_12",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "a7b0ba5e923ffd2cbc99860e2728dfdcced7752724413e8550d6cab470c760f8",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_12.log",
+      "stdout_log_sha256": "ed67d731501c2488d2d7e39898785ffe22179cca46aeb741ecf2461c991ddd20",
+      "report_sha256": "d3768c72109d4e7092054f8f038f6c03a0689015516d9a93fce699c80261c874"
+    },
+    {
+      "part": "fork_12",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "a7b0ba5e923ffd2cbc99860e2728dfdcced7752724413e8550d6cab470c760f8",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_12.log",
+      "stdout_log_sha256": "f8f333fabb5169723de33223fa48d2f7c82479d4331c17d886734909ef8ab8d3",
+      "report_sha256": "5165ab9224192f960e3356bd2177540713b91419105def93469686ea0489ca35"
+    },
+    {
+      "part": "fork_13",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "bac0b55d4f0b3400ec55d6fc80b93e8a9e988981b3e39edfd9b4dfc54f62520d",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_13.log",
+      "stdout_log_sha256": "41ed79f781abd306d5a44de06f56d90afcb97e3cfc2b7fa05c347ca9570ca845",
+      "report_sha256": "e7b846c722a2d4e6a9f979a23eecba09eb51b599effd511d04a29cdede1aaa39"
+    },
+    {
+      "part": "fork_13",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "bac0b55d4f0b3400ec55d6fc80b93e8a9e988981b3e39edfd9b4dfc54f62520d",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_13.log",
+      "stdout_log_sha256": "1c9e6150260a5ef77f84bbde303c5f738f6b653967e94a5978769cebb5e454d2",
+      "report_sha256": "c18eeed6e145545a381112888604ca60cbd806666f46a627befc5d83470b0c85"
+    },
+    {
+      "part": "fork_14",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "3b9d184b7472a2f8970a3f6d9badde805b23d637847875927ccd6c185fa3f551",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_14.log",
+      "stdout_log_sha256": "267665f65bb602b22572b43fed7baf6dc9d7169f6d0dd4155b579f948accbe81",
+      "report_sha256": "112cb32cf3102a9fc9dd21502a88571f88bf036ff6fda35bec4e59cd3320f9a3"
+    },
+    {
+      "part": "fork_14",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "3b9d184b7472a2f8970a3f6d9badde805b23d637847875927ccd6c185fa3f551",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_14.log",
+      "stdout_log_sha256": "0f251dadf8f6578dc385aa74f8bd3e481d40937411f4771d64a33e14d42cfb55",
+      "report_sha256": "3b106cb6fbc8da4598e2c6c102ba51f186060b52b9b4ac49a3e00046cffc91bc"
+    },
+    {
+      "part": "fork_15",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "c4b008dc786fe20c54685a0d1601f88404ac70103fb78db5c39d39a7a23036f2",
+      "stdout_log": "measure/final-print-stdout/overhang-fork_15.log",
+      "stdout_log_sha256": "697343d5fc147fad1925373938e8d30df8ec2a7449c23988865665a0cf8ca095",
+      "report_sha256": "f607ec30a76442d60bac4d55aba36918170be083362f83e18195130bc33ffc23"
+    },
+    {
+      "part": "fork_15",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "c4b008dc786fe20c54685a0d1601f88404ac70103fb78db5c39d39a7a23036f2",
+      "stdout_log": "measure/final-print-stdout/thickness-fork_15.log",
+      "stdout_log_sha256": "2a581ddbe410c5a14a0d0f56397d93861eee17a401a2795322e06b13a36a5992",
+      "report_sha256": "ae68b4dce556c48c4e1aee6025cfc65831d476d4d6b8cad6703d60b4bd014d85"
+    },
+    {
+      "part": "single_01",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "78a2b96228d85e7cc1a63e8400c5f29fc15ffdc34dd6e6fbafef4e25e22693fb",
+      "stdout_log": "measure/final-print-stdout/overhang-single_01.log",
+      "stdout_log_sha256": "54ea636bb4e3b9f5f131337f496029a837da4f82472c5ebcf35c29aac49e85ee",
+      "report_sha256": "fb615d591db809ef8d46028bff5b9a93c4ca8305139c0a30cddf71fb0ef5b2f8"
+    },
+    {
+      "part": "single_01",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "78a2b96228d85e7cc1a63e8400c5f29fc15ffdc34dd6e6fbafef4e25e22693fb",
+      "stdout_log": "measure/final-print-stdout/thickness-single_01.log",
+      "stdout_log_sha256": "ed84d40fd5c333e879336a98b4b4f9882325cc6541733f6d485fc720fa7da54b",
+      "report_sha256": "6bfb5ee2efd47a7f7945757bf7e3edf0a3ed429a0305cdc55d16a11f49e961c2"
+    },
+    {
+      "part": "single_02",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "40914e11cf778459f18c438c97af50bcb809ceb41d86046a078491552991226b",
+      "stdout_log": "measure/final-print-stdout/overhang-single_02.log",
+      "stdout_log_sha256": "f50f3efa4ca5f5d67641b3c739ae7e48ea5e3b2ba6adf7d4d3919ef424de941c",
+      "report_sha256": "21c10ca1cc2f3b2dc9e86027303277e13495e3289aa757ff2d3883007c703703"
+    },
+    {
+      "part": "single_02",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "40914e11cf778459f18c438c97af50bcb809ceb41d86046a078491552991226b",
+      "stdout_log": "measure/final-print-stdout/thickness-single_02.log",
+      "stdout_log_sha256": "a8bbc3430a7204f2e0de9a07efafeb6b15a6b25292d49e78e8f0eba049f07b0c",
+      "report_sha256": "7837a0d6cdb76f79c2312b6877c75bc10c8709f0dcbefe23b6a733dcdb7bd9b3"
+    },
+    {
+      "part": "single_03",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "2f7429a3a46efea2e01a8ea3140553db54c5c9cb2622918ad5e0b66c7e039a1b",
+      "stdout_log": "measure/final-print-stdout/overhang-single_03.log",
+      "stdout_log_sha256": "c14bc228f9d15963fb2a133cca046e59c6751d5417e8899df48732fe73f17c1f",
+      "report_sha256": "42fe19408793ac4b63c644d24c9587265db0696a81f5af80b6d799233afad2d7"
+    },
+    {
+      "part": "single_03",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "2f7429a3a46efea2e01a8ea3140553db54c5c9cb2622918ad5e0b66c7e039a1b",
+      "stdout_log": "measure/final-print-stdout/thickness-single_03.log",
+      "stdout_log_sha256": "c129e8489a7c7a4baf01ec8666d2602d990d6114d41a9b0e30202295aea6c8c1",
+      "report_sha256": "77d896dc35035d8eb998a9d9c5977fa2ba706c2f33e6cb879b061bab925a4d75"
+    },
+    {
+      "part": "single_04",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "90aa468b843da65630b3ba7f1cf57171bed9a359da744d74abb2ec7975825751",
+      "stdout_log": "measure/final-print-stdout/overhang-single_04.log",
+      "stdout_log_sha256": "5dd3a5b065b512091ed5e37942f27cc6c7dd442dca5c8ede2fa7d5f3cc638527",
+      "report_sha256": "817f7ae83fe19d7274aabebc1109fdb862664820c80c85ba16699c4788b71e04"
+    },
+    {
+      "part": "single_04",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "90aa468b843da65630b3ba7f1cf57171bed9a359da744d74abb2ec7975825751",
+      "stdout_log": "measure/final-print-stdout/thickness-single_04.log",
+      "stdout_log_sha256": "387432d2c066276d01000c7b8cb7a897b72b2c632734efd40636124dc4b6eeda",
+      "report_sha256": "c78c162881f7d3867ad0eaeaf70fa4141ad4b8cf67456afaf56e0a114e9e8bbb"
+    },
+    {
+      "part": "single_05",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "c2e524344738cd0c0b6eb96de57035dcf69722772d9d819df2670314d8b31651",
+      "stdout_log": "measure/final-print-stdout/overhang-single_05.log",
+      "stdout_log_sha256": "f6e199d1d8215be1a44b3070727c3c15d239f7d0e22185fdfcfc57eccc58fa3b",
+      "report_sha256": "7c8bac95c1615c07607ab7a08d1a5a6c3e75329e7e49e50101b63b2abbca489d"
+    },
+    {
+      "part": "single_05",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "c2e524344738cd0c0b6eb96de57035dcf69722772d9d819df2670314d8b31651",
+      "stdout_log": "measure/final-print-stdout/thickness-single_05.log",
+      "stdout_log_sha256": "c14b1e3fb71365cf4731e9b62920ed4dddf38772114ad3cd0b9cd8e468aa4ed3",
+      "report_sha256": "c0fc1ae2bbaa2c8f3531c20b06aa7b649024a665ac6b90404bff36787e46509b"
+    },
+    {
+      "part": "single_06",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "9093be3f7ab18ef5b42d635cbf121a1909de1f27a0cd96174a373d40a6e753a7",
+      "stdout_log": "measure/final-print-stdout/overhang-single_06.log",
+      "stdout_log_sha256": "944e424ce99c4e93b10777ff36dc445ff434a2e3a27339a9f3bf6f06ff11c4a1",
+      "report_sha256": "e98c5ee644f9ff3f348c9549e14ace8545c7f03e28d92501b612d9cc50a7e10e"
+    },
+    {
+      "part": "single_06",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "9093be3f7ab18ef5b42d635cbf121a1909de1f27a0cd96174a373d40a6e753a7",
+      "stdout_log": "measure/final-print-stdout/thickness-single_06.log",
+      "stdout_log_sha256": "c504f64e3fc835040a50028eaf0b4fd1ce03a289bc738b0cf0e5560ff9d0cd1a",
+      "report_sha256": "072022c956f36edf282c955854815e4313a40c1574a690e77bce3dbe30769d5c"
+    },
+    {
+      "part": "single_07",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "7fd598adf740d5b6063dbdd8b97a28c45926fca62e5e71ce6ad55b0070ce1a00",
+      "stdout_log": "measure/final-print-stdout/overhang-single_07.log",
+      "stdout_log_sha256": "ee95a87c5ed2e792fe64ed9f2e04eba2a698e3f2d97731f1557621faa9301293",
+      "report_sha256": "4ed519b0b4190c4644542388ec3bd0ed9642c27509fa0f336aeca9c49cbab299"
+    },
+    {
+      "part": "single_07",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "7fd598adf740d5b6063dbdd8b97a28c45926fca62e5e71ce6ad55b0070ce1a00",
+      "stdout_log": "measure/final-print-stdout/thickness-single_07.log",
+      "stdout_log_sha256": "71d9c36b98fd4ac8be9646148674a7788afd2640ff7f9d8012fb2027fd1eb3d9",
+      "report_sha256": "fe89636b1049ff42e17286e49ebac4577705c62798f39129521c94071223cd5f"
+    },
+    {
+      "part": "single_08",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "9d5df047f02e74b9bfad8a96412ce0c01a6da17285eac0f44adf7e671ba07ff5",
+      "stdout_log": "measure/final-print-stdout/overhang-single_08.log",
+      "stdout_log_sha256": "48f981c53cd2b005a38fab7c2129938964452373c266d20ba2f845d892d2f4c7",
+      "report_sha256": "a75cea4bafbeaa8ce4548b5555dea071d96efe5ed07835c4091d77ec4a56cf3c"
+    },
+    {
+      "part": "single_08",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "9d5df047f02e74b9bfad8a96412ce0c01a6da17285eac0f44adf7e671ba07ff5",
+      "stdout_log": "measure/final-print-stdout/thickness-single_08.log",
+      "stdout_log_sha256": "7c33b4fc333afd65c30794b1465bb044ba97f2879374b0747f352412d96f3b3a",
+      "report_sha256": "2e6d9b579ffefbe0d7e42bf573a04119d336c9530c5867fb9971b192884b79da"
+    },
+    {
+      "part": "single_09",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "ddd607efe67cc1784b82dd745c56098173a55503f432cf64cd859f36ec2d461a",
+      "stdout_log": "measure/final-print-stdout/overhang-single_09.log",
+      "stdout_log_sha256": "0dbf5bc675582fdc98bc32a7ff57978826c396ac6a51e5eb87e561d5b74ea076",
+      "report_sha256": "cd63028dad1133ff19249dbffaf97dbb7c8fa548c613ed2c5c14fb0ef6954ff7"
+    },
+    {
+      "part": "single_09",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "ddd607efe67cc1784b82dd745c56098173a55503f432cf64cd859f36ec2d461a",
+      "stdout_log": "measure/final-print-stdout/thickness-single_09.log",
+      "stdout_log_sha256": "d04c6c37babcd0b60919eab767344be514532fb7f77a7b891e9c1c3c55fe2f6f",
+      "report_sha256": "34a0c16d53a45ed09a2adcedaaf90a2fb31634d8193d2889b99ab9970e64acaf"
+    },
+    {
+      "part": "single_10",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "7a393a046268c2509f43878548157f3eccf61a7f7607bac71d82f7d58aa72b3a",
+      "stdout_log": "measure/final-print-stdout/overhang-single_10.log",
+      "stdout_log_sha256": "435ab65e9e42551a25ad735c6c63eff7186065f796e6e932f2419956d9a48b8b",
+      "report_sha256": "12f5caa15ac9882d8d41e85ada498d6f99973e8b18bace7e67a9980f2fb2c7dc"
+    },
+    {
+      "part": "single_10",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "7a393a046268c2509f43878548157f3eccf61a7f7607bac71d82f7d58aa72b3a",
+      "stdout_log": "measure/final-print-stdout/thickness-single_10.log",
+      "stdout_log_sha256": "087d5eb479ade86e883d38f0af686dd8ec369a1c3cd6448e7479215ba1886563",
+      "report_sha256": "cf4a7bb50fb80401b0bf1373d29d4e2726d88da57d97a346d9d1fff496df6e25"
+    },
+    {
+      "part": "single_11",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "69d0689d0e918adf1bd545a248642e4e4537c7b97baf476ca61f7f1f1b56e021",
+      "stdout_log": "measure/final-print-stdout/overhang-single_11.log",
+      "stdout_log_sha256": "d2640c86e2946c5f89e4af7e9de89da8d84ff63610416a44da4870cf2dae43e8",
+      "report_sha256": "983ee97b5584196c560d89d92d4a304066830e77bb2ef5cbff92dd67d4a0741b"
+    },
+    {
+      "part": "single_11",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "69d0689d0e918adf1bd545a248642e4e4537c7b97baf476ca61f7f1f1b56e021",
+      "stdout_log": "measure/final-print-stdout/thickness-single_11.log",
+      "stdout_log_sha256": "a1f70dae9a6cac692ca1171573ab307e0cdf1c37328c44b7c618bac1c098e13d",
+      "report_sha256": "001c7ddc0a9861b7f10aca42534fefe393afe1fb4bc8d49f5d86ae4cf0fe5d25"
+    },
+    {
+      "part": "single_12",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "03dfc4c9b1e48688f3571c06d77c136091b2278ffaea19bd187823e422c2076e",
+      "stdout_log": "measure/final-print-stdout/overhang-single_12.log",
+      "stdout_log_sha256": "3a0d2d9772562a09ed0ba37c5842e6c0e9355b25cd8640a3979ecdc2cfd1eec4",
+      "report_sha256": "f62399c5bfd012af9b73e4fa7c991dbcdd7450f0e86f2197f658e3733c805759"
+    },
+    {
+      "part": "single_12",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "03dfc4c9b1e48688f3571c06d77c136091b2278ffaea19bd187823e422c2076e",
+      "stdout_log": "measure/final-print-stdout/thickness-single_12.log",
+      "stdout_log_sha256": "b8a8803f622b316633c7f3e83edb02b2464a70bc14336997c1e9fdd585172c66",
+      "report_sha256": "fd81bf17b1f0b1219fd0d5e001b7666e4459361072de7101bb1dabb2f00d69c2"
+    },
+    {
+      "part": "single_13",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "14283ed92c08544bc4711b000008f3d33a98fd44f924bca03cd729bad576613e",
+      "stdout_log": "measure/final-print-stdout/overhang-single_13.log",
+      "stdout_log_sha256": "253f1719c86ee7793476d952ea4f7d2aa050058c23076e12b852eaccfa6343b4",
+      "report_sha256": "5f5036564aba9d4361dfa0b068aa2ec64c83883fc4a9896a54d89aa24e423e2d"
+    },
+    {
+      "part": "single_13",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "14283ed92c08544bc4711b000008f3d33a98fd44f924bca03cd729bad576613e",
+      "stdout_log": "measure/final-print-stdout/thickness-single_13.log",
+      "stdout_log_sha256": "01a8ebbac9d5f8ab6e05603ec8346b349402aaf014baa7c1050624c33c8e382f",
+      "report_sha256": "b3d634d120181e26ab2444bbe4ab39946e68bf99ac48f90cce7fd58a40143837"
+    },
+    {
+      "part": "single_14",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "ca453bb8852117c5bf49cd2dc26c5af122c6cb4b8c00e64248d8a17622929bec",
+      "stdout_log": "measure/final-print-stdout/overhang-single_14.log",
+      "stdout_log_sha256": "d4e1cede3ac6fc76c47ebc893ef0d80ff0f71ab5a073ffc67345e796a050711c",
+      "report_sha256": "ee117ba0429e1f939e11fc60431fa8b7250c2f42b270ed7a260c72c914b4ae9e"
+    },
+    {
+      "part": "single_14",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "ca453bb8852117c5bf49cd2dc26c5af122c6cb4b8c00e64248d8a17622929bec",
+      "stdout_log": "measure/final-print-stdout/thickness-single_14.log",
+      "stdout_log_sha256": "c85a8d1a5577a4aabcf5ee46a4722ee7d208fbc74cc7c286fb02152f8a0dd635",
+      "report_sha256": "13390519861755aec41ff0c2eb707c4c06c9b4db02520025faf6c255cebd1f15"
+    },
+    {
+      "part": "single_15",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "5be413df5dc3c8fcb1ebd553ce20a429a25ee7bb39b561907bfe3c6d9bf13cf4",
+      "stdout_log": "measure/final-print-stdout/overhang-single_15.log",
+      "stdout_log_sha256": "c036f30961eebb2d4e3669c928c3b494245626053f500bada16fdfa1cc877c45",
+      "report_sha256": "5dc507e54d3cc770567358ba4bfc3892ca9f64eea92774fdcaf8c858dfa531d1"
+    },
+    {
+      "part": "single_15",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "5be413df5dc3c8fcb1ebd553ce20a429a25ee7bb39b561907bfe3c6d9bf13cf4",
+      "stdout_log": "measure/final-print-stdout/thickness-single_15.log",
+      "stdout_log_sha256": "aac91478cd6fb926a0acca6f37909e1979889cfe95cf4903c499d691d6bdfd38",
+      "report_sha256": "98a58868adbd26387acba88c27d58f838e75c1b9127d6d6479a67cc1c2a200bd"
+    },
+    {
+      "part": "sun",
+      "gate": "overhang",
+      "exit_code": 0,
+      "step_sha256": "434fa1bddf8275074682f6cf914c4908b9e94ff8be361fb5b276e779be9286da",
+      "stdout_log": "measure/final-print-stdout/overhang-sun.log",
+      "stdout_log_sha256": "d0512432d43297d9c18229091a6bf3266322defed2f3862e255e561cf1381d0d",
+      "report_sha256": "08d544ba18e0da409b045108a92d604d5542e055a8ca74be1985e4d4ccae8879"
+    },
+    {
+      "part": "sun",
+      "gate": "thickness",
+      "exit_code": 0,
+      "step_sha256": "434fa1bddf8275074682f6cf914c4908b9e94ff8be361fb5b276e779be9286da",
+      "stdout_log": "measure/final-print-stdout/thickness-sun.log",
+      "stdout_log_sha256": "16614dfceff53671cfe7968056e5d650413f705310833478b827ef78d0303672",
+      "report_sha256": "8f3b66797598eb558e7f4ff7afb48d92092d7f923dde77cf2612d9ee3acefc80"
+    }
+  ]
+}

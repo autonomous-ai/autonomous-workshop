@@ -1,0 +1,25 @@
+{
+  "kind": "rainward-sun.rules-and-state-check",
+  "status": "pass",
+  "scope": "Digital standard setup, documented legal hit trace, bar-first and pair-block constraints, exact pose conservation; no physical play or full-game simulation.",
+  "standard_setup": "pass",
+  "signature_trace": [
+    "A 6,1: 13->7; 8->7",
+    "B 6,1: own13->7; own24->23",
+    "A 6,2: 7->1 hit; die2 remains"
+  ],
+  "all_states_drop_count": 30,
+  "each_side_count": 15,
+  "signature_changed_occurrences": [
+    "single_06",
+    "fork_01"
+  ],
+  "signature_unchanged_occurrences": 28,
+  "victim_displacement_mm": 80.00000000000001,
+  "remaining_die_2_is_playable": true,
+  "bar_first_rejection": true,
+  "opposing_pair_rejection": true,
+  "bar_reentry": true,
+  "ideal_ordered_dice_outcomes": 36,
+  "printed_dice_fairness": "not physically tested"
+}

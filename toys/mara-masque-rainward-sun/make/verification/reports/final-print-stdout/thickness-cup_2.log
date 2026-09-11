@@ -1,0 +1,9 @@
+part_cup_2.step.py: 9.32 cm3 solid, grid 0.170 mm (251x251x169), 325404 surface samples, thickness resolved to 0.085 mm
+  PASS  wall >= 0.80 mm (+/-0.09)      0.0% of surface below (0 of 325404 samples)
+  PASS  thickness distribution         median 1.96 mm, p95 27.91 mm, max 42.03 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 9.32 cm3 (0%) in 0 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/thickness-cup_2.md
+
+--- stderr ---
