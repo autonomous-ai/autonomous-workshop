@@ -317,6 +317,20 @@ the newly computed current sandbox policy. Same-version policy drift, CLI
 downgrades, major-version migrations, and malformed checkpoints still fail
 closed.
 
+For an observed filesystem device-number change, an operator can use
+`WORKSHOP_CODEX_RUNTIME_DEVICE_RECOVERY=OLD:CURRENT workshop resume <id>`.
+This host-only setting reconstructs one prior device mapping and accepts it
+only if the complete reconstructed runtime fingerprint matches the existing
+private checkpoint. Paths, resolved paths, inodes, modes, CLI version, model,
+profile and all other policy fields remain bound. It cannot be combined with
+another policy migration. The actual launch uses current filesystem identities;
+the setting never reaches the native subprocess. A hash-bound owner-only
+`codex-runtime-device-recovery-<hash>.json` receipt records the exact session,
+mapping and fingerprints. The original session checkpoint is preserved, so
+repeat the explicit mapping on subsequent resumes of that checkpoint.
+Unexplained policy drift still fails closed; do not guess a mapping to bypass
+an identity mismatch.
+
 An interruption before the exact session identity is bound fails closed rather
 than automatically creating a second root session. Failed-turn events that do
 not begin with an exact allowlisted provider-transport diagnostic, unknown or

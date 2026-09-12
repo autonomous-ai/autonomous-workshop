@@ -707,6 +707,43 @@ def _runtime_config_sha256(
     return _sha256_json(payload)
 
 
+def _run_policy_before_device_renumber(
+    run_policy: _CodexRunPolicy, mapping: str,
+) -> _CodexRunPolicy:
+    """Reconstruct one explicitly declared old mount ID, without changing grants.
+
+    Device numbers can change after a remount. This candidate is useful only
+    if its complete runtime hash matches the private session checkpoint;
+    paths, inodes, modes, CLI, model and all policy fields still have to match.
+    The actual subprocess always receives the freshly observed current policy.
+    """
+    if not isinstance(mapping, str) or not re.fullmatch(
+        r"(0|[1-9][0-9]{0,19}):(0|[1-9][0-9]{0,19})", mapping
+    ):
+        raise ContractError("runtime device recovery requires OLD:CURRENT device numbers")
+    previous, current = (int(part) for part in mapping.split(":"))
+    if previous == current or max(previous, current) >= 2**64:
+        raise ContractError("runtime device recovery requires distinct valid device numbers")
+    identities = (*run_policy.trusted_python_runtime_paths,
+                  *run_policy.trusted_codex_runtime_paths)
+    if not any(current in (item.device, item.resolved_device) for item in identities):
+        raise ContractError("runtime device recovery current device is not in the runtime")
+
+    def predecessor(item: _TrustedRuntimePathIdentity) -> _TrustedRuntimePathIdentity:
+        return replace(
+            item,
+            device=previous if item.device == current else item.device,
+            resolved_device=(previous if item.resolved_device == current
+                             else item.resolved_device),
+        )
+
+    return replace(
+        run_policy,
+        trusted_python_runtime_paths=tuple(map(predecessor, run_policy.trusted_python_runtime_paths)),
+        trusted_codex_runtime_paths=tuple(map(predecessor, run_policy.trusted_codex_runtime_paths)),
+    )
+
+
 def _run_policy_before_workshop_python(
     run_policy: _CodexRunPolicy,
 ) -> _CodexRunPolicy:
@@ -2851,6 +2888,20 @@ class CodexNativeSessionLauncher:
         )
         if legacy_before_venv_directory is not None:
             predecessor_policies.append((legacy_before_venv_directory, True))
+        # Explicit host-only recovery; never forwarded to the native agent.
+        # Do not combine this with any other historical policy migration.
+        device_mapping = os.environ.get("WORKSHOP_CODEX_RUNTIME_DEVICE_RECOVERY")
+        device_predecessor_sha256 = None
+        if device_mapping is not None:
+            device_predecessor_sha256 = _runtime_config_sha256(
+                self.cli_version, self.model, self.reasoning_effort,
+                _run_policy_before_device_renumber(run_policy, device_mapping),
+                auto_compact_token_limit=self.auto_compact_token_limit,
+                runtime_profile_sha256=self.runtime_profile_sha256,
+                timeout_seconds=(self.timeout_seconds
+                                 if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS
+                                 else None),
+            )
         predecessor_runtime_config_sha256s = tuple(
             dict.fromkeys(
                 _runtime_config_sha256(
@@ -2878,8 +2929,33 @@ class CodexNativeSessionLauncher:
             run_root=root,
             host_state_root=state_root,
             runtime_config_sha256=runtime_config_sha256,
-            predecessor_runtime_config_sha256s=predecessor_runtime_config_sha256s,
+            predecessor_runtime_config_sha256s=(
+                (*predecessor_runtime_config_sha256s, device_predecessor_sha256)
+                if device_predecessor_sha256 is not None
+                else predecessor_runtime_config_sha256s
+            ),
         )
+        if device_mapping is not None and (
+            _read_private_checkpoint(path)["runtime_config_sha256"]
+            == device_predecessor_sha256
+        ):
+            recovery = {
+                "schema_version": 1,
+                "kind": "autonomous-workshop-runtime-device-recovery",
+                "product_id": product_id, "thread_id": thread_id,
+                "session_checkpoint_sha256": checkpoint_sha256,
+                "device_mapping": device_mapping,
+                "previous_runtime_config_sha256": device_predecessor_sha256,
+                "runtime_config_sha256": runtime_config_sha256,
+            }
+            recovery_sha256 = _sha256_json(recovery)
+            recovery_path = state_root / ("codex-runtime-device-recovery-%s.json" % recovery_sha256)
+            record = {**recovery, "recovery_sha256": recovery_sha256}
+            if recovery_path.exists() or recovery_path.is_symlink():
+                if _read_private_checkpoint(recovery_path) != record:
+                    raise ContractError("runtime device recovery record is invalid")
+            else:
+                _write_private_checkpoint(recovery_path, record)
         try:
             used_web_search, unused_observed_thread_id, token_usage = self._stream(
                 command=self._resume_command(thread_id, root, run_policy),

@@ -1493,6 +1493,76 @@ class CodexNativeSessionTest(unittest.TestCase):
                     root, current
                 )
 
+    def test_explicit_device_recovery_accepts_only_exact_device_drift(self):
+        for drift in (None, "inode", "mode", "path", "model", "cli_version"):
+            with self.subTest(drift=drift), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                launcher, factory = self.launcher([
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                    {"stdout": self.start_events(message="resumed again")},
+                ])
+                self.start(launcher, root)
+                checkpoint = self.host_state(root) / "codex-session.json"
+                payload = json.loads(checkpoint.read_text())
+                current = codex_runtime._codex_run_policy(root, launcher.binary)
+                current_device = current.trusted_python_runtime_paths[0].device
+                mapping = "%d:%d" % (current_device + 1000, current_device)
+                previous = codex_runtime._run_policy_before_device_renumber(current, mapping)
+                if drift in ("inode", "mode", "path"):
+                    item = previous.trusted_python_runtime_paths[0]
+                    value = getattr(item, drift)
+                    item = replace(item, **{drift: value + "-changed" if drift == "path" else value + 1})
+                    previous = replace(previous, trusted_python_runtime_paths=(
+                        item, *previous.trusted_python_runtime_paths[1:],
+                    ))
+                payload["runtime_config_sha256"] = codex_runtime._runtime_config_sha256(
+                    "0.144.0" if drift == "cli_version" else launcher.cli_version,
+                    "gpt-5.6-sol" if drift == "model" else launcher.model,
+                    launcher.reasoning_effort, previous,
+                )
+                payload["checkpoint_sha256"] = codex_runtime._sha256_json({
+                    k: v for k, v in payload.items() if k != "checkpoint_sha256"
+                })
+                checkpoint.write_text(json.dumps(payload))
+                os.chmod(checkpoint, 0o600)
+                original_bytes = checkpoint.read_bytes()
+                with mock.patch.dict(os.environ, {}, clear=True):
+                    with self.assertRaisesRegex(ContractError, "checkpoint binding"):
+                        self.resume(launcher, root)
+                with mock.patch.dict(os.environ, {
+                    "WORKSHOP_CODEX_RUNTIME_DEVICE_RECOVERY": mapping,
+                }):
+                    if drift is not None:
+                        with self.assertRaisesRegex(ContractError, "checkpoint binding"):
+                            self.resume(launcher, root)
+                        self.assertEqual(len(factory.calls), 1)
+                        self.assertEqual(list(self.host_state(root).glob("codex-runtime-device-recovery-*.json")), [])
+                    else:
+                        resumed = self.resume(launcher, root)
+                        self.resume(launcher, root)
+                        self.assertEqual(len(factory.calls), 3)
+                        self.assertEqual(resumed.binding.runtime_config_sha256,
+                            codex_runtime._runtime_config_sha256(launcher.cli_version,
+                                launcher.model, launcher.reasoning_effort, current))
+                        self.assertNotIn("WORKSHOP_CODEX_RUNTIME_DEVICE_RECOVERY", factory.calls[1][1]["env"])
+                        records = list(self.host_state(root).glob("codex-runtime-device-recovery-*.json"))
+                        self.assertEqual(len(records), 1)
+                        record = json.loads(records[0].read_text())
+                        self.assertEqual(record["thread_id"], THREAD_ID)
+                        self.assertEqual(record["device_mapping"], mapping)
+                        self.assertEqual(record["session_checkpoint_sha256"], payload["checkpoint_sha256"])
+                        self.assertEqual(stat.S_IMODE(records[0].stat().st_mode), 0o600)
+                self.assertEqual(checkpoint.read_bytes(), original_bytes)
+
+    def test_device_recovery_rejects_malformed_or_unobserved_mapping(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            policy = codex_runtime._codex_run_policy(Path(temporary).resolve(), TEST_CODEX_BINARY)
+            for mapping in ("", "1", "01:2", "-1:2", "1:1", "1:18446744073709551616", "1:999999999999"):
+                with self.subTest(mapping=mapping), self.assertRaises(ContractError):
+                    codex_runtime._run_policy_before_device_renumber(policy, mapping)
+
     def test_resume_accepts_exact_step_parts_only_policy_predecessor(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
