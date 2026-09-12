@@ -1828,3 +1828,11 @@ Validation passed: **370 tests**, including the recovery success/failure paths,
 native-session, CLI, workflow and token-accounting regressions. The initial
 unittest invocation exposed missing pytest test dependencies; those were
 installed only in the temporary target above, leaving the shared venv unchanged.
+
+Live recovery succeeded at 07:59:57 UTC on 2026-09-12 through the exact command
+above. The private recovery receipt matches the new checkpoint, preserves the
+original native root UUID, and records only device 16777231 → 16777230. The
+budget remained 347,504,345 / 500,000,000 at the first post-recovery check.
+The CLI passed session validation and the native Manager resumed reasoning and
+reporting progress. This proves runtime recovery, not Make completion or
+publication. Twelve component architecture checks also passed.
