@@ -8,7 +8,7 @@ from workshop.workflow.budgets import LifetimeBudget, LifetimeTurnBudget
 
 TOKEN_BUDGET_CAPABILITY_PATH = ".agents/skills/autonomous-workshop/references/token-budget-v1.md"
 DEFAULT_PRODUCT_TOKENS = 30_000_000
-MAX_PRODUCT_TOKENS = 500_000_000
+MAX_PRODUCT_TOKENS = 1_000_000_000
 
 
 def validate_limit(value):
