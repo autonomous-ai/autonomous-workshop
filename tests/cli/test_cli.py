@@ -294,6 +294,16 @@ class NativeCommandTest(unittest.TestCase):
             main(("resume", "wish-one", "--max-tokens", "3000000"))
         self.assertEqual(resume.call_args.kwargs["max_tokens"], 3000000)
 
+    def test_resume_runtime_device_recovery_is_explicit(self):
+        with mock.patch("cli.main.resume_native_run", return_value=native_receipt()) as resume, redirect_stdout(StringIO()):
+            main(("resume", "wish-one", "--runtime-device-from", "16777231"))
+            self.assertEqual(resume.call_args.kwargs["runtime_device_from"], 16777231)
+            main(("resume", "wish-one"))
+            self.assertNotIn("runtime_device_from", resume.call_args.kwargs)
+        with mock.patch("cli.main.resume_native_run") as resume, redirect_stderr(StringIO()):
+            with self.assertRaises(SystemExit): main(("resume", "wish-one", "--runtime-device-from", "unknown"))
+            resume.assert_not_called()
+
     def test_resume_explicit_effort_and_500m_total_reach_host(self):
         with mock.patch("cli.main.resume_native_run", return_value=native_receipt()) as resume, redirect_stdout(StringIO()):
             result = main(("resume", "wish-one", "--effort", "medium", "--max-tokens", "500000000"))

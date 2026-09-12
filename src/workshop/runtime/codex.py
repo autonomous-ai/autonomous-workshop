@@ -18,7 +18,7 @@ import tempfile
 import threading
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping, Optional
 
@@ -2773,6 +2773,94 @@ class CodexNativeSessionLauncher:
         root = _resolve_run_root(run_root)
         state_root = _resolve_host_state_root(host_state_root, root)
         return root, state_root, _checkpoint_path(state_root)
+
+    def rebind_runtime_device(
+        self, *, product_id: str, wish_sha256: str,
+        constitution_sha256: str, run_root: Path, host_state_root: Path,
+        previous_device: int,
+    ) -> Mapping[str, Any]:
+        """Explicit host recovery for a uniform device-number change only.
+
+        The caller holds the run mutation lock. Reconstructing the old policy
+        must reproduce its saved digest exactly; paths, inodes, modes, settings,
+        CLI version and every session binding remain mandatory. No device
+        search, general policy refresh or native launch occurs here.
+        """
+        if type(previous_device) is not int or not 0 <= previous_device < 2**64:
+            raise ContractError("previous runtime device must be an unsigned 64-bit integer")
+        root, state_root, path = self._binding_paths(
+            product_id=product_id, wish_sha256=wish_sha256,
+            constitution_sha256=constitution_sha256, run_root=run_root,
+            host_state_root=host_state_root,
+        )
+        payload = _read_private_checkpoint(path)
+        policy = _codex_run_policy(root, self.binary, protect_make_input=self.protect_make_input)
+        devices = {
+            number
+            for item in (*policy.trusted_python_runtime_paths, *policy.trusted_codex_runtime_paths)
+            for number in (item.device, item.resolved_device)
+        }
+        if len(devices) != 1:
+            raise ContractError("runtime device recovery requires one shared runtime filesystem")
+        current_device = next(iter(devices))
+        previous_policy = replace(
+            policy,
+            trusted_python_runtime_paths=tuple(
+                replace(item, device=previous_device, resolved_device=previous_device)
+                for item in policy.trusted_python_runtime_paths
+            ),
+            trusted_codex_runtime_paths=tuple(
+                replace(item, device=previous_device, resolved_device=previous_device)
+                for item in policy.trusted_codex_runtime_paths
+            ),
+        )
+        def identity(selected_policy):
+            digest = _runtime_config_sha256(
+                self.cli_version, self.model, self.reasoning_effort, selected_policy,
+                auto_compact_token_limit=self.auto_compact_token_limit,
+                runtime_profile_sha256=self.runtime_profile_sha256,
+                timeout_seconds=(self.timeout_seconds if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS else None),
+            )
+            return self._checkpoint_identity(
+                product_id=product_id, wish_sha256=wish_sha256,
+                constitution_sha256=constitution_sha256, run_root=root,
+                host_state_root=state_root, thread_id=payload.get("thread_id"),
+                runtime_config_sha256=digest,
+            )
+        before = identity(previous_policy)
+        after = identity(policy)
+        before = {**before, "checkpoint_sha256": _sha256_json(before)}
+        after = {**after, "checkpoint_sha256": _sha256_json(after)}
+        if payload == after:
+            return {"changed": False, "previous_device": previous_device, "current_device": current_device}
+        if payload != before:
+            raise ContractError("runtime device recovery refused: saved policy differs beyond the specified device number")
+        # Immutable write-ahead evidence. An interrupted replacement can retry
+        # the same explicit command; conflicting or unsafe records fail closed.
+        record = {
+            "kind": "autonomous-workshop.codex-runtime-device-recovery",
+            "schema_version": 1, "previous_device": previous_device,
+            "current_device": current_device, "before": before, "after": after,
+        }
+        receipt = state_root / ("codex-runtime-device-recovery-%s.json" % before["checkpoint_sha256"])
+        if receipt.exists() or receipt.is_symlink():
+            if _read_private_checkpoint(receipt) != record:
+                raise ContractError("runtime device recovery record conflicts with this correction")
+        else:
+            _write_private_checkpoint(receipt, record)
+        # Recheck both the original checkpoint and live runtime before changing
+        # authority; never bind a policy that changed during the operation.
+        if _read_private_checkpoint(path) != before or _codex_run_policy(
+            root, self.binary, protect_make_input=self.protect_make_input,
+        ) != policy:
+            raise ContractError("runtime changed during device recovery")
+        _replace_private_checkpoint(path, after)
+        return {
+            "changed": True, "previous_device": previous_device,
+            "current_device": current_device,
+            "previous_checkpoint_sha256": before["checkpoint_sha256"],
+            "checkpoint_sha256": after["checkpoint_sha256"],
+        }
 
     def rebind_session_constitution(
         self,

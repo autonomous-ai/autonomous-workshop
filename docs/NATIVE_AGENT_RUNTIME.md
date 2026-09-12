@@ -334,7 +334,12 @@ feature, and thread binding is unchanged, and the installed CLI is a strictly
 newer supported version in the same major line. The resumed process receives
 the newly computed current sandbox policy. Same-version policy drift, CLI
 downgrades, major-version migrations, and malformed checkpoints still fail
-closed.
+closed. An explicit `resume --runtime-device-from DEVICE` can recover a
+uniform runtime-filesystem device-number change for a Codex Spark token-budget
+run in Make. It must reconstruct the saved policy exactly with only that number
+changed, retains the same native session and usage, and writes private recovery
+evidence before rebinding. It is not a general runtime refresh; see
+[ADR 0068](adr/0068-explicit-runtime-device-recovery.md).
 
 An interruption before the exact session identity is bound fails closed rather
 than automatically creating a second root session. Failed-turn events that do

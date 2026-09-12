@@ -1103,6 +1103,7 @@ def _resume(args: argparse.Namespace) -> int:
         )
     receipt = resume_native_run(
         args.product_id,
+        **({"runtime_device_from": args.runtime_device_from} if args.runtime_device_from is not None else {}),
         **({"adopt_turn_budget": True} if args.turn_budget else {}),
         **({"max_tokens": args.max_tokens} if args.max_tokens is not None else {}),
         **_turn_boundary_options(args.turn_minutes),
@@ -2015,6 +2016,10 @@ def parser() -> argparse.ArgumentParser:
             "(domain skills such as the CAD verifier) from this Workshop install and "
             "rebind them in the run manifest; recorded in the run's private host state"
         ),
+    )
+    resume.add_argument(
+        "--runtime-device-from", type=int, default=None, metavar="DEVICE",
+        help="explicitly recover a single-filesystem device-number change for a saved Codex Spark token-budget Make run; all other runtime identity must match",
     )
     resume.set_defaults(handler=_resume)
 

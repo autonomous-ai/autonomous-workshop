@@ -1795,3 +1795,36 @@ native thread is **01a08bc0-f6df-7d03-a6e7-72a4db27f449**. Spark and the 500M
 total allowance remain preserved. This is an actual resume, not a new product
 or a claim that Make has passed. Only original Atlas is being advanced; the
 other five original pilots and the new static derivative remain paused.
+
+
+## 2026-09-12: Atlas runtime device recovery
+
+Atlas preserved both applied collision repairs but could not resume after the
+runtime filesystem device number changed from 16777231 to 16777230. Read-only
+reconstruction proved that this field change alone reproduced the saved runtime
+policy hash; no native checkpoint or product bytes were edited to bypass it.
+The new explicit host recovery is described in ADR 0068.
+
+Validation command (deterministic fakes, no model requests):
+
+```bash
+cd /Users/ab/code/autonomous-workshop-mixed-material-products
+uv pip install --python /Users/ab/code/autonomous-workshop/.venv/bin/python --target /private/tmp/workshop-runtime-device-test-deps pytest==8.4.2
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/Users/ab/code/autonomous-workshop/.venv/lib/python3.11/site-packages /Users/ab/code/autonomous-workshop/.venv/bin/python -c 'import sys; sys.path[:0] = ["/Users/ab/code/autonomous-workshop-mixed-material-products/src", "/private/tmp/workshop-runtime-device-test-deps"]; import pytest; raise SystemExit(pytest.main(["tests/runtime/test_codex_native_session.py", "tests/cli/test_cli.py", "tests/workflow/test_runtime_device_recovery.py", "tests/workflow/test_native_host.py", "tests/workflow/test_token_budget.py", "-q", "-p", "no:cacheprovider"]))'
+```
+
+Recovery/resume command (run only after validation):
+
+```bash
+cd /Users/ab/code/autonomous-workshop-mixed-material-products
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli resume wish-20260910-143753-a2e10997 --runtime-device-from 16777231 --max-tokens 500000000 --effort medium
+```
+
+This preserves the original Atlas Wish and root native session. Prior usage was
+347,504,345 / 500,000,000 tokens. There is no tool refresh, new Wish, mode change,
+Make acceptance or publication implied by runtime recovery.
+
+Validation passed: **370 tests**, including the recovery success/failure paths,
+native-session, CLI, workflow and token-accounting regressions. The initial
+unittest invocation exposed missing pytest test dependencies; those were
+installed only in the temporary target above, leaving the shared venv unchanged.

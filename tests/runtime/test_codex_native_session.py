@@ -2475,6 +2475,141 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertNotIn("rotated-secret-one", checkpoint_text)
             self.assertNotIn("rotated-secret-two", checkpoint_text)
 
+    def _device_recovery_fixture(self, root):
+        root.mkdir()
+        launcher, factory = self.launcher([{"stdout": self.start_events()}])
+        policy = codex_runtime._codex_run_policy(root, TEST_CODEX_BINARY)
+        def on_device(number):
+            return replace(
+                policy,
+                trusted_python_runtime_paths=tuple(replace(x, device=number, resolved_device=number) for x in policy.trusted_python_runtime_paths),
+                trusted_codex_runtime_paths=tuple(replace(x, device=number, resolved_device=number) for x in policy.trusted_codex_runtime_paths),
+            )
+        current, previous = on_device(7), on_device(8)
+        identity = launcher._checkpoint_identity(
+            product_id="wish-001", wish_sha256=WISH_SHA256,
+            constitution_sha256=CONSTITUTION_SHA256, run_root=root,
+            host_state_root=self.host_state(root), thread_id=THREAD_ID,
+            runtime_config_sha256=codex_runtime._runtime_config_sha256(
+                launcher.cli_version, launcher.model, launcher.reasoning_effort, previous,
+            ),
+        )
+        path = self.host_state(root) / "codex-session.json"
+        codex_runtime._write_private_checkpoint(path, {**identity, "checkpoint_sha256": codex_runtime._sha256_json(identity)})
+        return launcher, factory, current, path
+
+    def _recover_device(self, launcher, root, **overrides):
+        arguments = dict(
+            product_id="wish-001", wish_sha256=WISH_SHA256,
+            constitution_sha256=CONSTITUTION_SHA256, run_root=root,
+            host_state_root=self.host_state(root), previous_device=8,
+        )
+        arguments.update(overrides)
+        return launcher.rebind_runtime_device(**arguments)
+
+    def test_device_recovery_is_explicit_audited_and_resumes_same_thread(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve() / "run"
+            launcher, factory, current, path = self._device_recovery_fixture(root)
+            before = path.read_bytes()
+            usage = self.host_state(root) / "native-budget.json"
+            usage.write_bytes(b'preserved usage sentinel')
+            artifact = root / "design.txt"
+            artifact.write_bytes(b'preserved design sentinel')
+            with mock.patch.object(codex_runtime, "_codex_run_policy", return_value=current):
+                with self.assertRaisesRegex(ContractError, "binding is invalid"):
+                    self.resume(launcher, root)
+                self.assertEqual(factory.calls, [])
+                result = self._recover_device(launcher, root)
+                self.assertTrue(result["changed"])
+                after = path.read_bytes()
+                self.assertNotEqual(before, after)
+                receipts = list(self.host_state(root).glob("codex-runtime-device-recovery-*.json"))
+                self.assertEqual(len(receipts), 1)
+                record = json.loads(receipts[0].read_text())
+                self.assertEqual(record["before"], json.loads(before))
+                self.assertEqual(record["after"], json.loads(after))
+                self.assertEqual(stat.S_IMODE(receipts[0].stat().st_mode), 0o600)
+                self.assertFalse(self._recover_device(launcher, root)["changed"])
+                resumed = self.resume(launcher, root)
+            self.assertEqual(json.loads(path.read_text())["thread_id"], THREAD_ID)
+            self.assertEqual(len(factory.calls), 1)
+            self.assertIn("resume", factory.calls[0][0])
+            self.assertEqual(usage.read_bytes(), b'preserved usage sentinel')
+            self.assertEqual(artifact.read_bytes(), b'preserved design sentinel')
+            self.assertEqual(path.read_bytes(), after)
+
+    def test_device_recovery_refuses_other_runtime_or_checkpoint_drift(self):
+        for changed in ("inode", "mode", "path", "resolved_path", "multiple_devices", "model", "cli", "compaction", "constitution", "wrong_device", "tampered_digest"):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp).resolve() / "run"
+                launcher, factory, policy, path = self._device_recovery_fixture(root)
+                overrides = {}
+                item = policy.trusted_python_runtime_paths[0]
+                if changed in {"inode", "mode", "path", "resolved_path"}:
+                    value = getattr(item, changed)
+                    item = replace(item, **{changed: value + 1 if isinstance(value, int) else value + "-other"})
+                    policy = replace(policy, trusted_python_runtime_paths=(item, *policy.trusted_python_runtime_paths[1:]))
+                elif changed == "multiple_devices":
+                    item = replace(item, resolved_device=9)
+                    policy = replace(policy, trusted_python_runtime_paths=(item, *policy.trusted_python_runtime_paths[1:]))
+                elif changed == "model": launcher.model = "gpt-5.6-sol"
+                elif changed == "cli": launcher.cli_version = "0.150.1"
+                elif changed == "compaction": launcher.auto_compact_token_limit = 64000
+                elif changed == "constitution": overrides["constitution_sha256"] = "c" * 64
+                elif changed == "wrong_device": overrides["previous_device"] = 9
+                elif changed == "tampered_digest":
+                    value = json.loads(path.read_text()); value["checkpoint_sha256"] = "c" * 64
+                    path.write_text(json.dumps(value))
+                before = path.read_bytes()
+                with mock.patch.object(codex_runtime, "_codex_run_policy", return_value=policy):
+                    with self.assertRaises(ContractError): self._recover_device(launcher, root, **overrides)
+                self.assertEqual(path.read_bytes(), before)
+                self.assertEqual(factory.calls, [])
+                self.assertEqual(list(self.host_state(root).glob("codex-runtime-device-recovery-*.json")), [])
+
+    def test_device_recovery_retries_interrupted_checkpoint_replace(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve() / "run"
+            launcher, factory, current, path = self._device_recovery_fixture(root)
+            before = path.read_bytes()
+            with mock.patch.object(codex_runtime, "_codex_run_policy", return_value=current):
+                with mock.patch.object(codex_runtime, "_replace_private_checkpoint", side_effect=OSError("interrupted")):
+                    with self.assertRaises(OSError): self._recover_device(launcher, root)
+                self.assertEqual(path.read_bytes(), before)
+                receipt = next(self.host_state(root).glob("codex-runtime-device-recovery-*.json"))
+                recorded = receipt.read_bytes()
+                self.assertTrue(self._recover_device(launcher, root)["changed"])
+                self.assertEqual(receipt.read_bytes(), recorded)
+            self.assertEqual(factory.calls, [])
+
+    def test_device_recovery_refuses_conflicting_or_linked_receipt(self):
+        for linked in (False, True):
+            with self.subTest(linked=linked), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp).resolve() / "run"
+                launcher, factory, current, path = self._device_recovery_fixture(root)
+                before = path.read_bytes()
+                digest = json.loads(before)["checkpoint_sha256"]
+                receipt = self.host_state(root) / ("codex-runtime-device-recovery-%s.json" % digest)
+                if linked: receipt.symlink_to(path)
+                else: codex_runtime._write_private_checkpoint(receipt, {"conflict": True})
+                with mock.patch.object(codex_runtime, "_codex_run_policy", return_value=current):
+                    with self.assertRaises(ContractError): self._recover_device(launcher, root)
+                self.assertEqual(path.read_bytes(), before)
+                self.assertEqual(factory.calls, [])
+
+    def test_device_recovery_refuses_runtime_change_during_correction(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve() / "run"
+            launcher, factory, current, path = self._device_recovery_fixture(root)
+            before = path.read_bytes()
+            changed = replace(current, environment_allowlist=(*current.environment_allowlist, "OTHER"))
+            with mock.patch.object(codex_runtime, "_codex_run_policy", side_effect=[current, changed]):
+                with self.assertRaisesRegex(ContractError, "changed during"):
+                    self._recover_device(launcher, root)
+            self.assertEqual(path.read_bytes(), before)
+            self.assertEqual(factory.calls, [])
+
     def test_resume_accepts_supported_in_place_cli_upgrade(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"

@@ -9127,18 +9127,7 @@ def _run_native_session(
                 # policy identity rather than silently upgrading frozen tools.
                 # Token-budget runs are untimed by default, but an explicit
                 # operator boundary must survive this final launcher rebuild.
-                override = _turn_override(checkpoint)
-                turn_launcher = CodexNativeSessionLauncher(
-                    model=turn_launcher.model, reasoning_effort=turn_launcher.reasoning_effort,
-                    auto_compact_token_limit=turn_launcher.auto_compact_token_limit,
-                    runtime_profile_sha256=checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH),
-                    binary=turn_launcher.binary,
-                    timeout_seconds=None if override is _NO_TURN_OVERRIDE else override,
-                    cli_version=turn_launcher.cli_version,
-                    popen_factory=turn_launcher._popen_factory,
-                    version_runner=turn_launcher._version_runner,
-                    **({"protect_make_input": True} if checkpoint.make_mode is not None else {}),
-                )
+                turn_launcher = _token_budget_codex_launcher(checkpoint, turn_launcher)
                 if not supports_rollout_usage_version(turn_launcher.cli_version):
                     raise ContractError(
                         "token-budget rollout adapter requires Codex CLI 0.153.4 or newer"
@@ -10154,10 +10143,46 @@ def _resume_native_run_locked(
     )
 
 
+def _token_budget_codex_launcher(checkpoint, launcher):
+    """Select the same frozen token-budget launch policy for launch and recovery."""
+    override = _turn_override(checkpoint)
+    return CodexNativeSessionLauncher(
+        model=launcher.model, reasoning_effort=launcher.reasoning_effort,
+        auto_compact_token_limit=launcher.auto_compact_token_limit,
+        runtime_profile_sha256=checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH),
+        binary=launcher.binary,
+        timeout_seconds=None if override is _NO_TURN_OVERRIDE else override,
+        cli_version=launcher.cli_version,
+        popen_factory=launcher._popen_factory,
+        version_runner=launcher._version_runner,
+        **({"protect_make_input": True} if checkpoint.make_mode is not None else {}),
+    )
+
+
+def _recover_runtime_device(paths, checkpoint, previous_device):
+    # Keep this initial recovery surface narrow. Other workflows and historical
+    # policies need their own explicit, tested migration rather than guessing.
+    if (
+        checkpoint.manager_id != "codex" or checkpoint.effort != "spark"
+        or checkpoint.stage != "make" or checkpoint.status not in {"active", "waiting"}
+        or TOKEN_BUDGET_CAPABILITY_PATH not in checkpoint.input_sha256s
+        or BUDGETS_CAPABILITY_PATH not in checkpoint.input_sha256s
+    ):
+        raise ContractError("runtime device recovery requires an unfinished Codex Spark token-budget Make run")
+    launcher = _token_budget_codex_launcher(checkpoint, _native_launcher(checkpoint))
+    return launcher.rebind_runtime_device(
+        product_id=checkpoint.product_id, wish_sha256=checkpoint.wish_sha256,
+        constitution_sha256=materialized_agent_instructions_sha256(checkpoint),
+        run_root=paths.workspace, host_state_root=paths.host_state,
+        previous_device=previous_device,
+    )
+
+
 def resume_native_run(
     product_id: str,
     *,
     publish_requested: Optional[bool] = None,
+    runtime_device_from: Optional[int] = None,
     adopt_turn_budget: bool = False,
     max_tokens: Optional[int] = None,
     turn_seconds: Optional[int] = None,
@@ -10175,6 +10200,8 @@ def resume_native_run(
     optional presentation telemetry and cannot change the run result.
     """
 
+    if runtime_device_from is not None and (type(runtime_device_from) is not int or not 0 <= runtime_device_from < 2**64):
+        raise ContractError("previous runtime device must be an unsigned 64-bit integer")
     if publish_requested is not None and type(publish_requested) is not bool:
         raise ContractError("legacy publication option must be boolean")
     if type(adopt_turn_budget) is not bool:
@@ -10198,6 +10225,8 @@ def resume_native_run(
         )
         run = _open_budgeted_agent_run(paths)
         checkpoint = run.snapshot()
+        if runtime_device_from is not None:
+            _recover_runtime_device(paths, checkpoint, runtime_device_from)
         if manager_reasoning_effort is not None:
             # The explicit operator correction changes only the selected
             # reasoning setting. It cannot select a different model, workflow,
