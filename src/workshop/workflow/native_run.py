@@ -5075,11 +5075,29 @@ def _reconcile_token_accounting_need(paths, checkpoint, budget):
     current = _root_token_counts(value)
     baseline = need["baseline_root_tokens"]
     terminal = need["terminal_usage"]
-    if need["completed_turn"] and (
-        (terminal is not None and any(current[key] < baseline[key] + terminal[key] for key in current))
-        or (terminal is None and all(current[key] <= baseline[key] for key in current))
-    ):
-        raise UsageUnavailable("completed native turn lacks reconciled token usage")
+    if need["completed_turn"]:
+        advanced = any(current[key] > baseline[key] for key in current)
+        if terminal is None:
+            reconciled = advanced
+        else:
+            # Codex has emitted both request-local deltas and cumulative root
+            # counters in turn.completed across supported resume paths. Accept
+            # either exact monotonic relationship without guessing between
+            # them or weakening the requirement that the rollout advanced.
+            delta_reconciled = all(
+                current[key] >= baseline[key] + terminal[key]
+                for key in current
+            )
+            cumulative_reconciled = (
+                all(
+                    current[key] >= terminal[key] >= baseline[key]
+                    for key in current
+                )
+                and any(terminal[key] > baseline[key] for key in current)
+            )
+            reconciled = advanced and (delta_reconciled or cumulative_reconciled)
+        if not reconciled:
+            raise UsageUnavailable("completed native turn lacks reconciled token usage")
     path.unlink()
 
 

@@ -997,7 +997,9 @@ from each candidate; unrelated bodies are never usage inputs. Selected files
 are streamed to their observed size without an aggregate file-size spending cap;
 ordinary record bounds and identity validation remain.
 Completed root-turn input/output usage is reconciled against the native terminal
-event before a saved proposal or effect can advance; unresolved accounting
+event before a saved proposal or effect can advance. Supported terminal events
+may report request-local deltas or cumulative root counters; both require an
+exact monotonic relationship to the rollout ledger. Unresolved accounting
 survives resume in private host state. Canceled or still-in-flight descendants
 are not presented as completed usage. In-flight requests may overshoot the
 observed cap.

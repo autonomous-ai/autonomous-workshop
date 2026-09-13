@@ -161,6 +161,16 @@ record cannot contribute usage; later top-level token notifications remain the
 only counter source. Other oversized `response_item` payload types and all
 other unsupported oversized record kinds still fail closed.
 
+## Resume terminal-usage reconciliation (2026-09-13)
+
+Supported Codex resume paths have emitted `turn.completed` usage in two forms:
+request-local counters and cumulative root-thread counters. The rollout ledger
+remains the accounting authority. Reconciliation now accepts either exact
+monotonic relationship: observed root usage must advance beyond the saved
+baseline and must cover either the baseline plus the terminal delta or the
+terminal cumulative counters themselves. Missing, stale, regressing or
+otherwise inconsistent terminal usage still blocks the proposal.
+
 
 ## Bound discovery by metadata (2026-09-09)
 
