@@ -323,6 +323,28 @@ def test_large_compaction_partial_append_preserves_completed_usage(tmp_path):
     assert read_thread_usage(path, thread_id=ROOT, workspace=Path("/toy"))["tokens"] == counters(200)
 
 
+def test_large_visual_tool_result_preserves_usage(tmp_path, monkeypatch):
+    import workshop.runtime.codex_usage as module
+
+    monkeypatch.setattr(module, "MAX_LINE_BYTES", 1024)
+    visual = {
+        "type": "response_item",
+        "payload": {
+            "type": "custom_tool_call_output",
+            "output": [
+                {"type": "input_text", "text": "rendered"},
+                {"type": "input_image", "image_url": "data:image/png;base64," + "x" * 4096},
+            ],
+        },
+    }
+    path = write(tmp_path, records() + [usage(100), visual,
+        usage(200, last_token_usage=counters(100))])
+
+    assert read_thread_usage(
+        path, thread_id=ROOT, workspace=Path("/toy"),
+    )["tokens"] == counters(200)
+
+
 def test_large_compaction_late_duplicate_key_is_rejected(tmp_path):
     from workshop.runtime.codex_usage import MAX_LINE_BYTES
 

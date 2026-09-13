@@ -990,7 +990,9 @@ request awaiting its first usage report has no time
 limit and remains explicitly pending. Unavailable, malformed, or regressing
 established accounting fails closed. Oversized native compaction records are
 validated in bounded chunks without retaining their history or recounting
-embedded usage. Ancestry discovery reads only a bounded first metadata record
+embedded usage. Oversized visual `custom_tool_call_output` records receive the
+same bounded framing validation and are discarded; other oversized response
+items remain unsupported. Ancestry discovery reads only a bounded first metadata record
 from each candidate; unrelated bodies are never usage inputs. Selected files
 are streamed to their observed size without an aggregate file-size spending cap;
 ordinary record bounds and identity validation remain.

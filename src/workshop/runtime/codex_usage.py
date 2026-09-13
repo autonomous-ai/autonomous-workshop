@@ -73,9 +73,10 @@ def _records(path):
                     raise UsageUnavailable("native usage file shrank during read")
                 remaining -= len(line)
                 if len(line) > MAX_LINE_BYTES:
-                    # Native compaction can copy a large history into one line.
-                    # Validate its framing without retaining that history or
-                    # counting embedded old notifications as new consumption.
+                    # Native compaction can copy a large history into one line,
+                    # and visual tool results can embed image data. Validate
+                    # their framing without retaining either body or counting
+                    # embedded old notifications as new consumption.
                     try:
                         value, remaining = consume_compacted_record(
                             line, stream, remaining

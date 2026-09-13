@@ -149,6 +149,18 @@ cap enforcement. Private retained telemetry was recovered through the new reader
 without changing its aggregate counters. The failed native attempt is preserved;
 this recovery does not establish product completion or repair quality.
 
+## Large native visual-tool records (2026-09-13)
+
+A blind-review subagent can return several rendered images in one
+`response_item` / `custom_tool_call_output` record. Base64 image data can push
+that otherwise valid record beyond the ordinary 4 MiB line bound and stop a run
+after the creative work has finished. The streaming validator now accepts that
+exact outer and payload type pair, validates the complete JSON with the same
+depth, key, atom, duplicate-key and UTF-8 bounds, and discards the body. The
+record cannot contribute usage; later top-level token notifications remain the
+only counter source. Other oversized `response_item` payload types and all
+other unsupported oversized record kinds still fail closed.
+
 
 ## Bound discovery by metadata (2026-09-09)
 
