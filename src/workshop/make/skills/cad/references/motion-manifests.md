@@ -320,6 +320,25 @@ past a post. Writing it down also records *what the condition is for*: a full
 turn declared at one tooth is honest about being a bulk-clearance sweep with the
 mesh checked separately, and reads as such to whoever comes next.
 
+## What the sampling costs, and the budget that stops it
+
+Every sample is Boolean geometry: a condition costs roughly `steps + 1` times
+the number of pairs it compares — movers against each other and against every
+obstacle — and a `"driven"` mover adds two more passes over the table for its
+contact witnesses. `check_motion` prints that projection before the first sweep,
+so a manifest that has just asked for hundreds of thousands of kernel operations
+says so in the first second rather than four hours in.
+
+Sweeps are bounded so they cannot silently become the whole run.
+`verify_project` gives `check_motion` 900s (`WORKSHOP_MOTION_DEADLINE_SECONDS`,
+`0` to remove the bound), and `--deadline SECONDS` does the same for a direct
+run. A condition that runs out of budget stops where it is and reports
+**inconclusive** with the sample it reached — and unlike other inconclusive
+results, a budget stop fails the gate even under `--allow-inconclusive`, because
+nothing was measured past that point. The fix is to sample what actually needs
+sampling: raise `steps` only around the passes that matter, split a long cycle
+into separate conditions, or raise the budget on purpose.
+
 ## Choosing the direction
 
 A wrong direction reads as a blocked path, so derive the vector from the

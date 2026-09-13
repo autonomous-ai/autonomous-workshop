@@ -86,6 +86,12 @@ DEFAULT_PREVIEW_TOLERANCE = 0.1
 LIKENESS_FLOOR = 0.90
 LIKENESS_STALL_STREAK = 3
 DEFAULT_BED = (220.0, 220.0, 220.0)
+# Wall-clock ceiling handed to check_motion. The host's own CAD-gate timeout is
+# 30 minutes for the entire verification, so a single sweep that wants more than
+# this has already lost the run; stopping it leaves a verdict and a reason
+# instead of a killed process. 0 (or an unparseable value) means no bound.
+DEFAULT_MOTION_DEADLINE_SECONDS = 900.0
+MOTION_DEADLINE_ENV = "WORKSHOP_MOTION_DEADLINE_SECONDS"
 BED_DECLARATION = re.compile(
     r"--bed\s+(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)"
 )
@@ -187,6 +193,20 @@ SIGNATURE_REVIEW_FIELDS = {
     "resolution",
 }
 SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _motion_deadline_seconds() -> float:
+    """Seconds to allow check_motion, from the environment or the default."""
+    raw = os.environ.get(MOTION_DEADLINE_ENV)
+    if raw is None or not raw.strip():
+        return DEFAULT_MOTION_DEADLINE_SECONDS
+    try:
+        seconds = float(raw)
+    except ValueError:
+        print(f"verify_project: ignoring unparseable {MOTION_DEADLINE_ENV}={raw!r}; "
+              f"using {DEFAULT_MOTION_DEADLINE_SECONDS:g}s", file=sys.stderr)
+        return DEFAULT_MOTION_DEADLINE_SECONDS
+    return seconds if seconds > 0 else 0.0
 
 
 def _path_arg(path: Path, cwd: Path) -> str:
@@ -1257,6 +1277,13 @@ def _final(
         if not motion_manifest.is_file():
             print(f"verify_project: motion manifest not found: {motion_manifest}", file=sys.stderr)
             return 2
+        # A motion sweep is the one gate here whose cost is set by the manifest
+        # rather than by the model: steps x pairs of Boolean operations, which a
+        # generous manifest can stretch into hours. Bound it by default, so a
+        # too-expensive sweep reports "never finished" in minutes instead of
+        # leaving the whole verification with no verdict. It fails closed --
+        # an unfinished sweep is never read as clear.
+        motion_deadline = _motion_deadline_seconds()
         if not _run_or_stop(
             runner,
             [
@@ -1265,6 +1292,7 @@ def _final(
                 _path_arg(project, runner.cwd),
                 "--manifest",
                 _path_arg(motion_manifest, runner.cwd),
+                *(["--deadline", f"{motion_deadline:g}"] if motion_deadline else []),
             ],
         ):
             return 1

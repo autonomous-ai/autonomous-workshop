@@ -59,6 +59,10 @@ NATIVE_CAD_NON_PRINT_READY_TIER = "digitally-verified-not-print-ready"
 NATIVE_CAD_GATE_NOZZLE_MM = "0.4"
 NATIVE_CAD_GATE_OVERHANG_ANGLE_DEG = "45"
 DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS = 1_800.0
+# Grace for the stdout/stderr readers to see EOF after the verifier is reaped.
+# They only end when every holder of the write end is gone, so an unbounded
+# join here would outlive the timeout it is supposed to enforce.
+STREAM_DRAIN_GRACE_SECONDS = 30.0
 MAX_NATIVE_CAD_OUTPUT_BYTES = 1024 * 1024
 DEFAULT_NATIVE_CAD_OUTPUT_BYTES = MAX_NATIVE_CAD_OUTPUT_BYTES
 MAX_NATIVE_CAD_VERIFIER_BYTES = 4 * 1024 * 1024
@@ -751,6 +755,14 @@ class _Capture:
         )
 
 
+def _join_drains(threads: Sequence[threading.Thread]) -> bool:
+    """Join the output readers within the grace period; True when they ended."""
+
+    for thread in threads:
+        thread.join(STREAM_DRAIN_GRACE_SECONDS)
+    return not any(thread.is_alive() for thread in threads)
+
+
 def run_bounded_verifier(
     command: Sequence[str],
     *,
@@ -801,11 +813,19 @@ def run_bounded_verifier(
         except (AttributeError, OSError):
             process.kill()
         process.wait()
-        for thread in threads:
-            thread.join()
+        _join_drains(threads)
         raise
-    for thread in threads:
-        thread.join()
+    if not _join_drains(threads):
+        # The verifier is reaped, but something still holds the write end of a
+        # pipe: a stray grandchild that escaped the process group. Joining it
+        # without a bound is an unbounded hang inside the one place that is
+        # supposed to bound the verifier, and the captured bytes cannot be
+        # trusted to be complete either. Fail loudly instead of waiting.
+        raise ArtifactError(
+            "CAD verifier output pipes are still open %.0fs after the process "
+            "exited; a stray child escaped the verifier process group"
+            % STREAM_DRAIN_GRACE_SECONDS
+        )
     duration_ms = max(0, int(round((time.monotonic() - started) * 1000)))
     return VerifierProcessResult(
         returncode=returncode,

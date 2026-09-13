@@ -8,6 +8,37 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Fixed
 
+- A motion sweep can no longer become the whole run. Its cost is set by the
+  manifest, not the model -- `steps` x pairs of Boolean operations -- and
+  nothing bounded it, so an over-declared manifest could spend hours and leave
+  no verdict at all. `check_motion` now projects the sampled operations a
+  manifest asks for before the first sweep and accepts `--deadline SECONDS`
+  (`WORKSHOP_MOTION_DEADLINE_SECONDS`); `verify_project` passes a 900s default,
+  well inside the host's own 30-minute CAD-gate timeout. A condition that runs
+  out of budget stops at the sample it reached and is reported `inconclusive`
+  with `deadlineStopped`, which fails the run *even under*
+  `--allow-inconclusive` -- a cut-off sweep measured nothing past that point and
+  is not a clear path. `motion_presentation.py` takes the same `--deadline`
+  across its posing and rendering halves. Direct runs stay unbounded by
+  default; geometry, thresholds and verdicts are unchanged.
+- The host CAD gate can no longer hang after it has already given up. Its
+  stdout/stderr reader threads were joined without a bound, so a stray
+  grandchild that escaped the verifier's process group -- and therefore
+  survived the timeout kill -- held the pipes open and blocked the gate
+  forever, inside the one place whose job is to bound the verifier. The joins
+  now have a 30s grace and raise instead of waiting.
+- A long motion run now counts itself down instead of going silent. A
+  `check_motion` sweep or a `motion_presentation.py` render is minutes to hours
+  of Boolean geometry and tessellation, and printed nothing until it was
+  finished: a run five hours in was indistinguishable from a hang, to an
+  operator and to the agent waiting on it. Both tools now report on stderr
+  which assembly they are building, which condition is running, and
+  `k/N, elapsed, ~left` through each sweep, drive-evidence target, posed sample
+  and rendered frame. Lines are throttled to one per 10s
+  (`WORKSHOP_PROGRESS_INTERVAL`) and `WORKSHOP_PROGRESS=0` silences them;
+  `verify_project` already leaves child stderr unpiped, so the counts stream
+  through the full gate. stdout, geometry, hashes, verdicts and exit statuses
+  are unchanged.
 - Two STEP-only leftovers no longer ask a run for a mesh. The published
   CAD project contract (`make/schemas/cad-project.schema.json`) required
   `stl_path` on every part under `additionalProperties: false`, mandating

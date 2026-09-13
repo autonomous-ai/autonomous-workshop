@@ -1,18 +1,53 @@
 """Construct review states with the exact rigid poses used by check_motion."""
 from __future__ import annotations
 
+import contextlib
 import functools
 import io
 import math
 import runpy
 import struct
+import sys
+from contextvars import ContextVar
 from pathlib import Path
 
 import numpy as np
 
 SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+import progresslib  # noqa: E402  (needs SCRIPTS on sys.path)
+
 TOLERANCE = 0.08
 MAX_STATES = 48
+
+# One wall-clock bound for the states and frames of a single presentation.
+# Posing tessellates every leaf of the assembly per sample and rendering
+# rasterizes every triangle per frame, so a heavy assembly can spend an hour
+# here with nothing on disk to show for it.
+_DEADLINE = ContextVar("motion_states_deadline", default=None)
+
+
+@contextlib.contextmanager
+def deadline_scope(seconds):
+    """Bound the posing and rendering under this block to `seconds`."""
+    token = _DEADLINE.set(progresslib.Deadline(seconds) if seconds else None)
+    try:
+        yield
+    finally:
+        _DEADLINE.reset(token)
+
+
+def check_deadline(done, total, what):
+    """Stop between samples once the budget is spent, saying where it got to."""
+    deadline = _DEADLINE.get()
+    if deadline is None or not deadline.expired():
+        return
+    raise ValueError(
+        f"motion presentation stopped at its {deadline.seconds:g}s "
+        f"budget after {done}/{total} {what}; nothing was written. Lower --frames, "
+        "simplify the assembly, or raise --deadline")
 
 
 @functools.lru_cache(maxsize=1)
@@ -150,6 +185,8 @@ def posed_occurrences(shape, condition, indices):
             transforms.append((key, check["_pose_table"](spec, steps, f"movers[{index}]")))
     except check["ManifestError"] as exc:
         raise ValueError(str(exc)) from exc
+    reporter = progresslib.Progress(
+        f"posing {condition.get('id', 'motion')}", len(indices))
     for sample in indices:
         occurrences = []
         for index, (key, leaf, colour) in enumerate(parts["__leaf_nodes__"]):
@@ -170,6 +207,8 @@ def posed_occurrences(shape, condition, indices):
             occurrences.append((points, faces, rgb))
         if not occurrences:
             raise ValueError("motion assembly has no drawable leaves")
+        reporter.advance()
+        check_deadline(reporter.count, len(indices), "posed sample(s)")
         yield sample, occurrences
 
 
@@ -213,9 +252,13 @@ def animation_bytes(states, settings):
     validate_render(settings)
     _, renderer = helpers()
     framing = np.concatenate([p for _, occurrences in states for p, _, _ in occurrences])
-    frames = [renderer["render"](occurrences, settings["azimuth"], settings["elevation"],
-                                 settings["size"], .07, framing=framing)
-              for _, occurrences in states]
+    reporter = progresslib.Progress("rendering frames", len(states))
+    frames = []
+    for _, occurrences in states:
+        frames.append(renderer["render"](occurrences, settings["azimuth"], settings["elevation"],
+                                         settings["size"], .07, framing=framing))
+        reporter.advance()
+        check_deadline(reporter.count, len(states), "rendered frame(s)")
     stream = io.BytesIO()
     frames[0].save(stream, format="GIF", save_all=True, append_images=frames[1:], duration=120, loop=0, disposal=2)
     return stream.getvalue()
@@ -243,7 +286,8 @@ def construct(project, manifest, selections):
     if not entry.resolve().is_relative_to(project.resolve()):
         raise ValueError("motion assembly entry must resolve inside the project")
     try:
-        shape = check["build_assembly"](entry)
+        with progresslib.phase(f"building {Path(relative).name}"):
+            shape = check["build_assembly"](entry)
     except Exception as exc:
         raise ValueError(f"cannot build motion assembly: {type(exc).__name__}: {exc}") from exc
     states = []

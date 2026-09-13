@@ -33,6 +33,14 @@ and the complete presentation is bounded to 48 states. This renderer supports
 motion tables of up to 10,000 steps. The existing collision gate still checks
 the full declared cycle, not just the presented indices.
 
+Posing tessellates every leaf of the assembly once per sample and rendering
+rasterizes every triangle once per frame, so the job scales with the assembly,
+not just with `--frames`, and it writes nothing until both halves finish. Both
+count themselves down on stderr. `--deadline SECONDS`
+(or `WORKSHOP_MOTION_DEADLINE_SECONDS`) stops a presentation that cannot
+finish, naming the sample or frame it reached, instead of computing for hours
+with nothing to show; there is no bound unless you set one.
+
 Named moving groups carry their descendants, preserving all ancestor
 placements. Repeated labels need an unambiguous dotted path. Overlapping mover
 selections, such as both a group and its child, are rejected because they

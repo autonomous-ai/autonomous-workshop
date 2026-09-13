@@ -60,6 +60,7 @@ import importlib.util
 import io
 import json
 import math
+import os
 import sys
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -73,11 +74,15 @@ for _runtime_path in (SCRIPTS_DIR, PACKAGES_DIR, CADPY_SRC_DIR):
     if _runtime_path.is_dir() and _text not in sys.path:
         sys.path.insert(0, _text)
 
+import progresslib  # noqa: E402  (needs SCRIPTS_DIR on sys.path)
+
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
 GEN_FUNC = "gen_" + "step"
 
 DEFAULT_STEPS = 12
+DEADLINE_FLAG = "--deadline"
+DEADLINE_ENV = "WORKSHOP_MOTION_DEADLINE_SECONDS"
 DEFAULT_OVERLAP_TOL = 1e-3  # mm3; contact is not collision
 # Agreement between Common and A + B - Fuse, independent of a manifest's threshold.
 # The kernel integrates volume to a relative precision, not to an absolute cubic
@@ -99,6 +104,66 @@ def consistency_tolerance(*volumes: float) -> float:
 
 class ManifestError(Exception):
     """The manifest asks for something this gate cannot answer."""
+
+
+class DeadlineReached(ManifestError):
+    """The host's wall-clock budget ran out while this condition was sweeping.
+
+    Inconclusive, like any condition that did not run -- but never quietly
+    allowed. A sweep that was cut off measured nothing, and --allow-inconclusive
+    is for the genuinely unmeasurable, not for a gate that was too slow to
+    finish. main() fails on a deadline stop either way.
+    """
+
+
+_DEADLINE: ContextVar = ContextVar("check_motion_deadline", default=None)
+
+
+@contextmanager
+def deadline_scope(seconds: float | None):
+    """Bound every sweep under this block to `seconds` of wall clock.
+
+    One clock for the whole block: nested sweeps share the budget rather than
+    each starting a fresh one.
+    """
+    token = _DEADLINE.set(progresslib.Deadline(seconds) if seconds else None)
+    try:
+        yield
+    finally:
+        _DEADLINE.reset(token)
+
+
+def resolve_deadline(flag: float | None, environment: str | None) -> float | None:
+    """The wall-clock budget for this run: the flag, else the environment."""
+    for value, label in ((flag, DEADLINE_FLAG), (environment, DEADLINE_ENV)):
+        if value is None or (isinstance(value, str) and not value.strip()):
+            continue
+        try:
+            seconds = float(value)
+        except (TypeError, ValueError):
+            raise ValueError(f"{label} must be a number of seconds") from None
+        if not math.isfinite(seconds) or seconds < 0:
+            raise ValueError(f"{label} must be a nonnegative number of seconds")
+        # 0 is an explicit opt-out, so a caller can hand the environment
+        # through without having to decide whether to pass the flag at all.
+        return seconds or None
+    return None
+
+
+def check_deadline(done: int, total: int, what: str) -> None:
+    """Stop a sweep that has run past the host's budget, saying where it got to.
+
+    Called between samples, never inside one: a Boolean operation that is
+    itself slower than the budget still finishes, and the next call reports it.
+    """
+    deadline = _DEADLINE.get()
+    if deadline is None or not deadline.expired():
+        return
+    raise DeadlineReached(
+        f"stopped at the {DEADLINE_FLAG} budget after {done}/{total} {what}; "
+        "nothing was measured past that point. Raise the budget, lower steps, "
+        "or split the manifest -- do not read this as clear."
+    )
 
 
 # --- loading the assembly -------------------------------------------------
@@ -452,11 +517,13 @@ def sweep(moving, obstacles, place, steps: int, tol: float, allow_seated: bool) 
     not the path -- that is what `interfere` is for.
     """
     first = 1 if allow_seated else 0
+    reporter = progresslib.Progress("sweep", steps + 1 - first)
     for step in range(first, steps + 1):
         moved = place(moving, step / steps)
         for name, obstacle in obstacles:
             volume = overlap_volume(moved, obstacle)
             if volume > tol:
+                reporter.finish(f"- collision at step {step}")
                 return {
                     "clear": False,
                     "step": step,
@@ -464,6 +531,8 @@ def sweep(moving, obstacles, place, steps: int, tol: float, allow_seated: bool) 
                     "obstacle": name,
                     "overlapMm3": round(volume, 6),
                 }
+        reporter.advance()
+        check_deadline(step + 1 - first, steps + 1 - first, "sampled pose(s)")
     return {"clear": True, "steps": steps, "skippedSeatedStep": allow_seated}
 
 
@@ -748,13 +817,16 @@ def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
             placements[key] = place(shape, step)
         return placements[key]
 
+    reporter = progresslib.Progress("drive evidence", len(targets))
     for target, target_shape, target_place, _ in targets:
+        reporter.item(f"{target} against {len(placed) - 1} part(s) over {steps + 1 - first_step} sample(s)")
         frozen = posed(target, target_shape, target_place, 0)
         for parent, parent_shape, parent_place, _ in placed:
             if parent == target:
                 continue
             frozen_hit = None
             for step in range(first_step, steps + 1):
+                check_deadline(reporter.count - 1, len(targets), "drive target(s)")
                 volume = overlap_volume(posed(parent, parent_shape, parent_place, step), frozen)
                 if volume > overlap_tol:
                     frozen_hit = {"step": step, "overlapMm3": volume}
@@ -765,6 +837,7 @@ def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
             if pair not in nominal:
                 nominal[pair] = None
                 for step in range(first_step, steps + 1):
+                    check_deadline(reporter.count - 1, len(targets), "drive target(s)")
                     distance = float(surface_distance(
                         posed(parent, parent_shape, parent_place, step),
                         posed(target, target_shape, target_place, step),
@@ -780,6 +853,7 @@ def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
                 edges.append({"from": parent, "to": target,
                               "frozenWitness": frozen_hit,
                               "nominalWitness": nominal[pair]})
+    reporter.finish(f"- {len(edges)} contact edge(s)")
     reached = set(roots)
     while True:
         extra = {edge["to"] for edge in edges if edge["from"] in reached} - reached
@@ -857,24 +931,30 @@ def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
 
     def sweep_cycle():
         """First collision in the declared nominal poses, or None."""
-        for step in range(1 if allow_seated else 0, steps + 1):
+        first = 1 if allow_seated else 0
+        reporter = progresslib.Progress("coupled sweep", steps + 1 - first)
+        for step in range(first, steps + 1):
             posed = [
                 (name, place(shape, step))
                 for name, shape, place, driven in placed
             ]
-            for first in range(len(posed)):
-                for second in range(first + 1, len(posed)):
-                    volume = overlap_volume(posed[first][1], posed[second][1])
+            for pair in range(len(posed)):
+                for second in range(pair + 1, len(posed)):
+                    volume = overlap_volume(posed[pair][1], posed[second][1])
                     if volume > tol:
+                        reporter.finish(f"- collision at step {step}")
                         return {"step": step, "steps": steps,
-                                "between": [posed[first][0], posed[second][0]],
+                                "between": [posed[pair][0], posed[second][0]],
                                 "overlapMm3": round(volume, 6)}
                 for obstacle_name, obstacle in obstacles:
-                    volume = overlap_volume(posed[first][1], obstacle)
+                    volume = overlap_volume(posed[pair][1], obstacle)
                     if volume > tol:
+                        reporter.finish(f"- collision at step {step}")
                         return {"step": step, "steps": steps,
-                                "between": [posed[first][0], obstacle_name],
+                                "between": [posed[pair][0], obstacle_name],
                                 "overlapMm3": round(volume, 6)}
+            reporter.advance()
+            check_deadline(step + 1 - first, steps + 1 - first, "coupled pose(s)")
         return None
 
     step_mm = 0.0
@@ -923,12 +1003,54 @@ CHECKS = {
 }
 
 
+def estimate_samples(conditions: list) -> int:
+    """Upper bound on the Boolean/distance samples this manifest asks for.
+
+    From the declarations alone -- no geometry, no part resolution -- so it
+    costs nothing and can be printed before the first sweep. It is a ceiling:
+    a sweep stops at its first collision, and drive evidence stops at its first
+    witness. A manifest that is about to ask for hours of kernel time says so
+    up front instead of discovering it four hours in.
+    """
+    total = 0
+    for condition in conditions:
+        if not isinstance(condition, dict):
+            continue
+        inputs = condition.get("inputs") or {}
+        if not isinstance(inputs, dict):
+            continue
+        check = condition.get("check")
+        if check == "assembly_sequence":
+            steps = inputs.get("steps")
+            total += estimate_samples(steps if isinstance(steps, list) else [])
+            continue
+        steps = inputs.get("steps", DEFAULT_STEPS)
+        if not isinstance(steps, int) or isinstance(steps, bool) or steps < 1:
+            continue
+        samples = steps + 1
+        obstacles = inputs.get("obstacle_parts")
+        obstacles = len(obstacles) if isinstance(obstacles, list) else 1
+        movers = inputs.get("movers")
+        movers = len(movers) if isinstance(movers, list) else 0
+        if check == "coupled_motion_collision":
+            pairs = movers * (movers - 1) // 2 + movers * obstacles
+            total += samples * max(1, pairs)
+            driven = sum(1 for spec in (inputs.get("movers") or [])
+                         if isinstance(spec, dict) and spec.get("driven"))
+            # Frozen-pose and nominal-contact witnesses, each over the table.
+            total += 2 * driven * max(0, movers - 1) * samples
+        else:
+            total += samples * max(1, obstacles)
+    return total
+
+
 def run_condition(condition: dict, parts: dict, index: int) -> dict:
     # One condition samples an immutable assembly with non-destructive Boolean
     # operations. Nested assembly-sequence conditions share this cache; it is
     # discarded when the outer condition returns or raises.
     threshold = (condition.get("thresholds") or {}).get("maxOverlapMm3", DEFAULT_OVERLAP_TOL)
-    with validation_scope(), decision_scope(threshold):
+    ident = condition.get("id", f"condition_{index}")
+    with validation_scope(), decision_scope(threshold), progresslib.scope(ident):
         return _run_condition(condition, parts, index)
 
 
@@ -960,6 +1082,8 @@ def _run_condition(condition: dict, parts: dict, index: int) -> dict:
         record["stepResults"] = results
         failed = [r["id"] for r in results if r["status"] == "fail"]
         unclear = [r["id"] for r in results if r["status"] == "inconclusive"]
+        if any(r.get("deadlineStopped") for r in results):
+            record["deadlineStopped"] = True
         if failed:
             record.update(status="fail",
                           detail=f"order breaks at {failed[0]} ({len(failed)} failing step(s))")
@@ -977,6 +1101,11 @@ def _run_condition(condition: dict, parts: dict, index: int) -> dict:
 
     try:
         outcome = handler(inputs, thresholds, parts)
+    except DeadlineReached as error:
+        # Not "unmeasurable": unmeasured. Flagged so --allow-inconclusive
+        # cannot turn a budget stop into a passing gate.
+        record.update(status="inconclusive", detail=str(error), deadlineStopped=True)
+        return record
     except ManifestError as error:
         record.update(status="inconclusive", detail=str(error))
         return record
@@ -1528,6 +1657,11 @@ def main() -> int:
                         help="print the labelled parts and exit")
     parser.add_argument("--allow-inconclusive", action="store_true",
                         help="do not fail on conditions that could not run")
+    parser.add_argument("--deadline", type=float, default=None, metavar="SECONDS",
+                        help="stop sweeping after this much wall clock and report the "
+                             "unfinished conditions as inconclusive instead of running "
+                             f"on unbounded (default: ${DEADLINE_ENV}, else no bound). "
+                             "A budget stop always fails, even with --allow-inconclusive")
     parser.add_argument("--json", action="store_true", help="emit results as JSON")
     parser.add_argument("--self-check", action="store_true",
                         help="run the coupled-motion and retention fixtures, and exit")
@@ -1542,6 +1676,12 @@ def main() -> int:
     if not args.project or not args.manifest:
         parser.error("project and --manifest are required unless --self-check is used")
 
+    try:
+        budget = resolve_deadline(args.deadline, os.environ.get(DEADLINE_ENV))
+    except ValueError as error:
+        print(f"check_motion: {error}", file=sys.stderr)
+        return 2
+
     project = Path(args.project).resolve()
     if not project.is_dir():
         print(f"check_motion: {project} is not a directory", file=sys.stderr)
@@ -1550,7 +1690,8 @@ def main() -> int:
     try:
         manifest = load_manifest(args.manifest)
         entry = find_assembly_entry(project, manifest.get("assembly"))
-        parts = index_parts(build_assembly(entry))
+        with progresslib.phase(f"check_motion: building {entry.name}"):
+            parts = index_parts(build_assembly(entry))
     except ManifestError as error:
         print(f"check_motion: {error}", file=sys.stderr)
         return 2
@@ -1567,22 +1708,44 @@ def main() -> int:
         print("check_motion: manifest has no conditions", file=sys.stderr)
         return 2
 
-    results = [run_condition(condition, parts, index)
-               for index, condition in enumerate(conditions)]
-    retention_result = check_retention_closure(manifest, parts, results)
+    projected = estimate_samples(conditions)
+    if projected:
+        progresslib.write(f"check_motion: {len(conditions)} condition(s), up to "
+                          f"~{projected:,} sampled Boolean/distance operations "
+                          "before any stops early")
+    if budget is not None:
+        progresslib.write(f"check_motion: wall-clock budget {budget:g}s for "
+                          f"{len(conditions)} condition(s); an unfinished sweep is "
+                          "reported inconclusive, never clear")
+    sweeps = progresslib.Progress("check_motion condition", len(conditions))
+    results = []
+    # One clock for the whole run: the conditions and the retention closure
+    # share the budget, so an exhausted budget fails the closure immediately
+    # instead of sweeping for hours after the conditions already gave up.
+    with deadline_scope(budget):
+        for index, condition in enumerate(conditions):
+            named = condition if isinstance(condition, dict) else {}
+            sweeps.item(f"{named.get('id', f'condition_{index}')} [{named.get('check')}]")
+            results.append(run_condition(condition, parts, index))
+        sweeps.finish()
+        with progresslib.phase("check_motion: retention closure"):
+            retention_result = check_retention_closure(manifest, parts, results)
     if retention_result is not None:
         results.append(retention_result)
     failed = [r for r in results if r["status"] == "fail"]
     unclear = [r for r in results if r["status"] == "inconclusive"]
+    stopped = [r for r in results if r.get("deadlineStopped")]
 
     if args.json:
+        ok = not failed and not stopped and (args.allow_inconclusive or not unclear)
         print(json.dumps({
-            "ok": not failed and (args.allow_inconclusive or not unclear),
+            "ok": ok,
             "project": str(project),
             "assembly": entry.name,
+            "deadlineSeconds": budget,
             "results": results,
         }, indent=2))
-        return 0 if not failed and (args.allow_inconclusive or not unclear) else 1
+        return 0 if ok else 1
 
     labelled = len(part_names(parts))
     print(f"{entry.name}: {labelled} labelled parts, {len(results)} condition(s)\n")
@@ -1597,6 +1760,14 @@ def main() -> int:
 
     if failed:
         print(f"\ncheck_motion: {len(failed)} condition(s) failed", file=sys.stderr)
+        return 1
+    if stopped:
+        # A cut-off sweep measured nothing past its stopping point, so it is
+        # not clear and --allow-inconclusive does not cover it.
+        print(f"\ncheck_motion: {len(stopped)} condition(s) hit the "
+              f"{budget:g}s budget and never finished "
+              f"({len(results) - len(stopped) - len(failed)} complete)",
+              file=sys.stderr)
         return 1
     if unclear:
         # An inconclusive condition is a manifest that did not run, not a path
