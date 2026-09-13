@@ -94,6 +94,15 @@ docs show recommended workflows, not every flag.
 
 **Streams.** stdout carries the result; stderr carries progress, timing, and failures, and the two never interleave. Every tool answers on stdout — `gen` prints `<outcome> <package path>` per target — so `2>/dev/null` leaves a parseable result and `>/dev/null` a readable log. JSON on stdout is always compact; pipe through `jq .` to read it. For machine-readable output: `gen` and `export` take `--json`; `inspect` already emits JSON and takes `--format text` for prose. `--verbose` adds stage timing (and full tracebacks) on stderr. Output volume does not grow with model size — a 600-occurrence assembly logs the same dozen lines a single part does.
 
+**Long motion runs count themselves down.** `check_motion` and
+`motion_presentation.py` spend minutes to hours in Boolean geometry and
+tessellation, so they report on stderr which assembly they are building, which
+condition is running, and `k/N, elapsed, ~left` through every sweep, pose and
+rendered frame. A silent one is hung; a counting one is working, and the
+estimate says whether to wait. Lines are throttled to one per 10s
+(`WORKSHOP_PROGRESS_INTERVAL`), and `WORKSHOP_PROGRESS=0` silences them. stdout
+and exit statuses are unchanged.
+
 **Failures** print the exception and the frames *in your own generator*, not the runtime's:
 
 ```text

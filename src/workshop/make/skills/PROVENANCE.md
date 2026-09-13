@@ -302,6 +302,15 @@
   connected unions, cavity shells, independently retained members, placed
   assemblies, seated-contact policy and measurement failures. This is sampled
   directional evidence, not a physical joint or load-bearing certification.
+- Adapted locally on 2026-09-13 so the long motion tools count themselves down
+  on stderr. `check_motion` names the assembly it is building, each condition
+  as it starts, and reports `k/N, elapsed, ~left` through every sweep and
+  through drive-evidence sampling; `motion_states.py` does the same per posed
+  sample and per rendered animation frame. A multi-hour sweep was previously
+  indistinguishable from a hang. Progress is stderr only, throttled
+  (`WORKSHOP_PROGRESS_INTERVAL`, default 10s) and disabled by
+  `WORKSHOP_PROGRESS=0`; stdout, geometry, hashes, verdicts and exit statuses
+  are unchanged.
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do

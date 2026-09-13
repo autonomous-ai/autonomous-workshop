@@ -8,6 +8,18 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Fixed
 
+- A long motion run now counts itself down instead of going silent. A
+  `check_motion` sweep or a `motion_presentation.py` render is minutes to hours
+  of Boolean geometry and tessellation, and printed nothing until it was
+  finished: a run five hours in was indistinguishable from a hang, to an
+  operator and to the agent waiting on it. Both tools now report on stderr
+  which assembly they are building, which condition is running, and
+  `k/N, elapsed, ~left` through each sweep, drive-evidence target, posed sample
+  and rendered frame. Lines are throttled to one per 10s
+  (`WORKSHOP_PROGRESS_INTERVAL`) and `WORKSHOP_PROGRESS=0` silences them;
+  `verify_project` already leaves child stderr unpiped, so the counts stream
+  through the full gate. stdout, geometry, hashes, verdicts and exit statuses
+  are unchanged.
 - Two STEP-only leftovers no longer ask a run for a mesh. The published
   CAD project contract (`make/schemas/cad-project.schema.json`) required
   `stl_path` on every part under `additionalProperties: false`, mandating

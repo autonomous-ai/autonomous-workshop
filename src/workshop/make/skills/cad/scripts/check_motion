@@ -73,6 +73,8 @@ for _runtime_path in (SCRIPTS_DIR, PACKAGES_DIR, CADPY_SRC_DIR):
     if _runtime_path.is_dir() and _text not in sys.path:
         sys.path.insert(0, _text)
 
+import progresslib  # noqa: E402  (needs SCRIPTS_DIR on sys.path)
+
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
 GEN_FUNC = "gen_" + "step"
@@ -452,11 +454,13 @@ def sweep(moving, obstacles, place, steps: int, tol: float, allow_seated: bool) 
     not the path -- that is what `interfere` is for.
     """
     first = 1 if allow_seated else 0
+    reporter = progresslib.Progress("sweep", steps + 1 - first)
     for step in range(first, steps + 1):
         moved = place(moving, step / steps)
         for name, obstacle in obstacles:
             volume = overlap_volume(moved, obstacle)
             if volume > tol:
+                reporter.finish(f"- collision at step {step}")
                 return {
                     "clear": False,
                     "step": step,
@@ -464,6 +468,7 @@ def sweep(moving, obstacles, place, steps: int, tol: float, allow_seated: bool) 
                     "obstacle": name,
                     "overlapMm3": round(volume, 6),
                 }
+        reporter.advance()
     return {"clear": True, "steps": steps, "skippedSeatedStep": allow_seated}
 
 
@@ -748,7 +753,9 @@ def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
             placements[key] = place(shape, step)
         return placements[key]
 
+    reporter = progresslib.Progress("drive evidence", len(targets))
     for target, target_shape, target_place, _ in targets:
+        reporter.item(f"{target} against {len(placed) - 1} part(s) over {steps + 1 - first_step} sample(s)")
         frozen = posed(target, target_shape, target_place, 0)
         for parent, parent_shape, parent_place, _ in placed:
             if parent == target:
@@ -780,6 +787,7 @@ def sampled_drive_evidence(placed, steps, overlap_tol, allow_seated):
                 edges.append({"from": parent, "to": target,
                               "frozenWitness": frozen_hit,
                               "nominalWitness": nominal[pair]})
+    reporter.finish(f"- {len(edges)} contact edge(s)")
     reached = set(roots)
     while True:
         extra = {edge["to"] for edge in edges if edge["from"] in reached} - reached
@@ -857,24 +865,29 @@ def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
 
     def sweep_cycle():
         """First collision in the declared nominal poses, or None."""
-        for step in range(1 if allow_seated else 0, steps + 1):
+        first = 1 if allow_seated else 0
+        reporter = progresslib.Progress("coupled sweep", steps + 1 - first)
+        for step in range(first, steps + 1):
             posed = [
                 (name, place(shape, step))
                 for name, shape, place, driven in placed
             ]
-            for first in range(len(posed)):
-                for second in range(first + 1, len(posed)):
-                    volume = overlap_volume(posed[first][1], posed[second][1])
+            for pair in range(len(posed)):
+                for second in range(pair + 1, len(posed)):
+                    volume = overlap_volume(posed[pair][1], posed[second][1])
                     if volume > tol:
+                        reporter.finish(f"- collision at step {step}")
                         return {"step": step, "steps": steps,
-                                "between": [posed[first][0], posed[second][0]],
+                                "between": [posed[pair][0], posed[second][0]],
                                 "overlapMm3": round(volume, 6)}
                 for obstacle_name, obstacle in obstacles:
-                    volume = overlap_volume(posed[first][1], obstacle)
+                    volume = overlap_volume(posed[pair][1], obstacle)
                     if volume > tol:
+                        reporter.finish(f"- collision at step {step}")
                         return {"step": step, "steps": steps,
-                                "between": [posed[first][0], obstacle_name],
+                                "between": [posed[pair][0], obstacle_name],
                                 "overlapMm3": round(volume, 6)}
+            reporter.advance()
         return None
 
     step_mm = 0.0
@@ -928,7 +941,8 @@ def run_condition(condition: dict, parts: dict, index: int) -> dict:
     # operations. Nested assembly-sequence conditions share this cache; it is
     # discarded when the outer condition returns or raises.
     threshold = (condition.get("thresholds") or {}).get("maxOverlapMm3", DEFAULT_OVERLAP_TOL)
-    with validation_scope(), decision_scope(threshold):
+    ident = condition.get("id", f"condition_{index}")
+    with validation_scope(), decision_scope(threshold), progresslib.scope(ident):
         return _run_condition(condition, parts, index)
 
 
@@ -1550,7 +1564,8 @@ def main() -> int:
     try:
         manifest = load_manifest(args.manifest)
         entry = find_assembly_entry(project, manifest.get("assembly"))
-        parts = index_parts(build_assembly(entry))
+        with progresslib.phase(f"check_motion: building {entry.name}"):
+            parts = index_parts(build_assembly(entry))
     except ManifestError as error:
         print(f"check_motion: {error}", file=sys.stderr)
         return 2
@@ -1567,9 +1582,15 @@ def main() -> int:
         print("check_motion: manifest has no conditions", file=sys.stderr)
         return 2
 
-    results = [run_condition(condition, parts, index)
-               for index, condition in enumerate(conditions)]
-    retention_result = check_retention_closure(manifest, parts, results)
+    sweeps = progresslib.Progress("check_motion condition", len(conditions))
+    results = []
+    for index, condition in enumerate(conditions):
+        named = condition if isinstance(condition, dict) else {}
+        sweeps.item(f"{named.get('id', f'condition_{index}')} [{named.get('check')}]")
+        results.append(run_condition(condition, parts, index))
+    sweeps.finish()
+    with progresslib.phase("check_motion: retention closure"):
+        retention_result = check_retention_closure(manifest, parts, results)
     if retention_result is not None:
         results.append(retention_result)
     failed = [r for r in results if r["status"] == "fail"]

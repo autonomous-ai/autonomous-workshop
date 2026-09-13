@@ -6,11 +6,17 @@ import io
 import math
 import runpy
 import struct
+import sys
 from pathlib import Path
 
 import numpy as np
 
 SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+import progresslib  # noqa: E402  (needs SCRIPTS on sys.path)
+
 TOLERANCE = 0.08
 MAX_STATES = 48
 
@@ -150,6 +156,8 @@ def posed_occurrences(shape, condition, indices):
             transforms.append((key, check["_pose_table"](spec, steps, f"movers[{index}]")))
     except check["ManifestError"] as exc:
         raise ValueError(str(exc)) from exc
+    reporter = progresslib.Progress(
+        f"posing {condition.get('id', 'motion')}", len(indices))
     for sample in indices:
         occurrences = []
         for index, (key, leaf, colour) in enumerate(parts["__leaf_nodes__"]):
@@ -170,6 +178,7 @@ def posed_occurrences(shape, condition, indices):
             occurrences.append((points, faces, rgb))
         if not occurrences:
             raise ValueError("motion assembly has no drawable leaves")
+        reporter.advance()
         yield sample, occurrences
 
 
@@ -213,9 +222,12 @@ def animation_bytes(states, settings):
     validate_render(settings)
     _, renderer = helpers()
     framing = np.concatenate([p for _, occurrences in states for p, _, _ in occurrences])
-    frames = [renderer["render"](occurrences, settings["azimuth"], settings["elevation"],
-                                 settings["size"], .07, framing=framing)
-              for _, occurrences in states]
+    reporter = progresslib.Progress("rendering frames", len(states))
+    frames = []
+    for _, occurrences in states:
+        frames.append(renderer["render"](occurrences, settings["azimuth"], settings["elevation"],
+                                         settings["size"], .07, framing=framing))
+        reporter.advance()
     stream = io.BytesIO()
     frames[0].save(stream, format="GIF", save_all=True, append_images=frames[1:], duration=120, loop=0, disposal=2)
     return stream.getvalue()
@@ -243,7 +255,8 @@ def construct(project, manifest, selections):
     if not entry.resolve().is_relative_to(project.resolve()):
         raise ValueError("motion assembly entry must resolve inside the project")
     try:
-        shape = check["build_assembly"](entry)
+        with progresslib.phase(f"building {Path(relative).name}"):
+            shape = check["build_assembly"](entry)
     except Exception as exc:
         raise ValueError(f"cannot build motion assembly: {type(exc).__name__}: {exc}") from exc
     states = []
