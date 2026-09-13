@@ -83,6 +83,27 @@ def phase(label: str):
     write(f"{label} done in {duration(time.monotonic() - start)}")
 
 
+class Deadline:
+    """A wall-clock bound shared by the loops of one run.
+
+    The clock only: what a stop means -- an inconclusive gate, a refused
+    presentation -- belongs to the tool that set it. ``None`` or ``0`` seconds
+    is no bound at all, so a caller can hand a configured value straight
+    through without deciding whether to bound the run.
+    """
+
+    def __init__(self, seconds: float | None):
+        self.seconds = float(seconds) if seconds else None
+        self.started = time.monotonic()
+        self.expires = None if self.seconds is None else self.started + self.seconds
+
+    def expired(self) -> bool:
+        return self.expires is not None and time.monotonic() > self.expires
+
+    def elapsed(self) -> float:
+        return time.monotonic() - self.started
+
+
 class Progress:
     """Counted progress through a loop of roughly comparable items.
 

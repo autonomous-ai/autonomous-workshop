@@ -94,6 +94,17 @@ docs show recommended workflows, not every flag.
 
 **Streams.** stdout carries the result; stderr carries progress, timing, and failures, and the two never interleave. Every tool answers on stdout — `gen` prints `<outcome> <package path>` per target — so `2>/dev/null` leaves a parseable result and `>/dev/null` a readable log. JSON on stdout is always compact; pipe through `jq .` to read it. For machine-readable output: `gen` and `export` take `--json`; `inspect` already emits JSON and takes `--format text` for prose. `--verbose` adds stage timing (and full tracebacks) on stderr. Output volume does not grow with model size — a 600-occurrence assembly logs the same dozen lines a single part does.
 
+**A motion sweep is bounded, and an unfinished one is never clear.** Its cost
+is set by the manifest, not by the model -- `steps` x pairs of Boolean
+operations -- so `check_motion` prints the sample count it is about to spend
+before the first sweep, and `verify_project` gives it a 900s budget
+(`WORKSHOP_MOTION_DEADLINE_SECONDS`; `0` removes the bound). Run directly it is
+unbounded unless you pass `--deadline SECONDS`. A condition that runs out of
+budget stops and reports `inconclusive` with the sample it reached, and that
+**fails the gate even with `--allow-inconclusive`**: a sweep that was cut off
+measured nothing past its stopping point. Lower `steps`, split the manifest, or
+raise the budget deliberately -- never read a budget stop as a clear path.
+
 **Long motion runs count themselves down.** `check_motion` and
 `motion_presentation.py` spend minutes to hours in Boolean geometry and
 tessellation, so they report on stderr which assembly they are building, which

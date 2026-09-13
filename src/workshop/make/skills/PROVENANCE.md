@@ -311,6 +311,18 @@
   (`WORKSHOP_PROGRESS_INTERVAL`, default 10s) and disabled by
   `WORKSHOP_PROGRESS=0`; stdout, geometry, hashes, verdicts and exit statuses
   are unchanged.
+- Adapted locally on 2026-09-13 so a motion sweep is bounded. `check_motion`
+  projects the sampled Boolean/distance operations a manifest asks for before
+  the first sweep and accepts `--deadline SECONDS`
+  (`WORKSHOP_MOTION_DEADLINE_SECONDS`); a condition that runs out of budget
+  stops at the sample it reached and reports `inconclusive` with
+  `deadlineStopped`, which fails the run even under `--allow-inconclusive`.
+  `verify_project` passes a 900s default so an over-declared manifest cannot
+  consume the whole verification. `motion_presentation.py` takes the same
+  `--deadline` for its posing and rendering halves, which share one clock and
+  write nothing unless both finish. Unbounded runs remain the default for
+  direct invocations, and no geometry, threshold or verdict changed.
+
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do
