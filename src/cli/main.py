@@ -1122,6 +1122,7 @@ def _resume(args: argparse.Namespace) -> int:
         )
     receipt = resume_native_run(
         args.product_id,
+        check_motion=args.check_motion,
         **({"adopt_turn_budget": True} if args.turn_budget else {}),
         **({"max_tokens": args.max_tokens} if args.max_tokens is not None else {}),
         **_turn_boundary_options(args.turn_minutes),
@@ -1967,7 +1968,7 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     wish.set_defaults(handler=_wish)
     wish.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
-                      help="enable Make motion checks and animation review (default: false; frozen on resume)")
+                      help="enable Make motion checks and animation review (default: false)")
     wish.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
                       help="Codex input-plus-output token cap for the whole product (default: %(default)s)")
 
@@ -1980,7 +1981,7 @@ def parser() -> argparse.ArgumentParser:
     fix.add_argument("--model")
     fix.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS)
     fix.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
-                      help="enable Make motion checks and animation review (default: false; frozen on resume)")
+                      help="enable Make motion checks and animation review (default: false)")
     fix.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS)
     fix.add_argument("--turn-minutes", type=_turn_minutes, default=None)
     fix.add_argument("--github", action="store_true", help="also commit and push the new public archive")
@@ -1999,6 +2000,8 @@ def parser() -> argparse.ArgumentParser:
         "resume", help="resume the exact frozen native Manager session for one Wish"
     )
     resume.add_argument("product_id", help="saved Wish id")
+    resume.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
+                        help="enable Make motion checks and animation review on resume, including older runs (default: false)")
     resume.add_argument("--max-tokens", type=_token_budget, default=None, metavar="N",
                         help="explicit total Codex token cap; prior usage remains charged; omitted keeps the saved budget")
     resume.add_argument(

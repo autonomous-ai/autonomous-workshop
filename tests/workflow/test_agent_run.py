@@ -116,6 +116,53 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaises(StateConflict):
             run.snapshot()
 
+    def test_host_reselects_motion_without_changing_stage_or_other_inputs(self):
+        run = self.create(check_motion=True)
+        before = run.snapshot()
+        changes = run.refresh_domain_skill_tools({}, reason="operator resume", check_motion=False)
+        after = run.snapshot()
+        self.assertEqual([item["path"] for item in changes], ["MAKE-OPTIONS.json"])
+        for name, digest in before.input_sha256s.items():
+            if name != "MAKE-OPTIONS.json":
+                self.assertEqual(after.input_sha256s[name], digest)
+        for name in ("stage", "status", "round_index", "max_rounds", "stage_artifacts", "wish_sha256"):
+            self.assertEqual(getattr(before, name), getattr(after, name))
+        self.assertFalse(json.loads((run.run_root / "MAKE-OPTIONS.json").read_bytes())["check_motion"])
+        self.assertEqual(run.refresh_domain_skill_tools({}, reason="repeat", check_motion=False), ())
+        self.assertEqual(run.snapshot(), after)
+        run.refresh_domain_skill_tools({}, reason="explicit opt-in", check_motion=True)
+        self.assertTrue(json.loads((run.run_root / "MAKE-OPTIONS.json").read_bytes())["check_motion"])
+        self.assertEqual(stat.S_IMODE((run.run_root / "MAKE-OPTIONS.json").stat().st_mode), 0o400)
+        self.assertEqual(len((run.host_state_root / "host-corrections.jsonl").read_text().splitlines()), 2)
+
+    def test_legacy_motion_adoption_refuses_untracked_options(self):
+        run = self.create()
+        payload = run._load()
+        updated = dict(payload, inputs=[item for item in payload["inputs"] if item["path"] != "MAKE-OPTIONS.json"])
+        run._write_next(payload, updated)
+        before = run.snapshot()
+        with self.assertRaisesRegex(StateConflict, "untracked MAKE-OPTIONS"):
+            run.refresh_domain_skill_tools({}, reason="operator resume", check_motion=False)
+        self.assertEqual(run.snapshot(), before)
+        (run.run_root / "MAKE-OPTIONS.json").unlink()
+        changes = run.refresh_domain_skill_tools({}, reason="operator resume", check_motion=False)
+        self.assertIsNone(changes[0]["previous_sha256"])
+        self.assertIn("MAKE-OPTIONS.json", run.snapshot().input_sha256s)
+
+    def test_motion_finalizer_refresh_does_not_adopt_lifecycle_or_budget_rules(self):
+        scripts = self.skill / "scripts"
+        scripts.mkdir(exist_ok=True)
+        (scripts / "stage_proposal.py").write_text("# old finalizer")
+        run = self.create()
+        before = run.snapshot()
+        (scripts / "stage_proposal.py").write_text("# motion-aware finalizer")
+        (self.skill / "SKILL.md").write_text("new unrelated workflow")
+        changes = run.refresh_domain_skill_tools({}, reason="motion migration", motion_skill_root=self.skill)
+        self.assertEqual([item["path"] for item in changes],
+                         [".agents/skills/autonomous-workshop/scripts/stage_proposal.py"])
+        self.assertEqual(run.snapshot().input_sha256s[".agents/skills/autonomous-workshop/SKILL.md"],
+                         before.input_sha256s[".agents/skills/autonomous-workshop/SKILL.md"])
+
     def test_invalid_motion_option_refuses_before_materialization(self):
         for value in (None, "false", 0, 1):
             with self.subTest(value=value), self.assertRaises(ContractError):

@@ -113,7 +113,9 @@ uv run workshop wish "A small hand-cranked cam toy" --inventor soren-voss \
 Motion verification is optional for new runs. `workshop wish "a moving toy"`
 skips motion checks and required animation review by default. Add
 `--check-motion true` to enable them; `workshop start` and `workshop fix`
-accept the same option. The choice is frozen for resume. Skipped motion is
+accept the same option. `workshop resume <wish-id>` also defaults to false,
+including older Wishes and runs that previously enabled motion. Pass
+`--check-motion true` on resume to enable it again. Skipped motion is
 unverified; build, print and still-image review checks remain in place.
 
 `start <inventor>` is the ongoing Inventor-led loop; `wish "..."` creates one

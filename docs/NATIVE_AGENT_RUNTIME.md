@@ -57,9 +57,14 @@ verification (including isolated host replay), and proposal finalization read
 that same choice. Disabled motion is recorded as skipped/unverified, never a
 pass. Build, fit, print and still-image signature review are unchanged.
 
-Resume preserves the exact options. Earlier runs keep their original tools;
-if explicitly refreshed, absence of `MAKE-OPTIONS.json` retains their mandatory
-motion policy. Tool refresh does not replace the run-root options. See
+Every operator `resume` reselects the motion option, defaulting to false even
+for previously enabled and older runs. `resume --check-motion true` enables it.
+For an older run without `MAKE-OPTIONS.json`, the host first refreshes its
+carried CAD/Make-round tools and Make finalizer from the installed version,
+rebinds the same native session, then creates the selected root option. The
+mutation lock, immutable input manifest and private correction ledger cover
+these changes. Lifecycle instructions, sealed artifacts and token usage stay
+intact. A plain `--refresh-tools` operation still preserves the root option. See
 [ADR 0066](adr/0066-optional-motion-verification.md).
 
 ### Current token-budget and Spark handoff policy

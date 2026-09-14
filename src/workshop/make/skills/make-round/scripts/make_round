@@ -597,7 +597,7 @@ def make_round(args) -> int:
     if args.record_visual:
         try:
             summary = record_visual(project, args.record_visual, args.full, args.component,
-                                    check_motion=check_motion if option is not None else None)
+                                    check_motion=check_motion)
         except (ValueError, KeyError, OSError, TypeError) as exc:
             print("make_round: %s" % exc, file=sys.stderr)
             return 2

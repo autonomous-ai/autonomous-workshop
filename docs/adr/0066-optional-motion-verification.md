@@ -2,15 +2,16 @@
 
 - Date: 2026-09-14
 - Status: Accepted
-- Supersedes motion requirements for newly created runs in ADR 0047 and
+- Supersedes motion requirements for newly created and operator-resumed runs in ADR 0047 and
   ADR 0060 (declared-motion reconciliation); other Make checks remain intact.
 
 ## Decision
 
-`workshop wish`, `start`, and `fix` accept `--check-motion true|false`, with
+`workshop wish`, `start`, `fix`, and `resume` accept `--check-motion true|false`, with
 false as the default. The host freezes the boolean in read-only root
 `MAKE-OPTIONS.json`, covered by the ordinary immutable-input hash manifest.
-Resume and explicit domain-tool refresh preserve those bytes.
+Each operator resume reselects the boolean with default false, including
+previously enabled runs. Explicit domain-tool refresh alone preserves it.
 
 Make rounds and the final CAD verifier skip motion sweeps when disabled,
 including when a manifest or documented assembly action exists. Coupled-motion
@@ -25,10 +26,22 @@ Standalone tools default off and accept `--check-motion true`. Directly invoking
 `check_motion` remains an explicit request to run that diagnostic.
 
 The isolated host verifier resolves options relative to its frozen tool path,
-not the copied CAD project or current directory. Existing runs keep their
-materialized tools; an explicit refresh of an old run with no options file
-retains motion enabled. No checkpoint schema migration or Spark host rebuild
-is introduced.
+not the copied CAD project or current directory. On the first resume of an
+older run without this file, the host refreshes
+its carried CAD/Make-round tools and Make finalizer through the existing
+recorded tool-refresh operation. It rebinds the saved native session before
+adding the selected root option, so a checkpointed migration interrupted before
+session rebinding is retried before the next native turn.
+It does not import new lifecycle or token-budget instructions, reset usage,
+or rebuild sealed Spark assets. The native prompt tells the existing session
+to reread this host-owned choice and supersedes older mandatory-motion text.
+Completed/failed terminal runs are inspected without changing this option.
+Without operator resume, older materialized runs keep their original policy.
+No checkpoint schema migration or Spark host rebuild is introduced.
+
+Pending output bindings are reconciled only across consecutive recorded motion
+corrections. An unaccepted Make proposal is preserved privately and must be
+finalized again under the selected policy; sealed artifacts stay intact.
 
 ## Evidence and limits
 
@@ -41,4 +54,5 @@ a speedup on the CEO's run or establish physical motion correctness.
 
 Deterministic tests cover default skipping with existing manifests, explicit
 opt-in, missing required evidence, failed/inconclusive checks, malformed options,
-immutable-input tampering, resume and tool-refresh preservation.
+immutable-input tampering, resume reselection, legacy migration/interruption,
+session and budget preservation, and plain tool-refresh preservation.

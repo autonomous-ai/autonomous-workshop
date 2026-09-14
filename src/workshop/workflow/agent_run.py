@@ -1688,6 +1688,8 @@ class AgentRun:
         *,
         reason: str,
         token_budget_skill_root: Optional[Path] = None,
+        motion_skill_root: Optional[Path] = None,
+        check_motion: Optional[bool] = None,
     ) -> tuple[dict[str, Any], ...]:
         """Bring the run's host-owned domain skills up to the installed source.
 
@@ -1699,13 +1701,21 @@ class AgentRun:
         skills the run already carries are touched; a skill absent from the run
         is never introduced.  Every refresh appends one owner-only record under
         host state and returns the manifest changes it made.
+
+        A motion migration may refresh only the carried Make finalizer, even
+        for a pre-token-budget run. check_motion rebinds the root option through
+        this same verified input writer; it does not alter skills by itself.
         """
 
         if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 512:
             raise ContractError("domain skill refresh reason must be a short string")
         if not isinstance(domain_skill_roots, Mapping):
             raise ContractError("domain skill roots must be a mapping")
+        if check_motion is not None and type(check_motion) is not bool:
+            raise ContractError("agent run check_motion must be boolean")
         payload = self._load()
+        if check_motion is not None and payload["status"] == "complete":
+            raise TransitionError("a completed agent run has no motion policy to rebind")
         by_path: dict[str, dict[str, Any]] = {
             item["path"]: dict(item) for item in payload["inputs"]
         }
@@ -1722,11 +1732,15 @@ class AgentRun:
             if not _uses_token_budget(payload):
                 raise ContractError("review-tool refresh requires a token-budget run")
             roots["autonomous-workshop"] = token_budget_skill_root
+        elif motion_skill_root is not None:
+            roots["autonomous-workshop"] = motion_skill_root
+            review_paths = {"scripts/stage_proposal.py"}
         for name, source_root in sorted(roots.items()):
             if (
                 not isinstance(name, str)
                 or _AGENT_SKILL_NAME.fullmatch(name) is None
-                or (name == "autonomous-workshop" and token_budget_skill_root is None)
+                or (name == "autonomous-workshop"
+                    and token_budget_skill_root is None and motion_skill_root is None)
             ):
                 raise ContractError("domain skill name is invalid")
             prefix = ".agents/skills/%s/" % name
@@ -1782,6 +1796,25 @@ class AgentRun:
                         "mode": mode,
                     }
                 )
+        if check_motion is not None:
+            path = "MAKE-OPTIONS.json"
+            content = json.dumps({"schema_version": 1, "check_motion": check_motion},
+                                 sort_keys=True, separators=(",", ":")).encode("utf-8")
+            digest = _sha256(content)
+            previous = by_path.get(path)
+            if previous is None or previous["sha256"] != digest:
+                # This is a host-owned input rebind, never an agent edit.
+                # Refuse an untracked file instead of adopting or replacing it.
+                target = self.run_root / path
+                if previous is None and (target.exists() or target.is_symlink()):
+                    raise StateConflict("untracked MAKE-OPTIONS.json blocks motion policy adoption")
+                writes.append((PurePosixPath(path), content, 0o400))
+                by_path[path] = {"path": path, "sha256": digest,
+                                 "size": len(content), "mode": 0o400}
+                changes.append({"path": path,
+                                "previous_sha256": None if previous is None else previous["sha256"],
+                                "previous_mode": None if previous is None else previous["mode"],
+                                "sha256": digest, "mode": 0o400})
         if not changes:
             return ()
         inputs = sorted(by_path.values(), key=lambda item: item["path"])

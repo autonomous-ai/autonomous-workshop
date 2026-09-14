@@ -756,3 +756,6 @@ Workshop adds `motion_policy.py` and opt-in motion handling to `verify_project`
 and `make_round`, plus corresponding CAD and image-to-CAD guidance. New runs
 freeze `MAKE-OPTIONS.json`; disabled checks and animation review remain
 explicitly unverified. The underlying motion checker is unchanged.
+
+Operator resume also defaults to false. Make-round's final verification uses
+the current host-selected motion option instead of a previous round's option.

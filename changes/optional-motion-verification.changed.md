@@ -1,1 +1,1 @@
-Make motion verification and required animation review opt-in for new runs with `--check-motion true`; default false, frozen across resumes.
+Make motion verification and required animation review opt-in with `--check-motion true`; Wish, start, fix and every operator resume default to false, including resumed older Wishes.
