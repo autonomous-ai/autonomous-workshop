@@ -416,12 +416,18 @@ def read_thread_usage(path, *, thread_id, workspace):
     for record in _records(path):
         ledger.observe(record)
     if ledger.present:
-        return {
+        result = {
             "thread_id": thread_id, "models": sorted(ledger.models), "tokens": ledger.totals,
             "last_observed_at": ledger.last_at,
             "status": "observed" if ledger.observations else "pending",
             "accounting_source": "response-ledger-v1",
         }
+        # Native terminal counters may restore a process-local baseline which
+        # differs from lifetime response totals. Expose only an exact snapshot
+        # already covered by this ledger, with no later unnotified response.
+        if ledger.notification is not None and not ledger.pending_responses:
+            result["terminal_notification"] = ledger.notification[1]
+        return result
     return _read_notification_usage(path, thread_id=thread_id, workspace=workspace)
 
 

@@ -5160,7 +5160,18 @@ def _reconcile_token_accounting_need(paths, checkpoint, budget):
                 )
                 and any(terminal[key] > baseline[key] for key in current)
             )
-            reconciled = advanced and (delta_reconciled or cumulative_reconciled)
+            root = next(thread for thread in value["threads"]
+                        if thread["thread_id"] == value["root_thread_id"])
+            snapshot = root.get("terminal_notification")
+            ledger_reconciled = (
+                root.get("accounting_source") == "response-ledger-v1"
+                and isinstance(snapshot, dict)
+                and all(type(snapshot.get(key)) is int
+                        and snapshot[key] == terminal[key] for key in current)
+            )
+            reconciled = advanced and (
+                delta_reconciled or cumulative_reconciled or ledger_reconciled
+            )
         if not reconciled:
             raise UsageUnavailable("completed native turn lacks reconciled token usage")
     path.unlink()

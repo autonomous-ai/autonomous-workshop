@@ -1232,3 +1232,16 @@ The bounded oversized-record parser preserves compaction usage metadata and
 continues accepting visual custom-tool output without retaining its body.
 Offline replay on 2026-09-14 reproduced Cratercade's saved 608,046,967 tokens
 across 29 threads exactly. This is accounting recovery, not Make completion.
+
+For response-ledger sessions, a completed native turn may report a restored
+notification baseline that differs from both lifetime totals and the current
+invocation's delta. The reader exposes the last notification only after exact
+response coverage is validated and no later response awaits notification.
+Terminal reconciliation accepts an exact input/output match to that snapshot
+only when lifetime root usage also advances; the complete ledger remains the
+charged total. Ledger-free sessions keep the existing delta/cumulative rules.
+
+Print-gate Markdown reports retain the same explicit `RESULT:` verdict emitted
+on stdout, including failing verdicts. The frozen Make finalizer consumes that
+report contract. Restoring the summary does not change measurements, thresholds,
+or exit status; refreshed runs regenerate reports through the actual tools.

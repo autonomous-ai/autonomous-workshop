@@ -262,6 +262,11 @@
   new `render_review` through `workshop skills path` alongside the others, and
   keeps upstream's new appearance-review step ahead of the Workshop's own
   render-before-the-final-gate step, which is renumbered rather than replaced.
+  On 2026-09-14 the thickness and overhang Markdown writers again include
+  their exact stdout `RESULT:` verdict. The refreshed upstream reports had
+  omitted this summary while Workshop's frozen finalizer still required it.
+  Passing and failing measured fixtures exercise the writer-to-finalizer
+  contract; no measurements, thresholds or exit codes change.
   Geometry, measurement, inspection, validation, export, and `cadgen`
   algorithms are otherwise the reviewed upstream bytes.
 - Adapted locally on 2026-08-27 in the canonical `cadgen` STEP writer to apply

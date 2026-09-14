@@ -79,6 +79,16 @@ def test_response_ledger_counts_compaction_once_and_survives_restored_notificati
     assert first["tokens"] == counters(500)
     assert first["models"] == ["gpt-6-astra"]
     assert first["status"] == "observed"
+    assert first["terminal_notification"] == counters(300)
+
+
+@pytest.mark.parametrize("tail", [
+    [boundary("01a07960-0000-7000-8000-000000000003")],
+    [response("unnotified", 100, 600, turn=TURN_B, turn_total=300)],
+])
+def test_terminal_snapshot_is_absent_after_new_task_or_unnotified_response(tmp_path, tail):
+    result = read(tmp_path, completed_events() + tail)
+    assert "terminal_notification" not in result
 
 
 def test_child_session_binds_root_session_but_keeps_its_own_thread_and_turn_totals(tmp_path):

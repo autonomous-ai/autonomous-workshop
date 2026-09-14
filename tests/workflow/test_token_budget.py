@@ -356,6 +356,30 @@ def test_reconciled_cap_stop_does_not_create_an_accounting_effect_blocker(tmp_pa
     assert not (tmp_path / "token-accounting-need.json").exists()
 
 
+@pytest.mark.parametrize("terminal,baseline,passes", [
+    (300, 400, True), (299, 400, False), (301, 400, False), (300, 500, False),
+])
+def test_response_ledger_reconciles_exact_restored_terminal_snapshot(tmp_path, terminal, baseline, passes):
+    from tests.runtime.test_codex_response_usage import completed_events
+
+    sessions = tmp_path / "sessions"
+    write(sessions, completed_events())
+    current = read_product_usage(sessions, thread_id=ROOT, workspace=Path("/toy"))
+    paths, checkpoint = context(tmp_path)
+    budget = ProductTokenBudget()
+    budget.observe(observation(baseline))
+    callback = _product_token_observer(paths, checkpoint, budget)
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", return_value=current):
+        if passes:
+            callback.reconcile_completed_turn((terminal, None, None, 30, None))
+            assert not (tmp_path / "token-accounting-need.json").exists()
+        else:
+            with pytest.raises(UsageUnavailable, match="completed native turn"):
+                callback.reconcile_completed_turn((terminal, None, None, 30, None))
+            assert (tmp_path / "token-accounting-need.json").exists()
+    assert budget.to_dict()["used_tokens"] == 550
+
+
 def test_known_terminal_expectation_survives_earlier_read_failure_and_retries(tmp_path):
     paths, checkpoint = context(tmp_path)
     budget = ProductTokenBudget()
