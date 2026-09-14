@@ -150,6 +150,7 @@ def read_thread_usage(path, *, thread_id, workspace):
         raise UsageUnavailable("native rollout usage version is not validated")
     totals = {key: 0 for key in COUNTERS}
     task_totals = None
+    task_last = None
     task_start = False
     tasks = set()
     model = None
@@ -178,12 +179,20 @@ def read_thread_usage(path, *, thread_id, workspace):
         current = _counters(info.get("total_token_usage"))
         if not tasks:
             raise UsageUnavailable("native usage lacks a task boundary")
-        if task_start:
+        last = _counters(info.get("last_token_usage"))
+        if task_start and current == task_totals and last == task_last:
+            # An inter-agent hand-off can restate the previous notification
+            # verbatim before the new task issues its first request. The repeat
+            # carries no usage, so hold the boundary open for a record that can
+            # establish the baseline rather than reading its zero delta as an
+            # unexplained gap. Both counter sets must match exactly; a repeat of
+            # only the total is still ambiguous.
+            pass
+        elif task_start:
             # exec 0.153.4+ resets counters on process resume, but a continued
             # task in the same process (including a child follow-up) retains
             # them. Require an exact first-request baseline for either case;
             # never infer a reset merely from a decreasing counter.
-            last = _counters(info.get("last_token_usage"))
             if current == last:
                 task_totals = {key: 0 for key in COUNTERS}
             elif task_totals is None or any(
@@ -197,6 +206,7 @@ def read_thread_usage(path, *, thread_id, workspace):
         _counters(delta)
         totals = {key: totals[key] + delta[key] for key in COUNTERS}
         task_totals = current
+        task_last = last
         models.add(model)
         observations += 1
         last_at = record.get("timestamp")
