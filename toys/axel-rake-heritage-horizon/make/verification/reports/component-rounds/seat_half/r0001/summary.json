@@ -1,0 +1,61 @@
+{
+ "build": {
+  "seat_half": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "seat_half"
+ ],
+ "checked": [
+  "seat_half"
+ ],
+ "checks_ok": false,
+ "entry": "part_seat_half.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "seat_half"
+ ],
+ "print": {
+  "seat_half": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half/r0001/overhang-seat_half.log": "4688b170c98ecf6667e9c41fd6ed541b9c263f3f289600924b52444d93a5b71d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half/r0001/thickness-seat_half.log": "ad9cb29388a86336e8987f7c20da8a8fdca0501395d8bfc3cd0b32e1a158826e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 9.4% of the surface faces down that steeply; "
+    ],
+    "overhang_mm2": 9.9,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:seat_half",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half/r0001/visual-packet.json",
+  "packet_sha256": "3bbca6cfd00e8ea3f2a61bdf907588a6c6c9c81991a50b079d04304ad58f2c31",
+  "status": "pending"
+ }
+}

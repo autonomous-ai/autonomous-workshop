@@ -1,0 +1,52 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_fork_bridge.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_bridge"
+ ],
+ "print": {
+  "fork_bridge": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0001/overhang-fork_bridge.log": "712346971ac3e3eca3cfecb95850ff7408ddf404d999c777120159c668680525",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0001/thickness-fork_bridge.log": "57f39eaac2cfbc753234fc96ed0194d031659201265c483968253c0e6d644191"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.27,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [
+  "fork_bridge"
+ ],
+ "round": 2,
+ "scope": "component:fork_bridge",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0002/visual-packet.json",
+  "packet_sha256": "ae9f05a2e2af01d438c81711a8bb62f6a358f82b037cd3d8560333a8fdbd9209",
+  "status": "pending"
+ }
+}

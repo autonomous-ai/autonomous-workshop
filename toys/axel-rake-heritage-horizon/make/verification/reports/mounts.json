@@ -1,0 +1,293 @@
+{
+  "assembly": "heritage.step.py",
+  "mounts": [
+    {
+      "id": "rear_axle",
+      "component": "ref/iso4762_socket_head_cap_screw_m3x30.step",
+      "sha256": "37a1a96bb38150d38ee57caa29b062132306f1de3d4fb2757fe4eab10954c7ed",
+      "at": {
+        "position": [
+          -70,
+          -11.25,
+          27
+        ],
+        "rotation": [
+          90,
+          0,
+          0
+        ]
+      },
+      "parts": [
+        "chassis_left",
+        "chassis_right",
+        "swingarm_left",
+        "swingarm_right",
+        "fork_leg_left",
+        "fork_leg_right",
+        "fork_bridge_left",
+        "fork_bridge_right",
+        "seat_left",
+        "seat_right",
+        "pannier_left",
+        "pannier_right",
+        "footboard_left",
+        "footboard_right",
+        "tank_cover",
+        "front_fender",
+        "screen",
+        "handlebar",
+        "bar_riser",
+        "plinth",
+        "rear_wheel",
+        "rear_nut_1",
+        "rear_nut_2",
+        "front_wheel",
+        "front_axle",
+        "front_nut_1",
+        "front_nut_2"
+      ],
+      "min_clearance": 0,
+      "bolts": false
+    },
+    {
+      "id": "rear_nut_1",
+      "component": "ref/iso4032_hex_nut_m3.step",
+      "sha256": "7de90cc2ca5eb2c38a27e3aee66939f30bdfde4ac47cd6f19f0324fcf93496bd",
+      "at": {
+        "position": [
+          -70,
+          11.25,
+          27
+        ],
+        "rotation": [
+          -90,
+          0,
+          0
+        ]
+      },
+      "parts": [
+        "chassis_left",
+        "chassis_right",
+        "swingarm_left",
+        "swingarm_right",
+        "fork_leg_left",
+        "fork_leg_right",
+        "fork_bridge_left",
+        "fork_bridge_right",
+        "seat_left",
+        "seat_right",
+        "pannier_left",
+        "pannier_right",
+        "footboard_left",
+        "footboard_right",
+        "tank_cover",
+        "front_fender",
+        "screen",
+        "handlebar",
+        "bar_riser",
+        "plinth",
+        "rear_wheel",
+        "rear_axle",
+        "rear_nut_2",
+        "front_wheel",
+        "front_axle",
+        "front_nut_1",
+        "front_nut_2"
+      ],
+      "min_clearance": 0,
+      "bolts": false
+    },
+    {
+      "id": "rear_nut_2",
+      "component": "ref/iso4032_hex_nut_m3.step",
+      "sha256": "7de90cc2ca5eb2c38a27e3aee66939f30bdfde4ac47cd6f19f0324fcf93496bd",
+      "at": {
+        "position": [
+          -70,
+          13.65,
+          27
+        ],
+        "rotation": [
+          -90,
+          0,
+          0
+        ]
+      },
+      "parts": [
+        "chassis_left",
+        "chassis_right",
+        "swingarm_left",
+        "swingarm_right",
+        "fork_leg_left",
+        "fork_leg_right",
+        "fork_bridge_left",
+        "fork_bridge_right",
+        "seat_left",
+        "seat_right",
+        "pannier_left",
+        "pannier_right",
+        "footboard_left",
+        "footboard_right",
+        "tank_cover",
+        "front_fender",
+        "screen",
+        "handlebar",
+        "bar_riser",
+        "plinth",
+        "rear_wheel",
+        "rear_axle",
+        "rear_nut_1",
+        "front_wheel",
+        "front_axle",
+        "front_nut_1",
+        "front_nut_2"
+      ],
+      "min_clearance": 0,
+      "bolts": false
+    },
+    {
+      "id": "front_axle",
+      "component": "ref/iso4762_socket_head_cap_screw_m3x30.step",
+      "sha256": "37a1a96bb38150d38ee57caa29b062132306f1de3d4fb2757fe4eab10954c7ed",
+      "at": {
+        "position": [
+          70,
+          -11.25,
+          27
+        ],
+        "rotation": [
+          90,
+          0,
+          0
+        ]
+      },
+      "parts": [
+        "chassis_left",
+        "chassis_right",
+        "swingarm_left",
+        "swingarm_right",
+        "fork_leg_left",
+        "fork_leg_right",
+        "fork_bridge_left",
+        "fork_bridge_right",
+        "seat_left",
+        "seat_right",
+        "pannier_left",
+        "pannier_right",
+        "footboard_left",
+        "footboard_right",
+        "tank_cover",
+        "front_fender",
+        "screen",
+        "handlebar",
+        "bar_riser",
+        "plinth",
+        "rear_wheel",
+        "rear_axle",
+        "rear_nut_1",
+        "rear_nut_2",
+        "front_wheel",
+        "front_nut_1",
+        "front_nut_2"
+      ],
+      "min_clearance": 0,
+      "bolts": false
+    },
+    {
+      "id": "front_nut_1",
+      "component": "ref/iso4032_hex_nut_m3.step",
+      "sha256": "7de90cc2ca5eb2c38a27e3aee66939f30bdfde4ac47cd6f19f0324fcf93496bd",
+      "at": {
+        "position": [
+          70,
+          11.25,
+          27
+        ],
+        "rotation": [
+          -90,
+          0,
+          0
+        ]
+      },
+      "parts": [
+        "chassis_left",
+        "chassis_right",
+        "swingarm_left",
+        "swingarm_right",
+        "fork_leg_left",
+        "fork_leg_right",
+        "fork_bridge_left",
+        "fork_bridge_right",
+        "seat_left",
+        "seat_right",
+        "pannier_left",
+        "pannier_right",
+        "footboard_left",
+        "footboard_right",
+        "tank_cover",
+        "front_fender",
+        "screen",
+        "handlebar",
+        "bar_riser",
+        "plinth",
+        "rear_wheel",
+        "rear_axle",
+        "rear_nut_1",
+        "rear_nut_2",
+        "front_wheel",
+        "front_axle",
+        "front_nut_2"
+      ],
+      "min_clearance": 0,
+      "bolts": false
+    },
+    {
+      "id": "front_nut_2",
+      "component": "ref/iso4032_hex_nut_m3.step",
+      "sha256": "7de90cc2ca5eb2c38a27e3aee66939f30bdfde4ac47cd6f19f0324fcf93496bd",
+      "at": {
+        "position": [
+          70,
+          13.65,
+          27
+        ],
+        "rotation": [
+          -90,
+          0,
+          0
+        ]
+      },
+      "parts": [
+        "chassis_left",
+        "chassis_right",
+        "swingarm_left",
+        "swingarm_right",
+        "fork_leg_left",
+        "fork_leg_right",
+        "fork_bridge_left",
+        "fork_bridge_right",
+        "seat_left",
+        "seat_right",
+        "pannier_left",
+        "pannier_right",
+        "footboard_left",
+        "footboard_right",
+        "tank_cover",
+        "front_fender",
+        "screen",
+        "handlebar",
+        "bar_riser",
+        "plinth",
+        "rear_wheel",
+        "rear_axle",
+        "rear_nut_1",
+        "rear_nut_2",
+        "front_wheel",
+        "front_axle",
+        "front_nut_1"
+      ],
+      "min_clearance": 0,
+      "bolts": false
+    }
+  ]
+}

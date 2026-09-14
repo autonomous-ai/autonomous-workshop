@@ -1,0 +1,60 @@
+{
+ "build": {
+  "leaf": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "leaf"
+ ],
+ "checked": [
+  "leaf"
+ ],
+ "checks_ok": true,
+ "entry": "part_leaf.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/leaf/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "leaf"
+ ],
+ "print": {
+  "leaf": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/leaf/r0001/overhang-leaf.log": "59178a8c2e775fa370dd99aff4c8c2543a4e45113b3ce949587645d912e2ce09",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/leaf/r0001/thickness-leaf.log": "29d17d4d4e5c0a886c433abe37cf898b647327b54bbbd79bac49b38e6460bf7d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:leaf",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front confirms flat print face and integral raised stop peg; top shows matching crescent and clear bearing hole; iso shows a single continuous leaf with blunt terminals and peg bonded to the body. No extra or intersecting geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/leaf/r0001/visual-packet.json",
+  "packet_sha256": "993a250415bccfdf96511ebf80d074b855638c7cfd6a4bf7bd82fd81189a6737",
+  "status": "pass"
+ }
+}

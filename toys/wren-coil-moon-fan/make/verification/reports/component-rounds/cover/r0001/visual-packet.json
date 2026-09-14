@@ -1,0 +1,21 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cover/r0001/visual/front.png": "907d8f7674fcbacad40812fe6444a805641fa1fa0d795d538bf328cbfc6478fd",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cover/r0001/visual/iso.png": "db180857a780b5d54f629fee701b2aa756f9991d836f667367aedd2d6ba18939",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cover/r0001/visual/top.png": "2d0ce6e10ef6afcc4f781d3f0d0475864f62fbdd9a2ed65df34fbc82df2595ef"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "moon_lib.py": "630ea41d66e66e32203495cc9626083fbfbb9147de25ea23e1665a5dfd24d357",
+    "moon_spec.md": "219dcc2778e390116c75886a79d4d5c51507aae36e1714838f52d12ddbf2c99c",
+    "part_carrier.step": "302a292ec09ea2d8b9691c1cc3ed26919b61492660e8fea82e9fab762306cb20",
+    "part_carrier.step.py": "b3d05c07bd0582a6237a3e161975fe456ace6c74316c932dcf1760040c6ca01b",
+    "part_cover.step": "9f63e210320e40d1e613ec531b563515d46e66dec03cb16ef879f411d98b458b",
+    "part_cover.step.py": "a4f631c88a9f83fb52a980ec3f25fb7e317e3926fd66957e225cb1872978125e",
+    "part_leaf.step": "d17f65e8a70b9d50ccad148b43cd0213dc3bf101791c004addc03b8c629842b4",
+    "part_leaf.step.py": "d9f0aa1d1de96ad80c129a7e5622d5c4e456481f86c58dcc3cc7b0fffaf665a6",
+    "part_pin.step": "7cd59360b214406177281771ff2bf97efd167cb780154e7202e1e7d28263c342",
+    "part_pin.step.py": "c64580e85e5b671e25802c5410bc6e315320d5125dfe74ed301294a25bd958bb"
+  }
+}

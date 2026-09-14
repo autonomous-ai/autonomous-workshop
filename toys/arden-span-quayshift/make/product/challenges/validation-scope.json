@@ -1,0 +1,27 @@
+{
+  "status": "representative poses passed CAD checks",
+  "evidence": "../cad/measure/physical-validation.json",
+  "evidence_sha256": "29575e2d74b03502fcd12396b8a90e7242014205b092a8416ac12bc73bc75c46",
+  "representative_poses_routes_sha256": "1bc0227ce4823e24da7965730cb548f0e7fc76b6c632e44152b6aef29717a15e",
+  "counts_scope": "2/4/8 footprint completion classes, each with at least one validated exact representative pose; not counts of all physically distinguishable facings.",
+  "checks": "Continuous diameter26mm height26mm containing cylinder sweeps; actual low-gate overlap; sampled diameter10mm top-down finger contact with0.251mm inter-sample allowance. CAD proxy evidence, not hands-on comfort.",
+  "facing_evidence": "facing-access.json",
+  "facing_caveat": "Two of16 Q01 arch-facing aliases fail the conservative top-down finger proxy. Q02 and Q03 tested aliases pass. Match exact labels/rotations and rear-span orientation in the solution reproductions. All upright quarter-turns remain legal; legality is not a guarantee of successful passage or comfortable access.",
+  "board_symmetry_group": {
+    "used": "C2 = {identity, reflection x ->4-x}; preserves C1 and C5 individually.",
+    "broader_reasoning_group": "D2 = {identity, x reflection, y reflection,180-degree rotation} preserves the unordered port pair; y reflection and180 rotation require route reversal.",
+    "broader_group_counts": [
+      2,
+      4,
+      8
+    ],
+    "interpretation": "The broader group leaves the three card counts unchanged. Neither group establishes physical facade or access equivalence. Fixed setup clues constrain search before completed arrangements are quotiented."
+  },
+  "cad_source_sha256": "323b0e05affa7717e55c8cb60cde90a09397a6fd68a69c8a3617a1c99a3d8330",
+  "actual_ferry_bbox_mm": [
+    26.0,
+    24.5,
+    20.0
+  ],
+  "containing_cylinder_note": "Diameter26mm byheight26mm is the conservative swept containing cylinder; actual final ferry height is20mm."
+}

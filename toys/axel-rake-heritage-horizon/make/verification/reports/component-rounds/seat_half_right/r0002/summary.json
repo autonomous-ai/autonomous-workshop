@@ -1,0 +1,60 @@
+{
+ "build": {
+  "seat_half_right": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "seat_half_right"
+ ],
+ "checked": [
+  "seat_half_right"
+ ],
+ "checks_ok": true,
+ "entry": "part_seat_half_right.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half_right/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "seat_half_right"
+ ],
+ "print": {
+  "seat_half_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half_right/r0002/overhang-seat_half_right.log": "2c413b7a77cbf45c07a604fecf53142613a5b7cff16f5fc428cb4d7fc576bbb7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half_right/r0002/thickness-seat_half_right.log": "57ca029b9bbfcba4b197a6a1db14b62f159c21a97b7946ce2fede71525a44c08"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:seat_half_right",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Mirrored seat preserves the low dished rider area and stepped pillion; revised nose is supported across its width with no expanding cheek or detached edge.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half_right/r0002/visual-packet.json",
+  "packet_sha256": "ab5eb216c3ba4be47501bcbe76a21912a9faff0a932767cf931b4c20a24e6180",
+  "status": "pass"
+ }
+}

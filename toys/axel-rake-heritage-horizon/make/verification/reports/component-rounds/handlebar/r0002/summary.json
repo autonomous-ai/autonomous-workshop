@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_handlebar.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/handlebar/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "handlebar"
+ ],
+ "print": {
+  "handlebar": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/handlebar/r0001/overhang-handlebar.log": "9b0215fb858e49825b0d641a8bdba7a2563ef7621150aa215349f7cd1c39e4c3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/handlebar/r0001/thickness-handlebar.log": "b27b1daf195d297b305ebd14e92af02ca551c780a4aea675635e0cc18f63b3ff"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [
+  "handlebar"
+ ],
+ "round": 2,
+ "scope": "component:handlebar",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Symmetric swept bar arms taper into long grips and join the wide central mounting land; upper bevel and flat bottom remain continuous.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/handlebar/r0002/visual-packet.json",
+  "packet_sha256": "885021a350f9fc4e16c1c5b0a0f9aec544af07bd9ddeb3739514a76f1c71e56b",
+  "status": "pass"
+ }
+}

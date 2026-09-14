@@ -365,6 +365,42 @@ def test_followup_task_continues_the_cumulative_counter(tmp_path):
     assert result["status"] == "observed"
 
 
+@pytest.mark.parametrize("trailing,expected", [
+    ([usage(300, last_token_usage=counters(100))], counters(300)),  # continued process
+    ([usage(50)], counters(250)),  # the new task begins in a restarted process
+])
+def test_handoff_echo_before_the_first_request_holds_the_baseline(tmp_path, trailing, expected):
+    # An inter-agent NEW_TASK can emit a token_count that repeats the previous
+    # notification verbatim before the new task issues its first request. The
+    # repeat carries no usage, so it must neither be counted nor consume the
+    # boundary the following record still has to establish.
+    events = records(CHILD, ROOT) + [usage(100), usage(200, last_token_usage=counters(100))] + [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "handoff"}},
+        usage(200, last_token_usage=counters(100)),
+    ] + trailing
+
+    result = read_thread_usage(
+        write(tmp_path, events, CHILD), thread_id=CHILD, workspace=Path("/toy"),
+    )
+
+    assert result["tokens"] == expected
+    assert result["status"] == "observed"
+
+
+@pytest.mark.parametrize("repeat", [
+    usage(200, last_token_usage=counters(50)),  # only the total repeats
+    usage(250, last_token_usage=counters(100)),  # only the last request repeats
+])
+def test_handoff_partial_repeat_is_still_ambiguous(tmp_path, repeat):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100))] + [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "handoff"}},
+        repeat,
+    ]
+
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
 @pytest.mark.parametrize("first", [
     usage(200, last_token_usage=counters(100)),  # no previous task to continue from
 ])

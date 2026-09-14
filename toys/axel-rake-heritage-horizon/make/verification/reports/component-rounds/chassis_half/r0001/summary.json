@@ -1,0 +1,59 @@
+{
+ "build": {
+  "chassis_half": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "chassis_half"
+ ],
+ "checked": [
+  "chassis_half"
+ ],
+ "checks_ok": true,
+ "entry": "part_chassis_half.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "chassis_half"
+ ],
+ "print": {
+  "chassis_half": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0001/overhang-chassis_half.log": "433ad8e8d7f1da42edf7f7c4d5f8915b04ce1da37e1ad9fe41e710e0f354dd32",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0001/thickness-chassis_half.log": "cdb419192fb75b8c2dc51b4e929bd6281507fa0db791f711803eb279407339ac"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.24,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:chassis_half",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0001/visual-packet.json",
+  "packet_sha256": "b85d0c5f32abedafa8d92eccae1f0327e8542344bba9db795cfc053cee0def64",
+  "status": "pending"
+ }
+}

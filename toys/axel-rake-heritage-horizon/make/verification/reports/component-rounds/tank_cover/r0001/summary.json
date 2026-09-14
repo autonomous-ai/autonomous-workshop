@@ -1,0 +1,61 @@
+{
+ "build": {
+  "tank_cover": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "tank_cover"
+ ],
+ "checked": [
+  "tank_cover"
+ ],
+ "checks_ok": false,
+ "entry": "part_tank_cover.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/tank_cover/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "tank_cover"
+ ],
+ "print": {
+  "tank_cover": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/tank_cover/r0001/overhang-tank_cover.log": "c649efcb915057494ef5b6cd44a8b9ba3aef5719a73418ee0d9e0079878f5258",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/tank_cover/r0001/thickness-tank_cover.log": "c25aaef9ac1c2bb879bfd1824fc4c62bdcfbdc5894267bc773848016da8cdaa8"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 25.8% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 7.2,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:tank_cover",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/tank_cover/r0001/visual-packet.json",
+  "packet_sha256": "459ae44a76ff7139fd5b2b9324d83149c130f974aa2462da7ef1e203643fed9d",
+  "status": "pending"
+ }
+}

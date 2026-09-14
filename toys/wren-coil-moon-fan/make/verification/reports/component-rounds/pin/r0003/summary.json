@@ -1,0 +1,60 @@
+{
+ "build": {
+  "pin": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "pin"
+ ],
+ "checked": [
+  "pin"
+ ],
+ "checks_ok": true,
+ "entry": "part_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pin"
+ ],
+ "print": {
+  "pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0003/overhang-pin.log": "a6ef218af06e1895ef0d18850faee3b304517f3eda97896d593539841d1a336d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0003/thickness-pin.log": "682588acdad8b6fdc3efe56c622199f51001a661844a7dfb4362bf31642bb464"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show two connected flat-sided flexible legs, a thick barb band and longer lower ramp. Top shows a clear open split and circular supporting head. No feathered barb rim or detached material remains.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0003/visual-packet.json",
+  "packet_sha256": "064134d1d97c902dc13ca4954c9b156cf798ed82819f56bdeeea9e3e7da87aa2",
+  "status": "pass"
+ }
+}

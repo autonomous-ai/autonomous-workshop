@@ -1,0 +1,60 @@
+{
+ "build": {
+  "chassis_half": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "chassis_half"
+ ],
+ "checked": [
+  "chassis_half"
+ ],
+ "checks_ok": true,
+ "entry": "part_chassis_half.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "chassis_half"
+ ],
+ "print": {
+  "chassis_half": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0003/overhang-chassis_half.log": "ce7d008454c76334fca0dd9cfef78a8535a198ee6f72eb53b1efcbf02865a552",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0003/thickness-chassis_half.log": "88d729d75cbeb2188118d07493111692775d0d3f67fb40ec6cd13393b7848d9f"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.24,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:chassis_half",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Rear arch, motor and battery remain connected; neck housing is visibly taller with intact seam socket. V relief, pins and ledges remain attached with flat seam print base.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0003/visual-packet.json",
+  "packet_sha256": "c477a13cca8d1173d51c6253b17d166567b6abab2a03fec2d73ab45e96dbb56b",
+  "status": "pass"
+ }
+}

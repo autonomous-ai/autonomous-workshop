@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/part_plinth.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/plinth/r0001/thickness-plinth.md
+(3.2s, exit 0)
+--- stdout
+part_plinth.step.py: 20.15 cm3 solid, grid 0.207 mm (391x319x92), 302502 surface samples, thickness resolved to 0.103 mm
+  PASS  wall >= 0.80 mm (+/-0.10)      0.0% of surface below (0 of 302502 samples)
+  PASS  thickness distribution         median 2.90 mm, p95 64.85 mm, max 79.84 mm
+  WARN  hollowable at 1.20 mm wall     4.78 of 20.15 cm3 (24%) in 1 pocket(s)
+  PASS  filament that would save       0.72 cm3, 0.9 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/plinth/r0001/thickness-plinth.md
+
+--- stderr

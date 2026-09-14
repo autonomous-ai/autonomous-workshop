@@ -1,0 +1,30 @@
+{
+  "scope": "Requotient existing exhaustively enumerated completions; setup clues already enforced. Footprints only; not physical facing equivalence.",
+  "ordered_ports_C2": [
+    "identity",
+    "x reflection"
+  ],
+  "unordered_ports_D2": [
+    "identity",
+    "x reflection",
+    "y reflection with route reversal",
+    "180-degree rotation with route reversal"
+  ],
+  "results": [
+    {
+      "id": "Q01",
+      "ordered_ports_C2": 2,
+      "unordered_ports_D2": 2
+    },
+    {
+      "id": "Q02",
+      "ordered_ports_C2": 4,
+      "unordered_ports_D2": 4
+    },
+    {
+      "id": "Q03",
+      "ordered_ports_C2": 8,
+      "unordered_ports_D2": 8
+    }
+  ]
+}

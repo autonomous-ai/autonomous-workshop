@@ -1,0 +1,186 @@
+{
+ "build": {
+  "carrier": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "cover": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "leaf": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "pin": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "carrier",
+  "cover",
+  "leaf",
+  "pin"
+ ],
+ "checked": [
+  "carrier",
+  "cover",
+  "leaf",
+  "pin"
+ ],
+ "checks_ok": true,
+ "entry": "moon.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": {
+  "conditions": [
+   {
+    "detail": "clear across 120 samples (step 1.274 mm)",
+    "id": "press-open-press-return",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by carrier at step 1/6 (0.05922 mm3) - retained, as expected",
+    "id": "closed-stop",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by carrier at step 1/6 (0.05922 mm3) - retained, as expected",
+    "id": "open-stop",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by pin at step 2/10 (0.013989 mm3) - retained, as expected",
+    "id": "leaf-captured-up",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by carrier at step 4/10 (0.915492 mm3) - retained, as expected",
+    "id": "pin-captured-down",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by carrier at step 2/10 (1.2 mm3) - retained, as expected",
+    "id": "cover-captured-up",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by cover at step 2/10 (74.175 mm3) - retained, as expected",
+    "id": "inlay-captured",
+    "status": "pass"
+   },
+   {
+    "detail": "clear across 15 steps (step 1.000 mm)",
+    "id": "leaf-assembly-with-pin-removed",
+    "status": "pass"
+   },
+   {
+    "detail": "4 retention proof(s) close at 1 fixed root(s); every material member has a blocked escape sweep",
+    "id": "retention-closure",
+    "status": "pass"
+   }
+  ],
+  "detail": "9 condition(s): all pass",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "carrier",
+  "cover",
+  "leaf",
+  "pin"
+ ],
+ "print": {
+  "carrier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-carrier.log": "1c4988159ed2146021723bca8d34083d2cb9d16d8142dccb61654e38f594afb8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-carrier.log": "1eb8421bd1f3c4fb14cad4551da6e9d6f24434b889c89c80233f744ed9ccf5fd"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "cover": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-cover.log": "69097489d5839e75030cfdd3d70b7501dedd7bb72a988f1e79aac5ef2361fba3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-cover.log": "52ffc60805abccbc41805fd02e78f0ba4b52bc87820df9caea1a2fdc103eb917"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "leaf": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-leaf.log": "3f9200225ac363ea35354866fd7139059687c714774a77ba9439735a37de8502",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-leaf.log": "4d84ed3ee2170b9afdb5c5683a5a617efd5f8f211ab7fb9635b972f28d2ecf0d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-pin.log": "5ee55054082f61ee2b8ee1cd7f9255334b1a935dfa1b701b75725a521a746e49",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-pin.log": "3287de29589e3d8550be863cc8faf53d0a4dbb0da1ce826a673c52929b22ed85"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top shows one clean nested crescent; front shows a consistent leaf-to-body gap and accessible pivot ends; iso confirms matching outlines and seated pin without visible overlap. Service and tap-face checks remain in the local feature audit.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/visual-packet.json",
+  "packet_sha256": "f27a99dbe5c483b3bba8efd6806bc45890158af7ed7cc04016876449db4da720",
+  "status": "pass"
+ }
+}

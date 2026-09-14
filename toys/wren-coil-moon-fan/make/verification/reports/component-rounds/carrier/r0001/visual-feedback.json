@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Service recess breaches inner crescent wall",
+      "evidence": "Isometric view: rectangular cover recess opens directly through the right inner crescent rim",
+      "part": "carrier",
+      "repair": "Widen crescent belly and reposition coil so recess has at least 2 mm surrounding structure"
+    }
+  ],
+  "observation": "Crescent outline and rounded tips read clearly, but the service recess breaks through the inner spine and leaves thin edges.",
+  "packet_sha256": "40c438c52b785228d317463d3050d96597bdc7ef2b04e677ec12d628d516c9c7",
+  "status": "fail"
+}

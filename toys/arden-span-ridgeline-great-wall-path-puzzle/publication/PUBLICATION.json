@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.operator-publication-snapshot",
+  "title": "RIDGELINE — Great Wall Path Puzzle",
+  "inventor_id": "arden-span",
+  "publication": {
+    "adapter": "factory",
+    "mode": "operator-import-and-version-update",
+    "page_url": "https://www.autonomous.ai/toys/product/ridgeline-great-wall-path-puzzle",
+    "slug": "ridgeline-great-wall-path-puzzle",
+    "design_id": "6aa3a9b6a44bfd1fd9dc87a7",
+    "history_id": "6aa3c7a6a44bfd1fd9dc8dba",
+    "project_url": "https://cdn.autonomous.ai/panda-social/6aa3a9b6a44bfd1fd9dc87a7/6aa3c7a6a44bfd1fd9dc8dba/",
+    "status_at_observation": "public",
+    "observed_at": "2026-09-11T09:19:37.815764+00:00"
+  },
+  "native_release_acceptance": "not-asserted-for-this-operator-revision",
+  "edition": "Numbered 3x3 cradle, N orientation tab, eight part colors and retained face colors",
+  "primary_model": {
+    "path": "release/package/assembled.step",
+    "bytes": 6166540,
+    "sha256": "f471fbe9f3d5fcafab2caac7e498ee8568fa6f72694d9603ba1743946b08e323"
+  },
+  "published_archive_sha256": "f91061090002fca8b12b0edd701609ee599b5c855dc3101496e3ab8d33498456",
+  "cdn_readback": {
+    "observed_at": "2026-09-11T09:20:28.367285+00:00",
+    "status": "all-files-byte-verified",
+    "file_count": 43,
+    "root": "release/package",
+    "files": [
+      {
+        "path": "README.md",
+        "bytes": 3966,
+        "sha256": "471419c771b2a56af75b7c78c2e72265b5b8c18eefee4802e47a6c4790a4eb8e"
+      },
+      {
+        "path": "assembled.step",
+        "bytes": 6166540,
+        "sha256": "f471fbe9f3d5fcafab2caac7e498ee8568fa6f72694d9603ba1743946b08e323"
+      },
+      {
+        "path": "board/build_manual.py",
+        "bytes": 5116,
+        "sha256": "e9bc8cc1d64a3981c7708d85925d40e393d8fdcabaef273a4f60a8915a26265b"
+      },
+      {
+        "path": "board/grid-audit.json",
+        "bytes": 886,
+        "sha256": "6a1aa0cbf1e69a6f0ecac55444a56ae28994710e4d2104794f395f8180749ad8"
+      },
+      {
+        "path": "board/manual-audit.json",
+        "bytes": 277,
+        "sha256": "59323c61f4bf7848fc8d7bc6e3859f7b126f8284bf22329d1b0ca4a394ad4e69"
+      },
+      {
+        "path": "board/previous-edition.zip",
+        "bytes": 1215563,
+        "sha256": "70fd35c810c154eb01e4582a446a72e42e372596053c4c5e63f978d6525b1cea"
+      },
+      {
+        "path": "board/revise_board.py",
+        "bytes": 6950,
+        "sha256": "17e6ffe40fff1f39064590cbd37bd4efb3b5c8a65181157a7e9e69957e0769b6"
+      },
+      {
+        "path": "cadfits.py",
+        "bytes": 11162,
+        "sha256": "54d5c22d149f30933411af6349d003907a94febbb8843ba1a530ee5d979c64eb"
+      },
+      {
+        "path": "colors/colorize.py",
+        "bytes": 8239,
+        "sha256": "94051d21d3a190de9498cbc79554730b6b6aab76cef4e79030570c24fd650ec0"
+      },
+      {
+        "path": "colors/detailed-input.zip",
+        "bytes": 997308,
+        "sha256": "56251024333afd9cf3a6567b8ae39e28695c8435946e591dbc7d9772714b7b80"
+      },
+      {
+        "path": "colors/geometry/cadfits.py",
+        "bytes": 11162,
+        "sha256": "54d5c22d149f30933411af6349d003907a94febbb8843ba1a530ee5d979c64eb"
+      },
+      {
+        "path": "colors/geometry/cradle_grid.py",
+        "bytes": 2790,
+        "sha256": "68f7a11e2f006b4e4516990d6e578c25b522a0b714f49da4fc12a806adb7345f"
+      },
+      {
+        "path": "colors/geometry/ridgeline_lib.py",
+        "bytes": 8129,
+        "sha256": "e1f1b1cd8eead7b9b73a11d31b28d4a6a48579e5d6f14af03e29f9091b074966"
+      },
+      {
+        "path": "colors/input.zip",
+        "bytes": 935698,
+        "sha256": "c63a53447d590178475f06cc48d6c3c0f4ec0b6bacb8122b2f873dbcac3b2c3f"
+      },
+      {
+        "path": "colors/palette.json",
+        "bytes": 256,
+        "sha256": "60fe665106fd7e29f44a4f60117c8be856152506ea256c85e59207eee330c997"
+      },
+      {
+        "path": "colors/part-palette.json",
+        "bytes": 190,
+        "sha256": "048c9d0ca1ad039e1bbdcd6114315876f8701e787ac3905b6862a24f69b6aafc"
+      },
+      {
+        "path": "colors/part_colors.py",
+        "bytes": 219,
+        "sha256": "85491bcdf59a323c4c78b6e4ca4467825ff722f44c6153989b03c408d414a5fa"
+      },
+      {
+        "path": "cradle_grid.py",
+        "bytes": 2790,
+        "sha256": "68f7a11e2f006b4e4516990d6e578c25b522a0b714f49da4fc12a806adb7345f"
+      },
+      {
+        "path": "manual.pdf",
+        "bytes": 993531,
+        "sha256": "b7b6c97a7b5cee2619eccaadfcfd4ffbb4cfb996665bc8b4f3449a387eaf600c"
+      },
+      {
+        "path": "parts/a.step",
+        "bytes": 582490,
+        "sha256": "337dbe864d13d5ae3a7cc296276afc79db658c8d181f5cb567d97a0e496cd9d2"
+      },
+      {
+        "path": "parts/b.step",
+        "bytes": 527434,
+        "sha256": "456c4fa14655c65d778eb3db8338ecfe3d3f3ffe6bf4054926d34f98cb6b0299"
+      },
+      {
+        "path": "parts/c.step",
+        "bytes": 537794,
+        "sha256": "35a1cffe91fa0dec653ebed0906c43c53464d2d45f57d82c9c59cb4973b098f5"
+      },
+      {
+        "path": "parts/cradle.step",
+        "bytes": 799521,
+        "sha256": "9d681f94d811d5c99aae1c3d8865de66fb5fd019ad24bed034467456b4c277cf"
+      },
+      {
+        "path": "parts/d.step",
+        "bytes": 593907,
+        "sha256": "edba5b8c5104a2bd69d1225fb08fb51754201a2a9e3a8a52250a3f44310efdc8"
+      },
+      {
+        "path": "parts/g1.step",
+        "bytes": 718409,
+        "sha256": "c0f62cf395598cecedc84ee8356bb83b39366cc579d43fa3024f3d2323d67447"
+      },
+      {
+        "path": "parts/g2.step",
+        "bytes": 729932,
+        "sha256": "4e8df38d94404b9505cce0c7c74ef18d7d6adc117dad4da5cccf654e2d3cab65"
+      },
+      {
+        "path": "parts/s.step",
+        "bytes": 505821,
+        "sha256": "862c2ad644bf0dd4f747f60d7187af210107a178f1616bbe8c91693670eb16fc"
+      },
+      {
+        "path": "parts/t.step",
+        "bytes": 413254,
+        "sha256": "36f675d2b1bdf7a9d9f2052776f4de0dd51ca01a474ce80c16b7ac90548a7467"
+      },
+      {
+        "path": "parts/u.step",
+        "bytes": 509170,
+        "sha256": "8e9c3ae62db8f2ff5932821872fa19b3922d607111e4e337ddf6ac4ebbaa88f6"
+      },
+      {
+        "path": "project.json",
+        "bytes": 166,
+        "sha256": "eae54f17fad84d0373b9daf316af57188e179646c2154edcc70b274cbf2d0eed"
+      },
+      {
+        "path": "puzzle/arden-design.json",
+        "bytes": 21586,
+        "sha256": "2111b29b5c4fc332d4371984c53138a7105f6d5684b07eed13c7797600d8912f"
+      },
+      {
+        "path": "puzzle/independent_verify.py",
+        "bytes": 10840,
+        "sha256": "5d84a639eec90084802dfce2db3892a24b153b009ff5c5d6109d1fd18be719c8"
+      },
+      {
+        "path": "puzzle/solutions.json",
+        "bytes": 50420,
+        "sha256": "36c42ccfc9d2b4486c9dbf3c03181a41f332a97ef591079ecb0c4037b9aa5f9a"
+      },
+      {
+        "path": "puzzle/solve.py",
+        "bytes": 1785,
+        "sha256": "377a2faa9156329883285042b5fc56dc673a0a045939997e1997729e0e720330"
+      },
+      {
+        "path": "renders/assembled-iso.png",
+        "bytes": 310351,
+        "sha256": "5be79c035fcf2f3be47ccd2b3f91c6e1bd2d253dada45170cc9642b262a1e062"
+      },
+      {
+        "path": "renders/assembled-top.png",
+        "bytes": 143029,
+        "sha256": "a8f70a1f7f214d3c9986b14e0d7882fc49e3e9edf72166f7b4f7b8cc0db177a7"
+      },
+      {
+        "path": "renders/cradle-grid-iso.png",
+        "bytes": 171781,
+        "sha256": "ed5267a76b4f540249dcf23d952cdf77249b829a932afb87498dd7dab2421c0c"
+      },
+      {
+        "path": "renders/cradle-grid-top.png",
+        "bytes": 22170,
+        "sha256": "0307ec2d337ae4755879e9f92a6cdfd2d87021361d62d40b0cc1777491b7c70a"
+      },
+      {
+        "path": "renders/web-part-colors-top.png",
+        "bytes": 116868,
+        "sha256": "5f2927e8e348185337de8c2f912905278569498aba52238b03c224ebe38f752d"
+      },
+      {
+        "path": "renders/web-part-colors.png",
+        "bytes": 263455,
+        "sha256": "2a712dbb14039bec0e8e52d3251860fc343eb143e77f13f6eda8805c150aba4a"
+      },
+      {
+        "path": "ridgeline.step.py",
+        "bytes": 195,
+        "sha256": "a461c212bbf3ef025880902c76a28bd023cd5777dd7c74610c2c4c44e343fbc8"
+      },
+      {
+        "path": "ridgeline_lib.py",
+        "bytes": 8129,
+        "sha256": "e1f1b1cd8eead7b9b73a11d31b28d4a6a48579e5d6f14af03e29f9091b074966"
+      },
+      {
+        "path": "states.py",
+        "bytes": 2020,
+        "sha256": "84bf7953ef4e0f10bb58918ad181c0eed7ea7134b3fa131ad65741133f27c410"
+      }
+    ]
+  },
+  "github_preparation": {
+    "date": "2026-09-14",
+    "local_payload_matches_recorded_cdn_hashes": true,
+    "live_readback": "Unauthenticated API/CDN requests returned HTTP 403; publication status is the dated observation above."
+  },
+  "physical_testing": "not-performed"
+}

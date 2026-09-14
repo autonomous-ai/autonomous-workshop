@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/part_wheel.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/wheel/r0001/thickness-wheel.md
+(4.7s, exit 0)
+--- stdout
+part_wheel.step.py: 27.68 cm3 solid, grid 0.154 mm (354x354x86), 274915 surface samples, thickness resolved to 0.077 mm
+  PASS  wall >= 0.80 mm (+/-0.08)      0.0% of surface below (0 of 274915 samples)
+  PASS  thickness distribution         median 12.50 mm, p95 25.54 mm, max 25.93 mm
+  WARN  hollowable at 1.20 mm wall     19.67 of 27.68 cm3 (71%) in 1 pocket(s)
+  PASS  filament that would save       2.95 cm3, 3.7 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/wheel/r0001/thickness-wheel.md
+
+--- stderr

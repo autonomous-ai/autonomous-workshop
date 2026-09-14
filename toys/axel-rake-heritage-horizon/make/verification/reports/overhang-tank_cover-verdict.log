@@ -1,0 +1,9 @@
+part_tank_cover.step.py: 38.0 cm2 of surface, grid 0.400 mm, 169 unsupported samples over 2 region(s)
+  PASS  no face under 45 deg needs support     27.7% of the surface faces down that steeply; 0 region(s) need support, 2 bridge, 0 below 1 mm2
+  PASS  bridges within 12 mm                   2 region(s), longest span 3.1 mm
+        every unsupported region, largest first:
+        1. [bridge  ]     8.4 mm2 at (0.3, 0.2, 3.2)  span   3.1 mm of 3x3, 4.4 mm of air below
+        2. [bridge  ]     7.9 mm2 at (18.3, 0.3, 3.2)  span   3.1 mm of 3x3, 4.4 mm of air below
+RESULT: prints unsupported
+
+--- stderr ---
