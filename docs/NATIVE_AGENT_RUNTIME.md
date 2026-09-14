@@ -24,7 +24,11 @@ Workshop. It is authoritative together with
 [ADR 0044](adr/0044-scope-component-cad-network.md),
 [ADR 0045](adr/0045-own-agent-selected-dependencies.md),
 [ADR 0046](adr/0046-budgeted-spark-twenty-minute-turns.md),
-[ADR 0050](adr/0050-structured-terminal-failure-diagnostics.md), and the repository
+[ADR 0049](adr/0049-product-wide-token-budget.md),
+[ADR 0050](adr/0050-structured-terminal-failure-diagnostics.md),
+[ADR 0060](adr/0060-make-round-visual-feedback-and-three-repairs.md),
+[ADR 0061](adr/0061-spark-make-owned-verification.md),
+[ADR 0063](adr/0063-spark-component-first-make.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -56,6 +60,12 @@ isolation, exact file identity, and authenticated effect reconciliation remain
 required; they are not alternative spending budgets. Make retains its own
 frozen checks and review policy, including the current four-review allowance
 under [ADR 0060](adr/0060-make-round-visual-feedback-and-three-repairs.md).
+New Spark Make instructions also require a component-first baseline under
+[ADR 0063](adr/0063-spark-component-first-make.md): each distinct component has
+one `part_<role>.step.py` and its own passing isolated visual repair history
+before the combined entry is authored and reviewed. The make-round tool freshly
+exports the parts and refuses the requested assembly round when those passes
+are missing, failed, or stale. Forge and Quest retain their existing sequence.
 
 Spark accepts Make's output without repeating CAD verification, build-group
 validation, or production-part acceptance in the Workshop host. Make's own
@@ -261,6 +271,16 @@ and current local-archive limitation.
 project. Session memory is useful continuity, but the durable checkpoint,
 sealed manifests, and reconciled receipts remain authoritative. If memory and
 files disagree, the files win.
+
+On macOS, remounting can renumber `st_dev` without changing runtime files.
+Legacy session fingerprints include that transient number. Resume can reproduce
+the saved fingerprint using a single previous device number only when all
+trusted Python and Codex paths share one device in Darwin's
+`0x01000000`–`0x010000ff` range. Every other fingerprint field must match,
+including paths, symlink targets, inodes, modes, and runtime policy. This bounded
+compatibility check leaves the checkpoint unchanged and launches with current
+device identities. Mixed-device layouts, devices outside that range, other
+platforms, and additional policy drift retain the normal refusal.
 
 A Wish command is a finite job, not a daemon. The host rejects new Wish
 creation when macOS reports that it is running beneath a `grid.serve.*`
@@ -639,6 +659,10 @@ their two-review bound. Make rounds also render inspection views and record
 native Manager feedback on placement, proportions and other visible defects
 through `make_round --record-visual`. Pending visual feedback cannot pass a
 round, and self-review never replaces the independent critic (ADR 0060).
+For new Spark work, `make_round --component part_<role>.step.py` keeps an
+isolated history for every component; assembled review begins with
+`--require-component-passes` only after every component's current STEP has
+passed its own round (ADR 0063).
 Before independent review, Make generates every declared entry with `--write`
 so each carries a fresh `.step`, then runs `verify_project --print-gates
 --nozzle 0.4`. The mesh, overhang and wall-thickness gates build each printable
@@ -976,12 +1000,16 @@ request awaiting its first usage report has no time
 limit and remains explicitly pending. Unavailable, malformed, or regressing
 established accounting fails closed. Oversized native compaction records are
 validated in bounded chunks without retaining their history or recounting
-embedded usage. Ancestry discovery reads only a bounded first metadata record
+embedded usage. Oversized visual `custom_tool_call_output` records receive the
+same bounded framing validation and are discarded; other oversized response
+items remain unsupported. Ancestry discovery reads only a bounded first metadata record
 from each candidate; unrelated bodies are never usage inputs. Selected files
 are streamed to their observed size without an aggregate file-size spending cap;
 ordinary record bounds and identity validation remain.
 Completed root-turn input/output usage is reconciled against the native terminal
-event before a saved proposal or effect can advance; unresolved accounting
+event before a saved proposal or effect can advance. Supported terminal events
+may report request-local deltas or cumulative root counters; both require an
+exact monotonic relationship to the rollout ledger. Unresolved accounting
 survives resume in private host state. Canceled or still-in-flight descendants
 are not presented as completed usage. In-flight requests may overshoot the
 observed cap.

@@ -1,8 +1,8 @@
-"""Bounded-memory validator for an oversized native compaction.
+"""Bounded-memory validator for supported oversized native records.
 
-The outer record must have type=compacted. All JSON syntax and duplicate keys
-are checked; bodies are discarded. This record carries no top-level token_count
-event in the frozen native protocol. Other oversized kinds remain rejected.
+All JSON syntax and duplicate keys are checked; bodies are discarded. Native
+compactions and visual custom-tool results carry no top-level token_count event
+in the frozen native protocol. Other oversized kinds remain rejected.
 """
 import codecs
 import json
@@ -35,6 +35,7 @@ class Reader:
         self.remaining = remaining
         self.complete = prefix.endswith(b'\n')
         self.record_type = None
+        self.payload_type = None
 
     def peek(self):
         if self.position < len(self.buffer):
@@ -125,7 +126,7 @@ class Reader:
                 raise IncompleteRecord()
             raise InvalidRecord('malformed compacted atom')
 
-    def value(self, depth, capture=False):
+    def value(self, depth, capture=False, capture_payload_type=False):
         if depth > MAX_DEPTH:
             raise InvalidRecord('compacted nesting exceeds safe bounds')
         self.space()
@@ -135,14 +136,14 @@ class Reader:
         if ch == 34:
             return self.string(MAX_ATOM_BYTES if capture else None)
         if ch == 123:
-            return self.object(depth + 1)
+            return self.object(depth + 1, payload=capture_payload_type)
         if ch == 91:
             self.array(depth + 1)
             return None
         self.atom()
         return None
 
-    def object(self, depth=0, root=False):
+    def object(self, depth=0, root=False, payload=False):
         if depth > MAX_DEPTH:
             raise InvalidRecord('compacted nesting exceeds safe bounds')
         self.expect(123)
@@ -162,10 +163,16 @@ class Reader:
                 raise InvalidRecord('compacted object exceeds safe bounds')
             self.space()
             self.expect(58)
-            value = self.value(depth, capture=root and key == 'type')
+            value = self.value(
+                depth,
+                capture=(root or payload) and key == 'type',
+                capture_payload_type=root and key == 'payload',
+            )
             if root and key == 'type':
                 record_type = value
                 self.record_type = value
+            if payload and key == 'type':
+                self.payload_type = value
             self.space()
             end = self.take()
             if end == 125:
@@ -200,15 +207,29 @@ def consume_compacted_record(prefix, stream, remaining):
         reader.space()
         if reader.peek() is not None:
             raise InvalidRecord('trailing compacted record data')
+        supported = (
+            kind == 'compacted'
+            or (
+                kind == 'response_item'
+                and reader.payload_type == 'custom_tool_call_output'
+            )
+        )
         if not reader.complete:
-            if reader.record_type != 'compacted':
+            if not supported:
                 raise InvalidRecord('native usage record exceeds safe bounds')
             return None, reader.remaining
-        if kind != 'compacted':
+        if not supported:
             raise InvalidRecord('native usage record exceeds safe bounds')
-        return {'type': 'compacted'}, reader.remaining
+        return {'type': kind}, reader.remaining
     except IncompleteRecord:
-        if not reader.complete and reader.record_type == 'compacted':
+        supported = (
+            reader.record_type == 'compacted'
+            or (
+                reader.record_type == 'response_item'
+                and reader.payload_type == 'custom_tool_call_output'
+            )
+        )
+        if not reader.complete and supported:
             return None, reader.remaining
         raise InvalidRecord('incomplete compacted JSON') from None
     except UnicodeError:

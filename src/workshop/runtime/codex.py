@@ -18,7 +18,7 @@ import tempfile
 import threading
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping, Optional
 
@@ -686,6 +686,47 @@ def _runtime_config_sha256(
             "Codex runtime profile sha256",
         )
     return _sha256_json(payload)
+
+
+def _darwin_remounted_runtime_policies(
+    policy: _CodexRunPolicy,
+) -> Iterator[_CodexRunPolicy]:
+    """Reconstruct bounded legacy fingerprints after a Darwin remount.
+
+    Darwin st_dev numbers are mount assignments, not persistent volume IDs.
+    Legacy checkpoints stored only a digest, so prove the *entire* old digest
+    by substituting one common device number. Do not relax path, inode, mode,
+    symlink target, environment or permission comparisons. Support only the
+    first 256 devices in Darwin's filesystem device namespace, and only when
+    every trusted runtime path is on the same device. Other layouts fail closed.
+    These candidates are comparison evidence, never the launched policy.
+    """
+    if sys.platform != "darwin":
+        return
+    identities = (
+        *policy.trusted_python_runtime_paths,
+        *policy.trusted_codex_runtime_paths,
+    )
+    devices = {value for item in identities for value in (item.device, item.resolved_device)}
+    if len(devices) != 1:
+        return
+    current = devices.pop()
+    if not 0x01000000 <= current < 0x01000100:
+        return
+    for previous in range(0x01000000, 0x01000100):
+        if previous == current:
+            continue
+        yield replace(
+            policy,
+            trusted_python_runtime_paths=tuple(
+                replace(item, device=previous, resolved_device=previous)
+                for item in policy.trusted_python_runtime_paths
+            ),
+            trusted_codex_runtime_paths=tuple(
+                replace(item, device=previous, resolved_device=previous)
+                for item in policy.trusted_codex_runtime_paths
+            ),
+        )
 
 
 def _run_policy_before_workshop_python(
@@ -2639,6 +2680,10 @@ class CodexNativeSessionLauncher:
         )
         if legacy_before_venv_directory is not None:
             predecessor_policies.append((legacy_before_venv_directory, True))
+        predecessor_policies.extend(
+            (policy, True)
+            for policy in _darwin_remounted_runtime_policies(run_policy)
+        )
         predecessor_runtime_config_sha256s = tuple(
             dict.fromkeys(
                 _runtime_config_sha256(
