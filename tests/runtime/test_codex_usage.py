@@ -125,6 +125,94 @@ def test_product_counts_child_followup_without_reset_or_double_charge(tmp_path):
     assert result["total_tokens"] == 440
 
 
+@pytest.mark.parametrize("fresh", ["none", "continued", "reset"])
+@pytest.mark.parametrize("thread,parent", [(ROOT, None), (CHILD, ROOT)])
+def test_followup_replays_exact_snapshot_before_fresh_usage(tmp_path, fresh, thread, parent):
+    previous = usage(200, last_token_usage=counters(100))
+    replay = usage(200, last_token_usage=counters(100))
+    replay["timestamp"] = "2026-09-07T02:00:00Z"
+    events = records(thread, parent) + [usage(100), previous,
+        {"type": "event_msg", "payload": {"type": "task_complete", "turn_id": "first"}},
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        replay, replay,
+    ]
+    if fresh == "continued":
+        events.append(usage(300, last_token_usage=counters(100)))
+    elif fresh == "reset":
+        events.append(usage(100))
+    if fresh != "none":
+        events[-1]["timestamp"] = "2026-09-07T03:00:00Z"
+    events.append({"type": "event_msg", "payload": {
+        "type": "task_complete", "turn_id": "followup",
+    }})
+    result = read_thread_usage(write(tmp_path, events, thread), thread_id=thread, workspace=Path("/toy"))
+    assert result["tokens"] == counters(200 if fresh == "none" else 300)
+    assert result["last_observed_at"] == (
+        previous["timestamp"] if fresh == "none" else "2026-09-07T03:00:00Z"
+    )
+
+
+def test_replayed_child_snapshot_preserves_product_budget(tmp_path):
+    write(tmp_path, records() + [usage(100)])
+    events = records(CHILD, ROOT) + [usage(100), usage(200, last_token_usage=counters(100))]
+    child_path = write(tmp_path, events, CHILD)
+    before = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    events += [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(200, last_token_usage=counters(100)),
+    ]
+    child_path.write_text("".join(json.dumps(event) + "\n" for event in events))
+    after = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    assert after == before
+    from workshop.workflow.token_budget import ProductTokenBudget
+    budget = ProductTokenBudget()
+    budget.observe(before)
+    saved = budget.to_dict()
+    budget.observe(after)
+    assert budget.to_dict() == saved
+
+
+@pytest.mark.parametrize("key", COUNTERS)
+def test_followup_replay_with_changed_last_counter_fails_closed(tmp_path, key):
+    last = {**counters(100), key: counters(100)[key] + 1}
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(200, last_token_usage=last),
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("fresh", [usage(320, last_token_usage=counters(100)),
+                                  usage(150, last_token_usage=counters(50))])
+def test_replay_keeps_first_fresh_request_baseline_check(tmp_path, fresh):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(200, last_token_usage=counters(100)), fresh,
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_followup_identical_single_request_counts_as_reset(tmp_path):
+    events = records() + [usage(100),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "resume"}},
+        usage(100),
+    ]
+    result = read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+    assert result["tokens"] == counters(200)
+
+
+def test_followup_replay_under_changed_model_fails_closed(tmp_path):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        {"type": "turn_context", "payload": {"model": "other-model"}},
+        usage(200, last_token_usage=counters(100)),
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
 @pytest.mark.parametrize("current,last", [(300, 50), (100, 50), (300, 200)])
 def test_followup_with_unexplained_baseline_fails_closed(tmp_path, current, last):
     events = records() + [usage(200),

@@ -150,6 +150,8 @@ def read_thread_usage(path, *, thread_id, workspace):
         raise UsageUnavailable("native rollout usage version is not validated")
     totals = {key: 0 for key in COUNTERS}
     task_totals = None
+    previous_last = None
+    previous_model = None
     task_start = False
     tasks = set()
     model = None
@@ -176,14 +178,24 @@ def read_thread_usage(path, *, thread_id, workspace):
         if not isinstance(info, dict) or not isinstance(model, str) or not 1 <= len(model) <= 128:
             raise UsageUnavailable("native usage model or counters are unsupported")
         current = _counters(info.get("total_token_usage"))
+        last = _counters(info.get("last_token_usage"))
         if not tasks:
             raise UsageUnavailable("native usage lacks a task boundary")
         if task_start:
+            # A follow-up may replay the preceding task's final snapshot before
+            # any new request. Preserve the pending boundary so the first fresh
+            # observation still has to prove continuation or a process reset.
+            # total == last remains the reset case, even if its values happen
+            # to match an earlier single-request task; never discard that usage.
+            if (
+                current == task_totals and last == previous_last
+                and model == previous_model and current != last
+            ):
+                continue
             # exec 0.153.4+ resets counters on process resume, but a continued
             # task in the same process (including a child follow-up) retains
             # them. Require an exact first-request baseline for either case;
             # never infer a reset merely from a decreasing counter.
-            last = _counters(info.get("last_token_usage"))
             if current == last:
                 task_totals = {key: 0 for key in COUNTERS}
             elif task_totals is None or any(
@@ -197,6 +209,8 @@ def read_thread_usage(path, *, thread_id, workspace):
         _counters(delta)
         totals = {key: totals[key] + delta[key] for key in COUNTERS}
         task_totals = current
+        previous_last = last
+        previous_model = model
         models.add(model)
         observations += 1
         last_at = record.get("timestamp")

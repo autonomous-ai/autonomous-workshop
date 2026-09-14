@@ -161,6 +161,25 @@ record cannot contribute usage; later top-level token notifications remain the
 only counter source. Other oversized `response_item` payload types and all
 other unsupported oversized record kinds still fail closed.
 
+## Replayed follow-up usage snapshots (2026-09-14)
+
+Codex 0.154.0 can begin a subagent follow-up by repeating the preceding task's
+final cumulative and last-request counters, then complete without fresh usage.
+The adapter previously rejected this snapshot as an ambiguous task baseline.
+It now ignores an exact counter replay under the same model when cumulative
+usage differs from last-request usage. The first fresh record still must prove
+either cumulative continuation or a reset; duplicate snapshots do not consume
+that pending boundary or advance the observation timestamp.
+
+`total == last` retains its reset meaning even when it matches an earlier
+single-request task. Changed last-request counters, unexplained increments,
+regressions, and a replay under a different model remain fail-closed. Synthetic
+tests cover root and child tasks, duplicate-only follow-ups, subsequent
+continuation and reset, and unchanged product-budget observations. Offline
+replay recovered the affected product's same 9,425,297-token observation across
+three threads. No private records were edited and no native session resumed;
+this accounting recovery is not evidence that Make completed.
+
 ## Resume terminal-usage reconciliation (2026-09-13)
 
 Supported Codex resume paths have emitted `turn.completed` usage in two forms:
