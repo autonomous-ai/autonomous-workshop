@@ -1,0 +1,30 @@
+{
+  "spec": 1,
+  "id": "autonomous/workshop",
+  "name": "Workshop",
+  "description": "Describe a 3D object; get a validated, printable STEP part or assembly with a live 3D view.",
+  "engine": "codex",
+  "workspace": {
+    "template": "harness/template",
+    "marker": "model.step.py",
+    "init": "harness/toolchain/init-workspace.sh"
+  },
+  "agent": {
+    "instructions": "harness/AGENTS.md",
+    "skills": ["src/workshop/make/skills"],
+    "env": {
+      "CAD_SKILL_ROOT": "${workspace}/.agents/skills/cad",
+      "WORKSHOP_PYTHON": "${dsh}/.venv/bin/python"
+    }
+  },
+  "toolchain": {
+    "setup": "harness/toolchain/setup.sh",
+    "doctor": "harness/toolchain/doctor.sh"
+  },
+  "viewer": {
+    "command": "harness/toolchain/viewer.sh",
+    "url": "http://127.0.0.1:${port}/?file=${artifact}",
+    "artifactExtensions": [".step", ".stp", ".stl", ".glb"]
+  },
+  "verdict": ".harness/verdict.json"
+}

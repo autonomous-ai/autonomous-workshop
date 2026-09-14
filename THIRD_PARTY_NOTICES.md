@@ -65,3 +65,14 @@ they are not vendored in this repository:
 - [Playwright](https://github.com/microsoft/playwright) 1.61.1, Apache License
   2.0, copyright Microsoft Corporation. Its Chromium build is downloaded by
   `npx playwright install chromium` under the Chromium BSD-style license.
+
+## CAD viewer runtime (Harness 3D pane)
+
+`harness/viewer/` vendors the prebuilt CAD viewer from
+[`autonomous-ai/autonomous-vibe`](https://github.com/autonomous-ai/autonomous-vibe)
+(`skills/cad-viewer/scripts/viewer/`, commit
+`81b886b01e79ee65eb259f8324767ef4c844bfad`): `backend/server.mjs`, `dist/` and
+`package.json`, byte-for-byte. MIT License, copyright 2026 earthtojake; the
+license text is included at `harness/viewer/LICENSE`. It is used only by
+`harness/toolchain/viewer.sh`, the 3D pane Autonomous Harness opens beside a
+Workshop agent, never by Workshop's own product runs.
