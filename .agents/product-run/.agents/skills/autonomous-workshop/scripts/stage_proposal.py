@@ -2260,7 +2260,12 @@ def _make_contract(
     if any(path.endswith((".stl", ".3mf", ".glb")) for path in paths):
         raise ProposalError(
             "Make product manifest carries a mesh artifact; STEP is the only "
-            "geometry format the toolchain writes"
+            "geometry format the toolchain writes. A Wish-requested STL/3MF "
+            "print set is engineering evidence, not a product artifact: keep "
+            "it under the round's engineering/prints/ beside product/, cite it "
+            "from the product README, and do not list it in product.json; the "
+            "Release package and Factory publication are built from the sealed "
+            "STEP"
         )
     canonical_snap_paths = {
         (project_relative / "snap" / filename).as_posix()

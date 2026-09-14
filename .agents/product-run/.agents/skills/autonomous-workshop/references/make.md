@@ -70,6 +70,14 @@ printability is checkable again without a mesh deliverable. Call a product
 print-ready only behind a passing `--print-gates` run at the nozzle the print
 will use.
 
+A Wish that asks for a print-ready STL/3MF set does not change this. A mesh
+you export yourself is engineering evidence, not a product artifact: keep it
+under the round's `engineering/prints/` beside `product/`, outside the Made
+manifest, cite it from the product README, and never list it in
+`product.json`. The Release package and Factory publication are built from the
+sealed STEP, so the finalizer refuses any `.stl`, `.3mf` or `.glb` under
+`product/` and the run cannot proceed until they are moved out.
+
 ## Keep the session small
 
 Every tool call re-sends the whole session, and the product budget counts that

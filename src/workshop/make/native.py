@@ -221,7 +221,9 @@ class NativeMade:
         if any(path.endswith((".stl", ".3mf", ".glb")) for path in paths):
             raise ContractError(
                 "native Made manifest must not contain a mesh artifact; STEP "
-                "is the only geometry format the toolchain writes"
+                "is the only geometry format the toolchain writes (a "
+                "Wish-requested STL/3MF set belongs in the round's engineering/ "
+                "tree, outside the manifest)"
             )
         object.__setattr__(
             self,
