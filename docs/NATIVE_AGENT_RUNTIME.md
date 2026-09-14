@@ -1222,3 +1222,13 @@ The original MANAGER.json is provenance, not overwritten runtime policy.
 The resumed Manager receives the choice for subsequent native child work.
 This restores the existing operator override without changing the team's
 motion-policy defaults or native usage reconciliation.
+
+Historical per-response native usage remains supported alongside the newer
+notification replay handling. If a rollout contains a response ledger, its
+complete response/session identities, compaction references and notification
+coverage are validated; malformed or incomplete ledgers never fall back to
+notification totals. Ledger-free rollouts retain the team's replay rules.
+The bounded oversized-record parser preserves compaction usage metadata and
+continues accepting visual custom-tool output without retaining its body.
+Offline replay on 2026-09-14 reproduced Cratercade's saved 608,046,967 tokens
+across 29 threads exactly. This is accounting recovery, not Make completion.
