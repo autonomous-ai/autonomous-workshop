@@ -126,7 +126,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0062-step-only-cad-toolchain.md`, and
 `docs/adr/0063-spark-component-first-make.md`, and
 `docs/adr/0063-print-gates-on-source.md`, and
-`docs/adr/0064-operator-selected-turn-boundary.md` before changing the CLI, runtime,
+`docs/adr/0064-operator-selected-turn-boundary.md`, and
+`docs/adr/0067-non-printable-component-rounds.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -177,6 +178,10 @@ again. A product is print-ready only behind a passing `verify_project
 product status `full-with-thickness` **and** `print_ready_claim: true` — and
 reproduced by the host's own rerun. A half-declared claim is refused, not
 downgraded, and the legacy `--exports` full-tier replay path stays retired.
+ADR 0067 makes a Make round select print targets the way the verifier already
+does: a component declaring `PRINTABLE = False` is reviewed on build and visual
+evidence with its print gates recorded as skipped, never as failures. It removes
+gate runs that measured nothing and weakens no gate on a printable part.
 ADR 0064 adds one opt-in `--turn-minutes` override above the frozen turn
 boundaries of ADR 0019, ADR 0023 and the deep-economics profiles, and supersedes
 none of them: a run that does not ask keeps the exact boundary it froze. It

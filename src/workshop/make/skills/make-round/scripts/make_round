@@ -20,6 +20,7 @@ round could not run.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 from importlib.metadata import PackageNotFoundError, version as package_version
 import json
@@ -221,6 +222,55 @@ class _RootsView:
 # pure helpers (self-checked without CAD)
 
 
+def declared_printable(path) -> bool | None:
+    """Read a generator's module-level ``PRINTABLE`` without building it.
+
+    This is the static literal that `printlib` and `verify_project` already
+    select print targets by, read here so a round gates exactly what those two
+    gate. A purchased component -- a latch, a bearing, an NFC tag -- and a
+    logical review part both declare ``False``: they are modeled and reviewed,
+    but they are not print targets, and the print gates refuse them by contract
+    rather than by measurement.
+    """
+    path = Path(path)
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in tree.body:
+        value = None
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "PRINTABLE"
+            for target in node.targets
+        ):
+            value = node.value
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "PRINTABLE"
+        ):
+            value = node.value
+        if value is not None:
+            if isinstance(value, ast.Constant) and isinstance(value.value, bool):
+                return value.value
+            raise ValueError("%s: PRINTABLE must be the literal True or False" % path.name)
+    return None
+
+
+def not_printed(round_index: int) -> dict:
+    """The print record for an entry that is reviewed and never sliced.
+
+    SKIP rather than PASS: nothing was measured, so nothing is claimed. It is
+    also not FAIL -- a bought part refusing a wall gate is the contract
+    answering, not a defect the round can repair.
+    """
+    detail = "not a print target (PRINTABLE = False)"
+    return {
+        "verdict": "SKIP",
+        "thickness": {"verdict": "SKIP", "thinnest_mm": None, "failures": [], "detail": detail},
+        "overhang": {"verdict": "SKIP", "overhang_mm2": None, "failures": [], "detail": detail},
+        "measured_round": round_index,
+        "logs": {},
+    }
+
+
 def parse_build(stdout: str, stderr: str, returncode: int) -> dict:
     """The verdict and the reason from one part's `gen --write` run.
 
@@ -376,6 +426,9 @@ def render_summary(summary: dict) -> str:
         lines.append("  build %-4s %-28s%s" % (item["verdict"], role, extra))
         gates = (summary.get("print") or {}).get(role)
         if gates is None:
+            continue
+        if gates["verdict"] == "SKIP":
+            lines.append("  print SKIP %-28s  %s" % (role, gates["thickness"]["detail"]))
             continue
         wall = gates["thickness"]
         thin = "" if wall.get("thinnest_mm") is None else "  thinnest %.2f mm" % wall["thinnest_mm"]
@@ -634,6 +687,28 @@ def make_round(args) -> int:
     else:
         print("make_round: expected exactly one entry *.step.py (found %d); pass --entry" % len(entries), file=sys.stderr)
         return 2
+    # A one-piece project exposes its buildable geometry through the entry, and
+    # a split model that still prints as one piece declares that combined entry
+    # printable. Gate whatever actually prints, on the same declaration.
+    try:
+        if not parts:
+            parts = [entry]
+        elif component is None and declared_printable(entry) is True:
+            parts = [*parts, entry]
+        printable = {
+            part.name.removeprefix("part_").removesuffix(".step.py"): declared_printable(part)
+            for part in parts
+        }
+        if len(printable) != len(parts):
+            # Roles key the build digests, the gate records and the component
+            # state. Two entries answering to one role would quietly overwrite
+            # each other's evidence.
+            raise ValueError(
+                "two entries share one role: %s" % ", ".join(sorted(p.name for p in parts))
+            )
+    except (OSError, SyntaxError, ValueError) as exc:
+        print("make_round: %s" % exc, file=sys.stderr)
+        return 2
     measure = project / "measure"
     measure.mkdir(exist_ok=True)
     try:
@@ -646,10 +721,6 @@ def make_round(args) -> int:
     round_index = int(state.get("round", 0)) + 1
     out = Path(args.out) if args.out else round_root / ("r%04d" % round_index)
     out.mkdir(parents=True, exist_ok=True)
-
-    # A one-piece project exposes its buildable geometry through the entry.
-    if not parts:
-        parts = [entry]
 
     # 1. build every part once; hash the STEP bytes so the next round knows what moved.
     digests: dict[str, str] = {}
@@ -731,6 +802,12 @@ def make_round(args) -> int:
     same_context = context is not None and context == state.get("print_context")
     printing: dict[str, dict] = {}
     for role in sorted(digests):
+        if printable.get(role) is False:
+            # `check_thickness` and `check_overhang` reject this entry by
+            # declaration. Running them anyway turns a contract answer into a
+            # measured failure no repair can clear.
+            printing[role] = not_printed(round_index)
+            continue
         prior = previous_print.get(role)
         if (
             not args.all_parts and role not in changed and same_context
@@ -856,7 +933,7 @@ def make_round(args) -> int:
 
     ok = (
         all(item["verdict"] == "PASS" for item in build.values())
-        and all(item["verdict"] == "PASS" for item in printing.values())
+        and all(item["verdict"] in ("PASS", "SKIP") for item in printing.values())
         and all(item.get("ok") for item in likeness)
         and (motion is None or motion["verdict"] == "pass")
         and (full is None or full["ok"])
@@ -872,6 +949,7 @@ def make_round(args) -> int:
         "build": build,
         "print": printing,
         "reused": sorted(role for role in printing if printing[role].get("measured_round") != round_index),
+        "not_printed": sorted(role for role in printing if printing[role]["verdict"] == "SKIP"),
         "nozzle": args.nozzle,
         "overhang_angle": args.overhang_angle,
         "likeness": likeness,
@@ -973,6 +1051,27 @@ def self_check() -> int:
         check(not reusable_print({**record, "logs": {}}), "a record without its tool log is not reused")
         log.write_text("tampered\n", encoding="utf-8")
         check(not reusable_print(record), "an edited tool log invalidates the record")
+    with tempfile.TemporaryDirectory() as tmp:
+        entry = Path(tmp) / "part_latch.step.py"
+        entry.write_text("PRINTABLE = False\n\n\ndef gen_step():\n    return None\n", encoding="utf-8")
+        check(declared_printable(entry) is False, "a bought component declares itself off the bed")
+        entry.write_text("PRINTABLE: bool = True\n\n\ndef gen_step():\n    return None\n", encoding="utf-8")
+        check(declared_printable(entry) is True, "an annotated declaration reads the same")
+        entry.write_text("def gen_step():\n    return None\n", encoding="utf-8")
+        check(declared_printable(entry) is None, "an undeclared part keeps the legacy default")
+        entry.write_text("PRINTABLE = bool(1)\n", encoding="utf-8")
+        try:
+            declared_printable(entry)
+            check(False, "a computed declaration is refused")
+        except ValueError:
+            check(True, "a computed declaration is refused")
+    skipped = not_printed(3)
+    check(
+        skipped["verdict"] == "SKIP" and skipped["thickness"]["verdict"] == "SKIP"
+        and skipped["logs"] == {},
+        "a non-print target records a skip, never a measurement",
+    )
+    check(not reusable_print(skipped), "a skip is never carried forward as a passing pair")
     check(diff_parts({}, {"a": "1", "b": "2"}) == ["a", "b"], "the first round checks every part")
     check(diff_parts({"a": "1", "b": "2"}, {"a": "1", "b": "3", "c": "4"}) == ["b", "c"], "later rounds check only changed or new parts")
     check(parse_refs(["hero=ref/hero.png", "side=/abs/side.png"], []) == [("hero", "ref/hero.png"), ("side", "/abs/side.png")], "--ref pairs parse")
@@ -1023,6 +1122,18 @@ def self_check() -> int:
     check("over  PASS" in text, "the overhang gate reports beside the wall gate")
     check("(retained PASS evidence)" in text, "reused gate evidence is named rather than implied")
     check(len(text.splitlines()) <= 10, "the summary stays short")
+    bought = render_summary({
+        **summary,
+        "checked": ["latch"],
+        "build": {"latch": {"verdict": "PASS", "failures": []}},
+        "print": {"latch": not_printed(3)},
+        "reused": [],
+    })
+    check(
+        "build PASS latch" in bought and "print SKIP" in bought
+        and "PRINTABLE = False" in bought and "wall " not in bought,
+        "a reviewed bought component is built and named, never given a wall verdict",
+    )
     print("\nall fixtures pass" if ok else "\nself-check FAILED")
     return 0 if ok else 1
 

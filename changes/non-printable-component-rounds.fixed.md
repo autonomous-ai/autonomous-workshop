@@ -1,0 +1,1 @@
+- A Make round no longer fails a component it was never going to print: `make_round` selects print targets from the same `PRINTABLE` declaration `verify_project` uses, and records a purchased or logical component's wall and overhang gates as skipped instead of failed.
