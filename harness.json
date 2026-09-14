@@ -11,7 +11,9 @@
   },
   "agent": {
     "instructions": "harness/AGENTS.md",
-    "skills": ["src/workshop/make/skills"],
+    "skills": [
+      "src/workshop/make/skills"
+    ],
     "env": {
       "CAD_SKILL_ROOT": "${workspace}/.agents/skills/cad",
       "WORKSHOP_PYTHON": "${dsh}/.venv/bin/python"
@@ -24,7 +26,10 @@
   "viewer": {
     "command": "harness/toolchain/viewer.sh",
     "url": "http://127.0.0.1:${port}/?file=${artifact}",
-    "artifactExtensions": [".step", ".stp", ".stl", ".glb"]
+    "artifactExtensions": [
+      ".step",
+      ".stp"
+    ]
   },
   "verdict": ".harness/verdict.json"
 }
