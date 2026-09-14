@@ -364,6 +364,7 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
         print("Workflow: %s" % workflow.title())
     model = receipt.get("model")
     effort = receipt.get("effort")
+    initial_effort = receipt.get("initial_effort")
     if isinstance(model, str) and model:
         print(
             "Model: %s%s"
@@ -374,6 +375,8 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                 else "",
             )
         )
+    if isinstance(initial_effort, str) and initial_effort != effort:
+        print("Initial effort: %s; operator override applies to subsequent turns." % initial_effort)
     print("%s: %s at %s" % (verb, status, stage))
     budget = receipt.get("budget")
     if isinstance(budget, Mapping) and budget.get("unit") == "tokens":
@@ -1125,6 +1128,7 @@ def _resume(args: argparse.Namespace) -> int:
         check_motion=args.check_motion,
         **({"adopt_turn_budget": True} if args.turn_budget else {}),
         **({"max_tokens": args.max_tokens} if args.max_tokens is not None else {}),
+        **({"reasoning_effort": args.effort} if args.effort is not None else {}),
         **_turn_boundary_options(args.turn_minutes),
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
@@ -2000,6 +2004,8 @@ def parser() -> argparse.ArgumentParser:
         "resume", help="resume the exact frozen native Manager session for one Wish"
     )
     resume.add_argument("product_id", help="saved Wish id")
+    resume.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS, default=None,
+                        help="explicit reasoning effort for this and later resumes; omitted keeps the saved selection")
     resume.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
                         help="enable Make motion checks and animation review on resume, including older runs (default: false)")
     resume.add_argument("--max-tokens", type=_token_budget, default=None, metavar="N",

@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping, Optional, Sequence
 
-from workshop._validation import require_sha256
+from workshop._validation import require_sha256, utc_now
 
 try:
     import fcntl
@@ -205,6 +205,10 @@ from workshop.workflow.budgets import (
 )
 from workshop.workflow.token_budget import (
     ProductTokenBudget, TOKEN_BUDGET_CAPABILITY_PATH, DEFAULT_PRODUCT_TOKENS, validate_limit,
+)
+from workshop.workflow.reasoning_override import (
+    REASONING_OVERRIDE_NAME, append_reasoning_override, reasoning_override_binding,
+    validate_reasoning_override, validate_reasoning_selection,
 )
 from workshop.runtime.codex_usage import (
     UsageNotReady,
@@ -5026,6 +5030,67 @@ def _adopt_token_budget(paths, checkpoint, limit):
     _save_lifetime_budget(paths, checkpoint, budget)
 
 
+def _reasoning_override_context(paths, checkpoint):
+    validate_reasoning_selection(checkpoint, checkpoint.manager_reasoning_effort)
+    if not isinstance(_load_lifetime_budget(paths, checkpoint), ProductTokenBudget):
+        raise ContractError("reasoning effort override requires a persistent token budget")
+    session = _read_stable_private_json(
+        paths.host_state / "codex-session.json",
+        label="reasoning effort native session", maximum_bytes=32768,
+    )
+    return session, reasoning_override_binding(paths, checkpoint, session)
+
+
+def _read_reasoning_override(paths, checkpoint):
+    path = paths.host_state / REASONING_OVERRIDE_NAME
+    if not path.exists() and not path.is_symlink():
+        return None
+    value = _read_stable_private_json(
+        path, label="reasoning effort override", maximum_bytes=None,
+    )
+    _, binding = _reasoning_override_context(paths, checkpoint)
+    return validate_reasoning_override(value, binding=binding, checkpoint=checkpoint)
+
+
+def _set_reasoning_override(paths, checkpoint, effort):
+    """Persist explicit operator policy under the caller's run mutation lock."""
+    if checkpoint.status == "complete":
+        raise ContractError("reasoning effort override requires an unfinished product")
+    validate_reasoning_selection(checkpoint, effort)
+    previous = _read_reasoning_override(paths, checkpoint)
+    session, binding = _reasoning_override_context(paths, checkpoint)
+    value = append_reasoning_override(
+        previous, binding=binding, checkpoint=checkpoint, session=session,
+        effort=effort, requested_at=utc_now(),
+    )
+    if value is not None:
+        _write_private_json(paths.host_state / REASONING_OVERRIDE_NAME, value)
+
+
+def _token_budget_launcher(paths, checkpoint, launcher, budget, reasoning_override):
+    # Preserve the profile identity already used by token-budget sessions.
+    # Effort changes never replace the native model or mutate frozen inputs.
+    if reasoning_override is not None and launcher.model != checkpoint.manager_model:
+        raise ContractError("reasoning effort override must preserve the frozen model")
+    result = CodexNativeSessionLauncher(
+        model=launcher.model,
+        reasoning_effort=(
+            reasoning_override["changes"][-1]["effort"]
+            if reasoning_override is not None else launcher.reasoning_effort
+        ),
+        auto_compact_token_limit=launcher.auto_compact_token_limit,
+        runtime_profile_sha256=checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH),
+        binary=launcher.binary, timeout_seconds=None,
+        cli_version=launcher.cli_version,
+        popen_factory=launcher._popen_factory,
+        version_runner=launcher._version_runner,
+    )
+    if not supports_rollout_usage_version(result.cli_version):
+        raise ContractError("token-budget rollout adapter requires Codex CLI 0.153.4 or newer")
+    result.token_budget_observer = _product_token_observer(paths, checkpoint, budget)
+    return result
+
+
 def _root_token_counts(observation):
     if observation is None:
         return {"input_tokens": 0, "output_tokens": 0}
@@ -6418,6 +6483,7 @@ def _launcher_call(
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
     prompt = selection_prompt() if inventor_selection_boundary else native_stage_prompt(checkpoint.stage)
+    reasoning_override = _read_reasoning_override(paths, checkpoint)
     if "revision-source.zip" in checkpoint.input_sha256s:
         from workshop.workflow.revision import REVISION_GUIDANCE
         prompt += "\n\n" + REVISION_GUIDANCE
@@ -6522,6 +6588,15 @@ def _launcher_call(
             "and independent motion review; report motion as unverified. Do not run "
             "those checks manually or repeat a motion blocker. When true, apply the "
             "motion and animation requirements. Other checks still apply."
+        )
+    if reasoning_override is not None:
+        prompt += (
+            "\n\nHost reasoning authority: the operator explicitly selected %s "
+            "reasoning effort for this and subsequent Manager and child work. "
+            "This overrides older reasoning guidance; preserve the original "
+            "%s selection as provenance in MANAGER.json. Continue the same session and Goal."
+            % (reasoning_override["changes"][-1]["effort"],
+               reasoning_override["binding"]["initial_effort"])
         )
     arguments = {
         "product_id": checkpoint.product_id,
@@ -9000,6 +9075,7 @@ def _run_native_session(
     initial_make_boundaries: set[str] = set()
     while isinstance(budget, ProductTokenBudget) or turns < native_turn_limit:
         checkpoint = run.snapshot()
+        reasoning_override = _read_reasoning_override(paths, checkpoint)
         if isinstance(budget, ProductTokenBudget):
             _reconcile_token_accounting_need(paths, checkpoint, budget)
         if checkpoint.status in ("waiting", "failed", "complete"):
@@ -9129,22 +9205,9 @@ def _run_native_session(
                 initial_make_boundaries.add(checkpoint.checkpoint_sha256)
         if budget is not None:
             if isinstance(budget, ProductTokenBudget) and isinstance(turn_launcher, _CODEX_LAUNCHER_TYPE):
-                # Host-authorized product budget; preserve the existing native
-                # policy identity rather than silently upgrading frozen tools.
-                turn_launcher = CodexNativeSessionLauncher(
-                    model=turn_launcher.model, reasoning_effort=turn_launcher.reasoning_effort,
-                    auto_compact_token_limit=turn_launcher.auto_compact_token_limit,
-                    runtime_profile_sha256=checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH),
-                    binary=turn_launcher.binary, timeout_seconds=None,
-                    cli_version=turn_launcher.cli_version,
-                    popen_factory=turn_launcher._popen_factory,
-                    version_runner=turn_launcher._version_runner,
+                turn_launcher = _token_budget_launcher(
+                    paths, checkpoint, turn_launcher, budget, reasoning_override,
                 )
-                if not supports_rollout_usage_version(turn_launcher.cli_version):
-                    raise ContractError(
-                        "token-budget rollout adapter requires Codex CLI 0.153.4 or newer"
-                    )
-                turn_launcher.token_budget_observer = _product_token_observer(paths, checkpoint, budget)
             else:
                 turn_launcher = _budgeted_turn_launcher(
                 checkpoint,
@@ -9674,6 +9737,11 @@ def _native_receipt(
         receipt["model"] = checkpoint.manager_model
     if checkpoint.manager_reasoning_effort is not None:
         receipt["effort"] = checkpoint.manager_reasoning_effort
+    if paths is not None:
+        reasoning_override = _read_reasoning_override(paths, checkpoint)
+        if reasoning_override is not None:
+            receipt["initial_effort"] = reasoning_override["binding"]["initial_effort"]
+            receipt["effort"] = reasoning_override["changes"][-1]["effort"]
     if needs:
         receipt["needs"] = list(needs)
     if session is not None:
@@ -10164,6 +10232,7 @@ def resume_native_run(
     publish_requested: Optional[bool] = None,
     adopt_turn_budget: bool = False,
     max_tokens: Optional[int] = None,
+    reasoning_effort: Optional[str] = None,
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
     check_motion: bool = False,
@@ -10203,6 +10272,13 @@ def resume_native_run(
     with _native_run_mutation_lock(paths):
         run = _open_budgeted_agent_run(paths)
         checkpoint = run.snapshot()
+        _read_reasoning_override(paths, checkpoint)
+        if reasoning_effort is not None:
+            if checkpoint.status == "complete":
+                raise ContractError("reasoning effort override requires an unfinished product")
+            validate_reasoning_selection(checkpoint, reasoning_effort)
+            _reasoning_override_context(paths, checkpoint)
+
         if checkpoint.status in ("active", "waiting"):
             checkpoint = _adopt_resume_motion_policy(paths, run, checkpoint, check_motion)
         if adopt_turn_budget:
@@ -10217,6 +10293,8 @@ def resume_native_run(
         budget = _load_lifetime_budget(paths, checkpoint)
         if isinstance(budget, ProductTokenBudget):
             _reconcile_token_accounting_need(paths, checkpoint, budget)
+        if reasoning_effort is not None:
+            _set_reasoning_override(paths, checkpoint, reasoning_effort)
         return _resume_native_run_locked(
             product_id,
             run=run,

@@ -95,3 +95,14 @@ selection under each adapter's compatibility rules.
   run's selected effort overrides a legacy stage reasoning default.
 - Schema-v1 parser coverage proves historical runtime configuration remains
   represented as legacy rather than silently defaulted.
+
+## Preserved explicit resume effort (2026-09-14)
+
+`workshop resume --effort` restores the previously implemented operator override
+on top of the team motion-policy and runtime-accounting updates. The private,
+hash-bound `reasoning-effort.json` history preserves the initial selection,
+exact native session, model, lifetime usage and frozen Wish. Omission retains
+an existing override. Invalid history, incompatible profiles and non-Codex
+non-token-budget execution remain refused. Motion policy is selected separately;
+changing it does not reset the effort choice. Runtime CLI version validation
+and cumulative usage reconciliation use the team's current implementations.

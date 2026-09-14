@@ -1214,3 +1214,11 @@ that reason in its private checkpoint; both the immediate command receipt and
 later `workshop status` calls print it as `Need:`. Chat prose is never treated
 as a durable need, and agents are explicitly forbidden from using this path
 for ordinary unfinished or repairable work.
+
+Saved explicit reasoning choices remain supported through `workshop resume
+--effort medium`. The host validates its private `reasoning-effort.json`
+history and uses that selection for subsequent turns; omission retains it.
+The original MANAGER.json is provenance, not overwritten runtime policy.
+The resumed Manager receives the choice for subsequent native child work.
+This restores the existing operator override without changing the team's
+motion-policy defaults or native usage reconciliation.
