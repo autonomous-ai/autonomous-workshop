@@ -1,7 +1,7 @@
 {
   "extensions": [
     {
-      "artifact_sha256": "7de0429bc4040ffd878265c2737cad279a71a658c39c4e901c299009b294fa5c",
+      "artifact_sha256": "ce20c8d99fea1665e629a7844c1f30e9e9b653da47a37794b456c31158faafb1",
       "kind": "codex-skill",
       "name": "arden-span-inventor",
       "path": "skills/arden-span-inventor"

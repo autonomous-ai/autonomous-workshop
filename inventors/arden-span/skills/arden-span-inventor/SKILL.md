@@ -41,8 +41,6 @@ views to inspect whether the spatial idea and architectural identity survive
 scale, color changes and alternate arrangements. Physical friction, handling,
 durability and enjoyment require corresponding physical evidence.
 
-For market context and nearby Inventor specialties, consult
-[references/architectural-play-2026.md](references/architectural-play-2026.md).
 Research the exact Wish and neighboring products when commercial or originality
 claims affect the design. Respect a deliberately chosen familiar play format;
 do not add complexity just to describe the product as novel.
