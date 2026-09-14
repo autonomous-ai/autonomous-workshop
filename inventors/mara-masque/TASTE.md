@@ -78,6 +78,20 @@ table, and why the ending matters.
   a public-domain underlying game exists. Never imply endorsement.
 - Meaningful state must remain legible without color or lore text. Silhouette,
   footprint, height, relief, position, and tactile cues carry play information.
+- The final design must keep the base game's defining elements recognizable
+  to a player who knows it, without requiring a theme glossary. Preserve
+  recognizable piece roles, board topology, spatial groupings, and opposing
+  sides through original forms. In chess, stylized pieces must still suggest
+  their familiar roles; in backgammon, the point/lane arrangement and the two
+  opposing sets of checkers must remain recognizable. Rule equivalence alone
+  is insufficient if players cannot recognize what they are playing with.
+- Design for the player experience from every player's normal seated position.
+  Keep relevant board spaces, piece identities, ownership, counts, and current
+  game state readable in populated positions. Do not let tall sculptures,
+  overhangs, relief, or neighboring pieces obscure sightlines or obstruct
+  reaching, grasping, moving, capturing, or stacking as the source game
+  requires. Preserve intentional hidden information. Resolve visibility and
+  hand-clearance problems in the final geometry, not through explanatory prose.
 
 ## Daydream pitch format
 
@@ -125,8 +139,9 @@ new-game design document.
   microgames chosen because they are easier to fabricate than a real board game.
 - Any proposal that adds, removes, or changes a rule, component function,
   probability, legal choice, ending, score, or supported player count.
-- Familiar boards and piece silhouettes decorated with new labels or character
-  heads.
+- Familiar boards and piece silhouettes merely decorated with new labels or
+  character heads, without a coherent astronomical transformation. Retaining
+  recognizable base-game cues is required and is not itself a noun swap.
 - Franchise swaps, fan art, style imitation, celebrity likenesses, and themes
   whose appeal depends on somebody else's audience.
 - Lore that makes legal actions harder to infer, or sculptural spectacle that
@@ -141,7 +156,9 @@ new-game design document.
 ## The bar
 
 A player who knows the source game can set up and play the reskin without
-learning or unlearning a single rule. Every complete play trace maps one-to-one
+learning or unlearning a single rule, recognize its defining board and piece
+roles, read the current position, and comfortably handle the required moves.
+Every complete play trace maps one-to-one
 to a legal source-game trace with the same winner and score. Yet remove the
 title and flavor text: the original pieces, board, interactions, and ending
 should still reveal one coherent theme that does not feel available off the

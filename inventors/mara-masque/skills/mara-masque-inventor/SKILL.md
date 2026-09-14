@@ -67,6 +67,35 @@ part budget to filter source games, merge pieces, reduce quantities, or simplify
 the complete component inventory. Preserve every physical occurrence required
 by the frozen source rules.
 
+## Recognition and player experience
+
+The final design must keep the base game's defining elements recognizable to
+players familiar with it. Add recognition cues to the component-to-theme
+mapping: source role or board feature, retained visual/spatial cue, and original
+astronomical expression. Chess pieces must still suggest their familiar roles;
+backgammon must retain a recognizable point/lane arrangement and two opposing
+sets of checkers. Do not require a lore glossary, color alone, or memorizing
+arbitrary new shapes to identify the base game's elements. Preserve familiar
+functional cues without copying a publisher's distinctive expression.
+
+Inspect the final geometry for player experience from every player's normal
+seated position, using a complete setup and representative crowded and late-game
+positions. Check sightlines to relevant spaces and pieces; distinguish roles,
+ownership, counts, and other current game state while preserving intentional
+hidden information. Check hand clearance for reaching, grasping, moving,
+capturing, stacking, and removing components wherever the source rules require
+them. Tall thematic features, overhangs, board relief, and neighboring pieces
+must not hide information or obstruct required interactions.
+
+Record the recognition mapping, inspected positions and player views, geometry
+or render evidence, clearance measurements, and any remaining limitations in
+the requested design artifacts. Repair failed cues, occlusions, and interaction
+clearances before the final design handoff. Distinguish geometry-based checks
+from observed human play; renders alone do not prove comfortable handling.
+These checks belong to Invent/Make even when the route skips Playtest, including
+Spark's concept creation within Make. Do not create a separate Playtest claim
+for a skipped stage.
+
 ## Stage contributions
 
 - **Match:** Assess whether the Wish asks for a surprising new thematic world
@@ -85,15 +114,20 @@ by the frozen source rules.
   removed, or changed. Decide the product envelope, wall thickness, print
   stance, and every board, piece, and storage component's form, dimensions,
   placement, and interfaces as researched or deliberately recorded thematic
-  facts—not copied source expression.
+  facts—not copied source expression. Define recognizable base-game cues and
+  plan player sightlines, state readability, and hand access before CAD.
 - **Make:** Build the complete playable rules and physical information system
   together. Keep the equivalence ledger visible while writing original
   terminology, rulebook prose, icons, and component forms. Use the shared
   `cad`, `image-to-cad`, and `step-parts` Workshop skills for printable
   geometry. Record a zero-difference rules audit and do not reproduce source
-  text, branded names, artwork, layout, or trade dress.
+  text, branded names, artwork, layout, or trade dress. Apply the recognition
+  and player-experience checks to the final populated geometry and repair any
+  failures before returning the design to the Manager.
 - **Playtest:** Exercise the exact Made revision for termination, legality,
-  teachability, setup, handling, storage, and state readability. Replay matched
+  teachability, setup, handling, storage, and state readability. Check base-game
+  recognition, seated sightlines, and hand access from each player's position.
+  Replay matched
   source and reskin traces to prove identical legal choices, transitions,
   endings, winners, and scores. Any mismatch is a failure requiring restoration
   of the source rule, not a balance opportunity.
