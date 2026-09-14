@@ -92,6 +92,36 @@ class AgentRunTest(unittest.TestCase):
             **kwargs,
         )
 
+    def test_make_options_default_false_and_survive_resume_and_tool_refresh(self):
+        cad = self.root / "cad"
+        cad.mkdir()
+        (cad / "SKILL.md").write_text("CAD tools")
+        run = self.create(domain_skill_roots={"cad": cad})
+        path = self.run_root / "MAKE-OPTIONS.json"
+        self.assertEqual(json.loads(path.read_bytes()), {"schema_version": 1, "check_motion": False})
+        self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o400)
+        digest = run.snapshot().input_sha256s["MAKE-OPTIONS.json"]
+        (cad / "SKILL.md").write_text("Updated CAD tools")
+        run.refresh_domain_skill_tools({"cad": cad}, reason="test refresh")
+        reopened = AgentRun.open(self.run_root, host_state_root=self.host_state_root)
+        self.assertEqual(reopened.snapshot().input_sha256s["MAKE-OPTIONS.json"], digest)
+
+    def test_make_options_true_are_frozen_and_tampering_is_rejected(self):
+        run = self.create(check_motion=True)
+        path = self.run_root / "MAKE-OPTIONS.json"
+        self.assertIs(json.loads(path.read_bytes())["check_motion"], True)
+        path.chmod(0o600)
+        path.write_text('{"schema_version":1,"check_motion":false}')
+        path.chmod(0o400)
+        with self.assertRaises(StateConflict):
+            run.snapshot()
+
+    def test_invalid_motion_option_refuses_before_materialization(self):
+        for value in (None, "false", 0, 1):
+            with self.subTest(value=value), self.assertRaises(ContractError):
+                self.create(check_motion=value)
+            self.assertFalse(self.run_root.exists())
+
     def artifact(self, run, stage, name=None, content=None):
         name = name or (stage + ".json")
         content = content or ('{"stage":"%s"}\n' % stage).encode("utf-8")

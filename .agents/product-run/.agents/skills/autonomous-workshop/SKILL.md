@@ -3,6 +3,13 @@ name: autonomous-workshop
 description: Run, resume, or diagnose one Autonomous Workshop Wish through its frozen Spark, Forge, or Quest effort route using native Manager Goals, tools, and subagents while preserving deterministic host gates and host-controlled effects.
 ---
 
+**Motion policy:** read run-root `MAKE-OPTIONS.json`. When `check_motion` is
+false (the default for new runs), skip motion sweeps, required animation and
+motion review below; report motion unverified. When true, retain the full
+motion contract. A missing options file in an older run retains mandatory
+motion verification. See the root `AGENTS.md` operator-selected policy.
+
+
 # Autonomous Workshop
 
 Turn one Wish into an exact, evidence-backed product handoff. You are the

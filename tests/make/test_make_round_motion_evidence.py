@@ -13,7 +13,7 @@ from tests.make.test_make_round import _gate_output, fake_visual_render, load_mo
 
 
 class MakeRoundMotionEvidenceTest(unittest.TestCase):
-    def run_motion(self, stdout, returncode=0, stderr=""):
+    def run_motion(self, stdout, returncode=0, stderr="", check_motion=True):
         module = load_module()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -54,7 +54,7 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
             args = SimpleNamespace(
                 project=str(project), entry=None, out=None, all_parts=False,
                 refs=[], min=0.90, nozzle=0.4, overhang_angle=45.0,
-                no_motion=False, full=False, json=True, record_visual=None,
+                no_motion=False, check_motion=check_motion, full=False, json=True, record_visual=None,
                 component=None, require_component_passes=False,
             )
             output = io.StringIO()
@@ -67,7 +67,7 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
             self.assertEqual(code, 1)
             self.assertEqual(
             calls,
-            ["gen", "check_thickness", "check_overhang", "check_motion", "render_review"],
+            ["gen", "check_thickness", "check_overhang", *(["check_motion"] if check_motion else []), "render_review"],
         )
             pending = json.loads(output.getvalue())
             self.assertFalse(pending["ok"])
@@ -76,6 +76,14 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
             code = 0 if summary["ok"] else 1
             self.assertEqual(summary, json.loads((measure / "rounds/r0001/summary.json").read_text()))
             return code, summary, module.render_summary(summary)
+
+    def test_default_skips_motion_even_with_a_manifest(self):
+        code, summary, rendered = self.run_motion("invalid motion JSON", check_motion=None)
+        self.assertEqual(code, 0)
+        self.assertIsNone(summary["motion"])
+        self.assertFalse(summary["check_motion"])
+        self.assertEqual(summary["motion_status"], "not-run")
+        self.assertIn("SKIP motion unverified", rendered)
 
     @staticmethod
     def record(name="rotation", status="pass", detail="clear"):

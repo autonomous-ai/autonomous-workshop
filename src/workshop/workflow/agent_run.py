@@ -788,9 +788,12 @@ class AgentRun:
         manager_reasoning_effort: Optional[str] = None,
         turn_seconds: Optional[int] = None,
         turn_untimed: bool = False,
+        check_motion: bool = False,
         wish_reference_files: Optional[Mapping[str, bytes]] = None,
         revision_snapshot: Optional[bytes] = None,
     ) -> "AgentRun":
+        if type(check_motion) is not bool:
+            raise ContractError("agent run check_motion must be boolean")
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
         if type(turn_untimed) is not bool:
@@ -1059,6 +1062,9 @@ class AgentRun:
                 0o400,
             ),
             (PurePosixPath("WISH.json"), wish_bytes, 0o400),
+            (PurePosixPath("MAKE-OPTIONS.json"),
+             json.dumps({"schema_version": 1, "check_motion": check_motion},
+                        sort_keys=True, separators=(",", ":")).encode("utf-8"), 0o400),
             (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
             (
                 PurePosixPath(MANAGER_PROJECT_PATH),

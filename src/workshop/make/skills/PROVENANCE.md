@@ -749,3 +749,10 @@ superseded that change: Make's current four-review policy and verifier are
 preserved unchanged, in accordance with the instruction to leave Make alone.
 Workshop token budgeting removes host execution caps, not Make's internal
 review allowance. The lock binds the integrated team skill bytes.
+
+## Optional motion verification (2026-09-14)
+
+Workshop adds `motion_policy.py` and opt-in motion handling to `verify_project`
+and `make_round`, plus corresponding CAD and image-to-CAD guidance. New runs
+freeze `MAKE-OPTIONS.json`; disabled checks and animation review remain
+explicitly unverified. The underlying motion checker is unchanged.

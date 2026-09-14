@@ -47,6 +47,21 @@ does not govern ordinary source-repository work.
 
 ## Runtime boundary
 
+### Optional motion verification
+
+New `wish`, `start`, and `fix` runs default `--check-motion` to false.
+`--check-motion true` enables the existing motion sweeps and required coupled
+animation/reconstruction/review. The host materializes the boolean in the
+read-only, hash-bound root `MAKE-OPTIONS.json`. Make rounds, final CAD
+verification (including isolated host replay), and proposal finalization read
+that same choice. Disabled motion is recorded as skipped/unverified, never a
+pass. Build, fit, print and still-image signature review are unchanged.
+
+Resume preserves the exact options. Earlier runs keep their original tools;
+if explicitly refreshed, absence of `MAKE-OPTIONS.json` retains their mandatory
+motion policy. Tool refresh does not replace the run-root options. See
+[ADR 0066](adr/0066-optional-motion-verification.md).
+
 ### Current token-budget and Spark handoff policy
 
 New Spark v4 runs compact at 192k; frozen v3 runs retain 64k. This

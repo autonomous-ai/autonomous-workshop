@@ -9760,6 +9760,7 @@ def start_native_run(
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
+    check_motion: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     revision_snapshot: Optional[bytes] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
@@ -9797,6 +9798,9 @@ def start_native_run(
     Manager must still bound the turn some other way, which today means a Codex
     token budget. Neither option changes any gate, review, or round allowance.
 
+    ``check_motion`` freezes the optional motion sweeps and animation review.
+    It defaults to false; resume retains the immutable Make options.
+
     ``wish_reference_files`` maps every reference image the Wish declares to
     its exact bytes; the run materializes them read-only under
     ``wish-references/`` and re-verifies them at every checkpoint. A Wish that
@@ -9813,6 +9817,8 @@ def start_native_run(
 
     _reject_grid_keepalive_wish_start()
     validate_limit(max_tokens)
+    if type(check_motion) is not bool:
+        raise ContractError("motion check option must be boolean")
 
     selected_effort = workshop_effort(effort) if effort is not None else None
     selected_runtime = manager_runtime_selection(
@@ -9878,6 +9884,7 @@ def start_native_run(
                 manager_reasoning_effort=selected_runtime.reasoning_effort,
                 turn_seconds=turn_seconds,
                 turn_untimed=turn_untimed,
+                check_motion=check_motion,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.

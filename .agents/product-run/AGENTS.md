@@ -1,5 +1,23 @@
 # Autonomous Workshop product-run constitution
 
+## Operator-selected motion verification
+
+Read the immutable run-root `MAKE-OPTIONS.json` before Make. Its
+`check_motion` is false by default; `workshop wish`, `start`, or `fix`
+with `--check-motion true` enables it for that run. Resume keeps this choice.
+If the file is absent in an older run, retain mandatory motion verification.
+
+When false, skip the Python motion sweeps, motion-manifest authoring solely
+for those checks, operating-animation generation/reconstruction, and the
+independent motion review. This takes precedence over motion requirements in
+domain skills, templates, and the references below. Do not run those tools
+manually to compensate for the skipped gate. Record motion as unverified,
+never passed. Build, fit, print gates, still-image signature review, and the
+Wish's required function remain in scope. Still images cannot prove motion.
+When true, apply the existing insertion/retention checks and, for coupled
+mechanisms, animation and independent motion review.
+
+
 This file governs one native Codex session launched by the Workshop host for
 one exact Wish. It does not contain the working rules for coding agents that
 maintain the Autonomous Workshop source repository.

@@ -3,6 +3,18 @@ name: make-round
 description: Run isolated component or assembled-object Make repair rounds with deterministic CAD checks and native visual inspection. Render the selected scope, inspect form and proportions, and record visual errors alongside likeness, build and motion results. Does not replace independent blind review or final verification.
 ---
 
+**Motion verification is opt-in.** Standalone `make_round` and `verify_project`
+default to false; pass `--check-motion true` to enable it. Inside Workshop,
+read the immutable run-root `MAKE-OPTIONS.json`: the tools inherit its
+`check_motion` value and reject contradictory flags. A missing options file
+in an older materialized run retains its mandatory motion policy. When false,
+skip motion sweeps and required animation/reconstruction/review, even if a
+manifest or assembly claims exist. Motion is unverified, never passed; do not
+claim assemblability or working motion from skipped evidence. Build, fit,
+print gates and still-image review remain required. These rules take
+precedence over motion-specific requirements in references and templates.
+
+
 # Make round
 
 One Make iteration, one combined summary. A command batches the deterministic
@@ -50,7 +62,7 @@ calls were reassembling by hand.
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
     --ref hero=<project>/cad/ref/hero.png [--ref side=...] \
     [--min 0.90] [--nozzle 0.4] [--overhang-angle 45] \
-    [--all-parts] [--no-motion] [--json]
+    [--all-parts] [--check-motion true|false] [--json]
 ```
 
 For a Spark component, select its own generator. This builds and renders only

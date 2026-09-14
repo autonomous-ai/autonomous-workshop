@@ -474,6 +474,27 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(start.call_args.kwargs["max_rounds"], 8)
 
+    def test_every_new_run_command_accepts_motion_opt_in(self):
+        for command in (("wish", "a toy"), ("start", "soren-voss"),
+                        ("fix", "/tmp/toy", "--prompt", "repair the pin")):
+            with self.subTest(command=command):
+                self.assertFalse(parser().parse_args(command).check_motion)
+                self.assertTrue(parser().parse_args((*command, "--check-motion", "true")).check_motion)
+
+    def test_wish_motion_is_opt_in_and_strictly_boolean(self):
+        for arguments, expected in (([], False), (["--check-motion", "false"], False),
+                                    (["--check-motion", "true"], True)):
+            with self.subTest(arguments=arguments), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                self.assertEqual(main(("wish", "a moon", *arguments, "--json")), 0)
+                self.assertIs(start.call_args.kwargs.get("check_motion", False), expected)
+        for value in ("yes", "1", "anything"):
+            with self.subTest(value=value), mock.patch("cli.main.start_native_run") as start, \
+                    redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+                main(("wish", "a moon", "--check-motion", value))
+            start.assert_not_called()
+
     def test_wish_passes_an_exact_turn_boundary_to_the_native_host(self):
         with mock.patch(
             "cli.main.generate_wish_id", return_value="wish-turn-minutes"
