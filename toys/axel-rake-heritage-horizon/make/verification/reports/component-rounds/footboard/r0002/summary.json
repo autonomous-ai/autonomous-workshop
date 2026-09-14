@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_footboard.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/footboard/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "footboard"
+ ],
+ "print": {
+  "footboard": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/footboard/r0001/overhang-footboard.log": "a84281b8b98f718eeaba833969dca6eb67a04f3c1acb990852d018672ded9e61",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/footboard/r0001/thickness-footboard.log": "de61dd209d4a6d88c861d4a0199e08edacc80c12ce2d77d8e55cd8c9cbc4f674"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [
+  "footboard"
+ ],
+ "round": 2,
+ "scope": "component:footboard",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Long rounded platform has a continuous shallow upper bevel and flat print base; clean corners and no detached material.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/footboard/r0002/visual-packet.json",
+  "packet_sha256": "10d1d06f94e85c0c35775c034677272d8d1432ea80874712fffcbb83f9d1e74b",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,747 @@
+{
+  "assembly": "heritage.step.py",
+  "conditions": [
+    {
+      "id": "guided-wheel-revolution",
+      "check": "coupled_motion_collision",
+      "expect": "clear",
+      "description": "Both externally turned wheels complete a full revolution; no driven transmission is claimed.",
+      "inputs": {
+        "steps": 144,
+        "movers": [
+          {
+            "part": "rear_wheel",
+            "rotation": {
+              "axis_point": [
+                -70,
+                0,
+                27
+              ],
+              "axis_direction": [
+                0,
+                1,
+                0
+              ],
+              "start_deg": 0,
+              "end_deg": 360
+            }
+          },
+          {
+            "part": "front_wheel",
+            "rotation": {
+              "axis_point": [
+                70,
+                0,
+                27
+              ],
+              "axis_direction": [
+                0,
+                1,
+                0
+              ],
+              "start_deg": 0,
+              "end_deg": 360
+            }
+          }
+        ],
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right",
+          "swingarm_left",
+          "swingarm_right",
+          "fork_leg_left",
+          "fork_leg_right",
+          "fork_bridge_left",
+          "fork_bridge_right",
+          "seat_left",
+          "seat_right",
+          "pannier_left",
+          "pannier_right",
+          "footboard_left",
+          "footboard_right",
+          "tank_cover",
+          "front_fender",
+          "screen",
+          "handlebar",
+          "bar_riser",
+          "plinth",
+          "rear_axle",
+          "rear_nut_1",
+          "rear_nut_2",
+          "front_axle",
+          "front_nut_1",
+          "front_nut_2"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 2.4
+      }
+    },
+    {
+      "id": "chassis-seam",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "chassis_right",
+        "obstacle_parts": [
+          "chassis_left"
+        ],
+        "translation": [
+          0,
+          -30,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "swingarm-left",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "swingarm_left",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right"
+        ],
+        "translation": [
+          0,
+          30,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "footboard-left",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "footboard_left",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right"
+        ],
+        "translation": [
+          0,
+          20,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "bag-left",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "pannier_left",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right",
+          "swingarm_left"
+        ],
+        "translation": [
+          0,
+          30,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "seat-left",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "seat_left",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right",
+          "tank_cover"
+        ],
+        "translation": [
+          0,
+          0,
+          35
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "fork-leg-left",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "fork_leg_left",
+        "obstacle_parts": [
+          "fork_bridge_left",
+          "fork_bridge_right"
+        ],
+        "translation": [
+          0,
+          25,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "bridge-left",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "fork_bridge_left",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right"
+        ],
+        "translation": [
+          30,
+          0,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "swingarm-right",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "swingarm_right",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right"
+        ],
+        "translation": [
+          0,
+          -30,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "footboard-right",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "footboard_right",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right"
+        ],
+        "translation": [
+          0,
+          -20,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "bag-right",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "pannier_right",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right",
+          "swingarm_right"
+        ],
+        "translation": [
+          0,
+          -30,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "seat-right",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "seat_right",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right",
+          "tank_cover"
+        ],
+        "translation": [
+          0,
+          0,
+          35
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "fork-leg-right",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "fork_leg_right",
+        "obstacle_parts": [
+          "fork_bridge_left",
+          "fork_bridge_right"
+        ],
+        "translation": [
+          0,
+          -25,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "bridge-right",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "fork_bridge_right",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right"
+        ],
+        "translation": [
+          30,
+          0,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "rear-wheel-between-supports",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "rear_wheel",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right",
+          "swingarm_left",
+          "swingarm_right"
+        ],
+        "translation": [
+          0,
+          0,
+          -65
+        ],
+        "steps": 40,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "rear-axle-through-bores",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "rear_axle",
+        "obstacle_parts": [
+          "swingarm_left",
+          "swingarm_right",
+          "rear_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 40,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "rear-nut-1",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "rear_nut_1",
+        "obstacle_parts": [
+          "swingarm_left",
+          "swingarm_right",
+          "rear_wheel",
+          "rear_axle"
+        ],
+        "translation": [
+          0,
+          15,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "rear-nut-2",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "rear_nut_2",
+        "obstacle_parts": [
+          "swingarm_left",
+          "swingarm_right",
+          "rear_wheel",
+          "rear_axle"
+        ],
+        "translation": [
+          0,
+          15,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "front-wheel-between-supports",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "front_wheel",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right",
+          "fork_leg_left",
+          "fork_leg_right"
+        ],
+        "translation": [
+          0,
+          0,
+          -65
+        ],
+        "steps": 40,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "front-axle-through-bores",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "front_axle",
+        "obstacle_parts": [
+          "fork_leg_left",
+          "fork_leg_right",
+          "front_wheel"
+        ],
+        "translation": [
+          0,
+          -40,
+          0
+        ],
+        "steps": 40,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "front-nut-1",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "front_nut_1",
+        "obstacle_parts": [
+          "fork_leg_left",
+          "fork_leg_right",
+          "front_wheel",
+          "front_axle"
+        ],
+        "translation": [
+          0,
+          15,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "front-nut-2",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "front_nut_2",
+        "obstacle_parts": [
+          "fork_leg_left",
+          "fork_leg_right",
+          "front_wheel",
+          "front_axle"
+        ],
+        "translation": [
+          0,
+          15,
+          0
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "tank-bosses",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "tank_cover",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right"
+        ],
+        "translation": [
+          0,
+          0,
+          35
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "front-fender-fit",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "front_fender",
+        "obstacle_parts": [
+          "fork_leg_left",
+          "fork_leg_right",
+          "front_wheel"
+        ],
+        "translation": [
+          0,
+          0,
+          40
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "screen-tongue",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "screen",
+        "obstacle_parts": [
+          "fork_bridge_left",
+          "fork_bridge_right",
+          "bar_riser",
+          "handlebar"
+        ],
+        "translation": [
+          -12,
+          0,
+          74
+        ],
+        "steps": 40,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "riser-fit",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Install riser and bars before the screen; reverse withdrawal clearance, not adhesive strength.",
+      "inputs": {
+        "moving_part": "bar_riser",
+        "obstacle_parts": [
+          "fork_bridge_left",
+          "fork_bridge_right"
+        ],
+        "translation": [
+          0,
+          0,
+          25
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "handlebar-fit",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Install riser and bars before the screen; reverse withdrawal clearance, not adhesive strength.",
+      "inputs": {
+        "moving_part": "handlebar",
+        "obstacle_parts": [
+          "bar_riser"
+        ],
+        "translation": [
+          0,
+          0,
+          25
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "remove-cradle",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "inputs": {
+        "moving_part": "plinth",
+        "obstacle_parts": [
+          "chassis_left",
+          "chassis_right",
+          "swingarm_left",
+          "swingarm_right",
+          "fork_leg_left",
+          "fork_leg_right",
+          "fork_bridge_left",
+          "fork_bridge_right",
+          "seat_left",
+          "seat_right",
+          "pannier_left",
+          "pannier_right",
+          "footboard_left",
+          "footboard_right",
+          "tank_cover",
+          "front_fender",
+          "screen",
+          "handlebar",
+          "bar_riser",
+          "rear_wheel",
+          "rear_axle",
+          "rear_nut_1",
+          "rear_nut_2",
+          "front_wheel",
+          "front_axle",
+          "front_nut_1",
+          "front_nut_2"
+        ],
+        "translation": [
+          0,
+          0,
+          -30
+        ],
+        "steps": 20,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    }
+  ]
+}

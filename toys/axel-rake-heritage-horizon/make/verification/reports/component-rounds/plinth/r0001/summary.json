@@ -1,0 +1,60 @@
+{
+ "build": {
+  "plinth": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "plinth"
+ ],
+ "checked": [
+  "plinth"
+ ],
+ "checks_ok": true,
+ "entry": "part_plinth.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/plinth/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "plinth"
+ ],
+ "print": {
+  "plinth": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/plinth/r0001/overhang-plinth.log": "ff8bd337b7c44a948dbf34fd219bb889e78d6be409405ef33c45a1b0b217b887",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/plinth/r0001/thickness-plinth.log": "a8ad8ea3c31b54c904e51978c6e851ab16006c83c98f6079b085a3ba868bff24"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:plinth",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Broad rectangular base supports two upright cradle posts with raised end lips and a clear central seat.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/plinth/r0001/visual-packet.json",
+  "packet_sha256": "6485482c4f9e680fc1c6845aa18ca05280f07802d83c355c0d03258c460b8367",
+  "status": "pass"
+ }
+}

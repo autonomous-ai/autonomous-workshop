@@ -1,0 +1,49 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/handlebar/r0002",
+ "likeness": {},
+ "parts": {
+  "handlebar": "7a8a96690246880f8f3eb1ca3ba490b27b49f73a9b2f93078cc1b41678c6907e"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "handlebar": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/handlebar/r0001/overhang-handlebar.log": "9b0215fb858e49825b0d641a8bdba7a2563ef7621150aa215349f7cd1c39e4c3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/handlebar/r0001/thickness-handlebar.log": "b27b1daf195d297b305ebd14e92af02ca551c780a4aea675635e0cc18f63b3ff"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1"
+  },
+  "platform": "darwin",
+  "python": "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+  "python_version": "3.11.12 (main, Apr  9 2025, 03:49:53) [Clang 20.1.0 ]",
+  "sources": {
+   "check_overhang": "023717b7fef568061fc4808d9c53597821f2a32d0c985ac3574389e9c32c1c40",
+   "check_thickness": "6f68affa79e7053701100ce938dbf25b4fe498642a6f7befdecbf0606d35d2bb",
+   "make_round": "64acc0f7c3bbdfe9aa5a071c73ea61ae9386c5c36bd35f862c97fe990609330c",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 2,
+ "scope": "component:handlebar"
+}

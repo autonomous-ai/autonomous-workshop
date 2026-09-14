@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_fork_leg.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_leg/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_leg"
+ ],
+ "print": {
+  "fork_leg": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_leg/r0001/overhang-fork_leg.log": "052a57ba1a02dc857375d9e53ddf6e271f9d8c10f9b202c35e1877bfab632198",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_leg/r0001/thickness-fork_leg.log": "81b0eac3f877cabf4b30815a9b2de4b83c501bb4a5029e8c36f0b3f1899b5aa5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [
+  "fork_leg"
+ ],
+ "round": 3,
+ "scope": "component:fork_leg",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Flat fork blade joins open circular axle boss, fender pad and rectangular upper lap without gaps; long raked profile is retained.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_leg/r0003/visual-packet.json",
+  "packet_sha256": "802704a21601e69ee5f091bf343a321c029f3e07ebede3230583102871ecceef",
+  "status": "pass"
+ }
+}

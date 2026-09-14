@@ -1,0 +1,60 @@
+{
+ "build": {
+  "seat_half": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "seat_half"
+ ],
+ "checked": [
+  "seat_half"
+ ],
+ "checks_ok": true,
+ "entry": "part_seat_half.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "seat_half"
+ ],
+ "print": {
+  "seat_half": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half/r0002/overhang-seat_half.log": "6e5c35761dc975b18e482906c907c4e3c5f76fe06d73d9a444b215b3d626523f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half/r0002/thickness-seat_half.log": "7eb1e89cf98802fcea4abfc95bbda5e017d17211f0aecfc3a61a127b91b5ddf0"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:seat_half",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Shortened nose has a straight supported end; dished rider section and raised pillion remain joined by the sloped transition, with a flat seam stance.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half/r0002/visual-packet.json",
+  "packet_sha256": "e54707135e012cd903ed8b680aa43e882725c9e7aa36ac9bbdfe124698293c62",
+  "status": "pass"
+ }
+}

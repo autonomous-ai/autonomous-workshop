@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_chassis_half_right.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half_right/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "chassis_half_right"
+ ],
+ "print": {
+  "chassis_half_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half_right/r0002/overhang-chassis_half_right.log": "8abc5ab73723f5f31344002ad071f3faebb69321aa772cadae2acfa412073710",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half_right/r0002/thickness-chassis_half_right.log": "2f1fc7ae9b9e3e8e7a8adde149a21954d88281a720ed8ac5df9a1a8b8804ef49"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.24,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [
+  "chassis_half_right"
+ ],
+ "round": 3,
+ "scope": "component:chassis_half_right",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Reflected rear arch, motor, battery and V relief remain continuous; thicker neck housing preserves the matching slot and flat seam stance.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half_right/r0003/visual-packet.json",
+  "packet_sha256": "4646833700cd90daeec111455343de0727a05dbb74b9a3f109248cc30cd935e5",
+  "status": "pass"
+ }
+}

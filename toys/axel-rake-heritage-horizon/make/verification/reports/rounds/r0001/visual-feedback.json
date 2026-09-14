@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Frame and attached body interfaces overlap",
+      "evidence": "Front/iso: tank neck and saddle support meet through solid material; exact interference also finds swingarm and bridge tongue clashes.",
+      "part": "chassis halves",
+      "repair": "Relieve the chassis at shared tank, seat and swingarm envelopes and open the steering slot to the bridge shoulder."
+    }
+  ],
+  "observation": "Long cruiser stance, full fenders, stepped saddle, panniers and tall screen are present. Frame intrudes into the tank and seat mounting regions; source interference confirms paired clashes.",
+  "packet_sha256": "6c6cc94e449d619809940115b9064833c4536d7efe15dd9bdc6d5f5433aa74a1",
+  "status": "fail"
+}

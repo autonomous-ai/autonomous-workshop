@@ -1,0 +1,16 @@
+{
+  "title": "Heritage Horizon",
+  "summary": "An imagined 2050 touring cruiser with a low saddle, deep fenders, paired luggage and a speculative electric heart. This 1:12 model has manually rotating wheels and a removable display cradle. An unofficial original interpretation with opaque printed screen and lamp; physical assembly and rolling remain untested.",
+  "status": "full-with-thickness",
+  "scale": "1:12",
+  "dimensions_mm": {
+    "length": 204.4,
+    "width": 77.5,
+    "height": 118
+  },
+  "printed_piece_count": 22,
+  "purchased_hardware_count": 6,
+  "physical_testing": "not-run",
+  "cad_project": "heritage",
+  "assembly_instructions": "heritage/README.md"
+}

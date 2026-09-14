@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_wheel.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/wheel/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "wheel"
+ ],
+ "print": {
+  "wheel": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/wheel/r0001/overhang-wheel.log": "47de27e23319e4d168c131cdf97ee0bd3fe8c17e2bcdb22ecf4e0501540c0eab",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/wheel/r0001/thickness-wheel.log": "8ce99fc05f87209c064a67daa5967361a120ac6af16f1945e3257356d51a3220"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [
+  "wheel"
+ ],
+ "round": 2,
+ "scope": "component:wheel",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Round tire has continuous beveled rolling shoulders and centered through bore; six radial face recesses are visible in iso with no detached spokes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/wheel/r0002/visual-packet.json",
+  "packet_sha256": "5e5b56ec823d2a7949d635c8e6626f811aa627e28e8c84332886ce1f52869810",
+  "status": "pass"
+ }
+}

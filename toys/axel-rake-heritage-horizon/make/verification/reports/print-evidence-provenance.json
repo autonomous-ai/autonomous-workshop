@@ -1,0 +1,650 @@
+[
+  {
+    "role": "bar_riser",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_bar_riser.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "8a075f03c906ab7552d811d527fae32f20c6d490dcf905e44a4580c9efd2e856",
+    "raw_report": "measure/overhang-bar_riser.md",
+    "raw_report_sha256": "a3e35c27d373f0f5d0714f0689b2c1bd926f930abd19b366094f2384678c1019",
+    "captured_log": "measure/overhang-bar_riser-verdict.log",
+    "captured_log_sha256": "aa3504f1d66d759e778844edb4910be4fcdf22ccbf43afd51209c159f97a1f55",
+    "evidence": "measure/overhang-bar_riser-evidence.md"
+  },
+  {
+    "role": "bar_riser",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_bar_riser.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "8a075f03c906ab7552d811d527fae32f20c6d490dcf905e44a4580c9efd2e856",
+    "raw_report": "measure/thickness-bar_riser.md",
+    "raw_report_sha256": "011449fd877e0bd00336b5a354d781bc7ebe4140596edfe4f007a027018cf6f2",
+    "captured_log": "measure/thickness-bar_riser-verdict.log",
+    "captured_log_sha256": "9b76b2d6f919d652f69c9c542e7f27db2f1d67974daa0b55a08139f3900e39bd",
+    "evidence": "measure/thickness-bar_riser-evidence.md"
+  },
+  {
+    "role": "chassis_half",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_chassis_half.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "805a1266938f1db0111addcaaa9f3048b234c607d01da92f6789c3ea35ae71a7",
+    "raw_report": "measure/overhang-chassis_half.md",
+    "raw_report_sha256": "3008356bff12a82069fa687af655de69820b3c1c76c8ccff5fe280a4331830fb",
+    "captured_log": "measure/overhang-chassis_half-verdict.log",
+    "captured_log_sha256": "2b750f766bc7422a32952e957c1bbd4fa5bd78c1acb7fc4badb7a0991d8096f4",
+    "evidence": "measure/overhang-chassis_half-evidence.md"
+  },
+  {
+    "role": "chassis_half",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_chassis_half.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "805a1266938f1db0111addcaaa9f3048b234c607d01da92f6789c3ea35ae71a7",
+    "raw_report": "measure/thickness-chassis_half.md",
+    "raw_report_sha256": "6b661307afcd0db4fd24de4b9c306e648ad4c464dfe7389f91034ca9249569b4",
+    "captured_log": "measure/thickness-chassis_half-verdict.log",
+    "captured_log_sha256": "f405af32abb6d5a07b3955bf4e88a1d4481d981d7a55bb8cad15d8500b065dce",
+    "evidence": "measure/thickness-chassis_half-evidence.md"
+  },
+  {
+    "role": "chassis_half_right",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_chassis_half_right.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "0017f1173cc55c0d2800579f89e19838213fdd8ebed45537d1d7364b63d505a0",
+    "raw_report": "measure/overhang-chassis_half_right.md",
+    "raw_report_sha256": "0fb6f3715dbd40f630fd417662b1372f7f4923a914c7badec69ac96944779eb4",
+    "captured_log": "measure/overhang-chassis_half_right-verdict.log",
+    "captured_log_sha256": "b2c1976110f1cc3a04827c76d0ddaae6ba7cfec97f0d4698d07419655886d438",
+    "evidence": "measure/overhang-chassis_half_right-evidence.md"
+  },
+  {
+    "role": "chassis_half_right",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_chassis_half_right.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "0017f1173cc55c0d2800579f89e19838213fdd8ebed45537d1d7364b63d505a0",
+    "raw_report": "measure/thickness-chassis_half_right.md",
+    "raw_report_sha256": "f25c8d1783dc98681299e0f994dac9b7b8b44d858066f8e596a9740f82b091e7",
+    "captured_log": "measure/thickness-chassis_half_right-verdict.log",
+    "captured_log_sha256": "ba3691339e4448fd7e5e8737afc0cd31addb07819f419d673caa01fe029190c6",
+    "evidence": "measure/thickness-chassis_half_right-evidence.md"
+  },
+  {
+    "role": "footboard",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_footboard.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "047f7cd552ff7420b2fbd20f248cb2823ddcab49c6f4f474a5972bb94d813366",
+    "raw_report": "measure/overhang-footboard.md",
+    "raw_report_sha256": "7fe93027cde02b1b6362dd9a8c88377236e32bb43e3a4f3cb1b9f7c71953a96c",
+    "captured_log": "measure/overhang-footboard-verdict.log",
+    "captured_log_sha256": "b3e0f1b47c590ffbc0e96c62aa8dafbc3c54015c0d38f1a3483484d214c886e0",
+    "evidence": "measure/overhang-footboard-evidence.md"
+  },
+  {
+    "role": "footboard",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_footboard.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "047f7cd552ff7420b2fbd20f248cb2823ddcab49c6f4f474a5972bb94d813366",
+    "raw_report": "measure/thickness-footboard.md",
+    "raw_report_sha256": "dadbe5befbb814801c996603d3436be1b151a7f3fa7b765c3bf905872c197ca1",
+    "captured_log": "measure/thickness-footboard-verdict.log",
+    "captured_log_sha256": "cb71c073223451c24dbb7664d34d35d5a8f6950027576395aa92da4d67f3665d",
+    "evidence": "measure/thickness-footboard-evidence.md"
+  },
+  {
+    "role": "fork_bridge",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_fork_bridge.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "ff7ca3f6f6569be4ee3d4bd6a1c9c15fbc560a2a2d60e145075750bdb624f5fe",
+    "raw_report": "measure/overhang-fork_bridge.md",
+    "raw_report_sha256": "71d8d589ac3ce2ad0083e091e6cd80b3bd00fbf8e878ce6e1b728ff0d202c3d3",
+    "captured_log": "measure/overhang-fork_bridge-verdict.log",
+    "captured_log_sha256": "2856e34536af7480557030a5a94135393770a6824a938166b632c4214f46fd26",
+    "evidence": "measure/overhang-fork_bridge-evidence.md"
+  },
+  {
+    "role": "fork_bridge",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_fork_bridge.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "ff7ca3f6f6569be4ee3d4bd6a1c9c15fbc560a2a2d60e145075750bdb624f5fe",
+    "raw_report": "measure/thickness-fork_bridge.md",
+    "raw_report_sha256": "e663cfc892c70dc735bb78c1fc49be7618873d34551dd0e7828b386e3cf4e5f5",
+    "captured_log": "measure/thickness-fork_bridge-verdict.log",
+    "captured_log_sha256": "ab3876c02ddce5b34c0ca4827ee3e495e9e7be12918ae8ac9e1d892716731913",
+    "evidence": "measure/thickness-fork_bridge-evidence.md"
+  },
+  {
+    "role": "fork_bridge_right",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_fork_bridge_right.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "b3ef75250ca8213e36b3f4bce0d64a5429d1b48a2ca851318bc6b982b04f1e89",
+    "raw_report": "measure/overhang-fork_bridge_right.md",
+    "raw_report_sha256": "e9f4dfe8cc52a3b010d458e61ac37ac2a0cb77484a600302df2f1495c4d53339",
+    "captured_log": "measure/overhang-fork_bridge_right-verdict.log",
+    "captured_log_sha256": "09feab0525fedb41d3e0003ccf33e960cb5294e1dea710daf8342211ce0c98a2",
+    "evidence": "measure/overhang-fork_bridge_right-evidence.md"
+  },
+  {
+    "role": "fork_bridge_right",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_fork_bridge_right.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "b3ef75250ca8213e36b3f4bce0d64a5429d1b48a2ca851318bc6b982b04f1e89",
+    "raw_report": "measure/thickness-fork_bridge_right.md",
+    "raw_report_sha256": "85cfcfba33cb8f07bd2a7f3032b65b81e02be685d7a9357c6161d41c2e8b0e30",
+    "captured_log": "measure/thickness-fork_bridge_right-verdict.log",
+    "captured_log_sha256": "bc221d9eceb546a77fd9b4b79735f8623bea85feade84cc2c8487ecc93c5d3c2",
+    "evidence": "measure/thickness-fork_bridge_right-evidence.md"
+  },
+  {
+    "role": "fork_leg",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_fork_leg.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "09dc6df550db1f197ca53b86ad61b4e72537aeed5179a46cca8aad84730e505f",
+    "raw_report": "measure/overhang-fork_leg.md",
+    "raw_report_sha256": "5712004ee065630f89f87facb7db6a4bdacdc33ba130b77cedf0ff774c214fcb",
+    "captured_log": "measure/overhang-fork_leg-verdict.log",
+    "captured_log_sha256": "f257f624d52d3cb1e49f5414db8e790a123292ef574632ef6388f9447e184dca",
+    "evidence": "measure/overhang-fork_leg-evidence.md"
+  },
+  {
+    "role": "fork_leg",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_fork_leg.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "09dc6df550db1f197ca53b86ad61b4e72537aeed5179a46cca8aad84730e505f",
+    "raw_report": "measure/thickness-fork_leg.md",
+    "raw_report_sha256": "0fe444f04278524387bb682e04e26676672a78d9a0387d34741505c706b40c4e",
+    "captured_log": "measure/thickness-fork_leg-verdict.log",
+    "captured_log_sha256": "b1292025ee66ca661eec9685936b60e94ba833462c29bb3e16c513921c5b9b39",
+    "evidence": "measure/thickness-fork_leg-evidence.md"
+  },
+  {
+    "role": "front_fender",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_front_fender.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "cb76e6e21a3f54f025608b9eba11315415069a3d67a83c57d268077526d12507",
+    "raw_report": "measure/overhang-front_fender.md",
+    "raw_report_sha256": "eeedab4008b608a3f6b20ef8679a220e8b0621b04843817694333560c3a6c8de",
+    "captured_log": "measure/overhang-front_fender-verdict.log",
+    "captured_log_sha256": "b1e457bcefbc8c8e709aa0851ae10cbc5b22985d8c6882f8576b48cb6012f5c8",
+    "evidence": "measure/overhang-front_fender-evidence.md"
+  },
+  {
+    "role": "front_fender",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_front_fender.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "cb76e6e21a3f54f025608b9eba11315415069a3d67a83c57d268077526d12507",
+    "raw_report": "measure/thickness-front_fender.md",
+    "raw_report_sha256": "b8c14a9695fd035c52a5c26ff2182d0515505f28e1dc2c2feac7e6080628a060",
+    "captured_log": "measure/thickness-front_fender-verdict.log",
+    "captured_log_sha256": "69057a3c3116f88b8cea329161b781214ead0894aaa492cc95861f9b9921f6a5",
+    "evidence": "measure/thickness-front_fender-evidence.md"
+  },
+  {
+    "role": "handlebar",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_handlebar.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "ed167f5d4c5b7296ae3f1af3ad2eee31486de7bd9ee90400bf6bc79a965e8fde",
+    "raw_report": "measure/overhang-handlebar.md",
+    "raw_report_sha256": "8960870abee4dd2359c94c2f7767fcd674cbc48573d7b2b69425823f9e98e7d1",
+    "captured_log": "measure/overhang-handlebar-verdict.log",
+    "captured_log_sha256": "67deeaf655eb2864d0cb1e4f7c24db7d11a070e4f458b8d8f3c9b0c12e472f46",
+    "evidence": "measure/overhang-handlebar-evidence.md"
+  },
+  {
+    "role": "handlebar",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_handlebar.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "ed167f5d4c5b7296ae3f1af3ad2eee31486de7bd9ee90400bf6bc79a965e8fde",
+    "raw_report": "measure/thickness-handlebar.md",
+    "raw_report_sha256": "f070e760380e9280ff0f0701847d00090a7c3698ff47537c9ae8bbcec1eef6b8",
+    "captured_log": "measure/thickness-handlebar-verdict.log",
+    "captured_log_sha256": "76c5274eef6598973f5b8ee110145e94ea12c587da9d54f6c569fee4b3965a08",
+    "evidence": "measure/thickness-handlebar-evidence.md"
+  },
+  {
+    "role": "pannier",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_pannier.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "a64766dd8a02534b017da2840de8cf6220b9ac6ab82ed52b087ee8bcbd8ab209",
+    "raw_report": "measure/overhang-pannier.md",
+    "raw_report_sha256": "7b6904e0c50d1a1b962b1cb078a9de02434589ba350fbda34cc1aec0ad121a6b",
+    "captured_log": "measure/overhang-pannier-verdict.log",
+    "captured_log_sha256": "aed4ed67aac2ec79ad5b592c0feda5177f8dba5ff729e4713d5636ff78e9891a",
+    "evidence": "measure/overhang-pannier-evidence.md"
+  },
+  {
+    "role": "pannier",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_pannier.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "a64766dd8a02534b017da2840de8cf6220b9ac6ab82ed52b087ee8bcbd8ab209",
+    "raw_report": "measure/thickness-pannier.md",
+    "raw_report_sha256": "42558f2f5f6aada6d11b23e250a11fe128517356f46c00a043a09acc0dc3e1ae",
+    "captured_log": "measure/thickness-pannier-verdict.log",
+    "captured_log_sha256": "aaaed78aa6eb735fe1b8a6cabec7d3132061624862e450d4109bf90146cdb343",
+    "evidence": "measure/thickness-pannier-evidence.md"
+  },
+  {
+    "role": "plinth",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_plinth.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "29a5fe7042b677e58335cf3a0c9114079119610385cc4255623c44f233c998c7",
+    "raw_report": "measure/overhang-plinth.md",
+    "raw_report_sha256": "2840ef47a8412b3fe737539062307b2201aa61fcf99d16898ba2b69de3296452",
+    "captured_log": "measure/overhang-plinth-verdict.log",
+    "captured_log_sha256": "4a01f4cd54f8e81855c62d53356dbc53d04f1a65b99bf7f69b96d8441a4abdb0",
+    "evidence": "measure/overhang-plinth-evidence.md"
+  },
+  {
+    "role": "plinth",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_plinth.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "29a5fe7042b677e58335cf3a0c9114079119610385cc4255623c44f233c998c7",
+    "raw_report": "measure/thickness-plinth.md",
+    "raw_report_sha256": "2c085fbf5daabe89d7787ee40484c46c5b069bb2f16693ae7f5d5338466955af",
+    "captured_log": "measure/thickness-plinth-verdict.log",
+    "captured_log_sha256": "ef37b7f4c474344cf0611fb2ba7ce124aa74c7e19eef0fab9979c87a28382f4c",
+    "evidence": "measure/thickness-plinth-evidence.md"
+  },
+  {
+    "role": "screen",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_screen.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "8a569242e972e63ad984c2d15f96b1a8464b008713ba2974982c5a04289b73e7",
+    "raw_report": "measure/overhang-screen.md",
+    "raw_report_sha256": "44dcb21759807e02ddce01b68735f7188ea126a9dc57641e8c19e5f57e19d190",
+    "captured_log": "measure/overhang-screen-verdict.log",
+    "captured_log_sha256": "24d3a4a15cadace3326455f2312b12ee18c566c7618b46a0cffd62e6125a6075",
+    "evidence": "measure/overhang-screen-evidence.md"
+  },
+  {
+    "role": "screen",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_screen.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "8a569242e972e63ad984c2d15f96b1a8464b008713ba2974982c5a04289b73e7",
+    "raw_report": "measure/thickness-screen.md",
+    "raw_report_sha256": "6fbd30f186604bb769f650210264ec17718bc7965925788a5d7c1f88e6f625ea",
+    "captured_log": "measure/thickness-screen-verdict.log",
+    "captured_log_sha256": "8dbde88ada6fd4c7d1d5d780ecd22574ffec7508a76c20e0b84dff97b2e9acff",
+    "evidence": "measure/thickness-screen-evidence.md"
+  },
+  {
+    "role": "seat_half",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_seat_half.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "1e160d0887fedd9c3d0db720e070bc1b8a4ef2c21560a73c7ec1fce24a9db9db",
+    "raw_report": "measure/overhang-seat_half.md",
+    "raw_report_sha256": "3f0dfe42d72e9b6bc536ab3fe16720435403b7c672d62deaf710d063ba9b68c4",
+    "captured_log": "measure/overhang-seat_half-verdict.log",
+    "captured_log_sha256": "29139f33d61a6a31286c9ec550b7660962a71d3bb7ced17a5d677b1984ce453c",
+    "evidence": "measure/overhang-seat_half-evidence.md"
+  },
+  {
+    "role": "seat_half",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_seat_half.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "1e160d0887fedd9c3d0db720e070bc1b8a4ef2c21560a73c7ec1fce24a9db9db",
+    "raw_report": "measure/thickness-seat_half.md",
+    "raw_report_sha256": "b5ed2f84c2571c1519320a6fc67de571a857afe692ebc8a3a3ad0b454c068a3f",
+    "captured_log": "measure/thickness-seat_half-verdict.log",
+    "captured_log_sha256": "bb9a22e6f61b9d978eaa25fc05bd2d5f6e67cd9d7e998b5859f95c687da21ec5",
+    "evidence": "measure/thickness-seat_half-evidence.md"
+  },
+  {
+    "role": "seat_half_right",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_seat_half_right.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "e0d4eee93016995a69a7f118216a3177e9a1f5062f5ce34f024c3d3b00ba21d9",
+    "raw_report": "measure/overhang-seat_half_right.md",
+    "raw_report_sha256": "4120d4e11a7345bdcc5ca411fa721f31a92b949e036f4c88ea15db6cf92249af",
+    "captured_log": "measure/overhang-seat_half_right-verdict.log",
+    "captured_log_sha256": "878836452e543f7638a5b5cd805d47070a57336ab50524663b98eaf840db6bfd",
+    "evidence": "measure/overhang-seat_half_right-evidence.md"
+  },
+  {
+    "role": "seat_half_right",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_seat_half_right.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "e0d4eee93016995a69a7f118216a3177e9a1f5062f5ce34f024c3d3b00ba21d9",
+    "raw_report": "measure/thickness-seat_half_right.md",
+    "raw_report_sha256": "24e9841a05919341baa6fc6d1b7e97d59cf44d5b0200ef50b38bedccde83b05e",
+    "captured_log": "measure/thickness-seat_half_right-verdict.log",
+    "captured_log_sha256": "cd401aeb331402f8d7de3bc40a60a386819a01e4a8d73dfc6359a39dfdd585af",
+    "evidence": "measure/thickness-seat_half_right-evidence.md"
+  },
+  {
+    "role": "swingarm_side",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_swingarm_side.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "00f85b273763a8ad1d5cb825b5c61bba58359066b95a3b0de49fa43841cca82f",
+    "raw_report": "measure/overhang-swingarm_side.md",
+    "raw_report_sha256": "26d46c2e6174e3ed377552bc25430228364f3ee3d77911fc538defdad0d27c06",
+    "captured_log": "measure/overhang-swingarm_side-verdict.log",
+    "captured_log_sha256": "8feb6eed667ebc4e54d8bf4f6d95dfb2b57f1683dde32decd691f5bc2b7999f1",
+    "evidence": "measure/overhang-swingarm_side-evidence.md"
+  },
+  {
+    "role": "swingarm_side",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_swingarm_side.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "00f85b273763a8ad1d5cb825b5c61bba58359066b95a3b0de49fa43841cca82f",
+    "raw_report": "measure/thickness-swingarm_side.md",
+    "raw_report_sha256": "689799ea1d3f6e1bde8cd359e5bde423e5a1de7dcff2bb5ffd8bbe395fc7b519",
+    "captured_log": "measure/thickness-swingarm_side-verdict.log",
+    "captured_log_sha256": "b96ad9a69a000d115b1d0ad9bbd656e0293d1e32115b7c556b6514e77fe9951c",
+    "evidence": "measure/thickness-swingarm_side-evidence.md"
+  },
+  {
+    "role": "swingarm_side_right",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_swingarm_side_right.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "e8754ac5bcbf48acacdd6c69547658a54e644d6f3a5bbd156b983efdab65598d",
+    "raw_report": "measure/overhang-swingarm_side_right.md",
+    "raw_report_sha256": "51668d08c678ba024e583a29e9b1d42d3241150a32273390237ba3dd7ed6c34f",
+    "captured_log": "measure/overhang-swingarm_side_right-verdict.log",
+    "captured_log_sha256": "7209aed88231c0b1ebc8ba4d659c81976918c881b3f51ddbfd587728a527f91d",
+    "evidence": "measure/overhang-swingarm_side_right-evidence.md"
+  },
+  {
+    "role": "swingarm_side_right",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_swingarm_side_right.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "e8754ac5bcbf48acacdd6c69547658a54e644d6f3a5bbd156b983efdab65598d",
+    "raw_report": "measure/thickness-swingarm_side_right.md",
+    "raw_report_sha256": "e32e118cf94516ca1b6ee62b43f56275bc85e77f6ca4e477f5a493b96ddf0199",
+    "captured_log": "measure/thickness-swingarm_side_right-verdict.log",
+    "captured_log_sha256": "b51ecc96fac8bc5470094ec4462ac4ed1dbaedcd4def430c88ff7f31b9ceba80",
+    "evidence": "measure/thickness-swingarm_side_right-evidence.md"
+  },
+  {
+    "role": "tank_cover",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_tank_cover.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "af019132ef148cbef959d91d5bae88634013a8bba55a7600324010020eb963db",
+    "raw_report": "measure/overhang-tank_cover.md",
+    "raw_report_sha256": "a47af64388c5136beb1c700fd79fa6a1c7f19a7a690064f1d8149332b5d7a993",
+    "captured_log": "measure/overhang-tank_cover-verdict.log",
+    "captured_log_sha256": "686eb9de3819a7b408e39679cf940a924f034f6233f7e3a922aeb838684f803f",
+    "evidence": "measure/overhang-tank_cover-evidence.md"
+  },
+  {
+    "role": "tank_cover",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_tank_cover.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "af019132ef148cbef959d91d5bae88634013a8bba55a7600324010020eb963db",
+    "raw_report": "measure/thickness-tank_cover.md",
+    "raw_report_sha256": "a3e8e5103adc2f9f5e3857636476c8b5e2bb59ae0e1f95e4f9db3e76db0244dc",
+    "captured_log": "measure/thickness-tank_cover-verdict.log",
+    "captured_log_sha256": "20f8cb8d2dfc80fcb580bd32220d0bcc73f2a6febcbaf81a6b70411672dad266",
+    "evidence": "measure/thickness-tank_cover-evidence.md"
+  },
+  {
+    "role": "wheel",
+    "gate": "overhang",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_overhang",
+      "artifacts/make/r0001/product/heritage/part_wheel.step.py",
+      "--angle",
+      "45"
+    ],
+    "exit_code": 0,
+    "step_sha256": "1c1274c2aca15948e9a4c130bcb59131ad788458c714796e65dd0987c501e2e8",
+    "raw_report": "measure/overhang-wheel.md",
+    "raw_report_sha256": "5d3495da3b61eea4910030a1a99eff713c9d9f62bf522bfbbf456520a9a8473f",
+    "captured_log": "measure/overhang-wheel-verdict.log",
+    "captured_log_sha256": "64819973c4b42b31803b1cbad51f08dd9afcfd2c1b94501d3bb19c302a951617",
+    "evidence": "measure/overhang-wheel-evidence.md"
+  },
+  {
+    "role": "wheel",
+    "gate": "thickness",
+    "command": [
+      "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+      ".agents/skills/cad/scripts/check_thickness",
+      "artifacts/make/r0001/product/heritage/part_wheel.step.py",
+      "--nozzle",
+      "0.4"
+    ],
+    "exit_code": 0,
+    "step_sha256": "1c1274c2aca15948e9a4c130bcb59131ad788458c714796e65dd0987c501e2e8",
+    "raw_report": "measure/thickness-wheel.md",
+    "raw_report_sha256": "c1ba2a0db4dcd93f0eeedf50871204c04650970f3bf1aa5f8c888c5036a5c158",
+    "captured_log": "measure/thickness-wheel-verdict.log",
+    "captured_log_sha256": "02f2515bab2a86ac60eb45df3232f81328dfc559784568a2b328c5e1eacebff6",
+    "evidence": "measure/thickness-wheel-evidence.md"
+  }
+]

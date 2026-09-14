@@ -1,0 +1,49 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half_right/r0002",
+ "likeness": {},
+ "parts": {
+  "seat_half_right": "48f45db930a2938a340e1943b571e884f59dcdb04a046c9e67261368407ca8d3"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "seat_half_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half_right/r0002/overhang-seat_half_right.log": "2c413b7a77cbf45c07a604fecf53142613a5b7cff16f5fc428cb4d7fc576bbb7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half_right/r0002/thickness-seat_half_right.log": "57ca029b9bbfcba4b197a6a1db14b62f159c21a97b7946ce2fede71525a44c08"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1"
+  },
+  "platform": "darwin",
+  "python": "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+  "python_version": "3.11.12 (main, Apr  9 2025, 03:49:53) [Clang 20.1.0 ]",
+  "sources": {
+   "check_overhang": "023717b7fef568061fc4808d9c53597821f2a32d0c985ac3574389e9c32c1c40",
+   "check_thickness": "6f68affa79e7053701100ce938dbf25b4fe498642a6f7befdecbf0606d35d2bb",
+   "make_round": "64acc0f7c3bbdfe9aa5a071c73ea61ae9386c5c36bd35f862c97fe990609330c",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 2,
+ "scope": "component:seat_half_right"
+}
