@@ -893,3 +893,12 @@ entries. Human output puts it after the header and JSON output puts
 rewriting saved evidence. Detailed fields, reports, verdicts, cache rules and
 exit behavior are unchanged; warnings and non-part gates keep their separate
 results. Synthetic large-round and feedback-path tests cover the projection.
+
+## Exact placed material cache (2026-09-14)
+
+Ported the check_motion optimization and regression tests from ef0b2bc7.
+Within one immutable outer motion condition, a bounded 32-entry LRU reuses
+successful material normalization only for identical topology, location and
+orientation. Failures are not cached; nested checks share the scope, which
+is discarded on exit. Samples, collision thresholds and decisions are unchanged.
+Frozen runs receive this correction only through host-owned tool refresh.
