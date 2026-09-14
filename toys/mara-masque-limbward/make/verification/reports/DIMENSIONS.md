@@ -1,0 +1,3 @@
+# Delivery geometry measurements
+
+Current production STEP files, not stale generator-side cache, were inspected in delivery-inspection.json and frames-and-pitch.json. All requests passed. Board measures196 x196 x26 mm; inner board160 x160 mm; adjacent file centres20 mm. Rook frame moves from(70,-60,22) to(70,80,22): exactly140 mm along +Y with identical axes. Piece height frames12,22,24,26,28,34 mm; circular foot diameter16 mm before black scallops. Exact analytical curved faces and source parameter retain radius8; tessellated bounds may fall slightly inside the true circle. All13 distinct solids and97-item delivery assembly validate; all state and assembly interference checks pass.

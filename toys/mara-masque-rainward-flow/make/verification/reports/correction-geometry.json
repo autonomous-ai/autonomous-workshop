@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "sun_mm": [
+    190.0,
+    190.0,
+    28.0
+  ],
+  "bar_top_area_mm2": 1809.5573684677213,
+  "bar_top_inner_wires": 0,
+  "dice_face_values_by_outward_normal": {
+    "(-1, 0, 0)": 5,
+    "(0, -1, 0)": 4,
+    "(0, 0, 1)": 1,
+    "(0, 0, -1)": 6,
+    "(0, 1, 0)": 3,
+    "(1, 0, 0)": 2
+  },
+  "pip_cones": 21,
+  "pip_radius_mm": 1,
+  "pip_depth_mm": 1.1,
+  "dice_volume_mm3": 4071.809736567222,
+  "checkers": {
+    "single": {
+      "bbox_mm": [
+        12.0000002,
+        8.000000200000002,
+        4.000000200000001
+      ],
+      "flat_contact_area_mm2": 49.83804353999999,
+      "equal_planar_top_bottom": true
+    },
+    "fork": {
+      "bbox_mm": [
+        12.0000002,
+        8.0000002,
+        4.000000200000001
+      ],
+      "flat_contact_area_mm2": 61.49303233999999,
+      "equal_planar_top_bottom": true
+    }
+  },
+  "limits": "Exact CAD only; no physical fairness or handling test."
+}

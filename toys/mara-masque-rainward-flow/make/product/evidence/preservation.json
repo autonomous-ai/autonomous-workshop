@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "snapshot_sha256": "8c281a08a6425800675acb75648a8e227b0bb509856d70aa0d283d0b448c8566",
+  "unchanged_functions": [
+    "xy",
+    "theta",
+    "cup",
+    "piece_poses"
+  ],
+  "scope": "Exact unchanged source functions; dimensions, revised geometry and rules trace checked separately."
+}

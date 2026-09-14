@@ -1,0 +1,59 @@
+{
+ "build": {
+  "white_bishop": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_bishop"
+ ],
+ "checked": [
+  "white_bishop"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_bishop.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_bishop"
+ ],
+ "print": {
+  "white_bishop": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0001/overhang-white_bishop.log": "37939ab98e1fff8930be9e8ae6294309b3a9b6482ac10f1e2613fdb5b6de2343",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0001/thickness-white_bishop.log": "e2cc29cc72ed467cdafc2c0b6e87960482ae8142f4ba7a9d21e3d4a1246d9d6d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.47,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:white_bishop",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0001/visual-packet.json",
+  "packet_sha256": "8f08edd3bec33e5a80cca04c21553bc5908de53d37fc5d686159dc64f89dec78",
+  "status": "pending"
+ }
+}

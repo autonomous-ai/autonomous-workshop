@@ -1,0 +1,60 @@
+{
+ "build": {
+  "white_knight": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_knight"
+ ],
+ "checked": [
+  "white_knight"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_knight.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_knight"
+ ],
+ "print": {
+  "white_knight": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0002/overhang-white_knight.log": "985442661f013ab35ec166f4c7092f15efc03afc4bcba770eac6d52a272b52b4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0002/thickness-white_knight.log": "08698d11aaeb07cfefa7523ca4ceb84a2471bd29d7a1b347349d3d718a72b3ed"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:white_knight",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show three nested stair levels shifting to one side, with slimmer depth and clear foot margin. Flat smooth underside; all tiers supported.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0002/visual-packet.json",
+  "packet_sha256": "7f2843f0febc25b1f2fd997c8a035ee6a29d055b8a95580e4e8742bf216e1874",
+  "status": "pass"
+ }
+}

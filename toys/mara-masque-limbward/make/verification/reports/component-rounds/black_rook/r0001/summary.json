@@ -1,0 +1,60 @@
+{
+ "build": {
+  "black_rook": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "black_rook"
+ ],
+ "checked": [
+  "black_rook"
+ ],
+ "checks_ok": true,
+ "entry": "part_black_rook.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_rook/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "black_rook"
+ ],
+ "print": {
+  "black_rook": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_rook/r0001/overhang-black_rook.log": "b4f41983be2b40eb8d5f0dcf9b4082729738c323b0da8450d6687343e2b0cc77",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_rook/r0001/thickness-black_rook.log": "862c003aa1601f4504a07c3cf2d3b9fd006ab0aea0495598f85185d9de2ec956"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:black_rook",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Tall orthogonal cross vanes and flat tops remain visible in iso; three deep foot scallops distinguish side in top and front. Base and upper are coherent.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_rook/r0001/visual-packet.json",
+  "packet_sha256": "31f57b6072172e4458666aecb43f27025a7420a915a0d2a7a77544f302827a84",
+  "status": "pass"
+ }
+}

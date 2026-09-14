@@ -1,0 +1,69 @@
+{
+ "build": {
+  "white_pawn": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_pawn"
+ ],
+ "checked": [
+  "white_pawn"
+ ],
+ "checks_ok": false,
+ "entry": "part_white_pawn.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_pawn"
+ ],
+ "print": {
+  "white_pawn": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001/overhang-white_pawn.log": "181e2dcd582b16b60c745c02a45a692f60e4996ca8bdedda1903842cb26fa56f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001/thickness-white_pawn.log": "43c65bb073ececf38122d5f68962ba5f793de4e5773dc10e3ea1f821898b2f10"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 1.2% of surface below (531 of 44539 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:white_pawn",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Wedge edge thickness check fails; roof and base margins need more material.",
+    "evidence": "Iso shows minimal foot margin at wedge corners; numeric thickness failure confirms edge risk.",
+    "part": "white_pawn",
+    "repair": "Reduce wedge footprint to10x8 and raise low roof to8 while keeping total height12."
+   }
+  ],
+  "observation": "Front and iso show the intended wedge and flat foot, but wedge corners approach the foot edge and thickness sampling fails at the edges.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001/visual-packet.json",
+  "packet_sha256": "ca800bea7608e1516717bc4bbc15f613789fd61ca4112d7bc7aab98db7384659",
+  "status": "fail"
+ }
+}

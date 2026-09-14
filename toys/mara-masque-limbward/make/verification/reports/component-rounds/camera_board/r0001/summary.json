@@ -1,0 +1,67 @@
+{
+ "build": {
+  "camera_board": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "camera_board"
+ ],
+ "checked": [
+  "camera_board"
+ ],
+ "checks_ok": true,
+ "entry": "part_camera_board.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "camera_board"
+ ],
+ "print": {
+  "camera_board": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0001/overhang-camera_board.log": "a23658f4f9eeb2e888392ea87a5a6d91511d1142156cc2e9b8b8edf7309f652b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0001/thickness-camera_board.log": "417af01e58ff1f273584a2065b1a9acf055b397f4a24c687d772ca0db3c814e3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:camera_board",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Lens face lacks an optical opening or concentric contour; camera recognition is weak.",
+    "evidence": "Iso lower-left front bulge is an unbroken broad slab.",
+    "part": "camera_board",
+    "repair": "Add a shallow elliptical front recess with a45-degree sloping ceiling; retain196 mm envelope and monolithic supported body."
+   }
+  ],
+  "observation": "Isometric view shows the board and shallow grip, but the front lens reads as a solid rectangular tab without an optical face. Top/front packet views obscure surface detail.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0001/visual-packet.json",
+  "packet_sha256": "272b92422541c19584a1307d8a4dd2286923ea9ea5bb8f05780a2ad431bece72",
+  "status": "fail"
+ }
+}

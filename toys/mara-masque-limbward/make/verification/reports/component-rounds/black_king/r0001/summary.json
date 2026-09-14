@@ -1,0 +1,60 @@
+{
+ "build": {
+  "black_king": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "black_king"
+ ],
+ "checked": [
+  "black_king"
+ ],
+ "checks_ok": true,
+ "entry": "part_black_king.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_king/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "black_king"
+ ],
+ "print": {
+  "black_king": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_king/r0001/overhang-black_king.log": "f9e0128baa792c103afb8155cbab5a43114fcfd266649574d0132fe2cc433033",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_king/r0001/thickness-black_king.log": "ba9ffecd49872c776b4d9ab9176e241dd6eecdb26709a2693c02ef52b3a3c190"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:black_king",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Dome and continuous cylindrical stellar post stand on a three-scalloped flat foot. Top exposes all three cutouts; front and iso show their depth without disrupting the post.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_king/r0001/visual-packet.json",
+  "packet_sha256": "fd3336f0c9f316f6e4381327c464f4cd5bc0d128b24cf8b3cc8c63acbb6a6764",
+  "status": "pass"
+ }
+}

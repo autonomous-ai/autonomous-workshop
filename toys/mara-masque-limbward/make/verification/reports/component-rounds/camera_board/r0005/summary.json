@@ -1,0 +1,61 @@
+{
+ "build": {
+  "camera_board": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "camera_board"
+ ],
+ "checked": [
+  "camera_board"
+ ],
+ "checks_ok": false,
+ "entry": "part_camera_board.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "camera_board"
+ ],
+ "print": {
+  "camera_board": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0005/overhang-camera_board.log": "774c159244902bbc68e4407ac93c0266ae89a4ba227650073932829092cc9c73",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0005/thickness-camera_board.log": "646390031a71c012122ef245fdd5a8d4d1e0d5606d6fd1761ac52f8598baffb4"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 36.7% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 1.5,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:camera_board",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0005/visual-packet.json",
+  "packet_sha256": "993cf2281482d10a20e7e97435e864a8e2ea4204d2f6718138f8e90d5233ccd3",
+  "status": "pending"
+ }
+}

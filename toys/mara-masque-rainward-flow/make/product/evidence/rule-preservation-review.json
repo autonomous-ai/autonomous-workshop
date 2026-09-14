@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "kind": "rainward.rule-preservation-review",
+  "reviewer": "mara-masque selected-inventor native agent",
+  "review_date": "2026-09-11",
+  "scope": "Revision differential rules audit only; no claim of physical playtest or printability.",
+  "files": {
+    "README.md": {
+      "baseline_path": "revision-work/make/product/README.md",
+      "baseline_sha256": "20e2941707b7a8b59efcc1bb987f5b47693265bcde6affbb82b0675f21417cc5",
+      "current_path": "artifacts/make/r0001/product/README.md",
+      "current_sha256": "d4c26f80c11df892cc1bcd5b1a9cba5f0b29ee8c4a6ed6ecfa42c57360c14b6e"
+    },
+    "RULES.md": {
+      "baseline_path": "revision-work/make/product/RULES.md",
+      "baseline_sha256": "94326e029431f7b8214d3b008c096a2fca05e13a4695e1ad9a1142cc965eaccf",
+      "current_path": "artifacts/make/r0001/product/RULES.md",
+      "current_sha256": "d601a858b70b4c1685dced91c7f176d73e4779a3ad784e9b13c7fc88d1fd9d66"
+    },
+    "orientation.svg": {
+      "baseline_path": "revision-work/make/product/orientation.svg",
+      "baseline_sha256": "2d5566e9f93aa991f2641962da688259e21c3812975a14d72fc3ee81fd8a72a4",
+      "current_path": "artifacts/make/r0001/product/orientation.svg",
+      "current_sha256": "3342e40d3b23980c073c4e955c3f0555ab81491a583a71ab220bbaffffac7f13"
+    }
+  },
+  "checks": [
+    {
+      "scope": "Choose the first player",
+      "method": "Exact section text comparison after fork-tail to split-tail terminology normalization",
+      "unchanged": true
+    },
+    {
+      "scope": "Take a turn",
+      "method": "Exact section text comparison after fork-tail to split-tail terminology normalization",
+      "unchanged": true
+    },
+    {
+      "scope": "Enter from the flare first",
+      "method": "Exact section text comparison after fork-tail to split-tail terminology normalization",
+      "unchanged": true
+    },
+    {
+      "scope": "Bear off and win",
+      "method": "Exact section text comparison after fork-tail to split-tail terminology normalization",
+      "unchanged": true
+    },
+    {
+      "scope": "Keep the historical play laws",
+      "method": "Exact section text comparison after fork-tail to split-tail terminology normalization",
+      "unchanged": true
+    },
+    {
+      "scope": "RULES complete playing instructions and historical interpretation through end of file",
+      "method": "Exact suffix comparison after terminology normalization",
+      "unchanged": true
+    },
+    {
+      "scope": "README setup table, travel, player identities and signature trace",
+      "method": "Human line-by-line complete unified diff inspection",
+      "unchanged": true
+    },
+    {
+      "scope": "orientation.svg point labels, lane boundaries, home-bank labels, coordinates and player direction",
+      "method": "Human complete unified diff inspection; only title/orientation text and decorative crest path removed",
+      "unchanged": true
+    },
+    {
+      "scope": "RULES title cleanup follow-up",
+      "method": "Reconstructed prior reviewed bytes matched prior exact SHA256; current text equals only Rainward Sun to Rainward Flow replacement. README and orientation hashes unchanged.",
+      "unchanged": true
+    }
+  ],
+  "rule_preservation_pass": true,
+  "confirmed_preserved": [
+    "two players,15 counters each,35 total printable parts and shared pair of dice",
+    "24-point topology, four banks,15-piece lane capacity, setup24:2/13:5/8:3/6:5 in own coordinates",
+    "A/B opposing travel, home banks and B reverse numbering",
+    "historical opening one-or-two dice options, tied contests, keep-or-reroll choice",
+    "alternate turns, exact-distance submoves, doubles four moves and whole-throw use without modern higher-die priority",
+    "blocking, hitting, mandatory bar entry, legal remainder and bearing-off choices",
+    "ending,1/2/3 scores, single/gammon/backgammon conditions and series restarts",
+    "historical touch/release/omission/premature-bearing/mistaken-throw/cocked-dice laws",
+    "public information and intended ideal dice probabilities; no physical fairness claim",
+    "no added powers, rules, resources, doubling cube or modern tournament rules"
+  ],
+  "permitted_differences": [
+    {
+      "file": "README.md",
+      "change": "Rainward Sun title to Rainward Flow and fork-tail to split-tail",
+      "classification": "identity/terminology only"
+    },
+    {
+      "file": "README.md",
+      "change": "Manual pip placement and ink diagram replaced by dark paint filling of CAD-defined recesses; retains1\u20136 opposite pairs and two-die cocked reroll",
+      "classification": "Wish-required finishing correction; no dice rule change"
+    },
+    {
+      "file": "README.md",
+      "change": "Crest-based physical orientation replaced by chosen wide lower bank boundary aligned with the same diagram for whole game",
+      "classification": "Physical orientation correction; all player-relative numbering/setup/travel preserved"
+    },
+    {
+      "file": "RULES.md",
+      "change": "Player silhouette terminology and probability-row physical dice representation changed",
+      "classification": "Physical expression only; ideal36-outcome rule assumption unchanged"
+    },
+    {
+      "file": "orientation.svg",
+      "change": "Revision title, new orientation cue description, crest decorative path removed",
+      "classification": "Diagram styling/orientation only; topology and numbering coordinates unchanged"
+    },
+    {
+      "file": "RULES.md",
+      "change": "All Rainward Sun name occurrences changed to Rainward Flow after initial audit.",
+      "classification": "Revision naming only; exact other bytes preserved."
+    }
+  ],
+  "blocking_rule_defects": [],
+  "non_rule_observations": [],
+  "conclusion": "Only title/terminology and Wish-authorized physical finishing/orientation changes were found. No accidental historical rule change was introduced. The subsequent RULES.md title cleanup was verified as a name-only substitution; all other compared bytes remained unchanged. This audit is bound to exact current file hashes."
+}

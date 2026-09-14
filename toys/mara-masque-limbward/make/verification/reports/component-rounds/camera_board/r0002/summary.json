@@ -1,0 +1,62 @@
+{
+ "build": {
+  "camera_board": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "camera_board"
+ ],
+ "checked": [
+  "camera_board"
+ ],
+ "checks_ok": false,
+ "entry": "part_camera_board.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "camera_board"
+ ],
+ "print": {
+  "camera_board": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0002/overhang-camera_board.log": "255dfbf5567571aed9605002a0a35da27c0da3ffab761b8171de07ed542139cf",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0002/thickness-camera_board.log": "00707b7af89403903df9a560e950cb206cd9cc94a12911f921e46e7bc9cf2edc"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 37.0% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 90.7,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:camera_board",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show a broad elliptical optical face in the lens bulge, board perimeter and alternating recessed cells, and right grip channels. Top view is underside-facing and verifies flat base; iso exposes playing surface. Geometry is coherent; overhang numeric failure still requires a steeper recess wall.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0002/visual-packet.json",
+  "packet_sha256": "93b6ab8af2c781de8ca54900970e12435d3956f500dd6edaea97f3220fd9b82a",
+  "status": "pass"
+ }
+}

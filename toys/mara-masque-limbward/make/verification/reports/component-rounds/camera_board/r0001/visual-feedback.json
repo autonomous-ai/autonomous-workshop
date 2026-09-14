@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Lens face lacks an optical opening or concentric contour; camera recognition is weak.",
+      "evidence": "Iso lower-left front bulge is an unbroken broad slab.",
+      "part": "camera_board",
+      "repair": "Add a shallow elliptical front recess with a45-degree sloping ceiling; retain196 mm envelope and monolithic supported body."
+    }
+  ],
+  "observation": "Isometric view shows the board and shallow grip, but the front lens reads as a solid rectangular tab without an optical face. Top/front packet views obscure surface detail.",
+  "packet_sha256": "272b92422541c19584a1307d8a4dd2286923ea9ea5bb8f05780a2ad431bece72",
+  "status": "fail"
+}

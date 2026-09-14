@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_camera_board.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "camera_board"
+ ],
+ "print": {
+  "camera_board": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0003/overhang-camera_board.log": "959571603a07fce2eb2938e213a7a40bac3b339a49a152a1ddd4864b5403850d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0003/thickness-camera_board.log": "81c8d2d0c964170128044d0565559f04d9bd2ffe4ee3d74c6a053f6dd09329e2"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "camera_board"
+ ],
+ "round": 4,
+ "scope": "component:camera_board",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front now shows a broad inset elliptical lens; iso shows it protruding from chunky camera body with visible raised grip and checker relief. Flat underside and coherent rim; no geometric placement errors.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0004/visual-packet.json",
+  "packet_sha256": "dadc10517d21a4bd4c7b53189307c83c3bb0d1b0001a861187f4b430c8934101",
+  "status": "pass"
+ }
+}

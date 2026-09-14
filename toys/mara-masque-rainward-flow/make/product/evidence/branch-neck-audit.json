@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "rainward.supporting-neck-profile-audit",
+  "reviewer": "mara-masque native selected-inventor agent",
+  "source_path": "cad/rainward_lib.py",
+  "source_sha256": "c0768de293ce1c8576919c6df3fdced5dc0ceb5cecd3e75540b6dbfb36d79c8b",
+  "design_revision": "R2 late terminal notch",
+  "method": "Parsed literal cubic control coordinates without importing CAD;1001 samples per cubic at evenly spaced parameter values; Euclidean nearest pairs between opposing non-terminal boundaries. Coordinates in millimeters.",
+  "excluded_scope": "Terminal rounded-cap interior slices approach zero at the endpoint and are not supporting necks. CAD wire validity,3D printability and lane clearance are separate root checks. This is not visual acceptance evidence.",
+  "checks": [
+    {
+      "name": "single supporting neck",
+      "segments_zero_indexed": [
+        1,
+        4
+      ],
+      "distance_mm": 2.1,
+      "boundary_point_a_mm": [
+        -5.0,
+        4.0
+      ],
+      "boundary_point_b_mm": [
+        -5.0,
+        1.9
+      ],
+      "meets_2mm_sampled": true
+    },
+    {
+      "name": "split upper branch",
+      "segments_zero_indexed": [
+        1,
+        4
+      ],
+      "distance_mm": 2.1,
+      "boundary_point_a_mm": [
+        -5.0,
+        4.0
+      ],
+      "boundary_point_b_mm": [
+        -5.0,
+        1.9
+      ],
+      "meets_2mm_sampled": true
+    },
+    {
+      "name": "split lower branch",
+      "segments_zero_indexed": [
+        7,
+        4
+      ],
+      "distance_mm": 2.0,
+      "boundary_point_a_mm": [
+        -5.0,
+        -0.9
+      ],
+      "boundary_point_b_mm": [
+        -5.0,
+        1.1
+      ],
+      "meets_2mm_sampled": true
+    }
+  ],
+  "sampled_supporting_necks_meet_2mm": true,
+  "limitations": "Discrete sampling is a numerical design screen, not a mathematically rigorous global lower bound or replacement for exact geometry and print gates. No CAD process, physical test or blind recognition review was run."
+}
