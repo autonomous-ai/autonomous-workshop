@@ -128,6 +128,7 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0060-make-round-visual-feedback-and-three-repairs.md`, and
 `docs/adr/0061-spark-make-owned-verification.md`, and
 `docs/adr/0062-step-only-cad-toolchain.md`, and
+`docs/adr/0063-spark-component-first-make.md`, and
 `docs/adr/0063-print-gates-on-source.md`, and
 `docs/adr/0064-operator-selected-turn-boundary.md`, and
 `docs/adr/0067-spark-mixed-material-products.md`, and
@@ -164,6 +165,10 @@ token-budget products, not Make's internal engineering or review policy.
 ADR 0061 supersedes duplicate host verification and native manual
 authoring for Spark only; it leaves Make's own implementation intact. Do not
 reintroduce these removed boundaries from an older ADR or frozen-run fixture.
+ADR 0063 makes new Spark Make work component-first: every distinct component
+has its own source and isolated make-round repair loop before assembly review.
+It changes native Make work and its deterministic round tool, not Workshop's
+host-owned Spark acceptance boundary.
 ADR 0060 requires native Manager visual feedback within Make rounds and expands
 final blind review to an initial review plus three repair-and-rereview cycles
 for new runs. Frozen older runs retain their original allowance and tool bytes.

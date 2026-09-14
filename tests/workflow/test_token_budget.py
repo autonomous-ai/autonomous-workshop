@@ -439,6 +439,22 @@ def test_terminal_reconciliation_uses_current_root_delta_and_allows_canceled_chi
     assert not (tmp_path / "token-accounting-need.json").exists()
 
 
+def test_terminal_reconciliation_accepts_cumulative_root_counters_after_resume(tmp_path):
+    paths, checkpoint = context(tmp_path)
+    budget = ProductTokenBudget()
+    budget.observe(observation(500))
+    callback = _product_token_observer(paths, checkpoint, budget)
+
+    with mock.patch(
+        "workshop.workflow.native_run._read_product_token_usage",
+        return_value=observation(600),
+    ):
+        callback.reconcile_completed_turn((600, None, None, 60, None))
+
+    assert budget.to_dict()["used_tokens"] == 660
+    assert not (tmp_path / "token-accounting-need.json").exists()
+
+
 def test_reconciled_cap_stop_does_not_create_an_accounting_effect_blocker(tmp_path):
     paths, checkpoint = context(tmp_path)
     budget = ProductTokenBudget(1000)

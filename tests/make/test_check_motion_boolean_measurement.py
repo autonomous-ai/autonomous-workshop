@@ -234,7 +234,7 @@ class MotionBooleanMeasurementTests(unittest.TestCase):
             self.assertEqual(fuse.call_count, 1)
             self.assertEqual(status, 1, output.getvalue())
             payload = json.loads(output.getvalue())
-            self.assertEqual(set(payload), {'ok', 'project', 'assembly', 'results'})
+            self.assertEqual(set(payload), {'ok', 'project', 'assembly', 'results', 'deadlineSeconds'})
             self.assertFalse(payload['ok'])
             result = payload['results'][0]
             self.assertEqual(set(result), {'id', 'check', 'description', 'status', 'detail'})

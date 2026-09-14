@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front and iso show camera lens bulge and grip integrated with board, aligned starting rows and separated reserve stock. Top confirms 32 reserves per side and orderly board placement; engravings are readable in iso despite top shading. No visible intersections, floating pieces or missing roles. All 97 occurrences have coherent scale.",
+  "packet_sha256": "828fff49f677734ae64bed82a13e5e2b7acd9fd60b864c6853f7b41366bf48af",
+  "status": "pass"
+}

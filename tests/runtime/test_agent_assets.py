@@ -170,6 +170,9 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
 
         for required in (
             "smallest viable parametric baseline",
+            "every distinct physical component",
+            "--component part_<role>.step.py",
+            "--require-component-passes",
             "STEP is the only geometry format the toolchain writes",
             "Call a product print-ready only behind a passing `--print-gates` run",
             "one canonical final render family",

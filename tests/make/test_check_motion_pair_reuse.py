@@ -19,8 +19,8 @@ class PairReuseTests(unittest.TestCase):
         # Execute the same handler with only memoized calls replaced by the
         # original measurement, retaining every loop, sample and threshold.
         source = inspect.getsource(motion.check_coupled)
-        source = source.replace("measured_pair((first, second), posed[first][1], posed[second][1])", "overlap_volume(posed[first][1], posed[second][1])")
-        source = source.replace("measured_pair((first, len(posed) + obstacle_index), posed[first][1], obstacle)", "overlap_volume(posed[first][1], obstacle)")
+        source = source.replace("measured_pair((pair, second), posed[pair][1], posed[second][1])", "overlap_volume(posed[pair][1], posed[second][1])")
+        source = source.replace("measured_pair((pair, len(posed) + obstacle_index), posed[pair][1], obstacle)", "overlap_volume(posed[pair][1], obstacle)")
         namespace = dict(motion.__dict__)
         exec(source, namespace)
         baseline = namespace['check_coupled']

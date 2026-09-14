@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" role="img" aria-label="Symbolic top view of the five by five QUAYSHIFT grid">
+<rect width="420" height="420" rx="12" fill="#f6f0e4"/>
+<rect x="42" y="42" width="328" height="328" rx="5" fill="#174b5b"/>
+<text x="78.0" y="391" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#273c36">A</text>
+<text x="142.0" y="391" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#273c36">B</text>
+<text x="206.0" y="391" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#273c36">C</text>
+<text x="270.0" y="391" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#273c36">D</text>
+<text x="334.0" y="391" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#273c36">E</text>
+<text x="28" y="339.0" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#273c36">1</text>
+<text x="28" y="275.0" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#273c36">2</text>
+<text x="28" y="211.0" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#273c36">3</text>
+<text x="28" y="147.0" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#273c36">4</text>
+<text x="28" y="83.0" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#273c36">5</text>
+<path d="M46 46V366 M46 46H366" stroke="#ffffff" stroke-opacity=".22" fill="none"/>
+<path d="M110 46V366 M46 110H366" stroke="#ffffff" stroke-opacity=".22" fill="none"/>
+<path d="M174 46V366 M46 174H366" stroke="#ffffff" stroke-opacity=".22" fill="none"/>
+<path d="M238 46V366 M46 238H366" stroke="#ffffff" stroke-opacity=".22" fill="none"/>
+<path d="M302 46V366 M46 302H366" stroke="#ffffff" stroke-opacity=".22" fill="none"/>
+<path d="M366 46V366 M46 366H366" stroke="#ffffff" stroke-opacity=".22" fill="none"/>
+<rect x="240.0" y="48.0" width="60" height="60" rx="3" fill="#d5c7aa" stroke="#243c36" stroke-width="2"/>
+<text x="270.0" y="83.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">A</text>
+<rect x="112.0" y="48.0" width="60" height="60" rx="3" fill="#d5c7aa" stroke="#243c36" stroke-width="2"/>
+<text x="142.0" y="83.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">A</text>
+<rect x="112.0" y="48.0" width="188.0" height="60.0" rx="3" fill="none" stroke="#d5c7aa" stroke-width="3"/>
+<polygon points="174.00,70.80 238.00,70.80 238.00,46.80 174.00,46.80" fill="#d5c7aa" fill-opacity=".92" stroke="#faf7f0" stroke-width="1"/>
+<rect x="240.0" y="240.0" width="60" height="60" rx="3" fill="#b96843" stroke="#243c36" stroke-width="2"/>
+<text x="270.0" y="275.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">B</text>
+<rect x="112.0" y="240.0" width="60" height="60" rx="3" fill="#b96843" stroke="#243c36" stroke-width="2"/>
+<text x="142.0" y="275.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">B</text>
+<rect x="112.0" y="240.0" width="188.0" height="60.0" rx="3" fill="none" stroke="#b96843" stroke-width="3"/>
+<polygon points="174.00,262.80 238.00,262.80 238.00,238.80 174.00,238.80" fill="#b96843" fill-opacity=".92" stroke="#faf7f0" stroke-width="1"/>
+<rect x="48.0" y="176.0" width="60" height="60" rx="3" fill="#d5c7aa" stroke="#243c36" stroke-width="2"/>
+<text x="78.0" y="211.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">C</text>
+<rect x="48.0" y="304.0" width="60" height="60" rx="3" fill="#d5c7aa" stroke="#243c36" stroke-width="2"/>
+<text x="78.0" y="339.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">C</text>
+<rect x="48.0" y="176.0" width="60.0" height="188.0" rx="3" fill="none" stroke="#d5c7aa" stroke-width="3"/>
+<polygon points="70.80,302.00 70.80,238.00 46.80,238.00 46.80,302.00" fill="#d5c7aa" fill-opacity=".92" stroke="#faf7f0" stroke-width="1"/>
+<path d="M69.0 261.0L87.0 279.0M69.0 279.0L87.0 261.0" stroke="#efb950" stroke-width="4"/>
+<rect x="112.0" y="112.0" width="60" height="60" rx="3" fill="#707348" stroke="#243c36" stroke-width="2"/>
+<text x="142.0" y="147.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">D</text>
+<rect x="48.0" y="112.0" width="60" height="60" rx="3" fill="#707348" stroke="#243c36" stroke-width="2"/>
+<text x="78.0" y="147.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">D</text>
+<rect x="48.0" y="48.0" width="60" height="60" rx="3" fill="#707348" stroke="#243c36" stroke-width="2"/>
+<text x="78.0" y="83.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">D</text>
+<rect x="240.0" y="176.0" width="60" height="60" rx="3" fill="#b96843" stroke="#243c36" stroke-width="2"/>
+<text x="270.0" y="211.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">E</text>
+<rect x="304.0" y="176.0" width="60" height="60" rx="3" fill="#b96843" stroke="#243c36" stroke-width="2"/>
+<text x="334.0" y="211.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">E</text>
+<rect x="240.0" y="112.0" width="60" height="60" rx="3" fill="#d5c7aa" stroke="#243c36" stroke-width="2"/>
+<text x="270.0" y="147.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">F</text>
+<rect x="304.0" y="112.0" width="60" height="60" rx="3" fill="#d5c7aa" stroke="#243c36" stroke-width="2"/>
+<text x="334.0" y="147.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">F</text>
+<rect x="304.0" y="304.0" width="60" height="60" rx="3" fill="#707348" stroke="#243c36" stroke-width="2"/>
+<text x="334.0" y="339.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">G</text>
+<rect x="304.0" y="240.0" width="60" height="60" rx="3" fill="#b96843" stroke="#243c36" stroke-width="2"/>
+<text x="334.0" y="275.0" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="17" fill="#102c31">H</text>
+<polyline points="206.0,334.0 206.0,270.0 206.0,206.0 206.0,142.0 206.0,78.0" fill="none" stroke="#072c39" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="206.0,334.0 206.0,270.0 206.0,206.0 206.0,142.0 206.0,78.0" fill="none" stroke="#f2be54" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M206 411V371 M206 41V8" stroke="#d9a53d" stroke-width="5"/>
+<path d="M200 379L206 371L212 379 M200 16L206 8L212 16" fill="none" stroke="#d9a53d" stroke-width="3"/>
+<text x="237" y="410" font-family="sans-serif" font-size="11" fill="#273c36">START · C1</text>
+<text x="237" y="18" font-family="sans-serif" font-size="11" fill="#273c36">EXIT · C5</text>
+</svg>

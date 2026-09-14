@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Fresh front, top and isometric images inspected. Front shows low board relief below the counters and two taller open cups; the center does not form a tall tower. Top shows the preserved scalloped Sun outline, radial counter rows and two opposing counter colors. Isometric exposes broad planar radial playing strips beneath the counters, shallow gaps and an open flat capture disk close to strip height. Four short boundary details occupy widened gaps; no endpoint dots or tall rails appear. Two cups and two recessed-pip dice sit clear of the board. No floating counters, missing components or visible positive intersections. Exact lane count, low boundary details, pip contrast and footprint support are further documented in canonical close views and native geometry audits.",
+  "packet_sha256": "b5849b501b78ca85686e0c60e5c9a407c461899300fa2cbbe69dace066145a6e",
+  "status": "pass"
+}

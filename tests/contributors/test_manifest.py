@@ -70,7 +70,9 @@ class RegistryTest(unittest.TestCase):
             [
                 "abo",
                 "alice",
+                "arden-span",
                 "arlo-playfield",
+                "axel-rake",
                 "bob",
                 "eve",
                 "ferro-line",
@@ -90,6 +92,7 @@ class RegistryTest(unittest.TestCase):
                 "tess-loop",
                 "theo-fieldcraft",
                 "vela-bloom",
+                "wren-coil",
             ],
         )
         for manifest in manifests:

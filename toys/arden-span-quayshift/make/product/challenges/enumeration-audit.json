@@ -1,0 +1,34 @@
+{
+  "method": "Independent Cartesian-product enumeration, no symmetry early-pruning; compares final canonical winner count to recursive MRV solver. Cell-grammar only.",
+  "results": [
+    {
+      "loose": [
+        "A",
+        "C"
+      ],
+      "independent_cartesian_nonoverlapping_labelled_candidates": 28,
+      "labelled_winners": 2,
+      "quotiented_winners": 2
+    },
+    {
+      "loose": [
+        "A",
+        "D",
+        "F"
+      ],
+      "independent_cartesian_nonoverlapping_labelled_candidates": 437,
+      "labelled_winners": 4,
+      "quotiented_winners": 4
+    },
+    {
+      "loose": [
+        "D",
+        "E",
+        "F"
+      ],
+      "independent_cartesian_nonoverlapping_labelled_candidates": 1086,
+      "labelled_winners": 16,
+      "quotiented_winners": 8
+    }
+  ]
+}

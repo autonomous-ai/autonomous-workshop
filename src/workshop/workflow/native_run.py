@@ -5088,11 +5088,29 @@ def _reconcile_token_accounting_need(paths, checkpoint, budget):
     current = _root_token_counts(value)
     baseline = need["baseline_root_tokens"]
     terminal = need["terminal_usage"]
-    if need["completed_turn"] and (
-        (terminal is not None and any(current[key] < baseline[key] + terminal[key] for key in current))
-        or (terminal is None and all(current[key] <= baseline[key] for key in current))
-    ):
-        raise UsageUnavailable("completed native turn lacks reconciled token usage")
+    if need["completed_turn"]:
+        advanced = any(current[key] > baseline[key] for key in current)
+        if terminal is None:
+            reconciled = advanced
+        else:
+            # Codex has emitted both request-local deltas and cumulative root
+            # counters in turn.completed across supported resume paths. Accept
+            # either exact monotonic relationship without guessing between
+            # them or weakening the requirement that the rollout advanced.
+            delta_reconciled = all(
+                current[key] >= baseline[key] + terminal[key]
+                for key in current
+            )
+            cumulative_reconciled = (
+                all(
+                    current[key] >= terminal[key] >= baseline[key]
+                    for key in current
+                )
+                and any(terminal[key] > baseline[key] for key in current)
+            )
+            reconciled = advanced and (delta_reconciled or cumulative_reconciled)
+        if not reconciled:
+            raise UsageUnavailable("completed native turn lacks reconciled token usage")
     path.unlink()
 
 
@@ -6425,6 +6443,9 @@ def _launcher_call(
             "%s. Choose an Inventor within that frozen Make scope; selection "
             "cannot change it." % checkpoint.make_mode
         )
+    if "revision-source.zip" in checkpoint.input_sha256s:
+        from workshop.workflow.revision import REVISION_GUIDANCE
+        prompt += "\n\n" + REVISION_GUIDANCE
     budget = _load_lifetime_budget(paths, checkpoint)
     if isinstance(budget, ProductTokenBudget):
         prompt += (
@@ -6516,6 +6537,17 @@ def _launcher_call(
             proof_boundary=make_proof_boundary,
         )
         prompt += _deep_invent_recovery_prompt(checkpoint)
+    if "MAKE-OPTIONS.json" in checkpoint.input_sha256s:
+        prompt += (
+            "\n\nHost motion policy: reread the immutable run-root MAKE-OPTIONS.json. "
+            "The operator can reselect check_motion on each resume (default false). "
+            "This choice supersedes older mandatory-motion instructions and any "
+            "previous choice remembered in this session. When false, skip motion "
+            "sweeps, motion-only manifest authoring, animation generation/reconstruction "
+            "and independent motion review; report motion as unverified. Do not run "
+            "those checks manually or repeat a motion blocker. When true, apply the "
+            "motion and animation requirements. Other checks still apply."
+        )
     arguments = {
         "product_id": checkpoint.product_id,
         "wish_sha256": checkpoint.wish_sha256,
@@ -9761,7 +9793,9 @@ def start_native_run(
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
+    check_motion: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
+    revision_snapshot: Optional[bytes] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -9801,11 +9835,18 @@ def start_native_run(
     Manager must still bound the turn some other way, which today means a Codex
     token budget. Neither option changes any gate, review, or round allowance.
 
+    ``check_motion`` freezes the optional motion sweeps and animation review.
+    It defaults to false; each operator resume reselects it, also defaulting off.
+
     ``wish_reference_files`` maps every reference image the Wish declares to
     its exact bytes; the run materializes them read-only under
     ``wish-references/`` and re-verifies them at every checkpoint. A Wish that
     declares references without their bytes, or bytes without a declaration,
     is rejected before any workspace exists.
+
+    ``revision_snapshot`` carries a manifest-verified public archive baseline,
+    bound to Wish context and materialized as immutable input plus an editable
+    clone. It never restores the source run's session or effect state.
 
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
@@ -9813,6 +9854,8 @@ def start_native_run(
 
     _reject_grid_keepalive_wish_start()
     validate_limit(max_tokens)
+    if type(check_motion) is not bool:
+        raise ContractError("motion check option must be boolean")
 
     selected_effort = workshop_effort(effort) if effort is not None else None
     selected_make_mode = validate_make_mode(
@@ -9868,6 +9911,7 @@ def start_native_run(
                 product_id=wish.product_id,
                 wish_bytes=wish_bytes,
                 wish_reference_files=wish_reference_files,
+                revision_snapshot=revision_snapshot,
                 product_run_constitution_source=assets.constitution,
                 skill_root=assets.skill_root,
                 domain_skill_roots=domain_skill_roots,
@@ -9881,6 +9925,7 @@ def start_native_run(
                 manager_reasoning_effort=selected_runtime.reasoning_effort,
                 turn_seconds=turn_seconds,
                 turn_untimed=turn_untimed,
+                check_motion=check_motion,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.
@@ -10188,6 +10233,7 @@ def resume_native_run(
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
     manager_reasoning_effort: Optional[str] = None,
+    check_motion: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -10195,6 +10241,9 @@ def resume_native_run(
 
     The ignored keyword preserves source compatibility with the former
     optional-publication API; every resumed Release now requires publication.
+
+    check_motion is reselected on every operator resume and defaults to false.
+    Older unfinished runs adopt the motion-aware tools through host refresh.
 
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
@@ -10204,6 +10253,8 @@ def resume_native_run(
         raise ContractError("previous runtime device must be an unsigned 64-bit integer")
     if publish_requested is not None and type(publish_requested) is not bool:
         raise ContractError("legacy publication option must be boolean")
+    if type(check_motion) is not bool:
+        raise ContractError("motion check option must be boolean")
     if type(adopt_turn_budget) is not bool:
         raise ContractError("turn-budget adoption option must be boolean")
     if max_tokens is not None:
@@ -10235,6 +10286,8 @@ def resume_native_run(
                 manager_reasoning_effort, reason="workshop resume --effort",
             )
             checkpoint = run.snapshot()
+        if checkpoint.status in ("active", "waiting"):
+            checkpoint = _adopt_resume_motion_policy(paths, run, checkpoint, check_motion)
         if adopt_turn_budget:
             _adopt_turn_budget(paths, checkpoint)
         if max_tokens is not None:
@@ -10255,6 +10308,87 @@ def resume_native_run(
             activity_observer=activity_observer,
             timing_observer=timing_observer,
         )
+
+
+def _adopt_resume_motion_policy(paths, run, checkpoint, check_motion):
+    """Adopt the operator's choice before continuing an old or current run."""
+    _reconcile_motion_resume_outputs(run, checkpoint)
+    reason = "workshop resume --check-motion %s" % str(check_motion).lower()
+    if "MAKE-OPTIONS.json" not in checkpoint.input_sha256s:
+        # Older private workspaces carry mandatory-motion tools. Upgrade the
+        # CAD/round tools and Make finalizer through the existing host refresh
+        # boundary, without importing the current lifecycle or token policy.
+        # Bind the session before creating MAKE-OPTIONS: if interrupted, the
+        # absent option causes this idempotent migration to finish next time.
+        _refresh_native_run_tools_locked(
+            checkpoint.product_id, paths, run, reason=reason,
+            domain_skill_roots={name: root for name, root in product_run_domain_skill_roots().items()
+                                if name in ("cad", "make-round")},
+            refresh_review=False,
+            motion_skill_root=product_run_agent_assets().skill_root,
+        )
+    run.refresh_domain_skill_tools({}, reason=reason, check_motion=check_motion)
+    checkpoint = run.snapshot()
+    _reconcile_motion_resume_outputs(run, checkpoint)
+    return checkpoint
+
+
+def _reconcile_motion_resume_outputs(run, checkpoint):
+    """Recover pending output bindings across only recorded motion corrections.
+
+    A policy change can interrupt finalization or a publication wait. Walk the
+    consecutive host correction chain so retries also work after a crash between
+    the input checkpoint and these dependent writes. Never adopt arbitrary stale
+    outcomes or move a sealed lifecycle gate.
+    """
+    ledger = run.host_state_root / "host-corrections.jsonl"
+    if not ledger.exists():
+        return
+    records = _read_stable_private_bytes(ledger, label="host corrections", maximum_bytes=1024 * 1024)
+    predecessors = {}
+    for line in records.splitlines():
+        record = json.loads(line)
+        if (record.get("kind") == "autonomous-workshop.host-correction"
+                and record.get("schema_version") == 1
+                and record.get("correction") == "domain-skill-refresh"
+                and str(record.get("reason", "")).startswith("workshop resume --check-motion ")):
+            predecessors[record["checkpoint_sha256"]] = record["previous_checkpoint_sha256"]
+    ancestors = set()
+    previous = checkpoint.checkpoint_sha256
+    while previous in predecessors:
+        previous = predecessors[previous]
+        if previous in ancestors:
+            break
+        ancestors.add(previous)
+    if not ancestors:
+        return
+    wait_path = _release_effect_wait_path(run)
+    if wait_path.exists():
+        waiting = _read_stable_private_json(wait_path, label="Release effect wait", maximum_bytes=None)
+        saved = waiting.get("waiting_checkpoint_sha256")
+        if saved in ancestors:
+            from dataclasses import replace
+            _read_release_effect_wait(run, replace(checkpoint, checkpoint_sha256=saved))
+            _atomic_private_write(wait_path, _canonical_json_bytes(
+                {**waiting, "waiting_checkpoint_sha256": checkpoint.checkpoint_sha256}) + b"\n")
+    if _agent_outcome_exists(run.run_root):
+        document, content = read_bounded_json_artifact(
+            run.run_root, _AGENT_OUTCOME_NAME,
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES, label="pending motion-resume outcome",
+        )
+        proposal = AgentOutcomeProposal.from_mapping(document)
+        if proposal.checkpoint_sha256 not in ancestors or proposal.outcome.stage != checkpoint.stage:
+            return  # The ordinary exactness gate still rejects unrelated output.
+        if checkpoint.stage == "make":
+            # The unaccepted proposal must be finalized against the new motion
+            # policy, especially when opting in after a skipped check.
+            directory = _ensure_private_directory(
+                run.host_state_root / "motion-resume-outcomes", label="motion resume outcomes")
+            _atomic_private_write(directory / (_sha256(content) + ".json"), content)
+            _remove_agent_outcome(run.run_root)
+        else:
+            _atomic_private_write(run.run_root / _AGENT_OUTCOME_NAME, _canonical_json_bytes(
+                {**document, "checkpoint_sha256": checkpoint.checkpoint_sha256}) + b"\n")
 
 
 def _reconcile_refreshed_token_budget(paths, run, checkpoint):
@@ -10317,57 +10451,69 @@ def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, An
             budget_authority=_persistent_token_budget_authority(paths),
         )
         run = _open_budgeted_agent_run(paths)
-        before = run.snapshot()
-        # Finish an interrupted prior refresh before creating another input
-        # checkpoint, so its exact correction evidence remains the predecessor.
-        _reconcile_refreshed_token_budget(paths, run, before)
-        changes = run.refresh_domain_skill_tools(
-            product_run_domain_skill_roots(), reason=reason,
-            token_budget_skill_root=(
-                product_run_agent_assets().skill_root
-                if TOKEN_BUDGET_CAPABILITY_PATH in before.input_sha256s else None
-            ),
+        return _refresh_native_run_tools_locked(
+            product_id, paths, run, reason=reason,
+            domain_skill_roots=product_run_domain_skill_roots(),
         )
-        after = run.snapshot()
-        _reconcile_refreshed_token_budget(paths, run, after)
-        # The stored Manager session binds the instruction-tree hash the run
-        # started with. A refreshed tool moves that hash by design, so the
-        # same host operation rebinds the session record it owns -- and does
-        # so even when this call found the tools current, because an earlier
-        # refresh may have been interrupted before this step.
-        session_rebound = False
-        launcher = _native_launcher(after)
-        session_path = paths.host_state / launcher.session_checkpoint_name
-        if session_path.exists():
-            rebind = getattr(launcher, "rebind_session_constitution", None)
-            if rebind is None:
-                raise ContractError(
-                    "host tool refresh is not supported for the %s Manager"
-                    % after.manager_id
-                )
-            rebound = rebind(
-                product_id=product_id,
-                wish_sha256=after.wish_sha256,
-                run_root=paths.workspace,
-                host_state_root=paths.host_state,
-                constitution_sha256=materialized_agent_instructions_sha256(after),
+
+
+def _refresh_native_run_tools_locked(
+    product_id, paths, run, *, reason, domain_skill_roots,
+    refresh_review=True, motion_skill_root=None,
+):
+    """Refresh and rebind the same session while the caller holds its run lock."""
+    before = run.snapshot()
+    # Finish an interrupted prior refresh before creating another input
+    # checkpoint, so its exact correction evidence remains the predecessor.
+    _reconcile_refreshed_token_budget(paths, run, before)
+    changes = run.refresh_domain_skill_tools(
+        domain_skill_roots, reason=reason,
+        motion_skill_root=motion_skill_root,
+        token_budget_skill_root=(
+            product_run_agent_assets().skill_root
+            if refresh_review and TOKEN_BUDGET_CAPABILITY_PATH in before.input_sha256s else None
+        ),
+    )
+    after = run.snapshot()
+    _reconcile_refreshed_token_budget(paths, run, after)
+    # The stored Manager session binds the instruction-tree hash the run
+    # started with. A refreshed tool moves that hash by design, so the
+    # same host operation rebinds the session record it owns -- and does
+    # so even when this call found the tools current, because an earlier
+    # refresh may have been interrupted before this step.
+    session_rebound = False
+    launcher = _native_launcher(after)
+    session_path = paths.host_state / manager_spec(after.manager_id).session_checkpoint_name
+    if session_path.exists():
+        rebind = getattr(launcher, "rebind_session_constitution", None)
+        if rebind is None:
+            raise ContractError(
+                "host tool refresh is not supported for the %s Manager"
+                % after.manager_id
             )
-            session_rebound = bool(rebound["changed"])
-            if session_rebound:
-                run.record_host_correction(
-                    {
-                        "kind": "autonomous-workshop.host-correction",
-                        "schema_version": 1,
-                        "correction": "manager-session-rebind",
-                        "reason": reason.strip(),
-                        "manager_id": after.manager_id,
-                        "checkpoint_sha256": after.checkpoint_sha256,
-                        "previous_constitution_sha256": rebound[
-                            "previous_constitution_sha256"
-                        ],
-                        "constitution_sha256": rebound["constitution_sha256"],
-                    }
-                )
+        rebound = rebind(
+            product_id=product_id,
+            wish_sha256=after.wish_sha256,
+            run_root=paths.workspace,
+            host_state_root=paths.host_state,
+            constitution_sha256=materialized_agent_instructions_sha256(after),
+        )
+        session_rebound = bool(rebound["changed"])
+        if session_rebound:
+            run.record_host_correction(
+                {
+                    "kind": "autonomous-workshop.host-correction",
+                    "schema_version": 1,
+                    "correction": "manager-session-rebind",
+                    "reason": reason.strip(),
+                    "manager_id": after.manager_id,
+                    "checkpoint_sha256": after.checkpoint_sha256,
+                    "previous_constitution_sha256": rebound[
+                        "previous_constitution_sha256"
+                    ],
+                    "constitution_sha256": rebound["constitution_sha256"],
+                }
+            )
     return {
         "product_id": product_id,
         "action": "tools-refreshed" if changes else "tools-current",

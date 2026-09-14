@@ -1,0 +1,91 @@
+{
+  "phase": "unprimed_image_only",
+  "reviewer": "blind_review",
+  "inputs_read": "Only the fourteen assigned canonical PNGs; no requirements, source, design, reports, or prior reviews read.",
+  "inspected_images": [
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/iso.png",
+      "sha256": "d68bc32b0aa9271ce87be84e116bcf89cad5385b3840cb9a72bb5c7fde314b86"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/signature.png",
+      "sha256": "a4255e904f62fb465dd2bd7fbfbdd28d4dc5175833170e7759f94fa6bbe78bf4"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/top.png",
+      "sha256": "ada3a86ad35a70cfa6e6d58cfb899110806b83815c11bdda5c42e25a90e09b49"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/board-top.png",
+      "sha256": "8fe21b80f1b32400ccfd9c2ccda1b6f15d93c88cb4844f2405251f7206c70425"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/board-near-top.png",
+      "sha256": "fb9536a5046e92a79ff65b34262ae96bffac650ebc6bb3ff5ff38dacf78b7c3f"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/board-oblique.png",
+      "sha256": "70c7f5098dc9edbd8b40b614bd3ab66d0f4fc374228877dae75c957bda82ff0d"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/board-side.png",
+      "sha256": "7c5a9fc8ec7543527ddc4a01cf277699517a8951c3e39965cd3de4c7a8a6d577"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/lane-detail.png",
+      "sha256": "55e16f9258de9041ff56db2f125b2e0e88c17e9260cbe542688beb32b3fadb3b"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/lane-detail-top.png",
+      "sha256": "71523a125b878d0528a8dacb9d13575488d0ff47fea513bbc2e70fae0243148f"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/lane-detail-neutral.png",
+      "sha256": "3f291579fe773dbf14bc23fed9bbe483eaaddcd705b465bed5ad379946fb1f3a"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/center-detail.png",
+      "sha256": "b86d6813f3ada028d5787e25a3f5dfcea963512f3315173381ca1f2c96863a75"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/capacity.png",
+      "sha256": "de1626495f6aaa4fc34c275f43b1c7632e3c4cce08a914367a5c4923ddc36fdc"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/dice-detail.png",
+      "sha256": "076a7a7e1c09a07f668c0a034a76fea899e0949f12ab465ca0e52fcf96b78757"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/counter-detail.png",
+      "sha256": "0ed5c94d4dca3c7c18034e542a520c76d5c4124ecf62e42cf69c433f8c6dfd6b"
+    }
+  ],
+  "held_object": "No hands or person are pictured. The apparent product is a tabletop board-game set: a thick circular sunburst-like board, loose light and dark counters, two open cylindrical cups, and two cubic pip-marked dice.",
+  "form_and_subjects": [
+    "The board is orange-gold in the colored renders and neutral gray in isolation. Its perimeter has sixteen rounded outward lobes by visual count. The visible side wall is continuous and substantial compared with shallow top grooves.",
+    "Twenty-four wedge-shaped radial lanes are visible by counting six per quarter; their thin separating grooves stop around a central circular area. There are four small capsule-shaped raised bars near selected lane boundaries, approximately a quarter turn apart.",
+    "The central circular region is blank in the overall setup. Oblique views reveal a narrow surrounding recessed ring and a slight height step. No central text or emblem is visible.",
+    "The light counters have broad rounded heads and tapered, curved single tails, resembling a teardrop or comet silhouette. The dark counters share the rounded head and taper but terminate in two rounded tips divided by a small notch. All have plain flat top faces and straight extruded side walls. The cream side surfaces visibly show rendering facets.",
+    "The two reddish orange cups beside the board have plain cylindrical outer walls, open circular rims, and visible recessed bottoms. No handles, lids, markings, or contents are visible.",
+    "Two separate cream dice are visible in the overall view. The dice detail shows a sharp-edged cube in opposite views with faces bearing one, two, three, four, five and six round black pips. Black pip interiors look dark; their depth is not reliably measured from the render."
+  ],
+  "counts_and_arrangement": [
+    "The top setup shows fifteen light and fifteen dark counters. Each color is distributed over four radial rows containing two, five, three and five counters. Rows extend radially between the edge and center; most board lanes are empty.",
+    "Four cream counters appear in the lane closeups, two on each of adjacent lanes; the short rounded boundary bar lies between these lanes. The bar is visibly above its narrow supporting boundary surface.",
+    "The capacity image shows five tall cream silhouettes arranged end-to-end along one lane from the rim toward the central region. Their side walls look continuous and there are no visible horizontal seams, so the image alone cannot establish whether these are stacked counters or taller single bodies.",
+    "The center detail shows three dark counters in a touching or nearly touching row across the central circular area and two cream counters just outside its right edge.",
+    "Counter detail contains two top silhouettes and two oblique silhouettes, labeled as the same counters; it demonstrates two distinct types rather than four different designs."
+  ],
+  "action_and_spatial_causality": [
+    "The signature image is labeled BEFORE and AFTER. A five-counter cream lane remains unchanged. A neighboring upper lane loses one of its two visible cream counters. At the lower outer board edge a dark counter in BEFORE is replaced by a cream counter in AFTER; another dark counter in the adjacent lane remains. A dark counter appears in the central area in AFTER.",
+    "These changes suggest a cream piece moves onto a dark piece location and the displaced dark piece is relocated to the central circle. The panels do not show a hand, trajectory, die result, automatic linkage, or the intervening movement, so causal operation remains inferred from changed positions only.",
+    "No moving board mechanism, hinge, rotating attachment, or motor is visibly demonstrated. The depicted change is a change in loose-counter placement."
+  ],
+  "limitations": [
+    "All inspected images are computer renders on plain backgrounds, with no dimensions, ruler, physical prototype, or user interaction.",
+    "Fine groove edges become faint or partly invisible in direct overhead lighting; near-top and oblique views make the central ring and lane boundaries clearer.",
+    "The repeated cups are only shown in the overall set; their underside geometry is not visible.",
+    "The imagery alone does not establish rules, a named theme, material, manufacturing quality, exact clearances, counter stackability, dice fairness, physical capacity, durability, or physical testing.",
+    "No judgment of requirement compliance or acceptability is made in this phase."
+  ]
+}

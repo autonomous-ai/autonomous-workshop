@@ -43,7 +43,9 @@ LISTED_MAKE_SKILLS = tuple(
 INVENTORS = (
     "abo",
     "alice",
+    "arden-span",
     "arlo-playfield",
+    "axel-rake",
     "bob",
     "eve",
     "ferro-line",

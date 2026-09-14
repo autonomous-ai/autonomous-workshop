@@ -66,6 +66,7 @@ class RuntimeDeviceRecoveryTest(unittest.TestCase):
                     "_persistent_token_budget_authority": dict(return_value=None),
                     "_open_budgeted_agent_run": dict(return_value=run),
                     "_recover_runtime_device": dict(side_effect=recover),
+                    "_adopt_resume_motion_policy": dict(side_effect=lambda p, r, c, enabled: events.append("motion") or c),
                     "_adopt_token_budget": dict(side_effect=lambda *a: events.append("budget")),
                     "_load_lifetime_budget": dict(return_value=None),
                     "_resume_native_run_locked": dict(side_effect=lambda *a, **k: events.append("launch") or {"ok": True}),
@@ -78,7 +79,7 @@ class RuntimeDeviceRecoveryTest(unittest.TestCase):
                     self.assertEqual(events, ["lock", "recover", "unlock"])
                 else:
                     self.assertEqual(host.resume_native_run("wish-one", runtime_device_from=8, max_tokens=500000000), {"ok": True})
-                    self.assertEqual(events, ["lock", "recover", "budget", "launch", "unlock"])
+                    self.assertEqual(events, ["lock", "recover", "motion", "budget", "launch", "unlock"])
                 run.set_manager_reasoning_effort.assert_not_called()
                 run.rebind_turn_boundary.assert_not_called()
 

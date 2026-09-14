@@ -2609,6 +2609,84 @@ class CodexNativeSessionTest(unittest.TestCase):
                     self._recover_device(launcher, root)
             self.assertEqual(path.read_bytes(), before)
             self.assertEqual(factory.calls, [])
+    def test_resume_accepts_only_device_renumbering_after_darwin_remount(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher([
+                {"stdout": self.start_events()},
+                {"stdout": self.start_events(message="resumed after remount")},
+            ])
+            current = codex_runtime._codex_run_policy(root, launcher.binary)
+
+            def on_device(policy, device):
+                return replace(
+                    policy,
+                    trusted_python_runtime_paths=tuple(
+                        replace(item, device=device, resolved_device=device)
+                        for item in policy.trusted_python_runtime_paths
+                    ),
+                    trusted_codex_runtime_paths=tuple(
+                        replace(item, device=device, resolved_device=device)
+                        for item in policy.trusted_codex_runtime_paths
+                    ),
+                )
+
+            old = on_device(current, 0x0100000D)
+            new = on_device(current, 0x01000011)
+            with mock.patch.object(codex_runtime, "_codex_run_policy", return_value=old):
+                started = self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            original_bytes = checkpoint.read_bytes()
+
+            # Remount compatibility must not hide any additional identity or
+            # policy drift, even when the saved digest is otherwise valid.
+            changes = [
+                replace(new, environment_allowlist=new.environment_allowlist[:-1]),
+                replace(new, permission_config_arguments=(*new.permission_config_arguments, "changed")),
+            ]
+            for field in ("inode", "resolved_inode", "mode", "resolved_mode", "path", "resolved_path"):
+                item = new.trusted_python_runtime_paths[0]
+                value = getattr(item, field)
+                changes.append(replace(new, trusted_python_runtime_paths=(
+                    replace(item, **{field: value + 1 if isinstance(value, int) else value + "-changed"}),
+                    *new.trusted_python_runtime_paths[1:],
+                )))
+            item = new.trusted_codex_runtime_paths[0]
+            changes.append(replace(new, trusted_codex_runtime_paths=(
+                replace(item, inode=item.inode + 1), *new.trusted_codex_runtime_paths[1:],
+            )))
+            for policy in changes:
+                with self.subTest(policy=policy), mock.patch.object(
+                    codex_runtime.sys, "platform", "darwin"
+                ), mock.patch.object(codex_runtime, "_codex_run_policy", return_value=policy):
+                    with self.assertRaisesRegex(ContractError, "binding is invalid"):
+                        self.resume(launcher, root)
+            self.assertEqual(len(factory.calls), 1)
+
+            with mock.patch.object(codex_runtime.sys, "platform", "darwin"), mock.patch.object(
+                codex_runtime, "_codex_run_policy", return_value=new
+            ):
+                resumed = self.resume(launcher, root)
+            self.assertEqual(resumed.status, "completed")
+            self.assertIn(THREAD_ID, factory.calls[1][0])
+            self.assertEqual(checkpoint.read_bytes(), original_bytes)
+            self.assertEqual(resumed.binding.checkpoint_sha256, started.binding.checkpoint_sha256)
+            self.assertNotEqual(resumed.binding.runtime_config_sha256, started.binding.runtime_config_sha256)
+
+    def test_remount_candidates_refuse_other_platforms_and_device_layouts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            policy = codex_runtime._codex_run_policy(root, TEST_CODEX_BINARY)
+            with mock.patch.object(codex_runtime.sys, "platform", "linux"):
+                self.assertEqual(list(codex_runtime._darwin_remounted_runtime_policies(policy)), [])
+            for devices in ((1, 1), (0x01000100, 0x01000100), (0x0100000D, 0x01000011)):
+                candidate = replace(policy, trusted_python_runtime_paths=tuple(
+                    replace(item, device=devices[0], resolved_device=devices[1])
+                    for item in policy.trusted_python_runtime_paths
+                ))
+                with self.subTest(devices=devices), mock.patch.object(codex_runtime.sys, "platform", "darwin"):
+                    self.assertEqual(list(codex_runtime._darwin_remounted_runtime_policies(candidate)), [])
 
     def test_resume_accepts_supported_in_place_cli_upgrade(self):
         with tempfile.TemporaryDirectory() as temporary:

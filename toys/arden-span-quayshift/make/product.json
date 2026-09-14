@@ -1,0 +1,26 @@
+{
+  "title": "QUAYSHIFT",
+  "summary": "Build the town. Let the ferry through. Rebuild a miniature canal town from eight architectural pieces, then guide its ferry through two high bridges while avoiding the low arch. Includes three spatial challenges.",
+  "status": "full-with-thickness",
+  "physical_part_count": 10,
+  "challenge_count": 3,
+  "challenge_target_shortfall": "Three edited starter challenges delivered; the aspirational 24-card collection is not complete.",
+  "physical_testing": "not-run",
+  "playtest": "not-run",
+  "commercial_hypothesis_usd": 49,
+  "commercial_validation": "not-verified",
+  "inventory": [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "tray",
+    "ferry"
+  ],
+  "part_markings": "Architectural IDs A-H in the instructions map to lowercase STEP occurrence names a-h.",
+  "print_ready_claim": true
+}

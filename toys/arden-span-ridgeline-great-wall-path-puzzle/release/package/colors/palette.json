@@ -1,0 +1,12 @@
+{
+  "stone": "#dbc89d",
+  "walkway": "#f2dfb5",
+  "terrain": "#527657",
+  "terrain_upper": "#749267",
+  "tile_base": "#354c3d",
+  "cradle": "#263b40",
+  "gate_g1": "#b74b37",
+  "gate_g2": "#307e87",
+  "label_plaque": "#263b40",
+  "label_text": "#f2dfb5"
+}

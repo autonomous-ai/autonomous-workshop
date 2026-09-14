@@ -1,0 +1,19 @@
+{
+  "findings": [
+    {
+      "defect": "Rounded split still resembles paired ear/prong projections behind a circular head",
+      "evidence": "Top view lower pair and upper column; iso lower-left pair shows short nearly parallel extensions",
+      "part": "split-tail counters",
+      "repair": "Sweep both contours toward one side, elongate body read and stagger terminal branch lengths more strongly within12x8 envelope"
+    },
+    {
+      "defect": "Recesses are pale and visually weak in round views",
+      "evidence": "Iso near-left two dice show white recess circles; top faces nearly blank at this scale",
+      "part": "dice",
+      "repair": "Use exact recessed face tessellation with dark fill in canonical views; change cylindrical pockets to shallow conical pips to resolve reported bottom-face overhang"
+    }
+  ],
+  "observation": "Front and iso show flat seated counters, equal cup heights and one unobstructed circular bar. Top reveals the split counter still has a head-like round mass and two aligned trailing knobs; full-view dice recesses lack dark contrast.",
+  "packet_sha256": "23203fdb6b90a21c28ec3ce639df45b0449fd9dae8b343463b6f54aa86ffa7ef",
+  "status": "fail"
+}

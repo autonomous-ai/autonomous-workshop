@@ -1,0 +1,60 @@
+{
+ "build": {
+  "fork_05": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "fork_05"
+ ],
+ "checked": [
+  "fork_05"
+ ],
+ "checks_ok": true,
+ "entry": "part_fork_05.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_05/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_05"
+ ],
+ "print": {
+  "fork_05": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_05/r0004/overhang-fork_05.log": "7154859b8e771bb5545f4519db60b7e1a500db40a517d123ca6c568f6b89c89b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_05/r0004/thickness-fork_05.log": "1032b9440cca36975ccf59a7f7f20e028181e97804026bc15f2a5784c4d0b8f1"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:fork_05",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Fresh fork_05 r0004 front/top/isometric images inspected together in the normalized component contact sheet. Front shows constant flat slab thickness; top shows one broad rounded head with flowing taper and two short separated tail tips; isometric confirms an uninterrupted planar top, vertical perimeter and intact late fork. No extra solids, missing fork, deformation or visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_05/r0004/visual-packet.json",
+  "packet_sha256": "471dffb32bb0e0b1d845b64e01e7158873707ae8c842a32271bafcfc6bc7aee7",
+  "status": "pass"
+ }
+}

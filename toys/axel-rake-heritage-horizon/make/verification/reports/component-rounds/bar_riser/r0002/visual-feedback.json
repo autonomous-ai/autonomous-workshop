@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Solid compact riser has flat mating faces and one sloped corner; no floating geometry or unwanted holes.",
+  "packet_sha256": "1b0732a167e159403f5e10c7228dee0c2c8359f800bc10469b5b398e80de989a",
+  "status": "pass"
+}

@@ -96,6 +96,16 @@ def _stable_file(path: Path, label: str, *, allow_empty: bool = False) -> bytes:
     return content
 
 
+def read_public_archive_file(path: Path, label: str, *, allow_empty: bool = False) -> bytes:
+    """Read a bounded, stable archive file for verified archive consumers."""
+    return _stable_file(path, label, allow_empty=allow_empty)
+
+
+def parse_public_archive_document(content: bytes, label: str) -> dict[str, Any]:
+    """Parse strict archive JSON without duplicate keys or nonfinite values."""
+    return _strict_json(content, label)
+
+
 def build_public_archive_manifest(root: Path) -> ArtifactManifest:
     """Hash every regular archive file except the two exact root metadata files."""
 

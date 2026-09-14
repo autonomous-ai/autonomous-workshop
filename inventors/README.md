@@ -49,6 +49,7 @@ skill each. Shared CAD, simulation, and evidence tooling stays in Workshop.
 |---|---|
 | ABO | `abo-inventor` |
 | Alice | `alice-inventor` |
+| [Arden Span](arden-span/) | `arden-span-inventor` |
 | Bob | `bob-inventor` |
 | Eve | `eve-inventor` |
 | Ivy | `ivy-inventor` |

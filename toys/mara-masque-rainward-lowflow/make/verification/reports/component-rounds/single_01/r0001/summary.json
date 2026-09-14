@@ -1,0 +1,60 @@
+{
+ "build": {
+  "single_01": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "single_01"
+ ],
+ "checked": [
+  "single_01"
+ ],
+ "checks_ok": true,
+ "entry": "part_single_01.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_01/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "single_01"
+ ],
+ "print": {
+  "single_01": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_01/r0001/overhang-single_01.log": "59279d046608e082ad56a933c062afd9dca7a746f44f8b90eb7128d82ef6bba1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_01/r0001/thickness-single_01.log": "f155bc6e5cdce8badae1729b2a114660439ef277bcdb8c83192a530c04f9c206"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:single_01",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows constant thickness and planar base/top; top and iso show one uninterrupted curved tail into a rounded broad body, with no detached parts, shoulders, holes or visible intersections. Preserved 12\u00d78\u00d74 form.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_01/r0001/visual-packet.json",
+  "packet_sha256": "545c7aa98eef95c32f592983863dcdb096b61b3924f00aeb4b8eb1d8a9fd1f12",
+  "status": "pass"
+ }
+}

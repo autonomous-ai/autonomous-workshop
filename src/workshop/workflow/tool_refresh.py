@@ -23,6 +23,11 @@ _SKILL = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _FIELDS = {"kind", "schema_version", "correction", "reason",
            "previous_checkpoint_sha256", "checkpoint_sha256", "changes"}
 _CHANGE_FIELDS = {"path", "previous_sha256", "previous_mode", "sha256", "mode"}
+_MOTION_OPTION_HASHES = {
+    hashlib.sha256(json.dumps({"schema_version": 1, "check_motion": enabled},
+                              sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    for enabled in (False, True)
+}
 
 
 def _fail() -> None:
@@ -141,10 +146,23 @@ def native_tool_refresh_notice(
         ):
             _fail()
         pure = PurePosixPath(path)
+        motion_option = path == "MAKE-OPTIONS.json"
+        if motion_option and (
+            change["sha256"] not in _MOTION_OPTION_HASHES
+            or change["mode"] != 0o400
+            or (change["previous_sha256"] is not None and (
+                change["previous_sha256"] not in _MOTION_OPTION_HASHES
+                or change["previous_mode"] != 0o400
+            ))
+        ):
+            _fail()
         if (
             pure.is_absolute() or pure.as_posix() != path or ".." in pure.parts
-            or len(pure.parts) < 4 or pure.parts[:2] != (".agents", "skills")
-            or _SKILL.fullmatch(pure.parts[2]) is None or path in seen
+            or path in seen
+            or (not motion_option and (
+                len(pure.parts) < 4 or pure.parts[:2] != (".agents", "skills")
+                or _SKILL.fullmatch(pure.parts[2]) is None
+            ))
         ):
             _fail()
         seen.add(path)

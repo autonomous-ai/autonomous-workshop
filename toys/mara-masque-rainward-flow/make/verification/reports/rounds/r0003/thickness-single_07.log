@@ -1,0 +1,15 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_07.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/thickness-single_07.md
+(2.2s, exit 0)
+--- stdout
+part_single_07.step.py: 0.20 cm3 solid, grid 0.133 mm (95x65x35), 12243 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (2 of 12243 samples); thinnest 0.40 mm at (-1.2, -2.6, 0.1) in 2 region(s); no region is a wall, 2 taper(s) at feature edges (0.02% of surface, budget 2%); 1 more within measurement error of the limit
+  PASS  thickness distribution         median 4.00 mm, p95 7.73 mm, max 12.87 mm
+  WARN  hollowable at 1.20 mm wall     0.03 of 0.20 cm3 (14%) in 1 pocket(s), 1 too small to shell
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.67 mm at (6.0, -0.7, 0.1)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.13 mm
+        2. [taper] 0.40 mm at (-1.2, -2.6, 0.1)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.13 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/thickness-single_07.md
+
+--- stderr

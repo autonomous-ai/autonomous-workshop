@@ -1,0 +1,60 @@
+{
+ "build": {
+  "camera_board": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "camera_board"
+ ],
+ "checked": [
+  "camera_board"
+ ],
+ "checks_ok": true,
+ "entry": "part_camera_board.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "camera_board"
+ ],
+ "print": {
+  "camera_board": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0006/overhang-camera_board.log": "535691ec3765aa6d79c5785c79343ca11af6bbaa3abfd443ea5625d06682672d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0006/thickness-camera_board.log": "44d2f66f6ebca84b182239e2d4574b4a3afa94df692d167aa6bec1c22fc7c256"
+   },
+   "measured_round": 6,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 6,
+ "scope": "component:camera_board",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front optical face has circular central lens and well within broad surround; iso clearly shows forward asymmetric grip and shutter boss. Board grid and rim continuous, all geometry integrated. Top footprint remains flat with lens and grip projections; no displaced, extra or floating solids.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/camera_board/r0006/visual-packet.json",
+  "packet_sha256": "2857b72cd11854fdee1d5dfb9b81f1044730ae2d3a129cf3f0de5090c00e26d1",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,21 @@
+{
+  "renderer": "native render_review; exact STEP occurrence colors; image panels only concatenated",
+  "hero_source": "cad/quayshift.step",
+  "signature_sources": [
+    "states/layout1.step",
+    "states/layout2.step",
+    "states/layout3.step"
+  ],
+  "sha256": {
+    "cad/quayshift.step": "cbe5fa17cac278463c15b98075799b7521919e96c8957775d446ed5f70aadc4d",
+    "states/layout1.step": "4528ccbaedeac6fe1f670ba997ab0d9e8d1df2a817d08c8eba5675bcf0963250",
+    "states/layout2.step": "003dcc1b4c948f2e5e063403ee758f397343c2df962b3a985fcb13c8278921b5",
+    "states/layout3.step": "81dd68b4c09b7cdcd1a6dd7da161402f972ba2e9d73e80c2a47a9b3662a71af1",
+    "cad/snap/clearance.png": "6fb387e4a8454a951d9c93041fbebbcc8fd5f780304acc10d18d453ccb2e5c04",
+    "cad/snap/ferry.png": "26f6bddd7c76ba611a7edae0c218ba0a5533b1c7b580712a145217ccb2d0c4a9",
+    "cad/snap/iso.png": "3b5a54f6d582f9ec5916c6c42afef236c0cf811e0180a2ea469f0844f785121d",
+    "cad/snap/signature.png": "a342df7c8dd43d02a2c5a74f6038175c9044ad424a98b975ca61a807f597b2ce",
+    "cad/snap/tray.png": "d973b2065c955efdba4fb376edee33b6338d0559f95fadd0553218974993533d"
+  },
+  "final_export_check": "Native render_review on final verifier export produced byte-identical iso.png. STEP export difference was presentation-style record ordering; reviewed pixels unchanged."
+}

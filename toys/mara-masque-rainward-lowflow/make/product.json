@@ -1,0 +1,36 @@
+{
+  "product_id": "wish-20260912-042535-b2afa8bf",
+  "title": "Rainward Lowflow",
+  "summary": "A Sun-shaped backgammon set with flowing plasma counters, shallow raised lanes and an open low capture circle.",
+  "revision_of": "Rainward Flow",
+  "status": "full-with-thickness",
+  "print_ready_claim": true,
+  "printed_parts": 35,
+  "sun_dimensions_mm": [
+    190,
+    190,
+    17
+  ],
+  "components": {
+    "sun": 1,
+    "single_tail_counters": 15,
+    "split_tail_counters": 15,
+    "dice": 2,
+    "cups": 2
+  },
+  "lane_count": 24,
+  "pieces_per_lane": 15,
+  "printer_bed_mm": [
+    200,
+    200,
+    200
+  ],
+  "nozzle_mm": 0.4,
+  "physical_testing": "not-run",
+  "playtest": "not-run",
+  "dice_fairness": "not physically or statistically tested",
+  "finishing": "Optional dark paint in modeled dice recesses to reproduce the contrasting pip appearance. All board distinctions are geometry in one material color.",
+  "verification": "cad/measure/verification-pipeline.md",
+  "rules": "RULES.md",
+  "limitations": "Digital checks do not establish physical print quality, handling, fit, stack stability, durability or dice fairness. Small counter tail overhangs are measured in cad/measure/fit-audit.json."
+}

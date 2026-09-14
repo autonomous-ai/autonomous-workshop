@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_single_02.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_02/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "single_02"
+ ],
+ "print": {
+  "single_02": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_02/r0001/overhang-single_02.log": "ed6779f85bd998050ccec94d534cbdd8e21cc9e6aa2dc2e0164d4a4a5a5225b8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_02/r0001/thickness-single_02.log": "31453b5f4ee27a21cadf2384c083050575c35af61bbbb2af7331039936169c05"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "single_02"
+ ],
+ "round": 2,
+ "scope": "component:single_02",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows uniform four-millimeter extrusion and flat top/base. Top and iso show one uninterrupted curved tail entering a broad rounded body; no fork, added shoulder, hole, detached part or visible intersection. Preserved overall12\u00d78 plan. These current render bytes exactly match the current-attempt views already inspected; only the evidence source binding was refreshed, without geometry or image changes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_02/r0002/visual-packet.json",
+  "packet_sha256": "514b1d218bc067734e9107cf716a8e20d30a90a2bc81293e9da2c45f1add49bb",
+  "status": "pass"
+ }
+}

@@ -25,7 +25,9 @@ from workshop.errors import ManifestError, WorkshopError
 BUNDLED_INVENTOR_IDS = (
     "abo",
     "alice",
+    "arden-span",
     "arlo-playfield",
+    "axel-rake",
     "bob",
     "eve",
     "ferro-line",
@@ -45,6 +47,7 @@ BUNDLED_INVENTOR_IDS = (
     "tess-loop",
     "theo-fieldcraft",
     "vela-bloom",
+    "wren-coil",
 )
 BUNDLED_INVENTOR_FILES = ("TASTE.md", "inventor.json")
 _PRODUCT_RUN_DOMAIN_SKILL_PATHS = (

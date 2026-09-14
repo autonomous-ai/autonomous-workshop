@@ -1,0 +1,59 @@
+{
+ "build": {
+  "front_fender": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "front_fender"
+ ],
+ "checked": [
+  "front_fender"
+ ],
+ "checks_ok": true,
+ "entry": "part_front_fender.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/front_fender/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "front_fender"
+ ],
+ "print": {
+  "front_fender": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/front_fender/r0001/overhang-front_fender.log": "851b34df3ff05e701a506d24a09fb2eee26329000d78233a88e9e67da9bc7322",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/front_fender/r0001/thickness-front_fender.log": "f3d9f39b40e9995af7cfa9eae3456979bd4376e9986be7babcb2ccf65279a6fd"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.6,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:front_fender",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/front_fender/r0001/visual-packet.json",
+  "packet_sha256": "f901512e94a81472a29acca3156c9df636cdc9a236f28be91dcd7013aa9b26e8",
+  "status": "pending"
+ }
+}

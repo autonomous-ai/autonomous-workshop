@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_cup_2.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup_2/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "cup_2"
+ ],
+ "print": {
+  "cup_2": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup_2/r0001/overhang-cup_2.log": "f8a8063840acca10ca1dee879ee1a454d1b7cce7de7216c9cd7c1f1aacad188c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup_2/r0001/thickness-cup_2.log": "8f31b2025add95cda103f603e3dcaafe4b7aa404bfe6deefea8f6f6149858863"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "cup_2"
+ ],
+ "round": 2,
+ "scope": "component:cup_2",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows vertical cylindrical sides and flat base; top is circular; iso exposes open cavity, continuous uniform rim and flat floor. No missing wall, detached body, incorrect orientation or extra feature. These current render bytes exactly match the current-attempt views already inspected; only the evidence source binding was refreshed, without geometry or image changes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup_2/r0002/visual-packet.json",
+  "packet_sha256": "44923788025052cf5f0cf03362e20502bf222326412ff06fd30a60117ca9d3a7",
+  "status": "pass"
+ }
+}

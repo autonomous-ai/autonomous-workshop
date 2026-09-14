@@ -7,6 +7,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -920,6 +921,29 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertEqual(process.wait.call_count, 2)
         self.assertTrue(process.stdout.closed)
         self.assertTrue(process.stderr.closed)
+
+    def test_a_stray_child_holding_the_pipes_cannot_hang_the_bounded_run(self):
+        """A grandchild that escapes the process group keeps the write end of
+        stdout open after the verifier exits. Joining its reader without a bound
+        is an unbounded wait inside the one place that bounds the verifier."""
+        leak = (
+            "import subprocess, sys;"
+            "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(3)'],"
+            " start_new_session=True);"
+            "sys.stdout.write('verifier done')"
+        )
+        started = time.monotonic()
+        with mock.patch("workshop.make.native_gate.STREAM_DRAIN_GRACE_SECONDS", 0.25):
+            with self.assertRaises(ArtifactError) as caught:
+                run_bounded_verifier(
+                    (sys.executable, "-c", leak),
+                    cwd=self.run_root,
+                    environment={"PYTHONDONTWRITEBYTECODE": "1"},
+                    timeout_seconds=None,
+                    max_output_bytes=64,
+                )
+        self.assertIn("stray child", str(caught.exception))
+        self.assertLess(time.monotonic() - started, 3.0)
 
     def _assert_default_runner_drains_and_bounds_both_streams(self):
         result = run_bounded_verifier(

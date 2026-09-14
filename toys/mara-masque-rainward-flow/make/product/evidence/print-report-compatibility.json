@@ -1,0 +1,600 @@
+{
+  "reason": "Current gate emits PASS tables; proposal validator requires legacy RESULT marker. No gate implementation or threshold modified.",
+  "records": [
+    {
+      "path": "cad/measure/thickness-cup_1.md",
+      "raw_sha256": "0d69abd5a673d7716c419c55f91fc69fa5dcd0b40a7312ae5443a1f55d5a8c56",
+      "compatible_sha256": "48b3dc0d4b899ba1b9fca5978025f242bc4ef7be39cd7a5fef3741e9fbc4ebad",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.09) | PASS | 0.0% of surface below (0 of 325404 samples) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-cup_1.md",
+      "raw_sha256": "65500f82e35403f58c8aebdac03b206ba95feec7d948c2d1e545e73da725729b",
+      "compatible_sha256": "70c24ea8e4c4c3b487b972b6c56cc5073095134b547cfb744b927cc0c429d42e",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 14.5% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-cup_2.md",
+      "raw_sha256": "187cc50ab25d98bd1df551997305a33bf7b05f0ed787e034949830e2ce956f90",
+      "compatible_sha256": "2a9e0b775f1589a631333b69c22c5553f9745452f4a1d5fb92cadbf71bf627c1",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.09) | PASS | 0.0% of surface below (0 of 325404 samples) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-cup_2.md",
+      "raw_sha256": "25ec69c4eea71b8d33abe16c6460272967f4fb404aaa473e5fa3514a441f0ccf",
+      "compatible_sha256": "2f19e91e155eb49efd3ff7fbbd9c3fee4e8786f5f9dd21c264ac02a7e1a92dce",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 14.5% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-die_1.md",
+      "raw_sha256": "f72dbcbbd2fa1b4cd2ab38c8eb0dbf5af836d76f9a3e6d3bedfd5618887e6c94",
+      "compatible_sha256": "1745c5b30b6347d9496fa3334dcf8b59ad072fe259c2de091cdc744cd6784e86",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (0 of 86668 samples) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-die_1.md",
+      "raw_sha256": "222c6e94c22c2c049bebe07b28b95a21d92598bbe52fbda17db30f6f2439a8b8",
+      "compatible_sha256": "7604fc73e8ab1c073c858bf85c160238ac4322b895878e3cf24e2cf34a070779",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 15.6% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 14 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-die_2.md",
+      "raw_sha256": "d2373b250f0fc97efa81f68e2ce9f9251a9c3ed2468bd4d24df8560b1bbb761e",
+      "compatible_sha256": "b6991f42a6248e5df76fb3e1c041926f04786be575dae05feea3bffba5ce3766",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (0 of 86668 samples) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-die_2.md",
+      "raw_sha256": "35cf8750029763087bcff9f7c543f4a3c88d3ad8840f6ed252966bc301c7506b",
+      "compatible_sha256": "57e394dc601e9dcb7cbc2c70d22378cb0397f9c90ab2ba20d70bfc97e0b8a00e",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 15.6% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 14 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_01.md",
+      "raw_sha256": "4a92e0c96952dad85767d07d22dcf637f3f41f7ee4e2cc5827c2bf1f592839fc",
+      "compatible_sha256": "d6aace979e4c97b0dab53a7c8604b4365a604b1d705b9b1752ec80fb2d05ba44",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_01.md",
+      "raw_sha256": "f677b7fa927f89573756ade47a6614cb430d3f104daf6d0d2f06c71e35821ad7",
+      "compatible_sha256": "3c9f83af35be3be427d16e0b48a0958f6d55b606ff9db14a26d97a4037651f7d",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_02.md",
+      "raw_sha256": "9ce484bd28bc2321f8fb5db870359e9e7826f1cab86aabc37b156c5415ff0888",
+      "compatible_sha256": "2fb8a558fc5f09c8f9a8422685f3e5ea43a49b7fab24c835d684002d967a773a",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_02.md",
+      "raw_sha256": "7c60dd8eab3e1d8bdeaad6d117d2b44e16b545a64fe41d6b66fb0ed1e678d4d3",
+      "compatible_sha256": "bc354433a09a654ea67ca5bfb73885b92dc00ad4c7baf163b6a7eccb9deafa28",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_03.md",
+      "raw_sha256": "7050a10243d77d86c4e2cea7d8d67247c12d22b6e028f0c4a5f213864ec8e86f",
+      "compatible_sha256": "deb22954255d5c6c07679fff74e5e4b4d5e78b72533afe8fde5801b8338fc317",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_03.md",
+      "raw_sha256": "720878d5b18c042f21007b818e1967d246ff6dac74b4370628942dfd39075e5a",
+      "compatible_sha256": "8519c083bfc3cb8593657b6084dd04fa0f2d71d5438fcf25974d32c6f995e6a2",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_04.md",
+      "raw_sha256": "ebb6d997faa860f38bf155ac3a929680a4e808ee36b2820856c70530dcecb2a7",
+      "compatible_sha256": "0ec5be060cbcb57b6fc0d982bcc09d66e8e8c98b9b351eea6a92182c7b67f4b0",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_04.md",
+      "raw_sha256": "96cbc22c2620c83824a87ca9904565985f59727d144f2f65278b2f00c49c97f5",
+      "compatible_sha256": "433d3b2ca4457f85d136fcd2602cbb3c598146115bef1ce2457702836376015a",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_05.md",
+      "raw_sha256": "37735838f39add156c6924bc4c8bb4df152da0992bc7e618c92d44496c3a7332",
+      "compatible_sha256": "ce5ae26080a5afd683ee5114b2502229aa56bddff9a3b65c676e3a38cc6b0cff",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_05.md",
+      "raw_sha256": "7791b30a4395846b7505a13e31bcaeb9052e5523a91a5c82d63d7e44304ac735",
+      "compatible_sha256": "e8f5e2593671b0522dccfdd54f4685d260aefd10ce41e95522b0f16209051f0c",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_06.md",
+      "raw_sha256": "b327adbe15b9252ea6541e98118c4267756de55e6e95c02913935f9762bc73ad",
+      "compatible_sha256": "2e714bbd5c2255b0042fe6659f65ca191aa780e61547d2c5ae4270564e89d415",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_06.md",
+      "raw_sha256": "fa5fb98d115f24bcb204b0deeaaa87a599cb05b6fb9ba03c6f7a3c9470356ecb",
+      "compatible_sha256": "1f53db640947b1c750484ef741f6d6b5a7af9ee38cda68f8a2f56add743cb9d0",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_07.md",
+      "raw_sha256": "b288d3234422f9e7973751674e6085dd012ec154a2fb3542834ee489ad156360",
+      "compatible_sha256": "8546a7b57eaeafdbfbce44918cddeb400dd8edf38b7563206211494f0dafea48",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_07.md",
+      "raw_sha256": "bcdef7ce7a10745d80a421794485bf6f69d464f7ade03b4e8c454153f4147734",
+      "compatible_sha256": "d4b1fc7791dbb02682be17c8bda590cfc03b4558a897243b938db4ace0ba60bf",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_08.md",
+      "raw_sha256": "97a9a99922776a7631161d6f320c567b9f17e60a320d8c6bfe7f6fe0ee2a4d41",
+      "compatible_sha256": "6bdb6e20366721f9198214a2fcb81c72dd9588c00b6f8b3a83274ff5f775f917",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_08.md",
+      "raw_sha256": "863ba78915a6a9f8c2f46f540d4bfdc680c4382ef80273d3a74beb9ac51b355b",
+      "compatible_sha256": "a2a16a5c2e74604abe1020e71ab8da917872968b30667381139196ae77f26e50",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_09.md",
+      "raw_sha256": "3449d290760b80edc706b78cc46bb4035e227945248a190aa933a65757e5ce28",
+      "compatible_sha256": "a74c9f4dcd626bd42e24fd88e7e90d0f648bb40d4b217c7189f8c6285e2cba7c",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_09.md",
+      "raw_sha256": "08c29328e135734c2bdc89d0504328ec069725825bf87ef353671ceb525db480",
+      "compatible_sha256": "5d8e1f4b569a9c6dab591bb4bf9a04d128c7d7e623f7a2a1c0ea72170aa96674",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_10.md",
+      "raw_sha256": "da2ecdd45fecf06e37491dcba4ba7f78ec334f746a16a997bbb925c7a3ea43a8",
+      "compatible_sha256": "dc3022cb99ce0738f4c1780fbf4551b7c76a92fdb9751093262bc05f684dfe78",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_10.md",
+      "raw_sha256": "64d72e2c3443de9afa470f0797cda770c4b497cbae66558115767a7e32264ca3",
+      "compatible_sha256": "3cf9b3a574d2d2ce877a37d93e9e90dd082f4c010b57b15be1a87985fd373347",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_11.md",
+      "raw_sha256": "9578e89dcacd4440fb9cb37fa8ac5f752c8ffa3fd5028ac1f69470919294afda",
+      "compatible_sha256": "433033554d819be36a575238d3a83f182b82e6ab001386be433af019693a7d3f",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_11.md",
+      "raw_sha256": "bbb7413b200a5361b6bd9f086b10c6c3222b03eadd6d68790e32590693d8c12e",
+      "compatible_sha256": "2360951187215253a83d2bf3182e1a6e93d537ad32593e9e0e791fe5d7ac9929",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_12.md",
+      "raw_sha256": "5c6602faaf9b8bf5159d338ca224cb78308decca8ca75ee4f40a77f6ef0d9880",
+      "compatible_sha256": "5de18b6fa384e507b722fad5a5ebcb03c3e5b078dbfb970098e44a8166e43a03",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_12.md",
+      "raw_sha256": "45ac77b1f725e332ee1d8accd2fd28bac2be65980398fdf01553ca77c48b65b8",
+      "compatible_sha256": "a25680ee34b29b362b700e903420a54bc54c355ac79956f0e5c46376b0b2d8f8",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_13.md",
+      "raw_sha256": "98d97fde3e46a459e9999453f85fb8ef7f5bcd2f8804f21527f4dc83f71a2d33",
+      "compatible_sha256": "3bbb7034af8b1ac995a39630f3e04ad46bc82b61eadf3f6f86024f9d52af8882",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_13.md",
+      "raw_sha256": "63d4477f511aa78320af44820608490a5c076422ac6958cd09aced130f7ce107",
+      "compatible_sha256": "5738a2a797c9bd88a341cd5dc59091676b443b01c898c85f107e106c28eda171",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_14.md",
+      "raw_sha256": "f63ba05e10fe097a801556b561b9d6c54a48f54eb6a20808cda1f249b5a42b41",
+      "compatible_sha256": "2038a7035296a64d14f571d987259c77f255fac0268be56cdda7e4e95bc6f0cc",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_14.md",
+      "raw_sha256": "daf3079ccabadae7ffc4dfce954b7d62e3679c5fcce3015a450f34cb9d2c9681",
+      "compatible_sha256": "12247b13d565da083ca2a68d6d20f24b5b3eb4d579354b02bf5c04422f63f93e",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-fork_15.md",
+      "raw_sha256": "984a329553b49a74c60cee3dffe743d881533458a9bcf7d6757ff404ed233367",
+      "compatible_sha256": "8fa74909f0b89721bcf667a4c6b839a3c49c2bb4255aa32dec5125993eb71bb4",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.0% of surface below (2 of 14369 samples); thinnest 0.53 mm at (1.8, -3.8, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-fork_15.md",
+      "raw_sha256": "a75b8098ade2fa27227d3cae0f6a6e805d9452be73d09e2d91470b8cb2e76683",
+      "compatible_sha256": "3e3e89d3e991af916319260e230109a957684f5e59dd4211771e4d3fe0f1b13c",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 23.8% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_01.md",
+      "raw_sha256": "f0669a7c963d7af6c23460555a83403e521ee70495a268eda8e44cc88110132d",
+      "compatible_sha256": "77d71c9340a7511ba87166e67c5361b71ae94ef439a71c635736abdaab0f75dd",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_01.md",
+      "raw_sha256": "1bad7f39f827dc88036e571c38ed197f8020dc6505d6178878241b1cc9070f76",
+      "compatible_sha256": "4bb5183393b662a070724a8e2367d1e2485ba6f7a926a309157f01022b2f92a4",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_02.md",
+      "raw_sha256": "2e1846985c4754b30476e547474ec0a58ef29a1e5558610c6c02dca9c52b578b",
+      "compatible_sha256": "a197029e14fa89b40ea25ad9f317a67324f29975c7c4268a275c29e6fb548096",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_02.md",
+      "raw_sha256": "ff2f3380904d5622337d812a83a5808cc941da0b341dc5502fc69f6096fc2d0b",
+      "compatible_sha256": "f6643f61a0d1988138e1cf525152cb01b6f2864004094ed71d4fe620410b5c29",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_03.md",
+      "raw_sha256": "ea76745bdb5081963c44bf79587a7c4ba43856c2744c994e030935599fee81c9",
+      "compatible_sha256": "2999592e97cf65dd0f0ff144c46d3a1a7f4bba4d5b4a3fea6787651b0d99c8e7",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_03.md",
+      "raw_sha256": "881d001ec22be20e8eca22335c8874c07968351b86a495fd4969f9798e43258c",
+      "compatible_sha256": "01286b84a2f33af767c93502c862c58918c48ddf9cce62118dfee1976b316e4c",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_04.md",
+      "raw_sha256": "37558216dd6a2b86b214a9d92449c36b82908e6feab77793d3991a67fb6ebeee",
+      "compatible_sha256": "9ce68ff2c10a251a440a86051f6af61e027944bb0f507adc75c4e77991037135",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_04.md",
+      "raw_sha256": "e38da7aaa19f28d29401ff73d5324fd8178ebdff332bd4bb01207c60eabdefad",
+      "compatible_sha256": "e60dbad1945915c719b32b068c64ff4a69b5969f36eb14659e8fa75e444c3783",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_05.md",
+      "raw_sha256": "2cb049a945c15f03510ad1526dae1f53bdc3536abe8bc7d72f4bfcae2754d07a",
+      "compatible_sha256": "245839396824f909daddcd4363b00df410cbe7e64b5d40c1f8cf42801efc368c",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_05.md",
+      "raw_sha256": "ea4cbd1fac5571a4ac73438e3c491af71f72d78f87e5330c4cd51a36a46c20f2",
+      "compatible_sha256": "0578da2a40788fae9dcf69600ad62c55d5ae209f964fa24fc28d0eddcc27d9d1",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_06.md",
+      "raw_sha256": "ad72f4e92860249e5b24a7d852c1f0cc70f3667950354b98c6faa323a9e7f89a",
+      "compatible_sha256": "fbbd96b8b11308832ce66165caa9319348d523cca3293b66b8f46e68adc98d6f",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_06.md",
+      "raw_sha256": "e46e5011611f21c1dd7dcc1d92ef5ef5515c771d8aa93e5329238741d2b03617",
+      "compatible_sha256": "9840fcc28dddf5b51e030737d3270cae15433bb405ca25d63122eb57cb491d92",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_07.md",
+      "raw_sha256": "1c0a576ea8e323bc9dee8cc3269399a24fc8d9637eb98aec3ef9ad1849d7f48a",
+      "compatible_sha256": "fdeea1e1bb988837548580fe6d13a51c8c4f8ddd74fdc2cbc31b50a10a4ab6db",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_07.md",
+      "raw_sha256": "5ad924fa77fa1b96a4b29b5fb5d7389e0927c62724d210d1c159bee8c4d367b7",
+      "compatible_sha256": "05a6658f62abda08d301177bbed40a35b551d4d872427a567befb8e99c8c8f29",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_08.md",
+      "raw_sha256": "e1809c05641d1a729d0a15e2cb7a802831494111ece85a0140670b58f1bbe53d",
+      "compatible_sha256": "7fb0877d2de17ed90bc58f7f57d1bb1b67e99d8fd090f73808c054cc33751aec",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_08.md",
+      "raw_sha256": "4f1d3b03fb1bbbc73cb6a4fdd51c3209af7a88edb6d7a263c32b2257a4a16652",
+      "compatible_sha256": "db170e1a7755d0a24253d7491084054f93f70aa0a50b50c507d386f125d0717e",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_09.md",
+      "raw_sha256": "11039869f2b3f6ba4b5f013ee1c4f3b86dab50668c27db241efeee0fcc3a8f21",
+      "compatible_sha256": "32ddf0204dab36eb4d4e9cc6334823d5cc8eee302e536b34c276432116cd8875",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_09.md",
+      "raw_sha256": "1d14fed836d7ab8a7a9e84261fc963f8cecb6097319b0234fda3bfc84f5ab160",
+      "compatible_sha256": "5e41ff852556fcebc666bfe582e1472c8601a604ae87e3cfd5e3f14662faa737",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_10.md",
+      "raw_sha256": "65efc684138f17eb77cb7692d2b0155da6a35e66a449590a4dde6578bcf19772",
+      "compatible_sha256": "068fbb2eaa8aff9eadd3401506751fc59c84f68816abfb939214c317d244ff79",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_10.md",
+      "raw_sha256": "a0aa0eb5d94774a6f8c0cb512f88d7efb9ac2d3849dd81cf9fc2f6de06d0a13e",
+      "compatible_sha256": "0b209d21e14c33c8502b4754c2cda0f83ca6e6852cd0b56ddcb513cd516716cd",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_11.md",
+      "raw_sha256": "080b4d2710081402b1df8dc184e210118abdbc8908244c4b35b57cf3b4c79437",
+      "compatible_sha256": "fb81fea1e003c153335180d363812661b8da88918fab544ab494ebfd9a10ad12",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_11.md",
+      "raw_sha256": "8fa3c28f03d2491d44e338b1ddb5d031fbe171fbd989430b87d2bbf6e81fcf95",
+      "compatible_sha256": "46e0231bbadd0327206044bdf09a71439bbb30b933002112528b8eae9f2d42e0",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_12.md",
+      "raw_sha256": "618cac416404e6154b1595efb3fb6f09fe72c9316693731a9b16f1a7ac5b4259",
+      "compatible_sha256": "3cca0d1372c428a5b2f206dda1003407a7a08234fdd9485caf8dc22521262df1",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_12.md",
+      "raw_sha256": "0ed04540726d732ce1860fd4a16de598c8317c25f50616319a6b9d347aa390a4",
+      "compatible_sha256": "528fc1a8b807fcae8826ccb1cdf5f4e2763d8c03bc30c682d9815a1a4be01a4c",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_13.md",
+      "raw_sha256": "99d9870d4cce272e546c9c92cd16b8a2a42a9240c402beba1f717cc3e20a9b5e",
+      "compatible_sha256": "6267f31b2918fdedd0588f4d2953a3a0cab70a29118e78ee8d686575bbd91372",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_13.md",
+      "raw_sha256": "7b7c52d60c166f30db90034b81c22b29f952da71a52f02325862be52c7df8692",
+      "compatible_sha256": "724fcc6c47e4538b2703a9003610b4fd1434f06a9bea88e1432a6ab0a3ca029c",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_14.md",
+      "raw_sha256": "f4068eabf45d182ec366222a95ad65d1857d47013606265933f18c1a481d43fb",
+      "compatible_sha256": "b389cebb855fab5c5bd797dd3a2564ed6edc3496c33d0e995af14edaaebc9cd3",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_14.md",
+      "raw_sha256": "f264fd0ee7a4b913439ea484e7e4d6f7ce3b6d4144e7e6f8bacd05a3666d11fd",
+      "compatible_sha256": "19674a9ff44a8e6da946de86b3df1d5de28bd56c7797bf3e9c041d80dfd1591e",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-single_15.md",
+      "raw_sha256": "9aec4014e161084daa22bbf2e7c757b7fcc6376deb0c494b864c37c7b65fefb1",
+      "compatible_sha256": "23c74f825dad407d2505ebedede0979b6065d50c0912052d0c6035d6bea37564",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.07) | PASS | 0.1% of surface below (8 of 12009 samples); thinnest 0.13 mm at (-5.2, 3.9, 0.0) in 5 region(s); no region is a wall, 5 taper(s) at feature edges (0.06% of surface, budget 2%) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-single_15.md",
+      "raw_sha256": "46fe5b99a9e5184b6b2ef6d98e9967316a549fad5ceff3431c4a4226d270342f",
+      "compatible_sha256": "753a4b8138187cde9a2116fc5f3b0854606896bde08bafabb3ee9d9b31fb8c1e",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 22.2% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    },
+    {
+      "path": "cad/measure/thickness-sun.md",
+      "raw_sha256": "f2dd879f7736dd78bda80679c35ea5a5dc349ce439bbeefcf78333246333abf3",
+      "compatible_sha256": "e0e29da5dd6bafaa198800b986359f631cb7e63422d47de4a24c559941349586",
+      "derived_from_rows": [
+        "| wall >= 0.80 mm (+/-0.24) | PASS | 0.0% of surface below (0 of 268598 samples) |"
+      ]
+    },
+    {
+      "path": "cad/measure/overhang-sun.md",
+      "raw_sha256": "ab8c75ee5613b230c1f67f357428cf579079553160da2527e5d65aa2a9f29516",
+      "compatible_sha256": "4303223067ff973f701057ce633d17f7202ee290cac8402cc93319533e65316d",
+      "derived_from_rows": [
+        "| no face under 45 deg needs support | PASS | 39.3% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 0 below 1 mm2 |",
+        "| bridges within 12 mm | PASS | 0 region(s), longest span 0.0 mm |"
+      ]
+    }
+  ]
+}

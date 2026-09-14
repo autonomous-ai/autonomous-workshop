@@ -1877,3 +1877,45 @@ optional device correction refused a policy mismatch without rebinding it.
 Ordinary resume then passed the existing runtime checks and started the same
 native session at 13:51:22 UTC. No manual checkpoint repair was needed. Live
 motion performance and product completion remain unverified.
+
+## 2026-09-14 team motion-policy integration (in progress)
+
+The isolated mixed-material worktree pulled its branch and fetched main
+`52fef891aaf41a747d2bce501fb76575eae24aa1`. The branches diverged, so the
+integration uses a merge, preserving the already-pushed feature history:
+
+```bash
+git pull --ff-only
+git fetch origin main
+git merge --no-commit origin/main
+```
+
+Atlas is paused while this merge is validated. The team policy defaults motion
+verification to false on operator resume and records it as unverified. The
+merged CLI preserves `--make print|mixed`, including correction runs; isolated
+component reviews no longer build every printable part. The original Atlas
+Wish, native session, medium effort and 500M total allowance remain the target.
+
+Automatic approval review blocked token-accounting reconciliation, including
+the conservative proposal to retain this branch's completed-task replay
+binding. The merge is not committed or pushed, and Atlas has not resumed.
+No saved usage, product evidence or live checkpoint was edited. The initial
+full test run reported 2,088 passed, 36 failed and 19 skipped. After repairs,
+all 239 targeted non-accounting checks passed; the separate refresh-notice
+and skill-registry rerun passed 64 checks. Six accounting failures remain
+unresolved; the older branch and new main require different replay semantics.
+The proposed conservative resolution retains the branch's accounting logic,
+including refusing completed tasks with only stale usage notifications, and
+keeps main's larger visual-record framing support. Imported replay fixtures
+must use a bound prior completion and keep echo-only follow-ups pending.
+
+The operator subsequently approved the conservative accounting resolution.
+It retains the prior branch's accounting implementation; all 231 accounting,
+token-budget, motion-resume and device-recovery tests passed. Together with the
+239 repaired integration checks, this resolves every initial suite failure.
+
+Resume command after committing and pushing the tested integration:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli resume wish-20260910-143753-a2e10997 --max-tokens 500000000 --effort medium --check-motion false
+```

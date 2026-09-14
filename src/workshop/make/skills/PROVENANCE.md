@@ -583,6 +583,27 @@ Frozen running products retain their materialized tool until explicitly refreshe
   connected unions, cavity shells, independently retained members, placed
   assemblies, seated-contact policy and measurement failures. This is sampled
   directional evidence, not a physical joint or load-bearing certification.
+- Adapted locally on 2026-09-13 so the long motion tools count themselves down
+  on stderr. `check_motion` names the assembly it is building, each condition
+  as it starts, and reports `k/N, elapsed, ~left` through every sweep and
+  through drive-evidence sampling; `motion_states.py` does the same per posed
+  sample and per rendered animation frame. A multi-hour sweep was previously
+  indistinguishable from a hang. Progress is stderr only, throttled
+  (`WORKSHOP_PROGRESS_INTERVAL`, default 10s) and disabled by
+  `WORKSHOP_PROGRESS=0`; stdout, geometry, hashes, verdicts and exit statuses
+  are unchanged.
+- Adapted locally on 2026-09-13 so a motion sweep is bounded. `check_motion`
+  projects the sampled Boolean/distance operations a manifest asks for before
+  the first sweep and accepts `--deadline SECONDS`
+  (`WORKSHOP_MOTION_DEADLINE_SECONDS`); a condition that runs out of budget
+  stops at the sample it reached and reports `inconclusive` with
+  `deadlineStopped`, which fails the run even under `--allow-inconclusive`.
+  `verify_project` passes a 900s default so an over-declared manifest cannot
+  consume the whole verification. `motion_presentation.py` takes the same
+  `--deadline` for its posing and rendering halves, which share one clock and
+  write nothing unless both finish. Unbounded runs remain the default for
+  direct invocations, and no geometry, threshold or verdict changed.
+
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do
@@ -667,6 +688,12 @@ repair-and-rereview cycles. Python performs no visual judgment or model calls.
   `cad` and `image-to-cad` tools without changing them; a resync of the
   upstream skills does not touch it.
 
+Spark component-first extension (2026-09-10, ADR 0063): `--component` gives
+each `part_<role>.step.py` an isolated round history and visual packet;
+`--require-component-passes` freshly builds every part and prevents assembly
+review until all current component STEP bytes have passing isolated evidence.
+The native Manager still supplies the visual judgment. Forge and Quest keep
+their prior whole-product round sequence.
 
 ## Local audit dependency transport (2026-09-08)
 
@@ -1012,3 +1039,21 @@ retains main's STEP-only verifier/documentation changes and the branch's exact
 review, rendering, motion and subtree-copy fixes. Make-round retains main's
 native-session token-discipline guidance. The lock fingerprints were recomputed
 from the combined source trees; frozen product workspaces were not refreshed.
+## Optional motion verification (2026-09-14)
+
+Workshop adds `motion_policy.py` and opt-in motion handling to `verify_project`
+and `make_round`, plus corresponding CAD and image-to-CAD guidance. New runs
+freeze `MAKE-OPTIONS.json`; disabled checks and animation review remain
+explicitly unverified. The underlying motion checker is unchanged.
+
+Operator resume also defaults to false. Make-round's final verification uses
+the current host-selected motion option instead of a previous round's option.
+
+### Mixed-material branch integration
+
+The integration with main `52fef891` retains the branch's bounded material
+normalization and exact-pair caches. The team progresslib/deadline interfaces
+replace the branch's old `--progress` diagnostics; optional checks still use
+the original Boolean consistency rules. Isolated component rounds restrict
+build and print checks to the selected component. Skill fingerprints bind the
+combined source, not a claim about live Atlas verification.

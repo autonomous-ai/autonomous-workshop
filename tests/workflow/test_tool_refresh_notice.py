@@ -66,6 +66,37 @@ def test_absent_no_refresh_and_empty_change_history_leave_prompt_unchanged(tmp_p
     assert native_tool_refresh_notice(tmp_path, {}) == ""
 
 
+@pytest.mark.parametrize("enabled", [False, True])
+def test_canonical_motion_option_is_manifest_bound(tmp_path, enabled):
+    import hashlib
+    digest = hashlib.sha256(json.dumps({"schema_version": 1, "check_motion": enabled},
+                            sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    row = change("MAKE-OPTIONS.json", previous_sha256=None, previous_mode=None, sha256=digest)
+    ledger(tmp_path, [record([row])])
+    assert digest in native_tool_refresh_notice(tmp_path, current([row]))
+    with pytest.raises(StateConflict):
+        native_tool_refresh_notice(tmp_path, {})
+
+
+@pytest.mark.parametrize("mutation", ["arbitrary_hash", "remove", "executable", "nested", "old_hash"])
+def test_motion_option_notice_rejects_noncanonical_changes(tmp_path, mutation):
+    digest = sorted(notices._MOTION_OPTION_HASHES)[0]
+    row = change("MAKE-OPTIONS.json", previous_sha256=None, previous_mode=None, sha256=digest)
+    if mutation == "arbitrary_hash":
+        row["sha256"] = "2" * 64
+    elif mutation == "remove":
+        row.update(sha256=None, mode=None)
+    elif mutation == "executable":
+        row["mode"] = 0o500
+    elif mutation == "nested":
+        row["path"] = "nested/MAKE-OPTIONS.json"
+    else:
+        row.update(previous_sha256="1" * 64, previous_mode=0o400)
+    ledger(tmp_path, [record([row])])
+    with pytest.raises(StateConflict):
+        native_tool_refresh_notice(tmp_path, current([row]))
+
+
 def test_addition_removal_and_mode_change_are_explicit_current_bindings(tmp_path):
     changes = [change(previous_sha256=None, previous_mode=None),
                change(".agents/skills/cad/scripts/removed.py", sha256=None, mode=None),
@@ -184,7 +215,10 @@ def test_real_completed_refresh_hands_off_on_recovery_without_acknowledgement(tm
         with mock.patch("workshop.workflow.native_run._load_lifetime_budget", return_value=None), \
              mock.patch("workshop.workflow.native_run._deep_make_critical_path_prompt", return_value=""):
             _launcher_call(launcher, "resume", checkpoint=checkpoint, paths=paths)
-            assert launcher.resume.call_args.kwargs["prompt"] == native_stage_prompt("make")
+            initial_prompt = launcher.resume.call_args.kwargs["prompt"]
+            assert initial_prompt.startswith(native_stage_prompt("make"))
+            assert "Host motion policy:" in initial_prompt
+            assert "Host tool refresh notice" not in initial_prompt
             for relative in ("SKILL.md", "references/manifest.md", "scripts/check.py"):
                 (skill / relative).write_text("Current guidance/tool.\n")
             changes = run.refresh_domain_skill_tools({"mixed-materials": skill}, reason="PRIVATE_REASON")

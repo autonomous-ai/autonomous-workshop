@@ -1,0 +1,2207 @@
+{
+  "scope": "Exhaustive footprint completion classes, each with at least one exact representative pose checked by the linked CAD evidence. Counts do not enumerate all facade facings or prove hands-on comfort.",
+  "symmetry": "A/B, E/F, G/H interchangeable; identity and x reflection preserve each labeled entry/exit. Fixed clues are retained before quotienting full solutions.",
+  "high_gap_rule": "Traverse perpendicular to the arch strip, straight through consecutively. No turn inside any gap. Virtual outside cells enforce entry/exit direction.",
+  "quarter_turns": "0/90/180/270 upright; geometrically duplicate footprint orientations collapsed. Finite CAD details must be invariant or separately checked.",
+  "difficulty": "Editorial intended progression only, not human playtest or measured difficulty.",
+  "deck_shortfall": "Three edited challenges, not the aspirational 24; do not describe this as a completed 24-card set.",
+  "layouts": [
+    {
+      "id": "layout-1",
+      "placements": [
+        {
+          "part": "A",
+          "origin": [
+            1,
+            0
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "B",
+          "origin": [
+            1,
+            1
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "C",
+          "origin": [
+            0,
+            0
+          ],
+          "rotation": 90
+        },
+        {
+          "part": "D",
+          "origin": [
+            0,
+            3
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "E",
+          "origin": [
+            3,
+            2
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "F",
+          "origin": [
+            3,
+            3
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "G",
+          "origin": [
+            4,
+            0
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "H",
+          "origin": [
+            4,
+            1
+          ],
+          "rotation": 0
+        }
+      ],
+      "routes": [
+        [
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            2,
+            4
+          ]
+        ]
+      ],
+      "route_count": 1,
+      "tempting_failures": [
+        {
+          "swap": [
+            "A",
+            "C"
+          ],
+          "valid_routes": 0,
+          "reason": "The low opening occupies a required high passage; no alternative visits both high openings."
+        },
+        {
+          "swap": [
+            "B",
+            "C"
+          ],
+          "valid_routes": 0,
+          "reason": "The low opening occupies a required high passage; no alternative visits both high openings."
+        },
+        {
+          "replace": "D",
+          "placement": {
+            "part": "D",
+            "origin": [
+              1,
+              2
+            ],
+            "rotation": 90
+          },
+          "valid_routes": 0,
+          "nonoverlapping": true,
+          "reason": "All pieces fit on the grid, but this orientation cuts the required connected trip through both high passages."
+        },
+        {
+          "replace": "E",
+          "placement": {
+            "part": "E",
+            "origin": [
+              2,
+              2
+            ],
+            "rotation": 90
+          },
+          "valid_routes": 0,
+          "nonoverlapping": true,
+          "reason": "All pieces fit on the grid, but this orientation cuts the required connected trip through both high passages."
+        },
+        {
+          "replace": "F",
+          "placement": {
+            "part": "F",
+            "origin": [
+              2,
+              2
+            ],
+            "rotation": 90
+          },
+          "valid_routes": 0,
+          "nonoverlapping": true,
+          "reason": "All pieces fit on the grid, but this orientation cuts the required connected trip through both high passages."
+        }
+      ]
+    },
+    {
+      "id": "layout-2",
+      "placements": [
+        {
+          "part": "A",
+          "origin": [
+            1,
+            0
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "B",
+          "origin": [
+            0,
+            2
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "C",
+          "origin": [
+            4,
+            0
+          ],
+          "rotation": 90
+        },
+        {
+          "part": "D",
+          "origin": [
+            3,
+            3
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "E",
+          "origin": [
+            0,
+            4
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "F",
+          "origin": [
+            0,
+            0
+          ],
+          "rotation": 90
+        },
+        {
+          "part": "G",
+          "origin": [
+            3,
+            1
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "H",
+          "origin": [
+            3,
+            2
+          ],
+          "rotation": 0
+        }
+      ],
+      "routes": [
+        [
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            2,
+            4
+          ]
+        ]
+      ],
+      "route_count": 1,
+      "tempting_failures": [
+        {
+          "swap": [
+            "A",
+            "C"
+          ],
+          "valid_routes": 0,
+          "reason": "The low opening occupies a required high passage; no alternative visits both high openings."
+        },
+        {
+          "swap": [
+            "B",
+            "C"
+          ],
+          "valid_routes": 0,
+          "reason": "The low opening occupies a required high passage; no alternative visits both high openings."
+        },
+        {
+          "replace": "D",
+          "placement": {
+            "part": "D",
+            "origin": [
+              1,
+              3
+            ],
+            "rotation": 90
+          },
+          "valid_routes": 0,
+          "nonoverlapping": true,
+          "reason": "All pieces fit on the grid, but this orientation cuts the required connected trip through both high passages."
+        },
+        {
+          "replace": "E",
+          "placement": {
+            "part": "E",
+            "origin": [
+              1,
+              3
+            ],
+            "rotation": 90
+          },
+          "valid_routes": 0,
+          "nonoverlapping": true,
+          "reason": "All pieces fit on the grid, but this orientation cuts the required connected trip through both high passages."
+        },
+        {
+          "replace": "F",
+          "placement": {
+            "part": "F",
+            "origin": [
+              0,
+              1
+            ],
+            "rotation": 0
+          },
+          "valid_routes": 0,
+          "nonoverlapping": true,
+          "reason": "All pieces fit on the grid, but this orientation cuts the required connected trip through both high passages."
+        }
+      ]
+    },
+    {
+      "id": "layout-3",
+      "placements": [
+        {
+          "part": "A",
+          "origin": [
+            1,
+            0
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "B",
+          "origin": [
+            0,
+            2
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "C",
+          "origin": [
+            4,
+            0
+          ],
+          "rotation": 90
+        },
+        {
+          "part": "D",
+          "origin": [
+            0,
+            3
+          ],
+          "rotation": 270
+        },
+        {
+          "part": "E",
+          "origin": [
+            0,
+            0
+          ],
+          "rotation": 90
+        },
+        {
+          "part": "F",
+          "origin": [
+            3,
+            1
+          ],
+          "rotation": 90
+        },
+        {
+          "part": "G",
+          "origin": [
+            4,
+            3
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "H",
+          "origin": [
+            4,
+            4
+          ],
+          "rotation": 0
+        }
+      ],
+      "routes": [
+        [
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            2,
+            4
+          ]
+        ]
+      ],
+      "route_count": 2,
+      "tempting_failures": [
+        {
+          "swap": [
+            "A",
+            "C"
+          ],
+          "valid_routes": 0,
+          "reason": "The low opening occupies a required high passage; no alternative visits both high openings."
+        },
+        {
+          "swap": [
+            "B",
+            "C"
+          ],
+          "valid_routes": 0,
+          "reason": "The low opening occupies a required high passage; no alternative visits both high openings."
+        },
+        {
+          "replace": "D",
+          "placement": {
+            "part": "D",
+            "origin": [
+              0,
+              3
+            ],
+            "rotation": 0
+          },
+          "valid_routes": 0,
+          "nonoverlapping": true,
+          "reason": "All pieces fit on the grid, but this orientation cuts the required connected trip through both high passages."
+        },
+        {
+          "replace": "E",
+          "placement": {
+            "part": "E",
+            "origin": [
+              0,
+              1
+            ],
+            "rotation": 0
+          },
+          "valid_routes": 0,
+          "nonoverlapping": true,
+          "reason": "All pieces fit on the grid, but this orientation cuts the required connected trip through both high passages."
+        },
+        {
+          "replace": "F",
+          "placement": {
+            "part": "F",
+            "origin": [
+              1,
+              1
+            ],
+            "rotation": 0
+          },
+          "valid_routes": 0,
+          "nonoverlapping": true,
+          "reason": "All pieces fit on the grid, but this orientation cuts the required connected trip through both high passages."
+        }
+      ]
+    }
+  ],
+  "challenges": [
+    {
+      "fixed": [
+        {
+          "part": "B",
+          "origin": [
+            1,
+            1
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "D",
+          "origin": [
+            0,
+            3
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "E",
+          "origin": [
+            3,
+            2
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "F",
+          "origin": [
+            3,
+            3
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "G",
+          "origin": [
+            4,
+            0
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "H",
+          "origin": [
+            4,
+            1
+          ],
+          "rotation": 0
+        }
+      ],
+      "loose": [
+        "A",
+        "C"
+      ],
+      "nonoverlapping_candidates_examined": 28,
+      "valid_completion_classes": 2,
+      "completions": [
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                1,
+                1
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                0,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "E",
+              "origin": [
+                3,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "F",
+              "origin": [
+                3,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "G",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                4,
+                1
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        },
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                4
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                1,
+                1
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                0,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "E",
+              "origin": [
+                3,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "F",
+              "origin": [
+                3,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "G",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                4,
+                1
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                2,
+                2
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        }
+      ],
+      "id": "Q01",
+      "title": "First passage",
+      "witness": "layout-1",
+      "deduction": "Put the high arch on the ferry line; park the low gate away from it. Two completions are allowed."
+    },
+    {
+      "fixed": [
+        {
+          "part": "B",
+          "origin": [
+            0,
+            2
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "C",
+          "origin": [
+            4,
+            0
+          ],
+          "rotation": 90
+        },
+        {
+          "part": "E",
+          "origin": [
+            0,
+            4
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "G",
+          "origin": [
+            3,
+            1
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "H",
+          "origin": [
+            3,
+            2
+          ],
+          "rotation": 0
+        }
+      ],
+      "loose": [
+        "A",
+        "D",
+        "F"
+      ],
+      "nonoverlapping_candidates_examined": 437,
+      "valid_completion_classes": 4,
+      "completions": [
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                3,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "E",
+              "origin": [
+                0,
+                4
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "F",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                3,
+                1
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                3,
+                2
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        },
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                3,
+                3
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "E",
+              "origin": [
+                0,
+                4
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "F",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                3,
+                1
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                3,
+                2
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        },
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                3,
+                3
+              ],
+              "rotation": 180
+            },
+            {
+              "part": "E",
+              "origin": [
+                0,
+                4
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "F",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                3,
+                1
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                3,
+                2
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        },
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                3,
+                3
+              ],
+              "rotation": 270
+            },
+            {
+              "part": "E",
+              "origin": [
+                0,
+                4
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "F",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                3,
+                1
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                3,
+                2
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        }
+      ],
+      "id": "Q02",
+      "title": "Around the corner",
+      "witness": "layout-2",
+      "deduction": "Orient the long building and courtyard to preserve the westward detour and its return to C5; then keep the entrance bridge open."
+    },
+    {
+      "fixed": [
+        {
+          "part": "A",
+          "origin": [
+            1,
+            0
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "B",
+          "origin": [
+            0,
+            2
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "C",
+          "origin": [
+            4,
+            0
+          ],
+          "rotation": 90
+        },
+        {
+          "part": "G",
+          "origin": [
+            4,
+            3
+          ],
+          "rotation": 0
+        },
+        {
+          "part": "H",
+          "origin": [
+            4,
+            4
+          ],
+          "rotation": 0
+        }
+      ],
+      "loose": [
+        "D",
+        "E",
+        "F"
+      ],
+      "nonoverlapping_candidates_examined": 543,
+      "valid_completion_classes": 8,
+      "completions": [
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                2,
+                3
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "E",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "F",
+              "origin": [
+                3,
+                1
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                4,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                4,
+                4
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                0,
+                3
+              ],
+              [
+                0,
+                4
+              ],
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 2
+        },
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                2,
+                3
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "E",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "F",
+              "origin": [
+                0,
+                3
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                4,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                4,
+                4
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        },
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                2,
+                3
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "E",
+              "origin": [
+                0,
+                3
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "F",
+              "origin": [
+                3,
+                1
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                4,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                4,
+                4
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        },
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                2,
+                2
+              ],
+              "rotation": 180
+            },
+            {
+              "part": "E",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "F",
+              "origin": [
+                0,
+                3
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                4,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                4,
+                4
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                1,
+                4
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        },
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                0,
+                3
+              ],
+              "rotation": 270
+            },
+            {
+              "part": "E",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "F",
+              "origin": [
+                3,
+                1
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                4,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                4,
+                4
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                3,
+                3
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                2,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 2
+        },
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                0,
+                3
+              ],
+              "rotation": 270
+            },
+            {
+              "part": "E",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "F",
+              "origin": [
+                3,
+                2
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                4,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                4,
+                4
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        },
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                0,
+                3
+              ],
+              "rotation": 270
+            },
+            {
+              "part": "E",
+              "origin": [
+                0,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "F",
+              "origin": [
+                3,
+                3
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                4,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                4,
+                4
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        },
+        {
+          "placements": [
+            {
+              "part": "A",
+              "origin": [
+                1,
+                0
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "B",
+              "origin": [
+                0,
+                2
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "C",
+              "origin": [
+                4,
+                0
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "D",
+              "origin": [
+                0,
+                3
+              ],
+              "rotation": 270
+            },
+            {
+              "part": "E",
+              "origin": [
+                3,
+                1
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "F",
+              "origin": [
+                3,
+                3
+              ],
+              "rotation": 90
+            },
+            {
+              "part": "G",
+              "origin": [
+                4,
+                3
+              ],
+              "rotation": 0
+            },
+            {
+              "part": "H",
+              "origin": [
+                4,
+                4
+              ],
+              "rotation": 0
+            }
+          ],
+          "routes": [
+            [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                2,
+                3
+              ],
+              [
+                2,
+                4
+              ]
+            ]
+          ],
+          "route_count": 1
+        }
+      ],
+      "id": "Q03",
+      "title": "The open court",
+      "witness": "layout-3",
+      "deduction": "Place both interchangeable long buildings and the courtyard around two fixed high passages. Preserve a return corridor to C5; unused water is allowed."
+    }
+  ],
+  "finite_validation": {
+    "status": "representative poses passed CAD checks",
+    "evidence": "../cad/measure/physical-validation.json",
+    "evidence_sha256": "29575e2d74b03502fcd12396b8a90e7242014205b092a8416ac12bc73bc75c46",
+    "representative_poses_routes_sha256": "1bc0227ce4823e24da7965730cb548f0e7fc76b6c632e44152b6aef29717a15e",
+    "counts_scope": "2/4/8 footprint completion classes, each with at least one validated exact representative pose; not counts of all physically distinguishable facings.",
+    "checks": "Continuous diameter26mm height26mm containing cylinder sweeps; actual low-gate overlap; sampled diameter10mm top-down finger contact with0.251mm inter-sample allowance. CAD proxy evidence, not hands-on comfort.",
+    "facing_evidence": "facing-access.json",
+    "facing_caveat": "Two of16 Q01 arch-facing aliases fail the conservative top-down finger proxy. Q02 and Q03 tested aliases pass. Match exact labels/rotations and rear-span orientation in the solution reproductions. All upright quarter-turns remain legal; legality is not a guarantee of successful passage or comfortable access.",
+    "board_symmetry_group": {
+      "used": "C2 = {identity, reflection x ->4-x}; preserves C1 and C5 individually.",
+      "broader_reasoning_group": "D2 = {identity, x reflection, y reflection,180-degree rotation} preserves the unordered port pair; y reflection and180 rotation require route reversal.",
+      "broader_group_counts": [
+        2,
+        4,
+        8
+      ],
+      "interpretation": "The broader group leaves the three card counts unchanged. Neither group establishes physical facade or access equivalence. Fixed setup clues constrain search before completed arrangements are quotiented."
+    },
+    "cad_source_sha256": "323b0e05affa7717e55c8cb60cde90a09397a6fd68a69c8a3617a1c99a3d8330",
+    "actual_ferry_bbox_mm": [
+      26.0,
+      24.5,
+      20.0
+    ],
+    "containing_cylinder_note": "Diameter26mm byheight26mm is the conservative swept containing cylinder; actual final ferry height is20mm."
+  }
+}

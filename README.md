@@ -49,6 +49,26 @@ Our initial Inventors seed the shop and exercise the system. The long-term platf
 
 Internally, the sealed brief that begins one product run is still called a Wish. Existing Wish commands and frozen run contracts remain part of the engine; the consumer experience centers on creating and directing an Inventor.
 
+## Correct a published toy
+
+Clone a published toy archive into a separate Spark run using a correction brief:
+
+```bash
+uv run workshop fix toys/mara-masque-rainward-sun \
+  --prompt-file docs/examples/rainward-sun-fix.txt
+```
+
+Use `--prompt "Describe the correction"` for a short brief. The command keeps the
+original Inventor, creates a new Wish and editable copy, and runs Make and
+publication with fresh evidence. The original run and listing stay unchanged.
+The source must be a local Workshop public archive with its `MANIFEST.json`;
+URLs and private run directories are not accepted. `--model`, `--effort`,
+`--max-tokens` and `--turn-minutes` select the new run's settings. Resume a stopped
+revision with `workshop resume <new-wish-id>`.
+
+The Rainward Sun prompt above is a prepared example; a corrected version has
+not yet been live-validated. See [the correction-run contract](docs/adr/0065-published-toy-correction-runs.md).
+
 ## Quickstart
 
 ```bash
@@ -90,6 +110,14 @@ To make just one product from your own idea, use `wish`:
 uv run workshop wish "A small hand-cranked cam toy" --inventor soren-voss \
   --workflow spark --agent codex --model sol --effort high
 ```
+
+Motion verification is optional for new runs. `workshop wish "a moving toy"`
+skips motion checks and required animation review by default. Add
+`--check-motion true` to enable them; `workshop start` and `workshop fix`
+accept the same option. `workshop resume <wish-id>` also defaults to false,
+including older Wishes and runs that previously enabled motion. Pass
+`--check-motion true` on resume to enable it again. Skipped motion is
+unverified; build, print and still-image review checks remain in place.
 
 `start <inventor>` is the ongoing Inventor-led loop; `wish "..."` creates one
 product and stops. Omit `--inventor` on a Wish to let the Manager choose the
@@ -311,6 +339,13 @@ loop — a detent click, a glide, a rocking mass — that a hand runs without lo
 while the eyes stay on the work, and that sits still and deliberate beside a
 laptop once it is put down.
 
+### Axel Rake — design the vehicle that comes next ([TASTE.md](inventors/axel-rake/TASTE.md))
+
+Original present-day and future cars and motorcycles, designed package-first —
+wheelbase, rider or occupant, and battery or engine placed before any surface —
+then built as rolling, part-split printable scale models on one family scale,
+with every speculative future technology labelled in a ledger.
+
 ## Toys
 
 Toys that already left the Workshop. After Factory publication, a sanitized snapshot lands in [`toys/<inventor>-<slug>/`](toys/). These are public examples, not private run workspaces.
@@ -319,6 +354,8 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 
 | Toy | Inventor | Effort | Snapshot | Factory |
 |---|---|---|---|---|
+| RIDGELINE — Great Wall Path Puzzle | [Arden Span](inventors/arden-span/) | Operator revision | [`toys/arden-span-ridgeline-great-wall-path-puzzle/`](toys/arden-span-ridgeline-great-wall-path-puzzle/) | [ridgeline-great-wall-path-puzzle](https://www.autonomous.ai/toys/product/ridgeline-great-wall-path-puzzle) |
+| QUAYSHIFT | [Arden Span](inventors/arden-span/) | ✨ Spark | [`toys/arden-span-quayshift/`](toys/arden-span-quayshift/) | [quayshift](https://www.autonomous.ai/toys/product/quayshift) |
 | Moonwake Turn | [Luma Vale](inventors/luma-vale/) | Spark | [`toys/luma-vale-moonwake-turn/`](toys/luma-vale-moonwake-turn/) | [moonwake-turn](https://www.autonomous.ai/toys/product/moonwake-turn) |
 | Mooncoil Dragon | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-mooncoil-dragon/`](toys/pico-press-mooncoil-dragon/) | [mooncoil-dragon](https://www.autonomous.ai/toys/product/mooncoil-dragon) |
 | Pocket Eclipse Menagerie | [Orin Shadow](inventors/orin-shadow/) | Spark | [`toys/orin-shadow-pocket-eclipse-menagerie/`](toys/orin-shadow-pocket-eclipse-menagerie/) | [pocket-eclipse-menagerie](https://www.autonomous.ai/toys/product/pocket-eclipse-menagerie) |

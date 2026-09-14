@@ -1,0 +1,60 @@
+{
+ "build": {
+  "fork_09": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "fork_09"
+ ],
+ "checked": [
+  "fork_09"
+ ],
+ "checks_ok": true,
+ "entry": "part_fork_09.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_09/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_09"
+ ],
+ "print": {
+  "fork_09": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_09/r0003/overhang-fork_09.log": "20800ab3a32210fb5340e7b03ecd58f6f2fe56fcf14517bd17e239d58635ed57",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_09/r0003/thickness-fork_09.log": "07c95124b6ce35d928350248c830677336d76eec4bb698aaf341811197578d9e"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:fork_09",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Fresh fork_09 r0003 front/top/isometric images inspected together in the normalized component contact sheet. Front shows constant flat slab thickness; top shows one broad rounded head with flowing taper and two short separated tail tips; isometric confirms an uninterrupted planar top, vertical perimeter and intact late fork. No extra solids, missing fork, deformation or visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_09/r0003/visual-packet.json",
+  "packet_sha256": "9e125279d4af9777487d9e29ca7e1d1926f862350f33a353a5cb654484750533",
+  "status": "pass"
+ }
+}

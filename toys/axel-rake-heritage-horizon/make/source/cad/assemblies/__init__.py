@@ -1,0 +1,1 @@
+"""Placed product assemblies."""

@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "scope": "Export/package binding and exact-state presentation after integrated verification; CAD source and35printable part STEP files unchanged.",
+  "export_sha256": "483736a20664b0ed319f4098918d0becf5a8902c925ac5db1a9154cb76de900d",
+  "package_step_sha256": "483736a20664b0ed319f4098918d0becf5a8902c925ac5db1a9154cb76de900d",
+  "reviewed_images_byte_identical": true,
+  "geometry_evidence": "cad/measure/presentation.json matches all35exported solids to unchanged source occurrences by centroid and volume, and regenerates the identical reviewed image pixels.",
+  "resolution": "Regenerate the native assembly package after the STEP export, without writing another STEP, so the package names the completed export hash."
+}

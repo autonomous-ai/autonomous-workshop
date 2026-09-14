@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Wedge edge thickness check fails; roof and base margins need more material.",
+      "evidence": "Iso shows minimal foot margin at wedge corners; numeric thickness failure confirms edge risk.",
+      "part": "white_pawn",
+      "repair": "Reduce wedge footprint to10x8 and raise low roof to8 while keeping total height12."
+    }
+  ],
+  "observation": "Front and iso show the intended wedge and flat foot, but wedge corners approach the foot edge and thickness sampling fails at the edges.",
+  "packet_sha256": "ca800bea7608e1516717bc4bbc15f613789fd61ca4112d7bc7aab98db7384659",
+  "status": "fail"
+}

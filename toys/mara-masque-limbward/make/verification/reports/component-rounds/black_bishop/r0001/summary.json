@@ -1,0 +1,60 @@
+{
+ "build": {
+  "black_bishop": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "black_bishop"
+ ],
+ "checked": [
+  "black_bishop"
+ ],
+ "checks_ok": true,
+ "entry": "part_black_bishop.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_bishop/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "black_bishop"
+ ],
+ "print": {
+  "black_bishop": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_bishop/r0001/overhang-black_bishop.log": "a31d26f9d50ef93042cb114d6c9729acf8060b8c7a85b8e3717a09dd92ebaecb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_bishop/r0001/thickness-black_bishop.log": "fc892428fce3b58187acc3af36c6415d945054ef96167acb668f71bb5cca0732"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:black_bishop",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and top expose diagonal cross and broad truncated peaked crest. Iso shows lower peaked silhouette and scalloped base with supported vanes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_bishop/r0001/visual-packet.json",
+  "packet_sha256": "e04dc510a22a10c0382edc2cbd350f799ffd1182b0c5cc87c1bba81d4b77909e",
+  "status": "pass"
+ }
+}

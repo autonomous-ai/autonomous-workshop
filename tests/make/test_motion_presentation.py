@@ -235,7 +235,7 @@ def test_final_verifier_refuses_missing_motion_review_before_geometry(tmp_path):
     verifier = runpy.run_path(str(TOOLS / "verify_project"))
     project = verifier["_sc_project"](tmp_path)
     (project / "measure/motion.json").write_text('{"conditions":[{"check":"coupled_motion_collision"}]}')
-    result = subprocess.run([sys.executable, str(TOOLS / "verify_project"), str(project)], cwd=project, capture_output=True, text=True)
+    result = subprocess.run([sys.executable, str(TOOLS / "verify_project"), str(project), "--check-motion", "true"], cwd=project, capture_output=True, text=True)
     assert result.returncode == 2 and "MOTION-EVIDENCE.json" in result.stderr
     assert "check_layout" not in result.stdout
 

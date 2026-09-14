@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front shows four circular recessed pips, top one, and iso shows one/three/five. Cube and planar faces are intact; pockets are inset and do not intersect cube edges. Canonical rendering separately preserves contrasting recess treatment. These current render bytes exactly match the current-attempt views already inspected; only the evidence source binding was refreshed, without geometry or image changes.",
+  "packet_sha256": "fe16bfa0b4e4de6cdacb5a280952146e28e3cbd39152fae3aa8374cb2d1552da",
+  "status": "pass"
+}

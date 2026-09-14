@@ -2,6 +2,7 @@
 from contextlib import redirect_stderr, redirect_stdout
 import io
 import json
+import os
 from pathlib import Path
 import runpy
 import sys
@@ -15,7 +16,6 @@ from tests.make.test_make_round import load_module
 
 
 CHECK = Path(__file__).resolve().parents[2] / 'src/workshop/make/skills/cad/scripts/check_motion'
-PREFIX = 'check_motion progress: '
 
 
 class MotionProgressTests(unittest.TestCase):
@@ -23,9 +23,11 @@ class MotionProgressTests(unittest.TestCase):
     def setUpClass(cls):
         cls.tool = runpy.run_path(str(CHECK))
 
-    def records(self, output):
-        return [json.loads(line[len(PREFIX):]) for line in output.splitlines()
-                if line.startswith(PREFIX)]
+    def setUp(self):
+        environment = patch.dict(os.environ, {'WORKSHOP_PROGRESS': '1',
+                                               'WORKSHOP_PROGRESS_INTERVAL': '0'})
+        environment.start()
+        self.addCleanup(environment.stop)
 
     def condition(self, identifier='escape'):
         return {'id': identifier, 'check': 'linear_motion_collision',
@@ -35,32 +37,27 @@ class MotionProgressTests(unittest.TestCase):
     def parts(self):
         return {'moving': Box(2, 2, 2), 'fixed': Box(2, 2, 2).translate((20, 0, 0))}
 
-    def test_progress_keeps_exact_results_and_is_silent_without_scope(self):
+    def test_progress_keeps_exact_results_and_can_be_silenced(self):
         stderr = io.StringIO()
-        with redirect_stderr(stderr):
+        with redirect_stderr(stderr), patch.dict(os.environ, {'WORKSHOP_PROGRESS': '0'}):
             expected = self.tool['run_condition'](self.condition(), self.parts(), 0)
         self.assertEqual(stderr.getvalue(), '')
-        with redirect_stderr(stderr), self.tool['progress_scope']('checks', enabled=True):
+        with redirect_stderr(stderr):
             actual = self.tool['run_condition'](self.condition(), self.parts(), 0)
         self.assertEqual(actual, expected)
-        self.assertEqual(self.records(stderr.getvalue()), [
-            {'condition': 'escape', 'phase': 'start'},
-            {'condition': 'escape', 'phase': 'sweep', 'step': 0, 'steps': 4},
-            {'condition': 'escape', 'phase': 'complete', 'status': 'pass'},
-        ])
+        self.assertIn('[escape] sweep: 5/5 (100%)', stderr.getvalue())
 
     def test_failed_condition_reports_completion_without_promoting_evidence(self):
         condition = self.condition()
         condition['inputs']['translation'] = None
         expected = self.tool['run_condition'](condition, self.parts(), 0)
         stderr = io.StringIO()
-        with redirect_stderr(stderr), self.tool['progress_scope']('checks', enabled=True):
+        with redirect_stderr(stderr):
             result = self.tool['run_condition'](condition, self.parts(), 0)
         self.assertEqual(result, expected)
         self.assertEqual(result['status'], 'inconclusive')
         self.assertNotIn('clear', result)
-        self.assertEqual(self.records(stderr.getvalue())[-1],
-                         {'condition': 'escape', 'phase': 'complete', 'status': 'inconclusive'})
+        self.assertNotIn('100%', stderr.getvalue())
 
     def test_coupled_sweep_and_drive_phases_are_identified_without_changing_results(self):
         condition = {'id': 'contact-cycle', 'check': 'coupled_motion_collision',
@@ -72,46 +69,39 @@ class MotionProgressTests(unittest.TestCase):
         expected = self.tool['run_condition'](condition, parts, 0)
         self.assertEqual(expected['status'], 'pass', expected)
         stderr = io.StringIO()
-        with redirect_stderr(stderr), self.tool['progress_scope']('checks', enabled=True):
+        with redirect_stderr(stderr):
             result = self.tool['run_condition'](condition, parts, 0)
         self.assertEqual(result, expected)
-        phases = [record['phase'] for record in self.records(stderr.getvalue())]
-        self.assertEqual(phases, ['start', 'coupled-sweep', 'drive-frozen', 'drive-contact', 'complete'])
+        self.assertIn('[contact-cycle] coupled sweep:', stderr.getvalue())
+        self.assertIn('[contact-cycle] drive evidence:', stderr.getvalue())
 
-    def test_nested_condition_diagnostics_restore_parent_and_escape_names(self):
+    def test_nested_condition_diagnostics_restore_parent(self):
         condition = {'id': 'sequence', 'check': 'assembly_sequence',
-                     'inputs': {'steps': [self.condition('child\nwith newline')]}}
+                     'inputs': {'steps': [self.condition('child')]}}
         stderr = io.StringIO()
         with redirect_stderr(stderr):
-            with self.tool['progress_scope']('outer', enabled=True):
+            with self.tool['progresslib'].scope('outer'):
                 result = self.tool['run_condition'](condition, self.parts(), 0)
-                self.tool['report_progress']('after')
-            self.tool['report_progress']('must-stay-silent')
+                self.tool['progresslib'].write('after')
+            self.tool['progresslib'].write('unscoped')
         self.assertEqual(result['status'], 'pass')
-        records = self.records(stderr.getvalue())
-        self.assertEqual(records[0], {'condition': 'sequence', 'phase': 'start'})
-        self.assertEqual(records[1], {'condition': 'child\nwith newline', 'phase': 'start'})
-        self.assertEqual(records[-2], {'condition': 'sequence', 'phase': 'complete', 'status': 'pass'})
-        self.assertEqual(records[-1], {'condition': 'outer', 'phase': 'after'})
-        self.assertEqual(len(stderr.getvalue().splitlines()), len(records))
+        self.assertIn('[child] sweep:', stderr.getvalue())
+        self.assertEqual(stderr.getvalue().splitlines()[-2:], ['[outer] after', 'unscoped'])
 
-    def test_samples_are_throttled_and_capped_but_completion_is_always_reported(self):
+    def test_samples_are_throttled_but_completion_is_always_reported(self):
         stderr = io.StringIO()
-        with redirect_stderr(stderr), self.tool['progress_scope']('long-sweep', enabled=True), \
-                patch.object(self.tool['time'], 'monotonic', return_value=0) as clock:
-            self.tool['report_progress']('start')
+        with redirect_stderr(stderr), self.tool['progresslib'].scope('long-sweep'), \
+                patch.object(self.tool['progresslib'].time, 'monotonic', return_value=0) as clock:
+            reporter = self.tool['progresslib'].Progress('sweep', 1000, interval=30)
             for second in (0, 1, 29, 30, 31, 60):
                 clock.return_value = second
-                self.tool['report_progress']('sweep', step=second, steps=1000)
-            clock.return_value = 60
-            for index in range(100):
-                self.tool['report_progress']('drive-frozen' if index % 2 else 'drive-contact',
-                                             step=index, steps=1000)
-            self.tool['report_progress']('complete', status='pass')
-        records = self.records(stderr.getvalue())
-        self.assertEqual([r['step'] for r in records if r['phase'] == 'sweep'], [0, 30, 60])
-        self.assertEqual(sum('step' in record for record in records), self.tool['MAX_SAMPLE_PROGRESS'])
-        self.assertEqual(records[-1], {'condition': 'long-sweep', 'phase': 'complete', 'status': 'pass'})
+                reporter.advance()
+            reporter.finish()
+        lines = stderr.getvalue().splitlines()
+        self.assertEqual(len(lines), 5)
+        for line, count in zip(lines[1:4], (1, 4, 6)):
+            self.assertIn(f'sweep: {count}/1000', line)
+        self.assertIn('sweep: 6 done in', lines[-1])
 
     def test_json_cli_keeps_evidence_on_stdout_and_progress_on_stderr(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -131,12 +121,11 @@ class MotionProgressTests(unittest.TestCase):
                 status = self.tool['main']()
             self.assertEqual(status, 0, stderr.getvalue())
             payload = json.loads(stdout.getvalue())
-            self.assertEqual(set(payload), {'ok', 'project', 'assembly', 'results'})
+            self.assertEqual(set(payload), {'ok', 'project', 'assembly', 'results', 'deadlineSeconds'})
             self.assertEqual(payload['results'], [self.tool['run_condition'](self.condition(), self.parts(), 0)])
             self.assertTrue(payload['ok'])
-            self.assertEqual(self.records(stderr.getvalue())[0], {'condition': 'assembly', 'phase': 'start'})
-            self.assertEqual(self.records(stderr.getvalue())[-1],
-                             {'condition': 'escape', 'phase': 'complete', 'status': 'pass'})
+            self.assertIn('building assembly.step.py', stderr.getvalue())
+            self.assertIn('[escape] sweep: 5/5 (100%)', stderr.getvalue())
 
     def test_real_runner_timeout_retains_flushed_condition_and_sample_progress(self):
         module = load_module()
@@ -145,20 +134,18 @@ class MotionProgressTests(unittest.TestCase):
             script = root / 'slow_condition.py'
             script.write_text(
                 'import runpy, time\n'
-                f'tool = runpy.run_path({str(CHECK)!r})\n'
-                'with tool["progress_scope"]("aircraft-separates", enabled=True):\n'
-                '    tool["report_progress"]("start")\n'
-                '    tool["report_progress"]("sweep", step=7, steps=1060)\n'
+                f'tool = runpy.run_path({str(CHECK.with_name("progresslib.py"))!r})\n'
+                'with tool["scope"]("aircraft-separates"):\n'
+                '    reporter = tool["Progress"]("sweep", 1060)\n'
+                '    reporter.advance()\n'
                 '    time.sleep(10)\n')
             log = root / 'motion.log'
             done = module.run([sys.executable, str(script)], cwd=root, log=log, timeout=2)
             self.assertEqual(done.returncode, 124)
             text = log.read_text()
             self.assertIn('TIMEOUT after 2s', text)
-            self.assertIn('"condition": "aircraft-separates"', text)
-            self.assertIn('"step": 7', text)
-            self.assertIn('"steps": 1060', text)
-            self.assertNotIn('"phase": "complete"', text)
+            self.assertIn('[aircraft-separates] sweep: 1/1060', text)
+            self.assertNotIn('done in', text)
             result = module.parse_motion(done.stdout, done.returncode, done.stderr)
             self.assertEqual(result['verdict'], 'fail')
             self.assertEqual(result['returncode'], 124)

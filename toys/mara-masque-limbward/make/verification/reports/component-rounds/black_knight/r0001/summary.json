@@ -1,0 +1,60 @@
+{
+ "build": {
+  "black_knight": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "black_knight"
+ ],
+ "checked": [
+  "black_knight"
+ ],
+ "checks_ok": true,
+ "entry": "part_black_knight.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_knight/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "black_knight"
+ ],
+ "print": {
+  "black_knight": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_knight/r0001/overhang-black_knight.log": "ae8c3812de2e36a1c1c53ba5820b11d4906716b4f389329ba37ba7669073347e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_knight/r0001/thickness-black_knight.log": "a16939f8a000b549bee25361d2a6667f0d08a7267daf1b66001cf39709f5b086"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:black_knight",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/iso reveal three asymmetric stair levels on a scalloped flat foot. Top confirms three notches; narrowed tier depth leaves material margin.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_knight/r0001/visual-packet.json",
+  "packet_sha256": "da8458531c70e0cecaef15d55c31bee2c830104cfc842202fea862e30cbe080a",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/part_screen.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/rounds/r0001/thickness-screen.md
+(2.3s, exit 0)
+--- stdout
+part_screen.step.py: 3.16 cm3 solid, grid 0.133 mm (290x323x27), 163809 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.1% of surface below (109 of 163809 samples); thinnest 0.53 mm at (-13.7, 37.5, 0.1) in 7 region(s); no region is a wall, 7 taper(s) at feature edges (0.07% of surface, budget 2%); 15 more within measurement error of the limit
+  PASS  thickness distribution         median 2.40 mm, p95 33.73 mm, max 42.40 mm
+  WARN  hollowable at 1.20 mm wall     0.01 of 3.16 cm3 (0%) in 1 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.53 mm at (-13.7, 37.5, 0.1)     34 samples, 0.6 mm2, runs 8.3 mm, band 0.08 mm
+        2. [taper] 0.67 mm at (6.5, 37.5, 0.1)     27 samples, 0.5 mm2, runs 5.0 mm, band 0.10 mm
+        3. [taper] 0.60 mm at (-0.2, 37.5, 0.1)     22 samples, 0.4 mm2, runs 4.7 mm, band 0.09 mm
+        4. [taper] 0.67 mm at (-4.0, 37.5, 0.1)     12 samples, 0.2 mm2, runs 3.0 mm, band 0.08 mm
+        5. [taper] 0.67 mm at (14.2, 37.5, 0.1)      8 samples, 0.2 mm2, runs 2.3 mm, band 0.07 mm
+        6. [taper] 0.67 mm at (10.5, 37.3, 0.0)      3 samples, 0.1 mm2, runs 1.2 mm, band 0.05 mm
+        ... and 1 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/rounds/r0001/thickness-screen.md
+
+--- stderr

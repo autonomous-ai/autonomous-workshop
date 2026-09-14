@@ -1,0 +1,60 @@
+{
+ "build": {
+  "carrier": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "carrier"
+ ],
+ "checked": [
+  "carrier"
+ ],
+ "checks_ok": true,
+ "entry": "part_carrier.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "carrier"
+ ],
+ "print": {
+  "carrier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0003/overhang-carrier.log": "94389f2b927081288b95075ccaec83893b3e74ca6fdf15e5dade92de95234631",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0003/thickness-carrier.log": "2adc95eb6c692a8f80b830f7cb887ee70dd5ff7d2eeab6d0631e0719d2a06c8f"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:carrier",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front remains flat; top confirms crescent proportions and bore; iso shows the pocket enclosed by a continuous rim, small capture roofs at its ends, and separate stop channel. The formerly breached inner wall is solid.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0003/visual-packet.json",
+  "packet_sha256": "652c8a602124f2bd1b24234d7b92026cfd7a24be4e08efb4d1344f06c5e82291",
+  "status": "pass"
+ }
+}

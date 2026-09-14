@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_sun.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-sun.md
+(15.1s, exit 0)
+--- stdout
+part_sun.step.py: 435.77 cm3 solid, grid 0.390 mm (492x492x48), 377966 surface samples, thickness resolved to 0.195 mm
+  PASS  wall >= 0.80 mm (+/-0.20)      0.0% of surface below (553 of 377966 samples); thinnest 0.39 mm at (36.7, 87.6, 16.1) in 16 region(s); no region is a wall, 13 taper(s) at feature edges and 3 spot(s) too small to be a wall (0.04% of surface, budget 2%); 1152 more within measurement error of the limit
+  PASS  thickness distribution         median 16.77 mm, p95 179.81 mm, max 190.14 mm
+  WARN  hollowable at 1.20 mm wall     361.50 of 435.77 cm3 (83%) in 1 pocket(s)
+  PASS  filament that would save       54.23 cm3, 67.2 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.39 mm at (7.5, -59.7, 16.2)    191 samples, 7.3 mm2, runs 10.0 mm, band 0.73 mm
+        2. [taper] 0.59 mm at (-8.5, 61.5, 16.5)     40 samples, 5.9 mm2, runs 9.2 mm, band 0.64 mm
+        3. [taper] 0.59 mm at (-62.3, -8.6, 16.3)     37 samples, 5.8 mm2, runs 9.3 mm, band 0.62 mm
+        4. [taper] 0.39 mm at (59.9, 7.5, 16.5)    242 samples, 5.6 mm2, runs 9.8 mm, band 0.57 mm
+        5. [spot ] 0.39 mm at (-55.2, 71.1, 16.2)      1 samples, 0.8 mm2, runs 0.0 mm, band 2.13 mm
+        6. [spot ] 0.59 mm at (-71.1, -55.2, 16.3)      2 samples, 0.8 mm2, runs 0.1 mm, band 2.13 mm
+        ... and 10 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-sun.md
+
+--- stderr

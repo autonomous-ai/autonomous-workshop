@@ -1,0 +1,59 @@
+{
+ "build": {
+  "footboard": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "footboard"
+ ],
+ "checked": [
+  "footboard"
+ ],
+ "checks_ok": true,
+ "entry": "part_footboard.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/footboard/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "footboard"
+ ],
+ "print": {
+  "footboard": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/footboard/r0001/overhang-footboard.log": "a84281b8b98f718eeaba833969dca6eb67a04f3c1acb990852d018672ded9e61",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/footboard/r0001/thickness-footboard.log": "de61dd209d4a6d88c861d4a0199e08edacc80c12ce2d77d8e55cd8c9cbc4f674"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:footboard",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/footboard/r0001/visual-packet.json",
+  "packet_sha256": "571c7c40769a5109fa64d9b844e4eb7ff287ef043c7a3bcc503065bc09dfe335",
+  "status": "pending"
+ }
+}

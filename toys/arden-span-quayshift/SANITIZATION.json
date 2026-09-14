@@ -1,0 +1,24 @@
+{
+  "files": [
+    {
+      "path": "make/verification/CAD-GATE.json",
+      "public_sha256": "5a3094ea69e0f62afdb78e434dcc306313a81bfd285dd2745aea9d9113a84c03",
+      "redactions": [
+        "workshop-run-root"
+      ],
+      "source_sha256": "14e653316034d68ed180639b3bbe75bae153095f1070609a4779809f82915971"
+    },
+    {
+      "path": "make/product/assembled.step.json",
+      "source_sha256": "0505310295a49bb30962fdfb2e01950d956e8faf96422f25aef976618cfc4e5e",
+      "public_sha256": "c8c45fdac857ee84ad473ec57f1ffe9adfc27f71a65df9315beb0538a884b3e1",
+      "redactions": [
+        "operator-checkout-and-python-environment-prefix"
+      ],
+      "description": "2060 external dependency paths use <PYTHON_SITE_PACKAGES> instead of the operator checkout. Original sourceClosureHash remains historical provenance; the redacted dependency list cannot replay that closure identity."
+    }
+  ],
+  "kind": "autonomous-workshop.public-archive-sanitization",
+  "policy": "Host-local absolute path prefixes are replaced with stable placeholders. Source and public hashes preserve an auditable one-way projection without disclosing the operator machine layout.",
+  "schema_version": 1
+}

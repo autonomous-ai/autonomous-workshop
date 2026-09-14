@@ -517,6 +517,12 @@ MAX_TURN_MINUTES = MAX_NATIVE_TURN_SECONDS // 60
 MIN_TURN_MINUTES = MIN_AGENT_TURN_SECONDS // 60
 
 
+def _check_motion(value: str) -> bool:
+    if value.lower() not in ("true", "false"):
+        raise argparse.ArgumentTypeError("expected true or false")
+    return value.lower() == "true"
+
+
 def _turn_minutes(value: str):
     """Parse one native turn boundary: exact minutes, or ``none`` for no clock."""
 
@@ -561,7 +567,9 @@ def _start_run(
     max_rounds: int = DEFAULT_MAX_ROUNDS,
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     turn_minutes: Any = None,
+    check_motion: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
+    revision_snapshot: Optional[bytes] = None,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
 ) -> Mapping[str, Any]:
@@ -641,7 +649,9 @@ def _start_run(
         max_rounds=max_rounds,
         **({"max_tokens": max_tokens} if max_tokens != DEFAULT_PRODUCT_TOKENS else {}),
         **_turn_boundary_options(turn_minutes),
+        **({"check_motion": True} if check_motion else {}),
         wish_reference_files=wish_reference_files,
+        **({"revision_snapshot": revision_snapshot} if revision_snapshot is not None else {}),
         github_publish_requested=github,
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
@@ -680,6 +690,7 @@ def _wish(args: argparse.Namespace) -> int:
         max_rounds=args.max_rounds,
         max_tokens=args.max_tokens,
         turn_minutes=args.turn_minutes,
+        check_motion=args.check_motion,
         wish_reference_files=wish_reference_files(loaded_references),
         progress=progress,
         live_progress=live_progress,
@@ -688,6 +699,35 @@ def _wish(args: argparse.Namespace) -> int:
         _print_json(receipt)
     else:
         _print_native_receipt(receipt, verb="Run")
+    return _native_exit_code(receipt, strict=args.strict)
+
+
+def _fix(args: argparse.Namespace) -> int:
+    from workshop.workflow.revision import prepare_revision
+
+    if args.prompt_file is not None:
+        try:
+            prompt = args.prompt_file.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            raise WorkshopError("cannot read correction prompt file") from exc
+    else:
+        prompt = args.prompt
+    wish, snapshot = prepare_revision(args.source, prompt)
+    runtime = manager_runtime_selection(
+        args.agent, model=args.model, reasoning_effort=args.effort,
+    )
+    progress = sys.stderr if args.json else sys.stdout
+    receipt = _start_run(
+        wish, workflow=workshop_effort("spark"), runtime=runtime,
+        make_mode=args.make_mode,
+        github=args.github, max_tokens=args.max_tokens,
+        turn_minutes=args.turn_minutes, check_motion=args.check_motion, revision_snapshot=snapshot,
+        progress=progress, live_progress=_LiveWishProgress(progress, runtime.spec.display_name),
+    )
+    if args.json:
+        _print_json(receipt)
+    else:
+        _print_native_receipt(receipt, verb="Revision")
     return _native_exit_code(receipt, strict=args.strict)
 
 
@@ -957,6 +997,7 @@ def _start(args: argparse.Namespace) -> int:
                     max_rounds=args.max_rounds,
                     max_tokens=args.max_tokens,
                     turn_minutes=args.turn_minutes,
+                    check_motion=args.check_motion,
                     wish_reference_files=reference_files,
                     progress=progress,
                     live_progress=live_progress,
@@ -1104,6 +1145,7 @@ def _resume(args: argparse.Namespace) -> int:
     receipt = resume_native_run(
         args.product_id,
         **({"runtime_device_from": args.runtime_device_from} if args.runtime_device_from is not None else {}),
+        check_motion=args.check_motion,
         **({"adopt_turn_budget": True} if args.turn_budget else {}),
         **({"max_tokens": args.max_tokens} if args.max_tokens is not None else {}),
         **_turn_boundary_options(args.turn_minutes),
@@ -1788,6 +1830,8 @@ def parser() -> argparse.ArgumentParser:
         "--strict", action="store_true", help="with --once: exit 1 when the run waits"
     )
     start.set_defaults(handler=_start)
+    start.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
+                       help="enable Make motion checks and animation review for each new run (default: false)")
     start.add_argument(
         "--turn-minutes",
         type=_turn_minutes,
@@ -1969,8 +2013,29 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     wish.set_defaults(handler=_wish)
+    wish.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
+                      help="enable Make motion checks and animation review (default: false)")
     wish.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
                       help="Codex input-plus-output token cap for the whole product (default: %(default)s)")
+
+    fix = subcommands.add_parser("fix", help="clone a published toy into a new Spark correction run")
+    fix.add_argument("source", type=Path, metavar="TOY_DIRECTORY")
+    correction = fix.add_mutually_exclusive_group(required=True)
+    correction.add_argument("--prompt", help="exact correction brief")
+    correction.add_argument("--prompt-file", type=Path, help="UTF-8 correction brief, preserved verbatim")
+    fix.add_argument("--agent", choices=tuple(SUPPORTED_MANAGER_IDS), default=DEFAULT_MANAGER_ID)
+    fix.add_argument("--model")
+    fix.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS)
+    fix.add_argument("--make", dest="make_mode", choices=("print", "mixed"), default="print",
+                     help="Make scope: print (default) or mixed materials")
+    fix.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
+                      help="enable Make motion checks and animation review (default: false)")
+    fix.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS)
+    fix.add_argument("--turn-minutes", type=_turn_minutes, default=None)
+    fix.add_argument("--github", action="store_true", help="also commit and push the new public archive")
+    fix.add_argument("--json", action="store_true")
+    fix.add_argument("--strict", action="store_true")
+    fix.set_defaults(handler=_fix)
 
     status = subcommands.add_parser(
         "status", help="inspect one native Wish checkpoint without running a model"
@@ -1983,6 +2048,8 @@ def parser() -> argparse.ArgumentParser:
         "resume", help="resume the exact frozen native Manager session for one Wish"
     )
     resume.add_argument("product_id", help="saved Wish id")
+    resume.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
+                        help="enable Make motion checks and animation review on resume, including older runs (default: false)")
     resume.add_argument("--max-tokens", type=_token_budget, default=None, metavar="N",
                         help="explicit total Codex token cap; prior usage remains charged; omitted keeps the saved budget")
     resume.add_argument(

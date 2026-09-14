@@ -3,6 +3,18 @@ name: cad
 description: Create, modify, inspect, and validate STEP-first parametric CAD parts and assemblies. Use for natural-language CAD specs, reference images, 2D technical drawings, STEP/STP generation or direct inspection, Python CAD source, source-level joints, selector references, geometry facts, measurements, mating deltas, and on-request native GLB viewing exports from CAD geometry. Do not use during a host-identified Workshop v8/v9 early-proof turn; use the host's exact proof commands and load this broad skill only after the proof marker.
 ---
 
+**Motion verification is opt-in.** Standalone `make_round` and `verify_project`
+default to false; pass `--check-motion true` to enable it. Inside Workshop,
+read the immutable run-root `MAKE-OPTIONS.json`: the tools inherit its
+`check_motion` value and reject contradictory flags. A missing options file
+in an older materialized run retains its mandatory motion policy. When false,
+skip motion sweeps and required animation/reconstruction/review, even if a
+manifest or assembly claims exist. Motion is unverified, never passed; do not
+claim assemblability or working motion from skipped evidence. Build, fit,
+print gates and still-image review remain required. These rules take
+precedence over motion-specific requirements in references and templates.
+
+
 # CAD generation, inspection, and validation
 
 Provenance: maintained in [earthtojake/text-to-cad](https://github.com/earthtojake/text-to-cad).
@@ -103,6 +115,26 @@ docs show recommended workflows, not every flag.
 **Bootstrap before the first run, not after the first failure.** `requirements.txt` pins `cadgen`, whose own metadata declares `requires-python = ">=3.11"` — a macOS system `python3` is often older and pip will refuse to resolve it, so create a project venv on a modern interpreter rather than pip-installing into the system one, then `python -m pip install -r <skill-dir>/requirements.txt`. That one line is enough for every script here: `numpy` and `scipy` arrive with `build123d`, and `shapely` — which `repair_mesh` needs — with `cadgen` itself. Check that up front; discovering it mid-workflow costs a full build round.
 
 **Streams.** stdout carries the result; stderr carries progress, timing, and failures, and the two never interleave. Every tool answers on stdout — `gen` prints `<outcome> <package path>` per target — so `2>/dev/null` leaves a parseable result and `>/dev/null` a readable log. JSON on stdout is always compact; pipe through `jq .` to read it. For machine-readable output: `gen` and `export` take `--json`; `inspect` already emits JSON and takes `--format text` for prose. `--verbose` adds stage timing (and full tracebacks) on stderr. Output volume does not grow with model size — a 600-occurrence assembly logs the same dozen lines a single part does.
+
+**A motion sweep is bounded, and an unfinished one is never clear.** Its cost
+is set by the manifest, not by the model -- `steps` x pairs of Boolean
+operations -- so `check_motion` prints the sample count it is about to spend
+before the first sweep, and `verify_project` gives it a 900s budget
+(`WORKSHOP_MOTION_DEADLINE_SECONDS`; `0` removes the bound). Run directly it is
+unbounded unless you pass `--deadline SECONDS`. A condition that runs out of
+budget stops and reports `inconclusive` with the sample it reached, and that
+**fails the gate even with `--allow-inconclusive`**: a sweep that was cut off
+measured nothing past its stopping point. Lower `steps`, split the manifest, or
+raise the budget deliberately -- never read a budget stop as a clear path.
+
+**Long motion runs count themselves down.** `check_motion` and
+`motion_presentation.py` spend minutes to hours in Boolean geometry and
+tessellation, so they report on stderr which assembly they are building, which
+condition is running, and `k/N, elapsed, ~left` through every sweep, pose and
+rendered frame. A silent one is hung; a counting one is working, and the
+estimate says whether to wait. Lines are throttled to one per 10s
+(`WORKSHOP_PROGRESS_INTERVAL`), and `WORKSHOP_PROGRESS=0` silences them. stdout
+and exit statuses are unchanged.
 
 **Failures** print the exception and the frames *in your own generator*, not the runtime's:
 
@@ -225,7 +257,7 @@ in the toolchain catches what it catches.
 - **`check_layout` — before "done".** Rename scaffold directories (`project_name`, `object_name`) before the first build. A generator over the step 7 layout thresholds with no `part_*.step.py` beside it is unfinished work, and `oversized-library` is over the line whether or not the model is otherwise perfect: once a project has part entries it owes the full layout. Migrating a tier is a pure move — fingerprint every entry's volume, solid count and bbox from source before and after, and diff.
 - **`validate` and `interfere` — before "sound".** A finding (`invalidTopology`, `openShell`, `nonPositiveVolume`, `noSolid`, `selfIntersecting`) that is not an intended surface model, a reported clash, a part floating free, or a feature unjustified against the brief each block completion. No render can establish the *absence* of a clash. An `{"ok":false}` naming no finding is usually not this model: `cadgen` scans the whole worktree, so one stale `*.py` with a pre-migration `gen_step()` envelope takes `validate` and `refs` down for every model at once — check that before editing geometry.
 - **`check_fit` — before "fits the bed".** It checks the four things nothing else covers: the part sits on the bed (`min(Z) == 0`), its footprint fits, it has positive volume, and the generator runs. A part still in assembly coordinates passes `validate` and `interfere` and cannot be printed. It reports but does not fail on disconnected bodies and a missing per-project audit; `--strict` promotes both.
-- **`check_motion` — before "assemblable".** `validate` and `interfere` answer whether parts are sound and whether they overlap once assembled, never whether they can be brought together or whether a connector holds. Final `verify_project` refuses to skip motion when the README/spec documents an insertion, seating, pressing, sliding, screwing, snapping, threading or locking action; part count alone does not trigger it. Write **both** directions of every joint — the one it assembles along, and the one it must not, via `"expect": "blocked"`; a dovetail only checked for coming apart passes as a plain pocket. **A blocked sweep freezes its obstacles, so it is not proof when a removable obstacle is itself free:** declare the complete `retention` chain, and every removable support needs its own passing blocked condition until the graph reaches a genuine fixed frame/housing root. Never mark a loose gate, cap, key, pin, screw, magnet or catch as fixed to close the audit. Give each separately installed rigid part with constrained access its actual insertion path — final-pose rotation does not prove the camshaft can enter the frame. See `references/motion-manifests.md`.
+- **`check_motion` — before "assemblable".** `validate` and `interfere` answer whether parts are sound and whether they overlap once assembled, never whether they can be brought together or whether a connector holds. When motion verification is enabled, final `verify_project` requires motion when the README/spec documents an insertion, seating, pressing, sliding, screwing, snapping, threading or locking action; part count alone does not trigger it. Write **both** directions of every joint — the one it assembles along, and the one it must not, via `"expect": "blocked"`; a dovetail only checked for coming apart passes as a plain pocket. **A blocked sweep freezes its obstacles, so it is not proof when a removable obstacle is itself free:** declare the complete `retention` chain, and every removable support needs its own passing blocked condition until the graph reaches a genuine fixed frame/housing root. Never mark a loose gate, cap, key, pin, screw, magnet or catch as fixed to close the audit. Give each separately installed rigid part with constrained access its actual insertion path — final-pose rotation does not prove the camshaft can enter the frame. See `references/motion-manifests.md`.
 - **`check_mount` — before "it can hold the part".** Deriving a seat with `cadmount` is not proof the model has one: the generator may never have subtracted it, cut it in the wrong place, or eaten it with a later feature — and `validate`, `interfere`, `check_fit` and `check_motion` pass all three. The gate places the component's own STEP at a declared pose and measures the built solids for clash, clearance, and whether a screw reaches each hole from either side. Keep every bought/foreign STEP under `ref/` and declare it in `measure/mounts.json` with the checksum from its catalog row; final `verify_project` rejects a supplier file hidden elsewhere, then requires every STEP under `ref/` to have a mount row whose `sha256` matches. A derived envelope cannot replace the supplier source. `"bolts": false` is the escape hatch for a strapped or glued component. See `references/bought-parts.md`.
 - **`check_mesh` — on every printable entry, beside `check_fit`.** It builds the entry from source and tessellates it, then answers what the slicer will see: watertight, manifold, winding, one shell, positive volume, bed. `check_fit` measures the same solid's B-rep, so the two are cheap and expensive halves of one question rather than a staleness pair — nothing is exported here to go stale. A non-manifold edge fails: the subject is one printed part, so an edge four faces share is a defect however normal it is between two bodies (`--assembly` demotes it for a combined entry). `scripts/repair_mesh` writes nothing; it repairs in memory to name which defect class you have, and the fix goes in the generator. See `references/repair-loop.md`.
 - **`check_thickness` — before "print-ready".** `<project>/part_<role>.step.py --nozzle 0.4` fails a wall under two extruded lines, which a slicer drops or prints as two perimeters with a gap while the STEP stays perfect. Hollow in the source with `scripts/cadprint.py`, never a bare `offset(solid, -wall)`: that shrinks the solid rather than shelling it, and every gate passes the undersized result. See `references/print-optimisation.md`.

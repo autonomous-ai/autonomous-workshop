@@ -161,6 +161,47 @@ cap enforcement. Private retained telemetry was recovered through the new reader
 without changing its aggregate counters. The failed native attempt is preserved;
 this recovery does not establish product completion or repair quality.
 
+## Large native visual-tool records (2026-09-13)
+
+A blind-review subagent can return several rendered images in one
+`response_item` / `custom_tool_call_output` record. Base64 image data can push
+that otherwise valid record beyond the ordinary 4 MiB line bound and stop a run
+after the creative work has finished. The streaming validator now accepts that
+exact outer and payload type pair, validates the complete JSON with the same
+depth, key, atom, duplicate-key and UTF-8 bounds, and discards the body. The
+record cannot contribute usage; later top-level token notifications remain the
+only counter source. Other oversized `response_item` payload types and all
+other unsupported oversized record kinds still fail closed.
+
+## Replayed follow-up usage snapshots (2026-09-14)
+
+Codex 0.154.0 can begin a subagent follow-up by repeating the preceding task's
+final cumulative and last-request counters, then complete without fresh usage.
+The adapter previously rejected this snapshot as an ambiguous task baseline.
+It now ignores an exact counter replay under the same model when cumulative
+usage differs from last-request usage. The first fresh record still must prove
+either cumulative continuation or a reset; duplicate snapshots do not consume
+that pending boundary or advance the observation timestamp.
+
+`total == last` retains its reset meaning even when it matches an earlier
+single-request task. Changed last-request counters, unexplained increments,
+regressions, and a replay under a different model remain fail-closed. Synthetic
+tests cover root and child tasks, duplicate-only follow-ups, subsequent
+continuation and reset, and unchanged product-budget observations. Offline
+replay recovered the affected product's same 9,425,297-token observation across
+three threads. No private records were edited and no native session resumed;
+this accounting recovery is not evidence that Make completed.
+
+## Resume terminal-usage reconciliation (2026-09-13)
+
+Supported Codex resume paths have emitted `turn.completed` usage in two forms:
+request-local counters and cumulative root-thread counters. The rollout ledger
+remains the accounting authority. Reconciliation now accepts either exact
+monotonic relationship: observed root usage must advance beyond the saved
+baseline and must cover either the baseline plus the terminal delta or the
+terminal cumulative counters themselves. Missing, stale, regressing or
+otherwise inconsistent terminal usage still blocks the proposal.
+
 
 ## Bound discovery by metadata (2026-09-09)
 

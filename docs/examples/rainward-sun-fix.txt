@@ -1,0 +1,28 @@
+Create a corrected revision of Rainward Sun while preserving its historical
+backgammon rules, 24-lane topology, setup, capacity and overall Sun dimensions.
+
+1. Remove the two block-like crest lobes from the central bar. Keep the bar
+spacious, circular and unobstructed. If an orientation cue is needed, use a
+low, smooth engraved solar-prominence motif on the far side, outside every
+captured-piece landing area.
+
+2. Replace the blank dice with finished dice whose 1–6 pip layouts are modeled
+as shallow recessed geometry directly in CAD, using standard opposite pairs
+1–6, 2–5 and 3–4. Canonical renders must show the recessed pips filled in a
+contrasting dark color. The instructions may require filling the engraved
+recesses with paint after printing, but must not require the user to position
+or draw the pips manually. Do not ship visually blank cubes. Do not claim
+physical statistical fairness without testing.
+
+3. Redesign both checker silhouettes so an unprimed viewer reads them as
+plasma droplets, solar rain or comet-like flowing matter—not animal heads,
+forks or generic polygon tokens. Give both a rounded condensed leading body
+and a swept, tapering plasma tail. One player has one flowing tail; the other
+has a clearly bifurcated tail that splits near its tip with rounded branches.
+Avoid square heads, sharp fragile tips and parallel prongs resembling ears.
+Keep flat stable undersides, stackability, minimum printable thickness and
+the full 15-piece lane capacity.
+
+Blind visual review must separately confirm that the dice visibly have pips,
+the counters read as flowing plasma rather than creatures, and the central
+bar contains no unexplained block-like objects.

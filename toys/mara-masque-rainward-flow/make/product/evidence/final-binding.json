@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "review_round": 2,
+  "binding_note": "Final verifier preflight accepted same image/concept review with passing round reports. Its full passing run regenerated70 reports; review print hash map refreshed to those exact final reports without changing geometry, images, reviewer observations or judgments. Pipeline report itself remains unedited.",
+  "verification_sha256": "befbc7ed292b8a96039608f07dc9c3a8dcd9450047ecfe51660d99bfa4a83b41",
+  "signature_review_sha256": "e36546fc16cae38d469b795c9e556ab039706ba821fa61ca4dbe159ef1343034"
+}

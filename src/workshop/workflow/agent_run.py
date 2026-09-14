@@ -70,6 +70,12 @@ from workshop.workflow.make_mode import (
     validate_make_mode,
 )
 
+from workshop.workflow.revision import (
+    MAX_REVISION_BYTES,
+    REVISION_INPUT,
+    materialize_revision,
+    revision_input,
+)
 
 BudgetAuthority = Callable[[Mapping[str, Any]], bool]
 
@@ -798,8 +804,12 @@ class AgentRun:
         manager_reasoning_effort: Optional[str] = None,
         turn_seconds: Optional[int] = None,
         turn_untimed: bool = False,
+        check_motion: bool = False,
         wish_reference_files: Optional[Mapping[str, bytes]] = None,
+        revision_snapshot: Optional[bytes] = None,
     ) -> "AgentRun":
+        if type(check_motion) is not bool:
+            raise ContractError("agent run check_motion must be boolean")
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
         if type(turn_untimed) is not bool:
@@ -839,6 +849,7 @@ class AgentRun:
             )
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
         wish_reference_inputs = _wish_reference_inputs(wish_bytes, wish_reference_files)
+        revision_inputs = revision_input(wish_bytes, revision_snapshot)
         try:
             requested = Path(run_root)
         except TypeError as exc:
@@ -1074,6 +1085,9 @@ class AgentRun:
                 0o400,
             ),
             (PurePosixPath("WISH.json"), wish_bytes, 0o400),
+            (PurePosixPath("MAKE-OPTIONS.json"),
+             json.dumps({"schema_version": 1, "check_motion": check_motion},
+                        sort_keys=True, separators=(",", ":")).encode("utf-8"), 0o400),
             (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
             (
                 PurePosixPath(MANAGER_PROJECT_PATH),
@@ -1094,6 +1108,7 @@ class AgentRun:
         all_input_files.extend(inventor_skill_files)
         all_input_files.extend(inventor_agent_files)
         all_input_files.extend(wish_reference_inputs)
+        all_input_files.extend(revision_inputs)
         all_input_files.sort(key=lambda item: item[0].as_posix())
         input_paths = [relative.as_posix() for relative, _, _ in all_input_files]
         if len(input_paths) != len(set(input_paths)):
@@ -1108,6 +1123,7 @@ class AgentRun:
         total_input_bytes = (
             sum(len(content) for _, content, _ in all_input_files)
             - reference_input_bytes
+            - sum(len(content) for _, content, _ in revision_inputs)
         )
         if total_input_bytes > MAX_AGENT_INPUT_BYTES:
             raise ArtifactError("agent run inputs exceed their total byte limit")
@@ -1199,6 +1215,8 @@ class AgentRun:
         references_root = selected / WISH_REFERENCES_DIRECTORY
         if references_root.exists():
             os.chmod(references_root, 0o500)
+        if revision_snapshot is not None:
+            materialize_revision(selected, revision_snapshot)
         core: dict[str, Any] = {
             "schema_version": 4 if selected_effort is not None else 3,
             "kind": AGENT_RUN_CHECKPOINT_KIND,
@@ -1481,6 +1499,7 @@ class AgentRun:
             size_limit = (
                 MAX_WISH_REFERENCE_BYTES
                 if _is_wish_reference_path(item["path"])
+                else MAX_REVISION_BYTES if item["path"] == REVISION_INPUT
                 else MAX_AGENT_INPUT_BYTES
             )
             if type(item["size"]) is not int or not 0 <= item["size"] <= size_limit:
@@ -1498,7 +1517,7 @@ class AgentRun:
             input_content[relative.as_posix()] = content
             if _is_wish_reference_path(relative.as_posix()):
                 reference_total += size
-            else:
+            elif relative.as_posix() != REVISION_INPUT:
                 total += size
         if (
             len(observed_paths) != len(set(observed_paths))
@@ -1527,6 +1546,7 @@ class AgentRun:
                     or (mode == "mixed" and mixed_prefix + "SKILL.md" not in mixed_paths)):
                 raise StateConflict("agent run domain skills differ from its frozen Make mode")
         _verify_wish_reference_inputs(input_content, observed_paths)
+        revision_input(input_content["WISH.json"], input_content.get(REVISION_INPUT))
         if any(path == "catalog" or path.startswith("catalog/") for path in observed_paths):
             raise StateConflict("product projects must not contain an Inventor catalog")
         legacy_catalog = self.run_root / "catalog"
@@ -1888,6 +1908,8 @@ class AgentRun:
         *,
         reason: str,
         token_budget_skill_root: Optional[Path] = None,
+        motion_skill_root: Optional[Path] = None,
+        check_motion: Optional[bool] = None,
     ) -> tuple[dict[str, Any], ...]:
         """Bring the run's host-owned domain skills up to the installed source.
 
@@ -1899,13 +1921,21 @@ class AgentRun:
         skills the run already carries are touched; a skill absent from the run
         is never introduced.  Every refresh appends one owner-only record under
         host state and returns the manifest changes it made.
+
+        A motion migration may refresh only the carried Make finalizer, even
+        for a pre-token-budget run. check_motion rebinds the root option through
+        this same verified input writer; it does not alter skills by itself.
         """
 
         if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 512:
             raise ContractError("domain skill refresh reason must be a short string")
         if not isinstance(domain_skill_roots, Mapping):
             raise ContractError("domain skill roots must be a mapping")
+        if check_motion is not None and type(check_motion) is not bool:
+            raise ContractError("agent run check_motion must be boolean")
         payload = self._load()
+        if check_motion is not None and payload["status"] == "complete":
+            raise TransitionError("a completed agent run has no motion policy to rebind")
         by_path: dict[str, dict[str, Any]] = {
             item["path"]: dict(item) for item in payload["inputs"]
         }
@@ -1922,11 +1952,15 @@ class AgentRun:
             if not _uses_token_budget(payload):
                 raise ContractError("review-tool refresh requires a token-budget run")
             roots["autonomous-workshop"] = token_budget_skill_root
+        elif motion_skill_root is not None:
+            roots["autonomous-workshop"] = motion_skill_root
+            review_paths = {"scripts/stage_proposal.py"}
         for name, source_root in sorted(roots.items()):
             if (
                 not isinstance(name, str)
                 or _AGENT_SKILL_NAME.fullmatch(name) is None
-                or (name == "autonomous-workshop" and token_budget_skill_root is None)
+                or (name == "autonomous-workshop"
+                    and token_budget_skill_root is None and motion_skill_root is None)
             ):
                 raise ContractError("domain skill name is invalid")
             prefix = ".agents/skills/%s/" % name
@@ -1982,13 +2016,33 @@ class AgentRun:
                         "mode": mode,
                     }
                 )
+        if check_motion is not None:
+            path = "MAKE-OPTIONS.json"
+            content = json.dumps({"schema_version": 1, "check_motion": check_motion},
+                                 sort_keys=True, separators=(",", ":")).encode("utf-8")
+            digest = _sha256(content)
+            previous = by_path.get(path)
+            if previous is None or previous["sha256"] != digest:
+                # This is a host-owned input rebind, never an agent edit.
+                # Refuse an untracked file instead of adopting or replacing it.
+                target = self.run_root / path
+                if previous is None and (target.exists() or target.is_symlink()):
+                    raise StateConflict("untracked MAKE-OPTIONS.json blocks motion policy adoption")
+                writes.append((PurePosixPath(path), content, 0o400))
+                by_path[path] = {"path": path, "sha256": digest,
+                                 "size": len(content), "mode": 0o400}
+                changes.append({"path": path,
+                                "previous_sha256": None if previous is None else previous["sha256"],
+                                "previous_mode": None if previous is None else previous["mode"],
+                                "sha256": digest, "mode": 0o400})
         if not changes:
             return ()
         inputs = sorted(by_path.values(), key=lambda item: item["path"])
         if len(inputs) > MAX_AGENT_INPUT_FILES:
             raise ContractError("domain skill refresh exceeds the agent input file limit")
         total = sum(
-            item["size"] for item in inputs if not _is_wish_reference_path(item["path"])
+            item["size"] for item in inputs
+            if not _is_wish_reference_path(item["path"]) and item["path"] != REVISION_INPUT
         )
         if total > MAX_AGENT_INPUT_BYTES:
             raise ContractError("domain skill refresh exceeds the agent input byte budget")

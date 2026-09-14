@@ -1,5 +1,25 @@
 # Autonomous Workshop product-run constitution
 
+## Operator-selected motion verification
+
+Read the immutable run-root `MAKE-OPTIONS.json` before Make. Its
+`check_motion` is false by default; `workshop wish`, `start`, or `fix`
+with `--check-motion true` enables it for that run. Every operator resume
+reselects this option, defaulting to false; reread it even if this session
+previously enabled motion. The host migrates older runs before resuming them.
+If the file is absent in an unmigrated run, retain its original motion policy.
+
+When false, skip the Python motion sweeps, motion-manifest authoring solely
+for those checks, operating-animation generation/reconstruction, and the
+independent motion review. This takes precedence over motion requirements in
+domain skills, templates, and the references below. Do not run those tools
+manually to compensate for the skipped gate. Record motion as unverified,
+never passed. Build, fit, print gates, still-image signature review, and the
+Wish's required function remain in scope. Still images cannot prove motion.
+When true, apply the existing insertion/retention checks and, for coupled
+mechanisms, animation and independent motion review.
+
+
 This file governs one native Codex session launched by the Workshop host for
 one exact Wish. It does not contain the working rules for coding agents that
 maintain the Autonomous Workshop source repository.
@@ -196,6 +216,12 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   image-to-cad gate. Do not `cat`, `rg`, or `sed` through skill scripts to
   learn their flags, and open a full report only when a summary names a
   failure you cannot place.
+- For Spark, spend the baseline phase on the parts before the whole. Model each
+  distinct physical component in its own `part_<role>.step.py`, run and pass an
+  isolated `make_round --component part_<role>.step.py` visual review-and-fix
+  loop for every component, and only then create/review the combined entry with
+  `--require-component-passes`. If an assembly repair changes a component,
+  repeat that component's isolated loop before reviewing the assembly again.
 - Inspect each Make round's visual packet for misplaced parts, proportion and
   size mismatches, missing/extra geometry, visible intersections and form errors.
   Record concrete native observations through `make_round --record-visual` so

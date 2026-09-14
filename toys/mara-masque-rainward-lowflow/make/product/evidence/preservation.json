@@ -1,0 +1,723 @@
+{
+  "schema_version": 1,
+  "kind": "current-source-preservation-audit",
+  "product_id": "wish-20260912-042535-b2afa8bf",
+  "subject_sha256": "ac82312361d6b147956b833b51651591e08fd909a8c918936622494fc430000f",
+  "source_archive_sha256": "857448d95613d0df95d7eb87b72f9d1c98140945ff54c83c0eae773a7a6aa0ba",
+  "script_sha256": "3add6114200eb0c94cc4dcdf3ac64e083bee68a56ee4f690c900a9a8743cc637",
+  "current_artifact_sha256": {
+    "cad/rainward_lib.py": "20eb910707c32018e194796646d8e38ed0f7486b117d9d7d1cf9a8c216bbb0d7",
+    "RULES.md": "d601a858b70b4c1685dced91c7f176d73e4779a3ad784e9b13c7fc88d1fd9d66",
+    "cad/part_cup_1.step.py": "c4eb1d8c723674228c870e08d44c01aad68567399f4bbe0d68404842f6182be9",
+    "cad/part_cup_2.step.py": "3d75b506ab5e0c9955c8fee191a6b3fdbc8174dae8396e08b7dfb480023fd509",
+    "cad/part_die_1.step.py": "0633cd852bf3f12e2830016a4670e556cddb71545536661b622f56dd8cd46825",
+    "cad/part_die_2.step.py": "70d495718e831930ff1fbc3031114c2124beffac56c123123dc2219df9447c38",
+    "cad/part_fork_01.step.py": "f9ae2ba0ba829dc7409b35a6d516b609b865d3a0aa6d17cfc3bfc48f7bb5f606",
+    "cad/part_fork_02.step.py": "b7fd69d0c9bd26f0443ccbdb06a2948362acb0c252c077093918bc4a3deeb1d1",
+    "cad/part_fork_03.step.py": "c97fc0e571e86edc479f75ffcd2e8353fd399cfe923f131174878e0f491cc375",
+    "cad/part_fork_04.step.py": "14ef0485d5e1f284fcfe7e1ecce4864242be31bca5397f908f5a4d7cc23feb3d",
+    "cad/part_fork_05.step.py": "d99264e42259d73e669109011087d20ff13675e12900692a951ef05468eda635",
+    "cad/part_fork_06.step.py": "94f031004ab901f171f56a274620a1a7df5db98394a648ebefe60328888b70d7",
+    "cad/part_fork_07.step.py": "cb51970cb33c1e20f53fd5a68e39a3428e906cb6d62d42bfc9d43147d69ca64f",
+    "cad/part_fork_08.step.py": "ca0b43b38e6f6881ad8c47b267b352c4af350357729fb3c2f82daff0b3d67633",
+    "cad/part_fork_09.step.py": "9a3c1731112caed55b5d402a56ddc45ff96fba46a33bfa32111c4b0a26a4cd03",
+    "cad/part_fork_10.step.py": "ddc631da84b926ba9a6550c6eaa51f980261094b35489c008084b92222c80010",
+    "cad/part_fork_11.step.py": "b37e840841656af10623f56ea9147aaf677464ffb55e644e3445e3d299801d8c",
+    "cad/part_fork_12.step.py": "507062c1374140ab8e6aaccac8f1b3256bada908fbadb4106960b3711c637a5d",
+    "cad/part_fork_13.step.py": "52388f7e0a96320b0a3d59657489cb61598818497d8ee1de2be96e26182d1ab8",
+    "cad/part_fork_14.step.py": "b336e28b58ebdcec0f43f53e92c8df3e204a86355f7b24c6c5a07f3e3e654425",
+    "cad/part_fork_15.step.py": "38f8082cb99688ec4a593e77db3b02c7ef7a4b74cb04ff035427eb5b0d1d7faa",
+    "cad/part_single_01.step.py": "a81a5bcb96e0cc554da131f56b3abec1c02301614d4d4224c4da9703cffbecb6",
+    "cad/part_single_02.step.py": "de052475bec74fb2e6eb794cc7446b10203da3bd9df9ae86db172c8f7f9e4994",
+    "cad/part_single_03.step.py": "865c2df19cac9a324e3bc56ea86ae9656c1cc511615f907eab88ca4bc547fd97",
+    "cad/part_single_04.step.py": "d1504db706967843789adc9bb9ea206acab9b8aebd3933938c6c71a3660a09be",
+    "cad/part_single_05.step.py": "bf6719891a385d0c19952095892289194cc5ec91d8cc3dbf10c2337e19ba7e51",
+    "cad/part_single_06.step.py": "03312fb85297d66181c9aacd90e8df153c4948efe530ea221b74344e3df43e28",
+    "cad/part_single_07.step.py": "58486945267d62690fc65c7c57a88b03c9208acadb43a8e0fd14eb5a5177f463",
+    "cad/part_single_08.step.py": "ec2944e58d09679b1febacd8518e811ad9c5527a85c9e576ab4f7dd60be1de4d",
+    "cad/part_single_09.step.py": "8875c0c6b9e91852c348948d3a8bc9ce91befa224b1d31efef392e4f4a4c68f2",
+    "cad/part_single_10.step.py": "de4167fe9cc592808d80682f55cdcc559d3d7dfd074ac26f3fc6cd4f82dc535d",
+    "cad/part_single_11.step.py": "50d92ae7495a7842db7db0c5627896436f0a7e10406a48d15794b16404691ee1",
+    "cad/part_single_12.step.py": "67cd1813e85ca90bb58d7a05178fa16745e8e7f64e291d48f6b62efc08872afb",
+    "cad/part_single_13.step.py": "7fcf2b077875664de980b8da709b99bb9485e96637f8b7a6834267c70fdb1a28",
+    "cad/part_single_14.step.py": "933bc5824e69229add32bda4098228960a270677db57b4a93237cdff34b65359",
+    "cad/part_single_15.step.py": "faac5dcedab31ae64e201592b4ec8a3a11b62ca3cd707dfe0ce9436a84f00dbc"
+  },
+  "export_stability_geometry_evidence": {
+    "path": "revision-notes/export-stability-geometry.json",
+    "sha256": "cd31d4d51fa1a29646abcf634a679e242695f520c2271665f031ae93483386fb"
+  },
+  "scope": "Fresh comparison against verified immutable archive and clone. AST equality ignores whitespace/comments only.",
+  "permitted_changed_scope": [
+    "sun board construction: center height, lane relief, recessed gaps, four between-lane separators",
+    "board material render color, when geometry remains readable in one color",
+    "DECK/BAR_TOP/CREST_TOP and dependent assembly Z or capture presentation placement",
+    "assembly product label and current revision metadata",
+    "Fork-only exact reviewed vertex-normalization helper and two guarded calls; independent native B-rep equivalence required, not an unchanged drop() AST claim."
+  ],
+  "limitations": [
+    "This is source preservation evidence, not physical testing or dice fairness testing.",
+    "Current STEP dimensions, checker support, lane capacity, stack clearance, and exact assembled occurrence placement require independent current geometry evidence.",
+    "New board geometry and actual outer footprint must pass current CAD measurement; preserved constants alone do not prove the implementation uses them."
+  ],
+  "checks": [
+    {
+      "name": "immutable_snapshot_hash_matches_current_wish",
+      "passed": true,
+      "actual": "857448d95613d0df95d7eb87b72f9d1c98140945ff54c83c0eae773a7a6aa0ba",
+      "expected": "857448d95613d0df95d7eb87b72f9d1c98140945ff54c83c0eae773a7a6aa0ba"
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/rainward_lib.py",
+      "passed": true,
+      "archive_sha256": "c0768de293ce1c8576919c6df3fdced5dc0ceb5cecd3e75540b6dbfb36d79c8b",
+      "clone_sha256": "c0768de293ce1c8576919c6df3fdced5dc0ceb5cecd3e75540b6dbfb36d79c8b"
+    },
+    {
+      "name": "unchanged_AST:SUN_R",
+      "passed": true,
+      "baseline_ast_sha256": "4dea70917bb0bc08ae47cf14d111fec689d39274c8757fb3361c49286bcae85c",
+      "current_ast_sha256": "4dea70917bb0bc08ae47cf14d111fec689d39274c8757fb3361c49286bcae85c"
+    },
+    {
+      "name": "unchanged_AST:RAY_R",
+      "passed": true,
+      "baseline_ast_sha256": "0e52caa456688a049c95f6faec77c2bb008ee93e69d7648aa4201442eea9f491",
+      "current_ast_sha256": "0e52caa456688a049c95f6faec77c2bb008ee93e69d7648aa4201442eea9f491"
+    },
+    {
+      "name": "unchanged_AST:RAY_COUNT",
+      "passed": true,
+      "baseline_ast_sha256": "1b8d8beb420bfc49b6493d76652e31111de362716d40606608784616fb1c7bb5",
+      "current_ast_sha256": "1b8d8beb420bfc49b6493d76652e31111de362716d40606608784616fb1c7bb5"
+    },
+    {
+      "name": "unchanged_AST:LANES",
+      "passed": true,
+      "baseline_ast_sha256": "2e53e925e0b8e70bb040aab31a07463c3ace2097b2eb593e8b1872c5d40bfe44",
+      "current_ast_sha256": "2e53e925e0b8e70bb040aab31a07463c3ace2097b2eb593e8b1872c5d40bfe44"
+    },
+    {
+      "name": "unchanged_AST:START_ANGLE",
+      "passed": true,
+      "baseline_ast_sha256": "d19835bb62a91a5b0821ff704ca1b48e2899f1fb8d5ad98d1af190b747eca58a",
+      "current_ast_sha256": "d19835bb62a91a5b0821ff704ca1b48e2899f1fb8d5ad98d1af190b747eca58a"
+    },
+    {
+      "name": "unchanged_AST:PITCH",
+      "passed": true,
+      "baseline_ast_sha256": "6f3fab6123c5b963e2d75c0499584c2d3a8231521f6bf891b1521260d659379d",
+      "current_ast_sha256": "6f3fab6123c5b963e2d75c0499584c2d3a8231521f6bf891b1521260d659379d"
+    },
+    {
+      "name": "unchanged_AST:RADII",
+      "passed": true,
+      "baseline_ast_sha256": "236616504921b2f9651c3f05f4a223b19d5f7d019f9b75c4ff73175c7caf788f",
+      "current_ast_sha256": "236616504921b2f9651c3f05f4a223b19d5f7d019f9b75c4ff73175c7caf788f"
+    },
+    {
+      "name": "unchanged_AST:DROP_H",
+      "passed": true,
+      "baseline_ast_sha256": "68915af41588bea895b9909192f00a7ba5271fceae1cfe7ab98621bc2313a02d",
+      "current_ast_sha256": "68915af41588bea895b9909192f00a7ba5271fceae1cfe7ab98621bc2313a02d"
+    },
+    {
+      "name": "unchanged_AST:DROP_L",
+      "passed": true,
+      "baseline_ast_sha256": "37ed4b818f3822602fda460824afaafbf457de9749daf56caf23405822eebf7d",
+      "current_ast_sha256": "37ed4b818f3822602fda460824afaafbf457de9749daf56caf23405822eebf7d"
+    },
+    {
+      "name": "unchanged_AST:DROP_W",
+      "passed": true,
+      "baseline_ast_sha256": "ce9ef4a87ada7497fec24546b0e1a28901904ee90e5e4ff7b6ea3813d5eea2ae",
+      "current_ast_sha256": "ce9ef4a87ada7497fec24546b0e1a28901904ee90e5e4ff7b6ea3813d5eea2ae"
+    },
+    {
+      "name": "unchanged_AST:DIE_EDGE",
+      "passed": true,
+      "baseline_ast_sha256": "712259548efce5d38d3924f482da0943788e3ce1722ef75e3ae3f1e227cb67bb",
+      "current_ast_sha256": "712259548efce5d38d3924f482da0943788e3ce1722ef75e3ae3f1e227cb67bb"
+    },
+    {
+      "name": "unchanged_AST:CUP_OD",
+      "passed": true,
+      "baseline_ast_sha256": "b3a15737f968fb2b270c0583a96adb835aa999422ac7ea396a92fd28aaced17a",
+      "current_ast_sha256": "b3a15737f968fb2b270c0583a96adb835aa999422ac7ea396a92fd28aaced17a"
+    },
+    {
+      "name": "unchanged_AST:CUP_ID",
+      "passed": true,
+      "baseline_ast_sha256": "bc1e86e1c7cf8ae119f20949b6ba74d53493014a35f86421069f746d8430bd9d",
+      "current_ast_sha256": "bc1e86e1c7cf8ae119f20949b6ba74d53493014a35f86421069f746d8430bd9d"
+    },
+    {
+      "name": "unchanged_AST:CUP_H",
+      "passed": true,
+      "baseline_ast_sha256": "a64f70022bf79c4ef1ee8bcc253396ae0516de9a782537985d1ef275fdaf5207",
+      "current_ast_sha256": "a64f70022bf79c4ef1ee8bcc253396ae0516de9a782537985d1ef275fdaf5207"
+    },
+    {
+      "name": "unchanged_AST:CUP_FLOOR",
+      "passed": true,
+      "baseline_ast_sha256": "447490a807e628a6162661e4da0ccdff0096c92a89ac43ab9a50e7bc7f47f311",
+      "current_ast_sha256": "447490a807e628a6162661e4da0ccdff0096c92a89ac43ab9a50e7bc7f47f311"
+    },
+    {
+      "name": "unchanged_AST:SINGLE_CURVES",
+      "passed": true,
+      "baseline_ast_sha256": "b53f7ef3d4918919be9d5d6205bf06f0954e0de2a783c0a21a18c2df7f3a8f3d",
+      "current_ast_sha256": "b53f7ef3d4918919be9d5d6205bf06f0954e0de2a783c0a21a18c2df7f3a8f3d"
+    },
+    {
+      "name": "unchanged_AST:FORK_CURVES",
+      "passed": true,
+      "baseline_ast_sha256": "1862bb1309c6b66a75c91fbf712160bec5ef4e74f6bf0eeb2bd98ff1d99fc983",
+      "current_ast_sha256": "1862bb1309c6b66a75c91fbf712160bec5ef4e74f6bf0eeb2bd98ff1d99fc983"
+    },
+    {
+      "name": "unchanged_AST:SINGLE",
+      "passed": true,
+      "baseline_ast_sha256": "94eb3e09262bfb07f2189769a20f7fba69ce7b1cd272fcd004911d0468c99633",
+      "current_ast_sha256": "94eb3e09262bfb07f2189769a20f7fba69ce7b1cd272fcd004911d0468c99633"
+    },
+    {
+      "name": "unchanged_AST:FORK",
+      "passed": true,
+      "baseline_ast_sha256": "6b1e648a0f2baa17252e837689af52acc70fef33170a39512a3322e126d8794e",
+      "current_ast_sha256": "6b1e648a0f2baa17252e837689af52acc70fef33170a39512a3322e126d8794e"
+    },
+    {
+      "name": "unchanged_AST:PIP_RADIUS",
+      "passed": true,
+      "baseline_ast_sha256": "a77ce679a39d58612d22d1de65d61b51b39b980ebe20eded1309aa6215eb9387",
+      "current_ast_sha256": "a77ce679a39d58612d22d1de65d61b51b39b980ebe20eded1309aa6215eb9387"
+    },
+    {
+      "name": "unchanged_AST:PIP_DEPTH",
+      "passed": true,
+      "baseline_ast_sha256": "2b7f593e5c32f5bfadc4d624322c3eae245637c90894f4ae3f15447d3f65d688",
+      "current_ast_sha256": "2b7f593e5c32f5bfadc4d624322c3eae245637c90894f4ae3f15447d3f65d688"
+    },
+    {
+      "name": "unchanged_AST:PIP_PITCH",
+      "passed": true,
+      "baseline_ast_sha256": "68915af41588bea895b9909192f00a7ba5271fceae1cfe7ab98621bc2313a02d",
+      "current_ast_sha256": "68915af41588bea895b9909192f00a7ba5271fceae1cfe7ab98621bc2313a02d"
+    },
+    {
+      "name": "unchanged_AST:PIP_LAYOUTS",
+      "passed": true,
+      "baseline_ast_sha256": "4a5865be92f4066877990bb782ea87dd70a1be7a8cda3de8679b3a82d21d6aa3",
+      "current_ast_sha256": "4a5865be92f4066877990bb782ea87dd70a1be7a8cda3de8679b3a82d21d6aa3"
+    },
+    {
+      "name": "unchanged_AST:PIP_FACES",
+      "passed": true,
+      "baseline_ast_sha256": "8169bbf43fd37af2da321902b790978dc9f6acc7f8ce4626806449af979b20c6",
+      "current_ast_sha256": "8169bbf43fd37af2da321902b790978dc9f6acc7f8ce4626806449af979b20c6"
+    },
+    {
+      "name": "unchanged_AST:PIP_COLOR",
+      "passed": true,
+      "baseline_ast_sha256": "6d82b10c8d3d404c7cf3fb59356b7c17172f7bc6b96d641d296269228a4a7e39",
+      "current_ast_sha256": "6d82b10c8d3d404c7cf3fb59356b7c17172f7bc6b96d641d296269228a4a7e39"
+    },
+    {
+      "name": "unchanged_AST:SINGLE_COLOR",
+      "passed": true,
+      "baseline_ast_sha256": "71c225972eb5c5560b98a8b99bd623960ec716a5f3bd6a3c6bc157294d839584",
+      "current_ast_sha256": "71c225972eb5c5560b98a8b99bd623960ec716a5f3bd6a3c6bc157294d839584"
+    },
+    {
+      "name": "unchanged_AST:FORK_COLOR",
+      "passed": true,
+      "baseline_ast_sha256": "3d65759bd0a3232fee83f2d7bbb1fe6d048d32bd548e63d64feb02dd5c9134e0",
+      "current_ast_sha256": "3d65759bd0a3232fee83f2d7bbb1fe6d048d32bd548e63d64feb02dd5c9134e0"
+    },
+    {
+      "name": "unchanged_AST:CUP_COLOR",
+      "passed": true,
+      "baseline_ast_sha256": "6cfa7463bb6c8505013cd29e5ee39b14dd5473e36d7d1c227bc6f3ad37ba6258",
+      "current_ast_sha256": "6cfa7463bb6c8505013cd29e5ee39b14dd5473e36d7d1c227bc6f3ad37ba6258"
+    },
+    {
+      "name": "unchanged_AST:DIE_COLOR",
+      "passed": true,
+      "baseline_ast_sha256": "8c8dfe4c2059010691e66deddc04637d61b14153b19321ad241b0f95ba1ccb38",
+      "current_ast_sha256": "8c8dfe4c2059010691e66deddc04637d61b14153b19321ad241b0f95ba1ccb38"
+    },
+    {
+      "name": "unchanged_AST:INITIAL_A",
+      "passed": true,
+      "baseline_ast_sha256": "c8d75155ab914acb79b46c704dffa15a8b0e3845ed34a1516821b65e55b2ef45",
+      "current_ast_sha256": "c8d75155ab914acb79b46c704dffa15a8b0e3845ed34a1516821b65e55b2ef45"
+    },
+    {
+      "name": "unchanged_AST:INITIAL_B",
+      "passed": true,
+      "baseline_ast_sha256": "e7a3d88018a46e2c962c3a9e5c0d564c9eba2f88f0ef4762564d156e44b5349e",
+      "current_ast_sha256": "e7a3d88018a46e2c962c3a9e5c0d564c9eba2f88f0ef4762564d156e44b5349e"
+    },
+    {
+      "name": "unchanged_AST:BEFORE_A",
+      "passed": true,
+      "baseline_ast_sha256": "453641520476466feb6c38d8bb59973d5159a6cddbd5071daa5c327518df1c60",
+      "current_ast_sha256": "453641520476466feb6c38d8bb59973d5159a6cddbd5071daa5c327518df1c60"
+    },
+    {
+      "name": "unchanged_AST:BEFORE_B",
+      "passed": true,
+      "baseline_ast_sha256": "694361116ff39439c129716bba2453f9ea387861b7be4b0ccbed9f45c99292d6",
+      "current_ast_sha256": "694361116ff39439c129716bba2453f9ea387861b7be4b0ccbed9f45c99292d6"
+    },
+    {
+      "name": "unchanged_AST:sampled_outline",
+      "passed": true,
+      "baseline_ast_sha256": "7c52964875ccf115df72715cd8646621bab8f1eb1d1af4e0c5f05c8c8c50fc6a",
+      "current_ast_sha256": "7c52964875ccf115df72715cd8646621bab8f1eb1d1af4e0c5f05c8c8c50fc6a"
+    },
+    {
+      "name": "unchanged_AST:xy",
+      "passed": true,
+      "baseline_ast_sha256": "0246a7cba38c7d8619030fe1635a89cc7716420f06c1350663b8c5c93199b8cf",
+      "current_ast_sha256": "0246a7cba38c7d8619030fe1635a89cc7716420f06c1350663b8c5c93199b8cf"
+    },
+    {
+      "name": "unchanged_AST:theta",
+      "passed": true,
+      "baseline_ast_sha256": "149dbb8987e5868d75540075e81d8710a4b0a4ebe70959c5b9c9107f346e01bd",
+      "current_ast_sha256": "149dbb8987e5868d75540075e81d8710a4b0a4ebe70959c5b9c9107f346e01bd"
+    },
+    {
+      "name": "unchanged_AST:finish",
+      "passed": true,
+      "baseline_ast_sha256": "dba2966c8211c57cdd78cd447850e7203b9d894ef34d254b3233021e26754544",
+      "current_ast_sha256": "dba2966c8211c57cdd78cd447850e7203b9d894ef34d254b3233021e26754544"
+    },
+    {
+      "name": "unchanged_AST:prism",
+      "passed": true,
+      "baseline_ast_sha256": "d4e8f6ca6905fcd81a722a5c93184528b296d122d18339869d24a00bdc0a1322",
+      "current_ast_sha256": "d4e8f6ca6905fcd81a722a5c93184528b296d122d18339869d24a00bdc0a1322"
+    },
+    {
+      "name": "unchanged_AST:cup",
+      "passed": true,
+      "baseline_ast_sha256": "063e60b03349b15bf7b0aa4114ceabebfea1c5b54a021d14e0b5cab48a0be6fa",
+      "current_ast_sha256": "063e60b03349b15bf7b0aa4114ceabebfea1c5b54a021d14e0b5cab48a0be6fa"
+    },
+    {
+      "name": "unchanged_AST:die",
+      "passed": true,
+      "baseline_ast_sha256": "cfafe7964f4a112734bd2f72e568bff7a365db672d6b6e42959a0e564d509257",
+      "current_ast_sha256": "cfafe7964f4a112734bd2f72e568bff7a365db672d6b6e42959a0e564d509257"
+    },
+    {
+      "name": "drop_only_two_exact_fork_guarded_normalization_calls",
+      "passed": true
+    },
+    {
+      "name": "drop_normalization_calls_at_exact_positions",
+      "passed": true
+    },
+    {
+      "name": "drop_original_AST_after_only_exact_guard_removal",
+      "passed": true,
+      "baseline_ast_sha256": "590fa45238a88bcc3a078058788723fde577f0addcfd2abe09b6ffb5593db826",
+      "actual_changed_drop_ast_sha256": "3238515cca4aa81123398f35174517e6cc3848f2366be47edfb0e20d579d14e5",
+      "stripped_ast_sha256": "590fa45238a88bcc3a078058788723fde577f0addcfd2abe09b6ffb5593db826",
+      "note": "drop AST changed; only these two explicitly checked implementation calls are permitted."
+    },
+    {
+      "name": "canonical_vertices_exact_reviewed_helper_AST",
+      "passed": true,
+      "expected_ast_sha256": "42846ccd633bd39d8a9b21ec7644f71aa815bba03f533542d1297d4c931d72f5",
+      "current_ast_sha256": "42846ccd633bd39d8a9b21ec7644f71aa815bba03f533542d1297d4c931d72f5",
+      "rounding_decimal_places": 10,
+      "maximum_vertex_displacement_mm": 1e-09,
+      "ocp_vertex_tolerance_mm": 1e-07
+    },
+    {
+      "name": "clone_matches_archive:make/product/RULES.md",
+      "passed": true,
+      "archive_sha256": "d601a858b70b4c1685dced91c7f176d73e4779a3ad784e9b13c7fc88d1fd9d66",
+      "clone_sha256": "d601a858b70b4c1685dced91c7f176d73e4779a3ad784e9b13c7fc88d1fd9d66"
+    },
+    {
+      "name": "exact_historical_rules_bytes",
+      "passed": true,
+      "expected_sha256": "d601a858b70b4c1685dced91c7f176d73e4779a3ad784e9b13c7fc88d1fd9d66",
+      "actual_sha256": "d601a858b70b4c1685dced91c7f176d73e4779a3ad784e9b13c7fc88d1fd9d66"
+    },
+    {
+      "name": "original_35_component_complement",
+      "passed": true,
+      "expected_count": 35,
+      "actual_count": 35,
+      "missing": [],
+      "extra": []
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_cup_1.step.py",
+      "passed": true,
+      "archive_sha256": "c4eb1d8c723674228c870e08d44c01aad68567399f4bbe0d68404842f6182be9",
+      "clone_sha256": "c4eb1d8c723674228c870e08d44c01aad68567399f4bbe0d68404842f6182be9"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_cup_1.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_cup_2.step.py",
+      "passed": true,
+      "archive_sha256": "3d75b506ab5e0c9955c8fee191a6b3fdbc8174dae8396e08b7dfb480023fd509",
+      "clone_sha256": "3d75b506ab5e0c9955c8fee191a6b3fdbc8174dae8396e08b7dfb480023fd509"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_cup_2.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_die_1.step.py",
+      "passed": true,
+      "archive_sha256": "0633cd852bf3f12e2830016a4670e556cddb71545536661b622f56dd8cd46825",
+      "clone_sha256": "0633cd852bf3f12e2830016a4670e556cddb71545536661b622f56dd8cd46825"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_die_1.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_die_2.step.py",
+      "passed": true,
+      "archive_sha256": "70d495718e831930ff1fbc3031114c2124beffac56c123123dc2219df9447c38",
+      "clone_sha256": "70d495718e831930ff1fbc3031114c2124beffac56c123123dc2219df9447c38"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_die_2.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_01.step.py",
+      "passed": true,
+      "archive_sha256": "f9ae2ba0ba829dc7409b35a6d516b609b865d3a0aa6d17cfc3bfc48f7bb5f606",
+      "clone_sha256": "f9ae2ba0ba829dc7409b35a6d516b609b865d3a0aa6d17cfc3bfc48f7bb5f606"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_01.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_02.step.py",
+      "passed": true,
+      "archive_sha256": "b7fd69d0c9bd26f0443ccbdb06a2948362acb0c252c077093918bc4a3deeb1d1",
+      "clone_sha256": "b7fd69d0c9bd26f0443ccbdb06a2948362acb0c252c077093918bc4a3deeb1d1"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_02.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_03.step.py",
+      "passed": true,
+      "archive_sha256": "c97fc0e571e86edc479f75ffcd2e8353fd399cfe923f131174878e0f491cc375",
+      "clone_sha256": "c97fc0e571e86edc479f75ffcd2e8353fd399cfe923f131174878e0f491cc375"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_03.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_04.step.py",
+      "passed": true,
+      "archive_sha256": "14ef0485d5e1f284fcfe7e1ecce4864242be31bca5397f908f5a4d7cc23feb3d",
+      "clone_sha256": "14ef0485d5e1f284fcfe7e1ecce4864242be31bca5397f908f5a4d7cc23feb3d"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_04.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_05.step.py",
+      "passed": true,
+      "archive_sha256": "d99264e42259d73e669109011087d20ff13675e12900692a951ef05468eda635",
+      "clone_sha256": "d99264e42259d73e669109011087d20ff13675e12900692a951ef05468eda635"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_05.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_06.step.py",
+      "passed": true,
+      "archive_sha256": "94f031004ab901f171f56a274620a1a7df5db98394a648ebefe60328888b70d7",
+      "clone_sha256": "94f031004ab901f171f56a274620a1a7df5db98394a648ebefe60328888b70d7"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_06.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_07.step.py",
+      "passed": true,
+      "archive_sha256": "cb51970cb33c1e20f53fd5a68e39a3428e906cb6d62d42bfc9d43147d69ca64f",
+      "clone_sha256": "cb51970cb33c1e20f53fd5a68e39a3428e906cb6d62d42bfc9d43147d69ca64f"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_07.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_08.step.py",
+      "passed": true,
+      "archive_sha256": "ca0b43b38e6f6881ad8c47b267b352c4af350357729fb3c2f82daff0b3d67633",
+      "clone_sha256": "ca0b43b38e6f6881ad8c47b267b352c4af350357729fb3c2f82daff0b3d67633"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_08.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_09.step.py",
+      "passed": true,
+      "archive_sha256": "9a3c1731112caed55b5d402a56ddc45ff96fba46a33bfa32111c4b0a26a4cd03",
+      "clone_sha256": "9a3c1731112caed55b5d402a56ddc45ff96fba46a33bfa32111c4b0a26a4cd03"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_09.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_10.step.py",
+      "passed": true,
+      "archive_sha256": "ddc631da84b926ba9a6550c6eaa51f980261094b35489c008084b92222c80010",
+      "clone_sha256": "ddc631da84b926ba9a6550c6eaa51f980261094b35489c008084b92222c80010"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_10.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_11.step.py",
+      "passed": true,
+      "archive_sha256": "b37e840841656af10623f56ea9147aaf677464ffb55e644e3445e3d299801d8c",
+      "clone_sha256": "b37e840841656af10623f56ea9147aaf677464ffb55e644e3445e3d299801d8c"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_11.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_12.step.py",
+      "passed": true,
+      "archive_sha256": "507062c1374140ab8e6aaccac8f1b3256bada908fbadb4106960b3711c637a5d",
+      "clone_sha256": "507062c1374140ab8e6aaccac8f1b3256bada908fbadb4106960b3711c637a5d"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_12.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_13.step.py",
+      "passed": true,
+      "archive_sha256": "52388f7e0a96320b0a3d59657489cb61598818497d8ee1de2be96e26182d1ab8",
+      "clone_sha256": "52388f7e0a96320b0a3d59657489cb61598818497d8ee1de2be96e26182d1ab8"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_13.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_14.step.py",
+      "passed": true,
+      "archive_sha256": "b336e28b58ebdcec0f43f53e92c8df3e204a86355f7b24c6c5a07f3e3e654425",
+      "clone_sha256": "b336e28b58ebdcec0f43f53e92c8df3e204a86355f7b24c6c5a07f3e3e654425"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_14.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_fork_15.step.py",
+      "passed": true,
+      "archive_sha256": "38f8082cb99688ec4a593e77db3b02c7ef7a4b74cb04ff035427eb5b0d1d7faa",
+      "clone_sha256": "38f8082cb99688ec4a593e77db3b02c7ef7a4b74cb04ff035427eb5b0d1d7faa"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_fork_15.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_01.step.py",
+      "passed": true,
+      "archive_sha256": "a81a5bcb96e0cc554da131f56b3abec1c02301614d4d4224c4da9703cffbecb6",
+      "clone_sha256": "a81a5bcb96e0cc554da131f56b3abec1c02301614d4d4224c4da9703cffbecb6"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_01.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_02.step.py",
+      "passed": true,
+      "archive_sha256": "de052475bec74fb2e6eb794cc7446b10203da3bd9df9ae86db172c8f7f9e4994",
+      "clone_sha256": "de052475bec74fb2e6eb794cc7446b10203da3bd9df9ae86db172c8f7f9e4994"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_02.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_03.step.py",
+      "passed": true,
+      "archive_sha256": "865c2df19cac9a324e3bc56ea86ae9656c1cc511615f907eab88ca4bc547fd97",
+      "clone_sha256": "865c2df19cac9a324e3bc56ea86ae9656c1cc511615f907eab88ca4bc547fd97"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_03.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_04.step.py",
+      "passed": true,
+      "archive_sha256": "d1504db706967843789adc9bb9ea206acab9b8aebd3933938c6c71a3660a09be",
+      "clone_sha256": "d1504db706967843789adc9bb9ea206acab9b8aebd3933938c6c71a3660a09be"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_04.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_05.step.py",
+      "passed": true,
+      "archive_sha256": "bf6719891a385d0c19952095892289194cc5ec91d8cc3dbf10c2337e19ba7e51",
+      "clone_sha256": "bf6719891a385d0c19952095892289194cc5ec91d8cc3dbf10c2337e19ba7e51"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_05.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_06.step.py",
+      "passed": true,
+      "archive_sha256": "03312fb85297d66181c9aacd90e8df153c4948efe530ea221b74344e3df43e28",
+      "clone_sha256": "03312fb85297d66181c9aacd90e8df153c4948efe530ea221b74344e3df43e28"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_06.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_07.step.py",
+      "passed": true,
+      "archive_sha256": "58486945267d62690fc65c7c57a88b03c9208acadb43a8e0fd14eb5a5177f463",
+      "clone_sha256": "58486945267d62690fc65c7c57a88b03c9208acadb43a8e0fd14eb5a5177f463"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_07.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_08.step.py",
+      "passed": true,
+      "archive_sha256": "ec2944e58d09679b1febacd8518e811ad9c5527a85c9e576ab4f7dd60be1de4d",
+      "clone_sha256": "ec2944e58d09679b1febacd8518e811ad9c5527a85c9e576ab4f7dd60be1de4d"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_08.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_09.step.py",
+      "passed": true,
+      "archive_sha256": "8875c0c6b9e91852c348948d3a8bc9ce91befa224b1d31efef392e4f4a4c68f2",
+      "clone_sha256": "8875c0c6b9e91852c348948d3a8bc9ce91befa224b1d31efef392e4f4a4c68f2"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_09.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_10.step.py",
+      "passed": true,
+      "archive_sha256": "de4167fe9cc592808d80682f55cdcc559d3d7dfd074ac26f3fc6cd4f82dc535d",
+      "clone_sha256": "de4167fe9cc592808d80682f55cdcc559d3d7dfd074ac26f3fc6cd4f82dc535d"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_10.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_11.step.py",
+      "passed": true,
+      "archive_sha256": "50d92ae7495a7842db7db0c5627896436f0a7e10406a48d15794b16404691ee1",
+      "clone_sha256": "50d92ae7495a7842db7db0c5627896436f0a7e10406a48d15794b16404691ee1"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_11.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_12.step.py",
+      "passed": true,
+      "archive_sha256": "67cd1813e85ca90bb58d7a05178fa16745e8e7f64e291d48f6b62efc08872afb",
+      "clone_sha256": "67cd1813e85ca90bb58d7a05178fa16745e8e7f64e291d48f6b62efc08872afb"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_12.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_13.step.py",
+      "passed": true,
+      "archive_sha256": "7fcf2b077875664de980b8da709b99bb9485e96637f8b7a6834267c70fdb1a28",
+      "clone_sha256": "7fcf2b077875664de980b8da709b99bb9485e96637f8b7a6834267c70fdb1a28"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_13.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_14.step.py",
+      "passed": true,
+      "archive_sha256": "933bc5824e69229add32bda4098228960a270677db57b4a93237cdff34b65359",
+      "clone_sha256": "933bc5824e69229add32bda4098228960a270677db57b4a93237cdff34b65359"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_14.step.py",
+      "passed": true
+    },
+    {
+      "name": "clone_matches_archive:make/source/cad/part_single_15.step.py",
+      "passed": true,
+      "archive_sha256": "faac5dcedab31ae64e201592b4ec8a3a11b62ca3cd707dfe0ce9436a84f00dbc",
+      "clone_sha256": "faac5dcedab31ae64e201592b4ec8a3a11b62ca3cd707dfe0ce9436a84f00dbc"
+    },
+    {
+      "name": "unchanged_component_wrapper_AST:part_single_15.step.py",
+      "passed": true
+    },
+    {
+      "name": "independent_checker_BRep_equivalence:single",
+      "passed": true,
+      "same_topology_counts": true,
+      "same_bbox_within_1e_9_mm": true,
+      "native_volume_difference_within_1e_7_mm3": true,
+      "native_area_difference_within_1e_7_mm2": true,
+      "symmetric_brep_difference_within_1e_7_mm3": true,
+      "both_valid": true
+    },
+    {
+      "name": "independent_checker_BRep_equivalence:fork",
+      "passed": true,
+      "same_topology_counts": true,
+      "same_bbox_within_1e_9_mm": true,
+      "native_volume_difference_within_1e_7_mm3": true,
+      "native_area_difference_within_1e_7_mm2": true,
+      "symmetric_brep_difference_within_1e_7_mm3": true,
+      "both_valid": true
+    }
+  ],
+  "passed": true
+}

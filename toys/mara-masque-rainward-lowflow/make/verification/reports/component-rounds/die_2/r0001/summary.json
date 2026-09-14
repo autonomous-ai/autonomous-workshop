@@ -1,0 +1,59 @@
+{
+ "build": {
+  "die_2": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "die_2"
+ ],
+ "checked": [
+  "die_2"
+ ],
+ "checks_ok": true,
+ "entry": "part_die_2.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/die_2/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "die_2"
+ ],
+ "print": {
+  "die_2": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/die_2/r0001/overhang-die_2.log": "a369e07a47169b845c15382384a14469a1e549f7db90a56ec82f1a20bd616319",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/die_2/r0001/thickness-die_2.log": "d9cc920bc7528ef0d91d27c9175a1be84f23969731c886a14399c42da3875337"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:die_2",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/die_2/r0001/visual-packet.json",
+  "packet_sha256": "5a3c30c386a180eeca0a4d5d9275f8b517728a3f6615ce470b979504b3030d97",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_white_queen.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_queen"
+ ],
+ "print": {
+  "white_queen": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0001/overhang-white_queen.log": "cb709f542572d80736df012ba51a792884dbc501d6778e97f8f3d97b13fc42c6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0001/thickness-white_queen.log": "cfbb99315199d0c8caec586da3aa8d0f2178b441be820e17cf8065fd1eec4976"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "white_queen"
+ ],
+ "round": 2,
+ "scope": "component:white_queen",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso shows centered annular well with thick circular rim; straight post and smooth flat foot are distinct from king dome. Underside view confirms closed foot.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0002/visual-packet.json",
+  "packet_sha256": "394b761ea1082c79d75fd1d82de608a3bc4bdf5e1b79f5915d33c9ec328419dc",
+  "status": "pass"
+ }
+}

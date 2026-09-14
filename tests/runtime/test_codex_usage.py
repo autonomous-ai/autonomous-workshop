@@ -409,6 +409,96 @@ def test_product_counts_child_followup_without_reset_or_double_charge(tmp_path):
     assert result["total_tokens"] == 440
 
 
+@pytest.mark.parametrize("fresh", ["none", "continued", "reset"])
+@pytest.mark.parametrize("thread,parent", [(ROOT, None), (CHILD, ROOT)])
+def test_followup_replays_exact_snapshot_before_fresh_usage(tmp_path, fresh, thread, parent):
+    previous = usage(200, last_token_usage=counters(100))
+    replay = usage(200, last_token_usage=counters(100))
+    replay["timestamp"] = "2026-09-07T02:00:00Z"
+    events = records(thread, parent) + [usage(100), previous,
+        {"type": "event_msg", "payload": {"type": "task_complete", "turn_id": "first"}},
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        replay, replay,
+    ]
+    if fresh == "continued":
+        events.append(usage(300, last_token_usage=counters(100)))
+    elif fresh == "reset":
+        events.append(usage(100))
+    if fresh != "none":
+        events[-1]["timestamp"] = "2026-09-07T03:00:00Z"
+    if fresh != "none":
+        events.append({"type": "event_msg", "payload": {
+            "type": "task_complete", "turn_id": "followup",
+        }})
+    result = read_thread_usage(write(tmp_path, events, thread), thread_id=thread, workspace=Path("/toy"))
+    assert result["tokens"] == counters(200 if fresh == "none" else 300)
+    assert result["last_observed_at"] == (
+        previous["timestamp"] if fresh == "none" else "2026-09-07T03:00:00Z"
+    )
+
+
+def test_replayed_child_snapshot_preserves_product_budget(tmp_path):
+    write(tmp_path, records() + [usage(100)])
+    events = records(CHILD, ROOT) + [usage(100), usage(200, last_token_usage=counters(100)),
+                                   complete("first")]
+    child_path = write(tmp_path, events, CHILD)
+    before = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    events += [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(200, last_token_usage=counters(100)),
+    ]
+    child_path.write_text("".join(json.dumps(event) + "\n" for event in events))
+    after = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    assert after == before
+    from workshop.workflow.token_budget import ProductTokenBudget
+    budget = ProductTokenBudget()
+    budget.observe(before)
+    saved = budget.to_dict()
+    budget.observe(after)
+    assert budget.to_dict() == saved
+
+
+@pytest.mark.parametrize("key", COUNTERS)
+def test_followup_replay_with_changed_last_counter_fails_closed(tmp_path, key):
+    last = {**counters(100), key: counters(100)[key] + 1}
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(200, last_token_usage=last),
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("fresh", [usage(320, last_token_usage=counters(100)),
+                                  usage(150, last_token_usage=counters(50))])
+def test_replay_keeps_first_fresh_request_baseline_check(tmp_path, fresh):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(200, last_token_usage=counters(100)), fresh,
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_followup_identical_single_request_counts_as_reset(tmp_path):
+    events = records() + [usage(100),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "resume"}},
+        usage(100),
+    ]
+    result = read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+    assert result["tokens"] == counters(200)
+
+
+def test_followup_replay_under_changed_model_fails_closed(tmp_path):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        {"type": "turn_context", "payload": {"model": "other-model"}},
+        usage(200, last_token_usage=counters(100)),
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
 @pytest.mark.parametrize("current,last", [(300, 50), (100, 50), (300, 200)])
 def test_followup_with_unexplained_baseline_fails_closed(tmp_path, current, last):
     events = records() + [usage(200),
@@ -561,6 +651,44 @@ def test_followup_task_continues_the_cumulative_counter(tmp_path):
     assert result["status"] == "observed"
 
 
+@pytest.mark.parametrize("trailing,expected", [
+    ([usage(300, last_token_usage=counters(100))], counters(300)),  # continued process
+    ([usage(50)], counters(250)),  # the new task begins in a restarted process
+])
+def test_handoff_echo_before_the_first_request_holds_the_baseline(tmp_path, trailing, expected):
+    # An inter-agent NEW_TASK can emit a token_count that repeats the previous
+    # notification verbatim before the new task issues its first request. The
+    # repeat carries no usage, so it must neither be counted nor consume the
+    # boundary the following record still has to establish.
+    # The conservative branch policy requires a bound completed-task snapshot.
+    events = records(CHILD, ROOT) + [usage(100), usage(200, last_token_usage=counters(100)),
+                                   complete("first")] + [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "handoff"}},
+        usage(200, last_token_usage=counters(100)),
+    ] + trailing
+
+    result = read_thread_usage(
+        write(tmp_path, events, CHILD), thread_id=CHILD, workspace=Path("/toy"),
+    )
+
+    assert result["tokens"] == expected
+    assert result["status"] == "observed"
+
+
+@pytest.mark.parametrize("repeat", [
+    usage(200, last_token_usage=counters(50)),  # only the total repeats
+    usage(250, last_token_usage=counters(100)),  # only the last request repeats
+])
+def test_handoff_partial_repeat_is_still_ambiguous(tmp_path, repeat):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100))] + [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "handoff"}},
+        repeat,
+    ]
+
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
 @pytest.mark.parametrize("first", [
     usage(200, last_token_usage=counters(100)),  # no previous task to continue from
 ])
@@ -605,6 +733,28 @@ def test_large_compaction_partial_append_preserves_completed_usage(tmp_path):
     with path.open("ab") as stream:
         stream.write(b'"}\n' + json.dumps(usage(200, last_token_usage=counters(100))).encode() + b'\n')
     assert read_thread_usage(path, thread_id=ROOT, workspace=Path("/toy"))["tokens"] == counters(200)
+
+
+def test_large_visual_tool_result_preserves_usage(tmp_path, monkeypatch):
+    import workshop.runtime.codex_usage as module
+
+    monkeypatch.setattr(module, "MAX_LINE_BYTES", 1024)
+    visual = {
+        "type": "response_item",
+        "payload": {
+            "type": "custom_tool_call_output",
+            "output": [
+                {"type": "input_text", "text": "rendered"},
+                {"type": "input_image", "image_url": "data:image/png;base64," + "x" * 4096},
+            ],
+        },
+    }
+    path = write(tmp_path, records() + [usage(100), visual,
+        usage(200, last_token_usage=counters(100))])
+
+    assert read_thread_usage(
+        path, thread_id=ROOT, workspace=Path("/toy"),
+    )["tokens"] == counters(200)
 
 
 def test_large_compaction_late_duplicate_key_is_rejected(tmp_path):

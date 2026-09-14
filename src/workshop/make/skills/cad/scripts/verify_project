@@ -16,8 +16,8 @@ touched always carries a .step that came from the source it just checked.
 
 Final mode (the default) runs layout, design-reference provenance, multi-target
 generation with STEP writes, print fit, local audits, bought-part mounts,
-powered-system integration and motion when declared (or required by a
-documented assembly procedure), then refs + validate for every entry and assembly
+powered-system integration and optional motion (--check-motion true) when
+declared or required by a documented assembly procedure, then refs + validate for every entry and assembly
 interference.  Image-derived renders and likeness run only after that inspect
 batch is clean, and the print gates (--print-gates) run last of all, so a clash
 or an invalid solid cannot spend any of their budget.
@@ -86,6 +86,12 @@ DEFAULT_PREVIEW_TOLERANCE = 0.1
 LIKENESS_FLOOR = 0.90
 LIKENESS_STALL_STREAK = 3
 DEFAULT_BED = (220.0, 220.0, 220.0)
+# Wall-clock ceiling handed to check_motion. The host's own CAD-gate timeout is
+# 30 minutes for the entire verification, so a single sweep that wants more than
+# this has already lost the run; stopping it leaves a verdict and a reason
+# instead of a killed process. 0 (or an unparseable value) means no bound.
+DEFAULT_MOTION_DEADLINE_SECONDS = 900.0
+MOTION_DEADLINE_ENV = "WORKSHOP_MOTION_DEADLINE_SECONDS"
 BED_DECLARATION = re.compile(
     r"--bed\s+(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)"
 )
@@ -192,6 +198,20 @@ PRINT_GATE_RESULTS = {
     "overhang": ("# Overhang and support\n", "RESULT: prints unsupported"),
 }
 MAX_PRINT_GATE_REPORT_BYTES = 1_000_000
+
+
+def _motion_deadline_seconds() -> float:
+    """Seconds to allow check_motion, from the environment or the default."""
+    raw = os.environ.get(MOTION_DEADLINE_ENV)
+    if raw is None or not raw.strip():
+        return DEFAULT_MOTION_DEADLINE_SECONDS
+    try:
+        seconds = float(raw)
+    except ValueError:
+        print(f"verify_project: ignoring unparseable {MOTION_DEADLINE_ENV}={raw!r}; "
+              f"using {DEFAULT_MOTION_DEADLINE_SECONDS:g}s", file=sys.stderr)
+        return DEFAULT_MOTION_DEADLINE_SECONDS
+    return seconds if seconds > 0 else 0.0
 
 
 def _path_arg(path: Path, cwd: Path) -> str:
@@ -1255,6 +1275,7 @@ def _final(
     printables: list[Path],
     *,
     motion_manifest: Path | None,
+    check_motion: bool = False,
     strict_fit: bool,
     strict_mount: bool,
     print_gates: bool,
@@ -1338,25 +1359,33 @@ def _final(
             "no measure/power.json; no functional powered system is declared",
         )
 
-    if motion_manifest is not None:
+    if check_motion and motion_manifest is not None:
         if not motion_manifest.is_file():
             print(f"verify_project: motion manifest not found: {motion_manifest}", file=sys.stderr)
             return 2
+        # A motion sweep is the one gate here whose cost is set by the manifest
+        # rather than by the model: steps x pairs of Boolean operations, which a
+        # generous manifest can stretch into hours. Bound it by default, so a
+        # too-expensive sweep reports "never finished" in minutes instead of
+        # leaving the whole verification with no verdict. It fails closed --
+        # an unfinished sweep is never read as clear.
+        motion_deadline = _motion_deadline_seconds()
         if not _run_or_stop(
             runner,
             [
                 sys.executable,
                 SCRIPTS_DIR / "check_motion",
-                "--progress",
                 _path_arg(project, runner.cwd),
                 "--manifest",
                 _path_arg(motion_manifest, runner.cwd),
+                *(["--deadline", f"{motion_deadline:g}"] if motion_deadline else []),
             ],
         ):
             return 1
     else:
         runner.skipped(
             "check_motion",
+            "disabled by Make motion policy; motion is unverified" if not check_motion else
             "no documented mating/assembly action and no moving joint is declared",
         )
 
@@ -1822,7 +1851,7 @@ def self_check() -> int:
                 "part_lid.step.py": "def gen_step():\n    return None\n",
             })
             fixture("a documented assembly path cannot become a skipped motion gate",
-                    img + ["--unpowered"], "no motion manifest exists")
+                    img + ["--unpowered", "--check-motion", "true"], "no motion manifest exists")
 
             project = _sc_project(root, {
                 "README.md": "# Widget\n\n## Files\n\n- `widget.step.py` is the entry.\n"
@@ -2098,6 +2127,9 @@ def build_parser() -> argparse.ArgumentParser:
                              "cannot then be called print-ready")
     parser.add_argument("--powered", action="store_true", help="final mode: require measure/power.json and run the powered-system gate")
     parser.add_argument("--unpowered", action="store_true", help="image-derived final: explicitly declare that the product has no functional electrical load")
+    motion_policy = runpy.run_path(str(SCRIPTS_DIR / "motion_policy.py"))
+    parser.add_argument("--check-motion", type=motion_policy["boolean"], default=None,
+                        metavar="true|false", help="enable motion sweeps and animation review (default: false, or frozen Make option)")
     parser.add_argument("--motion-manifest", help="motion JSON; defaults to measure/motion.json when present")
     parser.add_argument("--bed", type=_parse_bed, help="printer bed WxDxH (default: project declaration, then 220x220x220)")
     parser.add_argument("--preview-tolerance", type=float, default=DEFAULT_PREVIEW_TOLERANCE, help="quick-mode render mesh tolerance (default: 0.1)")
@@ -2226,6 +2258,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--likeness-accept-regression requires --image-derived")
     if args.report and args.no_report:
         parser.error("--report and --no-report are mutually exclusive")
+    try:
+        check_motion = runpy.run_path(str(SCRIPTS_DIR / "motion_policy.py"))["enabled"](args.check_motion)
+    except (OSError, ValueError) as exc:
+        refuse(str(exc))
     signature_review_sha256 = None
     try:
         assembly, parts = _discover_entries(project, args.assembly, cwd)
@@ -2251,10 +2287,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not args.quick and not args.dry_run:
         try:
             signature_review_sha256 = _required_signature_review(project)
-            motion_presentation = runpy.run_path(str(SCRIPTS_DIR / "motion_presentation.py"))
-            motion_presentation["validate"](
-                project, json.loads((project / SIGNATURE_REVIEW_RELATIVE).read_bytes())
-            )
+            if check_motion:
+                motion_presentation = runpy.run_path(str(SCRIPTS_DIR / "motion_presentation.py"))
+                motion_presentation["validate"](
+                    project, json.loads((project / SIGNATURE_REVIEW_RELATIVE).read_bytes())
+                )
         except (ValueError, OSError, TypeError, KeyError) as exc:
             refuse(str(exc))
 
@@ -2269,11 +2306,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             "one-piece print target sets PRINTABLE = True"
         )
 
-    motion_manifest = explicit_motion
-    if motion_manifest is None and (project / "measure" / "motion.json").is_file():
+    motion_manifest = explicit_motion if check_motion else None
+    if check_motion and motion_manifest is None and (project / "measure" / "motion.json").is_file():
         motion_manifest = project / "measure" / "motion.json"
     assembly_claims = _documented_assembly_claims(project) if not args.quick else []
-    if motion_manifest is None and assembly_claims:
+    if check_motion and motion_manifest is None and assembly_claims:
         refuse(
             "README/spec documents an assembly action but no motion manifest exists: "
             f"{assembly_claims[0]} Add measure/motion.json with the insertion/retention "
@@ -2435,6 +2472,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             parts,
             printables,
             motion_manifest=motion_manifest,
+            check_motion=check_motion,
             strict_fit=bool(args.strict_fit),
             strict_mount=bool(args.strict_mount),
             print_gates=bool(args.print_gates),

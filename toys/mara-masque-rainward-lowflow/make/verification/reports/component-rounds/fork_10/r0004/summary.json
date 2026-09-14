@@ -1,0 +1,60 @@
+{
+ "build": {
+  "fork_10": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "fork_10"
+ ],
+ "checked": [
+  "fork_10"
+ ],
+ "checks_ok": true,
+ "entry": "part_fork_10.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_10/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_10"
+ ],
+ "print": {
+  "fork_10": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_10/r0004/overhang-fork_10.log": "9322b715405a161db7fdbe16352d2c906039078a9a3229aaebfbadd0b8c8dfc6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_10/r0004/thickness-fork_10.log": "9c3060770767c10eae151d711937c5e2de88eb43fcf169686b5984ed5c2b31bb"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:fork_10",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Fresh fork_10 r0004 front/top/isometric images inspected together in the normalized component contact sheet. Front shows constant flat slab thickness; top shows one broad rounded head with flowing taper and two short separated tail tips; isometric confirms an uninterrupted planar top, vertical perimeter and intact late fork. No extra solids, missing fork, deformation or visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_10/r0004/visual-packet.json",
+  "packet_sha256": "60a736ea3d4048ffaedf61709c5920e11c825ef5be35b92160c4e36c97505274",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,102 @@
+# Rainward Lowflow
+
+![Rainward Lowflow](make/verification/renders/iso.png)
+
+A Sun-shaped backgammon set with flowing plasma counters, shallow raised lanes and an open low capture circle.
+
+[View the verified public product page](https://www.autonomous.ai/toys/product/rainward-lowflow)
+
+| Frozen on this run | Value |
+|---|---|
+| Agent | Codex (`--agent codex`) |
+| Workflow | Spark (`--workflow spark`) |
+| Model | gpt-6-astra (`--model gpt-6-astra`) |
+| Effort | Medium (`--effort medium`) |
+| Inventor | [Mara Masque](../../inventors/mara-masque/) |
+| Factory | https://www.autonomous.ai/toys/product/rainward-lowflow |
+
+## Workflow
+
+Spark: `Wish -> Make -> Release`. The accepted Inventor assignment is preserved under `match/`. Release is host-owned publication of Make output, with no native Release turn or new manual.
+
+| Stage | Attempts | Outcome |
+|---|---|---|
+| Wish | host | frozen |
+| Match | 1 | accepted (Mara Masque) |
+| Invent | skipped | Spark pass-through |
+| Make | 1 | accepted |
+| Playtest | not run | Spark omission |
+| Release | host | accepted |
+| Publication | host | public |
+
+Counts come from each stage's public `ATTEMPTS.json`. Skipped stages created no turn, artifact, or gate. Private host rejections and native session resumes are not public.
+
+## How this toy was created
+
+### 1. Wish — freeze the request
+
+**Input:** the creator's request. **This toy's input:** A Sun-shaped backgammon set with flowing plasma counters, shallow raised lanes and an open low capture circle.
+
+**Output:** an immutable, hash-bound Wish plus its frozen effort route. The exact wording is withheld; this is the sanitized public summary in [the Wish binding](wish/wish.json).
+
+### 2. Invent — choose an Inventor and define the concept
+
+**Input:** the frozen Wish, eligible Inventor roster with each bound Taste/skill bundle, and the product blueprint. **Output:** **Mara Masque** was selected and produced **Rainward Lowflow** — Backgammon — coronal-rain theme: rival streams of condensed plasma travel magnetic lanes, scatter lone drops, and rain back into the Sun. **Concept parts:** Sun, Single-tail drop 1, Single-tail drop 2, Single-tail drop 3, Single-tail drop 4, Single-tail drop 5, Single-tail drop 6, Single-tail drop 7, Single-tail drop 8, Single-tail drop 9, Single-tail drop 10, Single-tail drop 11, Single-tail drop 12, Single-tail drop 13, Single-tail drop 14, Single-tail drop 15, Split-tail drop 1, Split-tail drop 2, Split-tail drop 3, Split-tail drop 4, Split-tail drop 5, Split-tail drop 6, Split-tail drop 7, Split-tail drop 8, Split-tail drop 9, Split-tail drop 10, Split-tail drop 11, Split-tail drop 12, Split-tail drop 13, Split-tail drop 14, Split-tail drop 15, Shared die 1, Shared die 2, Open cup 1, Open cup 2. The complete compact concept is in [make/invented.json](make/invented.json). Spark has no separate Invent Goal; the accepted Inventor assignment and compact Make concept are preserved separately.
+
+### 3. Make — turn the concept into exact product bytes
+
+**Input:** the accepted concept, selected Inventor identity/Taste, blueprint, and any bounded revision evidence. **Output:** A Sun-shaped backgammon set with flowing plasma counters, shallow raised lanes and an open low capture circle. The sealed snapshot contains 37 STEP and 16 product render PNGs, together with [CAD source](make/source/), [models](make/models/), and [deterministic verification](make/verification/). [The Made contract](make/made.json) binds those exact bytes.
+
+### 4. Playtest — challenge the made product
+
+**Input:** the sealed Made product, blueprint-required checks, and exact evidence. **Output:** not run on this effort route; Release preserves the explicit [omission record](release/PLAYTEST-NOT-RUN.json).
+
+### 5. Release — make the customer package
+
+**Input:** the sealed product and the passed Playtest evidence or truthful not-run record. **Output:** the existing Make files and hash-bound publication metadata, with no new manual, PDF, review, or native Release turn; [the existing README](release/README.md) was reused from Make; see [the Release contract](release/release.json).
+
+### 6. Publication — perform and verify the external effect
+
+**Input:** the exact sealed Release package plus host-held Factory authorization; credentials never enter the native session. **Output:** [the public Factory product](https://www.autonomous.ai/toys/product/rainward-lowflow) and a sanitized, hash-verified [publication readback](publication/PUBLICATION.json).
+
+## Run cost
+
+| Measure | Value |
+|---|---|
+| Native Manager input tokens | unavailable (the Manager did not report input usage) |
+| Native Manager cached input tokens | unavailable (the Manager did not report cache detail) |
+| Native Manager uncached input tokens | unavailable (the Manager did not report cache detail) |
+| Native Manager cache-write input tokens | unavailable (the Manager did not report cache detail) |
+| Native Manager output tokens | unavailable (the Manager did not report output usage) |
+| Native Manager reasoning output tokens | unavailable (the Manager did not report reasoning detail) |
+| Wish to verified publication | 1d 21h 35m 18s (2026-09-12T04:25:35Z to 2026-09-14T02:00:53.230312+00:00) |
+
+Input and output tokens are best-effort separate counts reported by the native Manager; they are not added together. Cached plus uncached input equals the input covered by the economic breakdown, while cache writes and reasoning are reported as subsets rather than added again. No dollar cost is inferred. Elapsed time ends only after authenticated Factory public readback.
+
+## Reproduce
+
+From a checkout of this repository, verify the host and run the same agent and workflow. This command uses the public product summary; a later run follows the same route but does not replay these exact CAD bytes.
+
+```bash
+uv run workshop doctor
+uv run workshop wish --agent codex --model gpt-6-astra --effort medium --workflow spark 'A Sun-shaped backgammon set with flowing plasma counters, shallow raised lanes and an open low capture circle.'
+```
+
+If a native turn stops before Release, continue the same Wish with `uv run workshop resume <wish-id>`.
+
+## Snapshot contents
+
+- `wish/` — sanitized Wish binding (exact text only with explicit consent).
+- `match/` — accepted Match assignment.
+- Invent was skipped by this effort route; its sealed compact concept is under `make/`.
+- `make/` — the exact sealed Release facts, exact CAD source, models, product renders, verification, and sealed prior attempts.
+- `release/README.md` — the existing Make README, reused without rewriting.
+- `release/` — accepted Release contract and exact package bytes.
+- `publication/PUBLICATION.json` — sanitized public readback identities.
+- `TOKENS.json` — separate Manager-reported gross/cached/uncached input and output/reasoning tokens by stage; no combined total or dollar estimate.
+- `TIMING.json` — Wish intake to authenticated public-readback elapsed time.
+- `MANIFEST.json` — hashes every workflow file except itself and this README.
+- `SANITIZATION.json` — source/public hashes for host-local path prefixes replaced by stable placeholders.
+- Playtest was not run; Release records that omission explicitly.
+
+This archive contains no agent session, prompt, transcript, chain of thought, host state, credentials, or raw effect receipt. Publication is not proof of physical manufacture, fit, durability, or delivery.

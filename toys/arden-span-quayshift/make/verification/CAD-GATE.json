@@ -1,0 +1,53 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-13T23:56:22+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 323.68 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=ffe1f99b29ce54eba2b0e5ae815bf4e0f6c493d9578d8b3d33596e8b226f1776` | note | 0.00 |
+| 2 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout artifacts/make/r0001/product/cad` | rc=0 | 0.08 |
+| 3 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen artifacts/make/r0001/product/cad/quayshift.step.py artifacts/make/r0001/product/cad/part_A.step.py artifacts/make/r0001/product/cad/part_B.step.py artifacts/make/r0001/product/cad/part_C.step.py artifacts/make/r0001/product/cad/part_D.step.py artifacts/make/r0001/product/cad/part_E.step.py artifacts/make/r0001/product/cad/part_F.step.py artifacts/make/r0001/product/cad/part_G.step.py artifacts/make/r0001/product/cad/part_H.step.py artifacts/make/r0001/product/cad/part_ferry.step.py artifacts/make/r0001/product/cad/part_tray.step.py --write --json` | rc=0 | 23.54 |
+| 4 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit artifacts/make/r0001/product/cad --bed 220.0 220.0 --entry artifacts/make/r0001/product/cad/part_A.step.py --entry artifacts/make/r0001/product/cad/part_B.step.py --entry artifacts/make/r0001/product/cad/part_C.step.py --entry artifacts/make/r0001/product/cad/part_D.step.py --entry artifacts/make/r0001/product/cad/part_E.step.py --entry artifacts/make/r0001/product/cad/part_F.step.py --entry artifacts/make/r0001/product/cad/part_G.step.py --entry artifacts/make/r0001/product/cad/part_H.step.py --entry artifacts/make/r0001/product/cad/part_ferry.step.py --entry artifacts/make/r0001/product/cad/part_tray.step.py --strict` | rc=0 | 3.75 |
+| 5 | `/opt/homebrew/opt/python@3.11/bin/python3.11 artifacts/make/r0001/product/cad/measure/check_fit.py` | rc=0 | 2.31 |
+| 6 | `/opt/homebrew/opt/python@3.11/bin/python3.11 artifacts/make/r0001/product/cad/measure/check_spec.py` | rc=0 | 2.32 |
+| 7 | `/opt/homebrew/opt/python@3.11/bin/python3.11 artifacts/make/r0001/product/cad/measure/check_landmarks.py` | rc=0 | 3.62 |
+| 8 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_numbers artifacts/make/r0001/product/cad` | rc=0 | 2.36 |
+| 9 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_format artifacts/make/r0001/product/cad` | rc=0 | 0.04 |
+| 10 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 11 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 12 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion artifacts/make/r0001/product/cad --manifest artifacts/make/r0001/product/cad/measure/motion.json` | rc=0 | 124.52 |
+| 13 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect batch (23 JSONL requests)` | rc=0 | 31.24 |
+| 14 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cad/part_A.step.py --bed 220x220x220` | rc=0 | 3.16 |
+| 15 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cad/part_A.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-A.md` | rc=0 | 3.18 |
+| 16 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cad/part_A.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-A.md` | rc=0 | 7.12 |
+| 17 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cad/part_B.step.py --bed 220x220x220` | rc=0 | 3.27 |
+| 18 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cad/part_B.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-B.md` | rc=0 | 3.30 |
+| 19 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cad/part_B.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-B.md` | rc=0 | 7.42 |
+| 20 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cad/part_C.step.py --bed 220x220x220` | rc=0 | 2.92 |
+| 21 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cad/part_C.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-C.md` | rc=0 | 2.96 |
+| 22 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cad/part_C.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-C.md` | rc=0 | 6.69 |
+| 23 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cad/part_D.step.py --bed 220x220x220` | rc=0 | 2.85 |
+| 24 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cad/part_D.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-D.md` | rc=0 | 2.86 |
+| 25 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cad/part_D.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-D.md` | rc=0 | 5.91 |
+| 26 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cad/part_E.step.py --bed 220x220x220` | rc=0 | 2.83 |
+| 27 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cad/part_E.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-E.md` | rc=0 | 2.87 |
+| 28 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cad/part_E.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-E.md` | rc=0 | 6.73 |
+| 29 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cad/part_F.step.py --bed 220x220x220` | rc=0 | 2.73 |
+| 30 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cad/part_F.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-F.md` | rc=0 | 2.73 |
+| 31 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cad/part_F.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-F.md` | rc=0 | 6.70 |
+| 32 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cad/part_G.step.py --bed 220x220x220` | rc=0 | 2.75 |
+| 33 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cad/part_G.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-G.md` | rc=0 | 2.77 |
+| 34 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cad/part_G.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-G.md` | rc=0 | 7.76 |
+| 35 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cad/part_H.step.py --bed 220x220x220` | rc=0 | 2.65 |
+| 36 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cad/part_H.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-H.md` | rc=0 | 2.64 |
+| 37 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cad/part_H.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-H.md` | rc=0 | 7.77 |
+| 38 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cad/part_ferry.step.py --bed 220x220x220` | rc=0 | 2.62 |
+| 39 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cad/part_ferry.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-ferry.md` | rc=0 | 2.59 |
+| 40 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cad/part_ferry.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-ferry.md` | rc=0 | 4.77 |
+| 41 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh artifacts/make/r0001/product/cad/part_tray.step.py --bed 220x220x220` | rc=0 | 4.88 |
+| 42 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang artifacts/make/r0001/product/cad/part_tray.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-tray.md` | rc=0 | 5.05 |
+| 43 | `/opt/homebrew/opt/python@3.11/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness artifacts/make/r0001/product/cad/part_tray.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-tray.md` | rc=0 | 7.41 |

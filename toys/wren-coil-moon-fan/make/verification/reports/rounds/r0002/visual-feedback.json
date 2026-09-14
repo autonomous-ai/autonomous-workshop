@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Closed assembly keeps a single unmistakable crescent in top view. Front shows the intended0.4mm running gap, and iso shows aligned gold/dark outlines, exposed pin release and no floating parts. Extended motion and service clearance pass separate exact checks.",
+  "packet_sha256": "415bb2ebaa5eb853f58e424f6dcbca11bf4ece7cd54bca396aac00a88a87afc1",
+  "status": "pass"
+}
