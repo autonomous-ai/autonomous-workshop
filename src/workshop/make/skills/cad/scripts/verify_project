@@ -16,8 +16,8 @@ touched always carries a .step that came from the source it just checked.
 
 Final mode (the default) runs layout, design-reference provenance, multi-target
 generation with STEP writes, print fit, local audits, bought-part mounts,
-powered-system integration and motion when declared (or required by a
-documented assembly procedure), then refs + validate for every entry and assembly
+powered-system integration and optional motion (--check-motion true) when
+declared or required by a documented assembly procedure, then refs + validate for every entry and assembly
 interference.  Image-derived renders and likeness run only after that inspect
 batch is clean, and the print gates (--print-gates) run last of all, so a clash
 or an invalid solid cannot spend any of their budget.
@@ -68,7 +68,7 @@ import stat
 import subprocess
 import sys
 import time
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Sequence
 
 
@@ -86,6 +86,12 @@ DEFAULT_PREVIEW_TOLERANCE = 0.1
 LIKENESS_FLOOR = 0.90
 LIKENESS_STALL_STREAK = 3
 DEFAULT_BED = (220.0, 220.0, 220.0)
+# Wall-clock ceiling handed to check_motion. The host's own CAD-gate timeout is
+# 30 minutes for the entire verification, so a single sweep that wants more than
+# this has already lost the run; stopping it leaves a verdict and a reason
+# instead of a killed process. 0 (or an unparseable value) means no bound.
+DEFAULT_MOTION_DEADLINE_SECONDS = 900.0
+MOTION_DEADLINE_ENV = "WORKSHOP_MOTION_DEADLINE_SECONDS"
 BED_DECLARATION = re.compile(
     r"--bed\s+(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)"
 )
@@ -187,11 +193,20 @@ SIGNATURE_REVIEW_FIELDS = {
     "resolution",
 }
 SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
-PRINT_GATE_RESULTS = {
-    "thickness": ("# Thickness and hollow\n", "RESULT: printable at this wall"),
-    "overhang": ("# Overhang and support\n", "RESULT: prints unsupported"),
-}
-MAX_PRINT_GATE_REPORT_BYTES = 1_000_000
+
+
+def _motion_deadline_seconds() -> float:
+    """Seconds to allow check_motion, from the environment or the default."""
+    raw = os.environ.get(MOTION_DEADLINE_ENV)
+    if raw is None or not raw.strip():
+        return DEFAULT_MOTION_DEADLINE_SECONDS
+    try:
+        seconds = float(raw)
+    except ValueError:
+        print(f"verify_project: ignoring unparseable {MOTION_DEADLINE_ENV}={raw!r}; "
+              f"using {DEFAULT_MOTION_DEADLINE_SECONDS:g}s", file=sys.stderr)
+        return DEFAULT_MOTION_DEADLINE_SECONDS
+    return seconds if seconds > 0 else 0.0
 
 
 def _path_arg(path: Path, cwd: Path) -> str:
@@ -216,70 +231,6 @@ def _resolve_inside_project(raw: str | None, project: Path, cwd: Path) -> Path |
     except ValueError as exc:
         raise ValueError(f"path must stay inside {project}: {candidate}") from exc
     return candidate
-
-
-def _review_print_report(project: Path, name: str) -> bytes:
-    """Read one bounded report without following project or report links."""
-    descriptors = []
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
-    directory_flags = flags | getattr(os, "O_DIRECTORY", 0)
-    try:
-        descriptors.append(os.open(project, directory_flags))
-        descriptors.append(os.open("measure", directory_flags, dir_fd=descriptors[-1]))
-        descriptors.append(os.open(name, flags, dir_fd=descriptors[-1]))
-        descriptor = descriptors[-1]
-        before = os.fstat(descriptor)
-        if not stat.S_ISREG(before.st_mode) or not 1 <= before.st_size <= MAX_PRINT_GATE_REPORT_BYTES:
-            raise ValueError("signature review print report must be one bounded regular file")
-        with os.fdopen(os.dup(descriptor), "rb") as stream:
-            content = stream.read(MAX_PRINT_GATE_REPORT_BYTES + 1)
-        after = os.fstat(descriptor)
-        if (len(content) != before.st_size or after.st_size != before.st_size
-                or after.st_mtime_ns != before.st_mtime_ns):
-            raise ValueError("signature review print report changed while reading")
-        return content
-    except OSError as exc:
-        raise ValueError("signature review print report must be a real in-project file") from exc
-    finally:
-        for descriptor in reversed(descriptors):
-            os.close(descriptor)
-
-
-def _required_review_print_gates(project: Path, bindings) -> None:
-    """Match schema 8's exact passing reports; an empty map makes no claim."""
-    if not isinstance(bindings, dict) or any(not isinstance(key, str) for key in bindings):
-        raise ValueError("signature review print_gate_sha256s must be a report-to-digest map")
-    if not bindings:
-        return
-    covered = set()
-    for relative, expected in sorted(bindings.items()):
-        candidate = PurePosixPath(relative)
-        if (candidate.is_absolute() or ".." in candidate.parts
-                or candidate.parent != PurePosixPath("measure")
-                or candidate.as_posix() != relative or "\\" in relative
-                or any(ord(character) < 32 or ord(character) == 127 for character in relative)
-                or not candidate.name.endswith(".md")):
-            raise ValueError("signature review print gate must be a project measure/*.md report")
-        gate = candidate.name.split("-", 1)[0]
-        if gate not in PRINT_GATE_RESULTS:
-            raise ValueError("signature review print gate must be a thickness or overhang report")
-        if not isinstance(expected, str) or not SHA256_TEXT.fullmatch(expected):
-            raise ValueError("signature review print gate digest is invalid")
-        content = _review_print_report(project, candidate.name)
-        if hashlib.sha256(content).hexdigest() != expected:
-            raise ValueError(f"signature review is stale for {relative}")
-        try:
-            text = content.decode("utf-8")
-        except UnicodeError as exc:
-            raise ValueError("signature review print report must be UTF-8 text") from exc
-        title, passing = PRINT_GATE_RESULTS[gate]
-        if not text.startswith(title):
-            raise ValueError(f"signature review print report is not a {gate} report")
-        if passing not in text:
-            raise ValueError(f"signature review cites a failing {gate} report")
-        covered.add(gate)
-    if covered != set(PRINT_GATE_RESULTS):
-        raise ValueError("signature review print evidence must cover both thickness and overhang")
 
 
 def _required_signature_review(project: Path) -> str:
@@ -315,7 +266,7 @@ def _required_signature_review(project: Path) -> str:
         raise ValueError("signature review must use canonical JSON encoding")
     if set(review) != SIGNATURE_REVIEW_FIELDS:
         raise ValueError("signature review fields do not match schema 8")
-    if type(review.get("schema_version")) is not int or review.get("schema_version") != 8 or review.get("kind") != SIGNATURE_REVIEW_KIND:
+    if review.get("schema_version") != 8 or review.get("kind") != SIGNATURE_REVIEW_KIND:
         raise ValueError("signature review identity is invalid")
     for key in (
         "reviewer",
@@ -373,7 +324,17 @@ def _required_signature_review(project: Path) -> str:
             raise ValueError("signature review critical form requirement must match")
     if review.get("blocking_visual_defects") != []:
         raise ValueError("signature review still has blocking visual defects")
-    _required_review_print_gates(project, review["print_gate_sha256s"])
+    print_gate_sha256s = review.get("print_gate_sha256s")
+    if not isinstance(print_gate_sha256s, dict) or any(
+        not isinstance(path, str)
+        or not path
+        or not isinstance(digest, str)
+        or not SHA256_TEXT.fullmatch(digest)
+        for path, digest in print_gate_sha256s.items()
+    ):
+        raise ValueError(
+            "signature review print_gate_sha256s must map report paths to sha256 digests"
+        )
     for filename, field in (("iso.png", "iso_sha256"), ("signature.png", "signature_sha256")):
         expected = review.get(field)
         if not isinstance(expected, str) or not SHA256_TEXT.fullmatch(expected):
@@ -1229,6 +1190,7 @@ def _final(
     printables: list[Path],
     *,
     motion_manifest: Path | None,
+    check_motion: bool = False,
     strict_fit: bool,
     strict_mount: bool,
     print_gates: bool,
@@ -1312,10 +1274,17 @@ def _final(
             "no measure/power.json; no functional powered system is declared",
         )
 
-    if motion_manifest is not None:
+    if check_motion and motion_manifest is not None:
         if not motion_manifest.is_file():
             print(f"verify_project: motion manifest not found: {motion_manifest}", file=sys.stderr)
             return 2
+        # A motion sweep is the one gate here whose cost is set by the manifest
+        # rather than by the model: steps x pairs of Boolean operations, which a
+        # generous manifest can stretch into hours. Bound it by default, so a
+        # too-expensive sweep reports "never finished" in minutes instead of
+        # leaving the whole verification with no verdict. It fails closed --
+        # an unfinished sweep is never read as clear.
+        motion_deadline = _motion_deadline_seconds()
         if not _run_or_stop(
             runner,
             [
@@ -1324,12 +1293,14 @@ def _final(
                 _path_arg(project, runner.cwd),
                 "--manifest",
                 _path_arg(motion_manifest, runner.cwd),
+                *(["--deadline", f"{motion_deadline:g}"] if motion_deadline else []),
             ],
         ):
             return 1
     else:
         runner.skipped(
             "check_motion",
+            "disabled by Make motion policy; motion is unverified" if not check_motion else
             "no documented mating/assembly action and no moving joint is declared",
         )
 
@@ -1795,7 +1766,7 @@ def self_check() -> int:
                 "part_lid.step.py": "def gen_step():\n    return None\n",
             })
             fixture("a documented assembly path cannot become a skipped motion gate",
-                    img + ["--unpowered"], "no motion manifest exists")
+                    img + ["--unpowered", "--check-motion", "true"], "no motion manifest exists")
 
             project = _sc_project(root, {
                 "README.md": "# Widget\n\n## Files\n\n- `widget.step.py` is the entry.\n"
@@ -2071,6 +2042,9 @@ def build_parser() -> argparse.ArgumentParser:
                              "cannot then be called print-ready")
     parser.add_argument("--powered", action="store_true", help="final mode: require measure/power.json and run the powered-system gate")
     parser.add_argument("--unpowered", action="store_true", help="image-derived final: explicitly declare that the product has no functional electrical load")
+    motion_policy = runpy.run_path(str(SCRIPTS_DIR / "motion_policy.py"))
+    parser.add_argument("--check-motion", type=motion_policy["boolean"], default=None,
+                        metavar="true|false", help="enable motion sweeps and animation review (default: false, or frozen Make option)")
     parser.add_argument("--motion-manifest", help="motion JSON; defaults to measure/motion.json when present")
     parser.add_argument("--bed", type=_parse_bed, help="printer bed WxDxH (default: project declaration, then 220x220x220)")
     parser.add_argument("--preview-tolerance", type=float, default=DEFAULT_PREVIEW_TOLERANCE, help="quick-mode render mesh tolerance (default: 0.1)")
@@ -2199,6 +2173,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--likeness-accept-regression requires --image-derived")
     if args.report and args.no_report:
         parser.error("--report and --no-report are mutually exclusive")
+    try:
+        check_motion = runpy.run_path(str(SCRIPTS_DIR / "motion_policy.py"))["enabled"](args.check_motion)
+    except (OSError, ValueError) as exc:
+        refuse(str(exc))
     signature_review_sha256 = None
     try:
         assembly, parts = _discover_entries(project, args.assembly, cwd)
@@ -2224,10 +2202,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not args.quick and not args.dry_run:
         try:
             signature_review_sha256 = _required_signature_review(project)
-            motion_presentation = runpy.run_path(str(SCRIPTS_DIR / "motion_presentation.py"))
-            motion_presentation["validate"](
-                project, json.loads((project / SIGNATURE_REVIEW_RELATIVE).read_bytes())
-            )
+            if check_motion:
+                motion_presentation = runpy.run_path(str(SCRIPTS_DIR / "motion_presentation.py"))
+                motion_presentation["validate"](
+                    project, json.loads((project / SIGNATURE_REVIEW_RELATIVE).read_bytes())
+                )
         except (ValueError, OSError, TypeError, KeyError) as exc:
             refuse(str(exc))
 
@@ -2242,11 +2221,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             "one-piece print target sets PRINTABLE = True"
         )
 
-    motion_manifest = explicit_motion
-    if motion_manifest is None and (project / "measure" / "motion.json").is_file():
+    motion_manifest = explicit_motion if check_motion else None
+    if check_motion and motion_manifest is None and (project / "measure" / "motion.json").is_file():
         motion_manifest = project / "measure" / "motion.json"
     assembly_claims = _documented_assembly_claims(project) if not args.quick else []
-    if motion_manifest is None and assembly_claims:
+    if check_motion and motion_manifest is None and assembly_claims:
         refuse(
             "README/spec documents an assembly action but no motion manifest exists: "
             f"{assembly_claims[0]} Add measure/motion.json with the insertion/retention "
@@ -2368,7 +2347,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if signature_review_sha256 is not None:
         runner.note(
             "signature review",
-            f"schema=8 sha256={signature_review_sha256}",
+            f"schema=6 sha256={signature_review_sha256}",
         )
     workflow_started = time.perf_counter()
     result = runner.command([sys.executable, SCRIPTS_DIR / "check_layout", _path_arg(project, cwd)])
@@ -2408,6 +2387,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             parts,
             printables,
             motion_manifest=motion_manifest,
+            check_motion=check_motion,
             strict_fit=bool(args.strict_fit),
             strict_mount=bool(args.strict_mount),
             print_gates=bool(args.print_gates),

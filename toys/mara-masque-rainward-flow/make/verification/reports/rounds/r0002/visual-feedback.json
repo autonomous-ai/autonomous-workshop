@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Upper split branch root is too thin for retained2mm neck intent; single shoulder marginal",
+      "evidence": "Top view upper and lower brown pairs show narrow curved connection; independent branch-audit.md gives1.391mm upper neck and1.981mm single shoulder",
+      "part": "checker tail necks",
+      "repair": "Lower rounded notch and short branch0.95mm and add0.1mm to upper cap shoulder using reviewed exact control points"
+    }
+  ],
+  "observation": "All front/top/iso views inspected. Parts sit on table/deck, bar is one open round plateau, dice recesses are now visible from front and iso. Single tails read as swept droplets in top view; split contours are asymmetric but have a visibly narrow upper branch neck, independently measured below the original2mm intent.",
+  "packet_sha256": "4ed91a141831d832b97a3a751b60c5f2a4761990987f90c1ab08c931e0e7271a",
+  "status": "fail"
+}

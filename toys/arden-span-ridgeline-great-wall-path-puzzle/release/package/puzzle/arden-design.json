@@ -1,0 +1,1353 @@
+{
+  "status": "complete",
+  "inventory": {
+    "A": {
+      "0": 0,
+      "1": 1
+    },
+    "B": {
+      "0": 1,
+      "1": 1
+    },
+    "C": {
+      "0": 1,
+      "1": 2
+    },
+    "D": {
+      "0": 2,
+      "1": 1
+    },
+    "S": {
+      "0": 0,
+      "2": 1
+    },
+    "T": {
+      "0": 1,
+      "2": 1
+    },
+    "U": {
+      "0": 1,
+      "2": 2
+    },
+    "G1": {
+      "0": 1
+    },
+    "G2": {
+      "0": 2
+    }
+  },
+  "board": {
+    "rows": 3,
+    "cols": 3,
+    "cell_pitch_mm": 56,
+    "tile_size_mm": 55.6,
+    "tile_base_thickness_mm": 4,
+    "cradle_outer_mm": [
+      174,
+      174,
+      4
+    ],
+    "assembly_module_base_z_mm": 4,
+    "local_route_levels_mm": [
+      20,
+      32,
+      44
+    ],
+    "directions": [
+      "N",
+      "E",
+      "S",
+      "W"
+    ],
+    "coordinate_system": "x east, y north, z up; row zero north; rotations clockwise viewed from above; CAD rotation -90*r around Z",
+    "local_ports_xy_mm": [
+      [
+        0,
+        27.8
+      ],
+      [
+        27.8,
+        0
+      ],
+      [
+        0,
+        -27.8
+      ],
+      [
+        -27.8,
+        0
+      ]
+    ],
+    "route_clear_width_mm": 12,
+    "wall_width_mm": 16.8
+  },
+  "rules": [
+    "Use all nine modules upright, in quarter-turn rotations, one per cell.",
+    "Challenge clues fix exact module, cell and orientation.",
+    "Both ports at each seam must meet in direction and height.",
+    "One continuous route must visit all nine modules from G1 to G2; no other ends or loops.",
+    "T orientations 0/2 and 1/3 are mechanically equivalent and never counted separately."
+  ],
+  "counts": {
+    "oriented_solutions": 56,
+    "global_rotation_classes": 14,
+    "published_challenges": 12,
+    "additional_verified_challenges": 2,
+    "solution_path_shapes_mod_rotation": 4
+  },
+  "symmetry": "Global quarter-turn rotations identified. Mirror is not legal: A low N/high E has no reflected low E/high N counterpart. Piece IDs all correspond to different route behavior; T half-turn collapses.",
+  "challenges": [
+    {
+      "id": "R01",
+      "clues": [
+        [
+          4,
+          "G2",
+          3
+        ],
+        [
+          6,
+          "G1",
+          1
+        ],
+        [
+          0,
+          "A",
+          1
+        ],
+        [
+          2,
+          "B",
+          2
+        ]
+      ],
+      "solution": {
+        "path": [
+          6,
+          7,
+          8,
+          5,
+          2,
+          1,
+          0,
+          3,
+          4
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "B",
+            2
+          ],
+          [
+            3,
+            "C",
+            0
+          ],
+          [
+            4,
+            "G2",
+            3
+          ],
+          [
+            5,
+            "T",
+            0
+          ],
+          [
+            6,
+            "G1",
+            1
+          ],
+          [
+            7,
+            "U",
+            3
+          ],
+          [
+            8,
+            "D",
+            3
+          ]
+        ]
+      },
+      "solutions_with_gates": 6,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 2,
+      "deduction_prompt": "Trace the heights from each gate; reserve the only low-level straight for the low terrace connection."
+    },
+    {
+      "id": "R02",
+      "clues": [
+        [
+          4,
+          "G1",
+          2
+        ],
+        [
+          8,
+          "G2",
+          0
+        ]
+      ],
+      "solution": {
+        "path": [
+          4,
+          7,
+          6,
+          3,
+          0,
+          1,
+          2,
+          5,
+          8
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "B",
+            2
+          ],
+          [
+            3,
+            "T",
+            0
+          ],
+          [
+            4,
+            "G1",
+            2
+          ],
+          [
+            5,
+            "U",
+            0
+          ],
+          [
+            6,
+            "C",
+            0
+          ],
+          [
+            7,
+            "D",
+            3
+          ],
+          [
+            8,
+            "G2",
+            0
+          ]
+        ]
+      },
+      "solutions_with_gates": 1,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 0,
+      "deduction_prompt": "Use bends to reserve corners and compare the two high-level handed turns."
+    },
+    {
+      "id": "R03",
+      "clues": [
+        [
+          4,
+          "G2",
+          1
+        ],
+        [
+          8,
+          "G1",
+          3
+        ],
+        [
+          0,
+          "A",
+          1
+        ]
+      ],
+      "solution": {
+        "path": [
+          8,
+          7,
+          6,
+          3,
+          0,
+          1,
+          2,
+          5,
+          4
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "B",
+            2
+          ],
+          [
+            3,
+            "T",
+            0
+          ],
+          [
+            4,
+            "G2",
+            1
+          ],
+          [
+            5,
+            "D",
+            3
+          ],
+          [
+            6,
+            "C",
+            0
+          ],
+          [
+            7,
+            "U",
+            1
+          ],
+          [
+            8,
+            "G1",
+            3
+          ]
+        ]
+      },
+      "solutions_with_gates": 2,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 1,
+      "deduction_prompt": "Find the low terrace pair, then join the remaining level-one and level-two routes."
+    },
+    {
+      "id": "R04",
+      "clues": [
+        [
+          4,
+          "G2",
+          2
+        ],
+        [
+          6,
+          "G1",
+          0
+        ],
+        [
+          0,
+          "A",
+          1
+        ]
+      ],
+      "solution": {
+        "path": [
+          6,
+          3,
+          0,
+          1,
+          2,
+          5,
+          8,
+          7,
+          4
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "B",
+            2
+          ],
+          [
+            3,
+            "T",
+            0
+          ],
+          [
+            4,
+            "G2",
+            2
+          ],
+          [
+            5,
+            "U",
+            0
+          ],
+          [
+            6,
+            "G1",
+            0
+          ],
+          [
+            7,
+            "D",
+            0
+          ],
+          [
+            8,
+            "C",
+            3
+          ]
+        ]
+      },
+      "solutions_with_gates": 2,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 1,
+      "deduction_prompt": "Trace the heights from each gate; reserve the only low-level straight for the low terrace connection."
+    },
+    {
+      "id": "R05",
+      "clues": [
+        [
+          4,
+          "G1",
+          2
+        ],
+        [
+          6,
+          "G2",
+          0
+        ],
+        [
+          0,
+          "A",
+          1
+        ]
+      ],
+      "solution": {
+        "path": [
+          4,
+          7,
+          8,
+          5,
+          2,
+          1,
+          0,
+          3,
+          6
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "B",
+            2
+          ],
+          [
+            3,
+            "U",
+            0
+          ],
+          [
+            4,
+            "G1",
+            2
+          ],
+          [
+            5,
+            "T",
+            0
+          ],
+          [
+            6,
+            "G2",
+            0
+          ],
+          [
+            7,
+            "C",
+            0
+          ],
+          [
+            8,
+            "D",
+            3
+          ]
+        ]
+      },
+      "solutions_with_gates": 2,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 1,
+      "deduction_prompt": "Use bends to reserve corners and compare the two high-level handed turns."
+    },
+    {
+      "id": "R06",
+      "clues": [
+        [
+          4,
+          "G2",
+          2
+        ],
+        [
+          8,
+          "G1",
+          0
+        ],
+        [
+          0,
+          "A",
+          1
+        ],
+        [
+          2,
+          "B",
+          2
+        ]
+      ],
+      "solution": {
+        "path": [
+          8,
+          5,
+          2,
+          1,
+          0,
+          3,
+          6,
+          7,
+          4
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "B",
+            2
+          ],
+          [
+            3,
+            "U",
+            0
+          ],
+          [
+            4,
+            "G2",
+            2
+          ],
+          [
+            5,
+            "T",
+            0
+          ],
+          [
+            6,
+            "D",
+            0
+          ],
+          [
+            7,
+            "C",
+            3
+          ],
+          [
+            8,
+            "G1",
+            0
+          ]
+        ]
+      },
+      "solutions_with_gates": 6,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 2,
+      "deduction_prompt": "Find the low terrace pair, then join the remaining level-one and level-two routes."
+    },
+    {
+      "id": "R07",
+      "clues": [
+        [
+          4,
+          "G2",
+          3
+        ],
+        [
+          6,
+          "G1",
+          1
+        ],
+        [
+          0,
+          "A",
+          1
+        ],
+        [
+          2,
+          "D",
+          2
+        ]
+      ],
+      "solution": {
+        "path": [
+          6,
+          7,
+          8,
+          5,
+          2,
+          1,
+          0,
+          3,
+          4
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "D",
+            2
+          ],
+          [
+            3,
+            "C",
+            0
+          ],
+          [
+            4,
+            "G2",
+            3
+          ],
+          [
+            5,
+            "U",
+            2
+          ],
+          [
+            6,
+            "G1",
+            1
+          ],
+          [
+            7,
+            "T",
+            1
+          ],
+          [
+            8,
+            "B",
+            3
+          ]
+        ]
+      },
+      "solutions_with_gates": 6,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 2,
+      "deduction_prompt": "Trace the heights from each gate; reserve the only low-level straight for the low terrace connection."
+    },
+    {
+      "id": "R08",
+      "clues": [
+        [
+          4,
+          "G1",
+          1
+        ],
+        [
+          8,
+          "G2",
+          3
+        ],
+        [
+          0,
+          "A",
+          1
+        ]
+      ],
+      "solution": {
+        "path": [
+          4,
+          5,
+          2,
+          1,
+          0,
+          3,
+          6,
+          7,
+          8
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "D",
+            2
+          ],
+          [
+            3,
+            "T",
+            0
+          ],
+          [
+            4,
+            "G1",
+            1
+          ],
+          [
+            5,
+            "C",
+            3
+          ],
+          [
+            6,
+            "B",
+            0
+          ],
+          [
+            7,
+            "U",
+            3
+          ],
+          [
+            8,
+            "G2",
+            3
+          ]
+        ]
+      },
+      "solutions_with_gates": 2,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 1,
+      "deduction_prompt": "Use bends to reserve corners and compare the two high-level handed turns."
+    },
+    {
+      "id": "R09",
+      "clues": [
+        [
+          4,
+          "G2",
+          2
+        ],
+        [
+          8,
+          "G1",
+          0
+        ],
+        [
+          0,
+          "A",
+          1
+        ],
+        [
+          2,
+          "D",
+          2
+        ]
+      ],
+      "solution": {
+        "path": [
+          8,
+          5,
+          2,
+          1,
+          0,
+          3,
+          6,
+          7,
+          4
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "D",
+            2
+          ],
+          [
+            3,
+            "T",
+            0
+          ],
+          [
+            4,
+            "G2",
+            2
+          ],
+          [
+            5,
+            "U",
+            2
+          ],
+          [
+            6,
+            "B",
+            0
+          ],
+          [
+            7,
+            "C",
+            3
+          ],
+          [
+            8,
+            "G1",
+            0
+          ]
+        ]
+      },
+      "solutions_with_gates": 6,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 2,
+      "deduction_prompt": "Find the low terrace pair, then join the remaining level-one and level-two routes."
+    },
+    {
+      "id": "R10",
+      "clues": [
+        [
+          2,
+          "G1",
+          3
+        ],
+        [
+          6,
+          "G2",
+          1
+        ]
+      ],
+      "solution": {
+        "path": [
+          2,
+          1,
+          0,
+          3,
+          4,
+          5,
+          8,
+          7,
+          6
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "G1",
+            3
+          ],
+          [
+            3,
+            "B",
+            0
+          ],
+          [
+            4,
+            "T",
+            1
+          ],
+          [
+            5,
+            "D",
+            2
+          ],
+          [
+            6,
+            "G2",
+            1
+          ],
+          [
+            7,
+            "U",
+            1
+          ],
+          [
+            8,
+            "C",
+            3
+          ]
+        ]
+      },
+      "solutions_with_gates": 1,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 0,
+      "deduction_prompt": "Trace the heights from each gate; reserve the only low-level straight for the low terrace connection."
+    },
+    {
+      "id": "R11",
+      "clues": [
+        [
+          2,
+          "G1",
+          3
+        ],
+        [
+          4,
+          "G2",
+          1
+        ],
+        [
+          0,
+          "A",
+          1
+        ],
+        [
+          3,
+          "T",
+          0
+        ]
+      ],
+      "solution": {
+        "path": [
+          2,
+          1,
+          0,
+          3,
+          6,
+          7,
+          8,
+          5,
+          4
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "G1",
+            3
+          ],
+          [
+            3,
+            "T",
+            0
+          ],
+          [
+            4,
+            "G2",
+            1
+          ],
+          [
+            5,
+            "C",
+            2
+          ],
+          [
+            6,
+            "B",
+            0
+          ],
+          [
+            7,
+            "U",
+            3
+          ],
+          [
+            8,
+            "D",
+            3
+          ]
+        ]
+      },
+      "solutions_with_gates": 6,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 2,
+      "deduction_prompt": "Use bends to reserve corners and compare the two high-level handed turns."
+    },
+    {
+      "id": "R12",
+      "clues": [
+        [
+          2,
+          "G1",
+          3
+        ],
+        [
+          4,
+          "G2",
+          1
+        ],
+        [
+          0,
+          "A",
+          1
+        ],
+        [
+          3,
+          "U",
+          0
+        ]
+      ],
+      "solution": {
+        "path": [
+          2,
+          1,
+          0,
+          3,
+          6,
+          7,
+          8,
+          5,
+          4
+        ],
+        "state": [
+          [
+            0,
+            "A",
+            1
+          ],
+          [
+            1,
+            "S",
+            3
+          ],
+          [
+            2,
+            "G1",
+            3
+          ],
+          [
+            3,
+            "U",
+            0
+          ],
+          [
+            4,
+            "G2",
+            1
+          ],
+          [
+            5,
+            "C",
+            2
+          ],
+          [
+            6,
+            "D",
+            0
+          ],
+          [
+            7,
+            "T",
+            1
+          ],
+          [
+            8,
+            "B",
+            3
+          ]
+        ]
+      },
+      "solutions_with_gates": 6,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 2,
+      "deduction_prompt": "Find the low terrace pair, then join the remaining level-one and level-two routes."
+    },
+    {
+      "id": "R13",
+      "clues": [
+        [
+          2,
+          "G1",
+          2
+        ],
+        [
+          6,
+          "G2",
+          0
+        ],
+        [
+          0,
+          "B",
+          1
+        ]
+      ],
+      "solution": {
+        "path": [
+          2,
+          5,
+          8,
+          7,
+          4,
+          1,
+          0,
+          3,
+          6
+        ],
+        "state": [
+          [
+            0,
+            "B",
+            1
+          ],
+          [
+            1,
+            "A",
+            2
+          ],
+          [
+            2,
+            "G1",
+            2
+          ],
+          [
+            3,
+            "U",
+            0
+          ],
+          [
+            4,
+            "S",
+            0
+          ],
+          [
+            5,
+            "T",
+            0
+          ],
+          [
+            6,
+            "G2",
+            0
+          ],
+          [
+            7,
+            "C",
+            0
+          ],
+          [
+            8,
+            "D",
+            3
+          ]
+        ]
+      },
+      "solutions_with_gates": 2,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 1,
+      "deduction_prompt": "Trace the heights from each gate; reserve the only low-level straight for the low terrace connection."
+    },
+    {
+      "id": "R14",
+      "clues": [
+        [
+          2,
+          "G2",
+          2
+        ],
+        [
+          6,
+          "G1",
+          0
+        ],
+        [
+          0,
+          "B",
+          1
+        ]
+      ],
+      "solution": {
+        "path": [
+          6,
+          3,
+          0,
+          1,
+          4,
+          7,
+          8,
+          5,
+          2
+        ],
+        "state": [
+          [
+            0,
+            "B",
+            1
+          ],
+          [
+            1,
+            "A",
+            2
+          ],
+          [
+            2,
+            "G2",
+            2
+          ],
+          [
+            3,
+            "T",
+            0
+          ],
+          [
+            4,
+            "S",
+            0
+          ],
+          [
+            5,
+            "U",
+            2
+          ],
+          [
+            6,
+            "G1",
+            0
+          ],
+          [
+            7,
+            "C",
+            0
+          ],
+          [
+            8,
+            "D",
+            3
+          ]
+        ]
+      },
+      "solutions_with_gates": 2,
+      "solutions_with_all_clues": 1,
+      "minimal_extra_clue_count": 1,
+      "deduction_prompt": "Use bends to reserve corners and compare the two high-level handed turns."
+    }
+  ],
+  "negative": {
+    "state": [
+      [
+        0,
+        "A",
+        1
+      ],
+      [
+        1,
+        "S",
+        1
+      ],
+      [
+        2,
+        "B",
+        2
+      ],
+      [
+        3,
+        "C",
+        0
+      ],
+      [
+        4,
+        "G2",
+        3
+      ],
+      [
+        5,
+        "T",
+        0
+      ],
+      [
+        6,
+        "G1",
+        1
+      ],
+      [
+        7,
+        "U",
+        3
+      ],
+      [
+        8,
+        "D",
+        3
+      ]
+    ],
+    "defect": "S rotated 180 degrees. Direction remains aligned but its low/high ends reverse, producing 12 mm mismatches at both seams.",
+    "checker_rejection": "AssertionError(('seam', 0, 1, 0, {1: 0, 3: 1}))",
+    "repair": "Rotate S 180 degrees back; all other modules unchanged."
+  },
+  "limitations": [
+    "Abstract graph proof only; root must reconcile modeled stair treads and seams, bearing, collision, print checks and access.",
+    "No human difficulty, physical handling or market outcome evidence."
+  ]
+}

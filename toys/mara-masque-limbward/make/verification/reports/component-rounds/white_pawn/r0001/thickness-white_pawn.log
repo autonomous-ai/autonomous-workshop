@@ -1,0 +1,14 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_white_pawn.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001/thickness-white_pawn.md
+(2.5s, exit 1)
+--- stdout
+part_white_pawn.step.py: 1.40 cm3 solid, grid 0.133 mm (125x125x95), 44539 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      1.2% of surface below (531 of 44539 samples); thinnest 0.13 mm at (3.5, 4.9, 11.9) in 1 region(s); 1 wall(s) (widest band 0.86 mm); 30 more within measurement error of the limit
+  PASS  thickness distribution         median 9.87 mm, p95 16.00 mm, max 16.07 mm
+  WARN  hollowable at 1.20 mm wall     0.58 of 1.40 cm3 (42%) in 1 pocket(s)
+  PASS  filament that would save       0.09 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.13 mm at (3.5, 4.9, 11.9)    531 samples, 9.9 mm2, runs 11.6 mm, band 0.86 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001/thickness-white_pawn.md
+
+--- stderr

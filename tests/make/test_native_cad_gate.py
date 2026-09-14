@@ -7,6 +7,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -18,6 +19,7 @@ from workshop.make.native_gate import (
     DEFAULT_NATIVE_CAD_OUTPUT_BYTES,
     NATIVE_CAD_FULL_TIER,
     NATIVE_CAD_GATE_NOZZLE_MM,
+    NATIVE_CAD_GATE_OVERHANG_ANGLE_DEG,
     NATIVE_CAD_NON_PRINT_READY_TIER,
     NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_MODE,
@@ -366,11 +368,21 @@ class NativeCadGateTest(unittest.TestCase):
 
         evidence = self._verify(runner)
 
-        # A wall that passes at 0.4 mm can fail at 0.6, so the nozzle the claim
-        # was made at is in the command and therefore in the receipt.
+        # A wall that passes at 0.4 mm can fail at 0.6, and a face that passes
+        # at 45 deg can fail at 60, so both thresholds the claim was made at are
+        # in the command and therefore in the receipt.  Naming the angle also
+        # stops the receipt resting on a verifier default upstream can move.
         self.assertEqual(
             observed["command"][3:],
-            ("--fresh", "--strict-fit", "--print-gates", "--nozzle", NATIVE_CAD_GATE_NOZZLE_MM),
+            (
+                "--fresh",
+                "--strict-fit",
+                "--print-gates",
+                "--nozzle",
+                NATIVE_CAD_GATE_NOZZLE_MM,
+                "--overhang-angle",
+                NATIVE_CAD_GATE_OVERHANG_ANGLE_DEG,
+            ),
         )
         # Skipping the wall gate forfeits the claim upstream, so the tier that
         # carries the claim can never ask for it.
@@ -910,6 +922,29 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertTrue(process.stdout.closed)
         self.assertTrue(process.stderr.closed)
 
+    def test_a_stray_child_holding_the_pipes_cannot_hang_the_bounded_run(self):
+        """A grandchild that escapes the process group keeps the write end of
+        stdout open after the verifier exits. Joining its reader without a bound
+        is an unbounded wait inside the one place that bounds the verifier."""
+        leak = (
+            "import subprocess, sys;"
+            "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(3)'],"
+            " start_new_session=True);"
+            "sys.stdout.write('verifier done')"
+        )
+        started = time.monotonic()
+        with mock.patch("workshop.make.native_gate.STREAM_DRAIN_GRACE_SECONDS", 0.25):
+            with self.assertRaises(ArtifactError) as caught:
+                run_bounded_verifier(
+                    (sys.executable, "-c", leak),
+                    cwd=self.run_root,
+                    environment={"PYTHONDONTWRITEBYTECODE": "1"},
+                    timeout_seconds=None,
+                    max_output_bytes=64,
+                )
+        self.assertIn("stray child", str(caught.exception))
+        self.assertLess(time.monotonic() - started, 3.0)
+
     def _assert_default_runner_drains_and_bounds_both_streams(self):
         result = run_bounded_verifier(
             (
@@ -1075,6 +1110,50 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "one to four"):
             validate(self.project)
 
+    def test_schema_seven_signature_review_cannot_unlock_final_geometry(self):
+        self._write_signature_review(review_rounds=1)
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["schema_version"] = 7
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--fresh",
+                "--strict-fit",
+                "--no-report",
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("signature review identity is invalid", completed.stderr)
+        self.assertNotIn("check_layout", completed.stdout)
+
+    def test_signature_review_requires_a_print_gate_hash_mapping(self):
+        import runpy
+
+        self._write_signature_review(review_rounds=1)
+        validate = runpy.run_path(str(self.verifier))["_required_signature_review"]
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["print_gate_sha256s"] = []
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "must map report paths"):
+            validate(self.project)
+
     def test_blocking_form_defect_cannot_unlock_final_geometry(self):
         self._write_signature_review(review_rounds=1)
         review_path = self.project / "snap/SIGNATURE-REVIEW.json"
@@ -1124,4 +1203,3 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         for retired in ("check_thickness", "check_mesh", "check_overhang", "export"):
             with self.subTest(retired=retired):
                 self.assertNotIn(retired, output)
-

@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "phase": "revealed_comparison_after_preserved_unprimed_read",
+  "verdict": "PASS",
+  "review_rounds": 1,
+  "concept_sha256": "dc1d8304231ea7d5e5e2280295fd657b181d9ac78728e3deb09317a2a720dc52",
+  "corrections": [
+    {
+      "number": 1,
+      "verdict": "PASS",
+      "positive_match": "Broad low unobstructed capture circle;17mm top and0.2mm rise above lanes.",
+      "negative_requirements": "No obscuring central pillar, walls, ornament or blocked depicted approach; outer190x190 preserved.",
+      "blind_evidence": "board-side and center-detail recorded slight step and plain circle.",
+      "numeric_evidence": "correction-geometry and capture-clearance; sampled access only."
+    },
+    {
+      "number": 2,
+      "verdict": "PASS",
+      "positive_match": "24 broad flat raised lane surfaces, shallow rounded edges, counters rest ON them.",
+      "negative_requirements": "No tall wall/rail geometry, ridge-straddling or removed lanes. Small tails can overhang without contacting neighboring flats.",
+      "blind_evidence": "24 wedges counted; lane-detail and neutral view show level pieces on broad flats.",
+      "numeric_evidence": "24 planes at16.8;240 support checks min0.92879167 and2.43384mm centroid margin;48 capacity cases15 each."
+    },
+    {
+      "number": 3,
+      "verdict": "PASS",
+      "positive_match": "Narrow shallow recessed channels distinguish adjacent strips in uniform color.",
+      "negative_requirements": "No paint or alternating color relied on for board segmentation.",
+      "blind_evidence": "neutral near-top/oblique relief readable; overhead low contrast noted.",
+      "numeric_evidence": "20 ordinary floors0.8mm;0.8mm depth; exact STEP presentation."
+    },
+    {
+      "number": 4,
+      "verdict": "PASS",
+      "positive_match": "Four groups of six at original6/7,12/13,18/19,24/1.",
+      "negative_requirements": "No deleted lane or capacity loss.",
+      "blind_evidence": "Four quarter-turn boundary bars and24 radial lanes; original lane numbers not inferable from image alone.",
+      "numeric_evidence": "theta(p)=-75+15*(p-1); wide cuts before1,7,13,19; audited1.6mm floors after6,12,18,24."
+    },
+    {
+      "number": 5,
+      "verdict": "PASS",
+      "positive_match": "Four low rounded capsules in wide BETWEEN-lane gaps.",
+      "negative_requirements": "None on lanes6,12,18,24 or landing areas; no endpoint dots; no tall obstruction; uniform-color geometry.",
+      "blind_evidence": "lane-detail-top shows rounded bar in channel separated from adjacent counter-bearing flats; neutral counterpart retains relief.",
+      "numeric_evidence": "4 marker tops at17mm;0.55mm flat clearance;3.6809mm minimum counter clearance; sampled capture access passes."
+    }
+  ],
+  "critical_form_requirements": [
+    {
+      "requirement": "Substantially lower the central capture circle; retain a broad, flat, smooth unobstructed surface.",
+      "blind_evidence": "Blind board-side and center-detail show a slight central step and a plain broad circle with three dark counters, no pillar or obstruction. Current geometry supplements the visual read: center top17mm, only0.2mm above lane tops16.8mm, radius24mm, continuous1809.557mm2 plane, zero inner wires. No prior report is reused as current proof.",
+      "matches": true
+    },
+    {
+      "requirement": "Center must not obscure sightlines or impede placing and retrieving pieces.",
+      "blind_evidence": "Blind low side and center detail keep both near and far lanes visible; center has no walls or fittings. Current capture audit finds zero sampled collisions in42 vertical positions and2mm overhead clearance. This establishes depicted geometric access, not a hand-access or physical comfort test.",
+      "matches": true
+    },
+    {
+      "requirement": "Preserve board outer plan dimensions while intentionally reducing overall height.",
+      "blind_evidence": "Blind board views retain the circular outline and sixteen rounded perimeter lobes. Current measured STEP bounds190x190x17mm and preservation audit retain the original outer-profile constants; dimensional preservation is audit evidence, not an image-derived measurement.",
+      "matches": true
+    },
+    {
+      "requirement": "Replace engraved radial lines with exactly24 low broad flat-topped radial playing strips.",
+      "blind_evidence": "Blind top and near-top count24 wedge lanes; oblique isolation shows their broad tops above narrow channels. Current B-rep reports24 distinct lane flat faces at16.8mm, with deck16mm.",
+      "matches": true
+    },
+    {
+      "requirement": "Pieces sit ON playing lanes, not between narrow ridges or straddling tall walls or rails.",
+      "blind_evidence": "Blind lane-detail and neutral counterpart show flat counter bases resting on wide surfaces bounded by recessed channels; no tall rails flank or support them. Current240 support checks show zero neighbor-lane contact and minimum92.879% own-flat support, with small free tail overhang honestly retained.",
+      "matches": true
+    },
+    {
+      "requirement": "Keep flat stable support for existing plasma counters and aligned stacks.",
+      "blind_evidence": "Blind counters have plain planar-looking top faces and vertical sidewalls; lane detail shows level resting pieces. Capacity shows five aligned tall silhouettes, but cannot reveal layer seams. Current fit audit establishes planar contact, minimum2.43384mm centroid-to-support-hull margin, and full aligned interlayer contact; no physical stability claim.",
+      "matches": true
+    },
+    {
+      "requirement": "Use shallow rounded relief rather than tall walls or rails.",
+      "blind_evidence": "Blind board-side shows shallow surface relief relative to the board body; lane closeups show softened edges and no rail enclosure. Source and current measurements establish0.8mm lane relief and0.15mm edge rounding.",
+      "matches": true
+    },
+    {
+      "requirement": "Separate every neighboring strip with a narrow shallow recessed channel.",
+      "blind_evidence": "Blind neutral board-oblique shows narrow channels between the broad wedge tops, continuing outward from the central ring. Current geometry measures ordinary channel floor widths0.8mm; depth0.8mm is source-defined and consistent with measured tops.",
+      "matches": true
+    },
+    {
+      "requirement": "Lane distinctions must be visually and tactually geometric, without coloring or paint.",
+      "blind_evidence": "Blind neutral board-near-top, board-oblique and lane-detail-neutral show the same grooves, steps and marker through single-color geometry. Direct overhead lines are faint but countable; no alternating lane colors are needed. Physical tactile perception is not tested; nonzero relief is measured.",
+      "matches": true
+    },
+    {
+      "requirement": "Create four groups of six with modestly wider gaps exactly BETWEEN6/7,12/13,18/19,24/1.",
+      "blind_evidence": "Blind top detects four capsule-marked boundaries approximately a quarter turn apart and six lanes per quarter; visual count alone cannot assign original numbering. Revealed source retains theta(p)=-75+15*(p-1), cuts wide channels before p=1,7,13,19, and measured after_lane6,12,18,24 widths are1.6mm versus0.8mm for the other20.",
+      "matches": true
+    },
+    {
+      "requirement": "Do not remove a lane or reduce required15-piece lane capacity.",
+      "blind_evidence": "Blind board remains24 lanes; capacity shows five radial stations with tall aligned silhouettes. Current48 lane/type capacity checks each establish5 stations x3 aligned layers=15, full interlayer planar contact, zero positive overlap. Seam-free rendering cannot independently count all15 layers.",
+      "matches": true
+    },
+    {
+      "requirement": "Add exactly one distinct low rounded physical separator inside each of the four wide boundary gaps.",
+      "blind_evidence": "Blind board-top shows four short capsule features; lane-detail-top shows a rounded bar centered within a channel. Current B-rep detects exactly4 marker tops, each centered on an audited six-lane boundary at radius65mm, length10mm, width0.8mm.",
+      "matches": true
+    },
+    {
+      "requirement": "Separators must be BETWEEN lanes, never on lane6,12,18,24 or any landing area.",
+      "blind_evidence": "Blind lane-detail-top shows the marker separated from both neighboring broad counter-bearing faces. Current measurement gives0.55mm minimum marker-to-lane-flat clearance and current support audit3.6809mm minimum marker-to-counter clearance; source places markers at theta(p)+7.5 degrees for p=6,12,18,24.",
+      "matches": true
+    },
+    {
+      "requirement": "Do not add dots on lane endpoints.",
+      "blind_evidence": "Blind board top and oblique views show no endpoint dots or endpoint markers. The observed round lobes belong to the preserved perimeter outline; all four new short bars are inward along channels.",
+      "matches": true
+    },
+    {
+      "requirement": "Separators must remain low enough not to block sightlines, placement, retrieval or capture movement.",
+      "blind_evidence": "Blind lane closeups put marker tops well below counter tops and show open access on both sides; board-side has no tall barriers. Current marker top17mm is0.2mm above lane tops, and sampled capture clearance passes. No continuous swept-volume or hand-access test is claimed.",
+      "matches": true
+    },
+    {
+      "requirement": "All lane distinctions and separators must work in one material color through geometry alone.",
+      "blind_evidence": "Blind isolated gray board and neutral lane closeup preserve clear oblique lane edges and rounded between-lane bars. Presentation audit states exact STEP face-normal shading, uniformly recolored board, no drawn lines, groove-color changes or fake relief.",
+      "matches": true
+    },
+    {
+      "requirement": "Preserve corrected recessed1-6 dice pips and contrasting render treatment.",
+      "blind_evidence": "Blind dice-detail separately counts1,2,3 and opposite-view4,5,6 black circular pips on light faces. Recess depth cannot be read reliably from the image. Current B-rep finds21 conical recesses with opposite1/6,2/5,3/4; current preservation audit retains pip construction and color.",
+      "matches": true
+    },
+    {
+      "requirement": "Preserve flowing single-tail and late-bifurcated plasma counters, without faces, sharp points, square heads or long parallel ear-like prongs.",
+      "blind_evidence": "Blind counter-detail shows a rounded condensed head flowing into a swept tail; dark counter splits only at its small terminal notch. Tops have no face or decoration, ends are rounded. Current baseline/current native B-rep equivalence has zero symmetric volume difference for both counter types.",
+      "matches": true
+    },
+    {
+      "requirement": "Preserve historical backgammon rules, setup and original component complement.",
+      "blind_evidence": "Blind overall views show board,30 counters split15/15, two cups and two dice; initial row counts are2,5,3,5 per color. Current preservation audit proves35-component complement and exact historical RULES.md bytes; current rules check confirms standard setup and conserved30 counters. Images alone cannot verify the entire rules text.",
+      "matches": true
+    },
+    {
+      "requirement": "Show exact attacker replacement and victim capture onto the low central platform, preserving spatial/causal interaction.",
+      "blind_evidence": "Blind BEFORE/AFTER shows a cream counter replace an outer dark counter, the former cream position empty, and a dark counter newly in the center. Current state/rules evidence identifies single_06 and fork_01 as the only changed occurrences,28 unchanged counters, legal6-point hit with second die still playable;80mm victim displacement. The manual transition is depicted through endpoints, not an automatic mechanism.",
+      "matches": true
+    },
+    {
+      "requirement": "Regenerate current verification and canonical oblique overview, countable top and detail of checker ON lane with separator BETWEEN.",
+      "blind_evidence": "The fourteen blind-inspected canonical PNGs include iso,top,neutral board top/near-top/oblique/side,lane details,center,capacity,dice,counter and before/after signature. Current presentation hashes and STEP source hashes were verified against disk before comparison; all35 thickness and35 overhang reports contain PASS with no FAIL.",
+      "matches": true
+    },
+    {
+      "requirement": "Preserve prior products and use a distinct correction identity; do not claim physical tests or statistical dice fairness.",
+      "blind_evidence": "No blind image depicts a manufactured sample or user test. Current metadata concept is Rainward Lowflow and preservation audit binds this run product_id to its immutable archive. No external published product was altered by this reviewer. All conclusions are digital/visual; no statistical fairness, manufacture, tactile validation or physical stack stability is inferred.",
+      "matches": true
+    }
+  ],
+  "wish_revealed_after_blind_read": true,
+  "held_object_unmistakable": true,
+  "form_matches_wish": true,
+  "subjects_match_wish": true,
+  "action_matches_wish": true,
+  "relationship_matches_wish": true,
+  "anti_generic_signature_visible": true,
+  "signature_experience_unmistakable": true,
+  "finished_product_desirable": true,
+  "subjects_action_relationship": "Flowing single/split-tail counter sets on radial Sun board; attacker replaces lone opponent, victim relocates to broad low center. Before/after spatial relation was recognized without requirements; legality and displacement confirmed only after reveal.",
+  "desirability": "The coherent sunburst silhouette, flowing contrasting counters and low unobstructed center form a finished, legible game set. This is visual judgment, not observed human delight.",
+  "blocking_visual_defects": [],
+  "largest_risk": "Aligned equal-color capacity layers have invisible seams, and direct overhead shallow relief has low contrast. Renders alone cannot prove15 physical pieces or physical stack stability, tactile readability, hand access or dice fairness.",
+  "resolution": "Retain blind limits unchanged. Current hash-bound B-rep audit verifies5 stations x3 aligned4mm layers per lane, full planar interlayer contact, zero overlap and bounded own-lane support. Neutral near-top/oblique and close views visibly establish shallow ON-lane support and BETWEEN-lane markers. Physical usability and fairness remain untested; no blocking visual departure is observed.",
+  "evidence_sha256s": {
+    "WISH.json": "3e87fd19dec30b5749ede8f7bf49905cf2986fa7100d452972a34ca9a541b18c",
+    "revision-notes/creative-source.json": "53152006c5991bc21074e539f4e25bea099f6a88ba09cdf8891b78cc2a4849f4",
+    "artifacts/make/r0001/product/evidence/blind-r1-observations.json": "2b0676fa0c0b8c7d7c797d7df656ee9343354fa551af8404a018deb9e40cca59",
+    "artifacts/make/r0001/product/evidence/preservation.json": "e6008219433dc3ea8ff0d0667fc944460a81a310a24162ec4702aacebb68b78a",
+    "artifacts/make/r0001/product/evidence/export-stability-geometry.json": "cd31d4d51fa1a29646abcf634a679e242695f520c2271665f031ae93483386fb",
+    "artifacts/make/r0001/product/cad/rainward_lib.py": "20eb910707c32018e194796646d8e38ed0f7486b117d9d7d1cf9a8c216bbb0d7",
+    "artifacts/make/r0001/product/cad/measure/correction-geometry.json": "8fb52499573cf46ba912bcbac8d9688adce67dcc7d2a6f3ff173fe2c05181669",
+    "artifacts/make/r0001/product/cad/measure/fit-audit.json": "d6233f29106ae5ee2655005e6ac650e2010d4f7557805265d0df65afbba3d153",
+    "artifacts/make/r0001/product/cad/measure/capture-clearance.json": "6640d3cbc9ff6d26e5f03f2cb35f5c76382f4b0b8656351bfa6c80b4f20c2a61",
+    "artifacts/make/r0001/product/cad/measure/rules-check.json": "6106b06532e53c0255e04fb3ac2148734d6c5f965acd1f65194bbe5eb8fdc821",
+    "artifacts/make/r0001/product/cad/measure/presentation.json": "9516da5c9fcd2d2e842c77b33d34332acdedfc9b691ce77b9deb661c2db9b444",
+    "artifacts/make/r0001/product/cad/snap/iso.png": "d68bc32b0aa9271ce87be84e116bcf89cad5385b3840cb9a72bb5c7fde314b86",
+    "artifacts/make/r0001/product/cad/snap/signature.png": "a4255e904f62fb465dd2bd7fbfbdd28d4dc5175833170e7759f94fa6bbe78bf4",
+    "artifacts/make/r0001/product/cad/snap/top.png": "ada3a86ad35a70cfa6e6d58cfb899110806b83815c11bdda5c42e25a90e09b49",
+    "artifacts/make/r0001/product/cad/snap/board-top.png": "8fe21b80f1b32400ccfd9c2ccda1b6f15d93c88cb4844f2405251f7206c70425",
+    "artifacts/make/r0001/product/cad/snap/board-near-top.png": "fb9536a5046e92a79ff65b34262ae96bffac650ebc6bb3ff5ff38dacf78b7c3f",
+    "artifacts/make/r0001/product/cad/snap/board-oblique.png": "70c7f5098dc9edbd8b40b614bd3ab66d0f4fc374228877dae75c957bda82ff0d",
+    "artifacts/make/r0001/product/cad/snap/board-side.png": "7c5a9fc8ec7543527ddc4a01cf277699517a8951c3e39965cd3de4c7a8a6d577",
+    "artifacts/make/r0001/product/cad/snap/lane-detail.png": "55e16f9258de9041ff56db2f125b2e0e88c17e9260cbe542688beb32b3fadb3b",
+    "artifacts/make/r0001/product/cad/snap/lane-detail-top.png": "71523a125b878d0528a8dacb9d13575488d0ff47fea513bbc2e70fae0243148f",
+    "artifacts/make/r0001/product/cad/snap/lane-detail-neutral.png": "3f291579fe773dbf14bc23fed9bbe483eaaddcd705b465bed5ad379946fb1f3a",
+    "artifacts/make/r0001/product/cad/snap/center-detail.png": "b86d6813f3ada028d5787e25a3f5dfcea963512f3315173381ca1f2c96863a75",
+    "artifacts/make/r0001/product/cad/snap/capacity.png": "de1626495f6aaa4fc34c275f43b1c7632e3c4cce08a914367a5c4923ddc36fdc",
+    "artifacts/make/r0001/product/cad/snap/dice-detail.png": "076a7a7e1c09a07f668c0a034a76fea899e0949f12ab465ca0e52fcf96b78757",
+    "artifacts/make/r0001/product/cad/snap/counter-detail.png": "0ed5c94d4dca3c7c18034e542a520c76d5c4124ecf62e42cf69c433f8c6dfd6b",
+    "artifacts/make/r0001/product/cad/measure/thickness-cup_1.md": "388a6eb1f7f9c29963c5f8d388038f3196e33031d9ef23e028b8ea9178c2d51a",
+    "artifacts/make/r0001/product/cad/measure/thickness-cup_2.md": "ac82a93ead42a92b6cdb00c476aa1e550fcc0038258a8729dc8c8044cf416b93",
+    "artifacts/make/r0001/product/cad/measure/thickness-die_1.md": "fa41e1742ad6164810ca10cbc5bee99017936b1c22f7ac8b40c7fe66b7260b62",
+    "artifacts/make/r0001/product/cad/measure/thickness-die_2.md": "d2e17411a3c7f4778a5f2695a5663663d46a4a299192dd5a7c50e62ce2483f8c",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_01.md": "1b8e34686ca4dcb8ff2304de352fbb43462fc4ac7b1351070275bfcc08fae617",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_02.md": "0f5135839510a78098ac1ed3bc3192fea50258dcab2693b979b86af19c05b8cf",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_03.md": "362a6dea095917d0179deb5d419d71dcb2c8fa5e52f3d0f48b0cae22f1c2dd86",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_04.md": "7aa9609423a287f616ab8a4599af3cc3d4d2fc9a32bc15014d0ba45d4b1a85d3",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_05.md": "e75af1f985a643336a96b0f02af9a1a271bd9d01a878d4394e4259752323779c",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_06.md": "9ab12105735b5405b3ef5a1da646e4f10e7e34659cb0883649cc3e3a7f60290a",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_07.md": "123a7f91bcf9454e3181c8550d6b3f62eaf07becf6c4c3216ead98d183f18817",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_08.md": "bbb2690903426b11724bc290329cfe439c7ebb3413ec2f4010c8c308403263c0",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_09.md": "1f197689010daac0b708ef07cbc4c9a3d863e461d033f17cd3b05f5d67682963",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_10.md": "f037fa2790f225f3629a2ddfe78e9b9043e383f0c77ae771d70a4921632439dc",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_11.md": "e08965716fab5a9600065bd6e3f17c9b1473c28efce6b74d7864a93e39b1e465",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_12.md": "83844f279ba4c2ed5e29edf1672ef84a0e5516bcef5bcde5b0e2e9aac5a1dab2",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_13.md": "bea141a835191f1b5f8b59192403701adf244ae2900bd2d1a3dbb5cadaa98943",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_14.md": "dd31a49d9f5d06eb0778c7f0b2a7c5ae26b7adc139e7c8de3b939471e8bd7302",
+    "artifacts/make/r0001/product/cad/measure/thickness-fork_15.md": "7ccd3985cd554f1665303a0c9b4d7fd1e2aebf270a2db99e2bc52e4deec744f4",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_01.md": "9c776dcb4b74b0ae23cd1432ce54539c68008a4f1241d9a158a8a0bbada4e862",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_02.md": "48c36f95c252438ea2dfe7e58ccdd91e0b1caed871c50f8874fa43d8c8c0a859",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_03.md": "2e6be60ccabeedd726d47549622215560f8a25a3ca70b910dd34e5f069d60483",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_04.md": "1eeab9c2c54cf68dcb287ba185d41aff6ef8ccbabb165a8dfc3f91e906c74115",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_05.md": "90dbe109a6d25d3418da7eea8241019b3f8377d937e7937429ebd70d065d5f2c",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_06.md": "5ee435c6a03551aca5e6716d3fc69ac61f686582799797c59035393e191b20d8",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_07.md": "c4e3f2a9481215a60e7f4c70d57b22fd8412a46627722dea8ad46294b56a5530",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_08.md": "5cf933fe36135b51889abe2bd4a5ea9221b90936ea57c59f1cb4a6a222bb6bfd",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_09.md": "5a5f1aef46449944feeb77fb71468d2488eb4ee3f1c654afb5f1e315e76f90a3",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_10.md": "6db711464c6f726fb6700cb846fc4b1ec2ec0a23c1026d3fe7ff7feb3b1eb944",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_11.md": "7b652bae44a485cc2cd31b04ab53df86f4076e13ea48ee72096ff96789c93059",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_12.md": "9d48c4609b58ed5c593722f8b3e4dec9c9b7c259a169e7c7d35d23e49d28cdcf",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_13.md": "0cb26ab579ed23539db726e307603326b5eb028f97dc107f4545160acb09c5f2",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_14.md": "e1d48a1e8df5e1e0e55cbb0f9cd0cbe0ddf32ce75d6f0ad8c48e19ec94374211",
+    "artifacts/make/r0001/product/cad/measure/thickness-single_15.md": "ada7d925e442d07a889b3456f72a2803119f10ca89af2d7d293155d1e0147aa1",
+    "artifacts/make/r0001/product/cad/measure/thickness-sun.md": "97bdb638d7be50202f50308122fd9d93374dd0ee3757cb4d566cbd6c566a7e30",
+    "artifacts/make/r0001/product/cad/measure/overhang-cup_1.md": "4d4d65528e12dfd650784c8ec1f478cfb2cea3546542314e6ce229213fae461e",
+    "artifacts/make/r0001/product/cad/measure/overhang-cup_2.md": "1a2a8b5e2ecfdfe49fe870008bbd33baac0f8d30ac1fada24a1456ae2eb522ec",
+    "artifacts/make/r0001/product/cad/measure/overhang-die_1.md": "5d050d1938f6d8b163bd7d200ebd194af6bf4b9f9dd8ec95dcd128a135ba9142",
+    "artifacts/make/r0001/product/cad/measure/overhang-die_2.md": "412a5296be0c75d5f6d9ad52cf315dafa040943fda34c2c1925727a803536e48",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_01.md": "e944551cd1828fbb1e8286acf0c5ae8c3a22739c7f9881005f502e42c38d9d8c",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_02.md": "44410d451fa5869783af2d49d6dfe39c6e3c4a2fe2e9a4efd7bc98b9a25390c0",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_03.md": "12ee8a2fc4128e25ed78cd7ec6ed53633d451cc48012c20fc87976b2e7842375",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_04.md": "33446f42a21c1ab4b12ae72de879b31b77e8ae3fa2fc92b86aec84529a5fa9f9",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_05.md": "7fb59efd06c864b0896d266915638060cbcdefda6c9c79108068fd00d9ea64d4",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_06.md": "61d77f7596cd283a12fd0684c64a0b6db4f53ddaee5e87b9d33cc8be1561a0b4",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_07.md": "119814ef88be15af3dee81d7dfe981e6e3b58e93cbf67a331b475f9120050ea2",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_08.md": "51433b26eafa3a2821b93e216f9a65cde82e3d58b29935f078680d34ecf80802",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_09.md": "620f5e024c27732343a03911ae8f440fa80763fe51f86e25cd126a718c88fb80",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_10.md": "e07b88b13a525750102a2897d02361522c7aeaded368615fab79dc5d5f2b3d02",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_11.md": "732eeddb83155358a275e43db57d7daf2b3373ae50c1b7eb10b9853a5c2922c0",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_12.md": "0190b627b405e0f176838c14f361e67aa62d5c55783ede829f5682d4316ca3e2",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_13.md": "9652a70c747733df2a274490c711b3407f43bb830e96e558fe05ace0f316c515",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_14.md": "2136ff2dfa6973eea1e22474a32104d63555710f3b16d6d152b732bf1b1c7779",
+    "artifacts/make/r0001/product/cad/measure/overhang-fork_15.md": "280486cb425ed41af31785bd6e0263da534b4d652216ce54d4db13242877d2c1",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_01.md": "6041f0623faa687ee1dac453c0478b6e08133df4f8f549d95a9539f656de4ad0",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_02.md": "041ed6c8ffb6d286751ec8d611353161255ec3f9259983706bdb40e92dc51b6c",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_03.md": "56516ce5e2184f93c47c7b5002c3796fafa534ff563a591abd249a6d04411e18",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_04.md": "5fb1122fd343aaa7ff12e99ef6975494e0f72f337366da2717a6a05a47dc2ca2",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_05.md": "af2f91ac616fb1ff45eefee8a5aa2c6d55438436bed5f0a586cf6bb5f482554f",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_06.md": "2afbac008374d11cf4d9956ad6ec8945c135c961e1854987a2bbb97893811efd",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_07.md": "5e0ce0b65170a846c7e663fd16ad4778e1071c05432eed8831fdeda7e5c5c782",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_08.md": "4aa0d9aced45908fe1eed8e2850dc6cec7e4e7d1e0c97f18f03bd3e52bb1f232",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_09.md": "26e5a8437a51ed0268691fcddf365a7787f58baa4da632f25e3d049af2133bd2",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_10.md": "524a97d9ddfd19e0134ca0de7172da53116c5810b0a72b879db8199e160a53d9",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_11.md": "ab454df122c7f5f61effa70651c65234338c26886829460935badea8505f6411",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_12.md": "5ce08f65906ec4d259e3aac81970a4e6158fe21cf429c7ad073a7e794b15e600",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_13.md": "052ddf6b5ac2b6e7817df00e3b1f20a772e3da1fb840c37ff6dc810e0b800677",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_14.md": "f2f2c325e9a8342e1d5db0847aa7dff8b9495cf456ae23b4a94254dfbf8624e0",
+    "artifacts/make/r0001/product/cad/measure/overhang-single_15.md": "21d2bf53aae37a4f3c03ee0c2d5f0bd4c3fc9f1c95a149d0006dfe8a3b205a12",
+    "artifacts/make/r0001/product/cad/measure/overhang-sun.md": "2b419ef6a0075a0849993f65e6d9659d64c238d0c9145c92ab7e6cbb59d97dd1",
+    "artifacts/make/r0001/product/cad/../evidence/states/after.step": "211dc746246e97292b9fc682717b89632bfa05832a85653aa65a20000cd6351d",
+    "artifacts/make/r0001/product/cad/../evidence/states/before.step": "fbcccef436d5e79438032e212dc9d6fee1c78af8ab7a494f2926c1d897d92174",
+    "artifacts/make/r0001/product/cad/../evidence/states/capacity.step": "2ce997a3dec056b6433cf9a9bf4e3a56fd585f723cce09b611b5cd90ee6caf70",
+    "artifacts/make/r0001/product/cad/../evidence/states/center.step": "e21e4803518287dc98c3de7446293b83677cd9b9f3f4a85367805c4f062553bc",
+    "artifacts/make/r0001/product/cad/../evidence/states/lane.step": "3ca85fda241af614e4129fff173ac61064810d642905e277fbc4490d103ef648",
+    "artifacts/make/r0001/product/cad/part_die_1.step": "5ec73d95a51eece0336c623c8d36bc255da13b1497aff488c0a998a431de32e9",
+    "artifacts/make/r0001/product/cad/part_fork_01.step": "ab74dc4cf86e20cf0f99866f9aaa6ca6626353e44f3db4adb3772b9d3ee80abd",
+    "artifacts/make/r0001/product/cad/part_single_01.step": "aa48fddf7757c9b3042d00fd98e23a055cc6f15c1c2f1d062475d11a5e9969a9",
+    "artifacts/make/r0001/product/cad/rainward.step": "368122813740274814113cc149283260876f3649a45434816055bafa893644dd",
+    "artifacts/make/r0001/product/cad/render_current.py": "0cf34251e85069e8cd832abbbb18ff5eb4fb44ef63dd1d8125e924fe00a579d5"
+  },
+  "source_and_image_hash_bindings_checked": true,
+  "limitations": [
+    "No images were reread or altered after reveal. Original blind observations remain unchanged.",
+    "Historical archive is comparison provenance only, never substituted for current checks.",
+    "Some counter tails overhang their lane flats; minimum actual planar support is92.879%, not100%.",
+    "Identical aligned stack layers have no visible seams.15-piece capacity is B-rep contact evidence, not blind layer counting.",
+    "No physical print, stability, tactile handling, continuous sweep or statistical fairness testing is claimed."
+  ]
+}

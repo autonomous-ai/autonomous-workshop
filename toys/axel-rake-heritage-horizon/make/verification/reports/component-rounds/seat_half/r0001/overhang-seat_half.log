@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/part_seat_half.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half/r0001/overhang-seat_half.md
+(1.7s, exit 1)
+--- stdout
+part_seat_half.step.py: 20.8 cm2 of surface, grid 0.400 mm, 64 unsupported samples over 1 region(s)
+  FAIL  no face under 45 deg needs support     9.4% of the surface faces down that steeply; 1 region(s) need support, 0 bridge, 0 below 1 mm2; worst 9.9 mm2 spanning 2.2 mm
+  PASS  bridges within 12 mm                   0 region(s), longest span 0.0 mm
+        every unsupported region, largest first:
+        1. [overhang]     9.9 mm2 at (-15.0, -56.4, 8.0)  span   2.2 mm of 2x4, 10.0 mm of air below
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half/r0001/overhang-seat_half.md
+
+--- stderr

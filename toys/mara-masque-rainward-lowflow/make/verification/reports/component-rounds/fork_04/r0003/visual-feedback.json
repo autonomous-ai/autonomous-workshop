@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front shows uniform four-millimeter extrusion and flat top/base. Top and iso show continuous swept broad body terminating in a shallow late rounded bifurcation. Both short ends are connected, and no extra neck, detached geometry or visible intersections occur. Re-exported from canonical CAD working directory; all three image hashes equal the exact current-run images already natively inspected. No shape change.",
+  "packet_sha256": "19cefc29323f7cb6342aaa8c70ad33920750e5b3cf1771088f4b8fa9567ba67f",
+  "status": "pass"
+}

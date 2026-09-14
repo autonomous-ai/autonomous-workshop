@@ -1,0 +1,567 @@
+{
+  "kind": "captured-console-verdict-attachment",
+  "reports": [
+    {
+      "path": "measure/thickness-cup_1.md",
+      "original_final_report_sha256": "0d69abd5a673d7716c419c55f91fc69fa5dcd0b40a7312ae5443a1f55d5a8c56",
+      "captured_console_sha256": "ff8e12f610b4a4f130b8598eb7b3b8c8b819e7108ad297bdb7efc8e3d581a745",
+      "delivery_report_sha256": "d7031842f22f12cf0882028c36133899428487d4e05fba391dfcfb339e6a106a",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-cup_2.md",
+      "original_final_report_sha256": "187cc50ab25d98bd1df551997305a33bf7b05f0ed787e034949830e2ce956f90",
+      "captured_console_sha256": "99a4bf5f4325f93f06218d4389e6296316714423fce87df27057e171e00b2459",
+      "delivery_report_sha256": "435e51f1be925a30f931c5a6ae22ffc82840fd64caf7467a850b0120ef5943f5",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-die_1.md",
+      "original_final_report_sha256": "f72dbcbbd2fa1b4cd2ab38c8eb0dbf5af836d76f9a3e6d3bedfd5618887e6c94",
+      "captured_console_sha256": "de8e2000ed936855fdf323c71f006f5d1f2f775263164728f1fecbf06d5887b4",
+      "delivery_report_sha256": "f65097ac72488f06e77bddee12212d78a658b440ace966ed33ed4477cfb6704b",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-die_2.md",
+      "original_final_report_sha256": "d2373b250f0fc97efa81f68e2ce9f9251a9c3ed2468bd4d24df8560b1bbb761e",
+      "captured_console_sha256": "a4c4f2adc3234a013a46a41507b7353f89cd9811ee9c0729c515c7a23678ae63",
+      "delivery_report_sha256": "50633ff6995a4fd7293583edfa5c1455d786dbecebdfe252dff21a24bbcbae3c",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_01.md",
+      "original_final_report_sha256": "4a92e0c96952dad85767d07d22dcf637f3f41f7ee4e2cc5827c2bf1f592839fc",
+      "captured_console_sha256": "ee1bddf209a6c471408a546c2e9d2bfb7148fbf3c3c42e4435027fc019ed03c1",
+      "delivery_report_sha256": "2b1f01a27e4768d699953052c0fb8bd416c6792cd5b9026ae904fa865f6ba3a8",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_02.md",
+      "original_final_report_sha256": "9ce484bd28bc2321f8fb5db870359e9e7826f1cab86aabc37b156c5415ff0888",
+      "captured_console_sha256": "42ca67669163e278b6391f3e11047f237768b93bb318177963c6643697ca96ab",
+      "delivery_report_sha256": "15621dce4f5c86451f28ed99556e442f4be923f80e84b33d5a918fa9d1c880ab",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_03.md",
+      "original_final_report_sha256": "7050a10243d77d86c4e2cea7d8d67247c12d22b6e028f0c4a5f213864ec8e86f",
+      "captured_console_sha256": "8d04de2e862176901ab3eebff0eccf5496176101137536f2cd6b5343bcb9ccf3",
+      "delivery_report_sha256": "75cddc65fe3c4b361bbb273ecc8172b1f6475dbe5ee73a0875853ecaf4b0ce1e",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_04.md",
+      "original_final_report_sha256": "ebb6d997faa860f38bf155ac3a929680a4e808ee36b2820856c70530dcecb2a7",
+      "captured_console_sha256": "6c7928780880560e641e82151b881343d4144eb7fdf8b1509a21ad385675649a",
+      "delivery_report_sha256": "3e27b5fab1c8d01e184fb23fd0e73ad90f14625fc7d20d469bc12560f4ff7850",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_05.md",
+      "original_final_report_sha256": "37735838f39add156c6924bc4c8bb4df152da0992bc7e618c92d44496c3a7332",
+      "captured_console_sha256": "b5e4f2db5d27326c2c7cb715b7ebd07cd0b9ba4a7b01010951a247b73da946d0",
+      "delivery_report_sha256": "09a201504323f284776ac3e060c332c10610db46e40ecd33944b5a0a7515e0b6",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_06.md",
+      "original_final_report_sha256": "b327adbe15b9252ea6541e98118c4267756de55e6e95c02913935f9762bc73ad",
+      "captured_console_sha256": "6c81275201438973847944fd8eaa89f726bf1c826ca7790ffc067cdca1f500d1",
+      "delivery_report_sha256": "f278e4f2536983d5fd4e65defd9efc3af50ce2cad02d78f5a2bd902892aedde0",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_07.md",
+      "original_final_report_sha256": "b288d3234422f9e7973751674e6085dd012ec154a2fb3542834ee489ad156360",
+      "captured_console_sha256": "9c645f133b9e1a995eb748f929e026f7e6d23053db36b1225a3da31020618057",
+      "delivery_report_sha256": "19cb79da1bec1abaa2cb505b00fc36cfd10095c37494e2860d63c6b63b64de57",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_08.md",
+      "original_final_report_sha256": "97a9a99922776a7631161d6f320c567b9f17e60a320d8c6bfe7f6fe0ee2a4d41",
+      "captured_console_sha256": "b7cf2969bfb70e34f1bafaaab5c52971a857bbf05defb95e0000c23306b1e2d6",
+      "delivery_report_sha256": "57738a1f7630e2c0c81de7f7ce0ed17605db2517f3e6b6a1a57674f782e4626e",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_09.md",
+      "original_final_report_sha256": "3449d290760b80edc706b78cc46bb4035e227945248a190aa933a65757e5ce28",
+      "captured_console_sha256": "cd8497b48a4164f8fd674f28eb3a49566ae4c819b76a813d34d157ac82c40d21",
+      "delivery_report_sha256": "6d83cd1485d029b83117bd91c6ae6e3307d43f24ee0222ab8fa89ca98021e453",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_10.md",
+      "original_final_report_sha256": "da2ecdd45fecf06e37491dcba4ba7f78ec334f746a16a997bbb925c7a3ea43a8",
+      "captured_console_sha256": "a3aa6e8393dc5046cff431dd160732d442ab65da5f0e376df30c5db80cb86a7b",
+      "delivery_report_sha256": "978a6c7a6b5199d7ca24cdb60745d3eb4346b777ea3890b52b5355056b8d2ce0",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_11.md",
+      "original_final_report_sha256": "9578e89dcacd4440fb9cb37fa8ac5f752c8ffa3fd5028ac1f69470919294afda",
+      "captured_console_sha256": "1720760d21809c2c91c6d171bceb81799b2b314cba0820427547056ca01aadb5",
+      "delivery_report_sha256": "eefa38fcaa3ce88a13e1d3e966744bb3a095dcbd317ea58c806a915b47c38e31",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_12.md",
+      "original_final_report_sha256": "5c6602faaf9b8bf5159d338ca224cb78308decca8ca75ee4f40a77f6ef0d9880",
+      "captured_console_sha256": "367db38b8e98f06741a0a05b219bbd7d434870f356b01aca51fb1a1ee72d36d2",
+      "delivery_report_sha256": "d3c5e57d976d8b328e94f2c60944b4dc8b9b1581a86486895be936086d56d386",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_13.md",
+      "original_final_report_sha256": "98d97fde3e46a459e9999453f85fb8ef7f5bcd2f8804f21527f4dc83f71a2d33",
+      "captured_console_sha256": "93cde99ac659521224435e936a135f58ca8f2c96f478afc61231ee98338bde1a",
+      "delivery_report_sha256": "13b596b5d0a5bde3d0abcc00e2fbc9d518ab66d15a1b6b683d49fab1b715384c",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_14.md",
+      "original_final_report_sha256": "f63ba05e10fe097a801556b561b9d6c54a48f54eb6a20808cda1f249b5a42b41",
+      "captured_console_sha256": "b97a4e8f2b95b4782c111b31fa41afeefdcd4f91d2efeb24e9f86091387c6bf6",
+      "delivery_report_sha256": "f310dd42fd9b6dce99d5040778462f349172e7e913c7a95022e106cd54c74068",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-fork_15.md",
+      "original_final_report_sha256": "984a329553b49a74c60cee3dffe743d881533458a9bcf7d6757ff404ed233367",
+      "captured_console_sha256": "2945973a971fadba4ac49105170e3cc56628636edfb5463ab3b1221fb8046382",
+      "delivery_report_sha256": "64180748ecc57fe0ac429c7a6e4100fe349f24494c8d9843b335bf2cbbf8740b",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_01.md",
+      "original_final_report_sha256": "f0669a7c963d7af6c23460555a83403e521ee70495a268eda8e44cc88110132d",
+      "captured_console_sha256": "286e97ac55f3b63247287d13b6d72ce0ef0dbc24c8a794edf672ed7bb7969304",
+      "delivery_report_sha256": "2855bcf25032cc91dc37f7a11e78f83705025778186c034539101ae9216794cc",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_02.md",
+      "original_final_report_sha256": "2e1846985c4754b30476e547474ec0a58ef29a1e5558610c6c02dca9c52b578b",
+      "captured_console_sha256": "191ab50d34bc5703a5412d46121b862de145dac9823147b132654e438e763a1e",
+      "delivery_report_sha256": "27593b756fc0240396255fb24012b9e53623e798b272aef083f5f1795bba1049",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_03.md",
+      "original_final_report_sha256": "ea76745bdb5081963c44bf79587a7c4ba43856c2744c994e030935599fee81c9",
+      "captured_console_sha256": "fd5917bb7c183c14acb0516338c8b6edc7d45acac52568f4ebb0a1248d232fad",
+      "delivery_report_sha256": "51c4fafcc8165fff5a6a8914c73d04d2e4ab4a4481f3fc3cc99cd121ed4e3129",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_04.md",
+      "original_final_report_sha256": "37558216dd6a2b86b214a9d92449c36b82908e6feab77793d3991a67fb6ebeee",
+      "captured_console_sha256": "de31cded0b0013583b56e8266df4f6cce48789ad0b6a41713acc49e5f6d651e5",
+      "delivery_report_sha256": "ede8ada4de9d6fce20790f0e6aa2532be1da1d1d80c04c86ee043ea5134a1b49",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_05.md",
+      "original_final_report_sha256": "2cb049a945c15f03510ad1526dae1f53bdc3536abe8bc7d72f4bfcae2754d07a",
+      "captured_console_sha256": "b26962b4f12d3ec3c37495be2db983d076c3c09eee697c530324dab05eaa5ca1",
+      "delivery_report_sha256": "318384a95d6b36e4e7066460614f13e9ba13e72b538bba541c5e0cfaf7969749",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_06.md",
+      "original_final_report_sha256": "ad72f4e92860249e5b24a7d852c1f0cc70f3667950354b98c6faa323a9e7f89a",
+      "captured_console_sha256": "a21fd09bcc37e57cecaad41fcd8983779b494aef87b67797ae0bc699db7fb7ba",
+      "delivery_report_sha256": "62bdaa37d218cf6f225a63442a911986805d4f18a88bcfefd8839086e23be18f",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_07.md",
+      "original_final_report_sha256": "1c0a576ea8e323bc9dee8cc3269399a24fc8d9637eb98aec3ef9ad1849d7f48a",
+      "captured_console_sha256": "7faa64314b19b21d3bb44781c83375dc6a1b31666f3fb51db4f42591d1a61313",
+      "delivery_report_sha256": "7b66f84a89f3839a6b71b3b004469822ef05b4e1c9705d7ba3e222e3ccd4d349",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_08.md",
+      "original_final_report_sha256": "e1809c05641d1a729d0a15e2cb7a802831494111ece85a0140670b58f1bbe53d",
+      "captured_console_sha256": "4b9b522e52b43849c347741e0dfb9a226053836c61fa8565170860bdf9035c35",
+      "delivery_report_sha256": "ad0231b29fdcaa321565169a95bd84619cb82cc305a2f7bc0747a8c92bffc6af",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_09.md",
+      "original_final_report_sha256": "11039869f2b3f6ba4b5f013ee1c4f3b86dab50668c27db241efeee0fcc3a8f21",
+      "captured_console_sha256": "58e6ad185188471cad6f9f2d3176fa96c244feb0ce45aeaf2caf1a8e078c2c64",
+      "delivery_report_sha256": "5c4ea1e2da24e1406d7cbda376ba9f9c998e1657d5d1c9fb3b3daf4b366e94b9",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_10.md",
+      "original_final_report_sha256": "65efc684138f17eb77cb7692d2b0155da6a35e66a449590a4dde6578bcf19772",
+      "captured_console_sha256": "d138c62068b82388f8413c8a967e2e62ee50e2ee01a84f41b7883971cb4ef362",
+      "delivery_report_sha256": "518fd160c50cdcdd77c24fb95839aba1342f9947a96e156876014911d5897548",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_11.md",
+      "original_final_report_sha256": "080b4d2710081402b1df8dc184e210118abdbc8908244c4b35b57cf3b4c79437",
+      "captured_console_sha256": "7525cc73926f9f88f4ab91d2510038e1fc9157511404a056119c9ed193c6777b",
+      "delivery_report_sha256": "d26efb432ca733cad584f78afa069b261d6f0a1e8b7d767e957c52ca01ebae9e",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_12.md",
+      "original_final_report_sha256": "618cac416404e6154b1595efb3fb6f09fe72c9316693731a9b16f1a7ac5b4259",
+      "captured_console_sha256": "30127e5998a81623ae9791281b4bfd22990dd328cb1788806e9f93307d600852",
+      "delivery_report_sha256": "2918b238d695ef76bfc0931c532c19a4554a1d14ac16b1746b479f331e5b4ba0",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_13.md",
+      "original_final_report_sha256": "99d9870d4cce272e546c9c92cd16b8a2a42a9240c402beba1f717cc3e20a9b5e",
+      "captured_console_sha256": "60f87aa40ed2c868df69173063db920489677bb7fe25f1b023743f43e0e41c86",
+      "delivery_report_sha256": "ad07ca862dab1688039fd59276476380134b26d26ee7692e24ffe10115330c84",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_14.md",
+      "original_final_report_sha256": "f4068eabf45d182ec366222a95ad65d1857d47013606265933f18c1a481d43fb",
+      "captured_console_sha256": "edaf16d3706b6b18319edb011cba036283db46d0ff3c048958ea75858f0ff655",
+      "delivery_report_sha256": "4192e0685f1d1804fb4e98267b3551e7e8e112c0b5f261f33d1d1e261b903fb6",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-single_15.md",
+      "original_final_report_sha256": "9aec4014e161084daa22bbf2e7c757b7fcc6376deb0c494b864c37c7b65fefb1",
+      "captured_console_sha256": "d1a80d05fb6713e75a960b60a92c5e0febe49522636c7a5032f7a7b672da2146",
+      "delivery_report_sha256": "e8c8126fa8b4431014ccfd037a1cd265276ade036685bf1046a2bda8f602e677",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/thickness-sun.md",
+      "original_final_report_sha256": "e187280f36457adcf446386154bd7da63edd434403dad42343bb9e02ed1674d2",
+      "captured_console_sha256": "e366707dc33fc62260eaab7c13cd998adb3e9eac5a907404366ab4128ad96a6a",
+      "delivery_report_sha256": "8409885127c331233ab51f24f7ff7e4f4a68693983211006ee383fde9359ae5e",
+      "exact_result": "RESULT: printable at this wall",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-cup_1.md",
+      "original_final_report_sha256": "65500f82e35403f58c8aebdac03b206ba95feec7d948c2d1e545e73da725729b",
+      "captured_console_sha256": "291c6b50014f687bc4801f945728a8eb8b1b0fb78a3a66b37651f4de76f40301",
+      "delivery_report_sha256": "940e134b40668565dd042273aa9d1f067ce73e13f028473d2ff7bd58ced67709",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-cup_2.md",
+      "original_final_report_sha256": "25ec69c4eea71b8d33abe16c6460272967f4fb404aaa473e5fa3514a441f0ccf",
+      "captured_console_sha256": "2aee3f27252614433e3c056deeedd6ffe8a79878268d58cb72c27f0918928426",
+      "delivery_report_sha256": "8a5e9f422ee744eec75442f0f938db3e92925cfa445b6d91bca280086f4b0176",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-die_1.md",
+      "original_final_report_sha256": "222c6e94c22c2c049bebe07b28b95a21d92598bbe52fbda17db30f6f2439a8b8",
+      "captured_console_sha256": "53b95abf808e234ed31d512a7761a691a53d996eea3413a34fd21912f387623e",
+      "delivery_report_sha256": "add5757bb99626a5860fdc6663c72dc3c7ca9aed7966e81bd93b53b21890e73e",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-die_2.md",
+      "original_final_report_sha256": "35cf8750029763087bcff9f7c543f4a3c88d3ad8840f6ed252966bc301c7506b",
+      "captured_console_sha256": "362ddf21b02e0077dc80eec6b07d25e6dc5a9f5cf0ca6e961e1d3faf238067bd",
+      "delivery_report_sha256": "56ec87c1bdd5139ec11a3d7ec79836798b1c7098f34dfa3c83c0454f21a65975",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_01.md",
+      "original_final_report_sha256": "f677b7fa927f89573756ade47a6614cb430d3f104daf6d0d2f06c71e35821ad7",
+      "captured_console_sha256": "93066990dac940920c01d4689d1d2c99e4ed65490f9bd2c85dacc8299a8595bf",
+      "delivery_report_sha256": "5e81c4cd8a20b1b156a21b0e4f3ad23e97223596cbad82660159c6386e5696b9",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_02.md",
+      "original_final_report_sha256": "7c60dd8eab3e1d8bdeaad6d117d2b44e16b545a64fe41d6b66fb0ed1e678d4d3",
+      "captured_console_sha256": "a1bcd50f02bfc3c9ee0d2e2fc2dfdeaba75c41f591e111a182591c8dffaf1429",
+      "delivery_report_sha256": "f6bbee77a85113587fc3fbc8bab903830b8d2f1587c2e294e5cbb0b9782f0c9d",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_03.md",
+      "original_final_report_sha256": "720878d5b18c042f21007b818e1967d246ff6dac74b4370628942dfd39075e5a",
+      "captured_console_sha256": "edd8bc43bc7c2f6046d3cd1901c6ca8850517f58bcdf4241cd31dda5d0d9a27b",
+      "delivery_report_sha256": "ae1861f4d1ea852079f303e120cd1a7a13693a1197fcf5f0a5d37e83c06b8911",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_04.md",
+      "original_final_report_sha256": "96cbc22c2620c83824a87ca9904565985f59727d144f2f65278b2f00c49c97f5",
+      "captured_console_sha256": "b0baa034b319e9157d06e281c5f68b6ca6d55e2721bd453ae9f2cc8c3506c1b1",
+      "delivery_report_sha256": "0a2162b860a23c8086e80c7da74d5c49ef0be72abaeae85bf74d1728233dcb7e",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_05.md",
+      "original_final_report_sha256": "7791b30a4395846b7505a13e31bcaeb9052e5523a91a5c82d63d7e44304ac735",
+      "captured_console_sha256": "18b52e032552879f8c7b534576d9fce4e1381bbe83df4953e22b81375ebe4dd1",
+      "delivery_report_sha256": "34b8db3952accc4436133d38ccf5a2a0a650d14c5bfd8de4f5b157182bcb10df",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_06.md",
+      "original_final_report_sha256": "fa5fb98d115f24bcb204b0deeaaa87a599cb05b6fb9ba03c6f7a3c9470356ecb",
+      "captured_console_sha256": "e2527c6250a6ff90dbcaf130ab4b9869e7ad42da765f9f392e968bf67e5cd0ef",
+      "delivery_report_sha256": "463896e1e36287d3ab22156c0d90eed3dc66d2ba88c916e9ae99f712d9a4b555",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_07.md",
+      "original_final_report_sha256": "bcdef7ce7a10745d80a421794485bf6f69d464f7ade03b4e8c454153f4147734",
+      "captured_console_sha256": "66cdf73804f64e361aca3a6739528b56b4197f900b0b01bab5dfc56a4814401a",
+      "delivery_report_sha256": "47b97809f784c13c1ff2ba32d188bacc252cf0d1b15949bcf2b28d77390dc0cc",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_08.md",
+      "original_final_report_sha256": "863ba78915a6a9f8c2f46f540d4bfdc680c4382ef80273d3a74beb9ac51b355b",
+      "captured_console_sha256": "6ea4288035d133449a2a6dc19876376a58f0927d0cde4ba5ef5bc648040e8804",
+      "delivery_report_sha256": "13d7f49bd29b8b4844ba1da1fdd6f3bd1d631ae4b2d917ea56e0e54388e9113b",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_09.md",
+      "original_final_report_sha256": "08c29328e135734c2bdc89d0504328ec069725825bf87ef353671ceb525db480",
+      "captured_console_sha256": "54466ac2800ff02850a4017b9f3c0f6d0f8deceac31f2238708a326e9b2f9416",
+      "delivery_report_sha256": "e08539bc71254c5f5b0c37a5b5270fc7b5392421009ef9bb0af0b306a4d6da97",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_10.md",
+      "original_final_report_sha256": "64d72e2c3443de9afa470f0797cda770c4b497cbae66558115767a7e32264ca3",
+      "captured_console_sha256": "e1200f966ffb8394de36373ea874efd00cc94473ba8baea7216e634d3713d815",
+      "delivery_report_sha256": "ba584df66daf8c64f843caedb2989c69f9af11fd404967cdc6d9d3a21372dbec",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_11.md",
+      "original_final_report_sha256": "bbb7413b200a5361b6bd9f086b10c6c3222b03eadd6d68790e32590693d8c12e",
+      "captured_console_sha256": "e9747c3347dada1186bd0884a3a19d1a7f42b2f41ed3598c73a0dc1b679bc064",
+      "delivery_report_sha256": "ae77cc1a6dd0fd0f8288655210fd650a7993ba8019b1441f350b85b1f9196a4d",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_12.md",
+      "original_final_report_sha256": "45ac77b1f725e332ee1d8accd2fd28bac2be65980398fdf01553ca77c48b65b8",
+      "captured_console_sha256": "964e3ee33224e72f4efcfc9c785d6909cf5e1b0de8a8df38ccb2562b5bdc89b3",
+      "delivery_report_sha256": "59462ffe5b1af6814c3d643e58c8e4562ac5183e8509c13fe5f05849b40823b0",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_13.md",
+      "original_final_report_sha256": "63d4477f511aa78320af44820608490a5c076422ac6958cd09aced130f7ce107",
+      "captured_console_sha256": "6912595e8dc46e974764a4ced2b36ee3a9cea2665fb95ca6e0802e0fe7ebb47e",
+      "delivery_report_sha256": "a551cc85749411d1b3d9f710e76ef0d42a5e8decc86ad78e5edb04544ac5fdbc",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_14.md",
+      "original_final_report_sha256": "daf3079ccabadae7ffc4dfce954b7d62e3679c5fcce3015a450f34cb9d2c9681",
+      "captured_console_sha256": "3ce3d48cbdbe288d628ee49c6590398e53ffecc32bd0b8a7291eb4ccb9b531d9",
+      "delivery_report_sha256": "9fcd550b0c2ab0d97dc9377ffbb8d5fd8d96abe3bc4ecb318d068459932a0062",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-fork_15.md",
+      "original_final_report_sha256": "a75b8098ade2fa27227d3cae0f6a6e805d9452be73d09e2d91470b8cb2e76683",
+      "captured_console_sha256": "bcb94267e547502534c4ad2db015b084682e9f7405244dd35207bc7d250ffdfc",
+      "delivery_report_sha256": "db86612eab8b0ee5133089812d4545eca62a627d6fc3954c6d7ecda0e923eb9f",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_01.md",
+      "original_final_report_sha256": "1bad7f39f827dc88036e571c38ed197f8020dc6505d6178878241b1cc9070f76",
+      "captured_console_sha256": "dc58bc1e1c9805b4dcec4da35e64bdbe378ab6097daa2bbb522643577dfc9b84",
+      "delivery_report_sha256": "b538e8f395def64552a05210cb39698884387595a4ea5441aadb6843bff1a1c5",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_02.md",
+      "original_final_report_sha256": "ff2f3380904d5622337d812a83a5808cc941da0b341dc5502fc69f6096fc2d0b",
+      "captured_console_sha256": "79ad2b87663252ce61da72e6b6db8428fb1aad0da0074cd660bdeaf0fbf3d410",
+      "delivery_report_sha256": "9a127d12908e317b955d6f7cc19eab7a4eea61bdf8eb209083e3b0ceea93390f",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_03.md",
+      "original_final_report_sha256": "881d001ec22be20e8eca22335c8874c07968351b86a495fd4969f9798e43258c",
+      "captured_console_sha256": "ed10d87e047db628df6021c755c55f18e16373b0261ea50b83e90e952de5206b",
+      "delivery_report_sha256": "aebdc348dc4d57f19ffb5971f0fdcb3e0b5223d8d37a44f11535fbb90f7bda9e",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_04.md",
+      "original_final_report_sha256": "e38da7aaa19f28d29401ff73d5324fd8178ebdff332bd4bb01207c60eabdefad",
+      "captured_console_sha256": "413e5c0e50c05b2605b2253dbca8a5f613a6be5b523656d1584905e62ada8e22",
+      "delivery_report_sha256": "0d1c047b6fb1a996addb38c3eb14e5b6b1f07eb4d14e23b2dc30bf4efc884a0b",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_05.md",
+      "original_final_report_sha256": "ea4cbd1fac5571a4ac73438e3c491af71f72d78f87e5330c4cd51a36a46c20f2",
+      "captured_console_sha256": "2ba378be9b43eb140fb34da64e7770d9d04789c1e5f65128ccbd0b066afec442",
+      "delivery_report_sha256": "c5bced18907839530d375119d74b1eaf6e7e639adc98d85077f2a322954e1612",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_06.md",
+      "original_final_report_sha256": "e46e5011611f21c1dd7dcc1d92ef5ef5515c771d8aa93e5329238741d2b03617",
+      "captured_console_sha256": "31d1eb725123e1402123d06a424a112fe29b026dc82ab18933b889a7f6c0d27a",
+      "delivery_report_sha256": "cb631bc606364fcf322bf2c804994661c6da34862ca93c66cf2b80cb0a2781d9",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_07.md",
+      "original_final_report_sha256": "5ad924fa77fa1b96a4b29b5fb5d7389e0927c62724d210d1c159bee8c4d367b7",
+      "captured_console_sha256": "8f9878017ff9835936b7b98efa2654c5bf8ef9ffab4796ed10b327c44e705574",
+      "delivery_report_sha256": "913774f754ca526c298cb84339092040e170f7f553a74dcab8029c91fa77dd44",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_08.md",
+      "original_final_report_sha256": "4f1d3b03fb1bbbc73cb6a4fdd51c3209af7a88edb6d7a263c32b2257a4a16652",
+      "captured_console_sha256": "fbe6cb1a0135c8e46feb9a37038d933ae494b4c7247a8b72c8ff655302e9a019",
+      "delivery_report_sha256": "45e646d0348f5e41ec881c9da0e0b217f267aba4c9a95637ee9eb5928efde48d",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_09.md",
+      "original_final_report_sha256": "1d14fed836d7ab8a7a9e84261fc963f8cecb6097319b0234fda3bfc84f5ab160",
+      "captured_console_sha256": "7d4b25983e8efbdcd875e286bcdb7b4e8e16e7deef8b4f5c5ac2240120be875f",
+      "delivery_report_sha256": "18c916285472fb83004e6f2560ae0a3c1dcf536abdbe7a40fab0b29d96fb8dbd",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_10.md",
+      "original_final_report_sha256": "a0aa0eb5d94774a6f8c0cb512f88d7efb9ac2d3849dd81cf9fc2f6de06d0a13e",
+      "captured_console_sha256": "20c92047a7e6374b248c49ae79a5be4f9b245005bd6c8a2d877129dba446a2d6",
+      "delivery_report_sha256": "5c22c1e2c99421c71639c2846ae7b98e11c8827a92ccdde35731fa898a36624a",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_11.md",
+      "original_final_report_sha256": "8fa3c28f03d2491d44e338b1ddb5d031fbe171fbd989430b87d2bbf6e81fcf95",
+      "captured_console_sha256": "c80229b402b50339a8df74ad28603c1bac42f5ea50ae6e2648ec64b3585d6a02",
+      "delivery_report_sha256": "cb92ff0ea8ba3a54e93ce4a14b5a8fe5347a9683c1638c4558c28c37cda30073",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_12.md",
+      "original_final_report_sha256": "0ed04540726d732ce1860fd4a16de598c8317c25f50616319a6b9d347aa390a4",
+      "captured_console_sha256": "d097c1b77eb3ab5b95d330e6b2496c40c7e746db69078bcca37453b07c026f87",
+      "delivery_report_sha256": "ac365e229cc4a0bff84eca8758b32e2a15351728b363effe4fcef284084f9073",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_13.md",
+      "original_final_report_sha256": "7b7c52d60c166f30db90034b81c22b29f952da71a52f02325862be52c7df8692",
+      "captured_console_sha256": "c5dbfdcc0c67dc7fd0a7dc946dd55f97495e8dc751acbf9e832ab46a1da379fa",
+      "delivery_report_sha256": "24a69ef462a621dfd74bc8ee7cced6e0bb4abd5c2dee513003927758c6a0921c",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_14.md",
+      "original_final_report_sha256": "f264fd0ee7a4b913439ea484e7e4d6f7ce3b6d4144e7e6f8bacd05a3666d11fd",
+      "captured_console_sha256": "38a89b7a341e8fba5a7b7c27fba4ea4cd7541d1bee94c40a527181ba56a6dc8e",
+      "delivery_report_sha256": "f14ee4f4da988a829ba9fb9cda2c3a0002c924f65f53671d2ac393e210a6918f",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-single_15.md",
+      "original_final_report_sha256": "46fe5b99a9e5184b6b2ef6d98e9967316a549fad5ceff3431c4a4226d270342f",
+      "captured_console_sha256": "cee8d8225964da84653793720fd35c1bec0710d743598747e6c4db6982e419ef",
+      "delivery_report_sha256": "8ebf14785c7514dfc3dbd0d030a1b2e54cb55e68f440d4577be71605c2c71127",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    },
+    {
+      "path": "measure/overhang-sun.md",
+      "original_final_report_sha256": "ac61e59a2fd89b47f3ea0878785a657a86a07923e5c3d395938a0f4f210925bd",
+      "captured_console_sha256": "33c3fc8edbbfad34a024592fd98059767874ce2112380469e0f2bbf1f40813d3",
+      "delivery_report_sha256": "06beed575c584ce4a4d7f723c09d8d993123c7013735f9b81b1d926ebdaa6a74",
+      "exact_result": "RESULT: prints unsupported",
+      "measured_content_identical": true
+    }
+  ],
+  "geometry_changes": false,
+  "tool_changes": false
+}

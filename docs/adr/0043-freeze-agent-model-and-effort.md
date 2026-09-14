@@ -40,24 +40,24 @@ As of 2026-09-09, `ultra` is supported only with Codex `gpt-6-astra`
 catalog. It is passed literally, not mapped to `xhigh` or `max`. Frozen
 runtime selection and native launch validation both enforce this restriction.
 
-Codex defaults to `gpt-5.6-sol` at `medium`; `astra`, `sol`, `terra`, and `luna`
+Codex defaults to `gpt-6-astra` at `medium`; `astra`, `sol`, `terra`, and `luna`
 are friendly aliases for their exact Codex model ids. Claude Code defaults to
 `claude-opus-5` at `medium`; `opus` and `opus-5` resolve to that exact id. Grok
 Build retains its pinned `grok-4.6` model and exposes no reasoning-effort
 control until its CLI has an equivalent stable contract.
 
 On 2026-09-07 the new-selection reasoning default changed from high to medium.
-The model defaults are unchanged. Omitting `--effort` with `--model astra`
-now selects Astra/medium. Explicit overrides and frozen run selections retain
-their exact reasoning levels; this is not a migration of existing sessions.
+On 2026-09-11 the Codex model default changed from Sol to Astra. Omitting both
+`--model` and `--effort` now selects Astra/medium. Explicit overrides and frozen
+run selections retain their exact model and reasoning levels; this is not a
+migration of existing sessions.
 
 For each new product run, the host writes schema-v2 `MANAGER.json` containing
 the canonical agent, model, and reasoning effort. That file is immutable,
 included in the run input manifest, and revalidated on every checkpoint read.
-Resume reconstructs the launcher from those exact bytes unless the operator
-has explicitly recorded the supported reasoning override below. Schema-v1
-`MANAGER.json` remains readable and continues through the historical
-stage-shaped Codex reasoning profiles.
+Resume accepts no replacement flags and reconstructs the launcher from those
+exact bytes. Schema-v1 `MANAGER.json` remains readable and continues through
+the historical stage-shaped Codex reasoning profiles.
 
 The selected reasoning effort is Wish-wide for new schema-v2 projects. It
 overrides the low/medium/high reasoning values in the older Codex economics
@@ -72,51 +72,6 @@ one-session rule for the subsequent Wish-wide product run.
 Codex receives `--model` plus `model_reasoning_effort`; Claude Code receives
 `--model` plus `--effort`. Their private native session checkpoints bind the
 selection under each adapter's compatibility rules.
-
-### Explicit reasoning override on resume
-
-As of 2026-09-10, `workshop resume ID --effort medium` can change subsequent
-native Manager turns of an unfinished Codex product that originally froze
-`token-budget-v1.md`, `budgets-v1.md`, and schema-v2 `MANAGER.json`. Other
-supported reasoning values use the same frozen-model validation as new runs.
-The operator must wait until the current host invocation stops; the exclusive
-run lock rejects a concurrent change. There is no automatic effort change.
-
-The host atomically stores an owner-only `reasoning-effort.json` history,
-bound to the exact product, Wish, initial Manager bytes, model, initial effort,
-budget profile, workspace, private state root and native thread. Each change
-records its previous and new effort, UTC request time, lifecycle checkpoint
-and native runtime configuration hash. Repeating the current choice is
-idempotent. Omitting the flag preserves the most recent explicit choice,
-including after a failed launch. Invalid history or session bindings fail
-closed on status and resume.
-
-The original `MANAGER.json`, Wish, materialized instructions, stage evidence,
-usage and saved token cap are unchanged. The existing profile-bound native
-configuration already allows per-turn reasoning changes, so the override
-does not rebind or replace the Codex session. Later instruction-only host tool
-refreshes can keep the override; a different frozen budget profile requires
-separate migration support and is refused. Historical sessions without this
-profile, including token-budget adoption from an older run, are unsupported.
-
-Run receipts and status report the configured Manager setting as `effort` and
-preserve the original selection as `initial_effort` when an override exists.
-The native continuation prompt names both settings so the original Manager file cannot
-be mistaken for the current launch policy. Earlier turns are never relabeled.
-
-As of 2026-09-11, every continuation also relays the operator's selected effort
-as current intent for subsequent Manager and native child work, superseding
-earlier effort requests in the frozen Wish and instructions. Codex retains all
-child orchestration and must honor that choice through supported native
-capabilities while preserving existing contributions and the root Goal.
-
-This is an intent relay, not deterministic descendant enforcement. An isolated
-Codex 0.153.4 probe reproduced an existing child retaining its earlier effort
-after the exact root resumed at medium. Setting the documented
-`agents.default_subagent_reasoning_effort` to medium did not change that
-restored child. The host therefore adds no ineffective configuration override,
-child scheduler or native-state rewrite. Actual child request metadata must
-confirm compliance; the Manager's `effort` receipt alone cannot establish it.
 
 ## Consequences
 
@@ -138,8 +93,5 @@ confirm compliance; the Manager's `effort` receipt alone cannot establish it.
 - Claude checkpoint tests reject model drift on resume.
 - Workflow tests prove schema-v2 `MANAGER.json` is hash-bound and that a new
   run's selected effort overrides a legacy stage reasoning default.
-- Override tests prove an ultra-to-medium change resumes the exact thread with
-  the same native configuration hash, survives retries and instruction-only
-  rebinds, preserves usage and frozen bytes, and rejects invalid private records.
 - Schema-v1 parser coverage proves historical runtime configuration remains
   represented as legacy rather than silently defaulted.

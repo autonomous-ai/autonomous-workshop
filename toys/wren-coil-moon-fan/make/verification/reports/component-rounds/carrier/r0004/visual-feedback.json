@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Underside landmark is occluded in supplied packet",
+      "evidence": "Front has edge-on underside; top and iso show the opposite face",
+      "part": "carrier",
+      "repair": "Use a V-shaped supported groove and inspect an explicit underside view"
+    }
+  ],
+  "observation": "Top/front/iso preserve the enclosed crescent and track; the added underside landmark is hidden from these views. Numeric overhang failure requires a supported V groove and an underside view.",
+  "packet_sha256": "825ae731ac4e2370d33e37532188618179267b82ab234d565f1e07062e65e2a2",
+  "status": "inconclusive"
+}

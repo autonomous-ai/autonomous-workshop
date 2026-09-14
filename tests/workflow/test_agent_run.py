@@ -92,6 +92,83 @@ class AgentRunTest(unittest.TestCase):
             **kwargs,
         )
 
+    def test_make_options_default_false_and_survive_resume_and_tool_refresh(self):
+        cad = self.root / "cad"
+        cad.mkdir()
+        (cad / "SKILL.md").write_text("CAD tools")
+        run = self.create(domain_skill_roots={"cad": cad})
+        path = self.run_root / "MAKE-OPTIONS.json"
+        self.assertEqual(json.loads(path.read_bytes()), {"schema_version": 1, "check_motion": False})
+        self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o400)
+        digest = run.snapshot().input_sha256s["MAKE-OPTIONS.json"]
+        (cad / "SKILL.md").write_text("Updated CAD tools")
+        run.refresh_domain_skill_tools({"cad": cad}, reason="test refresh")
+        reopened = AgentRun.open(self.run_root, host_state_root=self.host_state_root)
+        self.assertEqual(reopened.snapshot().input_sha256s["MAKE-OPTIONS.json"], digest)
+
+    def test_make_options_true_are_frozen_and_tampering_is_rejected(self):
+        run = self.create(check_motion=True)
+        path = self.run_root / "MAKE-OPTIONS.json"
+        self.assertIs(json.loads(path.read_bytes())["check_motion"], True)
+        path.chmod(0o600)
+        path.write_text('{"schema_version":1,"check_motion":false}')
+        path.chmod(0o400)
+        with self.assertRaises(StateConflict):
+            run.snapshot()
+
+    def test_host_reselects_motion_without_changing_stage_or_other_inputs(self):
+        run = self.create(check_motion=True)
+        before = run.snapshot()
+        changes = run.refresh_domain_skill_tools({}, reason="operator resume", check_motion=False)
+        after = run.snapshot()
+        self.assertEqual([item["path"] for item in changes], ["MAKE-OPTIONS.json"])
+        for name, digest in before.input_sha256s.items():
+            if name != "MAKE-OPTIONS.json":
+                self.assertEqual(after.input_sha256s[name], digest)
+        for name in ("stage", "status", "round_index", "max_rounds", "stage_artifacts", "wish_sha256"):
+            self.assertEqual(getattr(before, name), getattr(after, name))
+        self.assertFalse(json.loads((run.run_root / "MAKE-OPTIONS.json").read_bytes())["check_motion"])
+        self.assertEqual(run.refresh_domain_skill_tools({}, reason="repeat", check_motion=False), ())
+        self.assertEqual(run.snapshot(), after)
+        run.refresh_domain_skill_tools({}, reason="explicit opt-in", check_motion=True)
+        self.assertTrue(json.loads((run.run_root / "MAKE-OPTIONS.json").read_bytes())["check_motion"])
+        self.assertEqual(stat.S_IMODE((run.run_root / "MAKE-OPTIONS.json").stat().st_mode), 0o400)
+        self.assertEqual(len((run.host_state_root / "host-corrections.jsonl").read_text().splitlines()), 2)
+
+    def test_legacy_motion_adoption_refuses_untracked_options(self):
+        run = self.create()
+        payload = run._load()
+        updated = dict(payload, inputs=[item for item in payload["inputs"] if item["path"] != "MAKE-OPTIONS.json"])
+        run._write_next(payload, updated)
+        before = run.snapshot()
+        with self.assertRaisesRegex(StateConflict, "untracked MAKE-OPTIONS"):
+            run.refresh_domain_skill_tools({}, reason="operator resume", check_motion=False)
+        self.assertEqual(run.snapshot(), before)
+        (run.run_root / "MAKE-OPTIONS.json").unlink()
+        changes = run.refresh_domain_skill_tools({}, reason="operator resume", check_motion=False)
+        self.assertIsNone(changes[0]["previous_sha256"])
+        self.assertIn("MAKE-OPTIONS.json", run.snapshot().input_sha256s)
+
+    def test_motion_finalizer_refresh_does_not_adopt_lifecycle_or_budget_rules(self):
+        scripts = self.skill / "scripts"
+        scripts.mkdir(exist_ok=True)
+        (scripts / "stage_proposal.py").write_text("# old finalizer")
+        run = self.create()
+        before = run.snapshot()
+        (scripts / "stage_proposal.py").write_text("# motion-aware finalizer")
+        (self.skill / "SKILL.md").write_text("new unrelated workflow")
+        changes = run.refresh_domain_skill_tools({}, reason="motion migration", motion_skill_root=self.skill)
+        self.assertEqual([item["path"] for item in changes],
+                         [".agents/skills/autonomous-workshop/scripts/stage_proposal.py"])
+        self.assertEqual(run.snapshot().input_sha256s[".agents/skills/autonomous-workshop/SKILL.md"],
+                         before.input_sha256s[".agents/skills/autonomous-workshop/SKILL.md"])
+
+    def test_invalid_motion_option_refuses_before_materialization(self):
+        for value in (None, "false", 0, 1):
+            with self.subTest(value=value), self.assertRaises(ContractError):
+                self.create(check_motion=value)
+            self.assertFalse(self.run_root.exists())
+
     def artifact(self, run, stage, name=None, content=None):
         name = name or (stage + ".json")
         content = content or ('{"stage":"%s"}\n' % stage).encode("utf-8")
@@ -218,7 +295,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(checkpoint_document["schema_version"], 3)
         self.assertEqual(checkpoint_document["manager_id"], "codex")
         self.assertEqual(checkpoint.manager_id, "codex")
-        self.assertEqual(checkpoint.manager_model, "gpt-5.6-sol")
+        self.assertEqual(checkpoint.manager_model, "gpt-6-astra")
         self.assertEqual(checkpoint.manager_reasoning_effort, "medium")
         self.assertEqual(checkpoint.inventor_roster, ())
         for relative, content in expected.items():
@@ -1202,6 +1279,96 @@ class AgentRunTest(unittest.TestCase):
         ledger.unlink()
         with self.assertRaisesRegex(StateConflict, "unavailable"):
             host._open_budgeted_agent_run(paths)
+
+    def test_an_unselected_boundary_is_absent_from_the_checkpoint(self):
+        run = self.create()
+        checkpoint = run.snapshot()
+        self.assertIsNone(checkpoint.turn_seconds)
+        self.assertFalse(checkpoint.turn_untimed)
+        payload = json.loads(
+            (run.host_state_root / "agent-run.json").read_text(encoding="utf-8")
+        )
+        self.assertNotIn("turn_seconds", payload)
+
+    def test_a_selected_boundary_survives_reopen(self):
+        run = self.create(turn_seconds=3 * 60 * 60)
+        checkpoint = run.snapshot()
+        self.assertEqual(checkpoint.turn_seconds, 3 * 60 * 60)
+        self.assertFalse(checkpoint.turn_untimed)
+        reopened = AgentRun.open(
+            run.run_root,
+            host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+        )
+        self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_an_untimed_selection_is_distinct_from_no_selection(self):
+        run = self.create(turn_untimed=True)
+        checkpoint = run.snapshot()
+        self.assertTrue(checkpoint.turn_untimed)
+        self.assertIsNone(checkpoint.turn_seconds)
+        payload = json.loads(
+            (run.host_state_root / "agent-run.json").read_text(encoding="utf-8")
+        )
+        self.assertIn("turn_seconds", payload)
+        self.assertIsNone(payload["turn_seconds"])
+
+    def test_an_invalid_boundary_is_refused_before_any_run_exists(self):
+        for kwargs in (
+            {"turn_seconds": 59},
+            {"turn_seconds": agent_run_module.MAX_NATIVE_TURN_SECONDS + 1},
+            {"turn_seconds": 60.0},
+            {"turn_seconds": True},
+            {"turn_untimed": "yes"},
+            {"turn_seconds": 600, "turn_untimed": True},
+        ):
+            with self.subTest(**kwargs), self.assertRaises(ContractError):
+                self.create(**kwargs)
+            self.assertFalse(self.run_root.exists())
+
+    def test_a_tampered_boundary_is_refused_on_reopen(self):
+        run = self.create(turn_seconds=7_200)
+        checkpoint_path = run.host_state_root / "agent-run.json"
+        payload = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+        payload.pop("checkpoint_sha256")
+        payload["turn_seconds"] = agent_run_module.MAX_NATIVE_TURN_SECONDS + 1
+        agent_run_module.AgentRun._write_checkpoint_file(checkpoint_path, payload)
+        with self.assertRaisesRegex(StateConflict, "native turn boundary is invalid"):
+            AgentRun.open(run.run_root, host_state_root=run.host_state_root)
+
+    def test_rebinding_replaces_the_boundary_and_keeps_the_lifecycle(self):
+        run = self.create(turn_seconds=1_800)
+        before = run.snapshot()
+        after = run.rebind_turn_boundary(turn_untimed=True)
+        self.assertTrue(after.turn_untimed)
+        self.assertIsNone(after.turn_seconds)
+        self.assertEqual(after.revision, before.revision + 1)
+        self.assertEqual(after.stage, before.stage)
+        self.assertEqual(after.status, before.status)
+        self.assertEqual(after.max_rounds, before.max_rounds)
+        self.assertEqual(after.round_index, before.round_index)
+        exact = run.rebind_turn_boundary(turn_seconds=5_400)
+        self.assertEqual(exact.turn_seconds, 5_400)
+        self.assertFalse(exact.turn_untimed)
+
+    def test_rebinding_to_the_same_boundary_writes_no_revision(self):
+        run = self.create(turn_seconds=1_800)
+        before = run.snapshot()
+        self.assertEqual(
+            run.rebind_turn_boundary(turn_seconds=1_800).revision, before.revision
+        )
+
+    def test_rebinding_refuses_an_invalid_boundary(self):
+        run = self.create()
+        for kwargs in (
+            {"turn_seconds": 59},
+            {"turn_seconds": agent_run_module.MAX_NATIVE_TURN_SECONDS + 1},
+            {"turn_seconds": 600, "turn_untimed": True},
+            {"turn_untimed": "yes"},
+        ):
+            with self.subTest(**kwargs), self.assertRaises(ContractError):
+                run.rebind_turn_boundary(**kwargs)
+        self.assertIsNone(run.snapshot().turn_seconds)
 
     def test_effort_checkpoint_rejects_a_disabled_active_stage(self):
         marker = self.skill / "references" / "effort-routes-v1.md"

@@ -1,7 +1,19 @@
 ---
 name: make-round
-description: Run each Make repair round with deterministic CAD checks and native visual inspection. Render the model, inspect placement and proportions, and record visual errors alongside likeness, build and motion results. Does not replace independent blind review or final verification.
+description: Run isolated component or assembled-object Make repair rounds with deterministic CAD checks and native visual inspection. Render the selected scope, inspect form and proportions, and record visual errors alongside likeness, build and motion results. Does not replace independent blind review or final verification.
 ---
+
+**Motion verification is opt-in.** Standalone `make_round` and `verify_project`
+default to false; pass `--check-motion true` to enable it. Inside Workshop,
+read the immutable run-root `MAKE-OPTIONS.json`: the tools inherit its
+`check_motion` value and reject contradictory flags. A missing options file
+in an older materialized run retains its mandatory motion policy. When false,
+skip motion sweeps and required animation/reconstruction/review, even if a
+manifest or assembly claims exist. Motion is unverified, never passed; do not
+claim assemblability or working motion from skipped evidence. Build, fit,
+print gates and still-image review remain required. These rules take
+precedence over motion-specific requirements in references and templates.
+
 
 # Make round
 
@@ -16,25 +28,13 @@ calls were reassembling by hand.
 
 ## Rules
 
-- Before expensive or final verification, mentally walk the complete ordinary
-  user cycle against the Wish and actual design: use/play, finish, reload/reset,
-  and repeat, as applicable. Distinguish one-time assembly and occasional service
-  from repeated actions. Check modeled access and instructions for tools, loose
-  fasteners, hand effort and repeated disassembly; judge whether that burden fits
-  the promised experience. Repair conflicts through native design judgment.
-  Revisit the cycle in the existing final review after its blind observation,
-  without adding a review round or artifact. Tool use may be appropriate; judge
-  it against the Wish. This design assessment is not physical Playtest evidence.
 - Run `make_round` once per repair round, after editing source and before
   deciding what to repair next. Then inspect the visual packet and record the
   Manager's findings using `--record-visual` without rebuilding. Read its summary; open a full report only
   when the summary names a failure you cannot place.
-- Finish project edits and standalone `gen --write` calls, including subagent
-  work, before starting `make_round`. While the round runs or its visual packet
-  awaits feedback, keep other agents and commands from changing this project's
-  sources, constraints, or STEP files. A concurrent `gen --write` can invalidate
-  the packet even without a Python edit; `CADGEN_WARM=0` does not make it safe.
-  Independent read-only work may continue.
+- A round can take minutes. Start `make_round` with `yield_time_ms: 30000` and,
+  while it runs, continue it with `write_stdin` at the same yield. Never put a
+  `sleep` between polls: each poll re-sends the whole session.
 - Do not read the cad or image-to-cad scripts to learn their flags. The
   exact invocations are below; they are the same programs the host gates
   run, unchanged.
@@ -47,9 +47,14 @@ calls were reassembling by hand.
   unresolved visibility as inconclusive rather than claiming a pass.
 - `make_round` never lowers a threshold, never edits source, and never
   replaces the final `verify_project` run the Make gate requires. It writes
-  round reports under `<project>/measure/rounds/` and the reusable state at
+  round reports under `<project>/measure/rounds/`, component histories under
+  `<project>/measure/component-rounds/<role>/`, and the reusable state at
   `<project>/measure/make-round-state.json`.
   CAD tools may update generated caches.
+- Spark uses two levels. Pass one isolated round history for every component,
+  then begin assembled-object rounds. Component feedback cannot stand in for
+  assembly feedback, and an assembly repair that changes component geometry
+  invalidates that component's prior pass.
 
 ## Usage
 
@@ -57,8 +62,29 @@ calls were reassembling by hand.
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
     --ref hero=<project>/cad/ref/hero.png [--ref side=...] \
     [--min 0.90] [--nozzle 0.4] [--overhang-angle 45] \
-    [--all-parts] [--no-motion] [--render-timeout SECONDS] [--json]
+    [--all-parts] [--check-motion true|false] [--json]
 ```
+
+For a Spark component, select its own generator. This builds and renders only
+that component, keeps its evidence under
+`measure/component-rounds/<role>/`, skips project-level motion, and does not
+implicitly apply whole-object reference images:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+    --component part_<role>.step.py [--ref detail=<component-reference.png>]
+```
+
+After every component passes, start the assembled-object loop with:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+    --require-component-passes [--ref hero=<whole-object-reference.png>]
+```
+
+That assembly command freshly builds each component and refuses to render the
+assembly when any latest isolated round failed, is missing, or describes older
+component geometry.
 
 - `<project>/cad` is the directory holding the generator sources: exactly one
   entry `<name>.step.py` and any number of `part_<role>.step.py`.
@@ -66,12 +92,6 @@ calls were reassembling by hand.
   read from the `LABEL=ref/<file>` lines of the project's `*_spec.md`.
 - `--nozzle` is the diameter the print will use and sets the minimum wall;
   `--overhang-angle` is the slope from vertical the printer bridges unsupported.
-- `--render-timeout SECONDS` sets a positive finite timeout for the combined
-  front/top/iso rendering subprocess (default 900 seconds, maximum 2,147,483
-  seconds to stay within portable subprocess polling limits). It changes only
-  how long that subprocess may run; rendering quality, required views, other
-  tool timeouts and visual feedback checks stay the same. The selected limit
-  is recorded in `summary.json` as `visual.timeout_seconds`.
 - Only parts whose written STEP bytes changed since the previous round are
   reported; `--all-parts` reports every part. The first round reports all.
 - Every part that builds is gated from source by `check_thickness` and
@@ -89,24 +109,9 @@ calls were reassembling by hand.
   (parts with a fresh build verdict, including build failures), `print` (the
   per-part wall and overhang verdicts with their measurements) and `reused`
   (parts whose gate evidence was carried forward).
-- Console output begins with a complete failed build/print part index, derived
-  from all recorded part verdicts, including reused entries. Human output puts
-  it immediately after the header; `--json` puts `failed_part_checks` first.
-  An older aggregate-only print failure is labeled `print`. This display-only
-  index leaves saved summaries and reports unchanged; it excludes warnings,
-  visual feedback and other gates, which retain their separate results.
 - The initial command returns exit 1 with visual status `pending` until native
   feedback is recorded, even if all numeric checks pass. A renderer failure
   produces visual status `error`; never fabricate feedback for missing images.
-  After a render timeout, inspect `visual-render.log`, then start a new normal
-  round with an explicit longer `--render-timeout` when appropriate. Keep the
-  failed round intact. Valid unchanged print PASS evidence can be reused under
-  the conditions above; failed checks run again. The new round must generate
-  its own current hash-bound visual packet and receive native inspection and
-  feedback. An error round cannot accept feedback or external replacement PNGs.
-  Existing runs retain their frozen tool bytes unless explicitly refreshed
-  through the supported host operation; a source checkout update alone does
-  not add this option to a saved run.
 - Exit 0 means numeric checks and recorded visual feedback pass; 1 means failed,
   inconclusive or pending; 2 means invalid input or the round could not run.
 
@@ -138,7 +143,7 @@ Then run:
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
-    --record-visual <feedback.json>
+    [--component part_<role>.step.py] --record-visual <feedback.json>
 ```
 
 This updates the same round's summary with detected visual errors. It rejects
@@ -154,7 +159,7 @@ blind review, the final `--record-visual` may also use
 the integrated verifier directly after blind review; never start a new round
 just to run it. The host alone performs the authoritative `--fresh` rebuild.
 
-After the failed-part index, the summary names the changed parts and their build verdicts, the
+The summary names, in order: the changed parts and their build verdicts, the
 likeness score per view with the change since
 the previous round and the pose it was scored at, the motion gate verdict,
 the native visual findings, and the `--full` verdict when requested. Everything the tools printed is kept
@@ -170,7 +175,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
 | likeness | `"$WORKSHOP_PYTHON" $I/render_views.py <entry>.step.py --match <ref.png> --label <L> --min 0.90 -o <dir> --shaded --json [--poses-from <prev poses.json>]` | `results[].iou`, `.ok`, `.az/.el/.roll/.fov` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
-| inspection views | `"$WORKSHOP_PYTHON" $C/render_review <entry.step.py> --view front --view top --view iso -o <round>/visual` | exact shaded PNGs for native Manager inspection |
+| inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view front --view top --view iso -o <round>/visual` | exact shaded PNGs for native Manager inspection of one component or the assembly |
 | final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit [--image-derived --likeness-ref L=PATH ...] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
 | motion sheet | `"$WORKSHOP_PYTHON" $C/motion_presentation.py` (see the cad skill) | presentation only, not a gate |
 

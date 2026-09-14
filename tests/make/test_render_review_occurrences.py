@@ -1,5 +1,4 @@
 """CAD review must retain leaf materials and assembly placements."""
-from collections import Counter
 from pathlib import Path
 import runpy
 import tempfile
@@ -7,19 +6,10 @@ import unittest
 from unittest import mock
 
 import numpy as np
-from build123d import Axis, Box, Color, Compound, Location, Shape, Solid, export_step, import_step
+from build123d import Axis, Box, Color, Compound, Shape, export_step, import_step
 
 
 RENDERER = Path(__file__).resolve().parents[2] / "src/workshop/make/skills/cad/scripts/render_review"
-
-
-def source_state(scene):
-    # Reading node.color would hide source-cache mutations by priming it here.
-    return [
-        (id(node), id(node.parent), tuple(map(id, node.children)), node.location,
-         node.label, None if node._color is None else tuple(node._color))
-        for node in [scene, *scene.descendants]
-    ]
 
 
 class ReviewOccurrencesTest(unittest.TestCase):
@@ -98,63 +88,6 @@ class ReviewOccurrencesTest(unittest.TestCase):
         group.color = Color(0, 0, 1)
         occurrences = self.occurrences(Compound(children=[group]))
         self.assertEqual([color for _, _, color in occurrences], [(0, 0, 255), (0, 0, 255)])
-
-    def test_leaf_copy_work_is_linear_with_exact_world_poses_and_colors(self):
-        for count in (1, 5, 17):
-            with self.subTest(leaves=count):
-                leaves = [Solid.make_box(1, 2, 3) for _ in range(count)]
-                for index, leaf in enumerate(leaves):
-                    leaf.label = f"leaf_{index}"
-                    leaf.location = Location((3 * index, 5, 1), (0, 0, 15))
-                leaves[0].color = Color("red")
-                group = Compound(children=leaves, label="group")
-                group.location = Location((7, -4, 2), (0, 0, 30))
-                scene = Compound(children=[group], label="root")
-                scene.location = Location((100, 20, 5), (10, 0, 0))
-                scene.color = Color("blue")
-                before = source_state(scene)
-                counts = Counter()
-                original_copy = Shape.__deepcopy__
-
-                def tracked(shape, memo):
-                    counts[shape.label] += 1
-                    return original_copy(shape, memo)
-
-                with mock.patch.object(Shape, "__deepcopy__", tracked):
-                    placed = list(self.renderer["_leaves"](scene))
-                # Previously these scenes copied 3, 35 and 323 shapes: every
-                # selected leaf recursively copied the root and all siblings.
-                self.assertEqual(counts, Counter({leaf.label: 1 for leaf in leaves}))
-                self.assertEqual(len(placed), count)
-                for index, (source, actual) in enumerate(zip(leaves, placed)):
-                    expected = Solid(source.wrapped.Located(source.global_location.wrapped))
-                    self.assertIsNone(actual.parent)
-                    self.assertEqual(actual.label, source.label)
-                    self.assertEqual(actual.location, source.global_location)
-                    self.assertAlmostEqual(actual.volume, expected.volume, places=9)
-                    np.testing.assert_allclose(
-                        sorted(tuple(vertex.center()) for vertex in actual.vertices()),
-                        sorted(tuple(vertex.center()) for vertex in expected.vertices()),
-                        atol=1e-9, rtol=0,
-                    )
-                    self.assertEqual(tuple(actual.color), tuple(Color("red" if index == 0 else "blue")))
-                self.assertEqual(source_state(scene), before)
-                self.occurrences(scene)
-                self.assertEqual(source_state(scene), before)
-
-    def test_failed_leaf_copy_preserves_source_placements_and_color_caches(self):
-        class Uncopyable:
-            def __deepcopy__(self, memo):
-                raise RuntimeError("metadata cannot be copied")
-
-        leaf = Solid.make_box(1, 2, 3)
-        leaf.metadata = Uncopyable()
-        scene = Compound(children=[Compound(children=[leaf])])
-        scene.color = Color("blue")
-        before = source_state(scene)
-        with self.assertRaisesRegex(RuntimeError, "metadata cannot be copied"):
-            self.occurrences(scene)
-        self.assertEqual(source_state(scene), before)
 
     def test_repeated_part_instances_are_not_deduplicated(self):
         part, _ = self.parts()

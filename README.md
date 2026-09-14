@@ -48,6 +48,26 @@ Our initial Inventors seed the shop and exercise the system. The long-term platf
 
 Internally, the sealed brief that begins one product run is still called a Wish. Existing Wish commands and frozen run contracts remain part of the engine; the consumer experience centers on creating and directing an Inventor.
 
+## Correct a published toy
+
+Clone a published toy archive into a separate Spark run using a correction brief:
+
+```bash
+uv run workshop fix toys/mara-masque-rainward-sun \
+  --prompt-file docs/examples/rainward-sun-fix.txt
+```
+
+Use `--prompt "Describe the correction"` for a short brief. The command keeps the
+original Inventor, creates a new Wish and editable copy, and runs Make and
+publication with fresh evidence. The original run and listing stay unchanged.
+The source must be a local Workshop public archive with its `MANIFEST.json`;
+URLs and private run directories are not accepted. `--model`, `--effort`,
+`--max-tokens` and `--turn-minutes` select the new run's settings. Resume a stopped
+revision with `workshop resume <new-wish-id>`.
+
+The Rainward Sun prompt above is a prepared example; a corrected version has
+not yet been live-validated. See [the correction-run contract](docs/adr/0065-published-toy-correction-runs.md).
+
 ## Quickstart
 
 ```bash
@@ -62,7 +82,7 @@ When an Inventor is not yet connected, Workshop opens [Connect Inventor](https:/
 
 Each Inventor has its own owner-only credential file under `$WORKSHOP_HOME/credentials/inventors/`. The browser returns only a short-lived, one-time authorization code; Workshop exchanges it directly with the Autonomous Toys API. Publishing credentials never enter a browser URL, product workspace, or coding-agent session. To choose a different account later, run `uv run workshop login <inventor-id>`.
 
-One command runs the whole loop, and keeps running it. Pico Press daydreams one brand-new idea that fits its Taste, the host rejects anything too close to a toy already made, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept), and then Pico Press dreams the next one:
+One command runs the whole loop, and keeps running it. Pico Press daydreams one fresh idea that fits its Taste, the host rejects anything too close to a toy already made, the survivor is sealed as the brief, the run makes and publishes it (✨ Spark, `Make -> Release`, with Codex as the Workshop Manager; the idea is already the concept), and then Pico Press dreams the next one:
 
 ```bash
 uv run workshop start pico-press
@@ -89,6 +109,14 @@ To make just one product from your own idea, use `wish`:
 uv run workshop wish "A small hand-cranked cam toy" --inventor soren-voss \
   --workflow spark --agent codex --model sol --effort high
 ```
+
+Motion verification is optional for new runs. `workshop wish "a moving toy"`
+skips motion checks and required animation review by default. Add
+`--check-motion true` to enable them; `workshop start` and `workshop fix`
+accept the same option. `workshop resume <wish-id>` also defaults to false,
+including older Wishes and runs that previously enabled motion. Pass
+`--check-motion true` on resume to enable it again. Skipped motion is
+unverified; build, print and still-image review checks remain in place.
 
 `start <inventor>` is the ongoing Inventor-led loop; `wish "..."` creates one
 product and stops. Omit `--inventor` on a Wish to let the Manager choose the
@@ -119,7 +147,7 @@ uv run workshop start ferro-line --workflow forge --max-rounds 6 \
   --wish "a wind-up robot duck that walks when you turn its key"
 ```
 
-`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Sol at medium effort; Claude Code defaults to Opus 5 at medium effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
+`--agent` chooses the Workshop Manager runtime; `--model` and `--effort` choose its model and reasoning level. Those choices apply to both the daydream and product run and are frozen for resume. Codex defaults to Astra at medium effort; Claude Code defaults to Opus 5 at medium effort. Friendly Codex aliases such as `astra` and `sol` resolve to exact model ids. Grok's first ✨ Spark run, from a typed brief, produced [Horn Tip](toys/pico-press-horn-tip/):
 
 ```bash
 grok login
@@ -139,7 +167,7 @@ uv run workshop resume <wish-id>
 Codex Astra also supports `--effort ultra`, passed unchanged to native Codex.
 Ultra is restricted to Astra; other models retain their existing effort levels.
 
-`start` and `wish` accept `--max-tokens N` up to **500,000,000**, default **30,000,000** per Codex
+`start` and `wish` accept `--max-tokens N` up to **200,000,000**, default **30,000,000** per Codex
 product. Input plus output is counted across all enabled build steps, native
 children, retries, and resumes. Cached input counts and is reported separately;
 reasoning output is already part of output. `start` gives each product its own
@@ -150,6 +178,18 @@ uv run workshop wish "A simple one-piece gravity desk rocker" --inventor soren-v
   --workflow spark --agent codex --model astra --effort medium --max-tokens 10000000
 uv run workshop resume <wish-id> --max-tokens 15000000  # total cap, not extra tokens
 ```
+
+`wish`, `start` and `resume` also accept `--turn-minutes M`, which bounds each
+native turn to `M` minutes (1 to 360), or `--turn-minutes none` to run with no
+Workshop wall clock at all. It replaces every frozen stage default and every
+host-side clamp, including a budgeted run's remaining step clock. Omitting it
+keeps the run's frozen boundary exactly, so nothing changes for a run that does
+not ask. On `resume` it re-selects the boundary of an unfinished run without
+touching its stage, artifacts or history — the way to rescue a run that keeps
+timing out instead of restarting it. An untimed run still needs the Manager's
+own bound, which today means a Codex token budget: Codex refuses to run untimed
+without one, while Claude Code and Grok Build have no token accounting and an
+untimed turn there is bounded by nothing Workshop owns. See ADR 0064.
 
 Omitting `--max-tokens` on resume preserves the saved allowance. Providing it
 explicitly adopts token budgeting for an eligible older run or changes its
@@ -283,6 +323,20 @@ Mechanical shadow-play toys whose held form casts a hidden creature, place, or
 event under ordinary light. Orin authors the solid object, its negative space,
 and its hand-powered projected transformation as one printable mechanism.
 
+### Halden Detent — make the hand something worth repeating ([TASTE.md](inventors/halden-detent/TASTE.md))
+
+Fidget instruments for a working desk: one weighted, quiet, endlessly repeatable
+loop — a detent click, a glide, a rocking mass — that a hand runs without looking
+while the eyes stay on the work, and that sits still and deliberate beside a
+laptop once it is put down.
+
+### Axel Rake — design the vehicle that comes next ([TASTE.md](inventors/axel-rake/TASTE.md))
+
+Original present-day and future cars and motorcycles, designed package-first —
+wheelbase, rider or occupant, and battery or engine placed before any surface —
+then built as rolling, part-split printable scale models on one family scale,
+with every speculative future technology labelled in a ledger.
+
 ## Toys
 
 Toys that already left the Workshop. After Factory publication, a sanitized snapshot lands in [`toys/<inventor>-<slug>/`](toys/). These are public examples, not private run workspaces.
@@ -291,6 +345,8 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 
 | Toy | Inventor | Effort | Snapshot | Factory |
 |---|---|---|---|---|
+| RIDGELINE — Great Wall Path Puzzle | [Arden Span](inventors/arden-span/) | Operator revision | [`toys/arden-span-ridgeline-great-wall-path-puzzle/`](toys/arden-span-ridgeline-great-wall-path-puzzle/) | [ridgeline-great-wall-path-puzzle](https://www.autonomous.ai/toys/product/ridgeline-great-wall-path-puzzle) |
+| QUAYSHIFT | [Arden Span](inventors/arden-span/) | ✨ Spark | [`toys/arden-span-quayshift/`](toys/arden-span-quayshift/) | [quayshift](https://www.autonomous.ai/toys/product/quayshift) |
 | Moonwake Turn | [Luma Vale](inventors/luma-vale/) | Spark | [`toys/luma-vale-moonwake-turn/`](toys/luma-vale-moonwake-turn/) | [moonwake-turn](https://www.autonomous.ai/toys/product/moonwake-turn) |
 | Mooncoil Dragon | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-mooncoil-dragon/`](toys/pico-press-mooncoil-dragon/) | [mooncoil-dragon](https://www.autonomous.ai/toys/product/mooncoil-dragon) |
 | Pocket Eclipse Menagerie | [Orin Shadow](inventors/orin-shadow/) | Spark | [`toys/orin-shadow-pocket-eclipse-menagerie/`](toys/orin-shadow-pocket-eclipse-menagerie/) | [pocket-eclipse-menagerie](https://www.autonomous.ai/toys/product/pocket-eclipse-menagerie) |

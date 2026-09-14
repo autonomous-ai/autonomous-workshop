@@ -14,10 +14,13 @@ import functools
 import hashlib
 import io
 import json
+import math
+import os
 import runpy
 import stat
 from pathlib import Path, PurePosixPath
 
+DEADLINE_ENV = "WORKSHOP_MOTION_DEADLINE_SECONDS"
 EVIDENCE = "snap/MOTION-EVIDENCE.json"
 REVIEW = "snap/MOTION-REVIEW.json"
 
@@ -173,7 +176,7 @@ def validate(project, signature_review):
     for row, (identity, occurrences) in zip(states, expected):
         if any(row[key] != value for key, value in identity.items()):
             raise ValueError("motion states are not in declared condition/sample order")
-        if row["sha256"] != tool["state_digest"](occurrences):
+        if row["sha256"] != hashlib.sha256(tool["state_bytes"](occurrences)).hexdigest():
             raise ValueError(f"motion state {row['condition_id']}[{row['sample_index']}] differs from the checked poses; regenerate the presentation")
     if evidence["animation_sha256"] != hashlib.sha256(tool["animation_bytes"](expected, evidence["render"])).hexdigest():
         raise ValueError("motion animation differs from its reconciled geometry and camera")
@@ -193,7 +196,23 @@ def _write(project, relative, data):
     path.write_bytes(data)
 
 
-def generate(project, *, selections=None, frames=8, view="iso", size=600):
+def resolve_deadline(flag, environment):
+    """Seconds this presentation may spend: the flag, else the environment."""
+    for value, label in ((flag, "--deadline"), (environment, DEADLINE_ENV)):
+        if value is None or (isinstance(value, str) and not value.strip()):
+            continue
+        try:
+            seconds = float(value)
+        except (TypeError, ValueError):
+            raise ValueError(f"{label} must be a number of seconds") from None
+        if not math.isfinite(seconds) or seconds < 0:
+            raise ValueError(f"{label} must be a nonnegative number of seconds")
+        # 0 opts out, so a configured value can be handed straight through.
+        return seconds or None
+    return None
+
+
+def generate(project, *, selections=None, frames=8, view="iso", size=600, deadline=None):
     tool = state_tool()
     manifest = json.loads(read_file(project, "measure/motion.json"))
     conditions = tool["coupled_conditions"](manifest)
@@ -204,10 +223,13 @@ def generate(project, *, selections=None, frames=8, view="iso", size=600):
         selections[condition["id"]] = tool["sample_indices"](condition, selections.get(condition["id"]), frames)
     source_hashes = sources(project)
     motion_hash = digest(project, "measure/motion.json")
-    entry, states = tool["construct"](project, manifest, selections)
-    _, azimuth, elevation = tool["helpers"]()[1]["parse_view"](view)
-    render = {"azimuth": azimuth, "elevation": elevation, "size": size}
-    animation = tool["animation_bytes"](states, render)
+    # One clock across posing and rendering: they are two halves of the same
+    # job, and nothing is written until both finish.
+    with tool["deadline_scope"](deadline):
+        entry, states = tool["construct"](project, manifest, selections)
+        _, azimuth, elevation = tool["helpers"]()[1]["parse_view"](view)
+        render = {"azimuth": azimuth, "elevation": elevation, "size": size}
+        animation = tool["animation_bytes"](states, render)
     _check_animation(animation)
     if source_hashes != sources(project) or motion_hash != digest(project, "measure/motion.json"):
         raise ValueError("motion inputs changed during generation")
@@ -215,7 +237,10 @@ def generate(project, *, selections=None, frames=8, view="iso", size=600):
     for identity, occurrences in states:
         # Bound by hash only: the state never reaches disk, and validation
         # rebuilds it from the same declared poses.
-        rows.append({**identity, "sha256": tool["state_digest"](occurrences)})
+        data = tool["state_bytes"](occurrences)
+        if len(data) > 20 * 1024 * 1024:
+            raise ValueError("motion state exceeds the 20 MiB reconciliation limit")
+        rows.append({**identity, "sha256": hashlib.sha256(data).hexdigest()})
     evidence = {"schema_version": 2, "kind": "declared-cad-motion-animation", "sources": source_hashes,
                 "assembly_entry": entry, "states": rows, "render": render,
                 "animation_sha256": hashlib.sha256(animation).hexdigest(), "motion_sha256": motion_hash}
@@ -232,8 +257,13 @@ def main():
     parser.add_argument("--samples", action="append", default=[], metavar="CONDITION=0,1,...", help="explicit increasing indices from a condition's motion table")
     parser.add_argument("--view", default="iso", help="named view or AZ,EL")
     parser.add_argument("--size", type=int, default=600)
+    parser.add_argument("--deadline", type=float, default=None, metavar="SECONDS",
+                        help="stop posing or rendering after this much wall clock and "
+                             "fail, instead of computing unbounded with nothing to show "
+                             f"(default: ${DEADLINE_ENV}, else no bound)")
     args = parser.parse_args()
     try:
+        deadline = resolve_deadline(args.deadline, os.environ.get(DEADLINE_ENV))
         if args.describe_states:
             if args.samples or args.frames != 8 or args.view != "iso" or args.size != 600:
                 raise ValueError("--describe-states reads existing states; generation options do not apply")
@@ -247,7 +277,8 @@ def main():
             if ident in selected:
                 raise ValueError("duplicate --samples condition")
             selected[ident] = [int(i) for i in indices.split(",")]
-        generate(args.project.resolve(), selections=selected, frames=args.frames, view=args.view, size=args.size)
+        generate(args.project.resolve(), selections=selected, frames=args.frames,
+                 view=args.view, size=args.size, deadline=deadline)
     except (OSError, ValueError, TypeError, KeyError, argparse.ArgumentTypeError) as exc:
         parser.error(str(exc))
     print("Wrote snap/motion.gif and snap/MOTION-EVIDENCE.json from reconciled declared poses; independent review and check_motion are still required.")

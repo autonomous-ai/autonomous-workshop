@@ -1,0 +1,59 @@
+{
+ "build": {
+  "screen": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "screen"
+ ],
+ "checked": [
+  "screen"
+ ],
+ "checks_ok": true,
+ "entry": "part_screen.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/screen/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "screen"
+ ],
+ "print": {
+  "screen": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/screen/r0001/overhang-screen.log": "dd9ae0b8f179774ee528ce03677d2df7ce7c3458d39e3c19a3f8272a6deeb1a5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/screen/r0001/thickness-screen.log": "645531787c091202f825b0b148e655fc0f5241f9ee8d727a91a984398e6b0814"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:screen",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/screen/r0001/visual-packet.json",
+  "packet_sha256": "a365ac0a951ecbc488fccbab0f95232b17f57e64999df278357c2b2f67180d9c",
+  "status": "pending"
+ }
+}

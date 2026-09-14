@@ -1,0 +1,1071 @@
+{
+  "status": "pass",
+  "source_sha256": "323b0e05affa7717e55c8cb60cde90a09397a6fd68a69c8a3617a1c99a3d8330",
+  "supports": [
+    {
+      "part": "A",
+      "bbox_mm": [
+        95.2,
+        31.2,
+        74.0
+      ],
+      "solid_volume_mm3": 88592.094,
+      "uniform_solid_COM_mm": [
+        44.413,
+        20.505,
+        30.719
+      ],
+      "support_hull_margin_mm": 11.095
+    },
+    {
+      "part": "B",
+      "bbox_mm": [
+        95.2,
+        31.2,
+        80.0
+      ],
+      "solid_volume_mm3": 90612.071,
+      "uniform_solid_COM_mm": [
+        52.922,
+        20.55,
+        31.982
+      ],
+      "support_hull_margin_mm": 11.05
+    },
+    {
+      "part": "C",
+      "bbox_mm": [
+        95.2,
+        31.2,
+        48.0
+      ],
+      "solid_volume_mm3": 54990.74,
+      "uniform_solid_COM_mm": [
+        54.211,
+        20.121,
+        17.524
+      ],
+      "support_hull_margin_mm": 11.479
+    },
+    {
+      "part": "D",
+      "bbox_mm": [
+        63.2,
+        63.2,
+        70.0
+      ],
+      "solid_volume_mm3": 99091.75,
+      "uniform_solid_COM_mm": [
+        23.013,
+        37.3,
+        28.113
+      ],
+      "support_hull_margin_mm": 22.613
+    },
+    {
+      "part": "E",
+      "bbox_mm": [
+        63.2,
+        31.2,
+        62.0
+      ],
+      "solid_volume_mm3": 54717.003,
+      "uniform_solid_COM_mm": [
+        26.391,
+        20.486,
+        23.835
+      ],
+      "support_hull_margin_mm": 11.114
+    },
+    {
+      "part": "F",
+      "bbox_mm": [
+        63.2,
+        31.2,
+        58.0
+      ],
+      "solid_volume_mm3": 51879.226,
+      "uniform_solid_COM_mm": [
+        30.96,
+        21.042,
+        21.634
+      ],
+      "support_hull_margin_mm": 10.558
+    },
+    {
+      "part": "G",
+      "bbox_mm": [
+        31.2,
+        31.2,
+        84.0
+      ],
+      "solid_volume_mm3": 50702.047,
+      "uniform_solid_COM_mm": [
+        15.872,
+        20.125,
+        38.833
+      ],
+      "support_hull_margin_mm": 11.475
+    },
+    {
+      "part": "H",
+      "bbox_mm": [
+        31.2,
+        31.2,
+        64.0
+      ],
+      "solid_volume_mm3": 38966.87,
+      "uniform_solid_COM_mm": [
+        15.894,
+        19.882,
+        28.981
+      ],
+      "support_hull_margin_mm": 11.718
+    },
+    {
+      "part": "tray",
+      "bbox_mm": [
+        184.0,
+        184.0,
+        12.0
+      ],
+      "solid_volume_mm3": 195160.209,
+      "uniform_solid_COM_mm": [
+        92.012,
+        92.013,
+        3.838
+      ],
+      "support_hull_margin_mm": 91.987
+    },
+    {
+      "part": "ferry",
+      "bbox_mm": [
+        26.0,
+        24.5,
+        20.0
+      ],
+      "solid_volume_mm3": 5732.621,
+      "uniform_solid_COM_mm": [
+        -0.0,
+        0.092,
+        7.985
+      ],
+      "support_hull_margin_mm": 10.905
+    }
+  ],
+  "layouts_and_completions": [
+    {
+      "id": "layout-1",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              2,
+              2
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 430,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 0.4,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "layout-2",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "layout-3",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              3
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 690,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        },
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q01-1",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              2,
+              2
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 430,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 0.4,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q01-2",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              2,
+              2
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 430,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q02-1",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q02-2",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q02-3",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q02-4",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q03-1",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              0,
+              4
+            ],
+            [
+              1,
+              4
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 690,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        },
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              1,
+              4
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q03-2",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              1,
+              4
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q03-3",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              1,
+              4
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q03-4",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              1,
+              4
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q03-5",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              3
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 690,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        },
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q03-6",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q03-7",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q03-8",
+      "routes": [
+        {
+          "cells": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              2,
+              4
+            ]
+          ],
+          "continuous_envelope_clear": true,
+          "finger_access": {
+            "samples": 560,
+            "max_sample_step_mm": 0.5,
+            "finger_diameter_mm": 10,
+            "inter_sample_radius_allowance_mm": 0.251,
+            "minimum_best_pad_margin_mm": 3.1,
+            "overlapping_contact_sets": true
+          }
+        }
+      ]
+    }
+  ],
+  "low_actual_overlap_mm3": 615.1300126904225,
+  "edge_escape_blocked": true,
+  "floor": "single continuous4mm base; engraved seams0.35wide and0.25deep cannot create raised snag or unsupported ferry disc",
+  "limitations": [
+    "Uniform solid COM; infill/warping not modeled.",
+    "Finger10mm proxies and geometric handoffs are not human comfort tests.",
+    "No physical fit, print, fun, durability or commercial validation."
+  ]
+}

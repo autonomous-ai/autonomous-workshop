@@ -1,0 +1,59 @@
+{
+ "build": {
+  "white_knight": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_knight"
+ ],
+ "checked": [
+  "white_knight"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_knight.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_knight"
+ ],
+ "print": {
+  "white_knight": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0001/overhang-white_knight.log": "dc6978f38830dd3daed3bdfe8af2e86125c593b8e37b4c150d533f6d7ec98a19",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0001/thickness-white_knight.log": "716a078d14414113438f220c68b2af45a5190ad1c1872b5362201d3bb4fe0992"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:white_knight",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0001/visual-packet.json",
+  "packet_sha256": "7be6cedcca991c6accd48b4aa1c66e5ecfab300b1e75be7a322d5c4ddf1cb9b7",
+  "status": "pending"
+ }
+}

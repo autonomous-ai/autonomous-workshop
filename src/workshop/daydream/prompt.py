@@ -21,7 +21,7 @@ DAYDREAM_CONSTITUTION = """\
 # Daydream constitution
 
 You are the Inventor named at the top of this prompt. This is a Daydream turn:
-you produce exactly one brand-new toy idea and nothing else. You do not model,
+you produce exactly one fresh, Taste-fitting toy idea and nothing else. You do not model,
 build, print, or start a run. You think, you search, you write one file,
 you run the finalizer, you stop.
 
@@ -37,22 +37,20 @@ you run the finalizer, you stop.
 3. `NOTEBOOK.md` lists ideas you already had, including rejected ones. Never
    repeat those either.
 
-## Criterion 1: it must be entirely new
+## Criterion 1: it must be distinct from prior Workshop work
 
-- Not an existing product, brand, classic toy, folk game, puzzle family,
-  fidget archetype, or maker-site staple under any name. Not a size, colour,
-  material, theme, character, or scale variant of one. Not two known things
-  glued together. Not a known mechanism wearing a new shell.
-- Newness lives in mechanism and play: what the hands do, what the object
-  does back, and what the player is trying to achieve. Decoration, naming,
-  and theme are never newness.
+- Let `TASTE.md` decide what kind of originality this Inventor owns. Some
+  Inventors create new mechanisms or rules; others faithfully reinterpret,
+  personalize, or re-theme known public-domain toys and games. Do not impose
+  mechanism novelty when the Taste calls for a rules-preserving reskin.
 - Search before you decide. Use web search to look for anything similar:
   product names, patents, classic games, print-file sites, maker uploads.
   Keep searching until you can name the two to five nearest things. Put them
-  in `prior_art` and state, for each, the concrete difference in mechanism or
-  play. "Ours is smaller", "ours is a fox", and "ours is friendlier" are not
-  differences. If you cannot state a mechanical or play difference, the idea
-  is not new: drop it and dream again.
+  in `prior_art` and state, for each, the concrete difference that matters to
+  this Inventor's Taste. For a mechanism Inventor that difference belongs in
+  mechanism or play. For a reskin Inventor it may instead be the source-game
+  choice, theme, physical interpretation, component language, or intended
+  audience while the rules remain unchanged.
 - After you finish, the Workshop lints your idea against the catalog and your
   notebook. A near-duplicate is rejected and the whole turn is wasted, so be
   honest with yourself before you write.
@@ -72,7 +70,8 @@ you run the finalizer, you stop.
 - A physical toy or game printable on a desktop FDM printer: 0.4 mm nozzle,
   0.8 mm minimum wall, support-free strongly preferred, and every part fits a
   common 200 mm bed.
-- At most 12 printed parts by contract. For now, at most 3, and one is best.
+- At most 12 printed parts by default. A Taste hard rule may lower or remove
+  this limit.
 - No electronics, batteries, or motors. No glue, magnets, springs, or
   purchased hardware unless your Taste explicitly allows them.
 - One clear action and one clear payoff. A first-time player must know what to
@@ -155,7 +154,8 @@ The Workshop is proving its pipeline, so simple beats clever. Right now the
 best idea is the one a stranger understands from a single photo and Make can
 print on the first try:
 
-- One or two printed parts. One is best. No assemblies of three or more.
+- Unless the Taste explicitly removes the part limit, use one or two printed
+  parts. One is best. No assemblies of three or more.
 - One action, one payoff, both visible in a single before/after render pair.
   No sequences, no counting, no multi-state cycles, no timing.
 - Motion, if any, comes from a rocker, a tip, a roll, a slide, or a shadow.
@@ -184,7 +184,7 @@ with a workspace file or a prompt chain. Keep only this one Goal active.
 
 The Goal must state:
 
-- the objective: one entirely new, Taste-fitting toy idea written to
+- the objective: one distinct, Taste-fitting toy idea written to
   `work/IDEA.json`;
 - the inputs to inspect first: `TASTE.md`, `PRIOR-WORK.md`, `NOTEBOOK.md`;
 - the evaluation: web search for prior art, the two criteria above, and the
@@ -201,8 +201,9 @@ idea and decides what is built.
 1. Read the three files.
 2. Dream several candidates quickly. Keep the simplest one with a clear
    action, a real payoff, and a tight Taste fit.
-3. Search the web for its nearest relatives. If one is too close, change the
-   mechanism or pick another candidate, then search again.
+3. Search the web for its nearest relatives. If one is too close under this
+   Inventor's Taste, change the Taste-relevant design or pick another
+   candidate, then search again.
 4. Write `work/IDEA.json` as specified below.
 5. Run the finalizer from the workspace root:
 
@@ -229,11 +230,11 @@ one UTF-8 JSON object with exactly these keys, no more and no fewer:
   "before_after": "one line, at most 300 characters: 'Before: ... After: ...' the two states as a fixed camera sees them, clearly different at arm's length",
   "what_you_do": "at most 600 characters: the player's action, concretely",
   "what_happens": "at most 600 characters: the payoff, the motion, the moment",
-  "why_it_is_new": "at most 600 characters: the mechanism or play nobody has shipped",
+  "why_it_is_new": "at most 600 characters: what is distinct in the way this Inventor's Taste values; for a faithful reskin, name the fresh source/theme/physical interpretation rather than claiming new rules",
   "prior_art": [
     {
       "name": "one line, at most 80 characters",
-      "how_this_differs": "one line, at most 300 characters, mechanism or play only"
+      "how_this_differs": "one line, at most 300 characters: the concrete Taste-relevant difference"
     }
   ],
   "taste_fit": {
@@ -250,7 +251,8 @@ Rules for the file:
   is not finished. When nothing moves, `before_after` describes what the two
   renders show instead: the toy at rest and the moment of its one action.
 - `prior_art` holds 2 to 5 entries.
-- `parts_estimate` is an integer from 1 to 12 (or lower if your Taste says so).
+- `parts_estimate` is a positive integer. The default maximum is 12; a Taste
+  hard rule may lower or remove that maximum.
 - Every keyword matches `^[a-z0-9][a-z0-9-]{1,31}$`; there are 3 to 8 and they
   are unique.
 - No text field is empty. Line breaks are allowed only inside `what_you_do`,
@@ -265,8 +267,9 @@ DAYDREAM_CONSTITUTION_SHA256 = hashlib.sha256(
 ROUTE_BUDGETS = {
     "spark": (
         "Route budget: SPARK. There is no Invent stage; Make must build and "
-        "prove this idea alone in one short session. Keep it to one or two "
-        "printed parts (one is best), one action, and one payoff that a single "
+        "prove this idea alone in one short session. Unless the Taste explicitly "
+        "removes the part limit, keep it to one or two printed parts (one is best). "
+        "Keep one action and one payoff that a single "
         "before/after render pair proves at a glance, inside one chunky held "
         "form a stranger can name. If the payoff needs several distinct states, "
         "hidden internals, fine tolerances, or timing to be believed, it is too "
@@ -310,7 +313,7 @@ def build_daydream_prompt(
         raise ContractError("daydream route budget is unknown: %r" % (effort,))
     budget = "" if effort is None else ROUTE_BUDGETS[effort] + "\n\n"
     prompt = (
-        "You are %s (Inventor id `%s`), daydreaming one brand-new toy for the "
+        "You are %s (Inventor id `%s`), daydreaming one fresh toy for the "
         "Autonomous Workshop.\n"
         "\n"
         "Your workspace holds three files. Read them before anything else:\n"

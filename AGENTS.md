@@ -51,10 +51,6 @@ All implementation and product-run work must preserve these boundaries:
   Make retains its own frozen engineering checks and review allowance.
   Pending usage is not subject to a first-report timer; completed usage must
   still be accounted for. Other runtime adapters retain their frozen policy.
-  Explicit operator `resume --effort` changes are supported for profile-bound
-  Codex token-budget runs through a validated private host history; the initial
-  Wish and Manager selection, exact native session and usage remain preserved.
-  This exception never permits a silent change to a saved reasoning setting.
 - Spark accepts Make's output as-is: no duplicate host CAD rebuild, geometry
   acceptance pass, or new manual review. Host-only Release publishes existing
   Make assets with deterministic site metadata; it creates no native Release
@@ -128,7 +124,9 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0060-make-round-visual-feedback-and-three-repairs.md`, and
 `docs/adr/0061-spark-make-owned-verification.md`, and
 `docs/adr/0062-step-only-cad-toolchain.md`, and
-`docs/adr/0063-print-gates-on-source.md` before changing the CLI, runtime,
+`docs/adr/0063-spark-component-first-make.md`, and
+`docs/adr/0063-print-gates-on-source.md`, and
+`docs/adr/0064-operator-selected-turn-boundary.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -160,6 +158,10 @@ token-budget products, not Make's internal engineering or review policy.
 ADR 0061 supersedes duplicate host verification and native manual
 authoring for Spark only; it leaves Make's own implementation intact. Do not
 reintroduce these removed boundaries from an older ADR or frozen-run fixture.
+ADR 0063 makes new Spark Make work component-first: every distinct component
+has its own source and isolated make-round repair loop before assembly review.
+It changes native Make work and its deterministic round tool, not Workshop's
+host-owned Spark acceptance boundary.
 ADR 0060 requires native Manager visual feedback within Make rounds and expands
 final blind review to an initial review plus three repair-and-rereview cycles
 for new runs. Frozen older runs retain their original allowance and tool bytes.
@@ -175,6 +177,10 @@ again. A product is print-ready only behind a passing `verify_project
 product status `full-with-thickness` **and** `print_ready_claim: true` — and
 reproduced by the host's own rerun. A half-declared claim is refused, not
 downgraded, and the legacy `--exports` full-tier replay path stays retired.
+ADR 0064 adds one opt-in `--turn-minutes` override above the frozen turn
+boundaries of ADR 0019, ADR 0023 and the deep-economics profiles, and supersedes
+none of them: a run that does not ask keeps the exact boundary it froze. It
+bounds a wall clock only; no gate, review, round or token allowance moves.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

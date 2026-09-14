@@ -229,13 +229,6 @@ Two consequences:
   color=...)`, then `asm.compound()`. Boolean-union only what is manufactured as
   a single part; keep separately printable pieces as named children so the next
   turn can address them by name.
-- **Shared print entries must preserve handedness.** Reuse one print entry only
-  when each occurrence's complete geometry matches by translation and proper
-  rotation, without reflection or scaling. Symmetric parts may still share an
-  entry. If reflected geometry cannot match that way, define explicit handed
-  variants in the part builder with distinct `part_<role>.step.py` entries and
-  run the existing print checks on each variant. Keep occurrence quantities and
-  assembly/print orientations in the handoff matched to the actual variants.
 - **Each feature is its own function**, named by intent. `add_rear_vent_slots`,
   `apply_corner_fillets`, `mirror_to_right_side` — not `thing1`, `fix_hole`,
   `helper2`. Names are the editing API: the next edit request is a search for

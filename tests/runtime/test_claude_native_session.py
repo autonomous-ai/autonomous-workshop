@@ -4,7 +4,9 @@ import unittest
 from pathlib import Path
 
 from workshop.errors import ContractError
+from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
 from workshop.runtime.claude import (
+    DEFAULT_CLAUDE_TIMEOUT_SECONDS,
     ClaudeNativeSessionLauncher,
     claude_subprocess_environment,
     claude_supports_native_workshop,
@@ -55,6 +57,72 @@ class ClaudeNativeSessionTest(unittest.TestCase):
             {"PATH": "/usr/bin", "HOME": "/tmp/home", "FACTORY_PASSWORD": "secret"}
         )
         self.assertNotIn("FACTORY_PASSWORD", environment)
+
+    def test_turn_boundary_accepts_a_longer_turn_and_an_untimed_one(self):
+        """Only an explicit request may exceed the historical one-hour default."""
+
+        self.assertEqual(DEFAULT_CLAUDE_TIMEOUT_SECONDS, 3_600)
+        default = ClaudeNativeSessionLauncher(
+            binary="/bin/claude", cli_version="2.0.0"
+        )
+        self.assertEqual(default.timeout_seconds, 3_600)
+        longer = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.0.0",
+            timeout_seconds=MAX_NATIVE_TURN_SECONDS,
+        )
+        self.assertEqual(longer.timeout_seconds, MAX_NATIVE_TURN_SECONDS)
+        untimed = ClaudeNativeSessionLauncher(
+            binary="/bin/claude", cli_version="2.0.0", timeout_seconds=None
+        )
+        self.assertIsNone(untimed.timeout_seconds)
+        for invalid in (MAX_NATIVE_TURN_SECONDS + 1, 0, -1, 60.0, "3600"):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(
+                ValueError, "1 to %d or None" % MAX_NATIVE_TURN_SECONDS
+            ):
+                ClaudeNativeSessionLauncher(
+                    binary="/bin/claude",
+                    cli_version="2.0.0",
+                    timeout_seconds=invalid,
+                )
+
+    def test_an_untimed_turn_never_arms_a_process_deadline(self):
+        """An untimed launcher must wait without a timeout, not with a huge one."""
+
+        waits = []
+
+        class _RecordingProcess(_FakeProcess):
+            def wait(self, timeout=None):
+                waits.append(timeout)
+                return self.returncode
+
+        launcher = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.0.0",
+            timeout_seconds=None,
+            popen_factory=lambda command, **kwargs: _RecordingProcess(
+                [
+                    json.dumps(
+                        {
+                            "type": "system",
+                            "subtype": "init",
+                            "session_id": "claude-session-untimed",
+                        }
+                    )
+                    + "\n",
+                ]
+            ),
+            uuid_factory=lambda: "initial-session-id",
+        )
+        launcher.start(
+            product_id="wish-untimed",
+            wish_sha256=DIGEST,
+            constitution_sha256=DIGEST,
+            run_root=self.run_root,
+            host_state_root=self.host_state,
+            prompt="make",
+        )
+        self.assertEqual(waits, [None])
 
     def test_start_and_resume_preserve_session_identity(self):
         seen = {}

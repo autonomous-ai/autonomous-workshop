@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_fork_06.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_06/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_06"
+ ],
+ "print": {
+  "fork_06": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_06/r0001/overhang-fork_06.log": "5b787276029cbbe2071d5977b599845f886363731f264ff66d6de4054b9c5d87",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_06/r0001/thickness-fork_06.log": "d9296cc015e99e2d49a049a0f305d05f37deb980f7bd51cafdbf498c78a75581"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "fork_06"
+ ],
+ "round": 2,
+ "scope": "component:fork_06",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows uniform four-millimeter extrusion and flat top/base. Top and iso show continuous swept broad body terminating in a shallow late rounded bifurcation. Both short ends are connected, and no extra neck, detached geometry or visible intersections occur. These current render bytes exactly match the current-attempt views already inspected; only the evidence source binding was refreshed, without geometry or image changes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_06/r0002/visual-packet.json",
+  "packet_sha256": "55116dd5c9f201dc55466376f6bd7c8e1bb8fa55c14bbe5d0e16569d65dbf823",
+  "status": "pass"
+ }
+}

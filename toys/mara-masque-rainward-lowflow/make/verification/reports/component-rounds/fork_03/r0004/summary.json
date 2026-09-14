@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_fork_03.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_03/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_03"
+ ],
+ "print": {
+  "fork_03": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_03/r0003/overhang-fork_03.log": "73d1fd4ddc3753788502b1b23f411edead7f021353efd346bde88e0406b2eaaa",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_03/r0003/thickness-fork_03.log": "57808110c79dcb496ef71ff86fdcc7f6442a19bb5adc85f27ad81d555e5995fa"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "fork_03"
+ ],
+ "round": 4,
+ "scope": "component:fork_03",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Fresh fork_03 r0004 front/top/isometric images inspected together in the normalized component contact sheet. Front shows constant flat slab thickness; top shows one broad rounded head with flowing taper and two short separated tail tips; isometric confirms an uninterrupted planar top, vertical perimeter and intact late fork. No extra solids, missing fork, deformation or visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_03/r0004/visual-packet.json",
+  "packet_sha256": "16487f3978d109a70962e09464e92c12b5a8ea3016a184cc2168506682b0c7a8",
+  "status": "pass"
+ }
+}

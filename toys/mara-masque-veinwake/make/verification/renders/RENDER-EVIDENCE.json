@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "scope": "Exact STEP presentation, no physical performance claim",
+  "camera_forward": [
+    0,
+    -1,
+    0.9
+  ],
+  "projection": "orthographic",
+  "common_frame_bounds": [
+    [
+      -69.99339457966474,
+      -64.99061787331499,
+      0.0
+    ],
+    [
+      69.9994539803227,
+      64.99777578808074,
+      87.0
+    ]
+  ],
+  "state_sha256s": {
+    "presentation/states/before.step": "83e23a69db354ddfc1fe74f67592bdd2a8f289031a560dbb89954d17545ca6e6",
+    "presentation/states/after.step": "e6fe1a79a3c8dd39c1896c566c885dd5e0a29ed6e1e307364810a8f01206472a"
+  },
+  "hero_step_sha256": "586ccdfc102ad5f840e590a67d2623775656d87284b4823217ea347e2c13ba0b",
+  "renderer_sha256": "54bbe62e3ff793cdc809cf55955619da3a3800bdf4fe02dfe3f11feb2d732303",
+  "iso_sha256": "e63ad414888d779376d1afd5913dfb22d4a30d07ef3e0b3b00d22e99c4380081",
+  "signature_sha256": "8f64cf26aa2fd14855a7582d98756de0e18325aeee8d1ff5c5da5f77d6f46fed",
+  "mean_rgb_difference": 3.6098583333333334,
+  "leaf_srgb_materials": true,
+  "reason": "Standard tool sheet recentred each state; use shared framing and fixed elevated front camera."
+}

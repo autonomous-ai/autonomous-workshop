@@ -41,6 +41,13 @@ _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _CODE = re.compile(r"[^a-z0-9]+")
 
 # Host failure codes that describe a slip in the run protocol, not the design.
+# The CAD-gate codes here all share one shape: the verifier either never
+# measured the geometry or measured it and agreed, so their finding carries the
+# verifier's own log rather than a refusal. Left unlisted they would be matched
+# by keyword against that log -- a passing pipeline that merely prints
+# `interfere` would bank a sealed-volume-overlap lesson against a design that
+# has none. Only `verifier-nonzero`, the code that means the verifier measured
+# and refused, still reaches the classifier.
 PROTOCOL_CODES = frozenset(
     {
         "make-contract-invalid",
@@ -49,12 +56,29 @@ PROTOCOL_CODES = frozenset(
         "make-production-parts-missing",
         "make-part-colours-missing",
         "declared-cad-output-changed",
+        "sealed-product-changed",
+        "verifier-timeout",
+        "verifier-output-limit",
+        "cad-not-print-ready",
     }
+)
+
+# A print gate states its own verdict on one line, and states it differently
+# when it refuses than when it agrees: `RESULT: WALL BELOW MINIMUM` against
+# `RESULT: printable at this wall`, `RESULT: NEEDS SUPPORT` against `RESULT:
+# prints unsupported`. Read those first. Every other line of a gate log -- the
+# check names above the verdict included -- is printed whether the check passed
+# or failed, so `wall >= 0.40 mm` and `no face under 45 deg needs support` say
+# nothing about the outcome and must not decide the anti-pattern.
+GATE_VERDICTS: tuple[tuple[str, str], ...] = (
+    ("result: wall below minimum", "underbuilt-shell"),
+    ("result: needs support", "support-dependent-geometry"),
 )
 
 # Failure class -> anti-pattern slug, matched by keyword against the failure
 # code and its finding. First match wins; order runs from the most specific
-# Make wall to the most general.
+# Make wall to the most general. This is the fallback for text no gate wrote:
+# a Manager's own finding, a host need, a budget stop.
 FAILURE_CLASSES: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
         "likeness-wall",
@@ -107,9 +131,10 @@ FAILURE_CLASSES: tuple[tuple[str, tuple[str, ...]], ...] = (
 def classify_make_failure(code: str, text: str = "") -> Optional[str]:
     """The anti-pattern node one Make failure belongs to, or ``None``.
 
-    Protocol codes never become lessons. Everything else is matched by keyword
-    against the code and the finding; an unmatched failure yields ``None`` so
-    the vault never receives a row with no failure mode.
+    Protocol codes never become lessons. A print gate that stated its own
+    refusal is taken at its word; everything else is matched by keyword against
+    the code and the finding. An unmatched failure yields ``None`` so the vault
+    never receives a row with no failure mode.
     """
 
     if not isinstance(code, str) or not code:
@@ -117,6 +142,9 @@ def classify_make_failure(code: str, text: str = "") -> Optional[str]:
     if code in PROTOCOL_CODES:
         return None
     haystack = " %s %s " % (code.replace("-", " ").lower(), " ".join(str(text or "").split()).lower())
+    for marker, slug in GATE_VERDICTS:
+        if marker in haystack:
+            return "anti-patterns/" + slug
     for slug, keywords in FAILURE_CLASSES:
         if any(keyword in haystack for keyword in keywords):
             return "anti-patterns/" + slug
@@ -135,6 +163,13 @@ def build_make_rows(
     (``deterministic-...`` for host gates, ``codex-...`` for the Manager's own
     statements), optionally ``change`` (what was tried), ``severity``
     (``block`` or ``improve``, default ``block``) and ``observed_at``.
+
+    A failure whose ``finding`` wraps the underlying evidence in a host-written
+    sentence may also name ``classify_text``: the evidence alone, used to pick
+    the anti-pattern. Without it the host's own wording decides the class, and a
+    template that happens to spell a tier ``full-with-thickness`` would file
+    every failure under a thin wall. The ``finding`` banked in the vault is
+    unaffected; only the classification input narrows.
     """
 
     if not isinstance(product_id, str) or _IDENTIFIER.fullmatch(product_id) is None:
@@ -152,7 +187,13 @@ def build_make_rows(
         finding = " ".join(str(item.get("finding") or "").split())
         if not isinstance(code, str) or not code or not finding:
             raise ContractError("make failure needs a code and a finding")
-        symptom = classify_make_failure(code, finding)
+        classify_text = item.get("classify_text")
+        symptom = classify_make_failure(
+            code,
+            " ".join(str(classify_text).split())
+            if isinstance(classify_text, str) and classify_text.strip()
+            else finding,
+        )
         if symptom is None:
             continue
         slug = _CODE.sub("-", code.lower()).strip("-")[:60] or "failure"
@@ -325,6 +366,7 @@ def make_lessons(
 
 __all__ = [
     "FAILURE_CLASSES",
+    "GATE_VERDICTS",
     "MAKE_SOURCE",
     "MAX_LESSONS_PER_NODE",
     "MAX_MAKE_LESSONS",

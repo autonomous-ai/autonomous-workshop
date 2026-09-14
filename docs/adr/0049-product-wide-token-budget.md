@@ -12,14 +12,6 @@ pricing table or dollar estimate participates in enforcement.
 
 On 2026-09-09 the explicitly selectable maximum was raised to 200,000,000
 tokens. The default remains 30,000,000 and existing saved caps do not change.
-On 2026-09-10 the supported maximum was raised again to 500,000,000 tokens.
-The 30,000,000 default and previously saved limits remain unchanged; an
-explicit `resume --max-tokens 500000000` updates the total cap while preserving
-all recovered prior usage.
-On 2026-09-12 the supported maximum was raised to 1,000,000,000 tokens for an
-explicit operator request. The default and saved limits remain unchanged.
-`resume --max-tokens 1000000000` preserves prior usage and the same native
-session; values above 1,000,000,000 are refused.
 
 The default was raised from 10M to 30M on 2026-09-07 after Crosscurrent's
 verified digital package used 17,724,704 tokens before publication. This gives
@@ -33,32 +25,12 @@ only when their complete observed native history can be recovered. Previous
 accounting remains preserved. Other runtimes retain their frozen policies.
 
 The trusted host reads bounded native rollout records using a compatibility
-adapter validated specifically for Codex 0.153.4. It binds root identity and
-workspace to private host state and follows native parent ancestry.
-
-As of 2026-09-11, rollouts containing top-level `token_usage_record` entries
-use that per-response ledger. Each unique response must bind its thread,
-native session and active task, and its five usage counters must add exactly
-to both the declared turn and thread totals. Declared `total_tokens` must
-equal input plus output. Identical response replays add nothing; conflicting
-identities or incomplete cumulative coverage fail closed. Top-level remote
-compaction responses are charged once; embedded compaction copies are ignored.
-
-`token_count` notifications corroborate ledger coverage without supplying
-spend. A changed notification requires a fresh current-task response whose
-usage equals its latest-request counters; within that task, cumulative changes
-must equal the fresh ordinary response usage. Identical notifications add
-nothing and cannot hide a later missing response. A compaction must name its
-exact already charged response before a zero-usage context-size notification
-with unchanged cumulative counters is accepted. That case never treats
-its context-size estimate as spend. Missing final responses, mixed legacy and
-ledger coverage, or malformed ledger records never fall back to guessed usage.
-This corrects two observed notification limitations: restored historical
-baselines on process resume and omitted remote-compaction usage. Recovered
-ledger totals remain charged through the existing monotonic product budget.
-
-Rollouts without any response-ledger entry retain the strict legacy reader,
-which deduplicates cumulative notifications and sums explicit task resets.
+adapter introduced and live-validated with Codex 0.153.4. On 2026-09-10 the
+launcher gate was widened to 0.153.4 or newer; the reader continues to validate
+the exact identity, task-boundary, model, counter and record shapes, so an
+incompatible newer format fails closed instead of becoming zero usage. It binds
+root identity and workspace to private host state, follows native parent ancestry, deduplicates
+cumulative notifications and sums explicit task resets across process resumes.
 Continued tasks in the same process, including native child follow-ups, retain
 cumulative counters. At each task boundary, the adapter accepts only a reset
 whose cumulative counters equal the latest request, or continuation whose
@@ -83,18 +55,6 @@ in-flight descendants remain pending rather than becoming fabricated completed
 usage. Crossing the cap or losing established accounting stops
 the supervised native process. In-flight requests can overshoot the allowance;
 this is an observed-usage stop, not provider-side hard preauthorization.
-
-Before each native launch, the host persists a fresh observation and only then
-captures that turn's accounting baseline. Historical compaction corrections
-cannot satisfy a later request's completion expectation. Resume also refreshes
-usage before dispatching existing proposals or host-only publication, retaining
-their existing effect policy. Schema-v2 accounting needs record the baseline's
-metering source. Established completed-turn baselines must use the same source
-as the observation that reconciles them; an older unknown or legacy baseline
-cannot be discharged by a richer ledger's historical correction. A truly
-unobserved root with zero usage may establish its first source normally.
-Schema-v1 nonterminal needs remain recoverable; an incomparable completed need
-remains blocked with its record intact and recovered consumption still charged.
 
 The ordinary twenty-minute split and aggregate time/turn limits no longer
 govern marked token-budget products. On 2026-09-09 the one-hour per-launch
@@ -189,6 +149,47 @@ cap enforcement. Private retained telemetry was recovered through the new reader
 without changing its aggregate counters. The failed native attempt is preserved;
 this recovery does not establish product completion or repair quality.
 
+## Large native visual-tool records (2026-09-13)
+
+A blind-review subagent can return several rendered images in one
+`response_item` / `custom_tool_call_output` record. Base64 image data can push
+that otherwise valid record beyond the ordinary 4 MiB line bound and stop a run
+after the creative work has finished. The streaming validator now accepts that
+exact outer and payload type pair, validates the complete JSON with the same
+depth, key, atom, duplicate-key and UTF-8 bounds, and discards the body. The
+record cannot contribute usage; later top-level token notifications remain the
+only counter source. Other oversized `response_item` payload types and all
+other unsupported oversized record kinds still fail closed.
+
+## Replayed follow-up usage snapshots (2026-09-14)
+
+Codex 0.154.0 can begin a subagent follow-up by repeating the preceding task's
+final cumulative and last-request counters, then complete without fresh usage.
+The adapter previously rejected this snapshot as an ambiguous task baseline.
+It now ignores an exact counter replay under the same model when cumulative
+usage differs from last-request usage. The first fresh record still must prove
+either cumulative continuation or a reset; duplicate snapshots do not consume
+that pending boundary or advance the observation timestamp.
+
+`total == last` retains its reset meaning even when it matches an earlier
+single-request task. Changed last-request counters, unexplained increments,
+regressions, and a replay under a different model remain fail-closed. Synthetic
+tests cover root and child tasks, duplicate-only follow-ups, subsequent
+continuation and reset, and unchanged product-budget observations. Offline
+replay recovered the affected product's same 9,425,297-token observation across
+three threads. No private records were edited and no native session resumed;
+this accounting recovery is not evidence that Make completed.
+
+## Resume terminal-usage reconciliation (2026-09-13)
+
+Supported Codex resume paths have emitted `turn.completed` usage in two forms:
+request-local counters and cumulative root-thread counters. The rollout ledger
+remains the accounting authority. Reconciliation now accepts either exact
+monotonic relationship: observed root usage must advance beyond the saved
+baseline and must cover either the baseline plus the terminal delta or the
+terminal cumulative counters themselves. Missing, stale, regressing or
+otherwise inconsistent terminal usage still blocks the proposal.
+
 
 ## Bound discovery by metadata (2026-09-09)
 
@@ -209,3 +210,10 @@ file rejection, metadata framing and the exact metadata byte boundary. An
 offline replay against retained product usage recovered the same aggregate
 counters after excluding an unrelated large body from discovery's size check.
 The failed attempt remains failed; accounting recovery is not Make completion.
+
+## Explicit one-billion-token cap retained (2026-09-14)
+
+The operator-authorized upper bound is 1,000,000,000 tokens, preserving saved
+Cratercade usage and its previously selected limit across the team sync. The
+default remains 30,000,000; raising the maximum does not reset any usage or
+change another run's saved limit. Values above the maximum remain refused.

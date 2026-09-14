@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -25,6 +26,7 @@ from typing import Any, Callable, Mapping, Optional
 
 from workshop.errors import ContractError
 from workshop.runtime.managers import (
+    MAX_NATIVE_TURN_SECONDS,
     NativeManagerInvocationError,
     NativeManagerRecoverableError,
 )
@@ -234,7 +236,7 @@ class GrokNativeSessionLauncher:
         *,
         binary: Optional[str] = None,
         model: str = GROK_MODEL,
-        timeout_seconds: int = DEFAULT_GROK_TIMEOUT_SECONDS,
+        timeout_seconds: Optional[int] = DEFAULT_GROK_TIMEOUT_SECONDS,
         max_turns: int = DEFAULT_GROK_MAX_TURNS,
         popen_factory: Any = subprocess.Popen,
         version_runner: Any = subprocess.run,
@@ -243,8 +245,14 @@ class GrokNativeSessionLauncher:
     ) -> None:
         if model != GROK_MODEL:
             raise ContractError("Workshop Grok model must be grok-4.6")
-        if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3_600:
-            raise ValueError("Grok timeout_seconds must be from 1 to 3,600")
+        if timeout_seconds is not None and (
+            type(timeout_seconds) is not int
+            or not 1 <= timeout_seconds <= MAX_NATIVE_TURN_SECONDS
+        ):
+            raise ValueError(
+                "Grok timeout_seconds must be from 1 to %d or None"
+                % MAX_NATIVE_TURN_SECONDS
+            )
         if type(max_turns) is not int or not 1 <= max_turns <= 1_024:
             raise ValueError("Grok max_turns must be from 1 to 1,024")
         self.binary = binary or os.environ.get("WORKSHOP_GROK_BIN") or shutil.which("grok")
@@ -454,7 +462,11 @@ class GrokNativeSessionLauncher:
     ) -> None:
         if activity_observer is not None:
             activity_observer("starting")
-        deadline = time.monotonic() + self.timeout_seconds
+        deadline = (
+            math.inf
+            if self.timeout_seconds is None
+            else time.monotonic() + self.timeout_seconds
+        )
         stderr_chunks: list[str] = []
         stderr_bytes = 0
 
@@ -511,8 +523,9 @@ class GrokNativeSessionLauncher:
                         activity = _classify_event(event)
                         if activity is not None and activity_observer is not None:
                             activity_observer(activity)
+                remaining = deadline - time.monotonic()
                 returncode = process.wait(
-                    timeout=max(0.1, deadline - time.monotonic())
+                    timeout=max(0.1, remaining) if math.isfinite(remaining) else None
                 )
             except subprocess.TimeoutExpired as exc:
                 process.kill()

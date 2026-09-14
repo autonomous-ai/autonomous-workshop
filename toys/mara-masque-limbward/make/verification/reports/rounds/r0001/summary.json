@@ -1,0 +1,371 @@
+{
+ "build": {
+  "black_bishop": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "black_king": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "black_knight": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "black_pawn": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "black_queen": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "black_rook": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "camera_board": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "white_bishop": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "white_king": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "white_knight": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "white_pawn": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "white_queen": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "white_rook": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "black_bishop",
+  "black_king",
+  "black_knight",
+  "black_pawn",
+  "black_queen",
+  "black_rook",
+  "camera_board",
+  "white_bishop",
+  "white_king",
+  "white_knight",
+  "white_pawn",
+  "white_queen",
+  "white_rook"
+ ],
+ "checked": [
+  "black_bishop",
+  "black_king",
+  "black_knight",
+  "black_pawn",
+  "black_queen",
+  "black_rook",
+  "camera_board",
+  "white_bishop",
+  "white_king",
+  "white_knight",
+  "white_pawn",
+  "white_queen",
+  "white_rook"
+ ],
+ "checks_ok": true,
+ "entry": "limbward.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": {
+  "conditions": [
+   {
+    "detail": "clear across 140 steps (step 1.000 mm)",
+    "id": "illustrated-rook-h1-h8",
+    "status": "pass"
+   }
+  ],
+  "detail": "1 condition(s): all pass",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "black_bishop",
+  "black_king",
+  "black_knight",
+  "black_pawn",
+  "black_queen",
+  "black_rook",
+  "camera_board",
+  "white_bishop",
+  "white_king",
+  "white_knight",
+  "white_pawn",
+  "white_queen",
+  "white_rook"
+ ],
+ "print": {
+  "black_bishop": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-black_bishop.log": "cc0e430c3847dd18f09a5e9814014078226729ed05900e5ea65d4c1d2a163ef3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-black_bishop.log": "1336d3d70d29ab64aa16cbb7d9b375e466a8ecc187c609c175f7e58690413ed1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "black_king": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-black_king.log": "103f141ef691b651fb2db807c7abf4b5d3acdb29d1c79f7ef512c3d10a40fe5b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-black_king.log": "53e2e34e32558bf15a214202bf7008adcc2552ddb4189fc847cfbd5e66ccef67"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "black_knight": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-black_knight.log": "7ba0543df1f429018f7d4e07c9e0a004f35d5499bf393c603e10dcb265ec0478",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-black_knight.log": "d7bb86623d7a998cec34945082cb6223d3f0f04ec691fba054444aacf9f27211"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "black_pawn": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-black_pawn.log": "99629799a5cca9bb670942dbcbc9f8c912f25e8ed9e49989f2fa78a2d90f0b42",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-black_pawn.log": "56241f60e340d32a48a09848e3e912efdb4576bef928891c4d6a47fc04839a96"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "black_queen": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-black_queen.log": "d2f58d5afafeafdcb5f96f74b51045a989605a21a33f8c824a29ca536863ceba",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-black_queen.log": "0fdbb5c743a75e64a89e7ad9c93979387605dd139d827fbf9a6cfdbd6b3b301d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "black_rook": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-black_rook.log": "bb34c256de060fe9f54e8339ea035942dc89940ff2a08ed08e937b33fc83f9f3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-black_rook.log": "363bd1f82545f34e1467860afcb55027becef35a4ed6f4bfc181c4e4e8ed4fdb"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "camera_board": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-camera_board.log": "6eca55492e64b87934583b343353866a1713191bee48cb1f477afb015aee9c27",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-camera_board.log": "22ef333f4f8bc50f547352cc54a12d993708d6ec1ecd3a48bf47bf91a3c18af6"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "white_bishop": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-white_bishop.log": "dee9e1c436756ed2e2701f2bae22594d196b857ce1a9a6320b10497774b02088",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-white_bishop.log": "933561f68284d072392f751cf33f03a975bda44b6b1ec81a8b9ed9bf8573301f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "white_king": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-white_king.log": "760b1bcaff791a14c302cdd843c3df3512b61f9b9df9b8b8683ce4594564c902",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-white_king.log": "4577b0f02ff3aee64ce3a130021931dea86b7d39b91496f8f0de5ccdfcabfc6f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "white_knight": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-white_knight.log": "b643b0407f4fbd17d7061d404fbeff55533d7f1b136faec2fe359bc567359ddb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-white_knight.log": "c70efc36e575b38916b45f6164911c952450d37411663cc6ceba8370e26340aa"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "white_pawn": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-white_pawn.log": "64a30f96bb9978b386efb3cb686a4cb8971046bbf44d3625d0e8d60d8dce38bc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-white_pawn.log": "220ae9192926ee5c8192f227a20ebb98c73330658db2310a0f5fee1bc45e1d40"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "white_queen": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-white_queen.log": "3546ebc9b657b83e3e44a941c7a900cd7bb26e50ad8e64a932a85309ff332bda",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-white_queen.log": "dc726842d86fc1c448ef4f1dc43d181d76749d94d51953a66450c52a9b7b3380"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "white_rook": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-white_rook.log": "737938c24b4b8c8944fea10987b03e92296079d9ffd89551376cd4598e47d234",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-white_rook.log": "f4aeffe78c8cf9b764db55cd2e4d8221ca0e6892bee814b4c4f390818093ce2a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show camera lens bulge and grip integrated with board, aligned starting rows and separated reserve stock. Top confirms 32 reserves per side and orderly board placement; engravings are readable in iso despite top shading. No visible intersections, floating pieces or missing roles. All 97 occurrences have coherent scale.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/visual-packet.json",
+  "packet_sha256": "828fff49f677734ae64bed82a13e5e2b7acd9fd60b864c6853f7b41366bf48af",
+  "status": "pass"
+ }
+}

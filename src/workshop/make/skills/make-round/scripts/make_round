@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """One Make iteration: build, print gates, likeness, motion, visual feedback.
 
-    make_round <project>/cad [--ref LABEL=PATH ...] [--min 0.90] [--nozzle 0.4]
-               [--overhang-angle 45] [--all-parts] [--no-motion] [--full]
-               [--out DIR] [--json] [--render-timeout SECONDS]
-               [--record-visual FEEDBACK.json]
+    make_round <project>/cad [--component part_<role>.step.py]
+               [--require-component-passes] [--ref LABEL=PATH ...] [--min 0.90]
+               [--nozzle 0.4] [--overhang-angle 45] [--all-parts] [--no-motion]
+               [--full] [--out DIR] [--json] [--record-visual FEEDBACK.json]
                [--self-check]
 
 Every verdict comes from the original cad and image-to-cad tools, run
@@ -12,10 +12,6 @@ unchanged; this script only sequences them, remembers what changed between
 rounds, and prints a summary short enough to read instead of the logs. It
 never lowers a threshold or edits source. Native Manager visual observations
 are recorded against exact evidence; this tool makes no model calls.
-
-Finish project edits and standalone gen --write calls before this command.
-While it runs or awaits visual feedback, other agents and commands must not
-change the project's sources, constraints or STEP files, even with CADGEN_WARM=0.
 
 Exit 0: all checks and native visual feedback passed. Exit 1: failed or pending. Exit 2: the
 round could not run.
@@ -27,9 +23,9 @@ import argparse
 import hashlib
 from importlib.metadata import PackageNotFoundError, version as package_version
 import json
-import math
 import os
 import re
+import runpy
 import subprocess
 import sys
 import tempfile
@@ -38,9 +34,8 @@ from pathlib import Path
 
 STATE_NAME = "make-round-state.json"
 ROUNDS_DIR = "rounds"
+COMPONENT_ROUNDS_DIR = "component-rounds"
 TOOL_TIMEOUT_SECONDS = 900
-# Keep subprocess poll timeouts representable as signed 32-bit milliseconds.
-MAX_RENDER_TIMEOUT_SECONDS = 2_147_483
 FULL_TIMEOUT_SECONDS = 1800
 MAX_TAIL_CHARS = 600
 
@@ -62,19 +57,16 @@ def source_hashes(project):
     }
 
 
-def prepare_visual(project, entry, out, cad, refs, *, timeout=TOOL_TIMEOUT_SECONDS):
+def prepare_visual(project, entry, out, cad, refs):
     """Render evidence for native inspection; never infer a visual verdict."""
     before = source_hashes(project)
     views = out / "visual"
     done = run([sys.executable, str(cad / "render_review"), str(entry),
                 "--view", "front", "--view", "top", "--view", "iso", "-o", str(views)],
-               cwd=project, log=out / "visual-render.log", timeout=timeout)
+               cwd=project, log=out / "visual-render.log")
     paths = [views / (v + ".png") for v in ("front", "top", "iso")]
     if done.returncode or not all(p.is_file() for p in paths) or before != source_hashes(project):
-        detail = "Visual render failed or source changed; inspect visual-render.log"
-        if done.returncode == 124:
-            detail = "Visual render timed out after %ss; inspect visual-render.log and retry a new round with --render-timeout SECONDS" % timeout
-        return {"status": "error", "findings": [], "timeout_seconds": timeout, "detail": detail}
+        return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}
     references = {}
     for label, ref in refs:
         path = resolve_reference(ref, project)
@@ -85,17 +77,60 @@ def prepare_visual(project, entry, out, cad, refs, *, timeout=TOOL_TIMEOUT_SECON
               "references": references}
     packet_path = out / "visual-packet.json"
     packet_path.write_text(json.dumps(packet, sort_keys=True, indent=2) + "\n", encoding="utf-8")
-    return {"status": "pending", "findings": [], "timeout_seconds": timeout, "packet": str(packet_path),
+    return {"status": "pending", "findings": [], "packet": str(packet_path),
             "packet_sha256": file_hash(packet_path),
             "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"}
 
 
-def record_visual(project, feedback_path, full=False):
+def component_role(project: Path, value: str) -> tuple[str, Path]:
+    """Resolve one canonical component source without accepting path traversal."""
+    name = Path(value).name
+    if value != name or not name.startswith("part_") or not name.endswith(".step.py"):
+        raise ValueError("--component must name one part_<role>.step.py in the CAD project")
+    role = name[len("part_"):-len(".step.py")]
+    if not role or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", role):
+        raise ValueError("--component has an invalid role")
+    source = project / name
+    if not source.is_file():
+        raise ValueError("component source does not exist: %s" % name)
+    return role, source
+
+
+def state_and_round_root(project: Path, component: str | None) -> tuple[Path, Path]:
+    measure = project / "measure"
+    if component is None:
+        return measure / STATE_NAME, measure / ROUNDS_DIR
+    role, _ = component_role(project, component)
+    root = measure / COMPONENT_ROUNDS_DIR / role
+    return root / STATE_NAME, root
+
+
+def record_visual(project, feedback_path, full=False, component=None, check_motion=None):
     """Attach native observations to the last round without rebuilding it."""
-    state = json.loads((project / "measure" / STATE_NAME).read_text())
-    out = Path(state["last_out"])
+    if component is not None and full:
+        raise ValueError("--full is only valid for the assembled-object round")
+    state_path, _ = state_and_round_root(project, component)
+    state = json.loads(state_path.read_text())
+    if component is None:
+        out = Path(state["last_out"])
+    else:
+        role, source = component_role(project, component)
+        round_value = state.get("round")
+        if (
+            type(round_value) is not int
+            or round_value < 1
+            or state.get("scope") != "component:%s" % role
+        ):
+            raise ValueError("component round state is invalid")
+        out = state_path.parent / ("r%04d" % round_value)
     summary_path = out / "summary.json"
     summary = json.loads(summary_path.read_text())
+    if component is not None and (
+        summary.get("scope") != "component:%s" % role
+        or summary.get("entry") != source.name
+        or summary.get("parts") != [role]
+    ):
+        raise ValueError("component round summary is invalid")
     visual = summary["visual"]
     if visual["status"] != "pending":
         raise ValueError("visual feedback is only accepted once for a pending round")
@@ -137,6 +172,9 @@ def record_visual(project, feedback_path, full=False):
         command = [sys.executable, str(cad / "verify_project"), str(project),
                    "--strict-fit", "--print-gates", "--nozzle", str(summary.get("nozzle", 0.4)),
                    "--report", str(project / "measure/verification-pipeline.md")]
+        motion_option = summary.get("check_motion") if check_motion is None else check_motion
+        if motion_option is not None:
+            command += ["--check-motion", str(motion_option).lower()]
         if summary["refs"]:
             command.append("--image-derived")
             for label, ref in summary["refs"]:
@@ -327,41 +365,11 @@ def parse_refs(values, spec_paths) -> list[tuple[str, str]]:
     return refs
 
 
-def failed_part_checks(summary: dict) -> dict:
-    """Project explicit build/print failures across all recorded part results."""
-    build = summary.get("build") or {}
-    printing = summary.get("print") or {}
-    failed = {}
-    for role in sorted(set(build) | set(printing)):
-        gates = ["build"] if build.get(role, {}).get("verdict") == "FAIL" else []
-        printed = printing.get(role) or {}
-        print_gates = [gate for gate in ("thickness", "overhang")
-                       if (printed.get(gate) or {}).get("verdict") == "FAIL"]
-        if printed.get("verdict") == "FAIL" and not print_gates:
-            # Older records may expose only the aggregate print verdict.
-            print_gates = ["print"]
-        if gates or print_gates:
-            failed[role] = gates + print_gates
-    return failed
-
-
-def render_json_summary(summary: dict) -> str:
-    """Put a derived failure index first without changing the saved summary."""
-    projection = {"failed_part_checks": failed_part_checks(summary)}
-    projection.update((key, value) for key, value in sorted(summary.items())
-                      if key != "failed_part_checks")
-    return json.dumps(projection)
-
-
 def render_summary(summary: dict) -> str:
     lines = [
-        "make_round r%04d  %s  changed %d/%d part(s)"
-        % (summary["round"], summary["project"], len(summary["changed"]), len(summary["parts"]))
+        "make_round r%04d  %s  %s  changed %d/%d part(s)"
+        % (summary["round"], summary.get("scope", "assembly"), summary["project"], len(summary["changed"]), len(summary["parts"]))
     ]
-    failed = failed_part_checks(summary)
-    lines.append("  failed build/print parts (%d): %s" % (
-        len(failed), "; ".join("%s [%s]" % (role, ", ".join(gates))
-                               for role, gates in failed.items()) or "none"))
     for role in summary["checked"]:
         item = summary["build"][role]
         extra = ("  " + "; ".join(item["failures"])) if item["verdict"] == "FAIL" and item["failures"] else ""
@@ -391,6 +399,8 @@ def render_summary(summary: dict) -> str:
             "  like  %-4s %-10s IoU %.3f vs %.2f%s  pose az %.1f el %.1f fov %s%s"
             % ("ok" if item["ok"] else "FAIL", item["label"], item["iou"], summary["min"], delta, item["az"], item["el"], item["fov"], "  (re-searched)" if item.get("searched") else "")
         )
+    if summary.get("motion_status") == "not-run":
+        lines.append("  move  SKIP motion unverified")
     if summary.get("motion") is not None:
         motion = summary["motion"]
         lines.append("  move  %-4s %s" % (motion["verdict"].upper()[:4], motion["detail"][:90]))
@@ -419,11 +429,8 @@ def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS) -> subprocess.
     try:
         done = subprocess.run(command, cwd=str(cwd), capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
-        # TimeoutExpired may carry bytes even when subprocess.run uses text=True.
-        stdout = exc.stdout.decode("utf-8", errors="replace") if isinstance(exc.stdout, bytes) else exc.stdout or ""
-        stderr = exc.stderr.decode("utf-8", errors="replace") if isinstance(exc.stderr, bytes) else exc.stderr or ""
-        log.write_text("TIMEOUT after %ss\n%s\n%s" % (timeout, stdout, stderr), encoding="utf-8")
-        return subprocess.CompletedProcess(command, 124, stdout, stderr)
+        log.write_text("TIMEOUT after %ds\n%s\n%s" % (timeout, exc.stdout or "", exc.stderr or ""), encoding="utf-8")
+        return subprocess.CompletedProcess(command, 124, exc.stdout or "", exc.stderr or "")
     log.write_text(
         "$ %s\n(%.1fs, exit %d)\n--- stdout\n%s\n--- stderr\n%s"
         % (" ".join(str(c) for c in command), time.monotonic() - started, done.returncode, done.stdout, done.stderr),
@@ -568,18 +575,33 @@ def tail(text: str) -> str:
     return " ".join((text or "").split())[-MAX_TAIL_CHARS:]
 
 
+def motion_policy():
+    return runpy.run_path(str(Path(__file__).resolve().parents[2] / "cad/scripts/motion_policy.py"))
+
+
 def make_round(args) -> int:
     project = Path(args.project).resolve()
     if not project.is_dir():
         print("make_round: not a directory: %s" % project, file=sys.stderr)
         return 2
+    try:
+        option = getattr(args, "check_motion", None)
+        if args.no_motion:
+            if option is True:
+                raise ValueError("--no-motion conflicts with --check-motion true")
+            option = False
+        check_motion = motion_policy()["enabled"](option)
+    except (OSError, ValueError) as exc:
+        print("make_round: %s" % exc, file=sys.stderr)
+        return 2
     if args.record_visual:
         try:
-            summary = record_visual(project, args.record_visual, args.full)
+            summary = record_visual(project, args.record_visual, args.full, args.component,
+                                    check_motion=check_motion)
         except (ValueError, KeyError, OSError, TypeError) as exc:
             print("make_round: %s" % exc, file=sys.stderr)
             return 2
-        print(render_json_summary(summary) if args.json else render_summary(summary))
+        print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
         return 0 if summary["ok"] else 1
     if args.full:
         print("make_round: --full requires --record-visual after inspection and independent blind review", file=sys.stderr)
@@ -592,21 +614,37 @@ def make_round(args) -> int:
     i2c = roots / "image-to-cad" / "scripts"
     python = sys.executable
     generators = sorted(project.glob("*.step.py"))
-    parts = [g for g in generators if g.name.startswith("part_")]
+    all_parts = [g for g in generators if g.name.startswith("part_")]
     entries = [g for g in generators if not g.name.startswith("part_")]
-    if args.entry:
+    component = None
+    if args.component:
+        try:
+            role, entry = component_role(project, args.component)
+        except ValueError as exc:
+            print("make_round: %s" % exc, file=sys.stderr)
+            return 2
+        component = role
+        parts = [entry]
+    elif args.entry:
+        parts = all_parts
         entry = project / args.entry
     elif len(entries) == 1:
+        parts = all_parts
         entry = entries[0]
     else:
         print("make_round: expected exactly one entry *.step.py (found %d); pass --entry" % len(entries), file=sys.stderr)
         return 2
     measure = project / "measure"
     measure.mkdir(exist_ok=True)
-    state_path = measure / STATE_NAME
+    try:
+        state_path, round_root = state_and_round_root(project, args.component)
+    except ValueError as exc:
+        print("make_round: %s" % exc, file=sys.stderr)
+        return 2
+    state_path.parent.mkdir(parents=True, exist_ok=True)
     state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
     round_index = int(state.get("round", 0)) + 1
-    out = Path(args.out) if args.out else measure / ROUNDS_DIR / ("r%04d" % round_index)
+    out = Path(args.out) if args.out else round_root / ("r%04d" % round_index)
     out.mkdir(parents=True, exist_ok=True)
 
     # A one-piece project exposes its buildable geometry through the entry.
@@ -629,6 +667,53 @@ def make_round(args) -> int:
             continue
         digests[role] = hashlib.sha256(step.read_bytes()).hexdigest()
     changed = diff_parts(state.get("parts", {}), digests) if not args.all_parts else sorted(digests)
+
+    # Spark can make assembly review contingent on current, passing isolated
+    # component evidence. Comparing freshly built STEP bytes catches edits in
+    # the component file and in any shared helper it imports.
+    if args.require_component_passes:
+        failures = []
+        if not all_parts:
+            failures.append("no part_<role>.step.py component sources exist")
+        for part in all_parts:
+            part_role = part.name[len("part_"):-len(".step.py")]
+            component_state_path, _ = state_and_round_root(project, part.name)
+            if not component_state_path.is_file():
+                failures.append("%s has no isolated component round" % part.name)
+                continue
+            component_state = json.loads(component_state_path.read_text(encoding="utf-8"))
+            component_round = component_state.get("round")
+            if (
+                type(component_round) is not int
+                or component_round < 1
+                or component_state.get("scope") != "component:%s" % part_role
+            ):
+                failures.append("%s has invalid component state" % part.name)
+                continue
+            component_summary_path = (
+                component_state_path.parent / ("r%04d" % component_round) / "summary.json"
+            )
+            if not component_summary_path.is_file():
+                failures.append("%s has no component summary" % part.name)
+                continue
+            component_summary = json.loads(component_summary_path.read_text(encoding="utf-8"))
+            if (
+                component_summary.get("scope") != "component:%s" % part_role
+                or component_summary.get("entry") != part.name
+                or component_summary.get("parts") != [part_role]
+            ):
+                failures.append("%s has invalid component summary" % part.name)
+            elif not component_summary.get("ok"):
+                failures.append("%s latest component round did not pass" % part.name)
+            elif component_state.get("parts", {}).get(part_role) != digests.get(part_role):
+                failures.append("%s changed after its component pass" % part.name)
+        prerequisite_log = out / "component-prerequisites.log"
+        if failures:
+            prerequisite_log.write_text("\n".join(failures) + "\n", encoding="utf-8")
+            print("make_round: assembled-object review requires current passing component rounds: %s" % "; ".join(failures), file=sys.stderr)
+            return 1
+        if prerequisite_log.is_file():
+            prerequisite_log.unlink()
 
     # 2. record the build verdict for what moved.
     for role in changed:
@@ -700,7 +785,7 @@ def make_round(args) -> int:
         }
 
     # 3. likeness per reference, replaying the previous pose when one exists.
-    refs = parse_refs(args.refs, sorted(project.glob("*_spec.md")))
+    refs = parse_refs(args.refs, [] if component is not None else sorted(project.glob("*_spec.md")))
     likeness = []
     previous_pose_paths = state.get("pose_paths")
     legacy_poses = state.get("poses_path") if previous_pose_paths is None else None
@@ -761,12 +846,12 @@ def make_round(args) -> int:
     # 4. motion gate when the project declares a manifest.
     motion = None
     manifest = measure / "motion.json"
-    if manifest.is_file() and not args.no_motion:
+    if component is None and manifest.is_file() and check_motion:
         done = run([python, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"], cwd=project, log=out / "motion.log")
         motion = parse_motion(done.stdout, done.returncode, done.stderr)
 
     # 5. Native visual inspection is a separate evidence submission, not a model call.
-    visual = prepare_visual(project, entry, out, cad, refs, timeout=args.render_timeout)
+    visual = prepare_visual(project, entry, out, cad, refs)
     full = None
 
     ok = (
@@ -778,6 +863,7 @@ def make_round(args) -> int:
     )
     summary = {
         "round": round_index,
+        "scope": "component:%s" % component if component is not None else "assembly",
         "project": str(project),
         "entry": entry.name,
         "parts": sorted(set(digests) | set(build_failures)),
@@ -791,6 +877,8 @@ def make_round(args) -> int:
         "likeness": likeness,
         "min": args.min,
         "motion": motion,
+        "check_motion": check_motion,
+        "motion_status": (motion["verdict"] if motion is not None else "not-run"),
         "full": full,
         "checks_ok": ok,
         "visual": visual,
@@ -801,6 +889,7 @@ def make_round(args) -> int:
     (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     state = {
         "round": round_index,
+        "scope": summary["scope"],
         "parts": digests,
         "print": printing,
         "print_context": context,
@@ -810,7 +899,7 @@ def make_round(args) -> int:
         "last_out": str(out),
     }
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    print(render_json_summary(summary) if args.json else render_summary(summary))
+    print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
     return 1  # pending or failed visual evidence cannot report a complete round
 
 
@@ -917,7 +1006,7 @@ def self_check() -> int:
     except ValueError:
         check(True, "a malformed --ref is refused")
     summary = {
-        "round": 3, "project": "/p/cad", "parts": ["frame", "knob", "lens"], "changed": ["frame"], "checked": ["frame"],
+        "round": 3, "scope": "assembly", "project": "/p/cad", "parts": ["frame", "knob", "lens"], "changed": ["frame"], "checked": ["frame"],
         "build": {"frame": {"verdict": "PASS", "failures": []}},
         "print": {"frame": {
             "verdict": "FAIL",
@@ -938,27 +1027,20 @@ def self_check() -> int:
     return 0 if ok else 1
 
 
-def positive_timeout(value):
-    seconds = float(value)
-    if not math.isfinite(seconds) or not 0 < seconds <= MAX_RENDER_TIMEOUT_SECONDS:
-        raise argparse.ArgumentTypeError(
-            "must be positive finite seconds, at most %d" % MAX_RENDER_TIMEOUT_SECONDS
-        )
-    return seconds
-
-
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("project", nargs="?", help="the cad directory holding *.step.py sources")
     parser.add_argument("--entry", help="entry generator name when more than one non-part *.step.py exists")
+    parser.add_argument("--component", help="review one isolated part_<role>.step.py using its own round history")
+    parser.add_argument("--require-component-passes", action="store_true", help="before assembly review, require current passing isolated rounds for every part")
     parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH", help="reference view; repeatable; default from the spec ledger")
     parser.add_argument("--min", type=float, default=0.90, help="likeness floor passed to render_views (default 0.90)")
     parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle diameter for the wall gate (default 0.4 mm)")
     parser.add_argument("--overhang-angle", type=float, default=45.0, help="slope from vertical the printer bridges unsupported (default 45 deg)")
     parser.add_argument("--all-parts", action="store_true", help="report every built part, not only the changed ones")
+    parser.add_argument("--check-motion", type=motion_policy()["boolean"], default=None,
+                        metavar="true|false", help="enable motion checks (default: false, or frozen Make option)")
     parser.add_argument("--no-motion", action="store_true", help="skip check_motion even when measure/motion.json exists")
-    parser.add_argument("--render-timeout", type=positive_timeout, default=TOOL_TIMEOUT_SECONDS,
-                        metavar="SECONDS", help="timeout for the front/top/iso render subprocess only (default 900 seconds)")
     parser.add_argument("--record-visual", help="record native Manager feedback for the last round without rebuilding")
     parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
@@ -969,6 +1051,12 @@ def main(argv=None) -> int:
         return self_check()
     if not args.project:
         parser.error("project is required")
+    if args.component and args.require_component_passes:
+        parser.error("--component and --require-component-passes are mutually exclusive")
+    if args.component and args.entry:
+        parser.error("--component and --entry are mutually exclusive")
+    if args.component and args.out:
+        parser.error("--out is not supported for canonical component round evidence")
     return make_round(args)
 
 

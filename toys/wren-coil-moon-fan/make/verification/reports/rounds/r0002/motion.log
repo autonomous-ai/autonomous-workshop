@@ -1,0 +1,385 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion <WORKSHOP_RUN>/artifacts/make/r0001/product/cad --manifest <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/motion.json --json
+(8.6s, exit 0)
+--- stdout
+{
+  "ok": true,
+  "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+  "assembly": "moon.step.py",
+  "deadlineSeconds": null,
+  "results": [
+    {
+      "id": "press-open-press-return",
+      "check": "coupled_motion_collision",
+      "description": "Direct finger input is the leaf itself; zero driven followers. Full75-degree outward and return cycle against every fixed occurrence.",
+      "clear": true,
+      "steps": 160,
+      "stepMm": 1.3028,
+      "movers": [
+        "leaf"
+      ],
+      "skippedSeatedStep": false,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 160 samples (step 1.303 mm)"
+    },
+    {
+      "id": "closed-stop",
+      "check": "rotation_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 1,
+      "steps": 6,
+      "obstacle": "carrier",
+      "overlapMm3": 0.05922,
+      "arcDeg": [
+        0.0,
+        -3.0
+      ],
+      "stepMm": 0.6948,
+      "angleDeg": -0.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by carrier at step 1/6 (0.05922 mm3) - retained, as expected"
+    },
+    {
+      "id": "open-stop",
+      "check": "rotation_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 1,
+      "steps": 6,
+      "obstacle": "carrier",
+      "overlapMm3": 0.05922,
+      "arcDeg": [
+        75.0,
+        78.0
+      ],
+      "stepMm": 0.6948,
+      "angleDeg": 75.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by carrier at step 1/6 (0.05922 mm3) - retained, as expected"
+    },
+    {
+      "id": "leaf-captured-up",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 2,
+      "steps": 10,
+      "obstacle": "pin",
+      "overlapMm3": 0.013989,
+      "translation": [
+        0.0,
+        0.0,
+        3.0
+      ],
+      "stepMm": 0.3,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by pin at step 2/10 (0.013989 mm3) - retained, as expected"
+    },
+    {
+      "id": "pin-captured-down",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 4,
+      "steps": 10,
+      "obstacle": "carrier",
+      "overlapMm3": 0.915492,
+      "translation": [
+        0.0,
+        0.0,
+        -10.0
+      ],
+      "stepMm": 1.0,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by carrier at step 4/10 (0.915492 mm3) - retained, as expected"
+    },
+    {
+      "id": "cover-captured-up",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 2,
+      "steps": 10,
+      "obstacle": "carrier",
+      "overlapMm3": 1.2,
+      "translation": [
+        0.0,
+        0.0,
+        3.0
+      ],
+      "stepMm": 0.3,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by carrier at step 2/10 (1.2 mm3) - retained, as expected"
+    },
+    {
+      "id": "inlay-captured",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": false,
+      "step": 2,
+      "steps": 10,
+      "obstacle": "cover",
+      "overlapMm3": 74.175,
+      "translation": [
+        0.0,
+        0.0,
+        3.0
+      ],
+      "stepMm": 0.3,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by cover at step 2/10 (74.175 mm3) - retained, as expected"
+    },
+    {
+      "id": "leaf-assembly-with-pin-removed",
+      "check": "linear_motion_collision",
+      "description": "",
+      "clear": true,
+      "steps": 15,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        15.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 15 steps (step 1.000 mm)"
+    },
+    {
+      "id": "retention-closure",
+      "check": "retention_closure",
+      "description": "Every removable retainer reaches an explicitly fixed assembly root.",
+      "memberEvidence": [
+        {
+          "part": "leaf",
+          "condition": "leaf-captured-up",
+          "members": [
+            {
+              "memberIndex": 0,
+              "volumeMm3": 6415.645743218838,
+              "boundsMm": [
+                [
+                  -43.00000000000001,
+                  -43.0,
+                  3.2
+                ],
+                [
+                  24.00000000096333,
+                  43.0,
+                  7.4
+                ]
+              ],
+              "id": "leaf-captured-up",
+              "check": "linear_motion_collision",
+              "description": "",
+              "clear": false,
+              "step": 2,
+              "steps": 10,
+              "obstacle": "pin",
+              "overlapMm3": 0.013989,
+              "translation": [
+                0.0,
+                0.0,
+                3.0
+              ],
+              "stepMm": 0.3,
+              "expect": "blocked",
+              "status": "pass",
+              "detail": "blocked by pin at step 2/10 (0.013989 mm3) - retained, as expected"
+            }
+          ],
+          "solidCount": 1,
+          "status": "pass",
+          "detail": "1 material member(s) blocked by declared supports"
+        },
+        {
+          "part": "pin",
+          "condition": "pin-captured-down",
+          "members": [
+            {
+              "memberIndex": 0,
+              "volumeMm3": 186.7583940115494,
+              "boundsMm": [
+                [
+                  -14.0,
+                  25.0,
+                  -1.6
+                ],
+                [
+                  -6.0,
+                  33.0,
+                  9.700000000000003
+                ]
+              ],
+              "id": "pin-captured-down",
+              "check": "linear_motion_collision",
+              "description": "",
+              "clear": false,
+              "step": 4,
+              "steps": 10,
+              "obstacle": "carrier",
+              "overlapMm3": 0.915492,
+              "translation": [
+                0.0,
+                0.0,
+                -10.0
+              ],
+              "stepMm": 1.0,
+              "expect": "blocked",
+              "status": "pass",
+              "detail": "blocked by carrier at step 4/10 (0.915492 mm3) - retained, as expected"
+            }
+          ],
+          "solidCount": 1,
+          "status": "pass",
+          "detail": "1 material member(s) blocked by declared supports"
+        },
+        {
+          "part": "cover",
+          "condition": "cover-captured-up",
+          "members": [
+            {
+              "memberIndex": 0,
+              "volumeMm3": 643.7399999999999,
+              "boundsMm": [
+                [
+                  -37.25,
+                  -17.2,
+                  2.05
+                ],
+                [
+                  -19.75,
+                  17.2,
+                  3.25
+                ]
+              ],
+              "id": "cover-captured-up",
+              "check": "linear_motion_collision",
+              "description": "",
+              "clear": false,
+              "step": 2,
+              "steps": 10,
+              "obstacle": "carrier",
+              "overlapMm3": 1.2,
+              "translation": [
+                0.0,
+                0.0,
+                3.0
+              ],
+              "stepMm": 0.3,
+              "expect": "blocked",
+              "status": "pass",
+              "detail": "blocked by carrier at step 2/10 (1.2 mm3) - retained, as expected"
+            }
+          ],
+          "solidCount": 1,
+          "status": "pass",
+          "detail": "1 material member(s) blocked by declared supports"
+        },
+        {
+          "part": "inlay",
+          "condition": "inlay-captured",
+          "members": [
+            {
+              "memberIndex": 0,
+              "volumeMm3": 185.4375,
+              "boundsMm": [
+                [
+                  -34.25,
+                  -10.75,
+                  1.0
+                ],
+                [
+                  -22.75,
+                  10.75,
+                  1.75
+                ]
+              ],
+              "id": "inlay-captured",
+              "check": "linear_motion_collision",
+              "description": "",
+              "clear": false,
+              "step": 2,
+              "steps": 10,
+              "obstacle": "cover",
+              "overlapMm3": 74.175,
+              "translation": [
+                0.0,
+                0.0,
+                3.0
+              ],
+              "stepMm": 0.3,
+              "expect": "blocked",
+              "status": "pass",
+              "detail": "blocked by cover at step 2/10 (74.175 mm3) - retained, as expected"
+            }
+          ],
+          "solidCount": 1,
+          "status": "pass",
+          "detail": "1 material member(s) blocked by declared supports"
+        }
+      ],
+      "status": "pass",
+      "detail": "4 retention proof(s) close at 1 fixed root(s); every material member has a blocked escape sweep"
+    }
+  ]
+}
+
+--- stderr
+check_motion: building moon.step.py ...
+check_motion: building moon.step.py done in 3s
+check_motion: 8 condition(s), up to ~750 sampled Boolean/distance operations before any stops early
+check_motion condition: 8 to go
+check_motion condition 1/8: press-open-press-return [coupled_motion_collision] (0s elapsed)
+[press-open-press-return] coupled sweep: 161 to go
+[press-open-press-return] coupled sweep: 1/161 (0%), 0s elapsed, ~8s left
+[press-open-press-return] coupled sweep: 161/161 (100%), 4s elapsed, ~0s left
+check_motion condition 2/8: closed-stop [rotation_motion_collision] (4s elapsed)
+[closed-stop] sweep: 6 to go
+[closed-stop] sweep: 0 done in 0s - collision at step 1
+check_motion condition 3/8: open-stop [rotation_motion_collision] (4s elapsed)
+[open-stop] sweep: 6 to go
+[open-stop] sweep: 0 done in 0s - collision at step 1
+check_motion condition 4/8: leaf-captured-up [linear_motion_collision] (4s elapsed)
+[leaf-captured-up] sweep: 10 to go
+[leaf-captured-up] sweep: 1/10 (10%), 0s elapsed, ~0s left
+[leaf-captured-up] sweep: 1 done in 0s - collision at step 2
+check_motion condition 5/8: pin-captured-down [linear_motion_collision] (4s elapsed)
+[pin-captured-down] sweep: 10 to go
+[pin-captured-down] sweep: 1/10 (10%), 0s elapsed, ~0s left
+[pin-captured-down] sweep: 3 done in 0s - collision at step 4
+check_motion condition 6/8: cover-captured-up [linear_motion_collision] (4s elapsed)
+[cover-captured-up] sweep: 10 to go
+[cover-captured-up] sweep: 1/10 (10%), 0s elapsed, ~0s left
+[cover-captured-up] sweep: 1 done in 0s - collision at step 2
+check_motion condition 7/8: inlay-captured [linear_motion_collision] (4s elapsed)
+[inlay-captured] sweep: 10 to go
+[inlay-captured] sweep: 1/10 (10%), 0s elapsed, ~0s left
+[inlay-captured] sweep: 1 done in 0s - collision at step 2
+check_motion condition 8/8: leaf-assembly-with-pin-removed [linear_motion_collision] (4s elapsed)
+[leaf-assembly-with-pin-removed] sweep: 15 to go
+[leaf-assembly-with-pin-removed] sweep: 1/15 (6%), 0s elapsed, ~1s left
+[leaf-assembly-with-pin-removed] sweep: 15/15 (100%), 0s elapsed, ~0s left
+check_motion condition: 8 done in 5s
+check_motion: retention closure ...
+[leaf-captured-up] sweep: 10 to go
+[leaf-captured-up] sweep: 1/10 (10%), 0s elapsed, ~0s left
+[leaf-captured-up] sweep: 1 done in 0s - collision at step 2
+[pin-captured-down] sweep: 10 to go
+[pin-captured-down] sweep: 1/10 (10%), 0s elapsed, ~0s left
+[pin-captured-down] sweep: 3 done in 0s - collision at step 4
+[cover-captured-up] sweep: 10 to go
+[cover-captured-up] sweep: 1/10 (10%), 0s elapsed, ~0s left
+[cover-captured-up] sweep: 1 done in 0s - collision at step 2
+[inlay-captured] sweep: 10 to go
+[inlay-captured] sweep: 1/10 (10%), 0s elapsed, ~0s left
+[inlay-captured] sweep: 1 done in 0s - collision at step 2
+check_motion: retention closure done in 0s

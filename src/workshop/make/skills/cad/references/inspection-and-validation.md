@@ -23,30 +23,6 @@ every edit round.
 
 ## Tool
 
-`render_review` retains source occurrence RGB and RGBA materials, including
-inherited opacity. Alpha 1 is opaque; alpha 0 contributes no visible surface
-but remains in the assembly's framing. Intermediate values composite every
-surface in per-pixel depth order, including both faces of a transparent shell.
-Opaque objects still hide surfaces behind them. This is surface-opacity
-visualization, not refraction, optical transmission measurement or physical
-proof that a real enclosure provides the required visibility.
-
-Transparent shared triangle edges contribute once. Distinct occurrences at
-exactly tied depths use a deterministic material/geometry order. The renderer
-does not discard deeper layers or simplify geometry to make the picture fit a
-cost cap; deeply overlapping transparent geometry can take longer to render.
-
-For an enclosed mechanism, preview a small set of camera directions at a low
-pixel resolution before rendering a full-size endpoint pair or animation.
-`render_review --size 256` supports diagnostic previews (minimum 128); repeat
-`--view` to batch directions for each exact endpoint state. Inspect both
-endpoints: a camera that reveals the resting mechanism can hide its moved
-parts behind a post or rail. Keep every occurrence, enclosure, material, pose
-and tessellation setting unchanged; reduce only pixel resolution. Settle the
-camera and required shared framing, then render the final evidence at its
-normal required resolution and perform all hash-bound reviews. Previews are
-camera-selection aids, not final visual or mechanical evidence.
-
 The launcher lives in the CAD skill directory:
 
 ```bash
@@ -110,41 +86,6 @@ meant to be solid, or a clash from `interfere`, blocks the work from being calle
 done: repair the source and rerun the check that failed. Neither question can be
 answered by reading the generator or by looking at a render.
 
-### Print reports before the final review
-
-Workshop final verification requires canonical schema-8
-`snap/SIGNATURE-REVIEW.json` before it starts. Its `print_gate_sha256s` maps
-direct `measure/thickness-<role>.md` and `measure/overhang-<role>.md` paths to
-their exact SHA-256 digests. A nonempty map must cite passing reports from
-both gates; bind every printable part's reports for a print-ready claim. An
-empty map is the explicit no-claim case, not passing print evidence.
-
-Prepare the reports with the standalone gates before review. For example,
-from the CAD project directory, repeat these commands for each printable part
-with the actual bed, nozzle and overhang angle:
-
-```bash
-python "$CAD_SKILL_ROOT/scripts/check_mesh" part_body.step.py --bed 220x220x220
-python "$CAD_SKILL_ROOT/scripts/check_overhang" part_body.step.py --angle 45.0 --report measure/overhang-body.md
-python "$CAD_SKILL_ROOT/scripts/check_thickness" part_body.step.py --nozzle 0.4 --report measure/thickness-body.md
-```
-
-After reviewing and hashing those reports and the exact images, run
-`verify_project . --strict-fit --print-gates --nozzle 0.4 --overhang-angle 45.0`
-from that same directory, retaining every other required final option. The
-verifier writes reports again. Identical geometry, gate bytes and arguments
-produce identical report bytes; even option formatting or a different command
-directory changes their embedded argument line. Copying a round report into a
-canonical path does not change that line. Never edit measured reports or
-rewrite a review's hashes to disguise a changed run. The finalizer checks exact
-bindings again; host isolated replay separately permits only the known report
-directory-prefix changes and compares all measurements, options and results.
-
-The gate report includes its actual `RESULT:` on both success and failure.
-After an audited tool refresh, regenerate reports with the new gate bytes and
-obtain the required review. Historical reports missing that result and cached
-passes bound to older gate hashes cannot be reused as current evidence.
-
 ### `refs --facts` "ok" is not a geometry claim
 
 `refs --facts` reports counts, bounds, labels and references. Its `ok` field is
@@ -179,35 +120,6 @@ assertions, not rebuild the same solids solely to repeat body-count or
 positive-volume checks owned by `check_fit` and `validate`. Keep the final
 per-artifact validation sequence above; make it cheap through one batch process,
 not by silently dropping a geometry gate.
-
-### Imported solids that fail only after placement
-
-If a supplier solid passes locally but fails after placement, isolate the
-reported occurrence with the unchanged validator. Reproduce its actual source
-transform chain, including parent transforms and mirrors; an equivalent-looking
-final pose or a few arbitrary rotations do not cover that construction. Keep
-the original supplier STEP and checksum under `ref/` unchanged, as required by
-`bought-parts.md`.
-
-A representation-only conversion, such as converting surfaces to NURBS, is a
-candidate to qualify, not an automatic repair. Preserve the original and
-candidate, then compare both Boolean differences, bounds, solid/shell counts
-and topology. Record numerical tolerances and Boolean failures; an empty result
-from a failed Boolean is not zero difference. Check the actual assembly
-placements and relevant operating states, then export and re-import the
-candidate STEP and validate it again. Surface samples can diagnose a mismatch
-but cannot establish global equality. A passing conversion of one imported
-part says nothing about a different part.
-
-If conversion changes the default reported volume, resolve that discrepancy
-before claiming preserved geometry or using the result for mass and balance.
-Compare sufficiently converged volume properties with accurate or adaptive
-integration, recording error settings and convergence on both representations.
-Matching bounds or zero Boolean differences alone do not resolve conflicting
-mass properties. Keep any accepted conversion in reproducible product source;
-it must preserve the supplier's geometry and interfaces and pass the unchanged
-assembly checks. Neither conversion nor this diagnosis permits skipping a
-finding, loosening the validator, or claiming physical performance.
 
 ## Interference checks
 

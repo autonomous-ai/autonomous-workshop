@@ -99,14 +99,6 @@ do not tell you when a round was wasted.
 
 - Apply the source edit and the affected `gen`/`inspect` in the **same** model
   round.
-- After geometry or placement repair, refresh the affected fit, mount and
-  targeted clearance checks against the current assembly before starting long
-  standalone motion checks, final presentation or delivery export. Include
-  neighboring components reached by the changed geometry: an unchanged bought
-  part or mount manifest does not prove that a widened wall still clears it.
-  Resolve those failures together before committing to expensive downstream
-  work. This is local preflight; it does not require a full interference rebuild
-  after every edit or replace the final reviews and integrated verification.
 - Run `interfere` standalone as the last check of the last edit round, and only
   then `verify_project`. Final mode rebuilds every entry first, then runs
   validate/interfere before likeness and exports and stops on a clash. The

@@ -124,8 +124,8 @@ def idea_problems(raw: Any) -> list[str]:
                     _line_problems(item, "taste_fit.%s[%d]" % (key, index), 200, allow_newlines=False)
                 )
     parts = raw["parts_estimate"]
-    if type(parts) is not int or not 1 <= parts <= 12:
-        problems.append("parts_estimate must be an integer from 1 to 12")
+    if type(parts) is not int or parts < 1:
+        problems.append("parts_estimate must be a positive integer")
     keywords = raw["keywords"]
     if (
         not isinstance(keywords, list)

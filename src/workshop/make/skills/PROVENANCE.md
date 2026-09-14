@@ -71,6 +71,10 @@
   back its claim (schema 7 -> 8, `print_gate_sha256s`), and new runs freeze
   `deep-economics-v15`, which routes a failed print gate into a targeted repair
   the way v13 did before v14 dropped it.
+- Workshop's verifier adaptation accepts that same schema-v8 review before its
+  final geometry work and checks that `print_gate_sha256s` is a report-to-digest
+  mapping. This keeps the vendored verifier's pre-geometry review guard aligned
+  with the run-local Make finalizer; schema 7 remains historical evidence only.
 - The **legacy full-tier replay path stays retired**. It would rerun a
   `final-fresh-exports-strict-fit` verifier, and `--exports` is still gone; the
   restored tier is a different command, so a pre-tier receipt cannot be replayed
@@ -298,6 +302,27 @@
   connected unions, cavity shells, independently retained members, placed
   assemblies, seated-contact policy and measurement failures. This is sampled
   directional evidence, not a physical joint or load-bearing certification.
+- Adapted locally on 2026-09-13 so the long motion tools count themselves down
+  on stderr. `check_motion` names the assembly it is building, each condition
+  as it starts, and reports `k/N, elapsed, ~left` through every sweep and
+  through drive-evidence sampling; `motion_states.py` does the same per posed
+  sample and per rendered animation frame. A multi-hour sweep was previously
+  indistinguishable from a hang. Progress is stderr only, throttled
+  (`WORKSHOP_PROGRESS_INTERVAL`, default 10s) and disabled by
+  `WORKSHOP_PROGRESS=0`; stdout, geometry, hashes, verdicts and exit statuses
+  are unchanged.
+- Adapted locally on 2026-09-13 so a motion sweep is bounded. `check_motion`
+  projects the sampled Boolean/distance operations a manifest asks for before
+  the first sweep and accepts `--deadline SECONDS`
+  (`WORKSHOP_MOTION_DEADLINE_SECONDS`); a condition that runs out of budget
+  stops at the sample it reached and reports `inconclusive` with
+  `deadlineStopped`, which fails the run even under `--allow-inconclusive`.
+  `verify_project` passes a 900s default so an over-declared manifest cannot
+  consume the whole verification. `motion_presentation.py` takes the same
+  `--deadline` for its posing and rendering halves, which share one clock and
+  write nothing unless both finish. Unbounded runs remain the default for
+  direct invocations, and no geometry, threshold or verdict changed.
+
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference`, `electromechanical-integration`, and `image-to-cad` do
@@ -382,6 +407,12 @@ repair-and-rereview cycles. Python performs no visual judgment or model calls.
   `cad` and `image-to-cad` tools without changing them; a resync of the
   upstream skills does not touch it.
 
+Spark component-first extension (2026-09-10, ADR 0063): `--component` gives
+each `part_<role>.step.py` an isolated round history and visual packet;
+`--require-component-passes` freshly builds every part and prevents assembly
+review until all current component STEP bytes have passing isolated evidence.
+The native Manager still supplies the visual judgment. Forge and Quest keep
+their prior whole-product round sequence.
 
 ## Local audit dependency transport (2026-09-08)
 
@@ -710,161 +741,6 @@ at the corrected tree and recorded privately. Frozen runs keep their exact
 materialized tools; this is measurement calibration, not a product-quality
 claim, and it does not change the necessary-contact rule for driven parts.
 
-## STEP provenance after export (2026-09-11)
-
-The generated render package captured its STEP hash before the queued STEP
-export ran. A single `gen source.step.py --write` invocation could therefore
-leave `assembly.json` with the previous sibling STEP hash, or no hash on the
-first write. Package provenance is now read inside the package job, after the
-sequential STEP export completes. Alternate export destinations retain the
-package's canonical STEP path and hash; geometry, source provenance and gates
-are unchanged. Export failures still stop before package creation.
-
-Regression tests cover fresh and replaced STEP files, identical size and
-timestamp with different bytes, alternate exports, package-only generation,
-output failures, and actual CLI regeneration with geometry round trips. Saved
-runs retain their materialized tool bytes unless the operator uses the normal
-audited host tool refresh.
-
-## Bounded review-render occurrence copies (2026-09-11)
-
-`render_review` now uses the shared placed-subtree copy helper for each leaf
-at its accumulated world pose. The previous `moved()` call followed the parent
-link and copied the entire assembly for every leaf: nested synthetic scenes
-with 1, 5 and 17 leaves copied 3, 35 and 323 shape nodes. They now copy 1, 5
-and 17. Inherited colors are preserved without populating source color caches.
-Regression tests retain exact nested geometry, colors and rendered pixels,
-and check source immutability on successful and failed copies. Camera settings,
-tessellation tolerance, visual evidence and gates are unchanged. This fixes
-avoidable copy work; it does not establish the cause of a product render timeout.
-
-## Complete product-render surfaces (2026-09-11)
-
-`render_product` previously sampled 75,000 individual triangles from larger
-meshes. That removed faces instead of simplifying the closed surface, producing
-holes and isolated panels in an otherwise valid STEP model. The presentation
-renderer now retains every input triangle; normal degenerate-face and camera
-visibility handling still applies. Camera framing, geometry state comparison,
-CLI validation and engineering gates are unchanged. Rendering cost now scales
-with the actual tessellation instead of silently discarding surface geometry.
-
-Synthetic regressions compare coarse and dense tessellations of the same closed
-cube, count all valid silhouette and visible-face draws above the former cap,
-and retain failure checks for empty or non-finite geometry. Saved runs require
-the normal audited host tool refresh to adopt the corrected renderer.
-
-## Review and motion opacity (2026-09-11)
-
-Still review and declared-motion presentation each discarded source RGBA
-alpha, so even a fully transparent modeled cover hid its interior. Both paths
-now retain inherited opacity. The existing opaque depth pass and RGB output
-are unchanged; transparent triangles are binned by row tile and depth-peeled
-in strict per-pixel depth/occurrence order before compositing. Half-open edge
-coverage avoids double opacity at shared triangle edges. Every distinct depth
-layer is processed without a layer cap; fixed tile pixel workspaces bound
-memory independently of layer count, while geometry storage and rendering time
-still grow with the transparent scene.
-
-Tests cover analytic blending, crossing and tied layers, sub-nanometre depth
-ordering and termination, shell faces, nested alpha, unchanged opaque pixels,
-bounded pixel workspaces, and actual motion GIF generation/reconstruction with
-stale and rehashed-tampered evidence rejected. This is surface-opacity
-presentation rather than optical or physical proof. Geometry, poses, evidence
-schemas and gates are unchanged. Saved runs adopt it only through the normal
-audited host tool refresh and must regenerate affected presentation evidence.
-
-## Schema-8 signature review and print reports (2026-09-11)
-
-ADR 0063 advanced the finalizer to signature-review schema 8, but the CAD
-verifier still required schema 7 and neither gate writer put its stdout
-`RESULT:` in the report bytes the finalizer validates. The verifier now accepts
-the same exact canonical schema-8 review, checks bounded real in-project
-thickness and overhang reports against their recorded hashes, headings and
-passing results, and retains the empty-map no-claim case. The two writers
-serialize their already-computed result on both success and failure; their
-measurement algorithms, stdout verdicts and exit codes are unchanged.
-
-Real tiny-source gate tests pass the same review bytes through both validators,
-prove byte-identical same-command reruns, and preserve host relocation's
-directory-prefix-only comparison. Failure tests cover invalid review schemas,
-unsafe or missing reports, changed digests, failed measurements and byte bounds.
-The finalizer still checks exact bindings after native verification; host
-isolated replay retains its existing normalized report comparison. No new
-post-run raw-hash gate is added. Saved runs require an audited tool refresh,
-fresh reports under the new gate hashes and the existing required review;
-historical report or review bytes are not rewritten into passing evidence.
-
-## Full motion-state digest without a duplicate encoded blob (2026-09-11)
-
-Motion generation alone rejected canonical in-memory states above 20 MiB,
-although reconstruction had no corresponding geometry limit. Both paths now
-hash the same canonical v2 encoding in chunks of at most 65,536 facet records.
-Every facet, normal, sorted record and header byte is preserved; `state_bytes`
-retains its compatibility encoding. No mesh is written and no geometry is
-sampled. Global sorting and rendering still hold full tessellated geometry in
-memory; the existing input-file, GIF and state-count bounds remain in force.
-
-Golden hashes and a 419,429-facet synthetic state prove byte compatibility and
-bounded record encoding beyond the former limit. Real eight-state generation
-and reconstruction still reject geometry and animation mismatches. This is a
-host-versioned deterministic tool correction, adopted by saved runs only
-through their normal audited refresh.
-
-## Fixed-frame review clipping (2026-09-11)
-
-A close-up of a complete assembly could crash when an opaque triangle lay
-wholly left of the image: the empty pixel-coordinate range disagreed with a
-NumPy depth slice whose negative endpoint wrapped into the image. The opaque
-raster loop now uses the same disjoint clipped-bounds guard as transparency.
-Only triangles with no on-image pixel bounds are skipped; intersecting
-triangles retain their existing coverage, shading and depth behavior.
-
-Synthetic tests reproduce the original failure, cover all sides and corners
-for opaque, transparent and invisible materials, and compare partial triangles
-and a complete mixed scene against crops of a larger reference rendering.
-Source geometry remains unchanged. Saved runs adopt this correction through
-the normal audited tool refresh.
-
-## Optional motion-check progress (2026-09-11)
-
-`check_motion --progress` adds flushed stderr phase and sample-index notices
-for assembly preparation, conditions, collision sweeps, drive-contact searches
-and retention. Repeated updates share a five-second throttle; the bounded
-setup and terminal notices bypass it. Fixed labels and numeric indices report
-the work being attempted, without manifest prose, percentages or estimated
-finish times. A long individual kernel operation can still remain silent.
-
-The default output, JSON and human results, sample order, numerical gates and
-exit codes are unchanged. Ordinary observer or stream failures disable only
-progress; invocation-scoped state is restored on return and interruption.
-Deterministic-clock tests cover throttling, nested counters, long sweeps,
-early collisions and diagnostic failures. A real tiny-source CLI fixture
-checks byte-identical result output with and without the flag. Saved runs
-can use this option only after the normal audited tool refresh; running
-checks are not changed or restarted.
-
-## Preview endpoint visibility before final rendering (2026-09-11)
-
-The CAD inspection reference now recommends small diagnostic camera previews
-of both exact endpoint states before expensive final pairs or animation for
-enclosed mechanisms. Repeated `render_review --view` arguments batch camera
-directions; only pixel resolution is reduced. Occurrences, enclosures,
-materials, poses and tessellation remain unchanged. Native Make selects the
-camera and shared framing, then produces the required final-resolution,
-hash-bound evidence. This is craft guidance, with no tool, gate, review-budget
-or Python camera-selection change. Frozen running projects are untouched.
-
-## Recheck nearby mounts before expensive downstream work (2026-09-11)
-
-The CAD cost reference now places affected fit, mount and targeted clearance
-checks before long standalone motion checks, final presentation and delivery
-export after a geometry or placement repair. The check scope includes nearby
-components reached by changed geometry, even when their own parts and mount
-manifest are unchanged. Native Make determines that scope and repairs; this
-adds no Python scheduler, per-edit full interference pass, gate or evidence
-exception. Final review and integrated verification remain required, and frozen
-running projects are untouched.
-
 ## Earlier review-count compatibility correction (2026-09-09)
 
 An earlier local correction allowed positive signature-review counts instead
@@ -874,31 +750,12 @@ preserved unchanged, in accordance with the instruction to leave Make alone.
 Workshop token budgeting removes host execution caps, not Make's internal
 review allowance. The lock binds the integrated team skill bytes.
 
-## Handed printed-part reuse guidance (2026-09-11)
+## Optional motion verification (2026-09-14)
 
-The CAD project-structure reference now distinguishes reusable occurrences from
-reflected geometry that needs explicit handed builder variants and distinct
-print entries. Reuse requires complete geometry to match by translation and
-proper rotation; symmetric reuse remains valid. Existing print checks apply to
-each variant, and handoff quantities and orientations must match it. This is
-native craft guidance, with no new gate, artifact schema or physical claim.
-Saved runs retain their frozen instructions until an audited tool refresh.
+Workshop adds `motion_policy.py` and opt-in motion handling to `verify_project`
+and `make_round`, plus corresponding CAD and image-to-CAD guidance. New runs
+freeze `MAKE-OPTIONS.json`; disabled checks and animation review remain
+explicitly unverified. The underlying motion checker is unchanged.
 
-## Make-round failed-part display index (2026-09-11)
-
-Make-round console output now starts with a complete index of explicit failed
-build and print checks, derived from all recorded parts, including reused
-entries. Human output puts it after the header and JSON output puts
-`failed_part_checks` first. Older summaries derive the same display without
-rewriting saved evidence. Detailed fields, reports, verdicts, cache rules and
-exit behavior are unchanged; warnings and non-part gates keep their separate
-results. Synthetic large-round and feedback-path tests cover the projection.
-
-## Exact placed material cache (2026-09-14)
-
-Ported the check_motion optimization and regression tests from ef0b2bc7.
-Within one immutable outer motion condition, a bounded 32-entry LRU reuses
-successful material normalization only for identical topology, location and
-orientation. Failures are not cached; nested checks share the scope, which
-is discarded on exit. Samples, collision thresholds and decisions are unchanged.
-Frozen runs receive this correction only through host-owned tool refresh.
+Operator resume also defaults to false. Make-round's final verification uses
+the current host-selected motion option instead of a previous round's option.

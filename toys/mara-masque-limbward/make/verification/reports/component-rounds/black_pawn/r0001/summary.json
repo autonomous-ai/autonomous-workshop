@@ -1,0 +1,60 @@
+{
+ "build": {
+  "black_pawn": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "black_pawn"
+ ],
+ "checked": [
+  "black_pawn"
+ ],
+ "checks_ok": true,
+ "entry": "part_black_pawn.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_pawn/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "black_pawn"
+ ],
+ "print": {
+  "black_pawn": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_pawn/r0001/overhang-black_pawn.log": "999e2d262015991eefc7a1851d3c972a48ae14b28aec7fa4734eedb1f71ff1d8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_pawn/r0001/thickness-black_pawn.log": "07228016860b09784510b5b5b89149f0d1a9802edb928602796fb13ddb1f6a68"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:black_pawn",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso shows the squat blunt sloping wedge with broad supporting foot. Front confirms low roof and top exposes three scallops; role and side distinguishable.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_pawn/r0001/visual-packet.json",
+  "packet_sha256": "906dfb309ac4042df99088374c40a794e2ce47e07be29bc4b53641f7c278ba71",
+  "status": "pass"
+ }
+}

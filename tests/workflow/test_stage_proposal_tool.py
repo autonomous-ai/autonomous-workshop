@@ -1174,6 +1174,24 @@ class StageProposalToolTest(unittest.TestCase):
             "playtest",
         )
 
+    def test_make_review_contract_is_accepted_by_the_cad_verifier(self):
+        import runpy
+
+        product_root, _, _, _ = self.create_product()
+        project = product_root / "cad/project"
+        review_path = project / "snap/SIGNATURE-REVIEW.json"
+        verifier = runpy.run_path(
+            str(
+                REPOSITORY
+                / "src/workshop/make/skills/cad/scripts/verify_project"
+            )
+        )
+
+        self.assertEqual(
+            verifier["_required_signature_review"](project),
+            hashlib.sha256(review_path.read_bytes()).hexdigest(),
+        )
+
     def test_make_rejects_missing_required_root_delivery_files(self):
         product_root, _, _, _ = self.create_product()
         for required in ("assembled.step", "assembled.step.json"):
@@ -1318,6 +1336,8 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_make_rejects_coupled_motion_without_animation_review(self):
+        (self.run_root / "MAKE-OPTIONS.json").write_text(
+            '{"schema_version":1,"check_motion":true}')
         product_root, _, _, _ = self.create_product()
         self.write_stage("make", {
             "assignment": self.assignment.to_dict(),
@@ -1330,6 +1350,7 @@ class StageProposalToolTest(unittest.TestCase):
         helper = self.run_root / ".agents/skills/cad/scripts/motion_presentation.py"
         helper.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(REPOSITORY / "src/workshop/make/skills/cad/scripts/motion_presentation.py", helper)
+        shutil.copyfile(REPOSITORY / "src/workshop/make/skills/cad/scripts/motion_policy.py", helper.with_name("motion_policy.py"))
         rejected = self.run_tool(
             "make", "--product-root", "artifacts/make/r0001/product",
             "--cad-project-path", "cad/project", "--cad-verification-path",
@@ -1338,6 +1359,29 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("motion presentation is invalid", rejected.stderr)
         self.assertIn("MOTION-EVIDENCE.json", rejected.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_default_skips_coupled_animation_review(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage("make", {
+            "assignment": self.assignment.to_dict(),
+            "invented": self.invented.to_dict(), "feedback": [],
+        }, round_index=1)
+        project = product_root / "cad/project"
+        (project / "measure/motion.json").write_text(
+            '{"conditions":[{"check":"coupled_motion_collision"}]}'
+        )
+        helper = self.run_root / ".agents/skills/cad/scripts/motion_presentation.py"
+        helper.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(REPOSITORY / "src/workshop/make/skills/cad/scripts/motion_presentation.py", helper)
+        shutil.copyfile(REPOSITORY / "src/workshop/make/skills/cad/scripts/motion_policy.py", helper.with_name("motion_policy.py"))
+        (self.run_root / "MAKE-OPTIONS.json").write_text(
+            '{"schema_version":1,"check_motion":false}')
+        accepted = self.run_tool(
+            "make", "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project", "--cad-verification-path",
+            "cad/project/validation/cad-build.json", expected=0,
+        )
+        self.assertTrue((self.run_root / "agent-outcome.json").is_file())
 
     def test_make_requires_review_bound_to_final_signature_images(self):
         product_root, _, _, _ = self.create_product()

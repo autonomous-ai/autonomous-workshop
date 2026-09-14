@@ -1,5 +1,12 @@
 # Review a moving product with motion evidence
 
+**Motion policy:** read run-root `MAKE-OPTIONS.json`. When `check_motion` is
+false (the default for new runs), skip motion sweeps, required animation and
+motion review below; report motion unverified. When true, retain the full
+motion contract. A missing options file in an older run retains mandatory
+motion verification. See the root `AGENTS.md` operator-selected policy.
+
+
 Keep the canonical schema-v6 signature review and its independent
 critic limit. Images judge appearance. An exact-CAD animation judges whether
 the intended action is visible. `check_motion` separately tests the declared

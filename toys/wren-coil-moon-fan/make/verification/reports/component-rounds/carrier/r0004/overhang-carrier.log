@@ -1,0 +1,14 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_carrier.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0004/overhang-carrier.md
+(3.8s, exit 1)
+--- stdout
+part_carrier.step.py: 73.2 cm2 of surface, grid 0.400 mm, 619 unsupported samples over 3 region(s)
+  FAIL  no face under 45 deg needs support     36.6% of the surface faces down that steeply; 1 region(s) need support, 2 bridge, 0 below 1 mm2; worst 86.0 mm2 spanning 17.5 mm
+  PASS  bridges within 12 mm                   2 region(s), longest span 0.8 mm
+        every unsupported region, largest first:
+        1. [overhang]    86.0 mm2 at (-28.4, 0.2, 0.4)  span  17.5 mm of 17x27, 1.6 mm of air below
+        2. [bridge  ]     7.3 mm2 at (-28.3, 17.4, 3.6)  span   0.8 mm of 8x1, 1.6 mm of air below
+        3. [bridge  ]     5.0 mm2 at (-28.2, -17.2, 3.5)  span   0.5 mm of 8x1, 1.6 mm of air below
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0004/overhang-carrier.md
+
+--- stderr

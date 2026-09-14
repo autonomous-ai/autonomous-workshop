@@ -1,0 +1,60 @@
+{
+ "build": {
+  "tank_cover": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "tank_cover"
+ ],
+ "checked": [
+  "tank_cover"
+ ],
+ "checks_ok": true,
+ "entry": "part_tank_cover.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/tank_cover/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "tank_cover"
+ ],
+ "print": {
+  "tank_cover": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/tank_cover/r0002/overhang-tank_cover.log": "aa7b0ff8aa5ec621d5e63162246959f8126bbc33543e15bd2d78263b553aa3a7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/tank_cover/r0002/thickness-tank_cover.log": "72e6e08d4a6fa38a6bd5d6193797e93849815c5592fc8036d99ec63491d2438d"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:tank_cover",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Full-width lower footprint now has vertical sides; elongated oval crown and tapered upper dome remain continuous and centered across the width.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/tank_cover/r0002/visual-packet.json",
+  "packet_sha256": "e5aa52935957a2fcdd209b3da330319337e2c5f2572937dbe481d35f3956e9e8",
+  "status": "pass"
+ }
+}

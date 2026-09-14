@@ -38,6 +38,30 @@ def _manifest(inventor_id: str = "sample"):
 
 
 class RegistryTest(unittest.TestCase):
+    def test_mara_requires_popular_games_and_astronomical_themes(self):
+        root = Path(__file__).resolve().parents[2]
+        taste = (root / "inventors" / "mara-masque" / "TASTE.md").read_text(
+            encoding="utf-8"
+        )
+        skill = (
+            root
+            / "inventors"
+            / "mara-masque"
+            / "skills"
+            / "mara-masque-inventor"
+            / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        for document in (taste.casefold(), skill.casefold()):
+            self.assertIn("widely popular", document)
+            self.assertIn("at least two independent", document)
+            self.assertIn("reject obscure", document)
+            self.assertIn("astronom", document)
+            self.assertNotIn(
+                "popularity and current trend evidence are irrelevant", document
+            )
+        self.assertIn("Mara has no printed-part-count limit", taste)
+        self.assertIn("Mara has no printed-part-count limit", skill)
+
     def test_bundled_inventors_are_valid_v8_skill_bundles(self):
         root = Path(__file__).resolve().parents[2]
         manifests = discover_inventors(root)
@@ -46,13 +70,17 @@ class RegistryTest(unittest.TestCase):
             [
                 "abo",
                 "alice",
+                "arden-span",
+                "axel-rake",
                 "bob",
                 "eve",
                 "ferro-line",
+                "halden-detent",
                 "ivy",
                 "kestrel-knot",
                 "leo",
                 "luma-vale",
+                "mara-masque",
                 "mira-fold",
                 "orin-shadow",
                 "pico-press",
@@ -60,6 +88,7 @@ class RegistryTest(unittest.TestCase):
                 "soren-voss",
                 "tess-loop",
                 "vela-bloom",
+                "wren-coil",
             ],
         )
         for manifest in manifests:

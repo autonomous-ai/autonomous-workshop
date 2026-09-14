@@ -78,6 +78,68 @@ class ClassifyTest(unittest.TestCase):
             with self.subTest(code=code):
                 self.assertEqual(classify_make_failure(code, text), "anti-patterns/" + slug)
 
+    def test_host_cad_gate_protocol_codes_never_bank_a_design_lesson(self):
+        """A gate that never refused the geometry teaches the vault nothing.
+
+        Each of these codes carries the verifier's own log as its finding: a
+        passing pipeline, or no measurement at all. Matched by keyword that log
+        reads as a design failure -- `interfere` from a clean interference pass,
+        `thickness` from the full tier's own name -- and banks an anti-pattern
+        against a design that never exhibited it.
+        """
+
+        passing_log = (
+            "[verify_project] interfere assembled.step.py ok; clearance ok; "
+            "RESULT: project verified"
+        )
+        for code in (
+            "cad-not-print-ready",
+            "sealed-product-changed",
+            "verifier-timeout",
+            "verifier-output-limit",
+            "declared-cad-output-changed",
+        ):
+            with self.subTest(code=code):
+                self.assertIsNone(classify_make_failure(code, passing_log))
+        # The one code that means the verifier measured and refused still does.
+        self.assertEqual(
+            classify_make_failure(
+                "verifier-nonzero",
+                "FAIL wall >= 0.40 mm (+/-0.05) 3.2% of surface below "
+                "RESULT: WALL BELOW MINIMUM",
+            ),
+            "anti-patterns/underbuilt-shell",
+        )
+
+    def test_a_gate_verdict_outranks_the_check_names_printed_above_it(self):
+        """`wall >= 0.40 mm` is a check name, printed pass or fail alike.
+
+        The print-gate sweep runs both gates per part, so one tail can carry the
+        wall gate's passing check name and the overhang gate's refusal. Keyword
+        order puts `underbuilt-shell` first, so only reading the gate's own
+        RESULT line keeps an overhang refusal from being banked as a thin wall.
+        """
+
+        both = (
+            "PASS wall >= 0.40 mm (+/-0.05) 0.0% of surface below; "
+            "thickness distribution median 2.10 mm; RESULT: printable at this wall "
+            "FAIL no face under 45 deg needs support; 2 region(s) need support "
+            "RESULT: NEEDS SUPPORT"
+        )
+        self.assertEqual(
+            classify_make_failure("verifier-nonzero", both),
+            "anti-patterns/support-dependent-geometry",
+        )
+        # And the reverse pairing still reads as the wall it is.
+        self.assertEqual(
+            classify_make_failure(
+                "verifier-nonzero",
+                "PASS no face under 45 deg needs support RESULT: prints unsupported "
+                "FAIL wall >= 0.40 mm RESULT: WALL BELOW MINIMUM",
+            ),
+            "anti-patterns/underbuilt-shell",
+        )
+
 
 class RowsTest(unittest.TestCase):
     def test_rows_keep_only_design_failures_and_carry_provenance(self):
@@ -101,6 +163,39 @@ class RowsTest(unittest.TestCase):
         self.assertEqual(vault_rows[0]["source"], "workshop-make")
         self.assertEqual((vault_rows[0]["severity"], vault_rows[1]["severity"]), ("high", "medium"))
         self.assertEqual(vault_rows[1]["fix_tried"], "thickened")
+
+    def test_classification_reads_the_evidence_not_the_host_sentence(self):
+        """The full tier is spelled `full-with-thickness`; that is not a wall.
+
+        `_cad_gate_failure` wraps the verifier tail in a sentence naming the
+        tier, because a reader of the vault needs it. Classified on that whole
+        sentence every full-tier rejection matches `thickness` and files as a
+        thin wall -- and `underbuilt-shell` is ordered ahead of the class the
+        evidence actually names. The print gates state their own verdict and
+        survive that, but no other gate does: here `check_fit` refuses on an
+        interference. `classify_text` narrows the classifier to the tail while
+        the banked finding keeps the tier.
+        """
+
+        tail = "FAIL clearance: band anchor and hood interfere over 4.1 mm2"
+        finding = (
+            "Make round 6 failed the host CAD gate verifier-nonzero "
+            "(full-with-thickness tier). %s" % tail
+        )
+        [row] = build_make_rows(
+            "wish-a",
+            6,
+            [{"code": "verifier-nonzero", "finding": finding, "classify_text": tail}],
+            [],
+        )
+        self.assertEqual(row["symptom"], "anti-patterns/sealed-volume-overlap")
+        # The vault still reads the tier the claim was rejected in.
+        self.assertIn("full-with-thickness", row["finding"])
+        # Without the split the host's own wording decides, and gets it wrong.
+        [unsplit] = build_make_rows(
+            "wish-a", 6, [{"code": "verifier-nonzero", "finding": finding}], []
+        )
+        self.assertEqual(unsplit["symptom"], "anti-patterns/underbuilt-shell")
 
     def test_rows_reject_malformed_input(self):
         with self.assertRaises(ContractError):

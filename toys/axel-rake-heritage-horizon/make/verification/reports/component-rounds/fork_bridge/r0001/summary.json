@@ -1,0 +1,60 @@
+{
+ "build": {
+  "fork_bridge": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "fork_bridge"
+ ],
+ "checked": [
+  "fork_bridge"
+ ],
+ "checks_ok": true,
+ "entry": "part_fork_bridge.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_bridge"
+ ],
+ "print": {
+  "fork_bridge": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0001/overhang-fork_bridge.log": "712346971ac3e3eca3cfecb95850ff7408ddf404d999c777120159c668680525",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0001/thickness-fork_bridge.log": "57f39eaac2cfbc753234fc96ed0194d031659201265c483968253c0e6d644191"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.27,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:fork_bridge",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso show the half lamp joined to bridge and neck, flat symmetry face, open screen slot and upper riser land. No unsupported detached geometry or misplaced joint observed.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0001/visual-packet.json",
+  "packet_sha256": "686a87a818f0c8261e49f5ccad88f18b9c73ebea3e265e7d7e85f5bd52b2c715",
+  "status": "pass"
+ }
+}

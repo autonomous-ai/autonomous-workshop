@@ -1,19 +1,53 @@
 """Construct review states with the exact rigid poses used by check_motion."""
 from __future__ import annotations
 
+import contextlib
 import functools
-import hashlib
 import io
 import math
 import runpy
 import struct
+import sys
+from contextvars import ContextVar
 from pathlib import Path
 
 import numpy as np
 
 SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+import progresslib  # noqa: E402  (needs SCRIPTS on sys.path)
+
 TOLERANCE = 0.08
 MAX_STATES = 48
+
+# One wall-clock bound for the states and frames of a single presentation.
+# Posing tessellates every leaf of the assembly per sample and rendering
+# rasterizes every triangle per frame, so a heavy assembly can spend an hour
+# here with nothing on disk to show for it.
+_DEADLINE = ContextVar("motion_states_deadline", default=None)
+
+
+@contextlib.contextmanager
+def deadline_scope(seconds):
+    """Bound the posing and rendering under this block to `seconds`."""
+    token = _DEADLINE.set(progresslib.Deadline(seconds) if seconds else None)
+    try:
+        yield
+    finally:
+        _DEADLINE.reset(token)
+
+
+def check_deadline(done, total, what):
+    """Stop between samples once the budget is spent, saying where it got to."""
+    deadline = _DEADLINE.get()
+    if deadline is None or not deadline.expired():
+        return
+    raise ValueError(
+        f"motion presentation stopped at its {deadline.seconds:g}s "
+        f"budget after {done}/{total} {what}; nothing was written. Lower --frames, "
+        "simplify the assembly, or raise --deadline")
 
 
 @functools.lru_cache(maxsize=1)
@@ -151,6 +185,8 @@ def posed_occurrences(shape, condition, indices):
             transforms.append((key, check["_pose_table"](spec, steps, f"movers[{index}]")))
     except check["ManifestError"] as exc:
         raise ValueError(str(exc)) from exc
+    reporter = progresslib.Progress(
+        f"posing {condition.get('id', 'motion')}", len(indices))
     for sample in indices:
         occurrences = []
         for index, (key, leaf, colour) in enumerate(parts["__leaf_nodes__"]):
@@ -164,18 +200,23 @@ def posed_occurrences(shape, condition, indices):
             faces = np.asarray(triangles, dtype=np.int64)
             if not len(points) or not len(faces) or not np.isfinite(points).all():
                 raise ValueError("motion occurrence has no finite triangulated geometry")
-            material = renderer["_colour_channels"](colour, index)
-            occurrences.append((points, faces, material))
+            if colour is None:
+                rgb = renderer["FALLBACK_COLOURS"][index % len(renderer["FALLBACK_COLOURS"])]
+            else:
+                rgb = tuple(renderer["_linear_to_srgb"](float(c)) for c in tuple(colour)[:3])
+            occurrences.append((points, faces, rgb))
         if not occurrences:
             raise ValueError("motion assembly has no drawable leaves")
+        reporter.advance()
+        check_deadline(reporter.count, len(indices), "posed sample(s)")
         yield sample, occurrences
 
 
-def _state_chunks(occurrences):
-    """Yield the unchanged canonical encoding in bounded record chunks.
+def state_bytes(occurrences):
+    """Stable canonical triangle encoding for hashing a posed state.
 
-    Global triangle ordering still uses the full geometry. Only the final
-    Binary-STL record encoding is chunked; no facets are sampled or written.
+    Binary-STL layout, held in memory only: nothing writes it to disk, because
+    STEP is the only geometry format this toolchain writes.
     """
     triangles = np.concatenate([p[f] for p, f, _ in occurrences]).astype("<f4")
     if not np.isfinite(triangles).all():
@@ -186,31 +227,15 @@ def _state_chunks(occurrences):
     triangles = np.take_along_axis(triangles, indices[:, :, None], axis=1)
     flat = triangles.reshape(-1, 9)
     triangles = triangles[np.lexsort(tuple(flat[:, i] for i in range(8, -1, -1)))]
-    yield b"Workshop declared motion state v2".ljust(80, b"\0") + struct.pack("<I", len(triangles))
-    for start in range(0, len(triangles), 65536):
-        chunk = triangles[start:start + 65536]
-        records = np.zeros(len(chunk), dtype=[("normal", "<f4", 3), ("points", "<f4", (3, 3)), ("attribute", "<u2")])
-        normals = np.cross(chunk[:, 1].astype(float) - chunk[:, 0],
-                           chunk[:, 2].astype(float) - chunk[:, 0])
-        lengths = np.linalg.norm(normals, axis=1)
-        valid = lengths > 0
-        normals[valid] /= lengths[valid, None]
-        records["normal"] = normals
-        records["points"] = chunk
-        yield memoryview(records).cast("B")
-
-
-def state_bytes(occurrences):
-    """Return the canonical in-memory encoding for compatibility callers."""
-    return b"".join(_state_chunks(occurrences))
-
-
-def state_digest(occurrences):
-    """Hash every canonical state record without allocating the full blob."""
-    digest = hashlib.sha256()
-    for chunk in _state_chunks(occurrences):
-        digest.update(chunk)
-    return digest.hexdigest()
+    records = np.zeros(len(triangles), dtype=[("normal", "<f4", 3), ("points", "<f4", (3, 3)), ("attribute", "<u2")])
+    normals = np.cross(triangles[:, 1].astype(float) - triangles[:, 0],
+                       triangles[:, 2].astype(float) - triangles[:, 0])
+    lengths = np.linalg.norm(normals, axis=1)
+    valid = lengths > 0
+    normals[valid] /= lengths[valid, None]
+    records["normal"] = normals
+    records["points"] = triangles
+    return b"Workshop declared motion state v2".ljust(80, b"\0") + struct.pack("<I", len(records)) + records.tobytes()
 
 
 def validate_render(settings):
@@ -227,9 +252,13 @@ def animation_bytes(states, settings):
     validate_render(settings)
     _, renderer = helpers()
     framing = np.concatenate([p for _, occurrences in states for p, _, _ in occurrences])
-    frames = [renderer["render"](occurrences, settings["azimuth"], settings["elevation"],
-                                 settings["size"], .07, framing=framing)
-              for _, occurrences in states]
+    reporter = progresslib.Progress("rendering frames", len(states))
+    frames = []
+    for _, occurrences in states:
+        frames.append(renderer["render"](occurrences, settings["azimuth"], settings["elevation"],
+                                         settings["size"], .07, framing=framing))
+        reporter.advance()
+        check_deadline(reporter.count, len(states), "rendered frame(s)")
     stream = io.BytesIO()
     frames[0].save(stream, format="GIF", save_all=True, append_images=frames[1:], duration=120, loop=0, disposal=2)
     return stream.getvalue()
@@ -257,7 +286,8 @@ def construct(project, manifest, selections):
     if not entry.resolve().is_relative_to(project.resolve()):
         raise ValueError("motion assembly entry must resolve inside the project")
     try:
-        shape = check["build_assembly"](entry)
+        with progresslib.phase(f"building {Path(relative).name}"):
+            shape = check["build_assembly"](entry)
     except Exception as exc:
         raise ValueError(f"cannot build motion assembly: {type(exc).__name__}: {exc}") from exc
     states = []

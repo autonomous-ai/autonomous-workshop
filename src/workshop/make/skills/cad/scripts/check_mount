@@ -60,7 +60,6 @@ for _runtime_path in (SCRIPTS_DIR, PACKAGES_DIR, CADPY_SRC_DIR):
 
 import cadfits          # noqa: E402 - after the sys.path setup above
 import cadmount         # noqa: E402
-from assembly_copy import placed_subtree_copy  # noqa: E402
 
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
@@ -138,23 +137,19 @@ def build_assembly(entry: Path):
 
 
 def index_parts(shape) -> dict[str, object]:
-    """Map labelled nodes to copies in their complete assembly pose."""
-    from build123d import Location
-
+    """Map every labelled leaf to its shape, in assembly pose."""
     found: dict[str, list[object]] = {}
 
-    def walk(node, trail: list[str], parent_pose) -> None:
+    def walk(node, trail: list[str]) -> None:
         label = getattr(node, "label", "") or ""
         path = trail + ([label] if label else [])
-        pose = parent_pose * node.location
         if label and trail:
-            placed = placed_subtree_copy(node, pose)
-            found.setdefault(label, []).append(placed)
-            found.setdefault(".".join(path), []).append(placed)
+            found.setdefault(label, []).append(node)
+            found.setdefault(".".join(path), []).append(node)
         for child in list(getattr(node, "children", []) or []):
-            walk(child, path, pose)
+            walk(child, path)
 
-    walk(shape, [], Location())
+    walk(shape, [])
     parts = {name: shapes[0] for name, shapes in found.items() if len(shapes) == 1}
     parts["__ambiguous__"] = sorted(name for name, shapes in found.items() if len(shapes) > 1)
     return parts

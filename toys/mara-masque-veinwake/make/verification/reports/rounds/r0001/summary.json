@@ -1,0 +1,396 @@
+{
+ "build": {
+  "bubble_1": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "bubble_2": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "bubble_3": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "bubble_4": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "rind": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "tooth_1": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "tooth_2": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "tooth_3": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "tooth_4": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "tooth_5": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bubble_1",
+  "bubble_2",
+  "bubble_3",
+  "bubble_4",
+  "rind",
+  "tooth_1",
+  "tooth_2",
+  "tooth_3",
+  "tooth_4",
+  "tooth_5"
+ ],
+ "checked": [
+  "bubble_1",
+  "bubble_2",
+  "bubble_3",
+  "bubble_4",
+  "rind",
+  "tooth_1",
+  "tooth_2",
+  "tooth_3",
+  "tooth_4",
+  "tooth_5"
+ ],
+ "checks_ok": false,
+ "entry": "veinwake.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": {
+  "conditions": [
+   {
+    "detail": "clear across 55 steps (step 1.000 mm)",
+    "id": "tooth_1-withdraws",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected",
+    "id": "tooth_1-floor-stop",
+    "status": "pass"
+   },
+   {
+    "detail": "clear across 55 steps (step 1.000 mm)",
+    "id": "tooth_2-withdraws",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected",
+    "id": "tooth_2-floor-stop",
+    "status": "pass"
+   },
+   {
+    "detail": "clear across 55 steps (step 1.000 mm)",
+    "id": "tooth_3-withdraws",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected",
+    "id": "tooth_3-floor-stop",
+    "status": "pass"
+   },
+   {
+    "detail": "clear across 55 steps (step 1.000 mm)",
+    "id": "tooth_4-withdraws",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected",
+    "id": "tooth_4-floor-stop",
+    "status": "pass"
+   },
+   {
+    "detail": "clear across 55 steps (step 1.000 mm)",
+    "id": "tooth_5-withdraws",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected",
+    "id": "tooth_5-floor-stop",
+    "status": "pass"
+   },
+   {
+    "detail": "clear across 55 steps (step 1.000 mm)",
+    "id": "bubble_1-withdraws",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected",
+    "id": "bubble_1-floor-stop",
+    "status": "pass"
+   },
+   {
+    "detail": "clear across 55 steps (step 1.000 mm)",
+    "id": "bubble_2-withdraws",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected",
+    "id": "bubble_2-floor-stop",
+    "status": "pass"
+   },
+   {
+    "detail": "clear across 55 steps (step 1.000 mm)",
+    "id": "bubble_3-withdraws",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected",
+    "id": "bubble_3-floor-stop",
+    "status": "pass"
+   },
+   {
+    "detail": "clear across 55 steps (step 1.000 mm)",
+    "id": "bubble_4-withdraws",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected",
+    "id": "bubble_4-floor-stop",
+    "status": "pass"
+   }
+  ],
+  "detail": "18 condition(s): all pass",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bubble_1",
+  "bubble_2",
+  "bubble_3",
+  "bubble_4",
+  "rind",
+  "tooth_1",
+  "tooth_2",
+  "tooth_3",
+  "tooth_4",
+  "tooth_5"
+ ],
+ "print": {
+  "bubble_1": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-bubble_1.log": "a0cf90eafabe2c7e7a941bba313f47508ce70789eec68b77d04f7f6919b8b0c7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-bubble_1.log": "f6cbd79ccb9b5f5e92de4bac09fd5e1c4cdcaf606826bbeecbe454b1cfff114f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no overhang result"
+    ],
+    "overhang_mm2": null,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "no passing wall result"
+    ],
+    "thinnest_mm": null,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  },
+  "bubble_2": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-bubble_2.log": "6f9e439975a25f435c86247fa47c64ab782f24949851a82afc1ad0f17b3ff53f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-bubble_2.log": "a76f4d9e4a5583826fd412d20be20a3e3a56f041d4fce55fe3443d1cd83b7c33"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no overhang result"
+    ],
+    "overhang_mm2": null,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "no passing wall result"
+    ],
+    "thinnest_mm": null,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  },
+  "bubble_3": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-bubble_3.log": "873ac0cdc54a0cdf6657f602f1c1b36ffab64c4430180832ce1a5f59a6ee8e7f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-bubble_3.log": "0afc261dbb42087f1a872b1964ef2d1501c2cd20589aeaf0941a70dfe778958a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no overhang result"
+    ],
+    "overhang_mm2": null,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "no passing wall result"
+    ],
+    "thinnest_mm": null,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  },
+  "bubble_4": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-bubble_4.log": "184b1b887c28666d85955d28befe48c27b29ba58cdc611ba6250e6236cd82338",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-bubble_4.log": "a99a6e4eabf943c49d884783be6087e8194aa4468b0549f93b1e053522c2565a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no overhang result"
+    ],
+    "overhang_mm2": null,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "no passing wall result"
+    ],
+    "thinnest_mm": null,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  },
+  "rind": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-rind.log": "d3ae611f5d55089724813e653720de12b59e72d379d82a233272a2fa044ef607",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-rind.log": "bd58334700bf6036361904f4531e48ab152769fc4097064e20a7047841697476"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tooth_1": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_1.log": "3c381b314928866b7af406dbbeddc526d9714516c70d6bcb4a6a3caccc073b7a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-tooth_1.log": "4b76e80709edfbdb93a17404dafe9385810ffbdb1081f6a8a189c09d3c3b1096"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tooth_2": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_2.log": "e4cac763c2fcd05b4850ae4d32a2e9e91193b301eb807a0409a75ea2d381a548",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-tooth_2.log": "6338557335c80478888cf18cf0f79bb725a728feb8fa92080a0787b9109a7652"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tooth_3": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_3.log": "494beaa0df510b9c1e262800d97cfb055a0c5069c442f56414b2e56ed2474fb6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-tooth_3.log": "95e94fc761d1810306dea7b307e737745bf0f4babfe4fab2a9a36e526d3e2216"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tooth_4": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_4.log": "13f0d09444036d938867c0349f730d8f77a222e5f8f5edd695e86383649fc035",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-tooth_4.log": "e86d9a2c19b4eca6f4723cbf5b50c2dd958b5affa9ec9b8c9f3df41da084b843"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tooth_5": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_5.log": "fc910c6cf90701b7191949fcbf2e7684feb1dcd379986789f04f0faae474db97",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-tooth_5.log": "bc843713d244b5244b40ccc5a7a8fef82f64f6628f2758efce4215f5d9f98f2c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: low rim and flat base with exposed blunt crowns; rear rows occluded, resolved by top and iso. Top: nine occupied sites in three straight rows, five hexagonal teeth and four three-lobed bubbles. Iso: all ten parts visible, irregular rounded rock perimeter, shallow field and uniform seating, no visible floating or intersecting parts. Bubble gate reports open tessellation edges despite no obvious image hole; numerical defect remains to repair.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/visual-packet.json",
+  "packet_sha256": "353003e80b8eff9b77968b88198127605afdd772b96f6167e02d5f61ed634aa2",
+  "status": "pass"
+ }
+}

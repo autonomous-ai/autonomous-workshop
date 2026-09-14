@@ -27,6 +27,7 @@ from workshop.runtime.execution import (
     CODEX_SUBPROCESS_ENVIRONMENT_ALLOWLIST,
     codex_subprocess_environment,
 )
+from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
 from workshop.runtime.project_boundary import PRODUCT_RUN_ROOT_MARKER
 from workshop.wish.contracts import WISH_REFERENCES_DIRECTORY
 from workshop.runtime.progress import SAFE_NATIVE_ACTIVITY_CLASSES
@@ -72,27 +73,7 @@ _TRANSIENT_DIAGNOSTIC_HEADS = frozenset(
     )
 )
 _MAX_NATIVE_FAILURE_MESSAGE_CHARS = 4 * 1024
-_NATIVE_RECONNECT_NOTICE = re.compile(
-    r"Reconnecting\.\.\. ([1-9][0-9]*)/([1-9][0-9]*) "
-    r"\(stream disconnected before completion: "
-    r"(?:stream closed before response\.completed|idle timeout waiting for SSE)\)"
-)
 _SAFE_TERMINAL_ERROR_CODE = re.compile(r"^[A-Za-z][A-Za-z0-9_.-]{0,127}$")
-# Complete native literals only; these diagnoses never grant retry authority.
-_EXACT_TERMINAL_ERROR_DIAGNOSES = {
-    "in-process app-server runtime is closed": (
-        "native-runtime", "app-server-closed",
-    ),
-    "luna response exceeded the output limit": (
-        "native-runtime", "luna-output-limit",
-    ),
-    "requested an operation in invalid state": (
-        "native-runtime", "handshake-invalid-state",
-    ),
-    "invalid json in cached login token file": (
-        "access", "cached-login-token-invalid-json",
-    ),
-}
 _TERMINAL_ERROR_SIGNATURES = (
     (
         "invalid-encrypted-content",
@@ -707,41 +688,45 @@ def _runtime_config_sha256(
     return _sha256_json(payload)
 
 
-def _run_policy_before_device_renumber(
-    run_policy: _CodexRunPolicy, mapping: str,
-) -> _CodexRunPolicy:
-    """Reconstruct one explicitly declared old mount ID, without changing grants.
+def _darwin_remounted_runtime_policies(
+    policy: _CodexRunPolicy,
+) -> Iterator[_CodexRunPolicy]:
+    """Reconstruct bounded legacy fingerprints after a Darwin remount.
 
-    Device numbers can change after a remount. This candidate is useful only
-    if its complete runtime hash matches the private session checkpoint;
-    paths, inodes, modes, CLI, model and all policy fields still have to match.
-    The actual subprocess always receives the freshly observed current policy.
+    Darwin st_dev numbers are mount assignments, not persistent volume IDs.
+    Legacy checkpoints stored only a digest, so prove the *entire* old digest
+    by substituting one common device number. Do not relax path, inode, mode,
+    symlink target, environment or permission comparisons. Support only the
+    first 256 devices in Darwin's filesystem device namespace, and only when
+    every trusted runtime path is on the same device. Other layouts fail closed.
+    These candidates are comparison evidence, never the launched policy.
     """
-    if not isinstance(mapping, str) or not re.fullmatch(
-        r"(0|[1-9][0-9]{0,19}):(0|[1-9][0-9]{0,19})", mapping
-    ):
-        raise ContractError("runtime device recovery requires OLD:CURRENT device numbers")
-    previous, current = (int(part) for part in mapping.split(":"))
-    if previous == current or max(previous, current) >= 2**64:
-        raise ContractError("runtime device recovery requires distinct valid device numbers")
-    identities = (*run_policy.trusted_python_runtime_paths,
-                  *run_policy.trusted_codex_runtime_paths)
-    if not any(current in (item.device, item.resolved_device) for item in identities):
-        raise ContractError("runtime device recovery current device is not in the runtime")
-
-    def predecessor(item: _TrustedRuntimePathIdentity) -> _TrustedRuntimePathIdentity:
-        return replace(
-            item,
-            device=previous if item.device == current else item.device,
-            resolved_device=(previous if item.resolved_device == current
-                             else item.resolved_device),
-        )
-
-    return replace(
-        run_policy,
-        trusted_python_runtime_paths=tuple(map(predecessor, run_policy.trusted_python_runtime_paths)),
-        trusted_codex_runtime_paths=tuple(map(predecessor, run_policy.trusted_codex_runtime_paths)),
+    if sys.platform != "darwin":
+        return
+    identities = (
+        *policy.trusted_python_runtime_paths,
+        *policy.trusted_codex_runtime_paths,
     )
+    devices = {value for item in identities for value in (item.device, item.resolved_device)}
+    if len(devices) != 1:
+        return
+    current = devices.pop()
+    if not 0x01000000 <= current < 0x01000100:
+        return
+    for previous in range(0x01000000, 0x01000100):
+        if previous == current:
+            continue
+        yield replace(
+            policy,
+            trusted_python_runtime_paths=tuple(
+                replace(item, device=previous, resolved_device=previous)
+                for item in policy.trusted_python_runtime_paths
+            ),
+            trusted_codex_runtime_paths=tuple(
+                replace(item, device=previous, resolved_device=previous)
+                for item in policy.trusted_codex_runtime_paths
+            ),
+        )
 
 
 def _run_policy_before_workshop_python(
@@ -2008,176 +1993,8 @@ class _ProcessSessionIdentity:
             raise ValueError("invalid process session identity")
 
 
-class _NativeProcessOwnership:
-    """Retain observed ancestry without treating polling as OS containment.
-
-    Process discovery runs only on the watcher. Callers request a fresh sample
-    with a bounded wait; a stalled process API cannot hold the state lock or
-    prevent the guard from reporting unsafe cleanup.
-    """
-
-    def __init__(self, identity: _ProcessSessionIdentity) -> None:
-        self.identity = identity
-        self._members: dict[tuple[int, float], Any] = {}
-        self._seeded = False
-        self._uncertain = False
-        self._stalled = False
-        self._inflight = False
-        self._requested = 0
-        self._completed = 0
-        self._condition = threading.Condition()
-        self._stopped = False
-        self._thread: Optional[threading.Thread] = None
-
-    def start(self) -> None:
-        self.observe()
-
-    def observe(self) -> None:
-        with self._condition:
-            if self._stopped or (self._stalled and self._inflight):
-                return
-            if self._thread is threading.current_thread():
-                self._uncertain = True
-                return
-            if self._thread is None:
-                self._thread = threading.Thread(
-                    target=self._watch, name="workshop-native-processes", daemon=True,
-                )
-                self._thread.start()
-            self._requested += 1
-            target = self._requested
-            self._condition.notify_all()
-            deadline = time.monotonic() + 0.5
-            while self._completed < target and not self._stopped:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    self._uncertain = self._stalled = True
-                    return
-                self._condition.wait(timeout=remaining)
-
-    def _watch(self) -> None:
-        while True:
-            with self._condition:
-                if self._requested == self._completed and not self._stopped:
-                    self._condition.wait(timeout=0.25)
-                if self._stopped:
-                    return
-                target = self._requested
-                members = dict(self._members)
-                self._inflight = True
-            try:
-                uncertain = self._capture(members)
-            except Exception:
-                # Unknown discovery failures are supervision failures, never
-                # a silently dead watcher or permission to infer ownership.
-                uncertain = True
-            with self._condition:
-                self._members = members
-                self._uncertain = self._uncertain or uncertain
-                self._stalled = self._inflight = False
-                self._completed = target
-                self._condition.notify_all()
-
-    def stop(self) -> bool:
-        with self._condition:
-            self._stopped = True
-            self._condition.notify_all()
-            thread = self._thread
-        if thread is not None and thread.ident is not None:
-            if thread is threading.current_thread():
-                return False
-            thread.join(timeout=1.0)
-            if thread.is_alive():
-                return False
-        return True
-
-    @property
-    def healthy(self) -> bool:
-        with self._condition:
-            return not self._uncertain
-
-    def _capture(self, members: dict[tuple[int, float], Any]) -> bool:
-        psutil = _psutil_api()
-        if psutil is None:
-            return True
-        uncertain = False
-        if not self._seeded:
-            self._seeded = True
-            root = psutil.Process(self.identity.session_id)
-            created = root.create_time()
-            if created != self.identity.leader_create_time:
-                return True
-            members[(root.pid, created)] = root
-        # Retained owners remain discovery roots after their own reparenting.
-        pending = list(members.items())
-        seen: set[tuple[int, float]] = set()
-        while pending:
-            key, owner = pending.pop()
-            if key in seen:
-                continue
-            seen.add(key)
-            try:
-                if not owner.is_running() or owner.status() == psutil.STATUS_ZOMBIE:
-                    members.pop(key, None)
-                    continue
-                for child in owner.children():
-                    try:
-                        created = child.create_time()
-                        child_key = (child.pid, created)
-                        if child_key in members:
-                            continue
-                        if not child.is_running() or child.status() == psutil.STATUS_ZOMBIE:
-                            continue
-                        if (
-                            child.ppid() != owner.pid
-                            or not owner.is_running()
-                            or created < key[1]
-                        ):
-                            uncertain = True
-                            continue
-                        members[child_key] = child
-                        pending.append((child_key, child))
-                    except psutil.NoSuchProcess:
-                        continue
-                    except (OSError, ValueError, RuntimeError, psutil.Error):
-                        uncertain = True
-            except psutil.NoSuchProcess:
-                members.pop(key, None)
-            except (OSError, ValueError, RuntimeError, psutil.Error):
-                uncertain = True
-        return uncertain
-
-    def alive_members(self) -> tuple[Any, ...]:
-        self.observe()
-        with self._condition:
-            return tuple(self._members.values())
-
-    def signal(self, number: int, *, leader_only: bool = False) -> None:
-        members = self.alive_members()
-        with self._condition:
-            if self._stalled:
-                return
-        psutil = _psutil_api()
-        if psutil is None:
-            return
-        for member in members:
-            try:
-                if leader_only and (
-                    member.pid != self.identity.session_id
-                    or member.create_time() != self.identity.leader_create_time
-                ):
-                    continue
-                # psutil rechecks the cached creation identity before signaling.
-                member.send_signal(number)
-            except psutil.NoSuchProcess:
-                continue
-            except (OSError, ValueError, RuntimeError, psutil.Error):
-                with self._condition:
-                    self._uncertain = True
-
-
 class _NativeProcessGuard:
-    """Own one native session and its observed creation-bound descendants.
+    """Own one launched Codex process session until it is proven quiescent.
 
     The launcher may be unwound by ``KeyboardInterrupt`` or ``SystemExit``,
     neither of which is an ``Exception``.  Keep cleanup outside the event
@@ -2197,41 +2014,16 @@ class _NativeProcessGuard:
         self.process_session_identity = process_session_identity
         self._lock = threading.Lock()
         self._reaped = False
-        self._cleanup_requested = threading.Event()
-        self._ownership = (
-            _NativeProcessOwnership(process_session_identity)
-            if isinstance(process, subprocess.Popen)
-            and process_session_identity is not None
-            else None
-        )
-
-    def start_supervision(self) -> None:
-        if self._ownership is not None:
-            self._ownership.start()
-
-    @property
-    def cleanup_requested(self) -> bool:
-        return self._cleanup_requested.is_set()
 
     def reap(self) -> bool:
-        self._cleanup_requested.set()
         with self._lock:
             if self._reaped:
                 return True
-            stopped = True
-            try:
-                reaped = _terminate_safely(
-                    self.process,
-                    process_group_id=self.process_group_id,
-                    process_session_identity=self.process_session_identity,
-                    process_ownership=self._ownership,
-                )
-            finally:
-                if self._ownership is not None:
-                    stopped = self._ownership.stop()
-            reaped = reaped and stopped
-            if self._ownership is not None:
-                reaped = reaped and self._ownership.healthy
+            reaped = _terminate_safely(
+                self.process,
+                process_group_id=self.process_group_id,
+                process_session_identity=self.process_session_identity,
+            )
             if reaped:
                 self._reaped = True
             return reaped
@@ -2409,8 +2201,6 @@ def _safe_activity_for_event(event: Mapping[str, Any]) -> Optional[str]:
     """Classify a decoded event without forwarding any event-owned bytes."""
 
     event_type = event.get("type")
-    if _is_native_reconnect_notice(event):
-        return None
     if event_type in ("turn.failed", "error"):
         return "failed"
     if event_type == "turn.completed":
@@ -2434,7 +2224,7 @@ def _safe_activity_for_event(event: Mapping[str, Any]) -> Optional[str]:
     if item_type in _CODEX_TOOL_ITEM_TYPES:
         return "tool"
     if item_type == "agent_message" and event_type == "item.completed":
-        return "reporting"
+        return "finalizing"
     return None
 
 
@@ -2462,9 +2252,7 @@ class _NativeEventStats:
     def observe_event(self, event: Mapping[str, Any]) -> None:
         self.decoded_event_records += 1
         event_type = event.get("type")
-        if _is_native_reconnect_notice(event):
-            self.last_event_class = "native-reconnecting"
-        elif event_type == "thread.started":
+        if event_type == "thread.started":
             self.last_event_class = "thread-started"
         elif event_type == "turn.started":
             self.last_event_class = "turn-started"
@@ -2561,9 +2349,13 @@ class CodexNativeSessionLauncher:
                 "Codex runtime profile sha256",
             )
         if timeout_seconds is not None and (
-            type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3_600
+            type(timeout_seconds) is not int
+            or not 1 <= timeout_seconds <= MAX_NATIVE_TURN_SECONDS
         ):
-            raise ValueError("Codex timeout_seconds must be from 1 to 3,600 or None")
+            raise ValueError(
+                "Codex timeout_seconds must be from 1 to %d or None"
+                % MAX_NATIVE_TURN_SECONDS
+            )
         self.binary = _resolved_codex_binary(
             binary or os.environ.get("WORKSHOP_CODEX_BIN") or shutil.which("codex")
         )
@@ -2888,20 +2680,10 @@ class CodexNativeSessionLauncher:
         )
         if legacy_before_venv_directory is not None:
             predecessor_policies.append((legacy_before_venv_directory, True))
-        # Explicit host-only recovery; never forwarded to the native agent.
-        # Do not combine this with any other historical policy migration.
-        device_mapping = os.environ.get("WORKSHOP_CODEX_RUNTIME_DEVICE_RECOVERY")
-        device_predecessor_sha256 = None
-        if device_mapping is not None:
-            device_predecessor_sha256 = _runtime_config_sha256(
-                self.cli_version, self.model, self.reasoning_effort,
-                _run_policy_before_device_renumber(run_policy, device_mapping),
-                auto_compact_token_limit=self.auto_compact_token_limit,
-                runtime_profile_sha256=self.runtime_profile_sha256,
-                timeout_seconds=(self.timeout_seconds
-                                 if self.timeout_seconds != DEFAULT_CODEX_TIMEOUT_SECONDS
-                                 else None),
-            )
+        predecessor_policies.extend(
+            (policy, True)
+            for policy in _darwin_remounted_runtime_policies(run_policy)
+        )
         predecessor_runtime_config_sha256s = tuple(
             dict.fromkeys(
                 _runtime_config_sha256(
@@ -2929,33 +2711,8 @@ class CodexNativeSessionLauncher:
             run_root=root,
             host_state_root=state_root,
             runtime_config_sha256=runtime_config_sha256,
-            predecessor_runtime_config_sha256s=(
-                (*predecessor_runtime_config_sha256s, device_predecessor_sha256)
-                if device_predecessor_sha256 is not None
-                else predecessor_runtime_config_sha256s
-            ),
+            predecessor_runtime_config_sha256s=predecessor_runtime_config_sha256s,
         )
-        if device_mapping is not None and (
-            _read_private_checkpoint(path)["runtime_config_sha256"]
-            == device_predecessor_sha256
-        ):
-            recovery = {
-                "schema_version": 1,
-                "kind": "autonomous-workshop-runtime-device-recovery",
-                "product_id": product_id, "thread_id": thread_id,
-                "session_checkpoint_sha256": checkpoint_sha256,
-                "device_mapping": device_mapping,
-                "previous_runtime_config_sha256": device_predecessor_sha256,
-                "runtime_config_sha256": runtime_config_sha256,
-            }
-            recovery_sha256 = _sha256_json(recovery)
-            recovery_path = state_root / ("codex-runtime-device-recovery-%s.json" % recovery_sha256)
-            record = {**recovery, "recovery_sha256": recovery_sha256}
-            if recovery_path.exists() or recovery_path.is_symlink():
-                if _read_private_checkpoint(recovery_path) != record:
-                    raise ContractError("runtime device recovery record is invalid")
-            else:
-                _write_private_checkpoint(recovery_path, record)
         try:
             used_web_search, unused_observed_thread_id, token_usage = self._stream(
                 command=self._resume_command(thread_id, root, run_policy),
@@ -3424,7 +3181,6 @@ class CodexNativeSessionLauncher:
                         process_guard.reap()
                         return
             try:
-                process_guard.start_supervision()
                 if self.token_budget_observer is not None:
                     usage_thread = threading.Thread(target=watch_usage, name="workshop-token-budget", daemon=True)
                     usage_thread.start()
@@ -3462,14 +3218,13 @@ class CodexNativeSessionLauncher:
                 # follows the normal terminal-event and checkpoint path below.
                 if finalization_watch is not None:
                     finalization_watch.close()
-                process_tree_reaped = process_guard.reap()
+                process_guard.reap()
                 usage_stop.set()
                 final_usage_failed = False
                 if usage_thread is not None:
                     usage_thread.join(timeout=10)
                     if usage_thread.is_alive():
-                        if process_tree_reaped:
-                            _close_process_streams(process_guard.process)
+                        _close_process_streams(process_guard.process)
                         raise CodexInvocationError("token budget monitor did not stop safely")
                     # Recover the final observed requests even after timeout or
                     # cancellation. The ledger is already durable per sample.
@@ -3481,23 +3236,6 @@ class CodexNativeSessionLauncher:
                         self.token_budget_observer()
                     except Exception:
                         final_usage_failed = True
-                if not process_tree_reaped:
-                    # An unreaped writer can leave a drain thread inside a
-                    # buffered read. close() would wait on that reader's lock
-                    # and hide this unsafe-cleanup failure indefinitely.
-                    failure = CodexInvocationError(
-                        "Codex native session could not be terminated safely"
-                    )
-                    previous = sys.exc_info()[1]
-                    if isinstance(previous, CodexInvocationError) and isinstance(
-                        previous.diagnostic, CodexFailureDiagnostic,
-                    ):
-                        failure.diagnostic = replace(
-                            previous.diagnostic,
-                            reason="unsafe-process-reap",
-                            process_tree_reaped=False,
-                        )
-                    raise failure from None
                 _close_process_streams(process_guard.process)
                 if final_usage_failed and sys.exc_info()[0] is None:
                     raise CodexInvocationError("product token budget stopped native execution; inspect Workshop status")
@@ -3586,11 +3324,6 @@ class CodexNativeSessionLauncher:
                 if activity is not None:
                     event_stats.last_activity = activity
                     activity_reporter.observe(activity)
-                if _is_native_reconnect_notice(event):
-                    # Codex owns this retry inside the current process/turn.
-                    # Completion, identity and usage still require their usual
-                    # evidence; EOF or a later terminal error is not success.
-                    continue
                 if event_type in ("turn.failed", "error"):
                     if _is_explicit_transient_event_failure(event):
                         raise CodexRecoverableInvocationError(
@@ -3700,14 +3433,6 @@ class CodexNativeSessionLauncher:
                 stream_failure = CodexInvocationError(
                     "Codex native session could not be reaped"
                 )
-        elif (
-            stream_failure is not None
-            or timed_out.is_set()
-            or process_guard.cleanup_requested
-        ):
-            # Cleanup was already requested. If it failed, an untimed wait
-            # would hide the unsafe result before the outer guard can report it.
-            returncode = getattr(process, "returncode", None)
         else:
             try:
                 returncode = process.wait(
@@ -4258,30 +3983,8 @@ def _terminate_safely(
     *,
     process_group_id: Optional[int] = None,
     process_session_identity: Optional[_ProcessSessionIdentity] = None,
-    process_ownership: Optional[_NativeProcessOwnership] = None,
 ) -> bool:
-    """Reap the launcher and verify its session and observed owned identities."""
-
-    if process_ownership is not None:
-        # Native SIGINT cancels Codex's exec sessions, including their separate
-        # SIDs. Observe before signaling; keep the watcher alive throughout the
-        # grace and escalation so surviving owners can reveal new children.
-        process_ownership.signal(signal.SIGINT, leader_only=True)
-        _wait_for_process(process, 0.5)
-        process_ownership.signal(signal.SIGTERM)
-        session_reaped = _terminate_safely(
-            process,
-            process_group_id=process_group_id,
-            process_session_identity=process_session_identity,
-        )
-        deadline = time.monotonic() + 0.5
-        while True:
-            if not process_ownership.alive_members():
-                return session_reaped and process_ownership.healthy
-            process_ownership.signal(signal.SIGKILL)
-            if time.monotonic() >= deadline:
-                return False
-            time.sleep(0.01)
+    """Reap the launcher and prove its dedicated process session is empty."""
 
     if process_session_identity is not None:
         process_session_id = process_session_identity.session_id
@@ -4413,22 +4116,6 @@ def _terminal_failure_message(event: Mapping[str, Any]) -> Optional[str]:
     return None
 
 
-def _is_native_reconnect_notice(event: Mapping[str, Any]) -> bool:
-    """Recognize the exact nonterminal transport notice observed in Codex exec.
-
-    A 0.153.4 loopback fixture emitted this top-level error, retried inside the
-    same process and completed the turn. Other messages and error shapes keep
-    their terminal behavior; no provider text or retry authority is retained.
-    """
-    if set(event) != {"type", "message"} or event.get("type") != "error":
-        return False
-    message = event.get("message")
-    if not isinstance(message, str) or len(message) > _MAX_NATIVE_FAILURE_MESSAGE_CHARS:
-        return False
-    match = _NATIVE_RECONNECT_NOTICE.fullmatch(message)
-    return match is not None and int(match[1]) <= int(match[2])
-
-
 def _terminal_failure_code(event: Mapping[str, Any]) -> Optional[str]:
     candidates: list[Any] = []
     error = event.get("error")
@@ -4461,24 +4148,12 @@ def _terminal_failure_diagnosis(
         normalized = " ".join(
             message[:_MAX_NATIVE_FAILURE_MESSAGE_CHARS].casefold().split()
         )
-    exact_diagnosis = None
-    if message is not None and len(message) <= _MAX_NATIVE_FAILURE_MESSAGE_CHARS:
-        exact_diagnosis = _EXACT_TERMINAL_ERROR_DIAGNOSES.get(normalized)
-        # Codex appends account-specific reset guidance to this fixed sentence.
-        # Diagnose only a complete, anchored sentence; retain none of its suffix.
-        usage_limit_head = "you've hit your usage limit."
-        if normalized == usage_limit_head or normalized.startswith(
-            usage_limit_head + " "
-        ):
-            exact_diagnosis = ("usage-limit", "usage-limit-exceeded")
     signature = "unclassified"
     for candidate, needles in _TERMINAL_ERROR_SIGNATURES:
         if any(needle in normalized for needle in needles):
             signature = candidate
             break
-    if exact_diagnosis is not None:
-        category, signature = exact_diagnosis
-    elif signature == "stream-disconnected":
+    if signature == "stream-disconnected":
         category = "provider-transport"
     elif signature == "rate-limited":
         category = "rate-limit"

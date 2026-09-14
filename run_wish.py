@@ -16,25 +16,17 @@ import shlex
 import subprocess
 import sys
 
-REPOSITORY = Path(__file__).resolve().parent
-# The runner may use system Python while the command uses the project venv.
-# Read the same checkout's deterministic runtime policy in either case.
-sys.path.insert(0, str(REPOSITORY / "src"))
-from workshop.errors import ContractError
-from workshop.runtime.managers import (
-    SUPPORTED_REASONING_EFFORTS,
-    manager_runtime_selection,
-)
-
 CONFIG = {
     "wish": "a minecraft sword",
     "agent": "claude",
     "model": "sonnet",
     "workflow": "spark",
     "effort": "high",
-    "max_tokens": None,  # Use the host default; resume keeps the saved cap.
+    "max_tokens": None,  # New Codex runs default to 10M; resume keeps saved cap.
+    "turn_minutes": None,  # None keeps the frozen boundary; "none" removes the clock.
 }
-# Optional isolated native executable for this Apple Silicon workstation.
+REPOSITORY = Path(__file__).resolve().parent
+# Isolated native executable installed for this Apple Silicon workstation.
 # Use the native binary directly so sandbox helpers do not need the npm wrapper.
 PINNED_CODEX_BINARY = (
     Path.home() / ".local/share/workshop/codex-0.153.4/node_modules/@openai/"
@@ -60,8 +52,14 @@ def build_command(config: dict, resume_id: str | None) -> list[str]:
         if type(limit) is not int or not 1_000 <= limit <= 100_000_000:
             raise SetupError("max_tokens phải là số nguyên từ 1.000 đến 100.000.000.")
         budget = ["--max-tokens", str(limit)]
+    turn = config.get("turn_minutes")
+    boundary = []
+    if turn is not None:
+        if not (turn == "none" or (type(turn) is int and 1 <= turn <= 360)):
+            raise SetupError("turn_minutes phải là số phút từ 1 đến 360, hoặc 'none'.")
+        boundary = ["--turn-minutes", str(turn)]
     if resume_id:
-        return [*prefix, "resume", resume_id, "--strict", *budget]
+        return [*prefix, "resume", resume_id, "--strict", *budget, *boundary]
     agent = config["agent"]
     if agent not in ("codex", "claude", "grok"):
         raise SetupError("agent phải là codex, claude hoặc grok.")
@@ -70,16 +68,14 @@ def build_command(config: dict, resume_id: str | None) -> list[str]:
     workflow = config["workflow"]
     if workflow not in ("spark", "forge", "quest"):
         raise SetupError("workflow phải là spark, forge hoặc quest.")
-    effort = config.get("effort")
-    try:
-        manager_runtime_selection(agent, model=config["model"], reasoning_effort=effort)
-    except ContractError as exc:
-        raise SetupError(str(exc)) from exc
     command = [*prefix, "wish", config["wish"], "--strict", "--agent", agent,
                "--workflow", workflow, "--model", config["model"]]
+    effort = config.get("effort")
     if effort is not None:
+        if agent == "grok" or effort not in ("low", "medium", "high", "xhigh"):
+            raise SetupError("effort chỉ hỗ trợ Codex/Claude: low, medium, high, xhigh.")
         command += ["--effort", effort]
-    return [*command, *budget]
+    return [*command, *budget, *boundary]
 
 
 def runtime_environment() -> dict[str, str]:
@@ -108,8 +104,10 @@ def main() -> int:
     parser.add_argument("--agent", "--manager", dest="agent", choices=("codex", "claude", "grok"))
     parser.add_argument("--model")
     parser.add_argument("--workflow", choices=("spark", "forge", "quest"))
-    parser.add_argument("--effort", "--reasoning-effort", dest="effort", choices=SUPPORTED_REASONING_EFFORTS)
+    parser.add_argument("--effort", "--reasoning-effort", dest="effort", choices=("low", "medium", "high", "xhigh"))
     parser.add_argument("--max-tokens", type=int, help="tổng token cap; resume không reset usage")
+    parser.add_argument("--turn-minutes",
+                        help="số phút cho mỗi native turn (1-360), hoặc 'none' để bỏ hẳn wall clock")
     gateway = parser.add_mutually_exclusive_group()
     gateway.add_argument("--openrouter", action="store_true", help="không được CLI mới hỗ trợ")
     gateway.add_argument("--no-openrouter", action="store_true", help="tương thích lệnh cũ; dùng native runtime")
@@ -124,6 +122,9 @@ def main() -> int:
             config[key] = value
     # Never apply CONFIG's token override to an existing product implicitly.
     config["max_tokens"] = args.max_tokens if args.resume or args.max_tokens is not None else CONFIG.get("max_tokens")
+    if args.turn_minutes is not None:
+        raw = args.turn_minutes.strip().lower()
+        config["turn_minutes"] = raw if raw == "none" else int(raw)
     if args.agent == "grok" and args.effort is None:
         config["effort"] = None
     config["use_openrouter"] = args.openrouter

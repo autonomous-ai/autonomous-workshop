@@ -1,0 +1,751 @@
+{
+  "kind": "autonomous-workshop.public-toy-archive",
+  "schema_version": 4,
+  "scope": "all files except MANIFEST.json and README.md",
+  "artifact_manifest": {
+    "schema_version": 1,
+    "artifact_sha256": "a83e482960039d2b51a80bc7c34dd806e915786d6ed584f24ea290bb7c334292",
+    "total_bytes": 12538180,
+    "created_at": "content-addressed",
+    "entries": [
+      {
+        "path": "SANITIZATION.json",
+        "bytes": 1181,
+        "sha256": "a5513a697c5e997b0bc590a6960d613a6b4c4cc2332f46423d5f7038bbf0167f",
+        "executable": false
+      },
+      {
+        "path": "TIMING.json",
+        "bytes": 253,
+        "sha256": "8a0e53d4e468c2292c72ad682dfa21149c93d9db9a7bc62d679a48bd9cd0cf6f",
+        "executable": false
+      },
+      {
+        "path": "TOKENS.json",
+        "bytes": 94,
+        "sha256": "7a2d393cde9f05a940d00a18dd24d3dfa8a08ef7af96e4758533bfb219f648b6",
+        "executable": false
+      },
+      {
+        "path": "make/ATTEMPTS.json",
+        "bytes": 500,
+        "sha256": "51081659012ba47eb65cc4b211256845dc33aef8826d9bd1a3a8bb8ce3540cea",
+        "executable": false
+      },
+      {
+        "path": "make/invented.json",
+        "bytes": 7011,
+        "sha256": "36b5dd56a00948e7f80a84647447589765d9c654ad4dff03538aeb62410fc96b",
+        "executable": false
+      },
+      {
+        "path": "make/made.json",
+        "bytes": 18840,
+        "sha256": "0d4fb9d9376c249203cc2d879de2db5662413d0302a446b4adcf470c452c3a55",
+        "executable": false
+      },
+      {
+        "path": "make/models/assembled.step",
+        "bytes": 3209418,
+        "sha256": "cbe5fa17cac278463c15b98075799b7521919e96c8957775d446ed5f70aadc4d",
+        "executable": false
+      },
+      {
+        "path": "make/models/cad/part_A.step",
+        "bytes": 339066,
+        "sha256": "9c034695127d97e6aa901e6caba0a5572684e5f79fa3d883d3f055921f698988",
+        "executable": false
+      },
+      {
+        "path": "make/models/cad/part_B.step",
+        "bytes": 370626,
+        "sha256": "1ccfd036f58619db3414c282b5934fc840c0a53bea20ff144bb40b4df8c0f460",
+        "executable": false
+      },
+      {
+        "path": "make/models/cad/part_C.step",
+        "bytes": 280150,
+        "sha256": "f5f0c0ca1a47fe21fadfeee22181bd5e3d73f856ee8199d89e209eaa87322b22",
+        "executable": false
+      },
+      {
+        "path": "make/models/cad/part_D.step",
+        "bytes": 199705,
+        "sha256": "d6fe40cf7636091983e9539da1c3b6d2676914a53e03812f7cd95204bf537bf7",
+        "executable": false
+      },
+      {
+        "path": "make/models/cad/part_E.step",
+        "bytes": 199804,
+        "sha256": "ccd82344f407eb92fdf6f6122ed6ed39d910c740d85e1a4af0da30f114fcee89",
+        "executable": false
+      },
+      {
+        "path": "make/models/cad/part_F.step",
+        "bytes": 168251,
+        "sha256": "8b7964b72161b11c640ed94165edc16c5b6229f95ced6d271b1e0765969c1b2a",
+        "executable": false
+      },
+      {
+        "path": "make/models/cad/part_G.step",
+        "bytes": 175615,
+        "sha256": "15cd444a97b5d5f6a593a5ca036d5b074cd75a493038b100cc08d3f934adb29b",
+        "executable": false
+      },
+      {
+        "path": "make/models/cad/part_H.step",
+        "bytes": 144085,
+        "sha256": "a1f5e11e0ef7e00acb0cb6cdcb5c8511949e68becc18bfe09aeaeec794b89193",
+        "executable": false
+      },
+      {
+        "path": "make/models/cad/part_ferry.step",
+        "bytes": 125421,
+        "sha256": "d6898114213fe4f11c9dfe4e078b74cf91e373a426e6c43e499441c91f9da247",
+        "executable": false
+      },
+      {
+        "path": "make/models/cad/part_tray.step",
+        "bytes": 1112112,
+        "sha256": "551c6f320dc15ae95ef063388887d2d6490a5ace0da12c820948f8f387232526",
+        "executable": false
+      },
+      {
+        "path": "make/models/cad/quayshift.step",
+        "bytes": 3209418,
+        "sha256": "cbe5fa17cac278463c15b98075799b7521919e96c8957775d446ed5f70aadc4d",
+        "executable": false
+      },
+      {
+        "path": "make/product.json",
+        "bytes": 865,
+        "sha256": "74ca3cbb8750dd4a2a0bb31e05e54256d693449fff7960d383ada0f311daef42",
+        "executable": false
+      },
+      {
+        "path": "make/product/README.md",
+        "bytes": 4185,
+        "sha256": "fb8d696e3809ba05630a9417e04e6e31918338356a312b1ea9b286a247501e85",
+        "executable": false
+      },
+      {
+        "path": "make/product/assembled.step.json",
+        "bytes": 132698,
+        "sha256": "c8c45fdac857ee84ad473ec57f1ffe9adfc27f71a65df9315beb0538a884b3e1",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q01-setup.svg",
+        "bytes": 5085,
+        "sha256": "940d609ce2e57270424b821822ff89f8e4b8d606705e64bb26984bdff7b83fa0",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q01-solution-01.svg",
+        "bytes": 6968,
+        "sha256": "e24caefe060dfe7ebd2592b82da0d736a448910bce5b2eb789a3c359340ae6d9",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q01-solution-02.svg",
+        "bytes": 6959,
+        "sha256": "1df48cda866a5e264e53dbd9b70275be19cf4ed89bad86e7ea31fa27a38d4564",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q02-setup.svg",
+        "bytes": 4719,
+        "sha256": "2e8bf7b25be6b8b4a31263b05845c20f8bbd9af6d6ef2a883e0a775cee624177",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q02-solution-01.svg",
+        "bytes": 7020,
+        "sha256": "9fd562d1ad402b0f00672af42e35349d60e56f90faded547f67c47b9d03004dd",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q02-solution-02.svg",
+        "bytes": 7020,
+        "sha256": "dab0305833d135ce4865618210a77b9c3e28b1e0f7db971a418ec93448c98e35",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q02-solution-03.svg",
+        "bytes": 7018,
+        "sha256": "777367cb56db62875d89d8ddcaa39dcafe5174745e21f7d4fab6649c28a04020",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q02-solution-04.svg",
+        "bytes": 7018,
+        "sha256": "e5bffa2ebb2c9a51c95b05a52ced752f0c34ef146cfff4005af606bec0624a26",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q03-setup.svg",
+        "bytes": 4976,
+        "sha256": "52b0957fd6b357d5cf96943719fb7a560d637a26d5acc503fec95aebf56c45e5",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q03-solution-01.svg",
+        "bytes": 7064,
+        "sha256": "10897f3b3a2d0d6e9e45c1b491b65fcbb9f738fafc857fede1a7e75584bbeb52",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q03-solution-02.svg",
+        "bytes": 7016,
+        "sha256": "cb4b8ba1df775a1ba0bbaccfff487418f3a27defa60ae50a05150cdef7675b1c",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q03-solution-03.svg",
+        "bytes": 7020,
+        "sha256": "8578b72526b99ced0feae3f43c90a3913349cb2c989feab70c3ddf42f6fb7624",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q03-solution-04.svg",
+        "bytes": 7018,
+        "sha256": "fe32ded89dcf7daba8f9ffc4d7b69ea2c458cc3ac3a001eeaf9a56054e66be9e",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q03-solution-05.svg",
+        "bytes": 7064,
+        "sha256": "8040a9755aa2274eb1f9ce0d4ddb29b2c0600a3c209e54b527c6654f192d2fa0",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q03-solution-06.svg",
+        "bytes": 7018,
+        "sha256": "9d56f39ea589b6f60ac168189256336d03b43851b18e18689df60e9f1ae89e7c",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q03-solution-07.svg",
+        "bytes": 7016,
+        "sha256": "1d92e6c82743af7e8070d1bc3e3769530785fd1cabeb023b832fcd98bc6c1dee",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/Q03-solution-08.svg",
+        "bytes": 7020,
+        "sha256": "d6c1e0cca539e88b1d7ff72d4f544dcf623791dd9b30f57d5c571469622553fa",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/README.md",
+        "bytes": 3406,
+        "sha256": "31acb945bedaaa72ee4d0fa7d7be148ebb46d3b290028b4608d9d1c3bf6fa701",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/REVIEW.md",
+        "bytes": 3370,
+        "sha256": "7b81851e81d381455011191305e351497a1cddf1e525539b30c3c2020f2f03f1",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/asset-check.json",
+        "bytes": 313,
+        "sha256": "6cdbed793bd13434b543fb40034eeb236ddba2d37fcebdd5abbb9425351d0d8f",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/build_cards.py",
+        "bytes": 11852,
+        "sha256": "49ad3c69b04ee078fcacf986384ad4eddd2750a94bf31fe6b3f1d17c0b966420",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/cards.html",
+        "bytes": 7700,
+        "sha256": "c971ff957a915ea7f38e9b8aa629dbabb5765adb3c1a1999337f9371f2a427b4",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/challenges.json",
+        "bytes": 45095,
+        "sha256": "5d21f74dcfc932e8ee64c896d0ac91c7c5be0b3eb743ad77a797d3750922fa25",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/enumeration-audit.json",
+        "bytes": 798,
+        "sha256": "9f683257a5c9aaa557c29bce531b132e6916350fe0de735e2683a07ea4327f79",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/facing-access.json",
+        "bytes": 308,
+        "sha256": "4529a101387b10a9c337a8efaf13d259694c865331b735a28a4fcd9c609d1940",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/original_grammar.py",
+        "bytes": 8240,
+        "sha256": "53cec6388234ed7d723a704c0351b036f20b02a072b181d08dae380b909874b4",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/palette.json",
+        "bytes": 180,
+        "sha256": "1bd9a439088be85ee0327c764e602df4d7dfe5e2e491b1d4e23e985dd218671c",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/solutions.html",
+        "bytes": 29295,
+        "sha256": "dcb0523e1f78c66103c132c5d08416fe9956251e8944fa43b65e6f8d66d1f28d",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/solver.py",
+        "bytes": 8055,
+        "sha256": "77eb7a8c9c6bfe775b3c009778af7de4047af19921d38d9be5c0849781c42549",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/symmetry-audit.json",
+        "bytes": 663,
+        "sha256": "6e46c056b6713d8a057f16bf009bf5fe6f626febe21bc8b2f0058d0de3c2cd7c",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/symmetry_audit.py",
+        "bytes": 1454,
+        "sha256": "65a666e61d3ca8eab51593124a900ead7c75279f31ef4bf56695c51944b60ebd",
+        "executable": false
+      },
+      {
+        "path": "make/product/challenges/validation-scope.json",
+        "bytes": 1972,
+        "sha256": "4d0335dcb390a8391e239cfb1c77d993a7e73725171207eec20a6e48966df47a",
+        "executable": false
+      },
+      {
+        "path": "make/product/groups/town.json",
+        "bytes": 859,
+        "sha256": "b060fc409349afa91b211e0fa522f90107ddbea2cb512cde159c70117ee66357",
+        "executable": false
+      },
+      {
+        "path": "make/product/inventory.json",
+        "bytes": 10597,
+        "sha256": "cb567a29a431f3979267e47113320f5aa13271543ecfeb14cf299505066f0b3d",
+        "executable": false
+      },
+      {
+        "path": "make/product/manufacturing.md",
+        "bytes": 8146,
+        "sha256": "83246097ea4379660f021114ee8b823a00fa14f4b28118c6beefe99740c0707b",
+        "executable": false
+      },
+      {
+        "path": "make/product/states/README.md",
+        "bytes": 998,
+        "sha256": "7d199f69cd4bbdb6a5a487ea85dd9f9b6596a73dae14921dff2c1a5da635366d",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/README.md",
+        "bytes": 1053,
+        "sha256": "0e2035ae8f1a0a2c3aa66b1eb5dc0f4e17bd31b095bdb0cbe2b53e26f42a7833",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/layouts.json",
+        "bytes": 5457,
+        "sha256": "008351499380895dc63304bb0ac6da3f4f876acd9fe945db2b4f6fc16e9a4667",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/part_A.step.py",
+        "bytes": 97,
+        "sha256": "54d3e2502ce66c7efe5e0dbe56b1006a676b2fc8ead1fa7ba072e79a4b270ff9",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/part_B.step.py",
+        "bytes": 97,
+        "sha256": "871dde9cdc57f88fe557f47818a5e073af969b72088ecf53e6861914ccb847b6",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/part_C.step.py",
+        "bytes": 97,
+        "sha256": "f35752734a0a4dc82bfb3bd5686f608cf5e41ddff36dea343e09fa80e62f5c57",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/part_D.step.py",
+        "bytes": 97,
+        "sha256": "bcac3b19a0e6e2a129b29098dcfc6202c6e0f791c0b384682ad675c3fbbb55e8",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/part_E.step.py",
+        "bytes": 97,
+        "sha256": "af75c01d3ca11cd51ecccad6a3fde848f25aa370c8665a9a892a215ecaca193f",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/part_F.step.py",
+        "bytes": 97,
+        "sha256": "38b9f8b7b8fdadd4d3655a1f0a299f410977bf4e5d9a3af4cb9e4387cbf397ec",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/part_G.step.py",
+        "bytes": 97,
+        "sha256": "63c71524c879a668d2332181dbd11c12fb346a77a9eea8728c67b58cfbf9f596",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/part_H.step.py",
+        "bytes": 97,
+        "sha256": "87c18ea4a2ee133be157e36c81f1ca4c25dbedbbf450740adc3b9336f715666d",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/part_ferry.step.py",
+        "bytes": 101,
+        "sha256": "56597241491d85c80f6196d95943edd95f5d8f877cedad3c1316b7e4e4e53342",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/part_tray.step.py",
+        "bytes": 100,
+        "sha256": "5f55b83743460d4227fcb16f552fd2aaf917ab346edb63a483f862199bac818a",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/quayshift.step.py",
+        "bytes": 91,
+        "sha256": "8afa283be3840bc3a373a007e39b77a76029dab1d0368c376041b42abc30eb64",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/quayshift_lib.py",
+        "bytes": 6452,
+        "sha256": "323b0e05affa7717e55c8cb60cde90a09397a6fd68a69c8a3617a1c99a3d8330",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/quayshift_spec.md",
+        "bytes": 4918,
+        "sha256": "f22597d6b2a4a2e6b77f71d4954e42959f894f7520303fd09b8b987b458af845",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/ref/concept.png",
+        "bytes": 2151066,
+        "sha256": "96659703515e0713c0d48d589224e3b528ce3ad2ffb5a3299f3d4a49d5fd6756",
+        "executable": false
+      },
+      {
+        "path": "make/source/cad/reference_read.md",
+        "bytes": 2222,
+        "sha256": "54bb16e68ca274676b5294811c608cf185decbc3fa989c1fbdc6e8660203d5a4",
+        "executable": false
+      },
+      {
+        "path": "make/verification/CAD-GATE.json",
+        "bytes": 10205,
+        "sha256": "5a3094ea69e0f62afdb78e434dcc306313a81bfd285dd2745aea9d9113a84c03",
+        "executable": false
+      },
+      {
+        "path": "make/verification/renders/MOTION-EVIDENCE.json",
+        "bytes": 3907,
+        "sha256": "4e4294242376284fc77e8d217ea52d3f81fd2bb3fe0946d8375698cc3d692caa",
+        "executable": false
+      },
+      {
+        "path": "make/verification/renders/MOTION-REVIEW.json",
+        "bytes": 1205,
+        "sha256": "e6680f3cd29b629ab0937603dd78347bc9e5c2870cb1104c36ffbb63a6aa5d22",
+        "executable": false
+      },
+      {
+        "path": "make/verification/renders/SIGNATURE-REVIEW.json",
+        "bytes": 15506,
+        "sha256": "561233bf7a28a214d4fc32b18553de62a526d4ad7ba2b5290aeed91818ef0bcb",
+        "executable": false
+      },
+      {
+        "path": "make/verification/renders/clearance.png",
+        "bytes": 12119,
+        "sha256": "6fb387e4a8454a951d9c93041fbebbcc8fd5f780304acc10d18d453ccb2e5c04",
+        "executable": false
+      },
+      {
+        "path": "make/verification/renders/ferry.png",
+        "bytes": 16711,
+        "sha256": "26f6bddd7c76ba611a7edae0c218ba0a5533b1c7b580712a145217ccb2d0c4a9",
+        "executable": false
+      },
+      {
+        "path": "make/verification/renders/iso.png",
+        "bytes": 37045,
+        "sha256": "3b5a54f6d582f9ec5916c6c42afef236c0cf811e0180a2ea469f0844f785121d",
+        "executable": false
+      },
+      {
+        "path": "make/verification/renders/motion.gif",
+        "bytes": 80994,
+        "sha256": "6314ebbceb798cdbab4147b5f1ef9f9d169ccbbeee7141e2769489c4c312b888",
+        "executable": false
+      },
+      {
+        "path": "make/verification/renders/render-provenance.json",
+        "bytes": 1319,
+        "sha256": "39c5452d74791e9c7510eab17ffd2670d98093a62fee58ec7c874144ae5580bc",
+        "executable": false
+      },
+      {
+        "path": "make/verification/renders/signature.png",
+        "bytes": 70663,
+        "sha256": "a342df7c8dd43d02a2c5a74f6038175c9044ad424a98b975ca61a807f597b2ce",
+        "executable": false
+      },
+      {
+        "path": "make/verification/renders/tray.png",
+        "bytes": 20633,
+        "sha256": "d973b2065c955efdba4fb376edee33b6338d0559f95fadd0553218974993533d",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/check_fit.py",
+        "bytes": 403,
+        "sha256": "add80eb83828c80ca38e4df20bb85195b3f668b4901205cda4a0b82e82a52a12",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/check_landmarks.py",
+        "bytes": 903,
+        "sha256": "3f557e2401f269edbfe22b26d9c60ea97ac0ae3a6aa236c8a68906da1bc111dc",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/check_physical.py",
+        "bytes": 7026,
+        "sha256": "10474811de6dc5affef748a44240b4dc23ac10a045fe5b2a3a8d27039783dc34",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/check_spec.py",
+        "bytes": 606,
+        "sha256": "db6030428bd2938a4b8eb8f2700493e5a593099341e486a429ad47a2311e795a",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/motion.json",
+        "bytes": 66576,
+        "sha256": "8e8bee5d224685d18a2f27862d8f3e9c12314bf7976a81c5151df5d4d1a6196c",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/overhang-A.md",
+        "bytes": 1622,
+        "sha256": "234cc8d04b9c0ccba9c5730cda5455aa35434a1e847eb3837625929283f293b5",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/overhang-B.md",
+        "bytes": 1622,
+        "sha256": "d8ed968709f26558ccc704622c29bcb16491f7a1bdef0ee4a529b4a0f0cb6356",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/overhang-C.md",
+        "bytes": 1624,
+        "sha256": "a1ee02cbb167867549f3f8b944371953f63462c8ca055bbbf00464d998588092",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/overhang-D.md",
+        "bytes": 1627,
+        "sha256": "87f44b2ac8da195c330a0ad5f8da0147b590ca338257f7a8017feeda3a8b3f73",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/overhang-E.md",
+        "bytes": 1682,
+        "sha256": "98dc7d98cb0d2e7baec53465b5e3ef40415773949ba6198dae3fc82f8fc823da",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/overhang-F.md",
+        "bytes": 1572,
+        "sha256": "0aa21c3fe7e0012e5f083eeb5d95cb41804cbc3e7d25c5ac8f87df8de02abfb3",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/overhang-G.md",
+        "bytes": 1737,
+        "sha256": "3657a32a8f79483d261b503628788e82d0626f34f898cf6c2ec344f263814ce9",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/overhang-H.md",
+        "bytes": 1626,
+        "sha256": "db8aeab599537d247277d33b0cc0b2f197d3b3e4a65c634457ba3abee525d43c",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/overhang-ferry.md",
+        "bytes": 1628,
+        "sha256": "58455495792678670be3f9670984e5a850ced813561edede2f292d0a682e9cb0",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/overhang-tray.md",
+        "bytes": 1108,
+        "sha256": "52b84a44650f2ff9241254009c4143f326366ecc81a88da3f3a87dfcbde2823f",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/physical-validation.json",
+        "bytes": 20776,
+        "sha256": "29575e2d74b03502fcd12396b8a90e7242014205b092a8416ac12bc73bc75c46",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/reference-measurement.json",
+        "bytes": 2231,
+        "sha256": "a3077d40cfab4c65d496ed433827af59c49ba6b759048f7d94664c25f9bf5746",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/thickness-A.md",
+        "bytes": 1210,
+        "sha256": "68e948ac14d4516c17a61e62dd41f1e517f9ef7f34fd69002d587e8e4bca491d",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/thickness-B.md",
+        "bytes": 1211,
+        "sha256": "743b226266b4bcc47469faec9c187ea5dc034d71a10f24f391bb688f5d390dd5",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/thickness-C.md",
+        "bytes": 1209,
+        "sha256": "93adeb3b71b91d88148f37ea9d3eba39f9e511e360dc8b6f17590d560a34ef40",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/thickness-D.md",
+        "bytes": 1211,
+        "sha256": "6fe0688c362a0f4dc97c8f2b571d406edbbcf73f4fd4fb0ce105452363750c40",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/thickness-E.md",
+        "bytes": 1209,
+        "sha256": "e08e42da041002a8f0b9d9f9e54caf76fc2aaaa9acdbffe3916c0da1ef3bf684",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/thickness-F.md",
+        "bytes": 1209,
+        "sha256": "952e385cc1c0dbc1f92fe1e24b9af208e642d8252391807f4a51585b1dac7e3c",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/thickness-G.md",
+        "bytes": 1209,
+        "sha256": "c44489a67c8eca47ba304cb7fc1a07334c3f215aa444c9566d13647c38d94a35",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/thickness-H.md",
+        "bytes": 1209,
+        "sha256": "8343fbd747292eb633a6a71c68abbfa44802ddbaad0bb681bde5ab0aba7b9716",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/thickness-ferry.md",
+        "bytes": 1218,
+        "sha256": "7ab306e5822a4f4795496e5ea6855575276b6c2849b0dc7cf2465fc79abc84d4",
+        "executable": false
+      },
+      {
+        "path": "make/verification/reports/thickness-tray.md",
+        "bytes": 1222,
+        "sha256": "8850fab669354152de501ef5ecc60c98737da7bbf0a3fa2b3d36f6751782d97c",
+        "executable": false
+      },
+      {
+        "path": "match/ATTEMPTS.json",
+        "bytes": 408,
+        "sha256": "b5162da212ea489ad8fd88f71f931a10d02c6d478e2385f6c2f325925942ddf0",
+        "executable": false
+      },
+      {
+        "path": "match/assignment.json",
+        "bytes": 889,
+        "sha256": "61d222d6594679a3ea09bb076b296aa39928bd50a196fca1b61ad725c0771834",
+        "executable": false
+      },
+      {
+        "path": "publication/ARCHIVE-NOTE.md",
+        "bytes": 1597,
+        "sha256": "8d473eb014c501d9b931f9ab9ab431d451d54c558231cf3502fa9f7cebee1b12",
+        "executable": false
+      },
+      {
+        "path": "publication/PUBLICATION.json",
+        "bytes": 1514,
+        "sha256": "d128d40b4f3005f2d45ffb3bab9f625d7856e039d2645a4e195f688f93f7d5e1",
+        "executable": false
+      },
+      {
+        "path": "release/ATTEMPTS.json",
+        "bytes": 410,
+        "sha256": "f6b28c60fa538e4e1cd0ddb4c17b3efd9f5ed11113e4fc0f15b4e5224798920a",
+        "executable": false
+      },
+      {
+        "path": "release/PLAYTEST-NOT-RUN.json",
+        "bytes": 136,
+        "sha256": "72838643d399fdf9027833d4889a6bdcdaaf29a21988f0a4019d1e7a46041800",
+        "executable": false
+      },
+      {
+        "path": "release/README.md",
+        "bytes": 4185,
+        "sha256": "fb8d696e3809ba05630a9417e04e6e31918338356a312b1ea9b286a247501e85",
+        "executable": false
+      },
+      {
+        "path": "release/product.json",
+        "bytes": 888,
+        "sha256": "cdbc3b96d772d8a89a3a436f8a8fd809b8ccd8b47a5048e8603d2ea6617d38ca",
+        "executable": false
+      },
+      {
+        "path": "release/release.json",
+        "bytes": 2204,
+        "sha256": "f42907b2d38edfd41aa8cf58d8c88b282e5328ed0b7a85ee677f0e26ab1273aa",
+        "executable": false
+      },
+      {
+        "path": "wish/WISH.md",
+        "bytes": 495,
+        "sha256": "2e6eb0d1f27c141ee57e79c1e22ba844db713bec98d3b0954af801d906a5fafd",
+        "executable": false
+      },
+      {
+        "path": "wish/wish.json",
+        "bytes": 807,
+        "sha256": "78bb2fce3a5eef4e2cc89acfb7a760985974c79033ad825af6d277853934d508",
+        "executable": false
+      }
+    ]
+  }
+}

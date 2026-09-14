@@ -1,0 +1,60 @@
+{
+ "build": {
+  "white_rook": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_rook"
+ ],
+ "checked": [
+  "white_rook"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_rook.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_rook/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_rook"
+ ],
+ "print": {
+  "white_rook": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_rook/r0001/overhang-white_rook.log": "e0379f82b12dd53b4da3be0c24833e7705c944ceff51f610d78cf362475f4fce",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_rook/r0001/thickness-white_rook.log": "e4ed903888907b3cdb7ca806c280612a5cf6ee5cbbccf3e174ba89fcea0ad2b4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:white_rook",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso clearly shows four full-height cross vanes with flat tops and smooth circular foot. Front confirms tall straight silhouette; top underside shows flat circular footprint.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_rook/r0001/visual-packet.json",
+  "packet_sha256": "a19fb182e83f1ee491992df4e2db92f2729df8e275e7758956bce0433b272279",
+  "status": "pass"
+ }
+}

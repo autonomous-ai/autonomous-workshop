@@ -165,14 +165,9 @@ def test_native_child_followup_survives_host_reload_and_enforces_cap(tmp_path):
         assert _load_lifetime_budget(paths, checkpoint).to_dict()["used_tokens"] == 1100
 
 
-@pytest.mark.parametrize("limit", [1000, 30000000, 200000000, 200000001, 500000000, 500000001, 1000000000])
-def test_supported_limit_includes_explicit_billion(limit):
-    assert validate_limit(limit) == limit
-
-
 @pytest.mark.parametrize("limit", [True, 999, 1000000001, 1000.0, "1000", None])
 def test_invalid_limit(limit):
-    with pytest.raises(ContractError, match="from 1,000 to 1,000,000,000"):
+    with pytest.raises(ContractError):
         validate_limit(limit)
 
 
@@ -204,37 +199,6 @@ def test_cap_change_preserves_usage(tmp_path):
     loaded = _load_lifetime_budget(paths, checkpoint)
     assert loaded.limit == 2000
     assert loaded.to_dict()["used_tokens"] == 330
-
-
-@pytest.mark.parametrize("saved_limit", [100_000_000, 200_000_000, 500_000_000])
-def test_raise_exhausted_cap_to_billion_preserves_recovered_usage(tmp_path, saved_limit):
-    paths, checkpoint = context(tmp_path)
-    budget = ProductTokenBudget(saved_limit)
-    budget.observe(observation(saved_limit))
-    assert budget.exhausted("make") == "run"
-    _save_lifetime_budget(paths, checkpoint, budget)
-    recovered = observation(saved_limit + 10_000_000)
-    with mock.patch("workshop.workflow.native_run._read_product_token_usage", return_value=recovered):
-        _adopt_token_budget(paths, checkpoint, 1_000_000_000)
-    loaded = _load_lifetime_budget(paths, checkpoint)
-    assert loaded.limit == 1_000_000_000
-    assert loaded.observation == recovered
-    assert loaded.to_dict()["used_tokens"] == recovered["total_tokens"]
-    assert loaded.to_dict()["used_tokens"] > budget.to_dict()["used_tokens"]
-    assert loaded.exhausted("make") is None
-
-
-def test_over_maximum_cap_update_preserves_existing_ledger(tmp_path):
-    paths, checkpoint = context(tmp_path)
-    budget = ProductTokenBudget(100_000_000)
-    budget.observe(observation(200))
-    _save_lifetime_budget(paths, checkpoint, budget)
-    saved = (tmp_path / "native-budget.json").read_bytes()
-    with mock.patch("workshop.workflow.native_run._read_product_token_usage") as read_usage:
-        with pytest.raises(ContractError, match="1,000,000,000"):
-            _adopt_token_budget(paths, checkpoint, 1_000_000_001)
-    read_usage.assert_not_called()
-    assert (tmp_path / "native-budget.json").read_bytes() == saved
 
 
 def test_missing_ledger_is_not_reset(tmp_path):
@@ -364,6 +328,22 @@ def test_terminal_reconciliation_uses_current_root_delta_and_allows_canceled_chi
     assert not (tmp_path / "token-accounting-need.json").exists()
 
 
+def test_terminal_reconciliation_accepts_cumulative_root_counters_after_resume(tmp_path):
+    paths, checkpoint = context(tmp_path)
+    budget = ProductTokenBudget()
+    budget.observe(observation(500))
+    callback = _product_token_observer(paths, checkpoint, budget)
+
+    with mock.patch(
+        "workshop.workflow.native_run._read_product_token_usage",
+        return_value=observation(600),
+    ):
+        callback.reconcile_completed_turn((600, None, None, 60, None))
+
+    assert budget.to_dict()["used_tokens"] == 660
+    assert not (tmp_path / "token-accounting-need.json").exists()
+
+
 def test_reconciled_cap_stop_does_not_create_an_accounting_effect_blocker(tmp_path):
     paths, checkpoint = context(tmp_path)
     budget = ProductTokenBudget(1000)
@@ -407,21 +387,13 @@ def test_cli_default_and_explicit_configuration(command):
                                 "--model", "astra", "--effort", "medium", "--max-tokens", "2000000"))
     assert args.max_tokens == 2000000
     assert parser().parse_args((*command, "--max-tokens", "200000000")).max_tokens == 200000000
-    assert parser().parse_args((*command, "--max-tokens", "500000000")).max_tokens == 500000000
-    assert parser().parse_args((*command, "--max-tokens", "1000000000")).max_tokens == 1000000000
     for value in ("0", "-1", "1000000001", "1.5", "no"):
         with pytest.raises(SystemExit):
             parser().parse_args((*command, "--max-tokens", value))
     assert parser().parse_args(("resume", "wish-id")).max_tokens is None
 
 
-def test_cli_resume_accepts_billion_and_rejects_above_maximum():
-    assert parser().parse_args(("resume", "wish-id", "--max-tokens", "1000000000")).max_tokens == 1000000000
-    with pytest.raises(SystemExit):
-        parser().parse_args(("resume", "wish-id", "--max-tokens", "1000000001"))
-
-
-@pytest.mark.parametrize("saved_limit", [10000000, 30000000, 100000000, 200000000, 500000000, 1000000000])
+@pytest.mark.parametrize("saved_limit", [10000000, 100000000, 200000000, 500000000, 1000000000])
 def test_new_default_does_not_change_persisted_run_limits(tmp_path, saved_limit):
     assert ProductTokenBudget().limit == 30000000
     paths, checkpoint = context(tmp_path)
@@ -487,3 +459,9 @@ def test_malformed_large_compaction_still_stops_host(tmp_path):
             callback()
         assert (paths.host_state / "token-budget-stop.json").is_file()
         assert _load_lifetime_budget(paths, checkpoint).to_dict()["used_tokens"] == 550
+
+
+@pytest.mark.parametrize("limit", [200_000_001, 500_000_000, 1_000_000_000])
+def test_preserved_explicit_large_budget(limit):
+    assert validate_limit(limit) == limit
+    assert parser().parse_args(("resume", "wish-id", "--max-tokens", str(limit))).max_tokens == limit

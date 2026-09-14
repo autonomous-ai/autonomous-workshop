@@ -1,0 +1,69 @@
+{
+ "build": {
+  "carrier": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "carrier"
+ ],
+ "checked": [
+  "carrier"
+ ],
+ "checks_ok": false,
+ "entry": "part_carrier.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "carrier"
+ ],
+ "print": {
+  "carrier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0001/overhang-carrier.log": "4fb02ab3f7978efbaae8a979db332d92dc61f706f4d1ca4b28abc1a41090106a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0001/thickness-carrier.log": "7f7067edcdf61b131cdace6e1eefb2bdc45b38137669c7a7e83bfb0946f815ff"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.4% of surface below (1069 of 296494 samples); thinne"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:carrier",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Service recess breaches inner crescent wall",
+    "evidence": "Isometric view: rectangular cover recess opens directly through the right inner crescent rim",
+    "part": "carrier",
+    "repair": "Widen crescent belly and reposition coil so recess has at least 2 mm surrounding structure"
+   }
+  ],
+  "observation": "Crescent outline and rounded tips read clearly, but the service recess breaks through the inner spine and leaves thin edges.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0001/visual-packet.json",
+  "packet_sha256": "40c438c52b785228d317463d3050d96597bdc7ef2b04e677ec12d628d516c9c7",
+  "status": "fail"
+ }
+}

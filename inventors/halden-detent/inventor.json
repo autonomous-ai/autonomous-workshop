@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "c6574fdee85f84db06f7a609d58dd9307278ae7efd09ca251c8d206fd9d8bcc5",
+      "kind": "codex-skill",
+      "name": "halden-detent-inventor",
+      "path": "skills/halden-detent-inventor"
+    }
+  ],
+  "id": "halden-detent",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

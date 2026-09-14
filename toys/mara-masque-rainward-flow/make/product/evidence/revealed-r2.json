@@ -1,0 +1,201 @@
+{
+  "review_number": 2,
+  "review_kind": "same_critic_informed_repair_rereview",
+  "prior_knowledge": "Same critic previously read Wish and concept. These are fresh visual observations before updated source/evidence, not a new naive or unprimed review. Round-1 failure remains unchanged.",
+  "protocol": "Same critic initial review plus allowed repair rereviews. Round 1 immutable failure is retained. Earlier suggestion to replace critic is superseded by frozen same-critic protocol.",
+  "observations_saved_before_updated_evidence": "work-notes/observations-r2.json",
+  "input_image_sha256s": {
+    "artifacts/make/r0001/product/cad/snap/iso.png": "64830946ffd6c87a61514be4ea061294e828dc9115d87fbbeeca426f774699cf",
+    "artifacts/make/r0001/product/cad/snap/signature.png": "61bdef5f81077588b2638501ed7eeb3207842ccc1dd55208f18e0855bb5d0fc8",
+    "artifacts/make/r0001/product/cad/snap/dice-detail.png": "992f84ff090096a27a86214892f7dc8c3270fece04f1e8ea7973754f1de1ccde",
+    "artifacts/make/r0001/product/cad/snap/counter-detail.png": "0ed5c94d4dca3c7c18034e542a520c76d5c4124ecf62e42cf69c433f8c6dfd6b"
+  },
+  "overall_status": "PASS_REPAIR_REREVIEW",
+  "positive_requirements": [
+    {
+      "requirement": "Preserve historical backgammon rules and setup",
+      "visual": "Game category and capture remain consistent; images cannot establish full rules.",
+      "numerical_or_documentary": "README and RULES retain the documented historical options; rule-preservation-review reports exact normalized section preservation and reviewed setup/direction diff. rules-check passes standard setup, legal trace, bar-first and blocked-pair checks. preservation.json reports unchanged xy/theta/cup/piece_poses functions.",
+      "verdict": "Pass within supplied differential evidence; no new primary-source or physical audit"
+    },
+    {
+      "requirement": "Preserve 24-lane topology",
+      "visual": "Radial lanes visible, exact count not a visual conclusion.",
+      "numerical_or_documentary": "Fit audit: 24 lanes in four banks of six.",
+      "verdict": "Pass, numerical"
+    },
+    {
+      "requirement": "Preserve overall Sun dimensions",
+      "visual": "No absolute visual scale.",
+      "numerical_or_documentary": "Correction geometry and fit report 190 x 190 x 28 mm.",
+      "verdict": "Pass, numerical"
+    },
+    {
+      "requirement": "Spacious circular unobstructed bar",
+      "visual": "Large open round plateau; only identifiable captured counter appears in after state.",
+      "numerical_or_documentary": "Top area 1809.557 mm2, zero inner wires; reported bar layout 30.",
+      "verdict": "Pass"
+    },
+    {
+      "requirement": "Optional cue low smooth engraving outside landing area",
+      "visual": "No motif on the bar; optional motif omitted.",
+      "numerical_or_documentary": "README uses chosen wide bank boundary aligned with diagram, not added bar geometry.",
+      "verdict": "Not applicable"
+    },
+    {
+      "requirement": "Finished dice all 1\u20136 layouts",
+      "visual": "All six values shown across the opposite views; pips clear.",
+      "numerical_or_documentary": "21 cones and six-normal map contain values 1 through 6.",
+      "verdict": "Pass"
+    },
+    {
+      "requirement": "Shallow recesses directly modeled in CAD",
+      "visual": "Visible dark locations; exact depth cannot be established by render.",
+      "numerical_or_documentary": "Conical recesses radius 1 mm, depth 1.1 mm reported.",
+      "verdict": "Pass, numerical recess support"
+    },
+    {
+      "requirement": "Opposite pairs 1\u20136, 2\u20135, 3\u20134",
+      "visual": "Opposite views consistent with required arrangements.",
+      "numerical_or_documentary": "Outward-normal map explicitly confirms each pair. README states same.",
+      "verdict": "Pass"
+    },
+    {
+      "requirement": "Canonical contrasting dark pip fill",
+      "visual": "Clearly dark pips on cream cubes in overview and detail.",
+      "numerical_or_documentary": "Color acceptance comes from images; README requires dark paint filling existing recesses.",
+      "verdict": "Pass, visual"
+    },
+    {
+      "requirement": "Both counters read as flowing plasma or comet-like matter",
+      "visual": "Both now have rounded broad bodies flowing into tails. Single is an elongated swept drop; split is a notched flowing drop. Flowing-matter reading now stronger than creature reading in detail.",
+      "numerical_or_documentary": "No measurement proves semantic recognition.",
+      "verdict": "Pass in same-critic repair rereview, not a new unprimed result"
+    },
+    {
+      "requirement": "Rounded condensed body on both",
+      "visual": "Both have broad rounded leading bodies.",
+      "numerical_or_documentary": "Organic geometry described in updated concept; numerical box is 12 x 8 x 4 mm each.",
+      "verdict": "Pass, visual"
+    },
+    {
+      "requirement": "Swept tapering plasma tails on both",
+      "visual": "Cream has clear continuous sweep; brown broad common taper has modest sweep and shallow tip notch. Brown is less fluid but shares the family form.",
+      "numerical_or_documentary": "Updated concept defines continuous swept tapers; geometry box alone does not prove style.",
+      "verdict": "Pass, visual"
+    },
+    {
+      "requirement": "One player one flowing tail",
+      "visual": "Cream shows one continuously tapered rounded extension without the prior pronounced drumstick knob.",
+      "numerical_or_documentary": "Single profile in concept.",
+      "verdict": "Pass"
+    },
+    {
+      "requirement": "Other player bifurcated near-tip tail with rounded branches",
+      "visual": "Short shallow notch at terminal end splits common tail into two rounded tips, visibly distinct in detail.",
+      "numerical_or_documentary": "Concept confines bifurcation to final 1.3 mm; branch audit separately supports widths.",
+      "verdict": "Pass"
+    },
+    {
+      "requirement": "Flat stable undersides",
+      "visual": "Counters appear seated, no tilting visible; unseen undersides not proven visually.",
+      "numerical_or_documentary": "Equal planar top/bottom true; contact areas single 49.838 and split 61.493 mm2.",
+      "verdict": "Pass as CAD support; physical stability untested"
+    },
+    {
+      "requirement": "Stackability",
+      "visual": "No full three-layer stack view supplied.",
+      "numerical_or_documentary": "Equal planar top/bottom and 4 mm height support aligned stacks; README explains aligned tails.",
+      "verdict": "Pass as design/CAD evidence; handling untested"
+    },
+    {
+      "requirement": "Minimum printable thickness",
+      "visual": "Chunky extrusion, rounded caps, no needle tips.",
+      "numerical_or_documentary": "Height 4 mm; branch-neck-audit sampled supporting necks single 2.1, split upper 2.1, lower 2.0 mm. Discrete screen explicitly excludes terminal caps and does not replace exact print gate.",
+      "verdict": "Pass within sampled neck scope; root print gates remain separate"
+    },
+    {
+      "requirement": "Full 15-piece lane capacity",
+      "visual": "Five-piece files visible; images do not prove 15-stack capacity.",
+      "numerical_or_documentary": "Fit audit capacity 15 each point, minimum adjacent gap 2.406779 mm; README five positions by three layers.",
+      "verdict": "Pass, numerical"
+    }
+  ],
+  "negative_requirements": [
+    {
+      "prohibition": "Block-like crest lobes or unexplained central objects",
+      "visual": "None visible. After-state object is a recognizable captured counter.",
+      "numerical_or_documentary": "Top zero inner wires and uninterrupted area support clear bar.",
+      "verdict": "Pass"
+    },
+    {
+      "prohibition": "Visually blank cubes",
+      "visual": "Dice plainly have pips in both relevant images.",
+      "numerical_or_documentary": "21 modeled cones.",
+      "verdict": "Pass"
+    },
+    {
+      "prohibition": "Manual pip positioning or drawing",
+      "visual": "Pattern locations visible; image alone cannot establish finishing requirement.",
+      "numerical_or_documentary": "README explicitly says fill existing recesses and do not draw or position pips.",
+      "verdict": "Pass"
+    },
+    {
+      "prohibition": "Untested physical statistical fairness claim",
+      "visual": "Images depict CAD, not testing.",
+      "numerical_or_documentary": "README and numerical reports explicitly disclaim physical fairness testing. Ideal 36 outcomes labeled as mathematical assumption in rules.",
+      "verdict": "Pass"
+    },
+    {
+      "prohibition": "Animal heads",
+      "visual": "Prominent rabbit-head reading from round 1 is resolved by continuous tail trunk. Weak two-nub association in upright small views remains possible, but creature is no longer dominant in detailed shape.",
+      "numerical_or_documentary": "Numerical evidence cannot establish recognition.",
+      "verdict": "Pass in informed repair rereview; semantic ambiguity disclosed"
+    },
+    {
+      "prohibition": "Forks",
+      "visual": "No long detached fork-like tines; only short notch in flowing taper.",
+      "numerical_or_documentary": "Concept short 1.3 mm terminal split consistent with visual.",
+      "verdict": "Pass"
+    },
+    {
+      "prohibition": "Generic polygon tokens",
+      "visual": "Organic rounded outlines.",
+      "numerical_or_documentary": "No semantic metric.",
+      "verdict": "Pass"
+    },
+    {
+      "prohibition": "Square heads",
+      "visual": "Rounded broad bodies on both.",
+      "numerical_or_documentary": "No semantic metric.",
+      "verdict": "Pass"
+    },
+    {
+      "prohibition": "Sharp fragile tips",
+      "visual": "Tips visibly rounded.",
+      "numerical_or_documentary": "Sampled necks at least 2 mm; physical durability untested.",
+      "verdict": "Pass for visible tip form, no durability claim"
+    },
+    {
+      "prohibition": "Parallel prongs resembling ears",
+      "visual": "Former separate projections replaced by common taper and short terminal lobes. No long parallel prongs; dominant rabbit-ear reading resolved, weak small-scale two-nub ambiguity remains.",
+      "numerical_or_documentary": "Sampled branch widths are structural evidence, not visual acceptance.",
+      "verdict": "Pass in repair rereview"
+    }
+  ],
+  "separate_visual_conclusions": {
+    "dice": "PASS: contrasting pips plainly visible",
+    "central_bar": "PASS: circular and free of unexplained blocks",
+    "counter_flow": "PASS on informed rereview: continuous tapered drops, with short rounded terminal split replacing long ear-like projections"
+  },
+  "desirability": "Appealing coherent warm tabletop set with distinctive sun board and improved matching flowing silhouettes. Plain cups and center, faint lane contrast and rendered sidewall tessellation keep presentation at CAD-preview polish. No desirability blocker.",
+  "blocking_defects": [],
+  "limitations": [
+    "No fresh naive recognition result is claimed. The original naive review failed and remains part of the record.",
+    "Weak two-nub creature association remains possible at small upright views; detailed form now reads predominantly as flowing drops.",
+    "Numerical reports reviewed as supplied evidence, not independently rerun. Supporting-neck sampling is not a rigorous global lower bound.",
+    "No physical print, fairness, durability or human handling/playtest claim."
+  ],
+  "nonblocking_document_note": "RULES refers to printed point numbers; README clarifies these are diagram numbers and physical lanes are unnumbered. Prefer clearer diagram-number wording if editing instructions further; no change to the preserved rules is needed.",
+  "next_action": "Root can use this repaired visual acceptance alongside current deterministic print and manufacturing gates; this rereview itself does not finalize the stage."
+}

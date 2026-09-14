@@ -1,0 +1,60 @@
+{
+ "build": {
+  "fork_09": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "fork_09"
+ ],
+ "checked": [
+  "fork_09"
+ ],
+ "checks_ok": true,
+ "entry": "part_fork_09.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_09/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_09"
+ ],
+ "print": {
+  "fork_09": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_09/r0002/overhang-fork_09.log": "b0b13cc6d905a9c83d076fb1370dbc4fbb02b99f30d987a8bc2d730ab25d2ae8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_09/r0002/thickness-fork_09.log": "5e4887ee6c2e10da993766a7bec60ec63a30d01fb71d89eaee3c1d7e59217db4"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:fork_09",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows uniform four-millimeter extrusion and flat top/base. Top and iso show continuous swept broad body terminating in a shallow late rounded bifurcation. Both short ends are connected, and no extra neck, detached geometry or visible intersections occur. These current render bytes exactly match the current-attempt views already inspected; only the evidence source binding was refreshed, without geometry or image changes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_09/r0002/visual-packet.json",
+  "packet_sha256": "776a51bfe20a03007e1c26da934902d6080a4c8f39eec7c5c2f4a618644d11c0",
+  "status": "pass"
+ }
+}

@@ -40,12 +40,19 @@ from cadgen._internal.generation_spec import EntrySpec, _display_path
 
 GIT_LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1\n"
 
-@contextlib.contextmanager
-def _generator_import_paths(script_path: Path) -> Iterator[None]:
-    """Keep source-local imports available while loading and running a generator."""
+def _load_generator_module(script_path: Path) -> object:
     resolved_script_path = script_path.resolve()
+    module_name = (
+        "_cad_tool_"
+        + _display_path(resolved_script_path).replace("/", "_").replace("\\", "_").replace("-", "_").replace(".", "_")
+    )
+    module_spec = importlib.util.spec_from_file_location(module_name, resolved_script_path)
+    if module_spec is None or module_spec.loader is None:
+        raise RuntimeError(f"Failed to load generator module from {_display_path(resolved_script_path)}")
+
+    module = importlib.util.module_from_spec(module_spec)
     original_sys_path = list(sys.path)
-    # Seed sys.path so the generator's top-level and deferred imports (packages such as
+    # Seed sys.path so the generator's module-top imports (its sibling/shared packages such as
     # robot_common / STEP) resolve. Derive everything from the generator script's OWN location —
     # its folder, plus any ancestor that is a package root (contains a STEP/ or robot_common/
     # package) — so resolution is independent of the process working directory. Deliberately NOT
@@ -63,25 +70,10 @@ def _generator_import_paths(script_path: Path) -> Iterator[None]:
             sys.path.insert(0, candidate)
 
     try:
-        yield
-    finally:
-        sys.path[:] = original_sys_path
-
-
-def _load_generator_module(script_path: Path) -> object:
-    resolved_script_path = script_path.resolve()
-    module_name = (
-        "_cad_tool_"
-        + _display_path(resolved_script_path).replace("/", "_").replace("\\", "_").replace("-", "_").replace(".", "_")
-    )
-    module_spec = importlib.util.spec_from_file_location(module_name, resolved_script_path)
-    if module_spec is None or module_spec.loader is None:
-        raise RuntimeError(f"Failed to load generator module from {_display_path(resolved_script_path)}")
-
-    module = importlib.util.module_from_spec(module_spec)
-    with _generator_import_paths(resolved_script_path):
         sys.modules[module_name] = module
         module_spec.loader.exec_module(module)
+    finally:
+        sys.path[:] = original_sys_path
 
     return module
 
@@ -405,10 +397,7 @@ def _run_script_generator_inner(
     # unloads modules mid-run; the sys.modules delta stays as a belt-and-braces union.
     evict_first_party_modules()
     modules_before_load = set(sys.modules)
-    with (
-        record_first_party_execution() as executed_files,
-        _generator_import_paths(spec.script_path),
-    ):
+    with record_first_party_execution() as executed_files:
         with logger.timed(f"load generator {spec.source_ref}"):
             module = _load_generator_module(spec.script_path)
         generator = getattr(module, generator_name, None)

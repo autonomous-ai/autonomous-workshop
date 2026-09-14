@@ -24,7 +24,11 @@ Workshop. It is authoritative together with
 [ADR 0044](adr/0044-scope-component-cad-network.md),
 [ADR 0045](adr/0045-own-agent-selected-dependencies.md),
 [ADR 0046](adr/0046-budgeted-spark-twenty-minute-turns.md),
-[ADR 0050](adr/0050-structured-terminal-failure-diagnostics.md), and the repository
+[ADR 0049](adr/0049-product-wide-token-budget.md),
+[ADR 0050](adr/0050-structured-terminal-failure-diagnostics.md),
+[ADR 0060](adr/0060-make-round-visual-feedback-and-three-repairs.md),
+[ADR 0061](adr/0061-spark-make-owned-verification.md),
+[ADR 0063](adr/0063-spark-component-first-make.md), and the repository
 [agent instructions](../AGENTS.md). ADR 0013 supersedes ADR 0012's page-first
 Release details; ADR 0014 supersedes their optional-publication and
 executable-Deliver details; ADR 0016 supersedes ADR 0015's one fixed route.
@@ -43,6 +47,26 @@ does not govern ordinary source-repository work.
 
 ## Runtime boundary
 
+### Optional motion verification
+
+New `wish`, `start`, and `fix` runs default `--check-motion` to false.
+`--check-motion true` enables the existing motion sweeps and required coupled
+animation/reconstruction/review. The host materializes the boolean in the
+read-only, hash-bound root `MAKE-OPTIONS.json`. Make rounds, final CAD
+verification (including isolated host replay), and proposal finalization read
+that same choice. Disabled motion is recorded as skipped/unverified, never a
+pass. Build, fit, print and still-image signature review are unchanged.
+
+Every operator `resume` reselects the motion option, defaulting to false even
+for previously enabled and older runs. `resume --check-motion true` enables it.
+For an older run without `MAKE-OPTIONS.json`, the host first refreshes its
+carried CAD/Make-round tools and Make finalizer from the installed version,
+rebinds the same native session, then creates the selected root option. The
+mutation lock, immutable input manifest and private correction ledger cover
+these changes. Lifecycle instructions, sealed artifacts and token usage stay
+intact. A plain `--refresh-tools` operation still preserves the root option. See
+[ADR 0066](adr/0066-optional-motion-verification.md).
+
 ### Current token-budget and Spark handoff policy
 
 New Spark v4 runs compact at 192k; frozen v3 runs retain 64k. This
@@ -56,6 +80,12 @@ isolation, exact file identity, and authenticated effect reconciliation remain
 required; they are not alternative spending budgets. Make retains its own
 frozen checks and review policy, including the current four-review allowance
 under [ADR 0060](adr/0060-make-round-visual-feedback-and-three-repairs.md).
+New Spark Make instructions also require a component-first baseline under
+[ADR 0063](adr/0063-spark-component-first-make.md): each distinct component has
+one `part_<role>.step.py` and its own passing isolated visual repair history
+before the combined entry is authored and reviewed. The make-round tool freshly
+exports the parts and refuses the requested assembly round when those passes
+are missing, failed, or stale. Forge and Quest retain their existing sequence.
 
 Spark accepts Make's output without repeating CAD verification, build-group
 validation, or production-part acceptance in the Workshop host. Make's own
@@ -113,28 +143,11 @@ a new stage attempt after the prior Goal is complete.
 New runs also freeze the canonical agent, model, and reasoning effort in a
 schema-v2 `MANAGER.json`. The CLI calls these `--agent`, `--model`, and
 `--effort`; Spark, Forge, and Quest are selected separately with `--workflow`.
-Codex defaults to `gpt-5.6-sol` at medium and Claude Code defaults to
+Codex defaults to `gpt-6-astra` at medium and Claude Code defaults to
 `claude-opus-5` at medium. The selected reasoning effort overrides the
 stage-shaped reasoning levels described below while leaving each workflow's
 compaction, turn boundaries, proof handoffs, and gates intact. Schema-v1
 Manager projects retain those historical stage-shaped reasoning levels.
-
-An explicit `workshop resume ID --effort medium` changes subsequent Manager
-turns for a supported Codex token-budget product without replacing its native
-thread or rewriting the original `MANAGER.json`. The host retains a private,
-validated change history; later resumes without the flag keep that choice.
-Status and receipts expose the configured Manager `effort` and original
-`initial_effort`. Every continuation relays the current operator choice for
-subsequent Manager and native child work, superseding earlier effort requests
-in frozen inputs without rewriting them. Codex owns how to honor that choice.
-Codex 0.153.4 can restore an existing child at its earlier effort; the native
-subagent default does not change that saved setting. The notice conveys intent,
-not deterministic child enforcement, and the receipt does not attest every
-child's actual setting. Native request metadata remains the evidence for that.
-This requires the originally frozen token-budget and whole-profile
-capabilities; unsupported older sessions are refused. Concurrent changes are
-refused by the run lock. See
-[ADR 0043](adr/0043-freeze-agent-model-and-effort.md#explicit-reasoning-override-on-resume).
 
 Codex Spark projects freeze `spark-economics-v3.md` and run that one
 session with a 64k automatic context-compaction ceiling
@@ -265,10 +278,29 @@ Codex authors run-local artifacts and finalizes one compact proposal
 host independently validates exact bytes, seals artifacts, and advances
 ```
 
+`workshop fix <published-toy-directory> --prompt-file <brief>` starts a new
+Spark run from a manifest-verified public archive. It binds an immutable
+`revision-source.zip` baseline and creates independent editable files under
+`revision-work/`. The exact correction prompt is the new Wish; its context
+records source lineage. The original session and publication remain separate.
+Current Make checks and blind review apply to the corrected output. See
+[ADR 0065](adr/0065-published-toy-correction-runs.md) for the intake contract
+and current local-archive limitation.
+
 `workshop resume <wish-id>` resumes the recorded session UUID in the same toy
 project. Session memory is useful continuity, but the durable checkpoint,
 sealed manifests, and reconciled receipts remain authoritative. If memory and
 files disagree, the files win.
+
+On macOS, remounting can renumber `st_dev` without changing runtime files.
+Legacy session fingerprints include that transient number. Resume can reproduce
+the saved fingerprint using a single previous device number only when all
+trusted Python and Codex paths share one device in Darwin's
+`0x01000000`–`0x010000ff` range. Every other fingerprint field must match,
+including paths, symlink targets, inodes, modes, and runtime policy. This bounded
+compatibility check leaves the checkpoint unchanged and launches with current
+device identities. Mixed-device layouts, devices outside that range, other
+platforms, and additional policy drift retain the normal refusal.
 
 A Wish command is a finite job, not a daemon. The host rejects new Wish
 creation when macOS reports that it is running beneath a `grid.serve.*`
@@ -283,13 +315,12 @@ checkpointed. The disconnect may arrive either on the private launcher
 diagnostic channel or in Codex's documented `turn.failed` / top-level `error`
 JSONL shape. The launcher reports only those two cases through the typed
 `CodexRecoverableInvocationError` boundary, and only after proving that the
-previous launcher's dedicated POSIX process session is empty and every
-creation-bound descendant observed by its guard has stopped. This includes
-Codex's built-in code-mode host and ordinary native exec commands. Codex
-0.153.4 automatically gives exec commands separate POSIX sessions; that native
-tool behavior is supported and is not custom daemonization by the product agent.
-Custom tools remain forbidden from daemonizing, deliberately detaching or
-creating new sessions, or intentionally leaving background work behind. While
+previous launcher's dedicated POSIX process session is empty. This includes
+Codex's built-in code-mode host even though that helper creates a separate
+process group inside the session. Product-run agents and custom tools are
+forbidden from daemonizing, detaching, creating a new process session, or
+intentionally leaving background work behind; the portable host boundary
+cannot prove quiescence for a process that deliberately escapes it. While
 retaining the same exclusive run lock, the host counts the
 failed attempt, preserves the unchanged stage packet, waits a bounded
 exponential delay with deterministic per-run jitter, and resumes that exact
@@ -316,20 +347,6 @@ newer supported version in the same major line. The resumed process receives
 the newly computed current sandbox policy. Same-version policy drift, CLI
 downgrades, major-version migrations, and malformed checkpoints still fail
 closed.
-
-For an observed filesystem device-number change, an operator can use
-`WORKSHOP_CODEX_RUNTIME_DEVICE_RECOVERY=OLD:CURRENT workshop resume <id>`.
-This host-only setting reconstructs one prior device mapping and accepts it
-only if the complete reconstructed runtime fingerprint matches the existing
-private checkpoint. Paths, resolved paths, inodes, modes, CLI version, model,
-profile and all other policy fields remain bound. It cannot be combined with
-another policy migration. The actual launch uses current filesystem identities;
-the setting never reaches the native subprocess. A hash-bound owner-only
-`codex-runtime-device-recovery-<hash>.json` receipt records the exact session,
-mapping and fingerprints. The original session checkpoint is preserved, so
-repeat the explicit mapping on subsequent resumes of that checkpoint.
-Unexplained policy drift still fails closed; do not guess a mapping to bypass
-an identity mismatch.
 
 An interruption before the exact session identity is bound fails closed rather
 than automatically creating a second root session. Failed-turn events that do
@@ -366,23 +383,11 @@ collision, not evidence of an omitted terminal event. See
 
 The launched process session is owned by an idempotent guard outside the event
 parser's ordinary `Exception` classification. A graceful host unwind such as
-Ctrl-C (`KeyboardInterrupt`) or `SystemExit` therefore requests native SIGINT
-shutdown first, allowing a bounded grace for Codex to cancel its exec sessions.
-The guard observes creation-bound descendants during the native stream and
-immediately before shutdown; already-bound surviving owners remain discovery
-roots after reparenting, including during grace and escalation. Remaining
-owned identities and original-session members receive TERM/KILL escalation.
-Successful cleanup requires the original session and observed ownership set to
-be empty. Enumeration, identity or signal uncertainty remains unsafe even if
-the original SID is empty, and a failed cleanup overrides an otherwise normal
-return or operator unwind. Reused PIDs and SIDs never authorize signals to a
-replacement process; cwd and command text never establish orphan ownership.
-
-This is an observational boundary, not OS-enforced universal containment. A
-descendant born and reparented entirely between observations cannot be
-identified retrospectively. The custom-detachment prohibition remains; the
-guard does not claim to recover arbitrary daemons or work already orphaned by
-an earlier host. User cancellation is
+Ctrl-C (`KeyboardInterrupt`) or `SystemExit` therefore terminates and reaps the
+dedicated Codex process session across all of its process groups before
+propagating the interruption. The host binds the session leader to its
+launch-time process creation identity; ambiguous identity or numeric SID reuse
+fails closed without signaling the replacement session. User cancellation is
 not converted into an automatic transport retry: if the exact
 session identity was already checkpointed, a later explicit `workshop resume`
 continues it; otherwise the run remains fail-closed. No portable subprocess
@@ -401,7 +406,7 @@ whole-run native-turn budget remain the surrounding resource bounds.
 
 `workshop status <wish-id>` is read-only and never opens or resumes Codex. While
 a native turn runs, the host reduces Codex JSONL events to one of eight coarse
-classes: `starting`, `running`, `reasoning`, `tool`, `subagent`, `reporting`,
+classes: `starting`, `running`, `reasoning`, `tool`, `subagent`, `finalizing`,
 `completed`, or `failed`. `running` is a five-second host heartbeat that means
 only that the launched Codex process is still alive; it does not infer what the
 model is doing. The host atomically stores only the current checkpoint binding,
@@ -420,12 +425,6 @@ remain visibly alive without copying native event volume into the outer log. In
 final machine-readable JSON receipt. The renderer describes completed agent
 messages only as progress reports: their content is neither exposed nor
 interpreted as proof that the current stage is actually finishing.
-`reporting` records only completion of an agent message; further reasoning,
-tools, and subagent work may follow. Historical private records named this
-event `finalizing`. They remain readable with their original hashes, while
-public status presents that legacy event as `reporting`. Message completion
-does not select `completed` or `failed`; stage acceptance still requires the
-host's separate proposal and gate checks.
 
 All progress delivery is serialized on a bounded daemon queue; observer-owned
 code never runs on the launcher thread. Terminal delivery waits only briefly
@@ -680,6 +679,10 @@ their two-review bound. Make rounds also render inspection views and record
 native Manager feedback on placement, proportions and other visible defects
 through `make_round --record-visual`. Pending visual feedback cannot pass a
 round, and self-review never replaces the independent critic (ADR 0060).
+For new Spark work, `make_round --component part_<role>.step.py` keeps an
+isolated history for every component; assembled review begins with
+`--require-component-passes` only after every component's current STEP has
+passed its own round (ADR 0063).
 Before independent review, Make generates every declared entry with `--write`
 so each carries a fresh `.step`, then runs `verify_project --print-gates
 --nozzle 0.4`. The mesh, overhang and wall-thickness gates build each printable
@@ -780,7 +783,9 @@ CAD-verification JSON contains the literal boolean
 `digitally-verified-not-print-ready` and the boolean is `false`. A half-declared
 claim is refused rather than downgraded, and the host reruns the verifier in the
 tier the pair names — the full tier's command carries `--print-gates --nozzle
-0.4` and never `--skip-thickness`, which would forfeit the claim. The host
+0.4 --overhang-angle 45` and never `--skip-thickness`, which would forfeit the
+claim. Both thresholds are named rather than defaulted, so the receipt records
+what the claim was measured against. The host
 receipt and stage-gate evidence record the tier and its print-ready
 eligibility. Release requires passing full-tier evidence; a lower-tier product
 publishes a digitally verified exchange solid whose printability is unverified.
@@ -985,8 +990,7 @@ private Wish demonstrate that:
     while older exact runs retain
     their original profile.
 13. a schema-v2 Manager project freezes the selected agent, model, and
-    initial reasoning effort; resume preserves that choice unless an operator
-    explicitly records a supported host reasoning override, while schema-v1
+    reasoning effort; resume reconstructs that exact choice, while schema-v1
     projects retain their historical stage-shaped reasoning behavior.
 
 ## Engine portability
@@ -1009,28 +1013,25 @@ authority.
 New Codex runs freeze `token-budget-v1.md`: `--max-tokens` defaults to
 30,000,000 input-plus-output tokens across all stages, native children and
 resumes. Cached input is included once; reasoning is already part of output.
-The host persists completed-request usage from a version-pinned Codex 0.153.4
-rollout adapter. Its top-level response ledger counts each unique completed
-response, including remote compaction, and requires exact thread and turn
-counter additivity. Notifications corroborate coverage; their restored
-cumulative baselines and post-compaction context-size estimates are not spend.
-Malformed or incomplete ledgers fail closed. Rollouts without ledger entries
-retain the strict legacy notification reader. A valid request awaiting its
-first usage report has no time limit and remains explicitly pending.
-Unavailable, malformed, or regressing established accounting fails closed.
-Oversized native compaction records are
+The host persists completed-request usage from a Codex 0.153.4-or-newer rollout
+adapter. The reader validates the exact rollout identity, task boundaries and
+counter schema, so an incompatible newer format still fails closed. A valid
+request awaiting its first usage report has no time
+limit and remains explicitly pending. Unavailable, malformed, or regressing
+established accounting fails closed. Oversized native compaction records are
 validated in bounded chunks without retaining their history or recounting
-embedded usage. Ancestry discovery reads only a bounded first metadata record
+embedded usage. Oversized visual `custom_tool_call_output` records receive the
+same bounded framing validation and are discarded; other oversized response
+items remain unsupported. Ancestry discovery reads only a bounded first metadata record
 from each candidate; unrelated bodies are never usage inputs. Selected files
 are streamed to their observed size without an aggregate file-size spending cap;
 ordinary record bounds and identity validation remain.
 Completed root-turn input/output usage is reconciled against the native terminal
-event before a saved proposal or effect can advance; unresolved accounting
-survives resume in private host state. Fresh prelaunch observations separate
-historical usage corrections from new-turn baselines. Completed expectations
-retain their metering source and fail closed across an incomparable source
-change. Canceled or still-in-flight descendants are not presented as completed
-usage. In-flight requests may overshoot the
+event before a saved proposal or effect can advance. Supported terminal events
+may report request-local deltas or cumulative root counters; both require an
+exact monotonic relationship to the rollout ledger. Unresolved accounting
+survives resume in private host state. Canceled or still-in-flight descendants
+are not presented as completed usage. In-flight requests may overshoot the
 observed cap.
 `resume --max-tokens N` changes the total cap without resetting consumption.
 Normal twenty-minute splits and aggregate time/turn allowances are superseded;

@@ -1,0 +1,362 @@
+{
+  "schema_version": 1,
+  "product": "QUAYSHIFT",
+  "measurement_scope": "CAD-derived nominal dimensions and volumes, not manufactured measurements. One connected solid per part is asserted by source part().",
+  "measurement_evidence": "cad/measure/physical-validation.json",
+  "measurement_evidence_sha256": "29575e2d74b03502fcd12396b8a90e7242014205b092a8416ac12bc73bc75c46",
+  "cad_source_sha256": "323b0e05affa7717e55c8cb60cde90a09397a6fd68a69c8a3617a1c99a3d8330",
+  "physical_part_count": 10,
+  "architecture_part_count": 8,
+  "connected_solid_count": 10,
+  "additional_printed_parts_for_palette": 0,
+  "palette_color_count": 5,
+  "grid_pitch_mm": 32,
+  "board_mm": [
+    184,
+    184,
+    12
+  ],
+  "assembled_max_nominal_height_mm": 88,
+  "parts": [
+    {
+      "id": "A",
+      "name": "High bridge A",
+      "quantity": 1,
+      "connected_solids": 1,
+      "material_colors_per_part": 1,
+      "color_name": "limestone",
+      "color_hex": "#d5c7aa",
+      "upright_bbox_mm": [
+        95.2,
+        31.2,
+        74.0
+      ],
+      "nominal_solid_volume_mm3": 88592.094,
+      "solid_PLA_reference_mass_g": 109.854,
+      "print_bbox_mm": [
+        95.2,
+        74.0,
+        31.2
+      ],
+      "print_orientation": {
+        "rotation_about_local_x_deg": -90,
+        "bed_face": "rear planar face at original maximum Y",
+        "already_applied_by_part_step_source": true
+      },
+      "step": "cad/part_A.step",
+      "uniform_solid_support_hull_margin_mm": 11.095
+    },
+    {
+      "id": "B",
+      "name": "High bridge B",
+      "quantity": 1,
+      "connected_solids": 1,
+      "material_colors_per_part": 1,
+      "color_name": "terracotta",
+      "color_hex": "#b96843",
+      "upright_bbox_mm": [
+        95.2,
+        31.2,
+        80.0
+      ],
+      "nominal_solid_volume_mm3": 90612.071,
+      "solid_PLA_reference_mass_g": 112.359,
+      "print_bbox_mm": [
+        95.2,
+        80.0,
+        31.2
+      ],
+      "print_orientation": {
+        "rotation_about_local_x_deg": -90,
+        "bed_face": "rear planar face at original maximum Y",
+        "already_applied_by_part_step_source": true
+      },
+      "step": "cad/part_B.step",
+      "uniform_solid_support_hull_margin_mm": 11.05
+    },
+    {
+      "id": "C",
+      "name": "Low gate",
+      "quantity": 1,
+      "connected_solids": 1,
+      "material_colors_per_part": 1,
+      "color_name": "limestone",
+      "color_hex": "#d5c7aa",
+      "upright_bbox_mm": [
+        95.2,
+        31.2,
+        48.0
+      ],
+      "nominal_solid_volume_mm3": 54990.74,
+      "solid_PLA_reference_mass_g": 68.189,
+      "print_bbox_mm": [
+        95.2,
+        48.0,
+        31.2
+      ],
+      "print_orientation": {
+        "rotation_about_local_x_deg": -90,
+        "bed_face": "rear planar face at original maximum Y",
+        "already_applied_by_part_step_source": true
+      },
+      "step": "cad/part_C.step",
+      "uniform_solid_support_hull_margin_mm": 11.479
+    },
+    {
+      "id": "D",
+      "name": "L-shaped courtyard",
+      "quantity": 1,
+      "connected_solids": 1,
+      "material_colors_per_part": 1,
+      "color_name": "dark olive",
+      "color_hex": "#707348",
+      "upright_bbox_mm": [
+        63.2,
+        63.2,
+        70.0
+      ],
+      "nominal_solid_volume_mm3": 99091.75,
+      "solid_PLA_reference_mass_g": 122.874,
+      "print_bbox_mm": [
+        63.2,
+        63.2,
+        70.0
+      ],
+      "print_orientation": {
+        "rotation_about_local_x_deg": 0,
+        "bed_face": "base underside",
+        "already_applied_by_part_step_source": true
+      },
+      "step": "cad/part_D.step",
+      "uniform_solid_support_hull_margin_mm": 22.613
+    },
+    {
+      "id": "E",
+      "name": "Two-cell building E",
+      "quantity": 1,
+      "connected_solids": 1,
+      "material_colors_per_part": 1,
+      "color_name": "terracotta",
+      "color_hex": "#b96843",
+      "upright_bbox_mm": [
+        63.2,
+        31.2,
+        62.0
+      ],
+      "nominal_solid_volume_mm3": 54717.003,
+      "solid_PLA_reference_mass_g": 67.849,
+      "print_bbox_mm": [
+        63.2,
+        31.2,
+        62.0
+      ],
+      "print_orientation": {
+        "rotation_about_local_x_deg": 0,
+        "bed_face": "base underside",
+        "already_applied_by_part_step_source": true
+      },
+      "step": "cad/part_E.step",
+      "uniform_solid_support_hull_margin_mm": 11.114
+    },
+    {
+      "id": "F",
+      "name": "Two-cell building F",
+      "quantity": 1,
+      "connected_solids": 1,
+      "material_colors_per_part": 1,
+      "color_name": "limestone",
+      "color_hex": "#d5c7aa",
+      "upright_bbox_mm": [
+        63.2,
+        31.2,
+        58.0
+      ],
+      "nominal_solid_volume_mm3": 51879.226,
+      "solid_PLA_reference_mass_g": 64.33,
+      "print_bbox_mm": [
+        63.2,
+        31.2,
+        58.0
+      ],
+      "print_orientation": {
+        "rotation_about_local_x_deg": 0,
+        "bed_face": "base underside",
+        "already_applied_by_part_step_source": true
+      },
+      "step": "cad/part_F.step",
+      "uniform_solid_support_hull_margin_mm": 10.558
+    },
+    {
+      "id": "G",
+      "name": "Tower G",
+      "quantity": 1,
+      "connected_solids": 1,
+      "material_colors_per_part": 1,
+      "color_name": "dark olive",
+      "color_hex": "#707348",
+      "upright_bbox_mm": [
+        31.2,
+        31.2,
+        84.0
+      ],
+      "nominal_solid_volume_mm3": 50702.047,
+      "solid_PLA_reference_mass_g": 62.871,
+      "print_bbox_mm": [
+        31.2,
+        31.2,
+        84.0
+      ],
+      "print_orientation": {
+        "rotation_about_local_x_deg": 0,
+        "bed_face": "base underside",
+        "already_applied_by_part_step_source": true
+      },
+      "step": "cad/part_G.step",
+      "uniform_solid_support_hull_margin_mm": 11.475
+    },
+    {
+      "id": "H",
+      "name": "Tower H",
+      "quantity": 1,
+      "connected_solids": 1,
+      "material_colors_per_part": 1,
+      "color_name": "terracotta",
+      "color_hex": "#b96843",
+      "upright_bbox_mm": [
+        31.2,
+        31.2,
+        64.0
+      ],
+      "nominal_solid_volume_mm3": 38966.87,
+      "solid_PLA_reference_mass_g": 48.319,
+      "print_bbox_mm": [
+        31.2,
+        31.2,
+        64.0
+      ],
+      "print_orientation": {
+        "rotation_about_local_x_deg": 0,
+        "bed_face": "base underside",
+        "already_applied_by_part_step_source": true
+      },
+      "step": "cad/part_H.step",
+      "uniform_solid_support_hull_margin_mm": 11.718
+    },
+    {
+      "id": "tray",
+      "name": "Canal tray",
+      "quantity": 1,
+      "connected_solids": 1,
+      "material_colors_per_part": 1,
+      "color_name": "dark petrol",
+      "color_hex": "#174b5b",
+      "upright_bbox_mm": [
+        184.0,
+        184.0,
+        12.0
+      ],
+      "nominal_solid_volume_mm3": 195160.209,
+      "solid_PLA_reference_mass_g": 241.999,
+      "print_bbox_mm": [
+        184.0,
+        184.0,
+        12.0
+      ],
+      "print_orientation": {
+        "rotation_about_local_x_deg": 0,
+        "bed_face": "base underside",
+        "already_applied_by_part_step_source": true
+      },
+      "step": "cad/part_tray.step",
+      "uniform_solid_support_hull_margin_mm": 91.987
+    },
+    {
+      "id": "ferry",
+      "name": "Hand-moved ferry",
+      "quantity": 1,
+      "connected_solids": 1,
+      "material_colors_per_part": 1,
+      "color_name": "ochre",
+      "color_hex": "#d9a53d",
+      "upright_bbox_mm": [
+        26.0,
+        24.5,
+        20.0
+      ],
+      "nominal_solid_volume_mm3": 5732.621,
+      "solid_PLA_reference_mass_g": 7.108,
+      "print_bbox_mm": [
+        26.0,
+        24.5,
+        20.0
+      ],
+      "print_orientation": {
+        "rotation_about_local_x_deg": 0,
+        "bed_face": "base underside",
+        "already_applied_by_part_step_source": true
+      },
+      "step": "cad/part_ferry.step",
+      "uniform_solid_support_hull_margin_mm": 10.905
+    }
+  ],
+  "totals": {
+    "solid_volume_mm3": 730444.631,
+    "solid_volume_cm3": 730.444631,
+    "solid_PLA_reference_mass_g": 905.751
+  },
+  "estimate_assumptions": {
+    "material": "PLA assumption, no selected material qualification",
+    "density_g_cm3": 1.24,
+    "effective_fraction_note": "Includes shells, top/bottom skins and infill as one assumed fraction; this is not the slicer infill setting.",
+    "waste_support_brim_multiplier": 1.1,
+    "machine_non_extrusion_time_multiplier": 1.2,
+    "mass_formula": "sum(solid_volume_mm3) * effective_fraction * 1.10 / 1000 * 1.24",
+    "time_formula_hours": "sum(solid_volume_mm3) * effective_fraction * 1.10 / extrusion_rate_mm3_s / 3600 * 1.20",
+    "scenarios": [
+      {
+        "name": "low",
+        "effective_deposited_fraction_of_solid_CAD": 0.35,
+        "assumed_extrusion_rate_mm3_s": 6,
+        "estimated_total_feedstock_g": 348.714,
+        "estimated_machine_hours": 15.623
+      },
+      {
+        "name": "central",
+        "effective_deposited_fraction_of_solid_CAD": 0.45,
+        "assumed_extrusion_rate_mm3_s": 4.5,
+        "estimated_total_feedstock_g": 448.347,
+        "estimated_machine_hours": 26.783
+      },
+      {
+        "name": "high",
+        "effective_deposited_fraction_of_solid_CAD": 0.6,
+        "assumed_extrusion_rate_mm3_s": 3,
+        "estimated_total_feedstock_g": 597.796,
+        "estimated_machine_hours": 53.566
+      }
+    ],
+    "not_sliced_or_printed": true
+  },
+  "packaging": {
+    "internal_box_mm": [
+      220,
+      220,
+      105
+    ],
+    "printed_mechanism": false,
+    "approach": "Tray flat, each architecture module individually supported in its town position, ferry in protected pocket, paperboard or foam separators and lid cushion. Packaging not counted as printed kit parts.",
+    "nominal_total_clearance_around_assembled_bbox_mm": [
+      36,
+      36,
+      17
+    ],
+    "qualification": "Nominal fit only; cushion thickness, transit protection and box availability not qualified."
+  },
+  "limitations": [
+    "No physical print, fit, comfort, durability or demand validation.",
+    "Uniform-solid support margins do not predict actual infilled-part center of mass or warping.",
+    "Only three edited challenges; no completed24-card deck.",
+    "US$49 complete-gift price is a commercial hypothesis, not a verified price or margin."
+  ],
+  "ferry_geometry_note": "Actual upright bounding box26 x24.5 x20mm. Cabin plan12 x18mm. Hull lower3mm tapers radius11 to13mm; upper3mm uses radius13mm; flat stern and recessed foredeck. The diameter26mm xheight26mm continuous swept cylinder is a conservative containing proxy, not the actual ferry height."
+}

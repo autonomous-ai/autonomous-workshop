@@ -1,0 +1,7 @@
+$ <HOME>/workspaces/peterat617/autonomous-workshop.worktrees/feat/halden-detent-inventor/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/crema_click/part_crema_piston.step.py --write --json
+(3.7s, exit 0)
+--- stdout
+{"ok":true,"sourceRef":"part_crema_piston.step.py","cadPath":"part_crema_piston","kind":"part","outcome":"built","packagePath":"__cadgen__/models/part_crema_piston.step.py"}
+
+--- stderr
+[scripts/gen] generated part GLB/topology artifact: __cadgen__/models/part_crema_piston.step.py

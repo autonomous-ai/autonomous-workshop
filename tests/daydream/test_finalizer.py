@@ -77,7 +77,15 @@ class FinalizerTest(unittest.TestCase):
                 self.assertFalse((root / "agent-outcome.json").exists())
         problems = finalize_daydream.idea_problems({**sample_idea_dict(), "title": "x" * 61, "parts_estimate": 0})
         self.assertIn("title is longer than 60 characters", problems)
-        self.assertIn("parts_estimate must be an integer from 1 to 12", problems)
+        self.assertIn("parts_estimate must be a positive integer", problems)
+
+    def test_finalizer_accepts_an_unbounded_positive_parts_estimate(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            idea = sample_idea_dict()
+            idea["parts_estimate"] = 33
+            root = self._root(temporary, idea)
+            completed = self._run(root)
+            self.assertEqual(completed.returncode, 0, completed.stderr)
 
     def test_finalizer_stays_standard_library_only(self):
         source = finalizer_bytes().decode("utf-8")

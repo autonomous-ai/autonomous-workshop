@@ -1,0 +1,13 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_pin.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0002/overhang-pin.md
+(3.5s, exit 1)
+--- stdout
+part_pin.step.py: 3.0 cm2 of surface, grid 0.400 mm, 39 unsupported samples over 2 region(s)
+  FAIL  no face under 45 deg needs support     17.5% of the surface faces down that steeply; 1 region(s) need support, 0 bridge, 1 below 1 mm2; worst 1.1 mm2 spanning 1.0 mm
+  PASS  bridges within 12 mm                   0 region(s), longest span 0.0 mm
+        every unsupported region, largest first:
+        1. [overhang]     1.1 mm2 at (-2.2, -0.1, 9.5)  span   1.0 mm of 1x3, 8.0 mm of air below
+        2. [trace   ]     0.8 mm2 at (2.3, -0.6, 9.5)  span   1.1 mm of 1x3, 8.0 mm of air below
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0002/overhang-pin.md
+
+--- stderr

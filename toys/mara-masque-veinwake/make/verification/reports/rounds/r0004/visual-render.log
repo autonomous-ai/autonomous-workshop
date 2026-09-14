@@ -1,0 +1,8 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/veinwake.step.py --view front --view top --view iso -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0004/visual
+(17.2s, exit 0)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0004/visual/front.png
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0004/visual/top.png
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0004/visual/iso.png
+
+--- stderr

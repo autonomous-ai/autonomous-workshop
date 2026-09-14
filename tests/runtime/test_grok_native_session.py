@@ -3,7 +3,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
 from workshop.runtime.grok import (
+    DEFAULT_GROK_TIMEOUT_SECONDS,
     GrokNativeSessionLauncher,
     grok_subprocess_environment,
     grok_supports_native_workshop,
@@ -112,6 +114,65 @@ class GrokNativeSessionTest(unittest.TestCase):
         self.assertIn("tool", observed)
         self.assertEqual(observed[0], "starting")
         self.assertEqual(observed[-1], "completed")
+
+    def test_turn_boundary_accepts_a_longer_turn_and_an_untimed_one(self):
+        """Only an explicit request may exceed the historical one-hour default."""
+
+        self.assertEqual(DEFAULT_GROK_TIMEOUT_SECONDS, 3_600)
+        default = GrokNativeSessionLauncher(
+            binary="/bin/grok", cli_version="1.0.5 (5115b46bc909)"
+        )
+        self.assertEqual(default.timeout_seconds, 3_600)
+        longer = GrokNativeSessionLauncher(
+            binary="/bin/grok",
+            cli_version="1.0.5 (5115b46bc909)",
+            timeout_seconds=MAX_NATIVE_TURN_SECONDS,
+        )
+        self.assertEqual(longer.timeout_seconds, MAX_NATIVE_TURN_SECONDS)
+        untimed = GrokNativeSessionLauncher(
+            binary="/bin/grok",
+            cli_version="1.0.5 (5115b46bc909)",
+            timeout_seconds=None,
+        )
+        self.assertIsNone(untimed.timeout_seconds)
+        for invalid in (MAX_NATIVE_TURN_SECONDS + 1, 0, -1, 60.0, "3600"):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(
+                ValueError, "1 to %d or None" % MAX_NATIVE_TURN_SECONDS
+            ):
+                GrokNativeSessionLauncher(
+                    binary="/bin/grok",
+                    cli_version="1.0.5 (5115b46bc909)",
+                    timeout_seconds=invalid,
+                )
+
+    def test_an_untimed_turn_never_arms_a_process_deadline(self):
+        """An untimed launcher must wait without a timeout, not with a huge one."""
+
+        waits = []
+
+        class _RecordingProcess(_FakeProcess):
+            def wait(self, timeout=None):
+                waits.append(timeout)
+                return self.returncode
+
+        launcher = GrokNativeSessionLauncher(
+            binary="/bin/grok",
+            cli_version="1.0.5 (5115b46bc909)",
+            timeout_seconds=None,
+            popen_factory=lambda command, **kwargs: _RecordingProcess(
+                [json.dumps({"type": "thinking"}) + "\n"]
+            ),
+            uuid_factory=lambda: "123e4567-e89b-12d3-a456-426614174000",
+        )
+        launcher.start(
+            product_id="wish-untimed",
+            wish_sha256=DIGEST,
+            constitution_sha256=DIGEST,
+            run_root=self.run_root,
+            host_state_root=self.host_state,
+            prompt="Create one native goal for the current make stage.",
+        )
+        self.assertEqual(waits, [None])
 
     def test_resume_uses_the_frozen_session_id(self):
         seen = {}

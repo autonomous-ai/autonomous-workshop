@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_white_king.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_king/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_king"
+ ],
+ "print": {
+  "white_king": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_king/r0001/overhang-white_king.log": "bdcd2774618eda0bafbe84131c487f1fb8eefef8e0e3b090ebc0e38dee26cee2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_king/r0001/thickness-white_king.log": "f0aa001f4a9901d2f12183c22e257d390b6e1ce840d57515965202cd16a32520"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "white_king"
+ ],
+ "round": 2,
+ "scope": "component:white_king",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso expose rounded dome atop cylindrical post, broad smooth foot and continuous body. No misplaced or disconnected geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_king/r0002/visual-packet.json",
+  "packet_sha256": "6f9cb3b65015a56b31edac909856b7bb0e57d36b6443c0fd88efe5a085b54a7a",
+  "status": "pass"
+ }
+}

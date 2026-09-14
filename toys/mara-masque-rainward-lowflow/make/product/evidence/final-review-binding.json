@@ -1,0 +1,1154 @@
+{
+  "schema_version": 1,
+  "kind": "final-report-binding-reconciliation",
+  "status": "PASS",
+  "scope": "Only schema8 print_gate_sha256s and authorized concept envelope metadata hash replaced. This is not a new visual review or fresh unprimed recognition.",
+  "review_before_sha256": "2010f745b028bdaf805c0ee5339d90d91d186195b629809b54f6b5755d956643",
+  "review_after_sha256": "13b0634dff5a869a89a4300d4080514d57b4567f513df8a72687cae85f741baf",
+  "review_path": "cad/snap/SIGNATURE-REVIEW.json",
+  "other_review_data_unchanged": true,
+  "original_blind_observations_sha256": "2b0676fa0c0b8c7d7c797d7df656ee9343354fa551af8404a018deb9e40cca59",
+  "original_comparison_sha256": "bb5cb4cf93ba964f0c626d9b7cbb9b5ccc3d271a6bbbd13e10dfe3a28053b635",
+  "reviewed_source_sha256": "20eb910707c32018e194796646d8e38ed0f7486b117d9d7d1cf9a8c216bbb0d7",
+  "source_unchanged": true,
+  "all_16_canonical_images_byte_identical": true,
+  "image_sha256s": {
+    "snap/board-oblique.png": "70c7f5098dc9edbd8b40b614bd3ab66d0f4fc374228877dae75c957bda82ff0d",
+    "snap/capacity.png": "de1626495f6aaa4fc34c275f43b1c7632e3c4cce08a914367a5c4923ddc36fdc",
+    "snap/dice-detail.png": "076a7a7e1c09a07f668c0a034a76fea899e0949f12ab465ca0e52fcf96b78757",
+    "snap/board-top.png": "8fe21b80f1b32400ccfd9c2ccda1b6f15d93c88cb4844f2405251f7206c70425",
+    "snap/top.png": "ada3a86ad35a70cfa6e6d58cfb899110806b83815c11bdda5c42e25a90e09b49",
+    "snap/lane-detail-top.png": "71523a125b878d0528a8dacb9d13575488d0ff47fea513bbc2e70fae0243148f",
+    "snap/before-detail.png": "f2c2986d61d562e4d1382649b5c1b64fbb91124ec54e6e6b8e340d2cfee43fd1",
+    "snap/after-detail.png": "f1cf893a2744de7e38c73db6509a44eb9ca1b858f2f9a6bb1d5f93385b2a2a4e",
+    "snap/board-side.png": "7c5a9fc8ec7543527ddc4a01cf277699517a8951c3e39965cd3de4c7a8a6d577",
+    "snap/counter-detail.png": "0ed5c94d4dca3c7c18034e542a520c76d5c4124ecf62e42cf69c433f8c6dfd6b",
+    "snap/iso.png": "d68bc32b0aa9271ce87be84e116bcf89cad5385b3840cb9a72bb5c7fde314b86",
+    "snap/lane-detail.png": "55e16f9258de9041ff56db2f125b2e0e88c17e9260cbe542688beb32b3fadb3b",
+    "snap/board-near-top.png": "fb9536a5046e92a79ff65b34262ae96bffac650ebc6bb3ff5ff38dacf78b7c3f",
+    "snap/lane-detail-neutral.png": "3f291579fe773dbf14bc23fed9bbe483eaaddcd705b465bed5ad379946fb1f3a",
+    "snap/center-detail.png": "b86d6813f3ada028d5787e25a3f5dfcea963512f3315173381ca1f2c96863a75",
+    "snap/signature.png": "a4255e904f62fb465dd2bd7fbfbdd28d4dc5175833170e7759f94fa6bbe78bf4"
+  },
+  "final_STEP_byte_changes": [
+    {
+      "path": "part_single_11.step",
+      "previous_sha256": "533b757675020ba1e07d81d639e9367dcb4bd7fc442ce0aa3d5591af89f3dd27",
+      "final_sha256": "3b83593cf2e0356798f83820ba124f1598cf95304a873edc9635ca58ddda3035"
+    },
+    {
+      "path": "part_fork_14.step",
+      "previous_sha256": "69c4dfab58c80a2f5360c3471f3411d2c485e5d1c63df16b01b5510862eaa700",
+      "final_sha256": "0d8bd1903a545da29d7ac6c7702a315f4878b1306a10b686364834f1a3377f13"
+    },
+    {
+      "path": "part_fork_02.step",
+      "previous_sha256": "cb36f7dd125b2c50fb41b21d46462650edc7373e5cbf46176d567067b08fc020",
+      "final_sha256": "3555339fc9894edf8870a3e5608461d4b801a338727d7dbc5846a1f84a7bb4c4"
+    },
+    {
+      "path": "part_single_07.step",
+      "previous_sha256": "c6a86340f6bffc0d4a389181e4b64342568f4c8982a0c4476140c0442e5e8981",
+      "final_sha256": "b1f378c956f947f5e298fc0ff18c965a86c4ce77f69f746a8f95aed9fce0e582"
+    },
+    {
+      "path": "rainward.step",
+      "previous_sha256": "368122813740274814113cc149283260876f3649a45434816055bafa893644dd",
+      "final_sha256": "e591c48ed5be1254c7d9cac94407be5e68f26b4c34747fef61b87cbed1ba457f"
+    },
+    {
+      "path": "part_die_1.step",
+      "previous_sha256": "5ec73d95a51eece0336c623c8d36bc255da13b1497aff488c0a998a431de32e9",
+      "final_sha256": "26603dbed5eafb628dd21450e1064bbcd8ec8065cbeb54394b2bfe17c51c8d39"
+    },
+    {
+      "path": "part_single_06.step",
+      "previous_sha256": "6707ef9afeae3895dad9352ad501438113b3abd93929626a7683fa5e0ed14584",
+      "final_sha256": "61c1db9c229faaccd5a0f3b0a4d38719515ab763475b9c9c9631e0861caf9c06"
+    },
+    {
+      "path": "part_fork_03.step",
+      "previous_sha256": "ed2ee6e68ebf8ea6d90c6fa26995145c4492a38eb0cf23f3819b48cb12ad7ce4",
+      "final_sha256": "737db31ff280ae23b6cf4a8ddf712edc27edd6fa4c13137d018577ac133f81d2"
+    },
+    {
+      "path": "part_fork_15.step",
+      "previous_sha256": "0edea3b8730a2dfc5a33faeb717bbb118e4f393ce0ee12f8949dec837a3a9819",
+      "final_sha256": "d81174c7b9faf7e282ec62ea822e84ea6b98ae3b382ce20eeb13f9feab58fb3d"
+    },
+    {
+      "path": "part_single_10.step",
+      "previous_sha256": "d42e26c1b637f2a2b08767ced480d3e041444f41c50f9c97aa4cedd4f153f00b",
+      "final_sha256": "495b2dc3e2b98e6dce4214320c3e7ffd67b4b907cb16a65a26904038de72de1b"
+    },
+    {
+      "path": "part_cup_2.step",
+      "previous_sha256": "b9e733911a39f82233d52f70581d775dabd0a7440122c2fb13dd1fba09ad130c",
+      "final_sha256": "4a1826411218ae688a250201e8a885fa4858a5c46cee15367f54db265676c50d"
+    },
+    {
+      "path": "part_fork_08.step",
+      "previous_sha256": "6678ed3bbca21a0c494eeda5b6133bc6881f2dc48aadd5660211ca9fc977f6d4",
+      "final_sha256": "13cb66df61d854c90847deb75082f5d1ae074f82057a663234698d43abf14a4a"
+    },
+    {
+      "path": "part_sun.step",
+      "previous_sha256": "749dfb335a38facfa23b7c1882e420c67cb098a7a6cd695546ef274736b2ddb0",
+      "final_sha256": "64c071c8e39da398a4493fb371459d161d6fe70db6fe81e188e4f5e963a48aec"
+    },
+    {
+      "path": "part_fork_12.step",
+      "previous_sha256": "2d156bcb82e76c0ff840ece8f2e9b1ceacdae9e33bc5cb15651774bea439cbaa",
+      "final_sha256": "b728c40fe6cc2d1c222205ca1280ca61b2c28ef42df055db3440d3c91235d219"
+    },
+    {
+      "path": "part_fork_04.step",
+      "previous_sha256": "00b42371a8075020ffd89755499e44f2c0bda253bca9909313ead75bba78b7c3",
+      "final_sha256": "077e6f960057f59f90dc17553125c954ae248126421265c55688c90ceafe526f"
+    },
+    {
+      "path": "part_single_01.step",
+      "previous_sha256": "aa48fddf7757c9b3042d00fd98e23a055cc6f15c1c2f1d062475d11a5e9969a9",
+      "final_sha256": "b402e400ac33b9d9099bd6760c63a19cc633dd00c3fe98c065437ea5d91182f6"
+    },
+    {
+      "path": "part_fork_05.step",
+      "previous_sha256": "4dcf82635520bc06cf516ec35e9cc8d0e7be274899e59c8dc46b50b5eabfdf1d",
+      "final_sha256": "30e29059b83aebf0c3c00c46767153692940eafe35029f2bfb502e702d383f4a"
+    },
+    {
+      "path": "part_fork_13.step",
+      "previous_sha256": "ae4a476f315cbc7c79745e70d3aca42107b5220579ab3b950a29de8b5975b008",
+      "final_sha256": "5f6715853ed5a9555dc2eebcd498a7ed80dfbbf22d2234da0987d00e6f752ef2"
+    },
+    {
+      "path": "part_fork_09.step",
+      "previous_sha256": "bf166ef018d1fe3b792ef943047b1e91a8ed54bf1b9dd2c0b8b8a45fded68ce1",
+      "final_sha256": "c2e0c70c10f3b5d0e1429796c9e938ee4dd9cf853ffb006b05536a293d86389e"
+    },
+    {
+      "path": "part_single_03.step",
+      "previous_sha256": "9b756ee482f6d381c5cdaf55f5b25b22914d7fcd7bd0c68d1b5729c485981d5a",
+      "final_sha256": "0d27fa903656cab7c50d6208e9eadbf2350c3fb1de42a10a46427e56b07f23ff"
+    },
+    {
+      "path": "part_fork_06.step",
+      "previous_sha256": "2d51858f99a1b13571ddd256e83509193571302ac2cb0ca7c4b1deeee2fe6a44",
+      "final_sha256": "0dd410a5864c49441126a6f9a31f78d37616d97e363328eaf14129bd9ce494e5"
+    },
+    {
+      "path": "part_fork_10.step",
+      "previous_sha256": "64012f42a90f4548e36f8298e21e30c9ba3e5919276198fb3eaa101c457af692",
+      "final_sha256": "4f15b835e044793cee59195e5c4589a6e1cd5fe0bfac0a1ee60c84710b2c1182"
+    },
+    {
+      "path": "part_single_15.step",
+      "previous_sha256": "f29ca0e82a16e06323785ce5c38d2741689f9f10b5be8ed4b5757af980b119af",
+      "final_sha256": "ed8588ce3da41cace1e2cac3a1324fffa45ba5a6681be2817bd64700db37d097"
+    },
+    {
+      "path": "part_single_14.step",
+      "previous_sha256": "39a1d1e8d6a6b315c2824e2d459a50c19a09ea2c8b77777332ddeaa42db9e1b4",
+      "final_sha256": "f5631c6ea61017b05c915888422fe665ea890c95ae5e5032272267d12938d070"
+    },
+    {
+      "path": "part_fork_11.step",
+      "previous_sha256": "7b480f20c0fcbca5fde869050dfbb321392da923fa9cf7f2c07d5a459b5460ca",
+      "final_sha256": "718ba1b6e137fea4d541a4bc7da87255cb3f5cf65e611f8ff53e55e4f15602d8"
+    },
+    {
+      "path": "part_fork_07.step",
+      "previous_sha256": "1a37670880147ae9f5fe2e6ed47391c7730e910fc61867135947b1db389009ba",
+      "final_sha256": "5fd14adac05e10030be8f4a23e8f443802ecd91b42e1fd3f86b37252515d15d8"
+    },
+    {
+      "path": "part_single_02.step",
+      "previous_sha256": "5e1ef49acd65dbe7928a09c120adfed5d97cef097e88855e460e5acc0e8b8107",
+      "final_sha256": "04a1145717fadc0f337929e486a2b7746934470148cee09689360ed3db180e1c"
+    },
+    {
+      "path": "part_single_05.step",
+      "previous_sha256": "3bca1e1453d8072028267f23c14462cfaf0bdb43c937a4cfa732c84581338fdb",
+      "final_sha256": "4018848afcfeece4a4ab16fec89ac2b3f1e4a005f2293c9c605ad6260723a0cd"
+    },
+    {
+      "path": "part_single_13.step",
+      "previous_sha256": "72a903dd30133cd1c155de429ac4be09e9a5900de2c0de45ee1d7584d3ba63af",
+      "final_sha256": "42653a11670dc1fb48f5a6c17ff8113954bd2f6362529f9460efababc95ca5e7"
+    },
+    {
+      "path": "part_cup_1.step",
+      "previous_sha256": "a5f1c618426ff9909e31d36af850ee55eb930b99a073e24c5cd0ac62b95e033f",
+      "final_sha256": "3d950a6f11937b5556d9b3a0b1a657684e7f465d05f183d155a00ddc733df583"
+    },
+    {
+      "path": "part_single_09.step",
+      "previous_sha256": "30ca811570d1a61d86396f0574748c989b849fa0cfb174c63fa717b63d8c00b9",
+      "final_sha256": "c58f2afc927253a729f1d9ac2c19be04fdca3f6339e7f34f16e0e143f0eda04e"
+    },
+    {
+      "path": "part_die_2.step",
+      "previous_sha256": "3593510828e300d24a55e9763e2c89df8ced990dbae54f4e76972f4259d9c1f0",
+      "final_sha256": "c2b7cbdafe4c7d9054b2a02eaf11bccfee214c83bd357a6e52f6d51e4eaf58fa"
+    },
+    {
+      "path": "part_single_08.step",
+      "previous_sha256": "2ba0c9650428366a51aa4fc5a8932dbbe7cebca9942129bd8a454e083673e317",
+      "final_sha256": "28918d22d07e45d1faa54d21b6be284e70c2d56bda28462e75d41353789d2abe"
+    },
+    {
+      "path": "part_single_12.step",
+      "previous_sha256": "f1aad64cee8d4ab7663d75477603e066a59fef96483f6fd8ca3061963405ff54",
+      "final_sha256": "279ec6140f0542dcaee7c94c067070dd6c5c64f0381009fcaf62483cb280e420"
+    },
+    {
+      "path": "part_fork_01.step",
+      "previous_sha256": "ab74dc4cf86e20cf0f99866f9aaa6ca6626353e44f3db4adb3772b9d3ee80abd",
+      "final_sha256": "c0b0c7d994cdef3bb7775e44137fd829d1072989cc979b6297d61241088d75ef"
+    },
+    {
+      "path": "part_single_04.step",
+      "previous_sha256": "44d40ad349cb5b9b5f2287bece9469a51b8e79864028f6fa2931f810bde0234d",
+      "final_sha256": "efaa07e1a19a55555632e19aa30fe3351121a5d7342ab0033c95f9a6d06b3880"
+    }
+  ],
+  "STEP_change_resolution": "Final regenerated STEP byte bindings are verified against current passing geometry/support audit and canonical presentation sources; images are byte-identical and geometry source unchanged. STEP byte changes are not mislabeled as byte identity.",
+  "pre_final_bindings_sha256": "df7c7cf9fb14842f00f2502d5e0179f5d4549831eb31019964fc7374652dba38",
+  "current_evidence_sha256s": {
+    "cad/measure/correction-geometry.json": "81029ac28c6d98b3ffe892ab34816bed03035125a3cf0090fe3d0a005d38a492",
+    "cad/measure/fit-audit.json": "ba247a0549f0cab6973745045fe3a1b64ae7c146e71925abfaec9ba6fd9c8337",
+    "cad/measure/capture-clearance.json": "6640d3cbc9ff6d26e5f03f2cb35f5c76382f4b0b8656351bfa6c80b4f20c2a61",
+    "cad/measure/rules-check.json": "6106b06532e53c0255e04fb3ac2148734d6c5f965acd1f65194bbe5eb8fdc821",
+    "cad/measure/presentation.json": "f8e568e2a50b5f5b8a08fabebffc9e3c72a7f01f291d13b526717f3b85c89604",
+    "cad/measure/verification-pipeline.md": "1520b64e978992b7bfa6bcc21883e690348377959b3215a6b8407a02cd265d7d"
+  },
+  "concept_metadata_compatibility": {
+    "compatible": true,
+    "before_concept_sha256": "dc1d8304231ea7d5e5e2280295fd657b181d9ac78728e3deb09317a2a720dc52",
+    "after_concept_sha256": "25d89665bcae3b738dade1fa4c5ecaa503c3b9dd54eead37f74f8615c56b6d88",
+    "source_file_sha256": "19f862dc3185c36e43d0cc47aaeb9b723f92127cbf64d53eeba8be2770cf5011",
+    "assessment": "Envelope height28 includes the unchanged taller cups seen in blind iso observation, while Sun component remains190x190x17. Explicit assumption correctly distinguishes component envelope from spread tabletop footprint. This changes metadata interpretation only; no geometry or visual requirement is relaxed.",
+    "exact_envelope": {
+      "height_mm": 28,
+      "length_mm": 190,
+      "width_mm": 190
+    },
+    "exact_added_assumption": "The component envelope remains190\u00d7190\u00d728mm to include unchanged28mm cups; the corrected Sun board is190\u00d7190\u00d717mm. This envelope is not the spread tabletop display footprint."
+  },
+  "print_report_count": 70,
+  "all_print_reports_pass": true,
+  "substantive_report_difference_count": 0,
+  "report_bindings": [
+    {
+      "path": "measure/thickness-cup_1.md",
+      "old_sha256": "388a6eb1f7f9c29963c5f8d388038f3196e33031d9ef23e028b8ea9178c2d51a",
+      "final_sha256": "0d69abd5a673d7716c419c55f91fc69fa5dcd0b40a7312ae5443a1f55d5a8c56",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_cup_1.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-cup_1.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_cup_1.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-cup_1.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-cup_2.md",
+      "old_sha256": "ac82a93ead42a92b6cdb00c476aa1e550fcc0038258a8729dc8c8044cf416b93",
+      "final_sha256": "187cc50ab25d98bd1df551997305a33bf7b05f0ed787e034949830e2ce956f90",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_cup_2.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-cup_2.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_cup_2.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-cup_2.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-die_1.md",
+      "old_sha256": "fa41e1742ad6164810ca10cbc5bee99017936b1c22f7ac8b40c7fe66b7260b62",
+      "final_sha256": "f72dbcbbd2fa1b4cd2ab38c8eb0dbf5af836d76f9a3e6d3bedfd5618887e6c94",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_die_1.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-die_1.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_die_1.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-die_1.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-die_2.md",
+      "old_sha256": "d2e17411a3c7f4778a5f2695a5663663d46a4a299192dd5a7c50e62ce2483f8c",
+      "final_sha256": "d2373b250f0fc97efa81f68e2ce9f9251a9c3ed2468bd4d24df8560b1bbb761e",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_die_2.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-die_2.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_die_2.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-die_2.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_01.md",
+      "old_sha256": "1b8e34686ca4dcb8ff2304de352fbb43462fc4ac7b1351070275bfcc08fae617",
+      "final_sha256": "4a92e0c96952dad85767d07d22dcf637f3f41f7ee4e2cc5827c2bf1f592839fc",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_01.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_01.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_01.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_01.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_02.md",
+      "old_sha256": "0f5135839510a78098ac1ed3bc3192fea50258dcab2693b979b86af19c05b8cf",
+      "final_sha256": "9ce484bd28bc2321f8fb5db870359e9e7826f1cab86aabc37b156c5415ff0888",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_02.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_02.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_02.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_02.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_03.md",
+      "old_sha256": "362a6dea095917d0179deb5d419d71dcb2c8fa5e52f3d0f48b0cae22f1c2dd86",
+      "final_sha256": "7050a10243d77d86c4e2cea7d8d67247c12d22b6e028f0c4a5f213864ec8e86f",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_03.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_03.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_03.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_03.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_04.md",
+      "old_sha256": "7aa9609423a287f616ab8a4599af3cc3d4d2fc9a32bc15014d0ba45d4b1a85d3",
+      "final_sha256": "ebb6d997faa860f38bf155ac3a929680a4e808ee36b2820856c70530dcecb2a7",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_04.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_04.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_04.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_04.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_05.md",
+      "old_sha256": "e75af1f985a643336a96b0f02af9a1a271bd9d01a878d4394e4259752323779c",
+      "final_sha256": "37735838f39add156c6924bc4c8bb4df152da0992bc7e618c92d44496c3a7332",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_05.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_05.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_05.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_05.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_06.md",
+      "old_sha256": "9ab12105735b5405b3ef5a1da646e4f10e7e34659cb0883649cc3e3a7f60290a",
+      "final_sha256": "b327adbe15b9252ea6541e98118c4267756de55e6e95c02913935f9762bc73ad",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_06.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_06.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_06.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_06.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_07.md",
+      "old_sha256": "123a7f91bcf9454e3181c8550d6b3f62eaf07becf6c4c3216ead98d183f18817",
+      "final_sha256": "b288d3234422f9e7973751674e6085dd012ec154a2fb3542834ee489ad156360",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_07.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_07.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_07.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_07.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_08.md",
+      "old_sha256": "bbb2690903426b11724bc290329cfe439c7ebb3413ec2f4010c8c308403263c0",
+      "final_sha256": "97a9a99922776a7631161d6f320c567b9f17e60a320d8c6bfe7f6fe0ee2a4d41",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_08.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_08.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_08.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_08.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_09.md",
+      "old_sha256": "1f197689010daac0b708ef07cbc4c9a3d863e461d033f17cd3b05f5d67682963",
+      "final_sha256": "3449d290760b80edc706b78cc46bb4035e227945248a190aa933a65757e5ce28",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_09.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_09.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_09.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_09.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_10.md",
+      "old_sha256": "f037fa2790f225f3629a2ddfe78e9b9043e383f0c77ae771d70a4921632439dc",
+      "final_sha256": "da2ecdd45fecf06e37491dcba4ba7f78ec334f746a16a997bbb925c7a3ea43a8",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_10.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_10.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_10.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_10.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_11.md",
+      "old_sha256": "e08965716fab5a9600065bd6e3f17c9b1473c28efce6b74d7864a93e39b1e465",
+      "final_sha256": "9578e89dcacd4440fb9cb37fa8ac5f752c8ffa3fd5028ac1f69470919294afda",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_11.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_11.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_11.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_11.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_12.md",
+      "old_sha256": "83844f279ba4c2ed5e29edf1672ef84a0e5516bcef5bcde5b0e2e9aac5a1dab2",
+      "final_sha256": "5c6602faaf9b8bf5159d338ca224cb78308decca8ca75ee4f40a77f6ef0d9880",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_12.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_12.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_12.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_12.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_13.md",
+      "old_sha256": "bea141a835191f1b5f8b59192403701adf244ae2900bd2d1a3dbb5cadaa98943",
+      "final_sha256": "98d97fde3e46a459e9999453f85fb8ef7f5bcd2f8804f21527f4dc83f71a2d33",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_13.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_13.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_13.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_13.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_14.md",
+      "old_sha256": "dd31a49d9f5d06eb0778c7f0b2a7c5ae26b7adc139e7c8de3b939471e8bd7302",
+      "final_sha256": "f63ba05e10fe097a801556b561b9d6c54a48f54eb6a20808cda1f249b5a42b41",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_14.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_14.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_14.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_14.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-fork_15.md",
+      "old_sha256": "7ccd3985cd554f1665303a0c9b4d7fd1e2aebf270a2db99e2bc52e4deec744f4",
+      "final_sha256": "984a329553b49a74c60cee3dffe743d881533458a9bcf7d6757ff404ed233367",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_15.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-fork_15.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_15.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-fork_15.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_01.md",
+      "old_sha256": "9c776dcb4b74b0ae23cd1432ce54539c68008a4f1241d9a158a8a0bbada4e862",
+      "final_sha256": "f0669a7c963d7af6c23460555a83403e521ee70495a268eda8e44cc88110132d",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_01.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_01.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_01.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_01.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_02.md",
+      "old_sha256": "48c36f95c252438ea2dfe7e58ccdd91e0b1caed871c50f8874fa43d8c8c0a859",
+      "final_sha256": "2e1846985c4754b30476e547474ec0a58ef29a1e5558610c6c02dca9c52b578b",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_02.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_02.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_02.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_02.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_03.md",
+      "old_sha256": "2e6be60ccabeedd726d47549622215560f8a25a3ca70b910dd34e5f069d60483",
+      "final_sha256": "ea76745bdb5081963c44bf79587a7c4ba43856c2744c994e030935599fee81c9",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_03.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_03.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_03.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_03.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_04.md",
+      "old_sha256": "1eeab9c2c54cf68dcb287ba185d41aff6ef8ccbabb165a8dfc3f91e906c74115",
+      "final_sha256": "37558216dd6a2b86b214a9d92449c36b82908e6feab77793d3991a67fb6ebeee",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_04.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_04.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_04.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_04.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_05.md",
+      "old_sha256": "90dbe109a6d25d3418da7eea8241019b3f8377d937e7937429ebd70d065d5f2c",
+      "final_sha256": "2cb049a945c15f03510ad1526dae1f53bdc3536abe8bc7d72f4bfcae2754d07a",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_05.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_05.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_05.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_05.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_06.md",
+      "old_sha256": "5ee435c6a03551aca5e6716d3fc69ac61f686582799797c59035393e191b20d8",
+      "final_sha256": "ad72f4e92860249e5b24a7d852c1f0cc70f3667950354b98c6faa323a9e7f89a",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_06.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_06.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_06.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_06.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_07.md",
+      "old_sha256": "c4e3f2a9481215a60e7f4c70d57b22fd8412a46627722dea8ad46294b56a5530",
+      "final_sha256": "1c0a576ea8e323bc9dee8cc3269399a24fc8d9637eb98aec3ef9ad1849d7f48a",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_07.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_07.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_07.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_07.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_08.md",
+      "old_sha256": "5cf933fe36135b51889abe2bd4a5ea9221b90936ea57c59f1cb4a6a222bb6bfd",
+      "final_sha256": "e1809c05641d1a729d0a15e2cb7a802831494111ece85a0140670b58f1bbe53d",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_08.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_08.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_08.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_08.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_09.md",
+      "old_sha256": "5a5f1aef46449944feeb77fb71468d2488eb4ee3f1c654afb5f1e315e76f90a3",
+      "final_sha256": "11039869f2b3f6ba4b5f013ee1c4f3b86dab50668c27db241efeee0fcc3a8f21",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_09.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_09.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_09.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_09.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_10.md",
+      "old_sha256": "6db711464c6f726fb6700cb846fc4b1ec2ec0a23c1026d3fe7ff7feb3b1eb944",
+      "final_sha256": "65efc684138f17eb77cb7692d2b0155da6a35e66a449590a4dde6578bcf19772",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_10.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_10.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_10.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_10.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_11.md",
+      "old_sha256": "7b652bae44a485cc2cd31b04ab53df86f4076e13ea48ee72096ff96789c93059",
+      "final_sha256": "080b4d2710081402b1df8dc184e210118abdbc8908244c4b35b57cf3b4c79437",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_11.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_11.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_11.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_11.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_12.md",
+      "old_sha256": "9d48c4609b58ed5c593722f8b3e4dec9c9b7c259a169e7c7d35d23e49d28cdcf",
+      "final_sha256": "618cac416404e6154b1595efb3fb6f09fe72c9316693731a9b16f1a7ac5b4259",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_12.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_12.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_12.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_12.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_13.md",
+      "old_sha256": "0cb26ab579ed23539db726e307603326b5eb028f97dc107f4545160acb09c5f2",
+      "final_sha256": "99d9870d4cce272e546c9c92cd16b8a2a42a9240c402beba1f717cc3e20a9b5e",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_13.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_13.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_13.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_13.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_14.md",
+      "old_sha256": "e1d48a1e8df5e1e0e55cbb0f9cd0cbe0ddf32ce75d6f0ad8c48e19ec94374211",
+      "final_sha256": "f4068eabf45d182ec366222a95ad65d1857d47013606265933f18c1a481d43fb",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_14.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_14.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_14.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_14.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-single_15.md",
+      "old_sha256": "ada7d925e442d07a889b3456f72a2803119f10ca89af2d7d293155d1e0147aa1",
+      "final_sha256": "9aec4014e161084daa22bbf2e7c757b7fcc6376deb0c494b864c37c7b65fefb1",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_15.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_15.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_15.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_15.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/thickness-sun.md",
+      "old_sha256": "97bdb638d7be50202f50308122fd9d93374dd0ee3757cb4d566cbd6c566a7e30",
+      "final_sha256": "e187280f36457adcf446386154bd7da63edd434403dad42343bb9e02ed1674d2",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_sun.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-sun.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_sun.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-sun.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-cup_1.md",
+      "old_sha256": "4d4d65528e12dfd650784c8ec1f478cfb2cea3546542314e6ce229213fae461e",
+      "final_sha256": "65500f82e35403f58c8aebdac03b206ba95feec7d948c2d1e545e73da725729b",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_cup_1.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-cup_1.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_cup_1.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-cup_1.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-cup_2.md",
+      "old_sha256": "1a2a8b5e2ecfdfe49fe870008bbd33baac0f8d30ac1fada24a1456ae2eb522ec",
+      "final_sha256": "25ec69c4eea71b8d33abe16c6460272967f4fb404aaa473e5fa3514a441f0ccf",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_cup_2.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-cup_2.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_cup_2.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-cup_2.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-die_1.md",
+      "old_sha256": "5d050d1938f6d8b163bd7d200ebd194af6bf4b9f9dd8ec95dcd128a135ba9142",
+      "final_sha256": "222c6e94c22c2c049bebe07b28b95a21d92598bbe52fbda17db30f6f2439a8b8",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_die_1.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-die_1.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_die_1.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-die_1.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-die_2.md",
+      "old_sha256": "412a5296be0c75d5f6d9ad52cf315dafa040943fda34c2c1925727a803536e48",
+      "final_sha256": "35cf8750029763087bcff9f7c543f4a3c88d3ad8840f6ed252966bc301c7506b",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_die_2.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-die_2.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_die_2.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-die_2.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_01.md",
+      "old_sha256": "e944551cd1828fbb1e8286acf0c5ae8c3a22739c7f9881005f502e42c38d9d8c",
+      "final_sha256": "f677b7fa927f89573756ade47a6614cb430d3f104daf6d0d2f06c71e35821ad7",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_01.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_01.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_01.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_01.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_02.md",
+      "old_sha256": "44410d451fa5869783af2d49d6dfe39c6e3c4a2fe2e9a4efd7bc98b9a25390c0",
+      "final_sha256": "7c60dd8eab3e1d8bdeaad6d117d2b44e16b545a64fe41d6b66fb0ed1e678d4d3",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_02.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_02.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_02.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_02.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_03.md",
+      "old_sha256": "12ee8a2fc4128e25ed78cd7ec6ed53633d451cc48012c20fc87976b2e7842375",
+      "final_sha256": "720878d5b18c042f21007b818e1967d246ff6dac74b4370628942dfd39075e5a",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_03.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_03.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_03.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_03.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_04.md",
+      "old_sha256": "33446f42a21c1ab4b12ae72de879b31b77e8ae3fa2fc92b86aec84529a5fa9f9",
+      "final_sha256": "96cbc22c2620c83824a87ca9904565985f59727d144f2f65278b2f00c49c97f5",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_04.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_04.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_04.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_04.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_05.md",
+      "old_sha256": "7fb59efd06c864b0896d266915638060cbcdefda6c9c79108068fd00d9ea64d4",
+      "final_sha256": "7791b30a4395846b7505a13e31bcaeb9052e5523a91a5c82d63d7e44304ac735",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_05.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_05.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_05.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_05.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_06.md",
+      "old_sha256": "61d77f7596cd283a12fd0684c64a0b6db4f53ddaee5e87b9d33cc8be1561a0b4",
+      "final_sha256": "fa5fb98d115f24bcb204b0deeaaa87a599cb05b6fb9ba03c6f7a3c9470356ecb",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_06.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_06.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_06.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_06.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_07.md",
+      "old_sha256": "119814ef88be15af3dee81d7dfe981e6e3b58e93cbf67a331b475f9120050ea2",
+      "final_sha256": "bcdef7ce7a10745d80a421794485bf6f69d464f7ade03b4e8c454153f4147734",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_07.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_07.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_07.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_07.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_08.md",
+      "old_sha256": "51433b26eafa3a2821b93e216f9a65cde82e3d58b29935f078680d34ecf80802",
+      "final_sha256": "863ba78915a6a9f8c2f46f540d4bfdc680c4382ef80273d3a74beb9ac51b355b",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_08.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_08.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_08.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_08.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_09.md",
+      "old_sha256": "620f5e024c27732343a03911ae8f440fa80763fe51f86e25cd126a718c88fb80",
+      "final_sha256": "08c29328e135734c2bdc89d0504328ec069725825bf87ef353671ceb525db480",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_09.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_09.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_09.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_09.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_10.md",
+      "old_sha256": "e07b88b13a525750102a2897d02361522c7aeaded368615fab79dc5d5f2b3d02",
+      "final_sha256": "64d72e2c3443de9afa470f0797cda770c4b497cbae66558115767a7e32264ca3",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_10.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_10.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_10.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_10.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_11.md",
+      "old_sha256": "732eeddb83155358a275e43db57d7daf2b3373ae50c1b7eb10b9853a5c2922c0",
+      "final_sha256": "bbb7413b200a5361b6bd9f086b10c6c3222b03eadd6d68790e32590693d8c12e",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_11.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_11.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_11.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_11.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_12.md",
+      "old_sha256": "0190b627b405e0f176838c14f361e67aa62d5c55783ede829f5682d4316ca3e2",
+      "final_sha256": "45ac77b1f725e332ee1d8accd2fd28bac2be65980398fdf01553ca77c48b65b8",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_12.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_12.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_12.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_12.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_13.md",
+      "old_sha256": "9652a70c747733df2a274490c711b3407f43bb830e96e558fe05ace0f316c515",
+      "final_sha256": "63d4477f511aa78320af44820608490a5c076422ac6958cd09aced130f7ce107",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_13.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_13.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_13.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_13.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_14.md",
+      "old_sha256": "2136ff2dfa6973eea1e22474a32104d63555710f3b16d6d152b732bf1b1c7779",
+      "final_sha256": "daf3079ccabadae7ffc4dfce954b7d62e3679c5fcce3015a450f34cb9d2c9681",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_14.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_14.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_14.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_14.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-fork_15.md",
+      "old_sha256": "280486cb425ed41af31785bd6e0263da534b4d652216ce54d4db13242877d2c1",
+      "final_sha256": "a75b8098ade2fa27227d3cae0f6a6e805d9452be73d09e2d91470b8cb2e76683",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_fork_15.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-fork_15.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_fork_15.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-fork_15.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_01.md",
+      "old_sha256": "6041f0623faa687ee1dac453c0478b6e08133df4f8f549d95a9539f656de4ad0",
+      "final_sha256": "1bad7f39f827dc88036e571c38ed197f8020dc6505d6178878241b1cc9070f76",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_01.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_01.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_01.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_01.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_02.md",
+      "old_sha256": "041ed6c8ffb6d286751ec8d611353161255ec3f9259983706bdb40e92dc51b6c",
+      "final_sha256": "ff2f3380904d5622337d812a83a5808cc941da0b341dc5502fc69f6096fc2d0b",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_02.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_02.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_02.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_02.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_03.md",
+      "old_sha256": "56516ce5e2184f93c47c7b5002c3796fafa534ff563a591abd249a6d04411e18",
+      "final_sha256": "881d001ec22be20e8eca22335c8874c07968351b86a495fd4969f9798e43258c",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_03.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_03.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_03.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_03.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_04.md",
+      "old_sha256": "5fb1122fd343aaa7ff12e99ef6975494e0f72f337366da2717a6a05a47dc2ca2",
+      "final_sha256": "e38da7aaa19f28d29401ff73d5324fd8178ebdff332bd4bb01207c60eabdefad",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_04.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_04.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_04.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_04.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_05.md",
+      "old_sha256": "af2f91ac616fb1ff45eefee8a5aa2c6d55438436bed5f0a586cf6bb5f482554f",
+      "final_sha256": "ea4cbd1fac5571a4ac73438e3c491af71f72d78f87e5330c4cd51a36a46c20f2",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_05.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_05.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_05.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_05.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_06.md",
+      "old_sha256": "2afbac008374d11cf4d9956ad6ec8945c135c961e1854987a2bbb97893811efd",
+      "final_sha256": "e46e5011611f21c1dd7dcc1d92ef5ef5515c771d8aa93e5329238741d2b03617",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_06.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_06.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_06.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_06.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_07.md",
+      "old_sha256": "5e0ce0b65170a846c7e663fd16ad4778e1071c05432eed8831fdeda7e5c5c782",
+      "final_sha256": "5ad924fa77fa1b96a4b29b5fb5d7389e0927c62724d210d1c159bee8c4d367b7",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_07.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_07.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_07.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_07.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_08.md",
+      "old_sha256": "4aa0d9aced45908fe1eed8e2850dc6cec7e4e7d1e0c97f18f03bd3e52bb1f232",
+      "final_sha256": "4f1d3b03fb1bbbc73cb6a4fdd51c3209af7a88edb6d7a263c32b2257a4a16652",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_08.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_08.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_08.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_08.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_09.md",
+      "old_sha256": "26e5a8437a51ed0268691fcddf365a7787f58baa4da632f25e3d049af2133bd2",
+      "final_sha256": "1d14fed836d7ab8a7a9e84261fc963f8cecb6097319b0234fda3bfc84f5ab160",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_09.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_09.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_09.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_09.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_10.md",
+      "old_sha256": "524a97d9ddfd19e0134ca0de7172da53116c5810b0a72b879db8199e160a53d9",
+      "final_sha256": "a0aa0eb5d94774a6f8c0cb512f88d7efb9ac2d3849dd81cf9fc2f6de06d0a13e",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_10.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_10.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_10.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_10.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_11.md",
+      "old_sha256": "ab454df122c7f5f61effa70651c65234338c26886829460935badea8505f6411",
+      "final_sha256": "8fa3c28f03d2491d44e338b1ddb5d031fbe171fbd989430b87d2bbf6e81fcf95",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_11.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_11.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_11.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_11.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_12.md",
+      "old_sha256": "5ce08f65906ec4d259e3aac81970a4e6158fe21cf429c7ad073a7e794b15e600",
+      "final_sha256": "0ed04540726d732ce1860fd4a16de598c8317c25f50616319a6b9d347aa390a4",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_12.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_12.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_12.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_12.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_13.md",
+      "old_sha256": "052ddf6b5ac2b6e7817df00e3b1f20a772e3da1fb840c37ff6dc810e0b800677",
+      "final_sha256": "7b7c52d60c166f30db90034b81c22b29f952da71a52f02325862be52c7df8692",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_13.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_13.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_13.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_13.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_14.md",
+      "old_sha256": "f2f2c325e9a8342e1d5db0847aa7dff8b9495cf456ae23b4a94254dfbf8624e0",
+      "final_sha256": "f264fd0ee7a4b913439ea484e7e4d6f7ce3b6d4144e7e6f8bacd05a3666d11fd",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_14.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_14.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_14.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_14.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-single_15.md",
+      "old_sha256": "21d2bf53aae37a4f3c03ee0c2d5f0bd4c3fc9f1c95a149d0006dfe8a3b205a12",
+      "final_sha256": "46fe5b99a9e5184b6b2ef6d98e9967316a549fad5ceff3431c4a4226d270342f",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_15.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_15.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_single_15.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_15.md`"
+        }
+      ]
+    },
+    {
+      "path": "measure/overhang-sun.md",
+      "old_sha256": "2b419ef6a0075a0849993f65e6d9659d64c238d0c9145c92ab7e6cbb59d97dd1",
+      "final_sha256": "ac61e59a2fd89b47f3ea0878785a657a86a07923e5c3d395938a0f4f210925bd",
+      "difference": "Command header source/report paths only; all measured values, classifications, warnings and results identical.",
+      "changed_lines": [
+        {
+          "line": 3,
+          "before": "`<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_sun.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-sun.md`",
+          "after": "`artifacts/make/r0001/product/cad/part_sun.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-sun.md`"
+        }
+      ]
+    }
+  ],
+  "limitations": "Original digital-only limitations persist: incomplete tail footprint support is quantified; stack seams are invisible; physical stability, hand access, tactile experience and statistical dice fairness remain untested. Verifier records its pre-reconciliation review hash; this receipt bridges that report to final updated bindings."
+}

@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "scope": "Demonstrated before-state victim extraction, overhead transport, descent to free capture circle. Sampled vertical positions plus exact overhead Z clearance; not a continuous swept-volume guarantee or hand-access/physical test.",
+  "vertical_positions_checked": 42,
+  "overhead_bottom_mm": 30.0,
+  "highest_stationary_geometry_mm": 28.0,
+  "overhead_clearance_mm": 2.0,
+  "sampled_positive_intersections": 0,
+  "state_sha256": {
+    "before": "fbcccef436d5e79438032e212dc9d6fee1c78af8ab7a494f2926c1d897d92174",
+    "after": "211dc746246e97292b9fc682717b89632bfa05832a85653aa65a20000cd6351d"
+  }
+}

@@ -1,0 +1,336 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake --manifest <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/motion.json --json
+(8.6s, exit 0)
+--- stdout
+{
+  "ok": true,
+  "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake",
+  "assembly": "veinwake.step.py",
+  "results": [
+    {
+      "id": "tooth_1-withdraws",
+      "check": "linear_motion_collision",
+      "description": "Open vertical withdrawal",
+      "clear": true,
+      "steps": 55,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        55.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 55 steps (step 1.000 mm)"
+    },
+    {
+      "id": "tooth_1-floor-stop",
+      "check": "linear_motion_collision",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "clear": false,
+      "step": 1,
+      "steps": 6,
+      "obstacle": "rind",
+      "overlapMm3": 307.87608,
+      "translation": [
+        0.0,
+        0.0,
+        -3.0
+      ],
+      "stepMm": 0.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected"
+    },
+    {
+      "id": "tooth_2-withdraws",
+      "check": "linear_motion_collision",
+      "description": "Open vertical withdrawal",
+      "clear": true,
+      "steps": 55,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        55.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 55 steps (step 1.000 mm)"
+    },
+    {
+      "id": "tooth_2-floor-stop",
+      "check": "linear_motion_collision",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "clear": false,
+      "step": 1,
+      "steps": 6,
+      "obstacle": "rind",
+      "overlapMm3": 307.87608,
+      "translation": [
+        0.0,
+        0.0,
+        -3.0
+      ],
+      "stepMm": 0.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected"
+    },
+    {
+      "id": "tooth_3-withdraws",
+      "check": "linear_motion_collision",
+      "description": "Open vertical withdrawal",
+      "clear": true,
+      "steps": 55,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        55.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 55 steps (step 1.000 mm)"
+    },
+    {
+      "id": "tooth_3-floor-stop",
+      "check": "linear_motion_collision",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "clear": false,
+      "step": 1,
+      "steps": 6,
+      "obstacle": "rind",
+      "overlapMm3": 307.87608,
+      "translation": [
+        0.0,
+        0.0,
+        -3.0
+      ],
+      "stepMm": 0.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected"
+    },
+    {
+      "id": "tooth_4-withdraws",
+      "check": "linear_motion_collision",
+      "description": "Open vertical withdrawal",
+      "clear": true,
+      "steps": 55,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        55.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 55 steps (step 1.000 mm)"
+    },
+    {
+      "id": "tooth_4-floor-stop",
+      "check": "linear_motion_collision",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "clear": false,
+      "step": 1,
+      "steps": 6,
+      "obstacle": "rind",
+      "overlapMm3": 307.87608,
+      "translation": [
+        0.0,
+        0.0,
+        -3.0
+      ],
+      "stepMm": 0.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected"
+    },
+    {
+      "id": "tooth_5-withdraws",
+      "check": "linear_motion_collision",
+      "description": "Open vertical withdrawal",
+      "clear": true,
+      "steps": 55,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        55.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 55 steps (step 1.000 mm)"
+    },
+    {
+      "id": "tooth_5-floor-stop",
+      "check": "linear_motion_collision",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "clear": false,
+      "step": 1,
+      "steps": 6,
+      "obstacle": "rind",
+      "overlapMm3": 307.87608,
+      "translation": [
+        0.0,
+        0.0,
+        -3.0
+      ],
+      "stepMm": 0.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected"
+    },
+    {
+      "id": "bubble_1-withdraws",
+      "check": "linear_motion_collision",
+      "description": "Open vertical withdrawal",
+      "clear": true,
+      "steps": 55,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        55.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 55 steps (step 1.000 mm)"
+    },
+    {
+      "id": "bubble_1-floor-stop",
+      "check": "linear_motion_collision",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "clear": false,
+      "step": 1,
+      "steps": 6,
+      "obstacle": "rind",
+      "overlapMm3": 307.87608,
+      "translation": [
+        0.0,
+        0.0,
+        -3.0
+      ],
+      "stepMm": 0.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected"
+    },
+    {
+      "id": "bubble_2-withdraws",
+      "check": "linear_motion_collision",
+      "description": "Open vertical withdrawal",
+      "clear": true,
+      "steps": 55,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        55.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 55 steps (step 1.000 mm)"
+    },
+    {
+      "id": "bubble_2-floor-stop",
+      "check": "linear_motion_collision",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "clear": false,
+      "step": 1,
+      "steps": 6,
+      "obstacle": "rind",
+      "overlapMm3": 307.87608,
+      "translation": [
+        0.0,
+        0.0,
+        -3.0
+      ],
+      "stepMm": 0.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected"
+    },
+    {
+      "id": "bubble_3-withdraws",
+      "check": "linear_motion_collision",
+      "description": "Open vertical withdrawal",
+      "clear": true,
+      "steps": 55,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        55.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 55 steps (step 1.000 mm)"
+    },
+    {
+      "id": "bubble_3-floor-stop",
+      "check": "linear_motion_collision",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "clear": false,
+      "step": 1,
+      "steps": 6,
+      "obstacle": "rind",
+      "overlapMm3": 307.87608,
+      "translation": [
+        0.0,
+        0.0,
+        -3.0
+      ],
+      "stepMm": 0.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected"
+    },
+    {
+      "id": "bubble_4-withdraws",
+      "check": "linear_motion_collision",
+      "description": "Open vertical withdrawal",
+      "clear": true,
+      "steps": 55,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        55.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 55 steps (step 1.000 mm)"
+    },
+    {
+      "id": "bubble_4-floor-stop",
+      "check": "linear_motion_collision",
+      "description": "Solid pocket floor stops downward travel; no upward retention claimed",
+      "clear": false,
+      "step": 1,
+      "steps": 6,
+      "obstacle": "rind",
+      "overlapMm3": 307.87608,
+      "translation": [
+        0.0,
+        0.0,
+        -3.0
+      ],
+      "stepMm": 0.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by rind at step 1/6 (307.87608 mm3) - retained, as expected"
+    }
+  ]
+}
+
+--- stderr

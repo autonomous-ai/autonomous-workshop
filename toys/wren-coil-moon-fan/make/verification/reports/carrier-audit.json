@@ -1,0 +1,65 @@
+{
+  "named_carrier_solids": [
+    "inlay_datum",
+    "pocket",
+    "window_wall",
+    "keepout",
+    "cover"
+  ],
+  "inlay_measured_mm": [
+    11.5,
+    21.5,
+    0.75
+  ],
+  "pocket_measured_mm": [
+    12.5,
+    22.5,
+    1.0499999999999998
+  ],
+  "window_measured_mm": [
+    15.5,
+    25.5,
+    1.0
+  ],
+  "keepout_measured_mm": [
+    15.5,
+    25.5,
+    3.25
+  ],
+  "side_clearance_mm": 0.5,
+  "rear_clearance_mm": 0.2999999999999998,
+  "pivot_keepout_overlap_mm3": 0,
+  "keepout_obstruction_set": "pin; entire moving leaf including stop peg, each1degree; cover-capture roofs. Pocket enclosing sidewalls, floor, inlay and retaining cover are intended enclosure exclusions, not mechanism ribs.",
+  "max_moving_keepout_overlap_mm3": 0,
+  "service_axis": "+Z, leaf held at75 degrees; tag0..15mm and released cover3..18mm sampled1mm",
+  "cover_release_limit": "Elastic transition through first3mm separately modelled analytically, not established by rigid sweeps.",
+  "endpoint_contact_distance_mm": [
+    0,
+    0
+  ],
+  "perimeter_spine_volume_mm3": 424.8136997625941,
+  "cover_release_estimate": {
+    "span_mm": 34.4,
+    "total_end_shortening_mm": 0.5,
+    "upward_bow_mm": 2.539685019840059,
+    "surface_strain_fraction": 0.010301588777068925,
+    "physical_validation": "not performed; force and20 service cycles untested"
+  },
+  "pin_release_estimate": {
+    "leg_length_mm": 6.9,
+    "inward_tip_mm": 0.35,
+    "surface_strain_fraction": 0.018746061751732823,
+    "physical_validation": "not performed; actual elastic snap fit untested"
+  },
+  "closed_bounds_mm": [
+    67.00000000096334,
+    86.0,
+    11.300000000000002
+  ],
+  "open_bounds_mm": [
+    106.60003941340818,
+    106.486494133502,
+    11.300000000000002
+  ],
+  "physical_claims": "No RF range, fit, fatigue, load rating or physical print has been measured."
+}

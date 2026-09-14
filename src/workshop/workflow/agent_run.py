@@ -42,6 +42,7 @@ from workshop.runtime.agent_assets import (
 from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
     MANAGER_PROJECT_PATH,
+    MAX_NATIVE_TURN_SECONDS,
     manager_project_bytes,
     manager_runtime_selection,
     manager_spec,
@@ -62,6 +63,12 @@ from workshop.workflow.effort import (
     workshop_effort,
 )
 
+from workshop.workflow.revision import (
+    MAX_REVISION_BYTES,
+    REVISION_INPUT,
+    materialize_revision,
+    revision_input,
+)
 
 BudgetAuthority = Callable[[Mapping[str, Any]], bool]
 
@@ -105,6 +112,10 @@ MAX_AGENT_ARTIFACTS_PER_OUTCOME = 16
 MAX_HOST_SEALED_ARTIFACTS_PER_GATE = 512
 MAX_AGENT_NEEDS = 16
 MAX_AGENT_NEED_CHARS = 1_024
+# A turn shorter than this finalizes nothing, so it is refused rather than
+# started. The upper bound is the shared launcher ceiling.
+MIN_AGENT_TURN_SECONDS = 60
+_UNSET_TURN_BOUNDARY = object()
 AGENT_RUN_CHECKPOINT_KIND = "autonomous-workshop-agent-run"
 
 _FORWARD_TRANSITIONS = {
@@ -730,6 +741,11 @@ class AgentRunCheckpoint:
     manager_reasoning_effort: Optional[str] = None
     needs: tuple[str, ...] = ()
     token_budgeted: bool = False  # Derived host authority, not an immutable input.
+    # An operator-selected native turn boundary, frozen for the whole run.
+    # ``turn_untimed`` removes the host wall clock; ``turn_seconds`` replaces it
+    # with an exact number. Neither set means the run keeps its frozen policy.
+    turn_seconds: Optional[int] = None
+    turn_untimed: bool = False
 
     @property
     def complete(self) -> bool:
@@ -770,10 +786,30 @@ class AgentRun:
         manager_id: str = DEFAULT_MANAGER_ID,
         manager_model: Optional[str] = None,
         manager_reasoning_effort: Optional[str] = None,
+        turn_seconds: Optional[int] = None,
+        turn_untimed: bool = False,
+        check_motion: bool = False,
         wish_reference_files: Optional[Mapping[str, bytes]] = None,
+        revision_snapshot: Optional[bytes] = None,
     ) -> "AgentRun":
+        if type(check_motion) is not bool:
+            raise ContractError("agent run check_motion must be boolean")
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
+        if type(turn_untimed) is not bool:
+            raise ContractError("agent run turn_untimed must be boolean")
+        if turn_untimed and turn_seconds is not None:
+            raise ContractError(
+                "agent run turn boundary is either untimed or an exact number"
+            )
+        if turn_seconds is not None and (
+            type(turn_seconds) is not int
+            or not MIN_AGENT_TURN_SECONDS <= turn_seconds <= MAX_NATIVE_TURN_SECONDS
+        ):
+            raise ContractError(
+                "agent run turn_seconds must be from %d to %d"
+                % (MIN_AGENT_TURN_SECONDS, MAX_NATIVE_TURN_SECONDS)
+            )
         selected_effort = workshop_effort(effort) if effort is not None else None
         selected_runtime = manager_runtime_selection(
             manager_id,
@@ -794,6 +830,7 @@ class AgentRun:
             )
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
         wish_reference_inputs = _wish_reference_inputs(wish_bytes, wish_reference_files)
+        revision_inputs = revision_input(wish_bytes, revision_snapshot)
         try:
             requested = Path(run_root)
         except TypeError as exc:
@@ -1025,6 +1062,9 @@ class AgentRun:
                 0o400,
             ),
             (PurePosixPath("WISH.json"), wish_bytes, 0o400),
+            (PurePosixPath("MAKE-OPTIONS.json"),
+             json.dumps({"schema_version": 1, "check_motion": check_motion},
+                        sort_keys=True, separators=(",", ":")).encode("utf-8"), 0o400),
             (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
             (
                 PurePosixPath(MANAGER_PROJECT_PATH),
@@ -1041,6 +1081,7 @@ class AgentRun:
         all_input_files.extend(inventor_skill_files)
         all_input_files.extend(inventor_agent_files)
         all_input_files.extend(wish_reference_inputs)
+        all_input_files.extend(revision_inputs)
         all_input_files.sort(key=lambda item: item[0].as_posix())
         input_paths = [relative.as_posix() for relative, _, _ in all_input_files]
         if len(input_paths) != len(set(input_paths)):
@@ -1055,6 +1096,7 @@ class AgentRun:
         total_input_bytes = (
             sum(len(content) for _, content, _ in all_input_files)
             - reference_input_bytes
+            - sum(len(content) for _, content, _ in revision_inputs)
         )
         if total_input_bytes > MAX_AGENT_INPUT_BYTES:
             raise ArtifactError("agent run inputs exceed their total byte limit")
@@ -1146,6 +1188,8 @@ class AgentRun:
         references_root = selected / WISH_REFERENCES_DIRECTORY
         if references_root.exists():
             os.chmod(references_root, 0o500)
+        if revision_snapshot is not None:
+            materialize_revision(selected, revision_snapshot)
         core: dict[str, Any] = {
             "schema_version": 4 if selected_effort is not None else 3,
             "kind": AGENT_RUN_CHECKPOINT_KIND,
@@ -1174,6 +1218,9 @@ class AgentRun:
         }
         if selected_effort is not None:
             core["effort"] = selected_effort.name
+        if turn_untimed or turn_seconds is not None:
+            # Absent means the frozen policy decides; ``null`` means no wall clock.
+            core["turn_seconds"] = None if turn_untimed else turn_seconds
         checkpoint_sha256 = cls._write_checkpoint_file(
             selected_host / "agent-run.json", core
         )
@@ -1327,6 +1374,8 @@ class AgentRun:
             expected_fields.add("manager_id")
         if "needs" in payload:
             expected_fields.add("needs")
+        if "turn_seconds" in payload:
+            expected_fields.add("turn_seconds")
         if set(payload) != expected_fields:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
@@ -1384,6 +1433,13 @@ class AgentRun:
                 or (payload["status"] in ("waiting", "failed")) != bool(needs)
             ):
                 raise StateConflict("agent run current needs are invalid")
+        if "turn_seconds" in payload:
+            boundary = payload["turn_seconds"]
+            if boundary is not None and (
+                type(boundary) is not int
+                or not MIN_AGENT_TURN_SECONDS <= boundary <= MAX_NATIVE_TURN_SECONDS
+            ):
+                raise StateConflict("agent run native turn boundary is invalid")
         _identifier(payload["product_id"], "agent run product_id")
         _positive_int(payload["max_rounds"], "agent run max_rounds", 100)
         expected_root = _sha256(str(self.run_root).encode("utf-8"))
@@ -1416,6 +1472,7 @@ class AgentRun:
             size_limit = (
                 MAX_WISH_REFERENCE_BYTES
                 if _is_wish_reference_path(item["path"])
+                else MAX_REVISION_BYTES if item["path"] == REVISION_INPUT
                 else MAX_AGENT_INPUT_BYTES
             )
             if type(item["size"]) is not int or not 0 <= item["size"] <= size_limit:
@@ -1433,7 +1490,7 @@ class AgentRun:
             input_content[relative.as_posix()] = content
             if _is_wish_reference_path(relative.as_posix()):
                 reference_total += size
-            else:
+            elif relative.as_posix() != REVISION_INPUT:
                 total += size
         if (
             len(observed_paths) != len(set(observed_paths))
@@ -1450,6 +1507,7 @@ class AgentRun:
         if not required <= set(observed_paths):
             raise StateConflict("agent run required inputs are missing")
         _verify_wish_reference_inputs(input_content, observed_paths)
+        revision_input(input_content["WISH.json"], input_content.get(REVISION_INPUT))
         if any(path == "catalog" or path.startswith("catalog/") for path in observed_paths):
             raise StateConflict("product projects must not contain an Inventor catalog")
         legacy_catalog = self.run_root / "catalog"
@@ -1630,6 +1688,8 @@ class AgentRun:
         *,
         reason: str,
         token_budget_skill_root: Optional[Path] = None,
+        motion_skill_root: Optional[Path] = None,
+        check_motion: Optional[bool] = None,
     ) -> tuple[dict[str, Any], ...]:
         """Bring the run's host-owned domain skills up to the installed source.
 
@@ -1641,13 +1701,21 @@ class AgentRun:
         skills the run already carries are touched; a skill absent from the run
         is never introduced.  Every refresh appends one owner-only record under
         host state and returns the manifest changes it made.
+
+        A motion migration may refresh only the carried Make finalizer, even
+        for a pre-token-budget run. check_motion rebinds the root option through
+        this same verified input writer; it does not alter skills by itself.
         """
 
         if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 512:
             raise ContractError("domain skill refresh reason must be a short string")
         if not isinstance(domain_skill_roots, Mapping):
             raise ContractError("domain skill roots must be a mapping")
+        if check_motion is not None and type(check_motion) is not bool:
+            raise ContractError("agent run check_motion must be boolean")
         payload = self._load()
+        if check_motion is not None and payload["status"] == "complete":
+            raise TransitionError("a completed agent run has no motion policy to rebind")
         by_path: dict[str, dict[str, Any]] = {
             item["path"]: dict(item) for item in payload["inputs"]
         }
@@ -1664,11 +1732,15 @@ class AgentRun:
             if not _uses_token_budget(payload):
                 raise ContractError("review-tool refresh requires a token-budget run")
             roots["autonomous-workshop"] = token_budget_skill_root
+        elif motion_skill_root is not None:
+            roots["autonomous-workshop"] = motion_skill_root
+            review_paths = {"scripts/stage_proposal.py"}
         for name, source_root in sorted(roots.items()):
             if (
                 not isinstance(name, str)
                 or _AGENT_SKILL_NAME.fullmatch(name) is None
-                or (name == "autonomous-workshop" and token_budget_skill_root is None)
+                or (name == "autonomous-workshop"
+                    and token_budget_skill_root is None and motion_skill_root is None)
             ):
                 raise ContractError("domain skill name is invalid")
             prefix = ".agents/skills/%s/" % name
@@ -1724,13 +1796,33 @@ class AgentRun:
                         "mode": mode,
                     }
                 )
+        if check_motion is not None:
+            path = "MAKE-OPTIONS.json"
+            content = json.dumps({"schema_version": 1, "check_motion": check_motion},
+                                 sort_keys=True, separators=(",", ":")).encode("utf-8")
+            digest = _sha256(content)
+            previous = by_path.get(path)
+            if previous is None or previous["sha256"] != digest:
+                # This is a host-owned input rebind, never an agent edit.
+                # Refuse an untracked file instead of adopting or replacing it.
+                target = self.run_root / path
+                if previous is None and (target.exists() or target.is_symlink()):
+                    raise StateConflict("untracked MAKE-OPTIONS.json blocks motion policy adoption")
+                writes.append((PurePosixPath(path), content, 0o400))
+                by_path[path] = {"path": path, "sha256": digest,
+                                 "size": len(content), "mode": 0o400}
+                changes.append({"path": path,
+                                "previous_sha256": None if previous is None else previous["sha256"],
+                                "previous_mode": None if previous is None else previous["mode"],
+                                "sha256": digest, "mode": 0o400})
         if not changes:
             return ()
         inputs = sorted(by_path.values(), key=lambda item: item["path"])
         if len(inputs) > MAX_AGENT_INPUT_FILES:
             raise ContractError("domain skill refresh exceeds the agent input file limit")
         total = sum(
-            item["size"] for item in inputs if not _is_wish_reference_path(item["path"])
+            item["size"] for item in inputs
+            if not _is_wish_reference_path(item["path"]) and item["path"] != REVISION_INPUT
         )
         if total > MAX_AGENT_INPUT_BYTES:
             raise ContractError("domain skill refresh exceeds the agent input byte budget")
@@ -1817,6 +1909,48 @@ class AgentRun:
             os.close(descriptor)
         os.chmod(ledger, 0o600)
 
+    def rebind_turn_boundary(
+        self, *, turn_seconds: Optional[int] = None, turn_untimed: bool = False
+    ) -> AgentRunCheckpoint:
+        """Re-select this run's native turn boundary without touching lifecycle.
+
+        An operator may need a longer turn than the run froze, most often when
+        a stage keeps timing out on a busy host. This rebinds only the boundary:
+        the stage, status, sealed artifacts, and history are carried forward
+        exactly, and a finished run is refused.
+        """
+
+        if type(turn_untimed) is not bool:
+            raise ContractError("agent run turn_untimed must be boolean")
+        if turn_untimed and turn_seconds is not None:
+            raise ContractError(
+                "agent run turn boundary is either untimed or an exact number"
+            )
+        if turn_seconds is not None and (
+            type(turn_seconds) is not int
+            or not MIN_AGENT_TURN_SECONDS <= turn_seconds <= MAX_NATIVE_TURN_SECONDS
+        ):
+            raise ContractError(
+                "agent run turn_seconds must be from %d to %d"
+                % (MIN_AGENT_TURN_SECONDS, MAX_NATIVE_TURN_SECONDS)
+            )
+        payload = self._load()
+        if payload["status"] == "complete":
+            raise TransitionError(
+                "a completed agent run has no native turn boundary to rebind"
+            )
+        updated = dict(payload)
+        if turn_untimed or turn_seconds is not None:
+            updated["turn_seconds"] = None if turn_untimed else turn_seconds
+        else:
+            updated.pop("turn_seconds", None)
+        if updated.get("turn_seconds", _UNSET_TURN_BOUNDARY) == payload.get(
+            "turn_seconds", _UNSET_TURN_BOUNDARY
+        ) and ("turn_seconds" in updated) == ("turn_seconds" in payload):
+            return self.snapshot()
+        self._write_next(payload, updated)
+        return self.snapshot()
+
     def snapshot(self) -> AgentRunCheckpoint:
         payload = self._load()
         by_path = {item["path"]: item for item in payload["sealed_artifacts"]}
@@ -1858,6 +1992,8 @@ class AgentRun:
             manager_reasoning_effort=manager_reasoning_effort,
             needs=tuple(payload.get("needs", ())),
             token_budgeted=_uses_token_budget(payload, self._budget_authority),
+            turn_seconds=payload.get("turn_seconds"),
+            turn_untimed="turn_seconds" in payload and payload["turn_seconds"] is None,
         )
 
     def expected_gate_subject_sha256(self) -> str:

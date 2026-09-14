@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping, Optional, Sequence
 
-from workshop._validation import require_sha256, utc_now
+from workshop._validation import require_sha256
 
 try:
     import fcntl
@@ -87,8 +87,6 @@ from workshop.make.revision import (
     NativeMakeInventRevision,
 )
 from workshop.make.native_gate import (
-    NATIVE_CAD_GATE_KIND,
-    NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
     NativeCadGateError,
     NativeMadeTreeGateError,
@@ -163,7 +161,7 @@ from workshop.runtime import (
     manager_runtime_selection,
     manager_spec,
 )
-from workshop.runtime.managers import NativeSessionLauncher
+from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS, NativeSessionLauncher
 from workshop.runtime.agent_assets import (
     parse_inventor_custom_agent_bytes,
     product_run_agent_assets,
@@ -191,6 +189,7 @@ from workshop.workflow.agent_run import (
     AgentRun,
     AgentRunCheckpoint,
     DeterministicGateReceipt,
+    MIN_AGENT_TURN_SECONDS,
 )
 from workshop.workflow.budgets import (
     BUDGETS_CAPABILITY_PATH,
@@ -199,6 +198,7 @@ from workshop.workflow.budgets import (
     LifetimeTurnBudget,
     TURN_BUDGETS_CAPABILITY_PATH,
     MAX_BUDGETED_TURNS,
+    MAX_TURN_SECONDS,
     SPARK_BUDGETED_TURN_SECONDS,
     CommandBudget,
     uses_command_budget,
@@ -206,14 +206,12 @@ from workshop.workflow.budgets import (
 from workshop.workflow.token_budget import (
     ProductTokenBudget, TOKEN_BUDGET_CAPABILITY_PATH, DEFAULT_PRODUCT_TOKENS, validate_limit,
 )
-from workshop.workflow.reasoning_override import (
-    REASONING_OVERRIDE_NAME,
-    append_reasoning_override,
-    reasoning_override_binding,
-    validate_reasoning_override,
-    validate_reasoning_selection,
+from workshop.runtime.codex_usage import (
+    UsageNotReady,
+    UsageUnavailable,
+    read_product_usage,
+    supports_rollout_usage_version,
 )
-from workshop.runtime.codex_usage import COUNTERS, read_product_usage, UsageUnavailable, UsageNotReady
 from workshop.workflow.effort import (
     DEEP_AUTO_COMPACT_TOKEN_LIMIT,
     DEEP_ECONOMICS_CAPABILITY_PATH,
@@ -564,7 +562,7 @@ class _NativeProgressTracker:
             return
         now = time.monotonic()
         if (
-            activity not in ("reporting", "finalizing", "completed", "failed")
+            activity not in ("finalizing", "completed", "failed")
             and now - self._last_write < 1.0
         ):
             return
@@ -2454,6 +2452,16 @@ def _record_make_evidence(
 
 
 def _cad_gate_failure(rejection: NativeCadGateError, checkpoint: AgentRunCheckpoint) -> dict[str, Any]:
+    """One CAD-gate rejection in the shape :func:`build_make_rows` reads.
+
+    The banked ``finding`` names the round, the code and the tier, because a
+    reader of the vault needs all three. The anti-pattern is chosen from
+    ``classify_text`` -- the verifier's own tail alone -- so the sentence the
+    host wrote around it cannot decide the class. Without that split the full
+    tier's own name, ``full-with-thickness``, files every rejection under a thin
+    wall, overhang refusals included.
+    """
+
     evidence = rejection.evidence
     tail = ""
     for stream in (evidence.stderr, evidence.stdout):
@@ -2465,6 +2473,7 @@ def _cad_gate_failure(rejection: NativeCadGateError, checkpoint: AgentRunCheckpo
         "code": rejection.failure_code,
         "finding": "Make round %d failed the host CAD gate %s (%s tier). %s"
         % (checkpoint.round_index, rejection.failure_code, evidence.verification_tier, tail),
+        "classify_text": tail,
         "evidence_class": "deterministic-cad-gate",
         "severity": "block",
     }
@@ -5017,72 +5026,6 @@ def _adopt_token_budget(paths, checkpoint, limit):
     _save_lifetime_budget(paths, checkpoint, budget)
 
 
-def _reasoning_override_context(paths, checkpoint):
-    validate_reasoning_selection(checkpoint, checkpoint.manager_reasoning_effort)
-    if not isinstance(_load_lifetime_budget(paths, checkpoint), ProductTokenBudget):
-        raise ContractError("reasoning effort override requires a persistent token budget")
-    session = _read_stable_private_json(
-        paths.host_state / "codex-session.json",
-        label="reasoning effort native session", maximum_bytes=32768,
-    )
-    return session, reasoning_override_binding(paths, checkpoint, session)
-
-
-def _read_reasoning_override(paths, checkpoint):
-    path = paths.host_state / REASONING_OVERRIDE_NAME
-    if not path.exists() and not path.is_symlink():
-        return None
-    value = _read_stable_private_json(
-        path, label="reasoning effort override", maximum_bytes=None,
-    )
-    _, binding = _reasoning_override_context(paths, checkpoint)
-    return validate_reasoning_override(value, binding=binding, checkpoint=checkpoint)
-
-
-def _set_reasoning_override(paths, checkpoint, effort):
-    """Persist explicit operator policy under the caller's run mutation lock."""
-    if checkpoint.status == "complete":
-        raise ContractError("reasoning effort override requires an unfinished product")
-    validate_reasoning_selection(checkpoint, effort)
-    previous = _read_reasoning_override(paths, checkpoint)
-    session, binding = _reasoning_override_context(paths, checkpoint)
-    value = append_reasoning_override(
-        previous, binding=binding, checkpoint=checkpoint, session=session,
-        effort=effort, requested_at=utc_now(),
-    )
-    if value is not None:
-        _write_private_json(paths.host_state / REASONING_OVERRIDE_NAME, value)
-
-
-def _token_budget_launcher(paths, checkpoint, launcher, budget, reasoning_override):
-    # Preserve the profile identity already used by token-budget sessions.
-    # Effort changes never replace the native model or mutate frozen inputs.
-    if reasoning_override is not None and launcher.model != checkpoint.manager_model:
-        raise ContractError("reasoning effort override must preserve the frozen model")
-    result = CodexNativeSessionLauncher(
-        model=launcher.model,
-        reasoning_effort=(
-            reasoning_override["changes"][-1]["effort"]
-            if reasoning_override is not None else launcher.reasoning_effort
-        ),
-        auto_compact_token_limit=launcher.auto_compact_token_limit,
-        runtime_profile_sha256=checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH),
-        binary=launcher.binary, timeout_seconds=None,
-        cli_version=launcher.cli_version,
-        popen_factory=launcher._popen_factory,
-        version_runner=launcher._version_runner,
-    )
-    if result.cli_version != "0.153.4":
-        raise ContractError("token-budget rollout adapter requires validated Codex 0.153.4")
-    # Reconcile already completed work before capturing this turn's baseline.
-    # A richer native ledger can recover historical compaction spend; it must
-    # never masquerade as evidence that the upcoming request was accounted for.
-    # Brand-new roots retain the observer's normal UsageNotReady behavior.
-    _product_token_observer(paths, checkpoint, budget)()
-    result.token_budget_observer = _product_token_observer(paths, checkpoint, budget)
-    return result
-
-
 def _root_token_counts(observation):
     if observation is None:
         return {"input_tokens": 0, "output_tokens": 0}
@@ -5091,45 +5034,22 @@ def _root_token_counts(observation):
     return {key: root["tokens"][key] for key in ("input_tokens", "output_tokens")}
 
 
-def _root_token_accounting_source(observation):
-    if observation is None:
-        return "unobserved"
-    root = next(thread for thread in observation["threads"]
-                if thread["thread_id"] == observation["root_thread_id"])
-    if root.get("status") == "pending":
-        tokens = root.get("tokens")
-        if (not isinstance(tokens, dict) or set(tokens) != set(COUNTERS)
-                or any(type(value) is not int or value != 0 for value in tokens.values())):
-            raise StateConflict("pending native root accounting is invalid")
-        return "unobserved"
-    source = root.get("accounting_source", "token-count-v1")
-    if source not in ("token-count-v1", "response-ledger-v1"):
-        raise StateConflict("native root accounting source is invalid")
-    return source
-
-
-def _record_token_accounting_need(paths, checkpoint, baseline, *, completed_turn=False, terminal_usage=None, baseline_source=None):
+def _record_token_accounting_need(paths, checkpoint, baseline, *, completed_turn=False, terminal_usage=None):
     path = paths.host_state / "token-accounting-need.json"
     if path.exists() or path.is_symlink():
         previous = _read_stable_private_json(path, label="token accounting need", maximum_bytes=4096)
-        expected = {"schema_version", "product_id", "wish_sha256", "baseline_root_tokens", "completed_turn", "terminal_usage"}
-        if previous.get("schema_version") == 2:
-            expected.add("baseline_source")
-        if not (set(previous) == expected
-                and previous.get("schema_version") in (1, 2) and type(previous.get("schema_version")) is int
+        if not (set(previous) == {"schema_version", "product_id", "wish_sha256", "baseline_root_tokens", "completed_turn", "terminal_usage"}
+                and previous.get("schema_version") == 1 and type(previous.get("schema_version")) is int
                 and previous.get("terminal_usage") is None
                 and completed_turn and previous.get("completed_turn") is False
                 and previous.get("product_id") == checkpoint.product_id
                 and previous.get("wish_sha256") == checkpoint.wish_sha256
                 and previous.get("baseline_root_tokens") == baseline):
             return  # Never replace an unresolved completed-turn expectation.
-        # An unknown old baseline cannot acquire provenance during a retry.
-        baseline_source = previous.get("baseline_source")
     _write_private_json(path, {
-        "schema_version": 1 if baseline_source is None else 2, "product_id": checkpoint.product_id,
+        "schema_version": 1, "product_id": checkpoint.product_id,
         "wish_sha256": checkpoint.wish_sha256, "baseline_root_tokens": baseline,
         "completed_turn": completed_turn, "terminal_usage": terminal_usage,
-        **({"baseline_source": baseline_source} if baseline_source is not None else {}),
     })
 
 
@@ -5142,19 +5062,12 @@ def _reconcile_token_accounting_need(paths, checkpoint, budget):
     def counters(value):
         return (isinstance(value, dict) and set(value) == {"input_tokens", "output_tokens"}
                 and all(type(count) is int and 0 <= count <= 10**12 for count in value.values()))
-    expected = {"schema_version", "product_id", "wish_sha256", "baseline_root_tokens", "completed_turn", "terminal_usage"}
-    if need.get("schema_version") == 2:
-        expected.add("baseline_source")
-    if (set(need) != expected
-            or need["schema_version"] not in (1, 2) or type(need["schema_version"]) is not int
+    if (set(need) != {"schema_version", "product_id", "wish_sha256", "baseline_root_tokens", "completed_turn", "terminal_usage"}
+            or need["schema_version"] != 1 or type(need["schema_version"]) is not int
             or need["product_id"] != checkpoint.product_id or need["wish_sha256"] != checkpoint.wish_sha256
             or not counters(need["baseline_root_tokens"]) or type(need["completed_turn"]) is not bool
             or (need["terminal_usage"] is not None and not counters(need["terminal_usage"]))
-            or (not need["completed_turn"] and need["terminal_usage"] is not None)
-            or (need["schema_version"] == 2 and (
-                need["baseline_source"] not in ("token-count-v1", "response-ledger-v1", "unobserved")
-                or (need["baseline_source"] == "unobserved" and any(need["baseline_root_tokens"].values()))
-            ))):
+            or (not need["completed_turn"] and need["terminal_usage"] is not None)):
         raise StateConflict("token accounting need binding is invalid")
     value = _read_product_token_usage(paths, checkpoint)
     budget.observe(value)
@@ -5162,45 +5075,51 @@ def _reconcile_token_accounting_need(paths, checkpoint, budget):
     current = _root_token_counts(value)
     baseline = need["baseline_root_tokens"]
     terminal = need["terminal_usage"]
-    source = _root_token_accounting_source(value)
-    baseline_source = need.get("baseline_source", "token-count-v1")
-    if need["completed_turn"] and baseline_source not in (source, "unobserved"):
-        raise UsageUnavailable("completed native turn lacks a comparable accounting baseline")
-    if need["completed_turn"] and (
-        (terminal is not None and any(current[key] < baseline[key] + terminal[key] for key in current))
-        or (terminal is None and all(current[key] <= baseline[key] for key in current))
-    ):
-        raise UsageUnavailable("completed native turn lacks reconciled token usage")
+    if need["completed_turn"]:
+        advanced = any(current[key] > baseline[key] for key in current)
+        if terminal is None:
+            reconciled = advanced
+        else:
+            # Codex has emitted both request-local deltas and cumulative root
+            # counters in turn.completed across supported resume paths. Accept
+            # either exact monotonic relationship without guessing between
+            # them or weakening the requirement that the rollout advanced.
+            delta_reconciled = all(
+                current[key] >= baseline[key] + terminal[key]
+                for key in current
+            )
+            cumulative_reconciled = (
+                all(
+                    current[key] >= terminal[key] >= baseline[key]
+                    for key in current
+                )
+                and any(terminal[key] > baseline[key] for key in current)
+            )
+            reconciled = advanced and (delta_reconciled or cumulative_reconciled)
+        if not reconciled:
+            raise UsageUnavailable("completed native turn lacks reconciled token usage")
     path.unlink()
-
-
-def _refresh_product_token_usage(paths, checkpoint, budget, *, baseline, baseline_source):
-    """Reconcile exact completed spend without changing host-effect eligibility."""
-    try:
-        value = _read_product_token_usage(paths, checkpoint)
-        budget.observe(value)
-        _save_lifetime_budget(paths, checkpoint, budget)
-    except UsageNotReady:
-        if budget.observation is None:
-            return  # Pre-identity startup, not fabricated zero-token usage.
-        _record_token_accounting_need(paths, checkpoint, baseline, baseline_source=baseline_source)
-        raise
-    except (WorkshopError, OSError, ValueError):
-        _record_token_accounting_need(paths, checkpoint, baseline, baseline_source=baseline_source)
-        _write_private_json(paths.host_state / "token-budget-stop.json", {
-            "reason": "native token usage unavailable or inconsistent",
-            "product_id": checkpoint.product_id,
-        })
-        raise
 
 
 def _product_token_observer(paths, checkpoint, budget):
     baseline = _root_token_counts(budget.observation)
-    baseline_source = _root_token_accounting_source(budget.observation)
     def observe():
-        _refresh_product_token_usage(
-            paths, checkpoint, budget, baseline=baseline, baseline_source=baseline_source,
-        )
+        try:
+            value = _read_product_token_usage(paths, checkpoint)
+            budget.observe(value)
+            _save_lifetime_budget(paths, checkpoint, budget)
+        except UsageNotReady:
+            if budget.observation is None:
+                return  # Pre-identity startup, not fabricated zero-token usage.
+            _record_token_accounting_need(paths, checkpoint, baseline)
+            raise
+        except (WorkshopError, OSError, ValueError):
+            _record_token_accounting_need(paths, checkpoint, baseline)
+            _write_private_json(paths.host_state / "token-budget-stop.json", {
+                "reason": "native token usage unavailable or inconsistent",
+                "product_id": checkpoint.product_id,
+            })
+            raise
         if budget.exhausted(checkpoint.stage):
             _write_private_json(paths.host_state / "token-budget-stop.json", {
                 "reason": "product token limit reached", "product_id": checkpoint.product_id,
@@ -5214,8 +5133,7 @@ def _product_token_observer(paths, checkpoint, budget):
     def reconcile_completed_turn(usage):
         terminal = None if usage is None else {"input_tokens": usage[0], "output_tokens": usage[3]}
         _record_token_accounting_need(
-            paths, checkpoint, baseline, completed_turn=True, terminal_usage=terminal,
-            baseline_source=baseline_source,
+            paths, checkpoint, baseline, completed_turn=True, terminal_usage=terminal
         )
         _reconcile_token_accounting_need(paths, checkpoint, budget)
 
@@ -5262,6 +5180,24 @@ def _uses_command_budget(checkpoint: AgentRunCheckpoint) -> bool:
     return uses_command_budget(checkpoint.input_sha256s)
 
 
+_NO_TURN_OVERRIDE = object()
+
+
+def _turn_override(checkpoint: AgentRunCheckpoint) -> Any:
+    """Return the operator-selected turn boundary frozen into this run.
+
+    ``_NO_TURN_OVERRIDE`` means the run keeps its frozen policy boundary.
+    ``None`` means the operator removed the host wall clock entirely. An int is
+    an exact number of seconds that outranks every host-side clamp, including
+    the budgeted Spark boundary and a remaining step clock.
+    """
+
+    if getattr(checkpoint, "turn_untimed", False):
+        return None
+    seconds = getattr(checkpoint, "turn_seconds", None)
+    return _NO_TURN_OVERRIDE if seconds is None else seconds
+
+
 def _budgeted_turn_launcher(
     checkpoint: AgentRunCheckpoint,
     launcher: NativeSessionLauncher,
@@ -5285,16 +5221,22 @@ def _budgeted_turn_launcher(
         # construction is used exactly as the caller built it.
         return launcher
     frozen_turn_ceiling = getattr(launcher, "timeout_seconds", None)
-    effective_seconds = (
-        min(seconds, frozen_turn_ceiling)
-        if type(frozen_turn_ceiling) is int
-        else seconds
-    )
-    if checkpoint.effort == "spark" and (
-        SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
-        or SPARK_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
-    ):
-        effective_seconds = min(effective_seconds, SPARK_BUDGETED_TURN_SECONDS)
+    override = _turn_override(checkpoint)
+    if override is not _NO_TURN_OVERRIDE:
+        # An explicit operator boundary outranks both clamps below. The clocks
+        # keep accounting for what this turn spends; they no longer cut it short.
+        effective_seconds = override
+    else:
+        effective_seconds = (
+            min(seconds, frozen_turn_ceiling)
+            if type(frozen_turn_ceiling) is int
+            else seconds
+        )
+        if checkpoint.effort == "spark" and (
+            SPARK_ECONOMICS_CAPABILITY_PATH in checkpoint.input_sha256s
+            or SPARK_ECONOMICS_V3_CAPABILITY_PATH in checkpoint.input_sha256s
+        ):
+            effective_seconds = min(effective_seconds, SPARK_BUDGETED_TURN_SECONDS)
     if (
         frozen_turn_ceiling == effective_seconds
         and getattr(launcher, "runtime_profile_sha256", None) == digest
@@ -5324,6 +5266,10 @@ def _codex_launcher_for(
     runtime_kwargs = dict(kwargs)
     if checkpoint.manager_model is not None:
         runtime_kwargs["model"] = checkpoint.manager_model
+    override = _turn_override(checkpoint)
+    if override is not _NO_TURN_OVERRIDE:
+        # One operator boundary replaces every stage-shaped default below.
+        runtime_kwargs["timeout_seconds"] = override
     return CodexNativeSessionLauncher(
         reasoning_effort=(
             checkpoint.manager_reasoning_effort or reasoning_effort
@@ -5547,6 +5493,9 @@ def _native_launcher(
         launcher_kwargs["model"] = checkpoint.manager_model
     if checkpoint.manager_reasoning_effort is not None:
         launcher_kwargs["reasoning_effort"] = checkpoint.manager_reasoning_effort
+    override = _turn_override(checkpoint)
+    if override is not _NO_TURN_OVERRIDE:
+        launcher_kwargs["timeout_seconds"] = override
     return manager_launcher(checkpoint.manager_id, **launcher_kwargs)
 
 
@@ -6469,7 +6418,9 @@ def _launcher_call(
 ) -> Any:
     runtime = manager_spec(checkpoint.manager_id)
     prompt = selection_prompt() if inventor_selection_boundary else native_stage_prompt(checkpoint.stage)
-    reasoning_override = _read_reasoning_override(paths, checkpoint)
+    if "revision-source.zip" in checkpoint.input_sha256s:
+        from workshop.workflow.revision import REVISION_GUIDANCE
+        prompt += "\n\n" + REVISION_GUIDANCE
     budget = _load_lifetime_budget(paths, checkpoint)
     if isinstance(budget, ProductTokenBudget):
         prompt += (
@@ -6561,26 +6512,16 @@ def _launcher_call(
             proof_boundary=make_proof_boundary,
         )
         prompt += _deep_invent_recovery_prompt(checkpoint)
-    if reasoning_override is not None:
+    if "MAKE-OPTIONS.json" in checkpoint.input_sha256s:
         prompt += (
-            "\n\nHost reasoning authority: the operator explicitly selected %s "
-            "reasoning effort for all subsequent Manager and native child work "
-            "on this product. This current choice supersedes earlier effort "
-            "requests in the Wish, MANAGER.json, frozen profile and stage "
-            "guidance. Their unchanged bytes preserve the original %s selection "
-            "as provenance. The host configures this root Manager turn at %s. "
-            "Existing native children can retain their earlier effort when "
-            "resumed; restoring a child does not establish that its setting "
-            "changed. Further child work must use %s. Codex owns orchestration "
-            "and how to honor this choice through supported native capabilities "
-            "while preserving completed child contributions. Do not rewrite "
-            "frozen inputs or native session state to change effort. Continue "
-            "the same root session, Goal and existing work. The model, frozen "
-            "tools, engineering checks and stage finalizers are unchanged."
-            % (reasoning_override["changes"][-1]["effort"],
-               reasoning_override["binding"]["initial_effort"],
-               reasoning_override["changes"][-1]["effort"],
-               reasoning_override["changes"][-1]["effort"])
+            "\n\nHost motion policy: reread the immutable run-root MAKE-OPTIONS.json. "
+            "The operator can reselect check_motion on each resume (default false). "
+            "This choice supersedes older mandatory-motion instructions and any "
+            "previous choice remembered in this session. When false, skip motion "
+            "sweeps, motion-only manifest authoring, animation generation/reconstruction "
+            "and independent motion review; report motion as unverified. Do not run "
+            "those checks manually or repeat a motion blocker. When true, apply the "
+            "motion and animation requirements. Other checks still apply."
         )
     arguments = {
         "product_id": checkpoint.product_id,
@@ -9059,7 +9000,6 @@ def _run_native_session(
     initial_make_boundaries: set[str] = set()
     while isinstance(budget, ProductTokenBudget) or turns < native_turn_limit:
         checkpoint = run.snapshot()
-        reasoning_override = _read_reasoning_override(paths, checkpoint)
         if isinstance(budget, ProductTokenBudget):
             _reconcile_token_accounting_need(paths, checkpoint, budget)
         if checkpoint.status in ("waiting", "failed", "complete"):
@@ -9189,12 +9129,23 @@ def _run_native_session(
                 initial_make_boundaries.add(checkpoint.checkpoint_sha256)
         if budget is not None:
             if isinstance(budget, ProductTokenBudget) and isinstance(turn_launcher, _CODEX_LAUNCHER_TYPE):
-                turn_launcher = _token_budget_launcher(
-                    paths, checkpoint, turn_launcher, budget, reasoning_override,
+                # Host-authorized product budget; preserve the existing native
+                # policy identity rather than silently upgrading frozen tools.
+                turn_launcher = CodexNativeSessionLauncher(
+                    model=turn_launcher.model, reasoning_effort=turn_launcher.reasoning_effort,
+                    auto_compact_token_limit=turn_launcher.auto_compact_token_limit,
+                    runtime_profile_sha256=checkpoint.input_sha256s.get(BUDGETS_CAPABILITY_PATH),
+                    binary=turn_launcher.binary, timeout_seconds=None,
+                    cli_version=turn_launcher.cli_version,
+                    popen_factory=turn_launcher._popen_factory,
+                    version_runner=turn_launcher._version_runner,
                 )
+                if not supports_rollout_usage_version(turn_launcher.cli_version):
+                    raise ContractError(
+                        "token-budget rollout adapter requires Codex CLI 0.153.4 or newer"
+                    )
+                turn_launcher.token_budget_observer = _product_token_observer(paths, checkpoint, budget)
             else:
-                if reasoning_override is not None:
-                    raise ContractError("reasoning effort override requires the Codex token-budget launcher")
                 turn_launcher = _budgeted_turn_launcher(
                 checkpoint,
                 turn_launcher,
@@ -9203,9 +9154,13 @@ def _run_native_session(
         turn_mark = None if budget is None else budget.started()
         reserved_seconds = None
         if isinstance(budget, LifetimeBudget):
-            reserved_seconds = 0 if isinstance(budget, ProductTokenBudget) else min(
-                budget.turn_timeout_seconds(checkpoint.stage),
-                getattr(turn_launcher, "timeout_seconds", 60 * 60),
+            launcher_ceiling = getattr(turn_launcher, "timeout_seconds", MAX_TURN_SECONDS)
+            reserved_seconds = 0 if isinstance(budget, ProductTokenBudget) else (
+                # An untimed launcher has no boundary to reserve against, so the
+                # step clock alone decides what this turn may hold.
+                budget.turn_timeout_seconds(checkpoint.stage)
+                if launcher_ceiling is None
+                else min(budget.turn_timeout_seconds(checkpoint.stage), launcher_ceiling)
             )
             budget.reserve(checkpoint.stage, reserved_seconds)
             _save_lifetime_budget(paths, checkpoint, budget)
@@ -9719,11 +9674,6 @@ def _native_receipt(
         receipt["model"] = checkpoint.manager_model
     if checkpoint.manager_reasoning_effort is not None:
         receipt["effort"] = checkpoint.manager_reasoning_effort
-    if paths is not None:
-        reasoning_override = _read_reasoning_override(paths, checkpoint)
-        if reasoning_override is not None:
-            receipt["initial_effort"] = reasoning_override["binding"]["initial_effort"]
-            receipt["effort"] = reasoning_override["changes"][-1]["effort"]
     if needs:
         receipt["needs"] = list(needs)
     if session is not None:
@@ -9819,7 +9769,11 @@ def start_native_run(
     github_publish_requested: bool = False,
     max_rounds: int = 4,
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
+    turn_seconds: Optional[int] = None,
+    turn_untimed: bool = False,
+    check_motion: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
+    revision_snapshot: Optional[bytes] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -9849,11 +9803,24 @@ def start_native_run(
     Make revision request and every Playtest ``improve`` verdict spends one
     round, so a mechanism-heavy Wish may need more than the default four.
 
+    ``turn_seconds`` and ``turn_untimed`` freeze one operator-selected native
+    turn boundary that replaces every stage-shaped default and host-side clamp.
+    ``turn_untimed`` removes the Workshop wall clock for this run; the selected
+    Manager must still bound the turn some other way, which today means a Codex
+    token budget. Neither option changes any gate, review, or round allowance.
+
+    ``check_motion`` freezes the optional motion sweeps and animation review.
+    It defaults to false; each operator resume reselects it, also defaulting off.
+
     ``wish_reference_files`` maps every reference image the Wish declares to
     its exact bytes; the run materializes them read-only under
     ``wish-references/`` and re-verifies them at every checkpoint. A Wish that
     declares references without their bytes, or bytes without a declaration,
     is rejected before any workspace exists.
+
+    ``revision_snapshot`` carries a manifest-verified public archive baseline,
+    bound to Wish context and materialized as immutable input plus an editable
+    clone. It never restores the source run's session or effect state.
 
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
@@ -9861,6 +9828,8 @@ def start_native_run(
 
     _reject_grid_keepalive_wish_start()
     validate_limit(max_tokens)
+    if type(check_motion) is not bool:
+        raise ContractError("motion check option must be boolean")
 
     selected_effort = workshop_effort(effort) if effort is not None else None
     selected_runtime = manager_runtime_selection(
@@ -9879,6 +9848,18 @@ def start_native_run(
         raise ContractError("round budget must be an integer between 1 and 100")
     if wish_reference_files is not None and not isinstance(wish_reference_files, Mapping):
         raise ContractError("Wish reference files must map reference names to bytes")
+    if type(turn_untimed) is not bool:
+        raise ContractError("untimed turn option must be boolean")
+    if turn_untimed and turn_seconds is not None:
+        raise ContractError("choose an exact turn boundary or an untimed turn, not both")
+    if turn_seconds is not None and (
+        type(turn_seconds) is not int
+        or not MIN_AGENT_TURN_SECONDS <= turn_seconds <= MAX_NATIVE_TURN_SECONDS
+    ):
+        raise ContractError(
+            "native turn boundary must be from %d to %d seconds"
+            % (MIN_AGENT_TURN_SECONDS, MAX_NATIVE_TURN_SECONDS)
+        )
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
@@ -9901,6 +9882,7 @@ def start_native_run(
                 product_id=wish.product_id,
                 wish_bytes=wish_bytes,
                 wish_reference_files=wish_reference_files,
+                revision_snapshot=revision_snapshot,
                 product_run_constitution_source=assets.constitution,
                 skill_root=assets.skill_root,
                 domain_skill_roots=domain_skill_roots,
@@ -9911,6 +9893,9 @@ def start_native_run(
                 manager_id=selected_manager.manager_id,
                 manager_model=selected_runtime.model,
                 manager_reasoning_effort=selected_runtime.reasoning_effort,
+                turn_seconds=turn_seconds,
+                turn_untimed=turn_untimed,
+                check_motion=check_motion,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.
@@ -10179,7 +10164,9 @@ def resume_native_run(
     publish_requested: Optional[bool] = None,
     adopt_turn_budget: bool = False,
     max_tokens: Optional[int] = None,
-    reasoning_effort: Optional[str] = None,
+    turn_seconds: Optional[int] = None,
+    turn_untimed: bool = False,
+    check_motion: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -10188,18 +10175,27 @@ def resume_native_run(
     The ignored keyword preserves source compatibility with the former
     optional-publication API; every resumed Release now requires publication.
 
+    check_motion is reselected on every operator resume and defaults to false.
+    Older unfinished runs adopt the motion-aware tools through host refresh.
+
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
     """
 
     if publish_requested is not None and type(publish_requested) is not bool:
         raise ContractError("legacy publication option must be boolean")
+    if type(check_motion) is not bool:
+        raise ContractError("motion check option must be boolean")
     if type(adopt_turn_budget) is not bool:
         raise ContractError("turn-budget adoption option must be boolean")
     if max_tokens is not None:
         validate_limit(max_tokens)
     if max_tokens is not None and adopt_turn_budget:
         raise ContractError("choose token budget or legacy turn-budget adoption, not both")
+    if type(turn_untimed) is not bool:
+        raise ContractError("untimed turn option must be boolean")
+    if turn_untimed and turn_seconds is not None:
+        raise ContractError("choose an exact turn boundary or an untimed turn, not both")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _validated_timing_observer(timing_observer)
@@ -10207,31 +10203,20 @@ def resume_native_run(
     with _native_run_mutation_lock(paths):
         run = _open_budgeted_agent_run(paths)
         checkpoint = run.snapshot()
-        # Validate saved and requested policy before changing any other state.
-        # Missing flags retain the latest explicit selection, never a default.
-        _read_reasoning_override(paths, checkpoint)
-        if reasoning_effort is not None:
-            if checkpoint.status == "complete":
-                raise ContractError("reasoning effort override requires an unfinished product")
-            validate_reasoning_selection(checkpoint, reasoning_effort)
-            _reasoning_override_context(paths, checkpoint)
+        if checkpoint.status in ("active", "waiting"):
+            checkpoint = _adopt_resume_motion_policy(paths, run, checkpoint, check_motion)
         if adopt_turn_budget:
             _adopt_turn_budget(paths, checkpoint)
         if max_tokens is not None:
             _adopt_token_budget(paths, checkpoint, max_tokens)
             checkpoint = run.snapshot()
+        if turn_untimed or turn_seconds is not None:
+            checkpoint = run.rebind_turn_boundary(
+                turn_seconds=turn_seconds, turn_untimed=turn_untimed
+            )
         budget = _load_lifetime_budget(paths, checkpoint)
         if isinstance(budget, ProductTokenBudget):
             _reconcile_token_accounting_need(paths, checkpoint, budget)
-            # A pending proposal or host-only publication can bypass the native
-            # launcher. Refresh its charged usage under the same lock as well.
-            _refresh_product_token_usage(
-                paths, checkpoint, budget,
-                baseline=_root_token_counts(budget.observation),
-                baseline_source=_root_token_accounting_source(budget.observation),
-            )
-        if reasoning_effort is not None:
-            _set_reasoning_override(paths, checkpoint, reasoning_effort)
         return _resume_native_run_locked(
             product_id,
             run=run,
@@ -10240,6 +10225,87 @@ def resume_native_run(
             activity_observer=activity_observer,
             timing_observer=timing_observer,
         )
+
+
+def _adopt_resume_motion_policy(paths, run, checkpoint, check_motion):
+    """Adopt the operator's choice before continuing an old or current run."""
+    _reconcile_motion_resume_outputs(run, checkpoint)
+    reason = "workshop resume --check-motion %s" % str(check_motion).lower()
+    if "MAKE-OPTIONS.json" not in checkpoint.input_sha256s:
+        # Older private workspaces carry mandatory-motion tools. Upgrade the
+        # CAD/round tools and Make finalizer through the existing host refresh
+        # boundary, without importing the current lifecycle or token policy.
+        # Bind the session before creating MAKE-OPTIONS: if interrupted, the
+        # absent option causes this idempotent migration to finish next time.
+        _refresh_native_run_tools_locked(
+            checkpoint.product_id, paths, run, reason=reason,
+            domain_skill_roots={name: root for name, root in product_run_domain_skill_roots().items()
+                                if name in ("cad", "make-round")},
+            refresh_review=False,
+            motion_skill_root=product_run_agent_assets().skill_root,
+        )
+    run.refresh_domain_skill_tools({}, reason=reason, check_motion=check_motion)
+    checkpoint = run.snapshot()
+    _reconcile_motion_resume_outputs(run, checkpoint)
+    return checkpoint
+
+
+def _reconcile_motion_resume_outputs(run, checkpoint):
+    """Recover pending output bindings across only recorded motion corrections.
+
+    A policy change can interrupt finalization or a publication wait. Walk the
+    consecutive host correction chain so retries also work after a crash between
+    the input checkpoint and these dependent writes. Never adopt arbitrary stale
+    outcomes or move a sealed lifecycle gate.
+    """
+    ledger = run.host_state_root / "host-corrections.jsonl"
+    if not ledger.exists():
+        return
+    records = _read_stable_private_bytes(ledger, label="host corrections", maximum_bytes=1024 * 1024)
+    predecessors = {}
+    for line in records.splitlines():
+        record = json.loads(line)
+        if (record.get("kind") == "autonomous-workshop.host-correction"
+                and record.get("schema_version") == 1
+                and record.get("correction") == "domain-skill-refresh"
+                and str(record.get("reason", "")).startswith("workshop resume --check-motion ")):
+            predecessors[record["checkpoint_sha256"]] = record["previous_checkpoint_sha256"]
+    ancestors = set()
+    previous = checkpoint.checkpoint_sha256
+    while previous in predecessors:
+        previous = predecessors[previous]
+        if previous in ancestors:
+            break
+        ancestors.add(previous)
+    if not ancestors:
+        return
+    wait_path = _release_effect_wait_path(run)
+    if wait_path.exists():
+        waiting = _read_stable_private_json(wait_path, label="Release effect wait", maximum_bytes=None)
+        saved = waiting.get("waiting_checkpoint_sha256")
+        if saved in ancestors:
+            from dataclasses import replace
+            _read_release_effect_wait(run, replace(checkpoint, checkpoint_sha256=saved))
+            _atomic_private_write(wait_path, _canonical_json_bytes(
+                {**waiting, "waiting_checkpoint_sha256": checkpoint.checkpoint_sha256}) + b"\n")
+    if _agent_outcome_exists(run.run_root):
+        document, content = read_bounded_json_artifact(
+            run.run_root, _AGENT_OUTCOME_NAME,
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES, label="pending motion-resume outcome",
+        )
+        proposal = AgentOutcomeProposal.from_mapping(document)
+        if proposal.checkpoint_sha256 not in ancestors or proposal.outcome.stage != checkpoint.stage:
+            return  # The ordinary exactness gate still rejects unrelated output.
+        if checkpoint.stage == "make":
+            # The unaccepted proposal must be finalized against the new motion
+            # policy, especially when opting in after a skipped check.
+            directory = _ensure_private_directory(
+                run.host_state_root / "motion-resume-outcomes", label="motion resume outcomes")
+            _atomic_private_write(directory / (_sha256(content) + ".json"), content)
+            _remove_agent_outcome(run.run_root)
+        else:
+            _atomic_private_write(run.run_root / _AGENT_OUTCOME_NAME, _canonical_json_bytes(
+                {**document, "checkpoint_sha256": checkpoint.checkpoint_sha256}) + b"\n")
 
 
 def _reconcile_refreshed_token_budget(paths, run, checkpoint):
@@ -10298,57 +10364,69 @@ def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, An
     paths = native_run_paths(product_id)
     with _native_run_mutation_lock(paths):
         run = _open_budgeted_agent_run(paths)
-        before = run.snapshot()
-        # Finish an interrupted prior refresh before creating another input
-        # checkpoint, so its exact correction evidence remains the predecessor.
-        _reconcile_refreshed_token_budget(paths, run, before)
-        changes = run.refresh_domain_skill_tools(
-            product_run_domain_skill_roots(), reason=reason,
-            token_budget_skill_root=(
-                product_run_agent_assets().skill_root
-                if TOKEN_BUDGET_CAPABILITY_PATH in before.input_sha256s else None
-            ),
+        return _refresh_native_run_tools_locked(
+            product_id, paths, run, reason=reason,
+            domain_skill_roots=product_run_domain_skill_roots(),
         )
-        after = run.snapshot()
-        _reconcile_refreshed_token_budget(paths, run, after)
-        # The stored Manager session binds the instruction-tree hash the run
-        # started with. A refreshed tool moves that hash by design, so the
-        # same host operation rebinds the session record it owns -- and does
-        # so even when this call found the tools current, because an earlier
-        # refresh may have been interrupted before this step.
-        session_rebound = False
-        launcher = _native_launcher(after)
-        session_path = paths.host_state / launcher.session_checkpoint_name
-        if session_path.exists():
-            rebind = getattr(launcher, "rebind_session_constitution", None)
-            if rebind is None:
-                raise ContractError(
-                    "host tool refresh is not supported for the %s Manager"
-                    % after.manager_id
-                )
-            rebound = rebind(
-                product_id=product_id,
-                wish_sha256=after.wish_sha256,
-                run_root=paths.workspace,
-                host_state_root=paths.host_state,
-                constitution_sha256=materialized_agent_instructions_sha256(after),
+
+
+def _refresh_native_run_tools_locked(
+    product_id, paths, run, *, reason, domain_skill_roots,
+    refresh_review=True, motion_skill_root=None,
+):
+    """Refresh and rebind the same session while the caller holds its run lock."""
+    before = run.snapshot()
+    # Finish an interrupted prior refresh before creating another input
+    # checkpoint, so its exact correction evidence remains the predecessor.
+    _reconcile_refreshed_token_budget(paths, run, before)
+    changes = run.refresh_domain_skill_tools(
+        domain_skill_roots, reason=reason,
+        motion_skill_root=motion_skill_root,
+        token_budget_skill_root=(
+            product_run_agent_assets().skill_root
+            if refresh_review and TOKEN_BUDGET_CAPABILITY_PATH in before.input_sha256s else None
+        ),
+    )
+    after = run.snapshot()
+    _reconcile_refreshed_token_budget(paths, run, after)
+    # The stored Manager session binds the instruction-tree hash the run
+    # started with. A refreshed tool moves that hash by design, so the
+    # same host operation rebinds the session record it owns -- and does
+    # so even when this call found the tools current, because an earlier
+    # refresh may have been interrupted before this step.
+    session_rebound = False
+    launcher = _native_launcher(after)
+    session_path = paths.host_state / manager_spec(after.manager_id).session_checkpoint_name
+    if session_path.exists():
+        rebind = getattr(launcher, "rebind_session_constitution", None)
+        if rebind is None:
+            raise ContractError(
+                "host tool refresh is not supported for the %s Manager"
+                % after.manager_id
             )
-            session_rebound = bool(rebound["changed"])
-            if session_rebound:
-                run.record_host_correction(
-                    {
-                        "kind": "autonomous-workshop.host-correction",
-                        "schema_version": 1,
-                        "correction": "manager-session-rebind",
-                        "reason": reason.strip(),
-                        "manager_id": after.manager_id,
-                        "checkpoint_sha256": after.checkpoint_sha256,
-                        "previous_constitution_sha256": rebound[
-                            "previous_constitution_sha256"
-                        ],
-                        "constitution_sha256": rebound["constitution_sha256"],
-                    }
-                )
+        rebound = rebind(
+            product_id=product_id,
+            wish_sha256=after.wish_sha256,
+            run_root=paths.workspace,
+            host_state_root=paths.host_state,
+            constitution_sha256=materialized_agent_instructions_sha256(after),
+        )
+        session_rebound = bool(rebound["changed"])
+        if session_rebound:
+            run.record_host_correction(
+                {
+                    "kind": "autonomous-workshop.host-correction",
+                    "schema_version": 1,
+                    "correction": "manager-session-rebind",
+                    "reason": reason.strip(),
+                    "manager_id": after.manager_id,
+                    "checkpoint_sha256": after.checkpoint_sha256,
+                    "previous_constitution_sha256": rebound[
+                        "previous_constitution_sha256"
+                    ],
+                    "constitution_sha256": rebound["constitution_sha256"],
+                }
+            )
     return {
         "product_id": product_id,
         "action": "tools-refreshed" if changes else "tools-current",

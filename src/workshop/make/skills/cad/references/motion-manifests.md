@@ -15,19 +15,7 @@ says a connector actually holds. A motion manifest checks both claims.
 python "$CAD_SKILL_ROOT/scripts/check_motion" <project-dir> --manifest <file.json>
 python "$CAD_SKILL_ROOT/scripts/check_motion" <project-dir> --manifest - < m.json
 python "$CAD_SKILL_ROOT/scripts/check_motion" <project-dir> --manifest m.json --list-parts
-python "$CAD_SKILL_ROOT/scripts/check_motion" <project-dir> --manifest m.json --json --progress > result.json 2> progress.log
 ```
-
-`--progress` optionally writes flushed phase and counter messages to stderr.
-Sample indices identify the sample about to run, including index zero; they
-are not completed-sample counts, percentages or time estimates. Repeated
-condition and sample updates share a five-second throttle. The bounded setup,
-retention and terminal notices bypass that throttle. Long individual CAD kernel
-operations can remain silent until the next sample. Progress does not change
-stdout results, measurement order, verdicts or exit codes; an unavailable
-progress stream disables diagnostics without affecting the gate. Without the
-flag, output is unchanged. Saved runs require the normal audited tool refresh
-before using the option; an already-running check cannot acquire it.
 
 A manifest belongs at `<project-dir>/measure/motion.json` next to the other
 verification artifacts. Exit 0 when every condition holds, 1 on any failure and
@@ -72,11 +60,6 @@ Every labelled node is addressable, including sub-assemblies — a Compound's
 solids reach its descendants, so `fuselage_nose` moves as one body rather than
 as 60 windows. Where a label repeats, use its dotted path; `--list-parts` marks
 which ones need it.
-
-Motion and bought-part mount checks copy selected nodes at their complete
-world pose without retaining assembly ancestors. A selected group keeps its
-children; moving one leaf does not copy unrelated siblings on every sample.
-The source assembly, part names, and collision thresholds are unchanged.
 
 ## Schema
 
@@ -336,6 +319,25 @@ fraction of a tooth for a mesh, less than a post's diameter for a part swinging
 past a post. Writing it down also records *what the condition is for*: a full
 turn declared at one tooth is honest about being a bulk-clearance sweep with the
 mesh checked separately, and reads as such to whoever comes next.
+
+## What the sampling costs, and the budget that stops it
+
+Every sample is Boolean geometry: a condition costs roughly `steps + 1` times
+the number of pairs it compares — movers against each other and against every
+obstacle — and a `"driven"` mover adds two more passes over the table for its
+contact witnesses. `check_motion` prints that projection before the first sweep,
+so a manifest that has just asked for hundreds of thousands of kernel operations
+says so in the first second rather than four hours in.
+
+Sweeps are bounded so they cannot silently become the whole run.
+`verify_project` gives `check_motion` 900s (`WORKSHOP_MOTION_DEADLINE_SECONDS`,
+`0` to remove the bound), and `--deadline SECONDS` does the same for a direct
+run. A condition that runs out of budget stops where it is and reports
+**inconclusive** with the sample it reached — and unlike other inconclusive
+results, a budget stop fails the gate even under `--allow-inconclusive`, because
+nothing was measured past that point. The fix is to sample what actually needs
+sampling: raise `steps` only around the passes that matter, split a long cycle
+into separate conditions, or raise the budget on purpose.
 
 ## Choosing the direction
 

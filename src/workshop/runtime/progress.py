@@ -35,8 +35,7 @@ SAFE_NATIVE_ACTIVITY_CLASSES = (
     "reasoning",
     "tool",
     "subagent",
-    "reporting",
-    "finalizing",  # Historical name for a completed agent message.
+    "finalizing",
     "completed",
     "failed",
 )
@@ -51,7 +50,7 @@ WISH_RUN_TIMING_OPERATIONS = (
 )
 WISH_RUN_TIMING_STATES = ("started", "completed", "failed")
 _ACTIVE_ACTIVITY_CLASSES = frozenset(
-    ("starting", "running", "reasoning", "tool", "subagent", "reporting", "finalizing")
+    ("starting", "running", "reasoning", "tool", "subagent", "finalizing")
 )
 _STAGES = frozenset(
     ("wish", "match", "invent", "make", "playtest", "release", "deliver")
@@ -385,7 +384,7 @@ class NativeRunProgress:
                 "stage": self.attempt_stage,
                 "number": self.stage_attempt,
             },
-            "activity": "reporting" if self.activity == "finalizing" else self.activity,
+            "activity": self.activity,
             "elapsed_seconds": elapsed_seconds,
             "last_activity_at": _timestamp(self.last_activity_at_ms),
         }

@@ -1,0 +1,402 @@
+{
+  "assembly": "moon.step.py",
+  "conditions": [
+    {
+      "id": "press-open-press-return",
+      "check": "coupled_motion_collision",
+      "expect": "clear",
+      "description": "Direct finger input is the leaf itself; zero driven followers. Full75-degree outward and return cycle against every fixed occurrence.",
+      "inputs": {
+        "steps": 160,
+        "movers": [
+          {
+            "part": "leaf",
+            "rotation": {
+              "axis_point": [
+                -10,
+                29,
+                0
+              ],
+              "axis_direction": [
+                0,
+                0,
+                1
+              ],
+              "angles_deg": [
+                0.0,
+                0.9375,
+                1.875,
+                2.8125,
+                3.75,
+                4.6875,
+                5.625,
+                6.5625,
+                7.5,
+                8.4375,
+                9.375,
+                10.3125,
+                11.25,
+                12.1875,
+                13.125,
+                14.0625,
+                15.0,
+                15.9375,
+                16.875,
+                17.8125,
+                18.75,
+                19.6875,
+                20.625,
+                21.5625,
+                22.5,
+                23.4375,
+                24.375,
+                25.3125,
+                26.25,
+                27.1875,
+                28.125,
+                29.0625,
+                30.0,
+                30.9375,
+                31.875,
+                32.8125,
+                33.75,
+                34.6875,
+                35.625,
+                36.5625,
+                37.5,
+                38.4375,
+                39.375,
+                40.3125,
+                41.25,
+                42.1875,
+                43.125,
+                44.0625,
+                45.0,
+                45.9375,
+                46.875,
+                47.8125,
+                48.75,
+                49.6875,
+                50.625,
+                51.5625,
+                52.5,
+                53.4375,
+                54.375,
+                55.3125,
+                56.25,
+                57.1875,
+                58.125,
+                59.0625,
+                60.0,
+                60.9375,
+                61.875,
+                62.8125,
+                63.75,
+                64.6875,
+                65.625,
+                66.5625,
+                67.5,
+                68.4375,
+                69.375,
+                70.3125,
+                71.25,
+                72.1875,
+                73.125,
+                74.0625,
+                75.0,
+                74.0625,
+                73.125,
+                72.1875,
+                71.25,
+                70.3125,
+                69.375,
+                68.4375,
+                67.5,
+                66.5625,
+                65.625,
+                64.6875,
+                63.75,
+                62.8125,
+                61.875,
+                60.9375,
+                60.0,
+                59.0625,
+                58.125,
+                57.1875,
+                56.25,
+                55.3125,
+                54.375,
+                53.4375,
+                52.5,
+                51.5625,
+                50.625,
+                49.6875,
+                48.75,
+                47.8125,
+                46.875,
+                45.9375,
+                45.0,
+                44.0625,
+                43.125,
+                42.1875,
+                41.25,
+                40.3125,
+                39.375,
+                38.4375,
+                37.5,
+                36.5625,
+                35.625,
+                34.6875,
+                33.75,
+                32.8125,
+                31.875,
+                30.9375,
+                30.0,
+                29.0625,
+                28.125,
+                27.1875,
+                26.25,
+                25.3125,
+                24.375,
+                23.4375,
+                22.5,
+                21.5625,
+                20.625,
+                19.6875,
+                18.75,
+                17.8125,
+                16.875,
+                15.9375,
+                15.0,
+                14.0625,
+                13.125,
+                12.1875,
+                11.25,
+                10.3125,
+                9.375,
+                8.4375,
+                7.5,
+                6.5625,
+                5.625,
+                4.6875,
+                3.75,
+                2.8125,
+                1.875,
+                0.9375,
+                0.0
+              ]
+            }
+          }
+        ],
+        "obstacle_parts": [
+          "carrier",
+          "pin",
+          "cover",
+          "inlay"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 1.6
+      }
+    },
+    {
+      "id": "closed-stop",
+      "check": "rotation_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "leaf",
+        "obstacle_parts": [
+          "carrier"
+        ],
+        "axis_point": [
+          -10,
+          29,
+          0
+        ],
+        "axis_direction": [
+          0,
+          0,
+          1
+        ],
+        "start_deg": 0,
+        "end_deg": -3,
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "open-stop",
+      "check": "rotation_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "leaf",
+        "obstacle_parts": [
+          "carrier"
+        ],
+        "axis_point": [
+          -10,
+          29,
+          0
+        ],
+        "axis_direction": [
+          0,
+          0,
+          1
+        ],
+        "start_deg": 75,
+        "end_deg": 78,
+        "steps": 6,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "leaf-captured-up",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "leaf",
+        "obstacle_parts": [
+          "pin"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 10,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "pin-captured-down",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "pin",
+        "obstacle_parts": [
+          "carrier"
+        ],
+        "translation": [
+          0,
+          0,
+          -10
+        ],
+        "steps": 10,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "cover-captured-up",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "cover",
+        "obstacle_parts": [
+          "carrier"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 10,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "inlay-captured",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "inputs": {
+        "moving_part": "inlay",
+        "obstacle_parts": [
+          "cover"
+        ],
+        "translation": [
+          0,
+          0,
+          3
+        ],
+        "steps": 10,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "leaf-assembly-with-pin-removed",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "inputs": {
+        "moving_part": "leaf",
+        "obstacle_parts": [
+          "carrier",
+          "cover",
+          "inlay"
+        ],
+        "translation": [
+          0,
+          0,
+          15
+        ],
+        "steps": 15,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    }
+  ],
+  "retention": {
+    "fixed_parts": [
+      "carrier"
+    ],
+    "proofs": [
+      {
+        "part": "leaf",
+        "condition": "leaf-captured-up",
+        "supports": [
+          "pin"
+        ]
+      },
+      {
+        "part": "pin",
+        "condition": "pin-captured-down",
+        "supports": [
+          "carrier"
+        ]
+      },
+      {
+        "part": "cover",
+        "condition": "cover-captured-up",
+        "supports": [
+          "carrier"
+        ]
+      },
+      {
+        "part": "inlay",
+        "condition": "inlay-captured",
+        "supports": [
+          "cover"
+        ]
+      }
+    ]
+  }
+}

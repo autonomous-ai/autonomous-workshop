@@ -1,9 +1,9 @@
 # Daydream
 
-Owns the stage before a Wish exists: one Inventor dreams one brand-new toy
-idea, the idea is linted for novelty, and the surviving idea is sealed as the
-plain-text brief that becomes a Wish. Daydream also owns each Inventor's
-persistent notebook of ideas already had.
+Owns the stage before a Wish exists: one Inventor dreams one fresh toy idea
+that fits its Taste, the idea is linted against prior Workshop work, and the
+surviving idea is sealed as the plain-text brief that becomes a Wish. Daydream
+also owns each Inventor's persistent notebook of ideas already had.
 
 Daydream contains no Match, Invent, Make, Playtest, or Release behaviour. It
 hands a `Wish` to Workflow through `wish_from_daydream`, and from there a run
@@ -14,14 +14,16 @@ Public API: `workshop.daydream`.
 
 ## The two criteria
 
-The founder's rule set for the MVP is two sentences: the idea must be entirely
-new, and it must fit what the Inventor's `TASTE.md` describes. Each is
+The rule set is two sentences: the idea must be distinct from prior Workshop
+work, and it must fit what the Inventor's `TASTE.md` describes. Each is
 enforced today as follows.
 
-- **Entirely new.** The `DAYDREAM_CONSTITUTION` instructs the Inventor to
-  search the web for anything similar, to name the two to five nearest things
-  in `prior_art` with the concrete difference in mechanism or play, and never
-  to repeat or re-skin any entry of `PRIOR-WORK.md` or `NOTEBOOK.md`. After
+- **Distinct from prior Workshop work.** The `DAYDREAM_CONSTITUTION` instructs
+  the Inventor to search the web for anything similar, to name the two to five
+  nearest things in `prior_art` with the concrete difference its Taste values,
+  and never to repeat or re-skin any entry of `PRIOR-WORK.md` or `NOTEBOOK.md`.
+  Taste decides whether originality belongs in mechanism and play or in a
+  faithful reinterpretation of a known public-domain toy or game. After
   the turn, `lint_novelty` deterministically compares the idea against the
   public toy catalog (`toys/<slug>/wish/wish.json`, falling back to the toy
   README) and against the notebook: an identical normalized title, or a
@@ -44,7 +46,7 @@ enforced today as follows.
 Daydream is one native Goal, like every product stage. The host also drops
 the constitution into the workspace as `AGENTS.md` and copies the run-local
 finalizer `finalize_daydream.py` beside it. The Inventor opens one Goal
-(objective: one new, Taste-fitting idea in `work/IDEA.json`), runs the
+(objective: one distinct, Taste-fitting idea in `work/IDEA.json`), runs the
 finalizer, which validates the file's shape and hashes its exact bytes into
 `agent-outcome.json`, and completes the Goal. The host passes that marker to
 the runtime as the turn's finalization marker and refuses an idea whose

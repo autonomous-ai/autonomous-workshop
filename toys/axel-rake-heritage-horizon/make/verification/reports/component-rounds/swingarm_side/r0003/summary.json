@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_swingarm_side.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "swingarm_side"
+ ],
+ "print": {
+  "swingarm_side": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side/r0001/overhang-swingarm_side.log": "a97ecf98ef0c07d6758140c68bc2a065c2a6c6221db5868915b2e07f7a097d94",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side/r0001/thickness-swingarm_side.log": "8cd324b58b2da49414cd8ccc1128e358f0ad2c28a20e8e04d04f027fcd903d71"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [
+  "swingarm_side"
+ ],
+ "round": 3,
+ "scope": "component:swingarm_side",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Centered open axle bore connects to long arm and two branched luggage supports; both raised mounting posts and flat base are intact.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side/r0003/visual-packet.json",
+  "packet_sha256": "3b4063b49625d8663526d4ac009434d6d462ae7791259b2407438bab6769073a",
+  "status": "pass"
+ }
+}

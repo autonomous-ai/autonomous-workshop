@@ -1,0 +1,41 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0002/visual/front.png": "460ed98a24184eba693a8472987a199da8c602c9efb4bbde7f6090b70b0a9052",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0002/visual/iso.png": "33f07dfc362a54d227c4d950a0958026dbb12887c61b520cd78445e8e32310da",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0002/visual/top.png": "3c9a6c92e424599c45389129b0c8f1162dd8b3b178c10d86131150e33a38b662"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "DESIGN.md": "4f76258e17cf06f282b242768921dcb1a2a8621f73036b8369d0e3feddf4901c",
+    "README.md": "f6e359d188819240b568f4fe6a24e0349a78014fc98412028d4dc7e50ed0fcc8",
+    "limbward_lib.py": "9bd7107b2317ac79867bba153dcf9235953af06f106e431b6ae2206ca446c68c",
+    "limbward_spec.md": "fadff0ebbdff5008cd11e845a27692014d55d3ae9c15ebe6e06e2cbce3581b58",
+    "part_black_bishop.step": "53302e467917b33b7856333aab80b3df188e0ff22808ead0a184101f7dd8233a",
+    "part_black_bishop.step.py": "7510952a0195c4545a03b8ceaa71a6550e22f82b1e8aaa4159b2651dc4ac1e07",
+    "part_black_king.step": "cff19d86dc79ba204f9e0f8867c1a5aa41829fbff9a43a610432c24c7d5af416",
+    "part_black_king.step.py": "ce0daf5e1d7e5dc43308e4a624bef18bccc67ba902b36b4ebed72a6fdc62d4ba",
+    "part_black_knight.step": "72b4c78294136b214731524e4ed7e2dde4d40259714de0750c1ab65fa9e2d909",
+    "part_black_knight.step.py": "bb70602380269bf3eba37e9bf7189e1d46cd00619bf95748e68753befad2f655",
+    "part_black_pawn.step": "3b5db812d0a248b113226b7195b624ae7f0cbc703e5be054cc38429a55a8f7e8",
+    "part_black_pawn.step.py": "132bfb485611a989dace2677dd3b408350ca3bfa8cceae5b6168d02deb1429bb",
+    "part_black_queen.step": "b7e8f04d91fecb84a1c4602e2d343310fa0ce7be4da3ba1388b35da91788156f",
+    "part_black_queen.step.py": "128e5ddb9d03e6c7262c40cd18b369ce4f59b9ce9a203498f1b99f58f5e32fe9",
+    "part_black_rook.step": "646a8339bd44b7b2650f6ab85f254fab78730c82c2bfdea16851c1bdeb70aa7d",
+    "part_black_rook.step.py": "dd27615fc6e1c9ef506e57c55958ac73d75a8231ba0500dd90faad7e5a449c32",
+    "part_camera_board.step": "fd77d07881cb8565c37feeeabf5ff5d7dabbff5b96cc9c949d5ca68b717c0596",
+    "part_camera_board.step.py": "062d0d026a5cb8962fffa47f94d097b49219ff50a6f2bcf7cf1835c08c4a5a39",
+    "part_white_bishop.step": "582638c86743219bdac5b523e7073e7d1289249f8c7cf2886ee7757e086a9ef8",
+    "part_white_bishop.step.py": "f39f923179e637fb89ab586a8d437043da881ad434a82b3538739d433610f9fc",
+    "part_white_king.step": "e13a9609eb0329c42a79cd97687b63028ad4e29852ea50ef05d8cf811bcbe0c6",
+    "part_white_king.step.py": "f7195f90d8880b7a41d623e360858fb7b82f3dc0433e557d328d7c640ab7ea99",
+    "part_white_knight.step": "20f55becf9629c92f8209062ec1e7d8617648e6f7681b3dcc80ea57f645a3843",
+    "part_white_knight.step.py": "bd4bab30cbf9e96355f50374ab6545ef88485fdd71c2912e49fbad456325fa49",
+    "part_white_pawn.step": "2bdc0d380a4610a102e2dea4301b5d06a9f1fcaa536eabc70f265def8d3e4eb0",
+    "part_white_pawn.step.py": "8da0f144e1be30ceb7428c80055ffe22ac5ac8c50fa61f5b225af91edb70df28",
+    "part_white_queen.step": "9c91d4b60f47164da478d6cb12f9f033c32810b20e93c5ba8678ec4c7dc2a00c",
+    "part_white_queen.step.py": "2cc695a4a4e28b997e7fbe5fa98f2b50c36a42339676b6b0d1ab39209bb1a72e",
+    "part_white_rook.step": "76b5ec7171ef475556b66b575f0c05132db00b634718a9ab817eab100ca3b52c",
+    "part_white_rook.step.py": "b29c4a197f946044b05e22ac92a7215bc61e88c733b9ca55cbda6f35501c29c5"
+  }
+}

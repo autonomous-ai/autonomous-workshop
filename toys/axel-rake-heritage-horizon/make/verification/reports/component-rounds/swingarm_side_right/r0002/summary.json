@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_swingarm_side_right.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side_right/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "swingarm_side_right"
+ ],
+ "print": {
+  "swingarm_side_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side_right/r0001/overhang-swingarm_side_right.log": "1dafd4a418f08c8d5a2a35c38bb0ddb1552bbdf3b343130fd96851d1577dc0c3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side_right/r0001/thickness-swingarm_side_right.log": "891c777b9073eda2c57f246dd31e87cde7d411bf3d677bf203e4de9795a075a5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [
+  "swingarm_side_right"
+ ],
+ "round": 2,
+ "scope": "component:swingarm_side_right",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Reflected arm has an open axle bore, uninterrupted long blade and two connected luggage supports with raised mating posts.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side_right/r0002/visual-packet.json",
+  "packet_sha256": "b2b53ef03e86140ac0d8ca163d5054fae73eef7fee19386211302c6305d5a03d",
+  "status": "pass"
+ }
+}

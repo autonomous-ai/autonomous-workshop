@@ -1,0 +1,20 @@
+{
+  "product_id": "wish-20260911-161806-46d9d5ed",
+  "title": "Rainward Flow",
+  "summary": "A Sun-shaped backgammon set with flowing plasma counters, an open circular capture bar and dark recessed dice pips.",
+  "printed_parts": 35,
+  "sun_dimensions_mm": [
+    190,
+    190,
+    28
+  ],
+  "nozzle_mm": 0.4,
+  "status": "full-with-thickness",
+  "print_ready_claim": true,
+  "physical_testing": "not-run",
+  "playtest": "not-run",
+  "required_finishing": "Fill the preformed dice recesses with contrasting dark paint and wipe the flat faces clean. No positioning or drawing of pips is needed.",
+  "fairness": "Physical statistical fairness has not been tested.",
+  "revision_of": "Rainward Sun",
+  "verification": "cad/measure/verification-pipeline.md"
+}

@@ -8,10 +8,6 @@ colours and applies deterministic flat lighting in software, so a review can
 see overlapping parts, openings, recesses, and relative visual mass without a
 GL context or an available CAD Viewer.
 
-Source RGBA opacity is retained, including inherited occurrence materials.
-Transparent surfaces are composited in per-pixel depth order; this displays
-surface opacity, not refraction or the optical properties of a real material.
-
 It is evidence for appearance only. Dimensions, validity, interference,
 motion, fit, mesh quality, and thickness remain owned by their normal gates.
 """
@@ -20,7 +16,6 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import hashlib
 import importlib.util
 import io
 import math
@@ -30,12 +25,6 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
-
-SCRIPTS_DIR = Path(__file__).resolve().parent
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
-
-from assembly_copy import placed_subtree_copy  # noqa: E402
 
 
 ENTRY_SUFFIX = ".step.py"
@@ -130,28 +119,14 @@ def _linear_to_srgb(value: float) -> int:
     return round(encoded * 255)
 
 
-def _colour_channels(colour, index: int):
+def _shape_colour(shape, index: int) -> tuple[int, int, int]:
+    colour = getattr(shape, "color", None)
     if colour is None:
         return FALLBACK_COLOURS[index % len(FALLBACK_COLOURS)]
     channels = tuple(colour)
     if len(channels) < 3:
         return FALLBACK_COLOURS[index % len(FALLBACK_COLOURS)]
-    rgb = tuple(_linear_to_srgb(float(value)) for value in channels[:3])
-    alpha = _opacity(channels)
-    return rgb if alpha == 1.0 else (*rgb, alpha)
-
-
-def _shape_colour(shape, index: int):
-    return _colour_channels(getattr(shape, "color", None), index)
-
-
-def _opacity(colour):
-    if len(colour) not in (3, 4):
-        raise ValueError("review colour must have RGB or RGBA channels")
-    alpha = float(colour[3]) if len(colour) == 4 else 1.0
-    if not math.isfinite(alpha) or not 0.0 <= alpha <= 1.0:
-        raise ValueError("review opacity must be finite and between 0 and 1")
-    return alpha
+    return tuple(_linear_to_srgb(float(value)) for value in channels[:3])
 
 
 def _leaves(shape, parent_location=None, inherited_colour=None):
@@ -161,8 +136,7 @@ def _leaves(shape, parent_location=None, inherited_colour=None):
     Children retain local placements, so descend with the accumulated parent
     transform rather than tessellating unplaced leaves directly.
     """
-    # The public color getter caches inherited values on the source node.
-    colour = getattr(shape, "_color", None)
+    colour = getattr(shape, "color", None)
     if colour is None:
         colour = inherited_colour
     children = list(getattr(shape, "children", ()) or ())
@@ -173,12 +147,7 @@ def _leaves(shape, parent_location=None, inherited_colour=None):
         for child in children:
             yield from _leaves(child, location, colour)
     else:
-        location = shape.location
-        if parent_location is not None:
-            location = parent_location * location
-        # An attached leaf's moved() copies its entire assembly through parent.
-        # Copy only this occurrence, including its effective inherited color.
-        placed = placed_subtree_copy(shape, location)
+        placed = shape if parent_location is None else shape.moved(parent_location)
         if getattr(placed, "color", None) is None and colour is not None:
             placed.color = colour
         yield placed
@@ -226,119 +195,6 @@ def _shade(colour, normal, light, toward_viewer):
     return tuple(min(255, max(0, round(channel * brightness))) for channel in colour)
 
 
-def _composite_transparent(pixels, opaque_depths, occurrences, *, right, up,
-                           toward_viewer, light, scale, x_offset, y_offset):
-    """Depth-peel every transparent surface with fixed-size pixel workspaces.
-
-    Triangles are binned by row tile once. Each tile keeps only its next layer,
-    accumulated colour and transmission, never a list of fragments per pixel.
-    Distinct occurrences at tied depths use a stable material/geometry order;
-    one occurrence's shared triangle edges contribute only once at each depth.
-    """
-    size = len(pixels)
-    rows = 32
-    buckets = [[] for _ in range((size + rows - 1) // rows)]
-
-    def occurrence_key(occurrence):
-        points, faces, colour = occurrence
-        digest = hashlib.sha256(points.tobytes() + faces.tobytes()).digest()
-        return (*colour[:3], _opacity(colour), digest)
-
-    for rank, (points, faces, colour) in enumerate(sorted(occurrences, key=occurrence_key)):
-        px = points @ right * scale + x_offset
-        py = y_offset - points @ up * scale
-        depth = points @ toward_viewer
-        alpha = _opacity(colour)
-        for a, b, c in faces:
-            vertices = points[[a, b, c]]
-            xs, ys = px[[a, b, c]], py[[a, b, c]]
-            denominator = ((ys[1] - ys[2]) * (xs[0] - xs[2])
-                           + (xs[2] - xs[1]) * (ys[0] - ys[2]))
-            if abs(denominator) < 1e-12:
-                continue
-            left, rightmost = max(0, int(np.floor(xs.min()))), min(size - 1, int(np.ceil(xs.max())))
-            top, bottom = max(0, int(np.floor(ys.min()))), min(size - 1, int(np.ceil(ys.max())))
-            if left > rightmost or top > bottom:
-                continue
-            normal = np.cross(vertices[1] - vertices[0], vertices[2] - vertices[0])
-            fill = _shade(colour[:3], normal, light, toward_viewer)
-            # Half-open edge coverage assigns a shared pixel to one triangle.
-            # Orient the ownership rule consistently even for reversed winding.
-            edge_owner = []
-            edge_functions = []
-            for corner in range(3):
-                start, stop = (corner + 1) % 3, (corner + 2) % 3
-                dx, dy = xs[stop] - xs[start], ys[stop] - ys[start]
-                if denominator < 0:
-                    dx, dy = -dx, -dy
-                edge_owner.append(dy > 0 or (dy == 0 and dx < 0))
-                # Canonical endpoints give adjacent triangles exactly opposite
-                # edge functions, independent of their area or winding. A
-                # tolerance on normalized weights creates unequal coverage bands.
-                p, q = (xs[start], ys[start]), (xs[stop], ys[stop])
-                sign = 1 if denominator > 0 else -1
-                if p > q:
-                    p, q = q, p
-                    sign = -sign
-                edge_functions.append((sign * (p[1] - q[1]), sign * (q[0] - p[0]),
-                                       sign * (p[0] * q[1] - q[0] * p[1])))
-            # Shade tie-breaking makes shared edges deterministic even where
-            # adjacent surface normals differ. It does not add another layer.
-            shade_key = (fill[0] << 16) | (fill[1] << 8) | fill[2]
-            triangle = (xs, ys, depth[[a, b, c]], denominator, left, rightmost,
-                        top, bottom, fill, alpha, rank, shade_key, edge_owner, edge_functions)
-            for tile in range(top // rows, bottom // rows + 1):
-                buckets[tile].append(triangle)
-
-    for tile, triangles in enumerate(buckets):
-        if not triangles:
-            continue
-        first, last = tile * rows, min(size, (tile + 1) * rows)
-        dimensions = (last - first, size)
-        ceiling = np.full(dimensions, np.inf)
-        ceiling_rank = np.full(dimensions, -1, dtype=np.int64)
-        transmission = np.ones(dimensions)
-        accumulated = np.zeros((*dimensions, 3))
-        opaque = opaque_depths[first:last]
-        while True:
-            nearest = np.full(dimensions, -np.inf)
-            ranks = np.full(dimensions, -1, dtype=np.int64)
-            shades = np.full(dimensions, -1, dtype=np.int64)
-            colours = np.zeros((*dimensions, 3))
-            alphas = np.zeros(dimensions)
-            for xs, ys, zs, denominator, left, rightmost, top, bottom, fill, alpha, rank, shade_key, edge_owner, edge_functions in triangles:
-                begin, end = max(first, top), min(last, bottom + 1)
-                y, x = np.ogrid[begin:end, left:rightmost + 1]
-                x, y = x + 0.5, y + 0.5
-                w0 = ((ys[1] - ys[2]) * (x - xs[2]) + (xs[2] - xs[1]) * (y - ys[2])) / denominator
-                w1 = ((ys[2] - ys[0]) * (x - xs[2]) + (xs[0] - xs[2]) * (y - ys[2])) / denominator
-                w2 = 1.0 - w0 - w1
-                inside = np.ones((end - begin, rightmost - left + 1), dtype=bool)
-                for (edge_a, edge_b, edge_c), owns_edge in zip(edge_functions, edge_owner):
-                    edge = edge_a * x + edge_b * y + edge_c
-                    inside &= (edge > 0) | ((edge == 0) & owns_edge)
-                z = w0 * zs[0] + w1 * zs[1] + w2 * zs[2]
-                region = np.s_[begin - first:end - first, left:rightmost + 1]
-                # This strict total order must decrease on every peel. An
-                # epsilon-based depth/rank comparison can cycle among layers.
-                below = (z < ceiling[region]) | ((z == ceiling[region]) & (rank < ceiling_rank[region]))
-                nearer = (z > nearest[region]) | ((z == nearest[region]) &
-                          ((rank > ranks[region]) | ((rank == ranks[region]) & (shade_key > shades[region]))))
-                visible = inside & (z > opaque[region] + 1e-9) & below & nearer
-                nearest[region][visible] = z[visible]
-                ranks[region][visible] = rank
-                shades[region][visible] = shade_key
-                colours[region][visible] = fill
-                alphas[region][visible] = alpha
-            hit = ranks >= 0
-            if not hit.any():
-                break
-            accumulated += (transmission * alphas)[..., None] * colours
-            transmission *= 1.0 - alphas
-            ceiling[hit], ceiling_rank[hit] = nearest[hit], ranks[hit]
-        pixels[first:last] = np.rint(accumulated + transmission[..., None] * pixels[first:last]).astype(np.uint8)
-
-
 def render(occurrences, azimuth: float, elevation: float, size: int, pad: float, *, framing=None):
     toward_viewer, right, up = camera_basis(azimuth, elevation)
     light = np.array([0.35, -0.45, 0.82], dtype=float)
@@ -363,14 +219,7 @@ def render(occurrences, azimuth: float, elevation: float, size: int, pad: float,
     pixels = np.empty((size, size, 3), dtype=np.uint8)
     pixels[:] = BACKGROUND
     depths = np.full((size, size), -np.inf)
-    transparent = []
     for points, faces, colour in occurrences:
-        alpha = _opacity(colour)
-        if alpha < 1.0:
-            if alpha > 0.0:
-                transparent.append((points, faces, colour))
-            continue
-        colour = colour[:3]
         px = points @ right * scale + x_offset
         py = y_offset - points @ up * scale
         depth = points @ toward_viewer
@@ -386,8 +235,6 @@ def render(occurrences, azimuth: float, elevation: float, size: int, pad: float,
             rightmost = min(size - 1, int(np.ceil(xs.max())))
             top = max(0, int(np.floor(ys.min())))
             bottom = min(size - 1, int(np.ceil(ys.max())))
-            if left > rightmost or top > bottom:
-                continue
             fill = _shade(colour, normal, light, toward_viewer)
             # Bound temporary arrays for large projected faces. Pixel-centre
             # barycentric coordinates interpolate this orthographic depth.
@@ -406,10 +253,6 @@ def render(occurrences, azimuth: float, elevation: float, size: int, pad: float,
                 visible = inside & (z > existing + 1e-9)
                 existing[visible] = z[visible]
                 pixels[first_row:last_row, left:rightmost + 1][visible] = fill
-    if transparent:
-        _composite_transparent(pixels, depths, transparent, right=right, up=up,
-                               toward_viewer=toward_viewer, light=light, scale=scale,
-                               x_offset=x_offset, y_offset=y_offset)
     return Image.fromarray(pixels)
 
 

@@ -468,14 +468,6 @@ class NativeHostTest(unittest.TestCase):
     def setUp(self):
         self.gamevault = install_fake_gamevault(self)
 
-    def _install_fake_usage(self, input_tokens=100):
-        # Fake launchers do not write native rollouts; resume still refreshes usage.
-        from tests.workflow.test_token_budget import observation
-        self.enterContext(mock.patch(
-            "workshop.workflow.native_run._read_product_token_usage",
-            return_value=observation(input_tokens),
-        ))
-
     @staticmethod
     def _launcher_checkpoint(
         *,
@@ -485,6 +477,8 @@ class NativeHostTest(unittest.TestCase):
         manager_id="codex",
         manager_model=None,
         manager_reasoning_effort=None,
+        turn_seconds=None,
+        turn_untimed=False,
     ):
         capability_paths = {
             "deep-v1": DEEP_ECONOMICS_V1_CAPABILITY_PATH,
@@ -614,6 +608,8 @@ class NativeHostTest(unittest.TestCase):
             manager_id=manager_id,
             manager_model=manager_model,
             manager_reasoning_effort=manager_reasoning_effort,
+            turn_seconds=turn_seconds,
+            turn_untimed=turn_untimed,
         )
 
     def test_grid_keepalive_service_cannot_create_repeating_wishes(self):
@@ -688,6 +684,114 @@ class NativeHostTest(unittest.TestCase):
                     3600,
                 )
                 self.assertEqual(bounded.timeout_seconds, 1200)
+
+    def test_selected_turn_boundary_replaces_the_frozen_stage_default(self):
+        """One operator boundary outranks every stage-shaped default."""
+
+        for effort, capability in (
+            ("spark", "v4"),
+            ("spark", "v3"),
+            ("forge", "deep-v14"),
+            ("quest", "deep-v13"),
+        ):
+            with self.subTest(effort=effort, capability=capability):
+                checkpoint = self._launcher_checkpoint(
+                    effort=effort,
+                    economics_capability=capability,
+                    turn_seconds=3 * 60 * 60,
+                )
+                with mock.patch(
+                    "workshop.workflow.native_run.CodexNativeSessionLauncher"
+                ) as launcher_type:
+                    _native_launcher(checkpoint)
+                self.assertEqual(
+                    launcher_type.call_args.kwargs["timeout_seconds"], 3 * 60 * 60
+                )
+
+    def test_selected_turn_boundary_survives_the_short_make_proof_branch(self):
+        """The shortest frozen boundary is still replaced, not merely widened."""
+
+        checkpoint = self._launcher_checkpoint(
+            effort="forge", economics_capability="deep-v14", turn_seconds=7_200
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(checkpoint, initial_make_proof_boundary=True)
+        self.assertEqual(launcher_type.call_args.kwargs["timeout_seconds"], 7_200)
+
+    def test_untimed_selection_removes_the_host_wall_clock(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v4", turn_untimed=True
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.CodexNativeSessionLauncher"
+        ) as launcher_type:
+            _native_launcher(checkpoint)
+        self.assertIsNone(launcher_type.call_args.kwargs["timeout_seconds"])
+
+    def test_selected_turn_boundary_reaches_a_non_codex_manager(self):
+        for options, expected in (
+            ({"turn_seconds": 5_400}, 5_400),
+            ({"turn_untimed": True}, None),
+        ):
+            with self.subTest(**options):
+                checkpoint = self._launcher_checkpoint(
+                    effort="spark",
+                    economics_capability="v4",
+                    manager_id="claude",
+                    **options,
+                )
+                with mock.patch(
+                    "workshop.workflow.native_run.manager_launcher"
+                ) as registry:
+                    _native_launcher(checkpoint)
+                self.assertEqual(
+                    registry.call_args.kwargs["timeout_seconds"], expected
+                )
+
+    def test_selected_turn_boundary_outranks_the_budgeted_spark_clamp(self):
+        """Without this the flag reads as accepted and silently does nothing."""
+
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v3", turn_seconds=4 * 60 * 60
+        )
+        checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+        with mock.patch(
+            "workshop.runtime.codex._resolved_codex_binary", return_value=None
+        ):
+            bounded = _budgeted_turn_launcher(
+                checkpoint, _native_launcher(checkpoint), 3600
+            )
+        self.assertEqual(bounded.timeout_seconds, 4 * 60 * 60)
+
+    def test_untimed_selection_outranks_a_remaining_step_clock(self):
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v3", turn_untimed=True
+        )
+        checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+        with mock.patch(
+            "workshop.runtime.codex._resolved_codex_binary", return_value=None
+        ):
+            bounded = _budgeted_turn_launcher(
+                checkpoint, _native_launcher(checkpoint), 600
+            )
+        self.assertIsNone(bounded.timeout_seconds)
+
+    def test_an_unselected_turn_boundary_changes_nothing(self):
+        """Every frozen run without the flag keeps its exact original policy."""
+
+        checkpoint = self._launcher_checkpoint(
+            effort="spark", economics_capability="v3"
+        )
+        checkpoint.input_sha256s[BUDGETS_CAPABILITY_PATH] = "f" * 64
+        with mock.patch(
+            "workshop.runtime.codex._resolved_codex_binary", return_value=None
+        ):
+            bounded = _budgeted_turn_launcher(
+                checkpoint, _native_launcher(checkpoint), 3600
+            )
+        self.assertEqual(bounded.timeout_seconds, 1200)
 
     def test_new_runtime_choice_overrides_legacy_stage_reasoning_profile(self):
         checkpoint = self._launcher_checkpoint(
@@ -2039,6 +2143,23 @@ class NativeHostTest(unittest.TestCase):
             self.assertFalse((home / "runs" / product_id).exists())
             self.assertFalse((home / "state" / product_id).exists())
 
+    def test_start_freezes_motion_option_and_rejects_non_booleans(self):
+        for options, expected in (({}, False), ({"check_motion": False}, False),
+                                  ({"check_motion": True}, True)):
+            with self.subTest(options=options), tempfile.TemporaryDirectory() as temporary:
+                with mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(Path(temporary).resolve())}, clear=True), \
+                        mock.patch("workshop.workflow.native_run._source_checkout_root", return_value=None), \
+                        mock.patch("workshop.workflow.native_run.AgentRun.create",
+                                   side_effect=ContractError("fixture stop")) as create:
+                    with self.assertRaisesRegex(ContractError, "fixture stop"):
+                        start_native_run(Wish.create("motion-choice", "a moving toy"), **options)
+                    self.assertIs(create.call_args.kwargs["check_motion"], expected)
+        with mock.patch("workshop.workflow.native_run.native_run_paths") as paths:
+            for invalid in ("false", 0, None):
+                with self.subTest(invalid=invalid), self.assertRaisesRegex(ContractError, "motion check option"):
+                    start_native_run(Wish.create("motion-invalid", "a toy"), check_motion=invalid)
+            paths.assert_not_called()
+
     def test_start_hands_wish_reference_bytes_to_the_run(self):
         content = b"\x89PNG" + b"\0" * 16
         reference = {
@@ -2186,7 +2307,6 @@ class NativeHostTest(unittest.TestCase):
                 native_run_paths("ambiguous-wish")
 
     def test_live_source_checkout_legacy_run_stays_status_and_resume_compatible(self):
-        self._install_fake_usage()
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -2393,10 +2513,10 @@ class NativeHostTest(unittest.TestCase):
             self.assertTrue(receipt["publication"]["requested"])
             self.assertEqual(receipt["workflow"], "spark")
             self.assertEqual(receipt["agent"], "codex")
-            self.assertEqual(receipt["model"], "gpt-5.6-sol")
+            self.assertEqual(receipt["model"], "gpt-6-astra")
             self.assertEqual(receipt["effort"], "medium")
             self.assertIn("Workflow: Spark", stderr.getvalue())
-            self.assertIn("Model: gpt-5.6-sol · effort medium", stderr.getvalue())
+            self.assertIn("Model: gpt-6-astra · effort medium", stderr.getvalue())
             self.assertIn(
                 "Starting one native Codex session for Make",
                 stderr.getvalue(),
@@ -2921,7 +3041,6 @@ class NativeHostTest(unittest.TestCase):
             self.assertIsNone(_repair_base(SimpleNamespace(run_root=root, host_state_root=root / "nowhere"), history))
 
     def test_resume_uses_exact_materialized_binding(self):
-        self._install_fake_usage()
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -3062,7 +3181,6 @@ class NativeHostTest(unittest.TestCase):
             )
 
     def test_resume_consumes_interrupted_finalized_stage_before_new_turn(self):
-        self._install_fake_usage()
         interrupted = _FinalizedMatchThenInterruptLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -3211,7 +3329,6 @@ class NativeHostTest(unittest.TestCase):
             )
 
     def test_token_cap_is_persisted_and_resume_never_grants_fresh_allowance(self):
-        self._install_fake_usage(1000)
         from workshop.workflow.token_budget import ProductTokenBudget
         from tests.workflow.test_token_budget import observation
 
@@ -3680,7 +3797,6 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(launcher.resumes, [])
 
     def test_status_reports_durable_safe_progress_and_attempted_turn_count(self):
-        self._install_fake_usage()
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -3751,7 +3867,6 @@ class NativeHostTest(unittest.TestCase):
                 self.assertNotIn(forbidden, private)
 
     def test_start_and_resume_surface_only_safe_non_authoritative_activity(self):
-        self._install_fake_usage()
         launcher = _ReportingFakeLauncher()
         observed = []
 
@@ -3790,7 +3905,6 @@ class NativeHostTest(unittest.TestCase):
         )
 
     def test_start_and_resume_emit_paired_timing_without_changing_turns(self):
-        self._install_fake_usage()
         launcher = _FakeLauncher()
         events = []
         with tempfile.TemporaryDirectory() as temporary:
@@ -3874,7 +3988,7 @@ class NativeHostTest(unittest.TestCase):
 
             self.assertFalse(home.exists())
 
-    def test_progress_throttles_churn_but_delivers_reports_and_terminal_classes(self):
+    def test_progress_throttles_active_event_churn_but_forces_terminal_classes(self):
         progress = NativeRunProgress(
             product_id="progress-throttle-wish",
             wish_sha256="a" * 64,
@@ -3889,25 +4003,20 @@ class NativeHostTest(unittest.TestCase):
         )
         with mock.patch(
             "workshop.workflow.native_run.time.monotonic",
-            side_effect=(100.0, 100.1, 100.2, 100.3, 100.4, 100.5),
+            side_effect=(100.0, 100.1, 100.2, 100.3, 100.4),
         ), mock.patch(
             "workshop.workflow.native_run.write_native_progress"
         ) as write_progress:
             tracker = _NativeProgressTracker(Path("/unused"), progress)
             tracker.observe("reasoning")
             tracker.observe("tool")
-            tracker.observe("reporting")
             tracker.observe("finalizing")
             tracker.observe("completed")
 
-        self.assertEqual(
-            [call.args[1].activity for call in write_progress.call_args_list],
-            ["reporting", "finalizing", "completed"],
-        )
+        self.assertEqual(write_progress.call_count, 2)
         self.assertEqual(tracker.progress.activity, "completed")
 
     def test_untrusted_progress_is_hidden_without_blocking_valid_status(self):
-        self._install_fake_usage()
         for case in ("tampered", "symlink"):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as temporary:
                 home = Path(temporary).resolve() / "workshop-home"

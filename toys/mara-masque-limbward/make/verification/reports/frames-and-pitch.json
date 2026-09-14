@@ -1,0 +1,1556 @@
+[
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/black_bishop",
+      "stepPath": "artifacts/make/r0001/product/parts/black_bishop.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997216,
+            -7.998002,
+            0.0
+          ],
+          "max": [
+            7.555556,
+            7.998002,
+            26.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.552772000000001,
+            15.996004,
+            26.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            -0.22082999999999986,
+            0.0,
+            13.0
+          ],
+          "diag": 34.260193532027806
+        },
+        "center": [
+          -0.22082999999999986,
+          0.0,
+          13.0
+        ],
+        "kind": "frame",
+        "name": "black_bishop",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_black_bishop.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/black_king",
+      "stepPath": "artifacts/make/r0001/product/parts/black_king.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997216,
+            -7.998002,
+            0.0
+          ],
+          "max": [
+            7.555556,
+            7.998002,
+            22.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.552772000000001,
+            15.996004,
+            22.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            -0.22082999999999986,
+            0.0,
+            11.0
+          ],
+          "diag": 31.333063381227184
+        },
+        "center": [
+          -0.22082999999999986,
+          0.0,
+          11.0
+        ],
+        "kind": "frame",
+        "name": "black_king",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_black_king.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/black_knight",
+      "stepPath": "artifacts/make/r0001/product/parts/black_knight.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997216,
+            -7.998002,
+            0.0
+          ],
+          "max": [
+            7.555556,
+            7.998002,
+            24.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.552772000000001,
+            15.996004,
+            24.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            -0.22082999999999986,
+            0.0,
+            12.0
+          ],
+          "diag": 32.768290478021584
+        },
+        "center": [
+          -0.22082999999999986,
+          0.0,
+          12.0
+        ],
+        "kind": "frame",
+        "name": "black_knight",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_black_knight.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/black_pawn",
+      "stepPath": "artifacts/make/r0001/product/parts/black_pawn.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997216,
+            -7.998002,
+            0.0
+          ],
+          "max": [
+            7.555556,
+            7.998002,
+            12.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.552772000000001,
+            15.996004,
+            12.0
+          ],
+          "extentAxis": "y",
+          "center": [
+            -0.22082999999999986,
+            0.0,
+            6.0
+          ],
+          "diag": 25.332999444440052
+        },
+        "center": [
+          -0.22082999999999986,
+          0.0,
+          6.0
+        ],
+        "kind": "frame",
+        "name": "black_pawn",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_black_pawn.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/black_queen",
+      "stepPath": "artifacts/make/r0001/product/parts/black_queen.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997216,
+            -7.998002,
+            0.0
+          ],
+          "max": [
+            7.555556,
+            7.998002,
+            28.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.552772000000001,
+            15.996004,
+            28.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            -0.22082999999999986,
+            0.0,
+            14.0
+          ],
+          "diag": 35.80168796093279
+        },
+        "center": [
+          -0.22082999999999986,
+          0.0,
+          14.0
+        ],
+        "kind": "frame",
+        "name": "black_queen",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_black_queen.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/black_rook",
+      "stepPath": "artifacts/make/r0001/product/parts/black_rook.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997216,
+            -7.998002,
+            0.0
+          ],
+          "max": [
+            7.555556,
+            7.998002,
+            34.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.552772000000001,
+            15.996004,
+            34.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            -0.22082999999999986,
+            0.0,
+            17.0
+          ],
+          "diag": 40.66645867114568
+        },
+        "center": [
+          -0.22082999999999986,
+          0.0,
+          17.0
+        ],
+        "kind": "frame",
+        "name": "black_rook",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_black_rook.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/camera_board",
+      "stepPath": "artifacts/make/r0001/product/parts/camera_board.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -98.0,
+            -98.0,
+            0.0
+          ],
+          "max": [
+            98.0,
+            98.0,
+            26.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            196.0,
+            196.0,
+            26.0
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            0.0,
+            13.0
+          ],
+          "diag": 278.40258619488435
+        },
+        "center": [
+          0.0,
+          0.0,
+          13.0
+        ],
+        "kind": "frame",
+        "name": "camera_board",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_camera_board.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/white_bishop",
+      "stepPath": "artifacts/make/r0001/product/parts/white_bishop.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997015,
+            -7.999254,
+            0.0
+          ],
+          "max": [
+            8.0,
+            7.999254,
+            26.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.997015000000001,
+            15.998508,
+            26.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            0.0014924999999998967,
+            0.0,
+            13.0
+          ],
+          "diag": 34.46529772301828
+        },
+        "center": [
+          0.0014924999999998967,
+          0.0,
+          13.0
+        ],
+        "kind": "frame",
+        "name": "white_bishop",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_white_bishop.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/white_king",
+      "stepPath": "artifacts/make/r0001/product/parts/white_king.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997015,
+            -7.999254,
+            0.0
+          ],
+          "max": [
+            8.0,
+            7.999254,
+            22.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.997015000000001,
+            15.998508,
+            22.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            0.0014924999999998967,
+            0.0,
+            11.0
+          ],
+          "diag": 31.55719802416382
+        },
+        "center": [
+          0.0014924999999998967,
+          0.0,
+          11.0
+        ],
+        "kind": "frame",
+        "name": "white_king",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_white_king.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/white_knight",
+      "stepPath": "artifacts/make/r0001/product/parts/white_knight.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997015,
+            -7.999254,
+            0.0
+          ],
+          "max": [
+            8.0,
+            7.999254,
+            24.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.997015000000001,
+            15.998508,
+            24.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            0.0014924999999998967,
+            0.0,
+            12.0
+          ],
+          "diag": 32.98267343828103
+        },
+        "center": [
+          0.0014924999999998967,
+          0.0,
+          12.0
+        ],
+        "kind": "frame",
+        "name": "white_knight",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_white_knight.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/white_pawn",
+      "stepPath": "artifacts/make/r0001/product/parts/white_pawn.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997015,
+            -7.999254,
+            0.0
+          ],
+          "max": [
+            8.0,
+            7.999254,
+            12.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.997015000000001,
+            15.998508,
+            12.0
+          ],
+          "extentAxis": "y",
+          "center": [
+            0.0014924999999998967,
+            0.0,
+            6.0
+          ],
+          "diag": 25.609700254713818
+        },
+        "center": [
+          0.0014924999999998967,
+          0.0,
+          6.0
+        ],
+        "kind": "frame",
+        "name": "white_pawn",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_white_pawn.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/white_queen",
+      "stepPath": "artifacts/make/r0001/product/parts/white_queen.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997015,
+            -7.999254,
+            0.0
+          ],
+          "max": [
+            8.0,
+            7.999254,
+            28.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.997015000000001,
+            15.998508,
+            28.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            0.0014924999999998967,
+            0.0,
+            14.0
+          ],
+          "diag": 35.998010321909305
+        },
+        "center": [
+          0.0014924999999998967,
+          0.0,
+          14.0
+        ],
+        "kind": "frame",
+        "name": "white_queen",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_white_queen.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/parts/white_rook",
+      "stepPath": "artifacts/make/r0001/product/parts/white_rook.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.1",
+      "displaySelector": "o1.1",
+      "copyText": "#o1.1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.1",
+        "bbox": {
+          "min": [
+            -7.997015,
+            -7.999254,
+            0.0
+          ],
+          "max": [
+            8.0,
+            7.999254,
+            34.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            15.997015000000001,
+            15.998508,
+            34.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            0.0014924999999998967,
+            0.0,
+            17.0
+          ],
+          "diag": 40.839401894938284
+        },
+        "center": [
+          0.0014924999999998967,
+          0.0,
+          17.0
+        ],
+        "kind": "frame",
+        "name": "white_rook",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "part_white_rook.step.py-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "x",
+      "from": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "occurrence",
+        "normalizedSelector": "o1.2",
+        "displaySelector": "o1.2",
+        "copyText": "#o1.2",
+        "positioning": {
+          "selectorType": "occurrence",
+          "selector": "o1.2",
+          "bbox": {
+            "min": [
+              -78.0,
+              -68.0,
+              22.0
+            ],
+            "max": [
+              -62.0,
+              -52.0,
+              56.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              16.0,
+              16.0,
+              34.0
+            ],
+            "extentAxis": "z",
+            "center": [
+              -70.0,
+              -60.0,
+              39.0
+            ],
+            "diag": 40.84115571332428
+          },
+          "center": [
+            -70.0,
+            -60.0,
+            39.0
+          ],
+          "kind": "frame",
+          "name": "white_rook",
+          "translation": [
+            -70.0,
+            -60.0,
+            22.0
+          ],
+          "localAxes": {
+            "x": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "y": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "z": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          },
+          "transform": [
+            1.0,
+            0.0,
+            0.0,
+            -70.0,
+            0.0,
+            1.0,
+            0.0,
+            -60.0,
+            0.0,
+            0.0,
+            1.0,
+            22.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "coordinate": -70.0,
+        "coordinateSource": "point"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "occurrence",
+        "normalizedSelector": "o1.3",
+        "displaySelector": "o1.3",
+        "copyText": "#o1.3",
+        "positioning": {
+          "selectorType": "occurrence",
+          "selector": "o1.3",
+          "bbox": {
+            "min": [
+              -58.0,
+              -68.0,
+              22.0
+            ],
+            "max": [
+              -42.0,
+              -52.0,
+              46.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              16.0,
+              16.0,
+              24.0
+            ],
+            "extentAxis": "z",
+            "center": [
+              -50.0,
+              -60.0,
+              34.0
+            ],
+            "diag": 32.984845004941285
+          },
+          "center": [
+            -50.0,
+            -60.0,
+            34.0
+          ],
+          "kind": "frame",
+          "name": "white_knight",
+          "translation": [
+            -50.0,
+            -60.0,
+            22.0
+          ],
+          "localAxes": {
+            "x": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "y": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "z": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          },
+          "transform": [
+            1.0,
+            0.0,
+            0.0,
+            -50.0,
+            0.0,
+            1.0,
+            0.0,
+            -60.0,
+            0.0,
+            0.0,
+            1.0,
+            22.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "coordinate": -50.0,
+        "coordinateSource": "point"
+      },
+      "measurement": {
+        "signedDistance": 20.0,
+        "absoluteDistance": 20.0,
+        "euclideanDistance": 20.615528128088304,
+        "vectorRelationship": null
+      }
+    },
+    "id": "file-pitch"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/cad/states/before",
+      "stepPath": "artifacts/make/r0001/product/cad/states/before.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.3",
+      "displaySelector": "o1.3",
+      "copyText": "#o1.3",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.3",
+        "bbox": {
+          "min": [
+            62.0,
+            -67.97763,
+            22.0
+          ],
+          "max": [
+            78.0,
+            -52.02237,
+            56.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            16.0,
+            15.955260000000003,
+            34.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            70.0,
+            -60.0,
+            39.0
+          ],
+          "diag": 40.82364904889812
+        },
+        "center": [
+          70.0,
+          -60.0,
+          39.0
+        ],
+        "kind": "frame",
+        "name": "white_rook",
+        "translation": [
+          70.0,
+          -60.0,
+          22.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          70.0,
+          0.0,
+          1.0,
+          0.0,
+          -60.0,
+          0.0,
+          0.0,
+          1.0,
+          22.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "before-rook"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/cad/states/after",
+      "stepPath": "artifacts/make/r0001/product/cad/states/after.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.3",
+      "displaySelector": "o1.3",
+      "copyText": "#o1.3",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.3",
+        "bbox": {
+          "min": [
+            62.0,
+            72.02237,
+            22.0
+          ],
+          "max": [
+            78.0,
+            87.97763,
+            56.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            16.0,
+            15.95526000000001,
+            34.0
+          ],
+          "extentAxis": "z",
+          "center": [
+            70.0,
+            80.0,
+            39.0
+          ],
+          "diag": 40.82364904889812
+        },
+        "center": [
+          70.0,
+          80.0,
+          39.0
+        ],
+        "kind": "frame",
+        "name": "white_rook",
+        "translation": [
+          70.0,
+          80.0,
+          22.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          70.0,
+          0.0,
+          1.0,
+          0.0,
+          80.0,
+          0.0,
+          0.0,
+          1.0,
+          22.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "after-rook"
+  }
+]

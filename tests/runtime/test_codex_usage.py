@@ -5,6 +5,7 @@ import pytest
 
 from workshop.runtime.codex_usage import (
     COUNTERS, UsageUnavailable, read_product_usage, read_thread_usage,
+    supports_rollout_usage_version,
 )
 
 ROOT = "01a0795e-0efd-76e2-91a9-aa019980ede0"
@@ -40,6 +41,39 @@ def write(tmp_path, events, name=ROOT):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(json.dumps(event) + "\n" for event in events))
     return path
+
+
+@pytest.mark.parametrize(
+    "version", ["0.153.4", "0.153.5", "0.154.0", "0.154.0-alpha.1", "1.0.0"],
+)
+def test_rollout_usage_accepts_codex_01534_or_newer(version):
+    assert supports_rollout_usage_version(version)
+
+
+@pytest.mark.parametrize(
+    "version", ["0.153.3", "0.153", "v0.154.0", "current", None, True],
+)
+def test_rollout_usage_rejects_old_or_malformed_codex_versions(version):
+    assert not supports_rollout_usage_version(version)
+
+
+def test_newer_codex_rollout_is_read_with_the_same_strict_schema(tmp_path):
+    result = read_thread_usage(
+        write(tmp_path, records(version="0.154.0") + [usage()]),
+        thread_id=ROOT,
+        workspace=Path("/toy"),
+    )
+    assert result["tokens"] == counters(100)
+
+
+def test_newer_codex_rollout_with_incompatible_counters_fails_closed(tmp_path):
+    events = records(version="0.154.0") + [
+        usage(total_token_usage={**counters(), "input_tokens": "100"}),
+    ]
+    with pytest.raises(UsageUnavailable, match="invalid native token counters"):
+        read_thread_usage(
+            write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"),
+        )
 
 
 def test_counts_resumes_and_deduplicates_notifications(tmp_path):
@@ -89,6 +123,94 @@ def test_product_counts_child_followup_without_reset_or_double_charge(tmp_path):
     ], CHILD)
     result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
     assert result["total_tokens"] == 440
+
+
+@pytest.mark.parametrize("fresh", ["none", "continued", "reset"])
+@pytest.mark.parametrize("thread,parent", [(ROOT, None), (CHILD, ROOT)])
+def test_followup_replays_exact_snapshot_before_fresh_usage(tmp_path, fresh, thread, parent):
+    previous = usage(200, last_token_usage=counters(100))
+    replay = usage(200, last_token_usage=counters(100))
+    replay["timestamp"] = "2026-09-07T02:00:00Z"
+    events = records(thread, parent) + [usage(100), previous,
+        {"type": "event_msg", "payload": {"type": "task_complete", "turn_id": "first"}},
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        replay, replay,
+    ]
+    if fresh == "continued":
+        events.append(usage(300, last_token_usage=counters(100)))
+    elif fresh == "reset":
+        events.append(usage(100))
+    if fresh != "none":
+        events[-1]["timestamp"] = "2026-09-07T03:00:00Z"
+    events.append({"type": "event_msg", "payload": {
+        "type": "task_complete", "turn_id": "followup",
+    }})
+    result = read_thread_usage(write(tmp_path, events, thread), thread_id=thread, workspace=Path("/toy"))
+    assert result["tokens"] == counters(200 if fresh == "none" else 300)
+    assert result["last_observed_at"] == (
+        previous["timestamp"] if fresh == "none" else "2026-09-07T03:00:00Z"
+    )
+
+
+def test_replayed_child_snapshot_preserves_product_budget(tmp_path):
+    write(tmp_path, records() + [usage(100)])
+    events = records(CHILD, ROOT) + [usage(100), usage(200, last_token_usage=counters(100))]
+    child_path = write(tmp_path, events, CHILD)
+    before = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    events += [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(200, last_token_usage=counters(100)),
+    ]
+    child_path.write_text("".join(json.dumps(event) + "\n" for event in events))
+    after = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
+    assert after == before
+    from workshop.workflow.token_budget import ProductTokenBudget
+    budget = ProductTokenBudget()
+    budget.observe(before)
+    saved = budget.to_dict()
+    budget.observe(after)
+    assert budget.to_dict() == saved
+
+
+@pytest.mark.parametrize("key", COUNTERS)
+def test_followup_replay_with_changed_last_counter_fails_closed(tmp_path, key):
+    last = {**counters(100), key: counters(100)[key] + 1}
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(200, last_token_usage=last),
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+@pytest.mark.parametrize("fresh", [usage(320, last_token_usage=counters(100)),
+                                  usage(150, last_token_usage=counters(50))])
+def test_replay_keeps_first_fresh_request_baseline_check(tmp_path, fresh):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        usage(200, last_token_usage=counters(100)), fresh,
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+
+
+def test_followup_identical_single_request_counts_as_reset(tmp_path):
+    events = records() + [usage(100),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "resume"}},
+        usage(100),
+    ]
+    result = read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
+    assert result["tokens"] == counters(200)
+
+
+def test_followup_replay_under_changed_model_fails_closed(tmp_path):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100)),
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "followup"}},
+        {"type": "turn_context", "payload": {"model": "other-model"}},
+        usage(200, last_token_usage=counters(100)),
+    ]
+    with pytest.raises(UsageUnavailable, match="baseline"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
 
 
 @pytest.mark.parametrize("current,last", [(300, 50), (100, 50), (300, 200)])
@@ -196,7 +318,7 @@ def test_duplicate_selected_session_identity_fails_closed(
 
 
 @pytest.mark.parametrize("events", [
-    records(version="0.153.5") + [usage()],
+    records(version="0.153.3") + [usage()],
     records(cwd="/elsewhere") + [usage()],
     records() + [usage(200, last_token_usage=counters(100))],
     records() + [usage(200), usage(100)],
@@ -241,6 +363,42 @@ def test_followup_task_continues_the_cumulative_counter(tmp_path):
     result = read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
     assert result["tokens"] == counters(350)
     assert result["status"] == "observed"
+
+
+@pytest.mark.parametrize("trailing,expected", [
+    ([usage(300, last_token_usage=counters(100))], counters(300)),  # continued process
+    ([usage(50)], counters(250)),  # the new task begins in a restarted process
+])
+def test_handoff_echo_before_the_first_request_holds_the_baseline(tmp_path, trailing, expected):
+    # An inter-agent NEW_TASK can emit a token_count that repeats the previous
+    # notification verbatim before the new task issues its first request. The
+    # repeat carries no usage, so it must neither be counted nor consume the
+    # boundary the following record still has to establish.
+    events = records(CHILD, ROOT) + [usage(100), usage(200, last_token_usage=counters(100))] + [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "handoff"}},
+        usage(200, last_token_usage=counters(100)),
+    ] + trailing
+
+    result = read_thread_usage(
+        write(tmp_path, events, CHILD), thread_id=CHILD, workspace=Path("/toy"),
+    )
+
+    assert result["tokens"] == expected
+    assert result["status"] == "observed"
+
+
+@pytest.mark.parametrize("repeat", [
+    usage(200, last_token_usage=counters(50)),  # only the total repeats
+    usage(250, last_token_usage=counters(100)),  # only the last request repeats
+])
+def test_handoff_partial_repeat_is_still_ambiguous(tmp_path, repeat):
+    events = records() + [usage(100), usage(200, last_token_usage=counters(100))] + [
+        {"type": "event_msg", "payload": {"type": "task_started", "turn_id": "handoff"}},
+        repeat,
+    ]
+
+    with pytest.raises(UsageUnavailable, match="baseline is ambiguous"):
+        read_thread_usage(write(tmp_path, events), thread_id=ROOT, workspace=Path("/toy"))
 
 
 @pytest.mark.parametrize("first", [
@@ -289,6 +447,28 @@ def test_large_compaction_partial_append_preserves_completed_usage(tmp_path):
     assert read_thread_usage(path, thread_id=ROOT, workspace=Path("/toy"))["tokens"] == counters(200)
 
 
+def test_large_visual_tool_result_preserves_usage(tmp_path, monkeypatch):
+    import workshop.runtime.codex_usage as module
+
+    monkeypatch.setattr(module, "MAX_LINE_BYTES", 1024)
+    visual = {
+        "type": "response_item",
+        "payload": {
+            "type": "custom_tool_call_output",
+            "output": [
+                {"type": "input_text", "text": "rendered"},
+                {"type": "input_image", "image_url": "data:image/png;base64," + "x" * 4096},
+            ],
+        },
+    }
+    path = write(tmp_path, records() + [usage(100), visual,
+        usage(200, last_token_usage=counters(100))])
+
+    assert read_thread_usage(
+        path, thread_id=ROOT, workspace=Path("/toy"),
+    )["tokens"] == counters(200)
+
+
 def test_large_compaction_late_duplicate_key_is_rejected(tmp_path):
     from workshop.runtime.codex_usage import MAX_LINE_BYTES
 
@@ -333,104 +513,6 @@ def test_oversized_unrelated_rollout_body_does_not_stop_product_usage(tmp_path):
     assert result["tokens"] == counters(300)
     assert result["total_tokens"] == 330
     assert {row["thread_id"] for row in result["threads"]} == {ROOT, CHILD}
-
-
-@pytest.mark.parametrize("target_thread,parent", [
-    (ROOT, None), (CHILD, ROOT), ("unrelated", None),
-])
-@pytest.mark.parametrize("partial", [b"", b'{"type":"session_meta","payload":'])
-@pytest.mark.parametrize("complete_on_read", [2, 3])
-def test_discovery_reopens_an_incomplete_metadata_append(
-    tmp_path, monkeypatch, target_thread, parent, partial, complete_on_read,
-):
-    import workshop.runtime.codex_usage as module
-
-    write(tmp_path, records() + [usage(100)])
-    write(tmp_path, records(CHILD, ROOT) + [usage(200)], CHILD)
-    if target_thread == "unrelated":
-        target = write(tmp_path, records("unrelated", cwd="/elsewhere"), "unrelated")
-    else:
-        target = tmp_path / "2026/09/07" / ("rollout-" + target_thread + ".jsonl")
-    completed = target.read_bytes()
-    target.write_bytes(partial)
-    real_open = module.os.open
-    target_opens = 0
-    delays = []
-
-    def finish_native_append(path, flags, *args, **kwargs):
-        nonlocal target_opens
-        if Path(path) == target:
-            target_opens += 1
-            if target_opens == complete_on_read:
-                target.write_bytes(completed)
-        return real_open(path, flags, *args, **kwargs)
-
-    monkeypatch.setattr(module.os, "open", finish_native_append)
-    monkeypatch.setattr(module.time, "sleep", delays.append)
-    result = read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy"))
-
-    assert target_opens >= complete_on_read
-    assert delays == [0.05] * (complete_on_read - 1)
-    assert result["tokens"] == counters(300)
-    assert result["total_tokens"] == 330
-    assert {row["thread_id"] for row in result["threads"]} == {ROOT, CHILD}
-    assert read_product_usage(tmp_path, thread_id=ROOT, workspace=Path("/toy")) == result
-
-
-@pytest.mark.parametrize("header,expected_reads", [
-    (b"", 3),
-    (b'{"type":"session_meta","payload":', 3),
-    (b'{"type":"event_msg","payload":{}}\n', 1),
-    (b'{"type":"session_meta","type":"session_meta","payload":{}}\n', 1),
-    (b'not-json\n', 1),
-])
-def test_identity_retry_is_bounded_and_only_for_incomplete_framing(
-    tmp_path, monkeypatch, header, expected_reads,
-):
-    import workshop.runtime.codex_usage as module
-
-    target = write(tmp_path, [], "unattributable")
-    target.write_bytes(header)
-    real_open = module.os.open
-    opens = 0
-    delays = []
-
-    def count_open(path, flags, *args, **kwargs):
-        nonlocal opens
-        opens += 1
-        return real_open(path, flags, *args, **kwargs)
-
-    monkeypatch.setattr(module.os, "open", count_open)
-    monkeypatch.setattr(module.time, "sleep", delays.append)
-    with pytest.raises(UsageUnavailable):
-        module._identity(target)
-    assert opens == expected_reads
-    assert delays == [0.05] * (expected_reads - 1)
-
-
-def test_identity_retry_rejects_link_replacement(tmp_path, monkeypatch):
-    import workshop.runtime.codex_usage as module
-
-    valid = write(tmp_path, records() + [usage(100)])
-    target = write(tmp_path, [], "incomplete")
-    real_open = module.os.open
-    opens = 0
-    delays = []
-
-    def replace_with_link(path, flags, *args, **kwargs):
-        nonlocal opens
-        opens += 1
-        if opens == 2:
-            target.unlink()
-            target.symlink_to(valid)
-        return real_open(path, flags, *args, **kwargs)
-
-    monkeypatch.setattr(module.os, "open", replace_with_link)
-    monkeypatch.setattr(module.time, "sleep", delays.append)
-    with pytest.raises(UsageUnavailable):
-        module._identity(target)
-    assert opens == 2
-    assert delays == [0.05]
 
 
 @pytest.mark.parametrize("target_thread,parent", [(ROOT, None), (CHILD, ROOT)])

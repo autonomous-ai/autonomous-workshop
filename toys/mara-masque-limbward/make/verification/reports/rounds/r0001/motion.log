@@ -1,0 +1,29 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion <WORKSHOP_RUN>/artifacts/make/r0001/product/cad --manifest <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/motion.json --json
+(26.5s, exit 0)
+--- stdout
+{
+  "ok": true,
+  "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+  "assembly": "states.py",
+  "results": [
+    {
+      "id": "illustrated-rook-h1-h8",
+      "check": "linear_motion_collision",
+      "description": "Freely handled rook in exact three-piece before fixture moves140 mm across h-file; no retained or driven joint is claimed.",
+      "clear": true,
+      "steps": 140,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        140.0,
+        0.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 140 steps (step 1.000 mm)"
+    }
+  ]
+}
+
+--- stderr

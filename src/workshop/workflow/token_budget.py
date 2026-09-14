@@ -13,7 +13,7 @@ MAX_PRODUCT_TOKENS = 1_000_000_000
 
 def validate_limit(value):
     if type(value) is not int or not 1_000 <= value <= MAX_PRODUCT_TOKENS:
-        raise ContractError(f"product token limit must be an integer from 1,000 to {MAX_PRODUCT_TOKENS:,}")
+        raise ContractError("product token limit must be an integer from 1,000 to 1,000,000,000")
     return value
 
 

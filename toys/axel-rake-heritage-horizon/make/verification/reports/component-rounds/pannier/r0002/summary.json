@@ -1,0 +1,60 @@
+{
+ "build": {
+  "pannier": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "pannier"
+ ],
+ "checked": [
+  "pannier"
+ ],
+ "checks_ok": true,
+ "entry": "part_pannier.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/pannier/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pannier"
+ ],
+ "print": {
+  "pannier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/pannier/r0002/overhang-pannier.log": "94f01349458889c78045dc94de29453c093867d219aadeb9db479b0a429812a3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/pannier/r0002/thickness-pannier.log": "a6dc9b3abb91ef2c944ffea25d2c61cb337aef44ba99a73b1f3607f667bbb061"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:pannier",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Rectangular bag retains two mounting sockets and recessed edge seam; flat outer bed perimeter replaces lower bevel while upper corners remain chamfered.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/pannier/r0002/visual-packet.json",
+  "packet_sha256": "bd9d96cae65c6a69b7a1fe3851932e9bc717227bea262e142bccca1d14ea5488",
+  "status": "pass"
+ }
+}

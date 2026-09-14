@@ -1,0 +1,60 @@
+{
+ "build": {
+  "white_pawn": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_pawn"
+ ],
+ "checked": [
+  "white_pawn"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_pawn.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_pawn"
+ ],
+ "print": {
+  "white_pawn": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0002/overhang-white_pawn.log": "314e7f45b9333a349bbdb1d1da0a23df75c2e7dbc863143d2af7c3eedf4ed07e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0002/thickness-white_pawn.log": "bd3473c7d1af6ebc86f7520618660b8a42f6298ee2ae79b6c4dd7b003579b919"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:white_pawn",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show a compact blunt wedge with thicker low face and wider foot margin. Top confirms rectangular roof orientation;12 mm low role remains distinct.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0002/visual-packet.json",
+  "packet_sha256": "64f6f3b1b6e68de77cbfd07e914036896ee44fb4f29a3e6ea7bcbfb3617246f9",
+  "status": "pass"
+ }
+}

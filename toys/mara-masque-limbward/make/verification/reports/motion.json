@@ -1,0 +1,11 @@
+{
+ "assembly":"states.py",
+ "conditions":[{
+  "id":"illustrated-rook-h1-h8",
+  "check":"linear_motion_collision",
+  "expect":"clear",
+  "description":"Freely handled rook in exact three-piece before fixture moves140 mm across h-file; no retained or driven joint is claimed.",
+  "inputs":{"moving_part":"white_rook","obstacle_parts":["camera_board","white_king","black_king"],"translation":[0,140,0],"steps":140,"allow_seated_contact":true},
+  "thresholds":{"maxOverlapMm3":0.001,"maxStepMm":1.01}
+ }]
+}

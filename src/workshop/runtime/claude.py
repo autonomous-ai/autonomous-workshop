@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -25,6 +26,7 @@ from typing import Any, Callable, Mapping, Optional
 
 from workshop.errors import ContractError
 from workshop.runtime.managers import (
+    MAX_NATIVE_TURN_SECONDS,
     NativeManagerInvocationError,
     NativeManagerRecoverableError,
     SUPPORTED_REASONING_EFFORTS,
@@ -197,7 +199,7 @@ class ClaudeNativeSessionLauncher:
         binary: Optional[str] = None,
         model: Optional[str] = None,
         reasoning_effort: Optional[str] = None,
-        timeout_seconds: int = DEFAULT_CLAUDE_TIMEOUT_SECONDS,
+        timeout_seconds: Optional[int] = DEFAULT_CLAUDE_TIMEOUT_SECONDS,
         popen_factory: Any = subprocess.Popen,
         version_runner: Any = subprocess.run,
         cli_version: Optional[str] = None,
@@ -214,8 +216,14 @@ class ClaudeNativeSessionLauncher:
             and reasoning_effort not in SUPPORTED_REASONING_EFFORTS
         ):
             raise ContractError("Workshop Claude reasoning effort is invalid")
-        if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3_600:
-            raise ValueError("Claude timeout_seconds must be from 1 to 3,600")
+        if timeout_seconds is not None and (
+            type(timeout_seconds) is not int
+            or not 1 <= timeout_seconds <= MAX_NATIVE_TURN_SECONDS
+        ):
+            raise ValueError(
+                "Claude timeout_seconds must be from 1 to %d or None"
+                % MAX_NATIVE_TURN_SECONDS
+            )
         self.binary = (
             binary or os.environ.get("WORKSHOP_CLAUDE_BIN") or shutil.which("claude")
         )
@@ -418,7 +426,11 @@ class ClaudeNativeSessionLauncher:
     ) -> Optional[str]:
         if activity_observer is not None:
             activity_observer("starting")
-        deadline = time.monotonic() + self.timeout_seconds
+        deadline = (
+            math.inf
+            if self.timeout_seconds is None
+            else time.monotonic() + self.timeout_seconds
+        )
         stderr_chunks: list[str] = []
         stderr_bytes = 0
 
@@ -488,7 +500,10 @@ class ClaudeNativeSessionLauncher:
                     activity = _classify_event(event)
                     if activity is not None and activity_observer is not None:
                         activity_observer(activity)
-            returncode = process.wait(timeout=max(0.1, deadline - time.monotonic()))
+            remaining = deadline - time.monotonic()
+            returncode = process.wait(
+                timeout=max(0.1, remaining) if math.isfinite(remaining) else None
+            )
         except subprocess.TimeoutExpired as exc:
             process.kill()
             raise ClaudeRecoverableInvocationError(

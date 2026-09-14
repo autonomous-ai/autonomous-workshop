@@ -1,0 +1,7 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/part_tank_cover.step.py --write --json
+(7.5s, exit 0)
+--- stdout
+{"ok":true,"sourceRef":"part_tank_cover.step.py","cadPath":"part_tank_cover","kind":"part","outcome":"built","packagePath":"__cadgen__/models/part_tank_cover.step.py"}
+
+--- stderr
+[scripts/gen] generated part GLB/topology artifact: __cadgen__/models/part_tank_cover.step.py

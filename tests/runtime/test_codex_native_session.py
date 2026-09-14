@@ -16,6 +16,7 @@ from unittest import mock
 
 import workshop.runtime.codex as codex_runtime
 from workshop.errors import ContractError
+from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
 from workshop.workflow.inventor_selection import INVENTOR_SELECTION_MARKER_NAME
 from workshop.runtime.codex import (
     DEFAULT_WORKSHOP_MODEL,
@@ -42,36 +43,6 @@ WISH_SHA256 = "a" * 64
 CONSTITUTION_SHA256 = "b" * 64
 ROOT_MARKER = ".workshop-product-run-root"
 TEST_CODEX_BINARY = str(Path("/bin/sh").resolve(strict=True))
-FIXED_NATIVE_FAILURE_DIAGNOSES = (
-    (
-        "in-process app-server runtime is closed",
-        "native-runtime",
-        "app-server-closed",
-    ),
-    (
-        "Luna response exceeded the output limit",
-        "native-runtime",
-        "luna-output-limit",
-    ),
-    (
-        "Requested an operation in invalid state",
-        "native-runtime",
-        "handshake-invalid-state",
-    ),
-    (
-        "invalid JSON in cached Login token file",
-        "access",
-        "cached-login-token-invalid-json",
-    ),
-)
-NATIVE_RECONNECT_MESSAGE = (
-    "Reconnecting... 1/2 (stream disconnected before completion: "
-    "stream closed before response.completed)"
-)
-NATIVE_RECONNECT_IDLE_MESSAGE = (
-    "Reconnecting... 1/2 (stream disconnected before completion: "
-    "idle timeout waiting for SSE)"
-)
 
 
 def permission_arguments(root, binary=TEST_CODEX_BINARY):
@@ -974,29 +945,6 @@ class CodexNativeSessionTest(unittest.TestCase):
                         cli_version="0.145.0",
                     )
 
-    def test_agent_message_completion_reports_progress_without_finalization(self):
-        for text in ("I am starting research.", "The stage is complete.", "private text"):
-            with self.subTest(text=text):
-                item = {"type": "agent_message", "text": text}
-                self.assertEqual(
-                    codex_runtime._safe_activity_for_event(
-                        {"type": "item.completed", "item": item}
-                    ),
-                    "reporting",
-                )
-                for event_type in ("item.started", "item.updated"):
-                    self.assertIsNone(codex_runtime._safe_activity_for_event(
-                        {"type": event_type, "item": item}
-                    ))
-        self.assertEqual(
-            codex_runtime._safe_activity_for_event({"type": "turn.completed"}),
-            "completed",
-        )
-        self.assertEqual(
-            codex_runtime._safe_activity_for_event({"type": "turn.failed"}),
-            "failed",
-        )
-
     def test_activity_observer_receives_only_coarse_host_classes(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -1053,15 +1001,6 @@ class CodexNativeSessionTest(unittest.TestCase):
                                     },
                                 }
                             ),
-                            event(
-                                {
-                                    "type": "item.started",
-                                    "item": {
-                                        "type": "command_execution",
-                                        "command": private_sentinel,
-                                    },
-                                }
-                            ),
                             event({"type": "turn.completed", "usage": {}}),
                         ]
                     }
@@ -1080,8 +1019,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                     "reasoning",
                     "tool",
                     "subagent",
-                    "reporting",
-                    "tool",
+                    "finalizing",
                     "completed",
                 ],
             )
@@ -1131,7 +1069,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(observed[-1], "completed")
             self.assertTrue(
                 set(observed).issubset(
-                    {"starting", "running", "reporting", "completed"}
+                    {"starting", "running", "finalizing", "completed"}
                 )
             )
             rendered = json.dumps(observed)
@@ -1492,76 +1430,6 @@ class CodexNativeSessionTest(unittest.TestCase):
                 codex_runtime._run_policy_before_supplier_drawings(
                     root, current
                 )
-
-    def test_explicit_device_recovery_accepts_only_exact_device_drift(self):
-        for drift in (None, "inode", "mode", "path", "model", "cli_version"):
-            with self.subTest(drift=drift), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary).resolve() / "run"
-                root.mkdir()
-                launcher, factory = self.launcher([
-                    {"stdout": self.start_events()},
-                    {"stdout": self.start_events(message="resumed")},
-                    {"stdout": self.start_events(message="resumed again")},
-                ])
-                self.start(launcher, root)
-                checkpoint = self.host_state(root) / "codex-session.json"
-                payload = json.loads(checkpoint.read_text())
-                current = codex_runtime._codex_run_policy(root, launcher.binary)
-                current_device = current.trusted_python_runtime_paths[0].device
-                mapping = "%d:%d" % (current_device + 1000, current_device)
-                previous = codex_runtime._run_policy_before_device_renumber(current, mapping)
-                if drift in ("inode", "mode", "path"):
-                    item = previous.trusted_python_runtime_paths[0]
-                    value = getattr(item, drift)
-                    item = replace(item, **{drift: value + "-changed" if drift == "path" else value + 1})
-                    previous = replace(previous, trusted_python_runtime_paths=(
-                        item, *previous.trusted_python_runtime_paths[1:],
-                    ))
-                payload["runtime_config_sha256"] = codex_runtime._runtime_config_sha256(
-                    "0.144.0" if drift == "cli_version" else launcher.cli_version,
-                    "gpt-5.6-sol" if drift == "model" else launcher.model,
-                    launcher.reasoning_effort, previous,
-                )
-                payload["checkpoint_sha256"] = codex_runtime._sha256_json({
-                    k: v for k, v in payload.items() if k != "checkpoint_sha256"
-                })
-                checkpoint.write_text(json.dumps(payload))
-                os.chmod(checkpoint, 0o600)
-                original_bytes = checkpoint.read_bytes()
-                with mock.patch.dict(os.environ, {}, clear=True):
-                    with self.assertRaisesRegex(ContractError, "checkpoint binding"):
-                        self.resume(launcher, root)
-                with mock.patch.dict(os.environ, {
-                    "WORKSHOP_CODEX_RUNTIME_DEVICE_RECOVERY": mapping,
-                }):
-                    if drift is not None:
-                        with self.assertRaisesRegex(ContractError, "checkpoint binding"):
-                            self.resume(launcher, root)
-                        self.assertEqual(len(factory.calls), 1)
-                        self.assertEqual(list(self.host_state(root).glob("codex-runtime-device-recovery-*.json")), [])
-                    else:
-                        resumed = self.resume(launcher, root)
-                        self.resume(launcher, root)
-                        self.assertEqual(len(factory.calls), 3)
-                        self.assertEqual(resumed.binding.runtime_config_sha256,
-                            codex_runtime._runtime_config_sha256(launcher.cli_version,
-                                launcher.model, launcher.reasoning_effort, current))
-                        self.assertNotIn("WORKSHOP_CODEX_RUNTIME_DEVICE_RECOVERY", factory.calls[1][1]["env"])
-                        records = list(self.host_state(root).glob("codex-runtime-device-recovery-*.json"))
-                        self.assertEqual(len(records), 1)
-                        record = json.loads(records[0].read_text())
-                        self.assertEqual(record["thread_id"], THREAD_ID)
-                        self.assertEqual(record["device_mapping"], mapping)
-                        self.assertEqual(record["session_checkpoint_sha256"], payload["checkpoint_sha256"])
-                        self.assertEqual(stat.S_IMODE(records[0].stat().st_mode), 0o600)
-                self.assertEqual(checkpoint.read_bytes(), original_bytes)
-
-    def test_device_recovery_rejects_malformed_or_unobserved_mapping(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            policy = codex_runtime._codex_run_policy(Path(temporary).resolve(), TEST_CODEX_BINARY)
-            for mapping in ("", "1", "01:2", "-1:2", "1:1", "1:18446744073709551616", "1:999999999999"):
-                with self.subTest(mapping=mapping), self.assertRaises(ContractError):
-                    codex_runtime._run_policy_before_device_renumber(policy, mapping)
 
     def test_resume_accepts_exact_step_parts_only_policy_predecessor(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -2518,6 +2386,85 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertNotIn("rotated-secret-one", checkpoint_text)
             self.assertNotIn("rotated-secret-two", checkpoint_text)
 
+    def test_resume_accepts_only_device_renumbering_after_darwin_remount(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher([
+                {"stdout": self.start_events()},
+                {"stdout": self.start_events(message="resumed after remount")},
+            ])
+            current = codex_runtime._codex_run_policy(root, launcher.binary)
+
+            def on_device(policy, device):
+                return replace(
+                    policy,
+                    trusted_python_runtime_paths=tuple(
+                        replace(item, device=device, resolved_device=device)
+                        for item in policy.trusted_python_runtime_paths
+                    ),
+                    trusted_codex_runtime_paths=tuple(
+                        replace(item, device=device, resolved_device=device)
+                        for item in policy.trusted_codex_runtime_paths
+                    ),
+                )
+
+            old = on_device(current, 0x0100000D)
+            new = on_device(current, 0x01000011)
+            with mock.patch.object(codex_runtime, "_codex_run_policy", return_value=old):
+                started = self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            original_bytes = checkpoint.read_bytes()
+
+            # Remount compatibility must not hide any additional identity or
+            # policy drift, even when the saved digest is otherwise valid.
+            changes = [
+                replace(new, environment_allowlist=new.environment_allowlist[:-1]),
+                replace(new, permission_config_arguments=(*new.permission_config_arguments, "changed")),
+            ]
+            for field in ("inode", "resolved_inode", "mode", "resolved_mode", "path", "resolved_path"):
+                item = new.trusted_python_runtime_paths[0]
+                value = getattr(item, field)
+                changes.append(replace(new, trusted_python_runtime_paths=(
+                    replace(item, **{field: value + 1 if isinstance(value, int) else value + "-changed"}),
+                    *new.trusted_python_runtime_paths[1:],
+                )))
+            item = new.trusted_codex_runtime_paths[0]
+            changes.append(replace(new, trusted_codex_runtime_paths=(
+                replace(item, inode=item.inode + 1), *new.trusted_codex_runtime_paths[1:],
+            )))
+            for policy in changes:
+                with self.subTest(policy=policy), mock.patch.object(
+                    codex_runtime.sys, "platform", "darwin"
+                ), mock.patch.object(codex_runtime, "_codex_run_policy", return_value=policy):
+                    with self.assertRaisesRegex(ContractError, "binding is invalid"):
+                        self.resume(launcher, root)
+            self.assertEqual(len(factory.calls), 1)
+
+            with mock.patch.object(codex_runtime.sys, "platform", "darwin"), mock.patch.object(
+                codex_runtime, "_codex_run_policy", return_value=new
+            ):
+                resumed = self.resume(launcher, root)
+            self.assertEqual(resumed.status, "completed")
+            self.assertIn(THREAD_ID, factory.calls[1][0])
+            self.assertEqual(checkpoint.read_bytes(), original_bytes)
+            self.assertEqual(resumed.binding.checkpoint_sha256, started.binding.checkpoint_sha256)
+            self.assertNotEqual(resumed.binding.runtime_config_sha256, started.binding.runtime_config_sha256)
+
+    def test_remount_candidates_refuse_other_platforms_and_device_layouts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            policy = codex_runtime._codex_run_policy(root, TEST_CODEX_BINARY)
+            with mock.patch.object(codex_runtime.sys, "platform", "linux"):
+                self.assertEqual(list(codex_runtime._darwin_remounted_runtime_policies(policy)), [])
+            for devices in ((1, 1), (0x01000100, 0x01000100), (0x0100000D, 0x01000011)):
+                candidate = replace(policy, trusted_python_runtime_paths=tuple(
+                    replace(item, device=devices[0], resolved_device=devices[1])
+                    for item in policy.trusted_python_runtime_paths
+                ))
+                with self.subTest(devices=devices), mock.patch.object(codex_runtime.sys, "platform", "darwin"):
+                    self.assertEqual(list(codex_runtime._darwin_remounted_runtime_policies(candidate)), [])
+
     def test_resume_accepts_supported_in_place_cli_upgrade(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -2773,18 +2720,32 @@ class CodexNativeSessionTest(unittest.TestCase):
                     auto_compact_token_limit=invalid,
                 )
 
-    def test_native_turn_defaults_to_the_maximum_supported_hour(self):
+    def test_native_turn_defaults_to_one_hour_and_is_capped_at_the_shared_ceiling(self):
+        """The default stays one hour; only an explicit request may exceed it."""
+
         self.assertEqual(DEFAULT_CODEX_TIMEOUT_SECONDS, 3_600)
         launcher = CodexNativeSessionLauncher(
             binary=TEST_CODEX_BINARY,
             cli_version="0.145.0",
         )
         self.assertEqual(launcher.timeout_seconds, 3_600)
-        with self.assertRaisesRegex(ValueError, "1 to 3,600"):
+        longer = CodexNativeSessionLauncher(
+            binary=TEST_CODEX_BINARY,
+            cli_version="0.145.0",
+            timeout_seconds=MAX_NATIVE_TURN_SECONDS,
+        )
+        self.assertEqual(longer.timeout_seconds, MAX_NATIVE_TURN_SECONDS)
+        with self.assertRaisesRegex(ValueError, "1 to %d" % MAX_NATIVE_TURN_SECONDS):
             CodexNativeSessionLauncher(
                 binary=TEST_CODEX_BINARY,
                 cli_version="0.145.0",
-                timeout_seconds=3_601,
+                timeout_seconds=MAX_NATIVE_TURN_SECONDS + 1,
+            )
+        with self.assertRaisesRegex(ValueError, "1 to %d" % MAX_NATIVE_TURN_SECONDS):
+            CodexNativeSessionLauncher(
+                binary=TEST_CODEX_BINARY,
+                cli_version="0.145.0",
+                timeout_seconds=0,
             )
 
     def test_every_host_turn_boundary_marker_is_accepted(self):
@@ -3007,100 +2968,6 @@ class CodexNativeSessionTest(unittest.TestCase):
 
             self.assertEqual(caught.exception.code, 7)
             self.assertTrue(factory.processes[0].terminated)
-
-    def test_unsafe_cleanup_cannot_hide_behind_success_or_operator_unwind(self):
-        for interruption in (None, KeyboardInterrupt(), SystemExit(7)):
-            with self.subTest(interruption=type(interruption).__name__), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary).resolve() / "run"
-                root.mkdir()
-                launcher, factory = self.launcher([{"stdout": self.start_events()}])
-                with mock.patch.object(
-                    codex_runtime._NativeProcessGuard, "reap", return_value=False,
-                ), mock.patch.object(
-                    codex_runtime._NativeActivityReporter, "start", side_effect=interruption,
-                ), self.assertRaisesRegex(
-                    CodexInvocationError, "could not be terminated safely",
-                ) as caught:
-                    self.start(launcher, root)
-                self.assertNotIsInstance(caught.exception, CodexRecoverableInvocationError)
-                self.assertFalse(factory.processes[0].stdout.closed)
-
-    def test_unsafe_cleanup_reports_failure_without_closing_a_blocked_stderr_reader(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary).resolve() / "run"
-            root.mkdir()
-            read_fd, write_fd = os.pipe()
-            reader = os.fdopen(read_fd, "r", encoding="utf-8")
-            writer = os.fdopen(write_fd, "w", encoding="utf-8")
-            launcher, factory = self.launcher([{"stdout": self.start_events()}])
-            failures = []
-
-            def popen(*args, **kwargs):
-                process = factory(*args, **kwargs)
-                process.stderr = reader
-                return process
-
-            def launch():
-                try:
-                    self.start(launcher, root)
-                except BaseException as error:
-                    failures.append(error)
-
-            launcher._popen_factory = popen
-            with mock.patch.object(codex_runtime._NativeProcessGuard, "reap", return_value=False):
-                worker = threading.Thread(target=launch, daemon=True)
-                worker.start()
-                try:
-                    worker.join(timeout=3)
-                    self.assertFalse(worker.is_alive(), "cleanup blocked in buffered stream.close()")
-                    self.assertEqual(len(failures), 1)
-                    self.assertIsInstance(failures[0], CodexInvocationError)
-                    self.assertIn("could not be terminated safely", str(failures[0]))
-                finally:
-                    writer.close()
-                    worker.join(timeout=3)
-                    reader.close()
-
-    def test_untimed_stream_failure_skips_indefinite_wait_and_keeps_safe_diagnostics(self):
-        for record in (
-            "not-json\n",
-            json.dumps({"type": "turn.failed", "error": {"message": "provider stream disconnected"}}) + "\n",
-        ):
-            with self.subTest(record=record), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary).resolve() / "run"
-                root.mkdir()
-                launcher, factory = self.launcher([
-                    {"stdout": [*self.start_events(terminal=False), record]},
-                ])
-                launcher.timeout_seconds = None
-                launcher.token_budget_observer = mock.Mock()
-                waits = []
-
-                def popen(*args, **kwargs):
-                    process = factory(*args, **kwargs)
-                    original_wait = process.wait
-
-                    def bounded_wait(timeout=None):
-                        waits.append(timeout)
-                        if timeout is None:
-                            raise AssertionError("unsafe cleanup reached indefinite wait")
-                        return original_wait(timeout=timeout)
-
-                    process.wait = bounded_wait
-                    return process
-
-                launcher._popen_factory = popen
-                with mock.patch.object(codex_runtime._NativeProcessGuard, "reap", return_value=False), \
-                     self.assertRaisesRegex(CodexInvocationError, "could not be terminated safely") as caught:
-                    self.start(launcher, root)
-                self.assertNotIn(None, waits)
-                self.assertNotIsInstance(caught.exception, CodexRecoverableInvocationError)
-                diagnostic = caught.exception.diagnostic
-                self.assertIsNotNone(diagnostic)
-                self.assertEqual(diagnostic.reason, "unsafe-process-reap")
-                self.assertFalse(diagnostic.process_tree_reaped)
-                self.assertGreater(diagnostic.event_records, 0)
-                self.assertEqual(diagnostic.terminal_error is not None, record != "not-json\n")
 
     def test_agent_message_does_not_infer_turn_completion(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -3336,42 +3203,6 @@ class CodexNativeSessionTest(unittest.TestCase):
                 caught.exception,
                 CodexFinalizedWithoutTerminalError,
             )
-
-    def test_untimed_failed_marker_cleanup_never_waits_indefinitely(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary).resolve() / "run"
-            root.mkdir()
-            marker = root / "agent-outcome.json"
-            launcher, factory = self.launcher([{
-                "stdout": self.start_events(terminal=False),
-                "stdout_callbacks": {2: lambda: marker.write_text("{}\n", encoding="utf-8")},
-                "ignore_termination": True,
-            }])
-            launcher.timeout_seconds = None
-            launcher.token_budget_observer = mock.Mock()
-            waits = []
-
-            def popen(*args, **kwargs):
-                process = factory(*args, **kwargs)
-                original_wait = process.wait
-
-                def bounded_wait(timeout=None):
-                    waits.append(timeout)
-                    if timeout is None:
-                        raise AssertionError("failed marker cleanup reached indefinite wait")
-                    return original_wait(timeout=timeout)
-
-                process.wait = bounded_wait
-                return process
-
-            launcher._popen_factory = popen
-            with mock.patch.object(codex_runtime, "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS", 0.02), \
-                 mock.patch.object(codex_runtime, "_CODEX_FINALIZATION_MARKER_POLL_SECONDS", 0.002), \
-                 self.assertRaisesRegex(CodexInvocationError, "could not be terminated safely") as caught:
-                self.start(launcher, root, finalization_marker=marker)
-            self.assertNotIn(None, waits)
-            self.assertNotIsInstance(caught.exception, CodexRecoverableInvocationError)
-            self.assertFalse(caught.exception.diagnostic.process_tree_reaped)
 
     def test_only_new_exact_regular_in_run_marker_can_trigger_reap(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -3889,195 +3720,6 @@ class CodexNativeSessionTest(unittest.TestCase):
 
             self.assertTrue(factory.processes[1].terminated)
 
-    def test_native_reconnect_notice_continues_same_process_and_session(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary).resolve() / "run"
-            root.mkdir()
-            notices = [event({"type": "error", "message": message}) for message in (
-                NATIVE_RECONNECT_MESSAGE, NATIVE_RECONNECT_IDLE_MESSAGE,
-            )]
-            records = self.start_events()
-            records[1:1] = notices * 3
-            records[-1] = event({"type": "turn.completed", "usage": {
-                "input_tokens": 100, "cached_input_tokens": 50,
-                "cache_write_input_tokens": 0, "output_tokens": 10,
-                "reasoning_output_tokens": 3,
-            }})
-            launcher, factory = self.launcher([
-                {"stdout": self.start_events()}, {"stdout": records},
-            ], timeout_seconds=None)
-            launcher.token_budget_observer = mock.Mock()
-            original = self.start(launcher, root)
-            observer = launcher.token_budget_observer
-            observer.reset_mock()
-
-            def reconcile(usage):
-                self.assertIsNotNone(factory.processes[1].returncode)
-                self.assertEqual(usage, (100, 50, 0, 10, 3))
-
-            observer.reconcile_completed_turn.side_effect = reconcile
-            activities = []
-            outcome = self.resume(launcher, root, activity_observer=activities.append)
-            self.assertEqual(outcome.status, "completed")
-            self.assertEqual(outcome.binding, original.binding)
-            self.assertEqual(len(factory.calls), 2)  # one start, one resume
-            self.assertIn(THREAD_ID, factory.calls[1][0])
-            self.assertNotIn("failed", activities)
-            self.assertIn("completed", activities)
-            observer.reconcile_completed_turn.assert_called_once()
-            observer.assert_called()
-            self.assertFalse((self.host_state(root) / CODEX_FAILURE_DIAGNOSTIC_FILENAME).exists())
-
-    def test_native_reconnect_preserves_marker_handoff_and_terminal_failure(self):
-        for terminal_failure in (False, True):
-            with self.subTest(terminal_failure=terminal_failure), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary).resolve() / "run"
-                root.mkdir()
-                marker = root / "agent-outcome.json"
-                records = [
-                    event({"type": "thread.started", "thread_id": THREAD_ID}),
-                    event({"type": "error", "message": NATIVE_RECONNECT_MESSAGE}),
-                    event({"type": "error", "message": NATIVE_RECONNECT_IDLE_MESSAGE}),
-                ]
-                if terminal_failure:
-                    records.append(event({"type": "turn.failed", "error": {"message": "unauthorized"}}))
-                launcher, factory = self.launcher([{
-                    "stdout": records,
-                    "stdout_callbacks": {1: lambda: marker.write_text("{}\n", encoding="utf-8")},
-                    "block_stdout_after_values": True,
-                    "hang_until_terminated": True,
-                }], timeout_seconds=None)
-                observer = mock.Mock()
-                launcher.token_budget_observer = observer
-                with mock.patch.object(codex_runtime, "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS", 0.05), \
-                     mock.patch.object(codex_runtime, "_CODEX_FINALIZATION_MARKER_POLL_SECONDS", 0.005):
-                    if terminal_failure:
-                        with self.assertRaises(CodexInvocationError) as caught:
-                            self.start(launcher, root, finalization_marker=marker)
-                        self.assertEqual(caught.exception.diagnostic.reason, "explicit-terminal-failure")
-                    else:
-                        # The existing marker boundary returns control only;
-                        # the host still owns proposal validation and gates.
-                        outcome = self.start(launcher, root, finalization_marker=marker)
-                        self.assertEqual(outcome.status, "completed")
-                observer.reconcile_completed_turn.assert_not_called()
-                observer.assert_called()
-                self.assertTrue(factory.processes[0].terminated)
-                self.assertEqual(len(factory.calls), 1)
-
-    def test_native_reconnect_stats_are_nonterminal_and_content_free(self):
-        stats = codex_runtime._NativeEventStats()
-        stats.last_activity = "tool"
-        notice = {"type": "error", "message": NATIVE_RECONNECT_MESSAGE}
-        stats.observe_event(notice)
-        self.assertEqual(stats.last_event_class, "native-reconnecting")
-        self.assertEqual(stats.last_activity, "tool")
-        self.assertIsNone(stats.terminal_error)
-        self.assertIsNone(codex_runtime._safe_activity_for_event(notice))
-        self.assertNotIn(NATIVE_RECONNECT_MESSAGE, repr(stats))
-        self.assertFalse(codex_runtime._is_explicit_transient_event_failure(notice))
-        self.assertFalse(codex_runtime._is_retryable_service_failure(notice))
-        stats.observe_event({"type": "turn.failed", "error": {"message": "failed"}})
-        self.assertEqual(stats.last_event_class, "terminal-error")
-        self.assertIsNotNone(stats.terminal_error)
-
-    def test_native_reconnect_notice_requires_exact_bounded_transport_shape(self):
-        for message in (NATIVE_RECONNECT_MESSAGE, NATIVE_RECONNECT_IDLE_MESSAGE):
-            for counter in ("1/1", "2/5", "123/456"):
-                notice = {"type": "error", "message": message.replace("1/2", counter)}
-                self.assertTrue(codex_runtime._is_native_reconnect_notice(notice))
-        rejected = [
-            {"type": "turn.failed", "error": {"message": NATIVE_RECONNECT_MESSAGE}},
-            {"type": "item.completed", "item": {"type": "agent_message", "text": NATIVE_RECONNECT_MESSAGE}},
-            {"type": "error", "message": NATIVE_RECONNECT_MESSAGE, "code": "unauthorized"},
-            {"type": "error", "message": NATIVE_RECONNECT_MESSAGE, "error": {"code": "bad_request"}},
-            {"type": "error", "message": None},
-        ]
-        for counter in ("0/2", "1/0", "3/2", "01/2", "-1/2", "1.0/2", "١/2", "1/" + "9" * 4100):
-            rejected.append({"type": "error", "message": NATIVE_RECONNECT_MESSAGE.replace("1/2", counter)})
-        for message in (
-            "prefix " + NATIVE_RECONNECT_MESSAGE, NATIVE_RECONNECT_MESSAGE + " suffix",
-            NATIVE_RECONNECT_MESSAGE + "\n", NATIVE_RECONNECT_MESSAGE.lower(),
-            NATIVE_RECONNECT_MESSAGE.replace("Reconnecting...", "Reconnecting…"),
-            NATIVE_RECONNECT_MESSAGE.replace("1/2", "1 / 2"),
-            "Reconnecting... 1/2 (unauthorized)",
-            "Reconnecting... 1/2 (You've hit your usage limit.)",
-            "Reconnecting... 1/2 (invalid encrypted content)",
-            "Reconnecting... 1/2 (bad request)",
-            "Reconnecting... 1/2 (request timed out)",
-            NATIVE_RECONNECT_MESSAGE.replace("response.completed)", "response.completed: secret)"),
-            NATIVE_RECONNECT_IDLE_MESSAGE + " private sentinel",
-            NATIVE_RECONNECT_IDLE_MESSAGE.replace("SSE)", "SSE: unauthorized)"),
-        ):
-            rejected.append({"type": "error", "message": message})
-        for notice in rejected:
-            with self.subTest(notice=notice):
-                self.assertFalse(codex_runtime._is_native_reconnect_notice(notice))
-
-    def test_native_reconnect_lookalikes_and_turn_failure_still_stop_and_reap(self):
-        for terminal in (
-            {"type": "turn.failed", "error": {"message": NATIVE_RECONNECT_MESSAGE}},
-            {"type": "turn.failed", "error": {"message": NATIVE_RECONNECT_IDLE_MESSAGE}},
-            {"type": "error", "message": "Reconnecting... 1/2 (unauthorized)"},
-            {"type": "error", "message": NATIVE_RECONNECT_MESSAGE + " private sentinel"},
-        ):
-            with self.subTest(terminal=terminal), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary).resolve() / "run"
-                root.mkdir()
-                records = self.start_events()
-                records[1:1] = [event({"type": "error", "message": NATIVE_RECONNECT_MESSAGE}), event(terminal)]
-                launcher, factory = self.launcher([{"stdout": records, "hang_until_terminated": True}])
-                with self.assertRaises(CodexInvocationError) as caught:
-                    self.start(launcher, root)
-                self.assertNotIsInstance(caught.exception, CodexRecoverableInvocationError)
-                self.assertEqual(caught.exception.diagnostic.reason, "explicit-terminal-failure")
-                self.assertEqual(caught.exception.diagnostic.terminal_error.event_type, terminal["type"])
-                self.assertTrue(factory.processes[0].terminated)
-                self.assertEqual(len(factory.calls), 1)
-                persisted = (self.host_state(root) / CODEX_FAILURE_DIAGNOSTIC_FILENAME).read_text()
-                self.assertNotIn(NATIVE_RECONNECT_MESSAGE, persisted)
-                self.assertNotIn("private sentinel", persisted)
-
-    def test_native_reconnect_eof_or_exhaustion_never_completes(self):
-        for exit_code in (0, 1):
-            with self.subTest(exit_code=exit_code), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary).resolve() / "run"
-                root.mkdir()
-                launcher, factory = self.launcher([{"stdout": [
-                    event({"type": "thread.started", "thread_id": THREAD_ID}),
-                    event({"type": "error", "message": NATIVE_RECONNECT_MESSAGE}),
-                    event({"type": "error", "message": NATIVE_RECONNECT_IDLE_MESSAGE.replace("1/2", "2/2")}),
-                ], "returncode": exit_code}], timeout_seconds=None)
-                launcher.token_budget_observer = mock.Mock()
-                with self.assertRaises(CodexInvocationError) as caught:
-                    self.start(launcher, root)
-                self.assertFalse(caught.exception.diagnostic.turn_completed)
-                self.assertEqual(caught.exception.diagnostic.last_event_class, "native-reconnecting")
-                self.assertIsNone(caught.exception.diagnostic.terminal_error)
-                self.assertTrue(caught.exception.diagnostic.process_tree_reaped)
-                self.assertEqual(len(factory.calls), 1)
-
-    def test_native_reconnect_preserves_thread_usage_and_cleanup_requirements(self):
-        for defect in ("identity", "usage", "cleanup"):
-            with self.subTest(defect=defect), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary).resolve() / "run"
-                root.mkdir()
-                records = self.start_events()
-                records[1:1] = [event({"type": "error", "message": NATIVE_RECONNECT_MESSAGE})]
-                if defect == "identity":
-                    records.pop(0)
-                if defect == "usage":
-                    records[-1] = event({"type": "turn.completed", "usage": {"input_tokens": -1, "output_tokens": 1}})
-                launcher, factory = self.launcher([{"stdout": records}])
-                if defect == "usage":
-                    observer = mock.Mock()
-                    observer.reconcile_completed_turn.side_effect = ContractError("completed request has no counters")
-                    launcher.token_budget_observer = observer
-                with mock.patch.object(codex_runtime._NativeProcessGuard, "reap",
-                                       return_value=defect != "cleanup"), self.assertRaises(CodexInvocationError):
-                    self.start(launcher, root)
-                self.assertEqual(len(factory.calls), 1)
-
     def test_terminal_failure_events_fail_closed(self):
         for event_type in ("turn.failed", "error"):
             with self.subTest(
@@ -4177,265 +3819,6 @@ class CodexNativeSessionTest(unittest.TestCase):
                 },
             )
             self.assertNotIn(secret, raw)
-
-    def test_native_usage_limit_persists_safe_diagnosis_without_recovery(self):
-        head = "You've hit your usage limit."
-        private = "ACCOUNT_PRIVATE_TEST_SENTINEL"
-        messages = (
-            head,
-            head + " Visit https://example.test/" + private
-            + " to purchase more credits or try again tomorrow.",
-            "\tYOU'VE  HIT YOUR\nUSAGE LIMIT.\n" + private,
-        )
-        for event_type in ("error", "turn.failed"):
-            for message in messages:
-                with self.subTest(
-                    event_type=event_type, message=message
-                ), tempfile.TemporaryDirectory() as temporary:
-                    root = Path(temporary).resolve() / "run"
-                    root.mkdir()
-                    state_root = self.host_state(root)
-                    failure = (
-                        {"type": event_type, "message": message}
-                        if event_type == "error" else
-                        {"type": event_type, "error": {"message": message}}
-                    )
-                    launcher, factory = self.launcher([
-                        {"stdout": [
-                            event({"type": "thread.started", "thread_id": THREAD_ID}),
-                            event(failure),
-                        ]},
-                    ])
-
-                    with self.assertRaises(CodexInvocationError) as caught:
-                        self.start(launcher, root, host_state_root=state_root)
-
-                    self.assertNotIsInstance(
-                        caught.exception, CodexRecoverableInvocationError
-                    )
-                    self.assertEqual(len(factory.calls), 1)
-                    self.assertTrue(caught.exception.diagnostic.process_tree_reaped)
-                    self.assertFalse(caught.exception.diagnostic.turn_completed)
-                    self.assertFalse(
-                        codex_runtime._is_explicit_transient_event_failure(failure)
-                    )
-                    self.assertFalse(codex_runtime._is_retryable_service_failure(failure))
-                    raw = (state_root / CODEX_FAILURE_DIAGNOSTIC_FILENAME).read_text()
-                    persisted = json.loads(raw)
-                    self.assertEqual(persisted["schema_version"], 2)
-                    self.assertEqual(persisted["diagnostic"]["terminal_error"], {
-                        "event_type": event_type,
-                        "category": "usage-limit",
-                        "signature": "usage-limit-exceeded",
-                        "code": None,
-                        "message_bytes": len(message.encode("utf-8")),
-                    })
-                    rendered = str(caught.exception)
-                    self.assertIn("category=usage-limit", rendered)
-                    self.assertIn("signature=usage-limit-exceeded", rendered)
-                    for value in (raw, rendered):
-                        self.assertNotIn(private, value)
-                        self.assertNotIn("example.test", value)
-                        self.assertNotIn(head.casefold(), value.casefold())
-
-    def test_native_usage_limit_requires_bounded_anchored_terminal_sentence(self):
-        head = "You've hit your usage limit."
-        messages = (
-            "tool failed: " + head,
-            '"' + head + '"',
-            head + "extra",
-            head[:-1],
-            head.replace("'", "\N{RIGHT SINGLE QUOTATION MARK}"),
-            head + " " * (4097 - len(head)),
-        )
-        for event_type in ("error", "turn.failed"):
-            for message in messages:
-                with self.subTest(event_type=event_type, message=message):
-                    failure = (
-                        {"type": event_type, "message": message}
-                        if event_type == "error" else
-                        {"type": event_type, "error": {"message": message}}
-                    )
-                    diagnosis = codex_runtime._terminal_failure_diagnosis(failure)
-                    self.assertEqual(diagnosis.category, "unclassified")
-                    self.assertEqual(diagnosis.signature, "unclassified")
-            message = head + " " * (4096 - len(head))
-            failure = (
-                {"type": event_type, "message": message}
-                if event_type == "error" else
-                {"type": event_type, "error": {"message": message}}
-            )
-            self.assertEqual(
-                codex_runtime._terminal_failure_diagnosis(failure).signature,
-                "usage-limit-exceeded",
-            )
-        for failure in (
-            {"type": "error", "error": {"message": head}},
-            {"type": "turn.failed", "message": head},
-            {"type": "item.completed", "message": head},
-        ):
-            with self.subTest(failure=failure):
-                self.assertEqual(
-                    codex_runtime._terminal_failure_diagnosis(failure).signature,
-                    "unclassified",
-                )
-
-    def test_fixed_native_failures_persist_safe_diagnoses_without_recovery(self):
-        for literal, category, signature in FIXED_NATIVE_FAILURE_DIAGNOSES:
-            for event_type in ("error", "turn.failed"):
-                for message in (
-                    literal, "\t" + "\n ".join(literal.upper().split()) + "\n"
-                ):
-                    with self.subTest(
-                        signature=signature, event_type=event_type, message=message
-                    ), tempfile.TemporaryDirectory() as temporary:
-                        root = Path(temporary).resolve() / "run"
-                        root.mkdir()
-                        state_root = self.host_state(root)
-                        failure = {"type": event_type}
-                        if event_type == "error":
-                            failure["message"] = message
-                        else:
-                            failure["error"] = {"message": message}
-                        launcher, factory = self.launcher([
-                            {"stdout": [
-                                event({
-                                    "type": "thread.started", "thread_id": THREAD_ID,
-                                }),
-                                event(failure),
-                            ]},
-                        ])
-
-                        with self.assertRaises(CodexInvocationError) as caught:
-                            self.start(launcher, root, host_state_root=state_root)
-
-                        self.assertNotIsInstance(
-                            caught.exception, CodexRecoverableInvocationError
-                        )
-                        self.assertEqual(len(factory.calls), 1)
-                        self.assertTrue(factory.processes[0].terminated)
-                        diagnostic = caught.exception.diagnostic
-                        self.assertEqual(
-                            diagnostic.reason, "explicit-terminal-failure"
-                        )
-                        self.assertFalse(diagnostic.turn_completed)
-                        self.assertTrue(diagnostic.process_tree_reaped)
-                        expected = {
-                            "event_type": event_type,
-                            "category": category,
-                            "signature": signature,
-                            "code": None,
-                            "message_bytes": len(message.encode("utf-8")),
-                        }
-                        self.assertEqual(
-                            diagnostic.terminal_error.to_dict(), expected
-                        )
-                        diagnostic_path = (
-                            state_root / CODEX_FAILURE_DIAGNOSTIC_FILENAME
-                        )
-                        raw = diagnostic_path.read_text(encoding="utf-8")
-                        persisted = json.loads(raw)
-                        self.assertEqual(persisted["schema_version"], 2)
-                        self.assertEqual(
-                            persisted["diagnostic"]["terminal_error"], expected
-                        )
-                        self.assertEqual(
-                            stat.S_IMODE(diagnostic_path.stat().st_mode), 0o600
-                        )
-                        self.assertNotIn(literal.casefold(), raw.casefold())
-                        rendered = str(caught.exception)
-                        self.assertIn("category=%s" % category, rendered)
-                        self.assertIn("signature=%s" % signature, rendered)
-                        self.assertNotIn(literal.casefold(), rendered.casefold())
-
-    def test_fixed_native_diagnoses_require_complete_bounded_terminal_messages(self):
-        secret = "FACTORY_PASSWORD=never-persist-this"
-        for literal, category, signature in FIXED_NATIVE_FAILURE_DIAGNOSES:
-            messages = (
-                ("prefix", "tool failed: " + literal),
-                ("suffix", literal + ": " + secret),
-                ("punctuation", literal + "."),
-                (
-                    "lookalike",
-                    literal.replace("e", "\N{CYRILLIC SMALL LETTER IE}", 1),
-                ),
-                ("hidden-suffix", literal + " " * 4096 + secret),
-                ("over-bound", literal + " " * (4097 - len(literal))),
-            )
-            for event_type in ("error", "turn.failed"):
-                for name, message in messages:
-                    with self.subTest(
-                        signature=signature, event_type=event_type, case=name
-                    ):
-                        failure = {"type": event_type}
-                        if event_type == "error":
-                            failure["message"] = message
-                        else:
-                            failure["error"] = {"message": message}
-                        diagnosis = codex_runtime._terminal_failure_diagnosis(failure)
-                        self.assertEqual(diagnosis.category, "unclassified")
-                        self.assertEqual(diagnosis.signature, "unclassified")
-                        self.assertFalse(
-                            codex_runtime._is_explicit_transient_event_failure(failure)
-                        )
-                        self.assertFalse(
-                            codex_runtime._is_retryable_service_failure(failure)
-                        )
-                        self.assertNotIn(secret, json.dumps(diagnosis.to_dict()))
-                with self.subTest(
-                    signature=signature, event_type=event_type, case="at-bound"
-                ):
-                    message = literal + " " * (4096 - len(literal))
-                    failure = {"type": event_type}
-                    if event_type == "error":
-                        failure["message"] = message
-                    else:
-                        failure["error"] = {"message": message}
-                    diagnosis = codex_runtime._terminal_failure_diagnosis(failure)
-                    self.assertEqual(
-                        (diagnosis.category, diagnosis.signature), (category, signature)
-                    )
-            for failure in (
-                {"type": "error", "error": {"message": literal}},
-                {"type": "turn.failed", "message": literal},
-                {
-                    "type": "item.completed",
-                    "item": {"type": "agent_message", "text": literal},
-                },
-                {
-                    "type": "item.completed",
-                    "item": {"type": "command_execution", "aggregated_output": literal},
-                },
-            ):
-                with self.subTest(signature=signature, failure=failure):
-                    diagnosis = codex_runtime._terminal_failure_diagnosis(failure)
-                    self.assertEqual(diagnosis.category, "unclassified")
-                    self.assertEqual(diagnosis.signature, "unclassified")
-
-    def test_fixed_native_diagnoses_preserve_independent_retry_codes(self):
-        for literal, category, signature in FIXED_NATIVE_FAILURE_DIAGNOSES:
-            for event_type in ("error", "turn.failed"):
-                for code in (None, "overloaded"):
-                    with self.subTest(
-                        signature=signature, event_type=event_type, code=code
-                    ):
-                        payload = {"message": literal, "code": code}
-                        failure = (
-                            {"type": event_type, **payload} if event_type == "error"
-                            else {"type": event_type, "error": payload}
-                        )
-                        diagnosis = codex_runtime._terminal_failure_diagnosis(failure)
-                        self.assertEqual(
-                            (diagnosis.category, diagnosis.signature),
-                            (category, signature),
-                        )
-                        self.assertFalse(
-                            codex_runtime._is_explicit_transient_event_failure(failure)
-                        )
-                        self.assertEqual(
-                            codex_runtime._is_retryable_service_failure(failure),
-                            code == "overloaded",
-                        )
 
     def test_terminal_failure_rejects_unsafe_provider_code(self):
         secret = "FACTORY_PASSWORD=never-persist-this"

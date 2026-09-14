@@ -53,8 +53,10 @@ PRODUCT_TURN_LIMIT = 12
 # matches the ceiling the retired two-timeout rail allowed.
 STEP_BUDGET_SECONDS = 2 * 60 * 60
 RUN_BUDGET_SECONDS = 6 * 60 * 60
-# The runtime launchers refuse anything longer, so no turn may exceed it.
-MAX_TURN_SECONDS = 60 * 60
+# Half a step, so a step always affords two full turns. A launcher will accept
+# a larger number (see ``MAX_NATIVE_TURN_SECONDS``); only an explicit
+# ``--turn-minutes`` override may exceed this budgeted default.
+MAX_TURN_SECONDS = STEP_BUDGET_SECONDS // 2
 # Budgeted Spark uses the shorter operator-requested boundary. Keep this
 # separate from legacy launcher defaults so unbudgeted session policies do not
 # drift on resume.
