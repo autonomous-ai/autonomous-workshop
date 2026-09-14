@@ -191,3 +191,33 @@ class ResumeMotionTest(unittest.TestCase):
         host._reconcile_motion_resume_outputs(run, current)
         actual = host._read_release_effect_wait(run, current)
         self.assertEqual(actual, {**waiting, "waiting_checkpoint_sha256": current.checkpoint_sha256})
+
+    def test_pending_make_tool_refresh_quarantines_only_exact_ancestor(self):
+        self.start(check_motion=False)
+        run = host._open_budgeted_agent_run(self.paths)
+        before = run.snapshot()
+        proposal = {
+            "schema_version": 1, "kind": "autonomous-workshop.agent-outcome-proposal",
+            "checkpoint_sha256": before.checkpoint_sha256, "subject_sha256": "b" * 64,
+            "outcome": {"schema_version": 1, "stage": "make", "status": "waiting",
+                        "artifacts": [], "needs": ["report writer mismatch"], "proposed_transition": None},
+        }
+        run.refresh_domain_skill_tools({}, reason="workshop resume --refresh-tools", check_motion=True)
+        current = replace(run.snapshot(), stage="make")
+        path = run.run_root / "agent-outcome.json"
+        for binding, stage, preserved in [
+            ("f" * 64, "make", False),
+            (before.checkpoint_sha256, "release", False),
+            (before.checkpoint_sha256, "make", True),
+        ]:
+            with self.subTest(binding=binding, stage=stage):
+                proposal["checkpoint_sha256"] = binding
+                proposal["outcome"]["stage"] = stage
+                content = json.dumps(proposal).encode()
+                path.write_bytes(content)
+                host._reconcile_motion_resume_outputs(run, current)
+                self.assertEqual(path.exists(), not preserved)
+                if preserved:
+                    saved = run.host_state_root / "motion-resume-outcomes" / (hashlib.sha256(content).hexdigest() + ".json")
+                    self.assertEqual(saved.read_bytes(), content)
+                    host._reconcile_motion_resume_outputs(run, current)

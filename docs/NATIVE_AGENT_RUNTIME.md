@@ -1245,3 +1245,10 @@ Print-gate Markdown reports retain the same explicit `RESULT:` verdict emitted
 on stdout, including failing verdicts. The frozen Make finalizer consumes that
 report contract. Restoring the summary does not change measurements, thresholds,
 or exit status; refreshed runs regenerate reports through the actual tools.
+
+After an explicit tool refresh, an unaccepted Make outcome from the exact
+recorded predecessor checkpoint is preserved in private quarantine and removed
+from the pending slot. The same native session must finalize again against
+the new tool bindings. Recovery walks only consecutive host correction records;
+unrelated checkpoints and stages retain their normal refusal. This also repairs
+an interrupted refresh without accepting or rewriting the old proposal.

@@ -10340,7 +10340,7 @@ def _adopt_resume_motion_policy(paths, run, checkpoint, check_motion):
 
 
 def _reconcile_motion_resume_outputs(run, checkpoint):
-    """Recover pending output bindings across only recorded motion corrections.
+    """Recover pending output bindings across recorded host tool corrections.
 
     A policy change can interrupt finalization or a publication wait. Walk the
     consecutive host correction chain so retries also work after a crash between
@@ -10357,7 +10357,9 @@ def _reconcile_motion_resume_outputs(run, checkpoint):
         if (record.get("kind") == "autonomous-workshop.host-correction"
                 and record.get("schema_version") == 1
                 and record.get("correction") == "domain-skill-refresh"
-                and str(record.get("reason", "")).startswith("workshop resume --check-motion ")):
+                and (str(record.get("reason", "")).startswith("workshop resume --check-motion ")
+                     or (checkpoint.stage == "make"
+                         and record.get("reason") == "workshop resume --refresh-tools"))):
             predecessors[record["checkpoint_sha256"]] = record["previous_checkpoint_sha256"]
     ancestors = set()
     previous = checkpoint.checkpoint_sha256
@@ -10386,8 +10388,8 @@ def _reconcile_motion_resume_outputs(run, checkpoint):
         if proposal.checkpoint_sha256 not in ancestors or proposal.outcome.stage != checkpoint.stage:
             return  # The ordinary exactness gate still rejects unrelated output.
         if checkpoint.stage == "make":
-            # The unaccepted proposal must be finalized against the new motion
-            # policy, especially when opting in after a skipped check.
+            # The unaccepted proposal must be finalized against the refreshed
+            # tools/policy. Preserve its exact bytes, never rebind it as ready.
             directory = _ensure_private_directory(
                 run.host_state_root / "motion-resume-outcomes", label="motion resume outcomes")
             _atomic_private_write(directory / (_sha256(content) + ".json"), content)
