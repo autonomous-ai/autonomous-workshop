@@ -149,8 +149,13 @@ for a skipped stage.
   together. Keep the equivalence ledger visible while writing original
   terminology, rulebook prose, icons, and component forms. Use the shared
   `cad`, `image-to-cad`, and `step-parts` Workshop skills for printable
-  geometry. Record a zero-difference rules audit and do not reproduce source
-  text, branded names, artwork, layout, or trade dress. Apply the recognition
+  geometry. When the product is a tiled board with standing pieces, read
+  `references/tiled-board-baseline.md` before fixing board, fit, and piece
+  dimensions, and cite the clauses relied on. Its values are overridable
+  defaults; state the reason for any departure. Its inventory note does not
+  displace the conventional inventory recorded above. Record a
+  zero-difference rules audit and do not reproduce source text, branded names,
+  artwork, layout, or trade dress. Apply the recognition
   and player-experience checks to the final populated geometry and repair any
   failures before returning the design to the Manager.
 - **Playtest:** Exercise the exact Made revision for termination, legality,
