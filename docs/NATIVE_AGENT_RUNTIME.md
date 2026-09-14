@@ -1252,3 +1252,10 @@ from the pending slot. The same native session must finalize again against
 the new tool bindings. Recovery walks only consecutive host correction records;
 unrelated checkpoints and stages retain their normal refusal. This also repairs
 an interrupted refresh without accepting or rewriting the old proposal.
+
+Spark schema-4 Release packets reference the sealed Made contract through its
+exact path, file hash, contract hash and product manifest hash. They do not
+duplicate its potentially large file inventory into the bounded native packet.
+The host still reads and validates the complete typed contract before preparing
+publication; modified sealed bytes remain refused. No native Release turn is
+introduced, and legacy PDF, Forge and Quest packet contracts remain unchanged.

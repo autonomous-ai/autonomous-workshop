@@ -4332,6 +4332,12 @@ def _prepare_effort_stage_input(
                 if selected_contract.get("manual_design_evidence_path") is not None:
                     inputs["required_package_files"].append(selected_contract["manual_design_evidence_path"])
             subject = _stage_subject("release", subject_inputs)
+            if effort.name == "spark" and context["release_contract"]["native_release_schema_version"] == 4:
+                # Host-only publication consumes the validated typed contract
+                # in context. Keep its exact artifact/hash binding in STAGE,
+                # without duplicating an arbitrarily large file manifest into
+                # a packet which no native Release turn needs to read.
+                inputs.pop("made")
         else:  # pragma: no cover - effort membership is checked above
             raise TransitionError("effort route cannot prepare this stage")
 
