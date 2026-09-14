@@ -1864,3 +1864,16 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:/private/tmp/workshop-motion-test
 ```
 
 The motion suite passed 112 tests. The CAD skill lock binds both changed scripts.
+
+Verifier and packaging regressions also passed: 68 tests. Live commands:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli resume wish-20260910-143753-a2e10997 --refresh-tools --runtime-device-from 16777230 --max-tokens 500000000 --effort medium
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli resume wish-20260910-143753-a2e10997 --max-tokens 500000000 --effort medium
+```
+
+The first command refreshed exactly check_motion and verify_project, but the
+optional device correction refused a policy mismatch without rebinding it.
+Ordinary resume then passed the existing runtime checks and started the same
+native session at 13:51:22 UTC. No manual checkpoint repair was needed. Live
+motion performance and product completion remain unverified.
