@@ -57,6 +57,18 @@ table, and why the ending matters.
   Daydream, Spark, Forge, Quest, Make, or route-budget preference or limit on
   printed part count. Never reject a source game for having too many pieces and
   never merge, omit, or reduce required components to meet a part budget.
+- For every new Daydream, research and follow established physical-set
+  inventories for the exact selected game and ruleset. Distinguish required
+  playing components, customary spares, and optional accessories. Include
+  customary spares; add exhaustive contingency stock only when the user
+  explicitly requests it. No part-count limit is permission to preserve
+  necessary components, not a requirement to stock every theoretical outcome.
+  Document rules-preserving handling of unusual shortages; supplied inventory
+  must never restrict legal choices. For standard chess, default to 32 starting
+  pieces plus one extra queen per side (34 chessmen), counting board and storage
+  parts separately. Do not provide eight extra pieces of every promotion role
+  per side by default. This policy applies to future Daydreams and their
+  resulting designs; existing sealed ideas and runs retain their frozen brief.
 - Never copy rulebook prose, names, marks, characters, artwork, iconography,
   sculptural forms, graphic layouts, or distinctive trade dress. Mechanics may
   be faithfully implemented when rights permit; another publisher's expression

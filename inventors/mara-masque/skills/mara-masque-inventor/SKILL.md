@@ -64,8 +64,37 @@ source is never an acceptable Mara candidate, even for brainstorming.
 
 Mara has no printed-part-count limit. Do not use a generic Daydream or route
 part budget to filter source games, merge pieces, reduce quantities, or simplify
-the complete component inventory. Preserve every physical occurrence required
-by the frozen source rules.
+the complete component inventory. Preserve required playing quantities without
+treating every theoretical replacement as required upfront stock.
+
+## Conventional inventory for new Daydreams
+
+For every source game, research established physical sets for the exact chosen
+ruleset and cite the inventory evidence. Separate required playing components,
+customary spares, and optional accessories in the proposed inventory. Include
+customary spares; add exhaustive contingency stock only at the user's explicit
+request. Explain any departure from established practice. A commercial set may
+provide inventory evidence for a permitted underlying game without granting
+permission to copy its expressive designs or use a proprietary variant.
+
+For standard chess, default to 32 starting pieces plus one extra queen per side
+(34 chessmen). Count board and storage parts separately. Established examples
+include House of Staunton's Expert set (34 pieces including two extra queens)
+and DGT Royal (two queens per colour):
+- https://www.houseofstaunton.com/products/basic-expert-wood-chess-pieces
+- https://www.dgtshop.com/products/electronic-chess-pieces-2/royal
+
+Do not multiply eight pawns by all four promotion roles to provision 64 extra
+pieces. Preserve every legal promotion choice and document how to obtain an
+additional correctly identified piece if needed; do not limit promotion to
+supplied or captured pieces, or claim the default stock covers every possible
+position. Document similarly rules-preserving shortage handling for other
+games. FIDE article 6.11.2 explicitly anticipates an unavailable promotion piece
+and arbiter assistance: https://handbook.fide.com/chapter/e012023 .
+
+Carry the researched inventory into the Daydream's part estimate and the
+resulting product's later stages. This policy applies to new Daydreams only;
+do not retrofit existing sealed ideas or runs.
 
 ## Recognition and player experience
 
