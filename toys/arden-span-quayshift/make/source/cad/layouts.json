@@ -1,0 +1,373 @@
+[
+  {
+    "id": "witness-1",
+    "route": [
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ]
+    ],
+    "paths_through_both_high_arches_in_this_build": 1,
+    "low_arch_swap_checks": [
+      {
+        "swapped": [
+          "A",
+          "C"
+        ],
+        "advertised_route_blocked": true,
+        "any_alternative_valid_trip": false
+      },
+      {
+        "swapped": [
+          "B",
+          "C"
+        ],
+        "advertised_route_blocked": true,
+        "any_alternative_valid_trip": false
+      }
+    ],
+    "placements": [
+      {
+        "part": "A",
+        "origin": [
+          1,
+          0
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "B",
+        "origin": [
+          1,
+          1
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "C",
+        "origin": [
+          0,
+          0
+        ],
+        "rotation": 90
+      },
+      {
+        "part": "D",
+        "origin": [
+          0,
+          3
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "E",
+        "origin": [
+          3,
+          2
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "F",
+        "origin": [
+          3,
+          3
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "G",
+        "origin": [
+          4,
+          0
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "H",
+        "origin": [
+          4,
+          1
+        ],
+        "rotation": 0
+      }
+    ],
+    "starter": {
+      "fixed_parts": [
+        "B",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H"
+      ],
+      "loose_parts": [
+        "A",
+        "C"
+      ],
+      "nonoverlapping_candidates_examined": 28,
+      "valid_abstract_completions": 2,
+      "claim": "Counts are complete only for these two loose pieces and this point-ferry model."
+    }
+  },
+  {
+    "id": "witness-2",
+    "route": [
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ]
+    ],
+    "paths_through_both_high_arches_in_this_build": 1,
+    "low_arch_swap_checks": [
+      {
+        "swapped": [
+          "A",
+          "C"
+        ],
+        "advertised_route_blocked": true,
+        "any_alternative_valid_trip": false
+      },
+      {
+        "swapped": [
+          "B",
+          "C"
+        ],
+        "advertised_route_blocked": true,
+        "any_alternative_valid_trip": false
+      }
+    ],
+    "placements": [
+      {
+        "part": "A",
+        "origin": [
+          1,
+          0
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "B",
+        "origin": [
+          0,
+          2
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "C",
+        "origin": [
+          4,
+          0
+        ],
+        "rotation": 90
+      },
+      {
+        "part": "D",
+        "origin": [
+          3,
+          3
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "E",
+        "origin": [
+          0,
+          4
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "F",
+        "origin": [
+          0,
+          0
+        ],
+        "rotation": 90
+      },
+      {
+        "part": "G",
+        "origin": [
+          3,
+          1
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "H",
+        "origin": [
+          3,
+          2
+        ],
+        "rotation": 0
+      }
+    ]
+  },
+  {
+    "id": "witness-3",
+    "route": [
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        2,
+        4
+      ]
+    ],
+    "paths_through_both_high_arches_in_this_build": 2,
+    "low_arch_swap_checks": [
+      {
+        "swapped": [
+          "A",
+          "C"
+        ],
+        "advertised_route_blocked": true,
+        "any_alternative_valid_trip": false
+      },
+      {
+        "swapped": [
+          "B",
+          "C"
+        ],
+        "advertised_route_blocked": true,
+        "any_alternative_valid_trip": false
+      }
+    ],
+    "placements": [
+      {
+        "part": "A",
+        "origin": [
+          1,
+          0
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "B",
+        "origin": [
+          0,
+          2
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "C",
+        "origin": [
+          4,
+          0
+        ],
+        "rotation": 90
+      },
+      {
+        "part": "D",
+        "origin": [
+          0,
+          3
+        ],
+        "rotation": 270
+      },
+      {
+        "part": "E",
+        "origin": [
+          0,
+          0
+        ],
+        "rotation": 90
+      },
+      {
+        "part": "F",
+        "origin": [
+          3,
+          1
+        ],
+        "rotation": 90
+      },
+      {
+        "part": "G",
+        "origin": [
+          4,
+          3
+        ],
+        "rotation": 0
+      },
+      {
+        "part": "H",
+        "origin": [
+          4,
+          4
+        ],
+        "rotation": 0
+      }
+    ]
+  }
+]

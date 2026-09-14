@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "kind": "autonomous-workshop.public-archive-sanitization",
+  "policy": "Only the already-published 43-file package and explicitly selected public version metadata are included. Raw host receipts, original Wish, session state and credentials are excluded. All package bytes match the recorded CDN readback.",
+  "files": []
+}

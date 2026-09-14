@@ -1,0 +1,11 @@
+# Reference reading
+
+Source: sealed ref/concept.png, copied unchanged from wish-references/ref-01-quayshift-concept.png. Native Manager opened the whole image. It is one perspective concept collage: town hero and two separate illustrative module studies, not three aligned views of a manufactured product.
+
+[observed] Limestone/terracotta/dark-olive shophouse massing, petrol tray, ochre ferry, rounded high portals, visibly lower gate, deep window recesses, broad stairs reaching terrace levels, flat parapet roofs, contrasting tall and short masses. [observed] The drawing includes a loose tree; the Wish explicitly excludes loose trees, so omit it. Image module boundaries and inventory remain unverified. The hero's left board edge is clipped. Separate studies cannot establish the hidden sides of the complete town.
+
+Measurement: measure/reference-measurement.json measures region (15,40)-(1200,950) [observed pixel coordinates], bounding box1185×901 pixels, aspect1.315, fill0.676. Region-only silhouette includes title fragments and perspective; it supplies no exact millimetres. No aligned orthographic cross-check is possible. Use it to characterize varied skyline above a broad square base, not to set fit.
+
+The Wish governs the original eight-module grammar and physical dimensions. All CAD millimetres will be deliberate design assumptions verified against solids, rather than dimensions claimed from this illustration. This is an original construction puzzle using the supplied appearance direction, not a reproduction of the illustrated unverified part arrangement. Keep the clipped collage as qualitative reference; it is not a usable whole-object silhouette for a numeric replica claim.
+
+Landmarks for exact geometry review: two open high spans and one physically obstructing low gate; eight distinct rigid architectural pieces; L court; paired two-cell terraces; two towers; varied tall/low roofs; recessed facade openings; broad connected steps; square five-by-five water field with C1/C5 gates and no other boundary gaps; ferry with recognizable hull and high cabin. All ornament stays inside its module cell envelope. No animals, people, gears, magnets, motor, tree, railings, stacking or drive tool.

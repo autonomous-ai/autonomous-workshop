@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "7de0429bc4040ffd878265c2737cad279a71a658c39c4e901c299009b294fa5c",
+      "kind": "codex-skill",
+      "name": "arden-span-inventor",
+      "path": "skills/arden-span-inventor"
+    }
+  ],
+  "id": "arden-span",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

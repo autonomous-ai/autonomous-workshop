@@ -1,0 +1,17 @@
+[
+  {
+    "challenge": "Q01",
+    "arch_facing_aliases": 16,
+    "top_down_finger_proxy_failed": 2
+  },
+  {
+    "challenge": "Q02",
+    "arch_facing_aliases": 32,
+    "top_down_finger_proxy_failed": 0
+  },
+  {
+    "challenge": "Q03",
+    "arch_facing_aliases": 64,
+    "top_down_finger_proxy_failed": 0
+  }
+]

@@ -1,0 +1,29 @@
+{
+  "source_sha256": "f84eadcc777ec00f35b0ac88008dcd8c3bd34103f57a5bd3829bf32e5952b531",
+  "assembly_sha256": "f471fbe9f3d5fcafab2caac7e498ee8568fa6f72694d9603ba1743946b08e323",
+  "cradle_sha256": "9d681f94d811d5c99aae1c3d8865de66fb5fd019ad24bed034467456b4c277cf",
+  "solids": 10,
+  "cradle_valid": true,
+  "cradle_faces": 227,
+  "engraved_faces": 183,
+  "minimum_floor_mm": 3.4,
+  "cradle_bbox_mm": [
+    174.0,
+    182.0,
+    5.5
+  ],
+  "assembly_bbox_mm": [
+    174.0,
+    182.0,
+    63.0
+  ],
+  "added_volume_mm3": 1106.9733240189455,
+  "removed_volume_mm3": 323.13600000003436,
+  "nine_modules_geometry_and_face_colors_unchanged": true,
+  "assembly_placements_unchanged": true,
+  "nine_cell_numbers_probed": true,
+  "four_grid_lines_probed": true,
+  "no_added_volume_above_tile_support_plane": true,
+  "no_module_cradle_intersection": true,
+  "physical_testing": "not performed"
+}

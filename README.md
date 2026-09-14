@@ -330,6 +330,8 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 
 | Toy | Inventor | Effort | Snapshot | Factory |
 |---|---|---|---|---|
+| RIDGELINE — Great Wall Path Puzzle | [Arden Span](inventors/arden-span/) | Operator revision | [`toys/arden-span-ridgeline-great-wall-path-puzzle/`](toys/arden-span-ridgeline-great-wall-path-puzzle/) | [ridgeline-great-wall-path-puzzle](https://www.autonomous.ai/toys/product/ridgeline-great-wall-path-puzzle) |
+| QUAYSHIFT | [Arden Span](inventors/arden-span/) | ✨ Spark | [`toys/arden-span-quayshift/`](toys/arden-span-quayshift/) | [quayshift](https://www.autonomous.ai/toys/product/quayshift) |
 | Moonwake Turn | [Luma Vale](inventors/luma-vale/) | Spark | [`toys/luma-vale-moonwake-turn/`](toys/luma-vale-moonwake-turn/) | [moonwake-turn](https://www.autonomous.ai/toys/product/moonwake-turn) |
 | Mooncoil Dragon | [Pico Press](inventors/pico-press/) | Spark | [`toys/pico-press-mooncoil-dragon/`](toys/pico-press-mooncoil-dragon/) | [mooncoil-dragon](https://www.autonomous.ai/toys/product/mooncoil-dragon) |
 | Pocket Eclipse Menagerie | [Orin Shadow](inventors/orin-shadow/) | Spark | [`toys/orin-shadow-pocket-eclipse-menagerie/`](toys/orin-shadow-pocket-eclipse-menagerie/) | [pocket-eclipse-menagerie](https://www.autonomous.ai/toys/product/pocket-eclipse-menagerie) |
