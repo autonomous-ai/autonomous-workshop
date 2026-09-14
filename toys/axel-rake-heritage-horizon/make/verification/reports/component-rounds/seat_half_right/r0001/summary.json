@@ -1,0 +1,61 @@
+{
+ "build": {
+  "seat_half_right": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "seat_half_right"
+ ],
+ "checked": [
+  "seat_half_right"
+ ],
+ "checks_ok": false,
+ "entry": "part_seat_half_right.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half_right/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "seat_half_right"
+ ],
+ "print": {
+  "seat_half_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half_right/r0001/overhang-seat_half_right.log": "d46ad9ad9021502890eaca5185e5ea17405715c2db8303e2736515b66c3cfda1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half_right/r0001/thickness-seat_half_right.log": "2628da1fb1b16e1ed08955f833ac9b09deccceafef60d9260557b4f262ed13f2"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 9.4% of the surface faces down that steeply; "
+    ],
+    "overhang_mm2": 9.9,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.27,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:seat_half_right",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/seat_half_right/r0001/visual-packet.json",
+  "packet_sha256": "0d5a86959f5176ccc03aeaa5ca1b65c21a3a51ce298650e188809a720d06b38e",
+  "status": "pending"
+ }
+}

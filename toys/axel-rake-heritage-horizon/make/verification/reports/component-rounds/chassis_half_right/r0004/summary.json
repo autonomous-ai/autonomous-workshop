@@ -1,0 +1,60 @@
+{
+ "build": {
+  "chassis_half_right": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "chassis_half_right"
+ ],
+ "checked": [
+  "chassis_half_right"
+ ],
+ "checks_ok": true,
+ "entry": "part_chassis_half_right.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half_right/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "chassis_half_right"
+ ],
+ "print": {
+  "chassis_half_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half_right/r0004/overhang-chassis_half_right.log": "eb41059601d457d4f02fcd526ed64c19d0dba6dd9bc74f4562caf2451a258409",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half_right/r0004/thickness-chassis_half_right.log": "11d34c3e49efe3394a0a9ed0885f7bf10728d365eb5cf259ec3b52d1c2e464cc"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.24,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:chassis_half_right",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Mirrored frame has the same open motor relief and continuous forward-routed neck; saddle support, rear arch and V relief remain intact without the thin outer cap.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half_right/r0004/visual-packet.json",
+  "packet_sha256": "f67177b1ac41cb4d6bfa4c29dfd501d4abff294f5d34d7ebe6678596906345c4",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,60 @@
+{
+ "build": {
+  "chassis_half": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "chassis_half"
+ ],
+ "checked": [
+  "chassis_half"
+ ],
+ "checks_ok": true,
+ "entry": "part_chassis_half.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "chassis_half"
+ ],
+ "print": {
+  "chassis_half": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0006/overhang-chassis_half.log": "94900d7c8e89536b9311459723e03abb6becc185e42a7b5539d12d59a166c561",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0006/thickness-chassis_half.log": "6af98c0fe696b684c37f485aa5c69ff09956a4cd44220a473786cba1805320cf"
+   },
+   "measured_round": 6,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.24,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 6,
+ "scope": "component:chassis_half",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Shorter steering housing keeps its roof and open tongue socket; forward neck, relieved motor face and stepped seat support remain connected with clean tank approach.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0006/visual-packet.json",
+  "packet_sha256": "6ef79d18294d24f58c374c646fec43454dbb1ba0260acadae3778869a3530f68",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "build": {
+  "pannier": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "pannier"
+ ],
+ "checked": [
+  "pannier"
+ ],
+ "checks_ok": false,
+ "entry": "part_pannier.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/pannier/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pannier"
+ ],
+ "print": {
+  "pannier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/pannier/r0001/overhang-pannier.log": "7ec259215acb1883c34245c56e61d0d8e4a5ff6f17edd179ce914e2051630d57",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/pannier/r0001/thickness-pannier.log": "edf58aaba11992d8348c3b66f8ac5e3d4d867846965871092b674f2ef7aa7da3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 30.2% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 164.8,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.47,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:pannier",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/pannier/r0001/visual-packet.json",
+  "packet_sha256": "f522dfcbbe68af4070da47e85e513213d59d192899ec7676802dcfe25ffa4b7a",
+  "status": "pending"
+ }
+}

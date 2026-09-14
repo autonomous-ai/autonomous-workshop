@@ -1,0 +1,15 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/part_chassis_half_right.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/rounds/r0002/overhang-chassis_half_right.md
+(2.2s, exit 0)
+--- stdout
+part_chassis_half_right.step.py: 108.3 cm2 of surface, grid 0.400 mm, 358 unsupported samples over 4 region(s)
+  PASS  no face under 45 deg needs support     25.1% of the surface faces down that steeply; 0 region(s) need support, 2 bridge, 2 below 1 mm2
+  PASS  bridges within 12 mm                   2 region(s), longest span 6.0 mm
+        every unsupported region, largest first:
+        1. [bridge  ]    53.5 mm2 at (35.6, 66.2, 5.2)  span   6.0 mm of 9x6, 6.4 mm of air below
+        2. [bridge  ]     2.4 mm2 at (9.7, 33.1, 15.4)  span   1.0 mm of 2x1, 2.4 mm of air below
+        3. [trace   ]     0.7 mm2 at (13.6, 37.9, 15.4)  span   0.6 mm of 1x1, 2.4 mm of air below
+        4. [trace   ]     0.1 mm2 at (-10.0, 32.7, 15.4)  span   0.0 mm of 0x0, 2.4 mm of air below
+RESULT: prints unsupported
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/rounds/r0002/overhang-chassis_half_right.md
+
+--- stderr

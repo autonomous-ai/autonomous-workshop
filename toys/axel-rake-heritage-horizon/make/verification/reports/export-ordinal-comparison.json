@@ -1,0 +1,110 @@
+[
+  {
+    "role": "bar_riser",
+    "isolated_step_sha256": "15e3fe7888f7116a5d28d34917069c460ddd2e3050268a4f8ded5cf9f7e15a46",
+    "final_batch_step_sha256": "8a075f03c906ab7552d811d527fae32f20c6d490dcf905e44a4580c9efd2e856",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "chassis_half",
+    "isolated_step_sha256": "bb12936d26140051568d1be7460458e45fad9d3ab703bd13810f9dca6885eb40",
+    "final_batch_step_sha256": "805a1266938f1db0111addcaaa9f3048b234c607d01da92f6789c3ea35ae71a7",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "chassis_half_right",
+    "isolated_step_sha256": "0faa85aa33dc4370ca1d3ed6d540b25d9125328b4e5ead40acd1a1000639ea2a",
+    "final_batch_step_sha256": "0017f1173cc55c0d2800579f89e19838213fdd8ebed45537d1d7364b63d505a0",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "footboard",
+    "isolated_step_sha256": "09a674251f5f0f173619326dee6781dc1f0c107ab8fc2883b3c2be0992921f78",
+    "final_batch_step_sha256": "047f7cd552ff7420b2fbd20f248cb2823ddcab49c6f4f474a5972bb94d813366",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "fork_bridge",
+    "isolated_step_sha256": "b21a4e3f020195669baeaa469b14e63723e7f8caa68ce965296ced2d883c9754",
+    "final_batch_step_sha256": "ff7ca3f6f6569be4ee3d4bd6a1c9c15fbc560a2a2d60e145075750bdb624f5fe",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "fork_bridge_right",
+    "isolated_step_sha256": "0b702b7f29c0efff7fdad53de8b13c31d0f587ec88b4af5e281ce9b8465b4a4c",
+    "final_batch_step_sha256": "b3ef75250ca8213e36b3f4bce0d64a5429d1b48a2ca851318bc6b982b04f1e89",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "fork_leg",
+    "isolated_step_sha256": "1d807ff7a97fae857ce8a8cc3e77d416ef55a69bd5ac6efa1b632d9ae75ca14d",
+    "final_batch_step_sha256": "09dc6df550db1f197ca53b86ad61b4e72537aeed5179a46cca8aad84730e505f",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "front_fender",
+    "isolated_step_sha256": "8f9a9210bd22867e96cb240214d796b6a27082ec912c3b0b6eb00938918fad4e",
+    "final_batch_step_sha256": "cb76e6e21a3f54f025608b9eba11315415069a3d67a83c57d268077526d12507",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "handlebar",
+    "isolated_step_sha256": "7a8a96690246880f8f3eb1ca3ba490b27b49f73a9b2f93078cc1b41678c6907e",
+    "final_batch_step_sha256": "ed167f5d4c5b7296ae3f1af3ad2eee31486de7bd9ee90400bf6bc79a965e8fde",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "pannier",
+    "isolated_step_sha256": "22712dc6855ff7582103c7e4b833f5a695bda0bd5f697066a19ad321134451aa",
+    "final_batch_step_sha256": "a64766dd8a02534b017da2840de8cf6220b9ac6ab82ed52b087ee8bcbd8ab209",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "plinth",
+    "isolated_step_sha256": "c45e5fcb1b884a0ca55bbdd528e067356818d13261bc781af08ae00ba14d676d",
+    "final_batch_step_sha256": "29a5fe7042b677e58335cf3a0c9114079119610385cc4255623c44f233c998c7",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "screen",
+    "isolated_step_sha256": "919173d91ade0917e66ac6d94ed3c26a0591458513edee1df689323b676a35cb",
+    "final_batch_step_sha256": "8a569242e972e63ad984c2d15f96b1a8464b008713ba2974982c5a04289b73e7",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "seat_half",
+    "isolated_step_sha256": "fdcb2b1209c25bbd064d9adc44fdf5144a640fcb785dc950b2aab44c74f39bd0",
+    "final_batch_step_sha256": "1e160d0887fedd9c3d0db720e070bc1b8a4ef2c21560a73c7ec1fce24a9db9db",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "seat_half_right",
+    "isolated_step_sha256": "48f45db930a2938a340e1943b571e884f59dcdb04a046c9e67261368407ca8d3",
+    "final_batch_step_sha256": "e0d4eee93016995a69a7f118216a3177e9a1f5062f5ce34f024c3d3b00ba21d9",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "swingarm_side",
+    "isolated_step_sha256": "cf7bef06c8d55622aebc6dc6b16910a85fff762a44550251e4a552e57299ab29",
+    "final_batch_step_sha256": "00f85b273763a8ad1d5cb825b5c61bba58359066b95a3b0de49fa43841cca82f",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "swingarm_side_right",
+    "isolated_step_sha256": "bda0a33c898021c51e6932b6b21a3cd5f2c463e1fb772aec1dee1c5164a8234f",
+    "final_batch_step_sha256": "e8754ac5bcbf48acacdd6c69547658a54e644d6f3a5bbd156b983efdab65598d",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "tank_cover",
+    "isolated_step_sha256": "c03cdad7a88842f5c6df1d52173637ee12f22e14e5ed461d2848ca5265f4255d",
+    "final_batch_step_sha256": "af019132ef148cbef959d91d5bae88634013a8bba55a7600324010020eb963db",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  },
+  {
+    "role": "wheel",
+    "isolated_step_sha256": "487fe834babc578a9ef2c436b97acbb0be2eeae657c9f4787335364d246cc65c",
+    "final_batch_step_sha256": "1c1274c2aca15948e9a4c130bcb59131ad788458c714796e65dd0987c501e2e8",
+    "difference": "Only STEP assembly-usage identifier ordinal; all other bytes identical."
+  }
+]

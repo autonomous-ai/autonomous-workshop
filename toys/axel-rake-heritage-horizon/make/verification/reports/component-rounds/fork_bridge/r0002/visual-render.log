@@ -1,0 +1,8 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/part_fork_bridge.step.py --view front --view top --view iso -o <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0002/visual
+(1.8s, exit 0)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0002/visual/front.png
+<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0002/visual/top.png
+<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_bridge/r0002/visual/iso.png
+
+--- stderr

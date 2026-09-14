@@ -1,0 +1,1 @@
+{"files":{"bar_riser":"15e3fe7888f7116a5d28d34917069c460ddd2e3050268a4f8ded5cf9f7e15a46","handlebar":"7a8a96690246880f8f3eb1ca3ba490b27b49f73a9b2f93078cc1b41678c6907e","screen":"919173d91ade0917e66ac6d94ed3c26a0591458513edee1df689323b676a35cb"},"group":"cockpit","kind":"autonomous-workshop.make-group","parts":["screen","handlebar","bar_riser"],"schema_version":1}

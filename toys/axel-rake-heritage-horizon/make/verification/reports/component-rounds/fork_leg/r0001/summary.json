@@ -1,0 +1,59 @@
+{
+ "build": {
+  "fork_leg": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "fork_leg"
+ ],
+ "checked": [
+  "fork_leg"
+ ],
+ "checks_ok": true,
+ "entry": "part_fork_leg.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_leg/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_leg"
+ ],
+ "print": {
+  "fork_leg": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_leg/r0001/overhang-fork_leg.log": "052a57ba1a02dc857375d9e53ddf6e271f9d8c10f9b202c35e1877bfab632198",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_leg/r0001/thickness-fork_leg.log": "81b0eac3f877cabf4b30815a9b2de4b83c501bb4a5029e8c36f0b3f1899b5aa5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:fork_leg",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/fork_leg/r0001/visual-packet.json",
+  "packet_sha256": "ba60da7b0bbf43b7bf228c2d9a221630b323f7494238a0014388b0cf9723803b",
+  "status": "pending"
+ }
+}

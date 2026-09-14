@@ -1,0 +1,59 @@
+{
+ "build": {
+  "swingarm_side_right": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "swingarm_side_right"
+ ],
+ "checked": [
+  "swingarm_side_right"
+ ],
+ "checks_ok": true,
+ "entry": "part_swingarm_side_right.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side_right/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "swingarm_side_right"
+ ],
+ "print": {
+  "swingarm_side_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side_right/r0001/overhang-swingarm_side_right.log": "1dafd4a418f08c8d5a2a35c38bb0ddb1552bbdf3b343130fd96851d1577dc0c3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side_right/r0001/thickness-swingarm_side_right.log": "891c777b9073eda2c57f246dd31e87cde7d411bf3d677bf203e4de9795a075a5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:swingarm_side_right",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/swingarm_side_right/r0001/visual-packet.json",
+  "packet_sha256": "259f7c08af74213c6bcd34f1ed86784a96e0edce5c2b6f2d39dd76ae2aa715e7",
+  "status": "pending"
+ }
+}

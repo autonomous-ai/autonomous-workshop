@@ -1,0 +1,60 @@
+{
+ "build": {
+  "chassis_half": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "chassis_half"
+ ],
+ "checked": [
+  "chassis_half"
+ ],
+ "checks_ok": true,
+ "entry": "part_chassis_half.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "chassis_half"
+ ],
+ "print": {
+  "chassis_half": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0005/overhang-chassis_half.log": "54620152807f96d663e3a9440318747836dae37c49815d6dafacaa696a5646c8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0005/thickness-chassis_half.log": "44c96289f5f07e419b1d69f53ae547c1da74e87c730c390307905d1bca2e710d"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.24,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:chassis_half",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Motor-face relief is now open without its residual thin cap; seat support and forward-routed neck remain connected to battery and rear arch. Pins, V relief and flat seam remain intact.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half/r0005/visual-packet.json",
+  "packet_sha256": "a8204f5f862e8c5ba6d2a5019e2721ce76b0a393192aa13343fa8d147e58c4e9",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,59 @@
+{
+ "build": {
+  "bar_riser": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bar_riser"
+ ],
+ "checked": [
+  "bar_riser"
+ ],
+ "checks_ok": true,
+ "entry": "part_bar_riser.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/bar_riser/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bar_riser"
+ ],
+ "print": {
+  "bar_riser": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/bar_riser/r0001/overhang-bar_riser.log": "1861fe74a27838065da390bea3bee49e1e2ed110bd85a9b1106e62f71c2131fe",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/bar_riser/r0001/thickness-bar_riser.log": "35cf9a0735043d3623ac0ab6ccffec2bb930e645b24c42d0ebafbc760722ed82"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:bar_riser",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/bar_riser/r0001/visual-packet.json",
+  "packet_sha256": "8f721f8d45ff79f590e7a6c0f4bec05ec137b50e80dc52f96c82794ef4709dc7",
+  "status": "pending"
+ }
+}

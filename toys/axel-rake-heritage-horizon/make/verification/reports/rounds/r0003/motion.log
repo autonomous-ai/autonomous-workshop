@@ -1,0 +1,610 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage --manifest <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/motion.json --json
+(58.1s, exit 0)
+--- stdout
+{
+  "ok": true,
+  "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+  "assembly": "heritage.step.py",
+  "deadlineSeconds": null,
+  "results": [
+    {
+      "id": "guided-wheel-revolution",
+      "check": "coupled_motion_collision",
+      "description": "Both externally turned wheels complete a full revolution; no driven transmission is claimed.",
+      "clear": true,
+      "steps": 144,
+      "stepMm": 1.6659,
+      "movers": [
+        "rear_wheel",
+        "front_wheel"
+      ],
+      "skippedSeatedStep": false,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 144 samples (step 1.666 mm)"
+    },
+    {
+      "id": "chassis-seam",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        -30.0,
+        0.0
+      ],
+      "stepMm": 1.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.500 mm)"
+    },
+    {
+      "id": "swingarm-left",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        30.0,
+        0.0
+      ],
+      "stepMm": 1.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.500 mm)"
+    },
+    {
+      "id": "footboard-left",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        20.0,
+        0.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.000 mm)"
+    },
+    {
+      "id": "bag-left",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        30.0,
+        0.0
+      ],
+      "stepMm": 1.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.500 mm)"
+    },
+    {
+      "id": "seat-left",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        35.0
+      ],
+      "stepMm": 1.75,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.750 mm)"
+    },
+    {
+      "id": "fork-leg-left",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        25.0,
+        0.0
+      ],
+      "stepMm": 1.25,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.250 mm)"
+    },
+    {
+      "id": "bridge-left",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        30.0,
+        0.0,
+        0.0
+      ],
+      "stepMm": 1.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.500 mm)"
+    },
+    {
+      "id": "swingarm-right",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        -30.0,
+        0.0
+      ],
+      "stepMm": 1.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.500 mm)"
+    },
+    {
+      "id": "footboard-right",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        -20.0,
+        0.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.000 mm)"
+    },
+    {
+      "id": "bag-right",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        -30.0,
+        0.0
+      ],
+      "stepMm": 1.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.500 mm)"
+    },
+    {
+      "id": "seat-right",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        35.0
+      ],
+      "stepMm": 1.75,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.750 mm)"
+    },
+    {
+      "id": "fork-leg-right",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        -25.0,
+        0.0
+      ],
+      "stepMm": 1.25,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.250 mm)"
+    },
+    {
+      "id": "bridge-right",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        30.0,
+        0.0,
+        0.0
+      ],
+      "stepMm": 1.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.500 mm)"
+    },
+    {
+      "id": "rear-wheel-between-supports",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 40,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        -65.0
+      ],
+      "stepMm": 1.625,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 40 steps (step 1.625 mm)"
+    },
+    {
+      "id": "rear-axle-through-bores",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 40,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        -40.0,
+        0.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 40 steps (step 1.000 mm)"
+    },
+    {
+      "id": "rear-nut-1",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        15.0,
+        0.0
+      ],
+      "stepMm": 0.75,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 0.750 mm)"
+    },
+    {
+      "id": "rear-nut-2",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        15.0,
+        0.0
+      ],
+      "stepMm": 0.75,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 0.750 mm)"
+    },
+    {
+      "id": "front-wheel-between-supports",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 40,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        -65.0
+      ],
+      "stepMm": 1.625,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 40 steps (step 1.625 mm)"
+    },
+    {
+      "id": "front-axle-through-bores",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 40,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        -40.0,
+        0.0
+      ],
+      "stepMm": 1.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 40 steps (step 1.000 mm)"
+    },
+    {
+      "id": "front-nut-1",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        15.0,
+        0.0
+      ],
+      "stepMm": 0.75,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 0.750 mm)"
+    },
+    {
+      "id": "front-nut-2",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        15.0,
+        0.0
+      ],
+      "stepMm": 0.75,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 0.750 mm)"
+    },
+    {
+      "id": "tank-bosses",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        35.0
+      ],
+      "stepMm": 1.75,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.750 mm)"
+    },
+    {
+      "id": "front-fender-fit",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        40.0
+      ],
+      "stepMm": 2.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 2.000 mm)"
+    },
+    {
+      "id": "screen-tongue",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 40,
+      "skippedSeatedStep": true,
+      "translation": [
+        -12.0,
+        0.0,
+        74.0
+      ],
+      "stepMm": 1.8742,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 40 steps (step 1.874 mm)"
+    },
+    {
+      "id": "riser-fit",
+      "check": "linear_motion_collision",
+      "description": "Install riser and bars before the screen; reverse withdrawal clearance, not adhesive strength.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        25.0
+      ],
+      "stepMm": 1.25,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.250 mm)"
+    },
+    {
+      "id": "handlebar-fit",
+      "check": "linear_motion_collision",
+      "description": "Install riser and bars before the screen; reverse withdrawal clearance, not adhesive strength.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        25.0
+      ],
+      "stepMm": 1.25,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.250 mm)"
+    },
+    {
+      "id": "remove-cradle",
+      "check": "linear_motion_collision",
+      "description": "Reverse withdrawal of the stated assembly step before adhesive curing; clearance only, no fastening proof.",
+      "clear": true,
+      "steps": 20,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        -30.0
+      ],
+      "stepMm": 1.5,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 20 steps (step 1.500 mm)"
+    }
+  ]
+}
+
+--- stderr
+check_motion: building heritage.step.py ...
+check_motion: building heritage.step.py done in 3s
+check_motion: 28 condition(s), up to ~10,103 sampled Boolean/distance operations before any stops early
+check_motion condition: 28 to go
+check_motion condition 1/28: guided-wheel-revolution [coupled_motion_collision] (0s elapsed)
+[guided-wheel-revolution] coupled sweep: 145 to go
+[guided-wheel-revolution] coupled sweep: 1/145 (0%), 0s elapsed, ~27s left
+[guided-wheel-revolution] coupled sweep: 50/145 (34%), 10s elapsed, ~19s left
+[guided-wheel-revolution] coupled sweep: 94/145 (64%), 20s elapsed, ~11s left
+[guided-wheel-revolution] coupled sweep: 143/145 (98%), 31s elapsed, ~0s left
+[guided-wheel-revolution] coupled sweep: 145/145 (100%), 31s elapsed, ~0s left
+check_motion condition 2/28: chassis-seam [linear_motion_collision] (31s elapsed)
+[chassis-seam] sweep: 20 to go
+[chassis-seam] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[chassis-seam] sweep: 20/20 (100%), 0s elapsed, ~0s left
+check_motion condition 3/28: swingarm-left [linear_motion_collision] (31s elapsed)
+[swingarm-left] sweep: 20 to go
+[swingarm-left] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[swingarm-left] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition 4/28: footboard-left [linear_motion_collision] (32s elapsed)
+[footboard-left] sweep: 20 to go
+[footboard-left] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[footboard-left] sweep: 20/20 (100%), 0s elapsed, ~0s left
+check_motion condition 5/28: bag-left [linear_motion_collision] (32s elapsed)
+[bag-left] sweep: 20 to go
+[bag-left] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[bag-left] sweep: 20/20 (100%), 0s elapsed, ~0s left
+check_motion condition 6/28: seat-left [linear_motion_collision] (33s elapsed)
+[seat-left] sweep: 20 to go
+[seat-left] sweep: 1/20 (5%), 0s elapsed, ~2s left
+[seat-left] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition 7/28: fork-leg-left [linear_motion_collision] (34s elapsed)
+[fork-leg-left] sweep: 20 to go
+[fork-leg-left] sweep: 1/20 (5%), 0s elapsed, ~0s left
+[fork-leg-left] sweep: 20/20 (100%), 0s elapsed, ~0s left
+check_motion condition 8/28: bridge-left [linear_motion_collision] (34s elapsed)
+[bridge-left] sweep: 20 to go
+[bridge-left] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[bridge-left] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition 9/28: swingarm-right [linear_motion_collision] (35s elapsed)
+[swingarm-right] sweep: 20 to go
+[swingarm-right] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[swingarm-right] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition 10/28: footboard-right [linear_motion_collision] (36s elapsed)
+[footboard-right] sweep: 20 to go
+[footboard-right] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[footboard-right] sweep: 20/20 (100%), 0s elapsed, ~0s left
+check_motion condition 11/28: bag-right [linear_motion_collision] (36s elapsed)
+[bag-right] sweep: 20 to go
+[bag-right] sweep: 1/20 (5%), 0s elapsed, ~0s left
+[bag-right] sweep: 20/20 (100%), 0s elapsed, ~0s left
+check_motion condition 12/28: seat-right [linear_motion_collision] (36s elapsed)
+[seat-right] sweep: 20 to go
+[seat-right] sweep: 1/20 (5%), 0s elapsed, ~2s left
+[seat-right] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition 13/28: fork-leg-right [linear_motion_collision] (37s elapsed)
+[fork-leg-right] sweep: 20 to go
+[fork-leg-right] sweep: 1/20 (5%), 0s elapsed, ~0s left
+[fork-leg-right] sweep: 20/20 (100%), 0s elapsed, ~0s left
+check_motion condition 14/28: bridge-right [linear_motion_collision] (38s elapsed)
+[bridge-right] sweep: 20 to go
+[bridge-right] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[bridge-right] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition 15/28: rear-wheel-between-supports [linear_motion_collision] (38s elapsed)
+[rear-wheel-between-supports] sweep: 40 to go
+[rear-wheel-between-supports] sweep: 1/40 (2%), 0s elapsed, ~5s left
+[rear-wheel-between-supports] sweep: 40/40 (100%), 2s elapsed, ~0s left
+check_motion condition 16/28: rear-axle-through-bores [linear_motion_collision] (41s elapsed)
+[rear-axle-through-bores] sweep: 40 to go
+[rear-axle-through-bores] sweep: 1/40 (2%), 0s elapsed, ~3s left
+[rear-axle-through-bores] sweep: 40/40 (100%), 2s elapsed, ~0s left
+check_motion condition 17/28: rear-nut-1 [linear_motion_collision] (43s elapsed)
+[rear-nut-1] sweep: 20 to go
+[rear-nut-1] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[rear-nut-1] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition 18/28: rear-nut-2 [linear_motion_collision] (44s elapsed)
+[rear-nut-2] sweep: 20 to go
+[rear-nut-2] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[rear-nut-2] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition 19/28: front-wheel-between-supports [linear_motion_collision] (45s elapsed)
+[front-wheel-between-supports] sweep: 40 to go
+[front-wheel-between-supports] sweep: 1/40 (2%), 0s elapsed, ~1s left
+[front-wheel-between-supports] sweep: 40/40 (100%), 1s elapsed, ~0s left
+check_motion condition 20/28: front-axle-through-bores [linear_motion_collision] (46s elapsed)
+[front-axle-through-bores] sweep: 40 to go
+[front-axle-through-bores] sweep: 1/40 (2%), 0s elapsed, ~3s left
+[front-axle-through-bores] sweep: 40/40 (100%), 2s elapsed, ~0s left
+check_motion condition 21/28: front-nut-1 [linear_motion_collision] (48s elapsed)
+[front-nut-1] sweep: 20 to go
+[front-nut-1] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[front-nut-1] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition 22/28: front-nut-2 [linear_motion_collision] (48s elapsed)
+[front-nut-2] sweep: 20 to go
+[front-nut-2] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[front-nut-2] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition 23/28: tank-bosses [linear_motion_collision] (49s elapsed)
+[tank-bosses] sweep: 20 to go
+[tank-bosses] sweep: 1/20 (5%), 0s elapsed, ~6s left
+[tank-bosses] sweep: 20/20 (100%), 2s elapsed, ~0s left
+check_motion condition 24/28: front-fender-fit [linear_motion_collision] (51s elapsed)
+[front-fender-fit] sweep: 20 to go
+[front-fender-fit] sweep: 1/20 (5%), 0s elapsed, ~1s left
+[front-fender-fit] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition 25/28: screen-tongue [linear_motion_collision] (52s elapsed)
+[screen-tongue] sweep: 40 to go
+[screen-tongue] sweep: 1/40 (2%), 0s elapsed, ~1s left
+[screen-tongue] sweep: 40/40 (100%), 1s elapsed, ~0s left
+check_motion condition 26/28: riser-fit [linear_motion_collision] (53s elapsed)
+[riser-fit] sweep: 20 to go
+[riser-fit] sweep: 1/20 (5%), 0s elapsed, ~0s left
+[riser-fit] sweep: 20/20 (100%), 0s elapsed, ~0s left
+check_motion condition 27/28: handlebar-fit [linear_motion_collision] (53s elapsed)
+[handlebar-fit] sweep: 20 to go
+[handlebar-fit] sweep: 1/20 (5%), 0s elapsed, ~0s left
+[handlebar-fit] sweep: 20/20 (100%), 0s elapsed, ~0s left
+check_motion condition 28/28: remove-cradle [linear_motion_collision] (54s elapsed)
+[remove-cradle] sweep: 20 to go
+[remove-cradle] sweep: 1/20 (5%), 0s elapsed, ~2s left
+[remove-cradle] sweep: 20/20 (100%), 1s elapsed, ~0s left
+check_motion condition: 28 done in 55s
+check_motion: retention closure ...
+check_motion: retention closure done in 0s

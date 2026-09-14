@@ -1,0 +1,32 @@
+{
+  "kind": "geometric-standing-stability-estimate",
+  "basis": "Exact BREP occurrence centers and volumes measured from the final assembly; solid PLA and steel density assumptions. Static gravity only.",
+  "source_measurement_sha256": "e76f6ee2e6891145faff9647533617a76e4e9d94e91c2484d30eb009bab4becf",
+  "bike_center_mm": [
+    -9.742195849249637,
+    0.05203762045684319,
+    39.07098901718084
+  ],
+  "base_support_rectangle_xy_mm": [
+    -45,
+    35,
+    -32.5,
+    32.5
+  ],
+  "cradle_contact_convex_hull_xy_mm": [
+    -18,
+    18,
+    -13,
+    13
+  ],
+  "base_margins_xy_mm": [
+    35.25780415075036,
+    32.447962379543156
+  ],
+  "cradle_margins_xy_mm": [
+    8.257804150750363,
+    12.947962379543156
+  ],
+  "conclusion": "Gravity projection lies inside both contact hull and stand footprint under the stated mass estimate.",
+  "physical_stability_tested": false
+}

@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_screen.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/screen/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "screen"
+ ],
+ "print": {
+  "screen": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/screen/r0001/overhang-screen.log": "dd9ae0b8f179774ee528ce03677d2df7ce7c3458d39e3c19a3f8272a6deeb1a5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/screen/r0001/thickness-screen.log": "645531787c091202f825b0b148e655fc0f5241f9ee8d727a91a984398e6b0814"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage",
+ "refs": [],
+ "reused": [
+  "screen"
+ ],
+ "round": 2,
+ "scope": "component:screen",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Tall tapered windscreen panel has an attached central lower tongue and flat rear print face; no gaps or extra geometry interrupt the panel.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/screen/r0002/visual-packet.json",
+  "packet_sha256": "34c3c2162c1a2d81648e41e082c398a27cb827644b768fe09c9729bfc64138bd",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,18 @@
+$ <HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/part_chassis_half_right.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half_right/r0001/thickness-chassis_half_right.md
+(4.0s, exit 1)
+--- stdout
+part_chassis_half_right.step.py: 31.14 cm3 solid, grid 0.239 mm (603x245x74), 173748 surface samples, thickness resolved to 0.120 mm
+  FAIL  wall >= 0.80 mm (+/-0.12)      0.5% of surface below (758 of 173748 samples); thinnest 0.24 mm at (20.8, 45.8, 14.3) in 5 region(s); 1 wall(s) (widest band 4.80 mm), 4 taper(s) at feature edges (0.02% of surface, budget 2%); 694 more within measurement error of the limit
+  PASS  thickness distribution         median 12.93 mm, p95 47.05 mm, max 69.68 mm
+  WARN  hollowable at 1.20 mm wall     19.85 of 31.14 cm3 (64%) in 1 pocket(s)
+  PASS  filament that would save       2.98 cm3, 3.7 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.60 mm at (31.4, 70.0, 4.5)    728 samples, 47.0 mm2, runs 9.8 mm, band 4.80 mm
+        2. [taper] 0.24 mm at (20.8, 45.8, 14.3)     15 samples, 1.1 mm2, runs 1.5 mm, band 0.73 mm
+        3. [taper] 0.36 mm at (-19.8, 45.8, 14.1)     12 samples, 0.9 mm2, runs 1.9 mm, band 0.48 mm
+        4. [taper] 0.48 mm at (19.4, 50.9, 0.0)      2 samples, 0.2 mm2, runs 0.6 mm, band 0.32 mm
+        5. [taper] 0.48 mm at (-1.5, 50.9, 0.1)      1 samples, 0.1 mm2, runs 0.0 mm, band 0.31 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/heritage/measure/component-rounds/chassis_half_right/r0001/thickness-chassis_half_right.md
+
+--- stderr

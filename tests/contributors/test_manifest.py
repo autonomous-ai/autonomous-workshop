@@ -70,6 +70,7 @@ class RegistryTest(unittest.TestCase):
             [
                 "abo",
                 "alice",
+                "axel-rake",
                 "bob",
                 "eve",
                 "ferro-line",

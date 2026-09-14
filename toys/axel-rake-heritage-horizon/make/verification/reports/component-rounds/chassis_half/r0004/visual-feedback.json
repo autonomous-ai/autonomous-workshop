@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin skin over swingarm relief",
+      "evidence": "Iso motor face at lower edge and gate region around x-33,z32,Y12 identify residual cap.",
+      "part": "chassis_half motor face",
+      "repair": "Extend relief beyond outer motor face and move inner neck edge slightly forward to clear tank skirt."
+    }
+  ],
+  "observation": "Seat relief and forward-routed neck preserve the main frame, but swingarm relief leaves a thin unsupported motor-face skin.",
+  "packet_sha256": "9e97ea94b85883225bf05069f62ec45f8f85ee576a05ebfff4eae0693831b4f0",
+  "status": "fail"
+}
