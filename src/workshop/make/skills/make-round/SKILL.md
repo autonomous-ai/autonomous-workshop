@@ -68,7 +68,9 @@ calls were reassembling by hand.
 For a Spark component, select its own generator. This builds and renders only
 that component, keeps its evidence under
 `measure/component-rounds/<role>/`, skips project-level motion, and does not
-implicitly apply whole-object reference images:
+implicitly apply whole-object reference images. A component that declares
+`PRINTABLE = False` passes the same way on its build and recorded visual
+evidence, and its pass counts toward `--require-component-passes`:
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
@@ -94,11 +96,22 @@ component geometry.
   `--overhang-angle` is the slope from vertical the printer bridges unsupported.
 - Only parts whose written STEP bytes changed since the previous round are
   reported; `--all-parts` reports every part. The first round reports all.
-- Every part that builds is gated from source by `check_thickness` and
-  `check_overhang`, which tessellate the entry in the gate and write no mesh.
+- Every **print target** that builds is gated from source by `check_thickness`
+  and `check_overhang`, which tessellate the entry in the gate and write no mesh.
   A part that did not build is reported as a gate failure, not a skip: there is
-  no solid to measure. A round passes only when both gates pass on every part,
-  so `built` and `printable at this nozzle` stay separate verdicts.
+  no solid to measure. A round passes only when both gates pass on every print
+  target, so `built` and `printable at this nozzle` stay separate verdicts.
+- The print targets are the ones `verify_project` gates, chosen by the same
+  static declaration: every `part_<role>.step.py` that does not declare
+  `PRINTABLE = False`, plus a combined entry that declares `PRINTABLE = True`.
+  A **purchased component** — a bought latch, bearing, magnet, NFC tag, screw —
+  and a logical review part declare `PRINTABLE = False`. They are built,
+  rendered and visually reviewed like any other component; both print gates are
+  recorded `SKIP` with no measurement and no printability claim, and the round
+  neither fails nor passes them on printability. A `SKIP` is never carried
+  forward as a reusable PASS, and `summary.json` names those roles under
+  `not_printed`. `PRINTABLE` must be a literal `True` or `False`; anything else
+  exits 2 rather than guessing.
 - An unchanged part reuses its previous PASS only when both gates passed, the
   tool logs still hash to what was recorded, and the nozzle, angle, gate bytes
   and interpreter are identical. A failed or legacy record is always
@@ -107,8 +120,9 @@ component geometry.
   as the one-piece product.
 - `summary.json` records `changed` (parts whose STEP bytes moved), `checked`
   (parts with a fresh build verdict, including build failures), `print` (the
-  per-part wall and overhang verdicts with their measurements) and `reused`
-  (parts whose gate evidence was carried forward).
+  per-part wall and overhang verdicts with their measurements), `reused`
+  (parts whose gate evidence was carried forward) and `not_printed` (parts that
+  declared themselves off the bed and were reviewed without print gates).
 - The initial command returns exit 1 with visual status `pending` until native
   feedback is recorded, even if all numeric checks pass. A renderer failure
   produces visual status `error`; never fabricate feedback for missing images.

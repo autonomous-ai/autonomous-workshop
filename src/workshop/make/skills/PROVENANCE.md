@@ -414,6 +414,15 @@ review until all current component STEP bytes have passing isolated evidence.
 The native Manager still supplies the visual judgment. Forge and Quest keep
 their prior whole-product round sequence.
 
+Print-target selection (2026-09-14, ADR 0067): the round reads the same static
+`PRINTABLE` literal `printlib` and `verify_project` select by, so it gates what
+those gate -- every `part_<role>.step.py` not declared `False`, plus a combined
+entry declared `True`. A declared non-print target (a purchased component, a
+logical review part) is built, rendered and reviewed with both print gates
+recorded `SKIP` and no printability claim, instead of being handed to gates that
+refuse it by contract. The `cad` tools are unchanged; only this host-owned
+sequencer changed.
+
 ## Local audit dependency transport (2026-09-08)
 
 A preserved Make rejection and a current-code subprocess reproduction show that

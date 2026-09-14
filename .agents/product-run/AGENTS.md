@@ -215,6 +215,15 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   loop for every component, and only then create/review the combined entry with
   `--require-component-passes`. If an assembly repair changes a component,
   repeat that component's isolated loop before reviewing the assembly again.
+- A purchased component is not a printed part: model its pocket in the part
+  that holds it, sized from the real component. When the component itself is
+  also modeled — to derive that pocket, to place it in the assembly, or because
+  the Wish names it as a distinct component — its entry declares
+  `PRINTABLE = False`. Such an entry is reviewed exactly like a printed one, by
+  build and recorded visual evidence, and its isolated round counts toward
+  `--require-component-passes`; the wall and overhang gates record `SKIP`
+  because nothing about it will be sliced. Never declare a part that will be
+  printed non-printable, and never claim a skipped gate as a passed one.
 - Inspect each Make round's visual packet for misplaced parts, proportion and
   size mismatches, missing/extra geometry, visible intersections and form errors.
   Record concrete native observations through `make_round --record-visual` so

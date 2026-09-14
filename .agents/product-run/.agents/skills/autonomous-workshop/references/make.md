@@ -132,6 +132,12 @@ are separate. Frozen older runs retain their materialized rules and tools.
    only: every distinct physical component, including the sole component of a
    one-piece object, gets its own `part_<role>.step.py`. Do not author the
    combined entry yet or hide component construction inside the assembly file.
+   A purchased component — a bought latch, bearing, magnet, NFC tag or screw —
+   is a pocket in a printed part, sized from the real component. When you model
+   the component itself as well, its entry declares `PRINTABLE = False`: it is
+   reviewed like any other component, and the print gates do not apply to
+   geometry that will never be sliced. Do not declare a part you will print
+   non-printable to get past a gate.
 2. For Spark, review and repair every component separately before assembly.
    For each `part_<role>.step.py`, run:
 
@@ -142,10 +148,13 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    Inspect its front, top, and isometric packet, record feedback with the same
    `--component` argument plus `--record-visual`, and repair/repeat until that
-   isolated component round passes. Use explicit `--ref` only when a reference
-   depicts that component by itself; project-level likeness and motion checks
-   belong to the assembled object. A pass is component-specific evidence, not
-   permission to skip the combined review.
+   isolated component round passes. A `PRINTABLE = False` component passes on
+   its build and recorded visual evidence, with both print gates recorded
+   `SKIP`; that pass counts toward `--require-component-passes` like any other.
+   Use explicit `--ref` only when a reference depicts that component by itself;
+   project-level likeness and motion checks belong to the assembled object.
+   A pass is component-specific evidence, not permission to skip the combined
+   review.
 3. Only after every component passes, author the non-part combined `*.step.py`
    entry and begin assembled-object rounds with:
 
@@ -169,9 +178,12 @@ are separate. Frozen older runs retain their materialized rules and tools.
    likeness passes or no reference image exists. Pending or inconclusive visual
    feedback is not a pass. These self-checks do not replace independent review.
    Run only additional narrow checks affected by an edit. `make_round` gates
-   every part that builds with `check_thickness` and `check_overhang` at the
-   fixed 0.4 mm nozzle standard, so a wall or overhang defect surfaces in the
-   round that caused it rather than at final verification.
+   every print target that builds with `check_thickness` and `check_overhang`
+   at the fixed 0.4 mm nozzle standard, so a wall or overhang defect surfaces
+   in the round that caused it rather than at final verification. It selects
+   those targets exactly as `verify_project` does, from the static `PRINTABLE`
+   declaration, and records a declared non-print target as `SKIP` rather than
+   as a failure it cannot repair.
 6. Render the exact STEP to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
    and `<cad-project>/snap/signature.png` (at least 1200×800 RGB). When the
    promise changes product geometry or state, generate distinct exact-state

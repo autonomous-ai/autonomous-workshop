@@ -682,7 +682,11 @@ round, and self-review never replaces the independent critic (ADR 0060).
 For new Spark work, `make_round --component part_<role>.step.py` keeps an
 isolated history for every component; assembled review begins with
 `--require-component-passes` only after every component's current STEP has
-passed its own round (ADR 0063).
+passed its own round (ADR 0063). A component that declares `PRINTABLE = False`
+-- a purchased latch, bearing or tag, or a logical review part -- is reviewed on
+its build and visual evidence with both print gates recorded as skipped, since
+the gates refuse a declared non-print target by contract and measure nothing
+([ADR 0067](adr/0067-non-printable-component-rounds.md)).
 Before independent review, Make generates every declared entry with `--write`
 so each carries a fresh `.step`, then runs `verify_project --print-gates
 --nozzle 0.4`. The mesh, overhang and wall-thickness gates build each printable

@@ -8,6 +8,23 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Fixed
 
+- A bought component can no longer block a Make round forever. `make_round`
+  ran `check_thickness` and `check_overhang` on every part that built, but both
+  gates refuse an entry declaring `PRINTABLE = False` -- the literal the CAD
+  toolchain marks a purchased latch, bearing, magnet or tag with, and the one
+  `printlib` and `verify_project` already select print targets by. The round
+  recorded those refusals as a wall FAIL and an overhang FAIL that no repair
+  could clear, so the isolated component review ADR 0063 requires could never
+  pass for a component the Wish requires to be bought. `make_round` now selects
+  print targets exactly as the verifier does -- every `part_<role>.step.py` not
+  declared `False`, plus a combined entry declared `True` -- builds, renders and
+  visually reviews a declared non-print target like any other component, and
+  records both gates as `SKIP` with no measurement and no printability claim.
+  A skip is never reused or reported as a pass, `summary.json` names those roles
+  under `not_printed`, and such a pass counts toward
+  `--require-component-passes`. A non-literal `PRINTABLE` exits 2. Print gates
+  on printable parts, the host CAD gate and every threshold are unchanged.
+  See ADR 0067.
 - A motion sweep can no longer become the whole run. Its cost is set by the
   manifest, not the model -- `steps` x pairs of Boolean operations -- and
   nothing bounded it, so an over-declared manifest could spend hours and leave

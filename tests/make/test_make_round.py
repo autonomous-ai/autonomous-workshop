@@ -87,6 +87,33 @@ def _gate_output(tool, *, fails):
     ), 0
 
 
+def _fake_tools(calls=None):
+    """Stand in for gen, the renderer and the print gates, in their exact shapes."""
+
+    def fake_run(command, **kwargs):
+        tool = Path(command[1]).name
+        if calls is not None:
+            calls.append(command)
+        if tool == "gen":
+            source = Path(command[2])
+            source.with_name(source.name[: -len(".py")]).write_bytes(source.read_bytes())
+        if tool == "render_review":
+            out = Path(command[command.index("-o") + 1])
+            out.mkdir()
+            for view in ("front", "top", "iso"):
+                (out / (view + ".png")).write_bytes(view.encode())
+        if tool in ("check_thickness", "check_overhang"):
+            stdout, code = _gate_output(tool, fails=False)
+            log = kwargs.get("log")
+            if log is not None:
+                Path(log).parent.mkdir(parents=True, exist_ok=True)
+                Path(log).write_text(stdout, encoding="utf-8")
+            return subprocess.CompletedProcess(command, code, stdout, "")
+        return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
+
+    return fake_run
+
+
 class MakeRoundTest(unittest.TestCase):
     def _round(
         self,
@@ -537,6 +564,167 @@ class MakeRoundTest(unittest.TestCase):
                 self.assertEqual(module.main([str(project), "--require-component-passes"]), 1)
             self.assertIn("part_wheel.step.py changed after its component pass", stderr.getvalue())
 
+
+    def _component_pass(self, module, project, name, fake_run):
+        """One isolated component round plus the Manager feedback that closes it."""
+        with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(
+            module, "skills_root", return_value=project
+        ), mock.patch.object(module, "run", side_effect=fake_run):
+            self.assertEqual(module.main([str(project), "--component", name]), 1)
+        role = name[len("part_"):-len(".step.py")]
+        summary = json.loads(
+            (project / "measure/component-rounds" / role / "r0001/summary.json").read_text()
+        )
+        feedback = project / "measure" / ("feedback-%s.json" % role)
+        feedback.write_text(json.dumps({
+            "packet_sha256": summary["visual"]["packet_sha256"],
+            "status": "pass",
+            "findings": [],
+            "observation": "The isolated component is coherent in all three views.",
+        }))
+        return summary, module.record_visual(project, feedback, component=name)
+
+    def test_a_bought_component_is_reviewed_without_being_slice_checked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module = load_module()
+            (project / "toy.step.py").write_text("def gen_step(): return 'assembly'\n")
+            (project / "part_body.step.py").write_text("def gen_step(): return 'body'\n")
+            # A purchased push-push latch: modeled and reviewed, never sliced.
+            (project / "part_latch.step.py").write_text(
+                "PRINTABLE = False\n\n\ndef gen_step(): return 'bought latch'\n"
+            )
+
+            calls = []
+            summary, recorded = self._component_pass(
+                module, project, "part_latch.step.py", _fake_tools(calls)
+            )
+            self.assertEqual(summary["build"]["latch"]["verdict"], "PASS")
+            self.assertEqual(summary["print"]["latch"]["verdict"], "SKIP")
+            for gate in ("thickness", "overhang"):
+                self.assertEqual(summary["print"]["latch"][gate]["verdict"], "SKIP")
+                self.assertEqual(summary["print"]["latch"][gate]["failures"], [])
+            self.assertEqual(summary["not_printed"], ["latch"])
+            # No print gate is spent on an entry those gates refuse by contract.
+            self.assertEqual([c for c in calls if Path(c[1]).name.startswith("check_")], [])
+            self.assertTrue(summary["checks_ok"])
+            # The declaration is not a printability claim, so the round says so.
+            self.assertIn("print SKIP", module.render_summary(summary))
+            self.assertNotIn("wall ", module.render_summary(summary))
+            # Build plus recorded visual inspection is a complete component pass.
+            self.assertTrue(recorded["ok"])
+
+            printed_calls = []
+            printed, _ = self._component_pass(
+                module, project, "part_body.step.py", _fake_tools(printed_calls)
+            )
+            self.assertEqual(printed["print"]["body"]["verdict"], "PASS")
+            self.assertEqual(
+                sorted(Path(c[1]).name for c in printed_calls if Path(c[1]).name.startswith("check_")),
+                ["check_overhang", "check_thickness"],
+            )
+
+            # The bought part's pass is current component evidence like any other.
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+                io.StringIO()
+            ) as stderr, mock.patch.object(
+                module, "skills_root", return_value=project
+            ), mock.patch.object(module, "run", side_effect=_fake_tools()):
+                self.assertEqual(module.main([str(project), "--require-component-passes"]), 1)
+            self.assertEqual(stderr.getvalue(), "")
+            assembly = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertEqual(assembly["scope"], "assembly")
+            self.assertEqual(assembly["print"]["latch"]["verdict"], "SKIP")
+            self.assertEqual(assembly["print"]["body"]["verdict"], "PASS")
+            self.assertTrue(assembly["checks_ok"])
+
+    def test_a_split_model_that_prints_as_one_piece_gates_its_combined_entry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module = load_module()
+            (project / "toy.step.py").write_text(
+                "PRINTABLE = True\n\n\ndef gen_step(): return 'one piece'\n"
+            )
+            (project / "part_head.step.py").write_text(
+                "PRINTABLE = False\n\n\ndef gen_step(): return 'head'\n"
+            )
+            calls = []
+            with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(
+                module, "skills_root", return_value=project
+            ), mock.patch.object(module, "run", side_effect=_fake_tools(calls)):
+                self.assertEqual(module.main([str(project)]), 1)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            # What prints is gated; the logical parts split for review are not.
+            self.assertEqual(summary["print"]["toy"]["verdict"], "PASS")
+            self.assertEqual(summary["print"]["head"]["verdict"], "SKIP")
+            self.assertEqual(summary["not_printed"], ["head"])
+            gated = [c[2] for c in calls if Path(c[1]).name.startswith("check_")]
+            self.assertEqual([Path(item).name for item in gated], ["toy.step.py"] * 2)
+
+    def test_a_computed_printable_declaration_cannot_run_a_round(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module = load_module()
+            (project / "toy.step.py").write_text("def gen_step(): return 'assembly'\n")
+            (project / "part_latch.step.py").write_text(
+                "PRINTABLE = bool(1)\n\n\ndef gen_step(): return 'latch'\n"
+            )
+            with contextlib.redirect_stderr(io.StringIO()) as stderr, mock.patch.object(
+                module, "skills_root", return_value=project
+            ), mock.patch.object(module, "run") as runner:
+                self.assertEqual(module.main([str(project)]), 2)
+                runner.assert_not_called()
+            self.assertIn("PRINTABLE must be the literal True or False", stderr.getvalue())
+
+    def test_two_entries_cannot_answer_to_one_role(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module = load_module()
+            # A combined entry that prints as one piece joins the print targets,
+            # so its role has to stay distinct from every part's.
+            (project / "toy.step.py").write_text(
+                "PRINTABLE = True\n\n\ndef gen_step(): return 'one piece'\n"
+            )
+            (project / "part_toy.step.py").write_text("def gen_step(): return 'toy'\n")
+            with contextlib.redirect_stderr(io.StringIO()) as stderr, mock.patch.object(
+                module, "skills_root", return_value=project
+            ), mock.patch.object(module, "run") as runner:
+                self.assertEqual(module.main([str(project)]), 2)
+                runner.assert_not_called()
+            self.assertIn("two entries share one role", stderr.getvalue())
+
+    def test_the_printable_declaration_is_read_as_the_cad_toolchain_reads_it(self):
+        """One contract, two readers: a round must select what the gates select."""
+        module = load_module()
+        printlib_path = (
+            product_run_domain_skill_roots()["cad"] / "scripts" / "printlib.py"
+        )
+        original = list(sys.path)
+        try:
+            spec = importlib.util.spec_from_file_location("printlib_for_test", printlib_path)
+            printlib = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(printlib)
+        finally:
+            sys.path[:] = original
+        sources = (
+            "PRINTABLE = False\n\n\ndef gen_step(): return None\n",
+            "PRINTABLE = True\n\n\ndef gen_step(): return None\n",
+            "PRINTABLE: bool = False\n\n\ndef gen_step(): return None\n",
+            "def gen_step(): return None\n",
+            "PRINTABLE = 1\n\n\ndef gen_step(): return None\n",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            entry = Path(tmp) / "part_latch.step.py"
+            for source in sources:
+                with self.subTest(source=source.splitlines()[0]):
+                    entry.write_text(source, encoding="utf-8")
+                    try:
+                        expected = printlib.declared_printable(entry)
+                    except ValueError:
+                        with self.assertRaises(ValueError):
+                            module.declared_printable(entry)
+                        continue
+                    self.assertIs(module.declared_printable(entry), expected)
 
     def test_visual_pass_cannot_unlock_full_verification_after_numeric_failure(self):
         with tempfile.TemporaryDirectory() as tmp:
