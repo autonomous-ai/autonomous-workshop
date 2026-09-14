@@ -1919,3 +1919,8 @@ Resume command after committing and pushing the tested integration:
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m cli resume wish-20260910-143753-a2e10997 --max-tokens 500000000 --effort medium --check-motion false
 ```
+
+Integration commit `211dc58d` was pushed to `make/mixed-material-products`.
+The command above started the same native Manager at 15:05:05 UTC. The CLI
+reported active stage work and tool use. Motion remains explicitly unverified;
+this confirms a live resume, not completion or publication of Atlas.
