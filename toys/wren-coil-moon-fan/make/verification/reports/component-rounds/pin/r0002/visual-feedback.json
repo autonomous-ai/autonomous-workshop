@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Lower barb ramp needs gentler slope",
+      "evidence": "Front and iso: short flared shoulder immediately below the thick barb band",
+      "part": "pin",
+      "repair": "Increase ramp rise from0.5 to0.8 while keeping0.5 radial extension"
+    }
+  ],
+  "observation": "Flat-sided split legs remove the thin edges, but the lower barb shoulder remains abrupt and its print overhang check fails.",
+  "packet_sha256": "d6aba0b86956270115731e947a229531f2fdcf47e29d4feb1e28284a858b9abf",
+  "status": "fail"
+}

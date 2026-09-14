@@ -1,0 +1,60 @@
+{
+ "build": {
+  "cover": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "cover"
+ ],
+ "checked": [
+  "cover"
+ ],
+ "checks_ok": true,
+ "entry": "part_cover.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cover/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "cover"
+ ],
+ "print": {
+  "cover": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cover/r0001/overhang-cover.log": "c1b69cb5d0599f75db305a3dfa110f7760073180e0fcc955dd642d3945d61a8c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cover/r0001/thickness-cover.log": "bbf1ab7f4a920ba3476392934d4af2ac5c51a521f99e398ac08739422901a572"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:cover",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows uniform flat thickness. Top and iso show a rectangular cover with two integral symmetric end tabs, continuous roots, flat underside, and no detached material. Service deflection remains a separate mechanical check.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cover/r0001/visual-packet.json",
+  "packet_sha256": "47ea82323870d372df65e5764e68f7273367808017bae7a8a9e32246f85457b8",
+  "status": "pass"
+ }
+}

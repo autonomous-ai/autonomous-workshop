@@ -1,0 +1,59 @@
+{
+ "build": {
+  "carrier": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "carrier"
+ ],
+ "checked": [
+  "carrier"
+ ],
+ "checks_ok": true,
+ "entry": "part_carrier.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "carrier"
+ ],
+ "print": {
+  "carrier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0002/overhang-carrier.log": "66061db31b1532eedd48d6ae98dc769870f662f561c65b166b8a5a01506a758a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0002/thickness-carrier.log": "2679ff00f353736f8ae129ee0dba8f63700f65f1ae7b80bd057b1b4e19794a2e"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:carrier",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0002/visual-packet.json",
+  "packet_sha256": "793cbe7f24aa9ee5ccf542f67635a3bd377070fcb7c48199f63af81a4a313c7f",
+  "status": "pending"
+ }
+}

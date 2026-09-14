@@ -1,0 +1,42 @@
+[
+  {
+    "report": "measure/overhang-carrier.md",
+    "original_sha256": "00fdc02e6d01e200f5224857196128e0ceeec7193a20296067e808f32d0b2ba6",
+    "normalization": "Append legacy summary from the explicit passing measured table; original bytes preserved outside delivery tree."
+  },
+  {
+    "report": "measure/overhang-cover.md",
+    "original_sha256": "109c510ce63c9639c23fe212d6a79cfdc8eac3879736ff3dff8566334797ca56",
+    "normalization": "Append legacy summary from the explicit passing measured table; original bytes preserved outside delivery tree."
+  },
+  {
+    "report": "measure/overhang-leaf.md",
+    "original_sha256": "f9de03c706822e298ebb239f39454c7bccafddb08f5d4daa59e3ae850e9892ae",
+    "normalization": "Append legacy summary from the explicit passing measured table; original bytes preserved outside delivery tree."
+  },
+  {
+    "report": "measure/overhang-pin.md",
+    "original_sha256": "83396ba196a344b698f6703b09ce765fe35453d4569126afa09881581f0a1e69",
+    "normalization": "Append legacy summary from the explicit passing measured table; original bytes preserved outside delivery tree."
+  },
+  {
+    "report": "measure/thickness-carrier.md",
+    "original_sha256": "53f44b02028b1116f93738c0352fd3ffd8f2ce2f054be6c13f7b1d62fc21e705",
+    "normalization": "Append legacy summary from the explicit passing measured table; original bytes preserved outside delivery tree."
+  },
+  {
+    "report": "measure/thickness-cover.md",
+    "original_sha256": "9e70d441c5613a7d85f0e56c2a79146649792f538bb8c45d2d4c152af2f4fbac",
+    "normalization": "Append legacy summary from the explicit passing measured table; original bytes preserved outside delivery tree."
+  },
+  {
+    "report": "measure/thickness-leaf.md",
+    "original_sha256": "0fb0ac8039cfd69b786f35335fc682496484c14846578973e17254e98591988b",
+    "normalization": "Append legacy summary from the explicit passing measured table; original bytes preserved outside delivery tree."
+  },
+  {
+    "report": "measure/thickness-pin.md",
+    "original_sha256": "634cce43957f8e865754a545e30541811e042013bbcec0cc17d28328462218c7",
+    "normalization": "Append legacy summary from the explicit passing measured table; original bytes preserved outside delivery tree."
+  }
+]

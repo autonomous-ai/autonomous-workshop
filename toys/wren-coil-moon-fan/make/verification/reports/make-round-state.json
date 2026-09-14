@@ -1,0 +1,106 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002",
+ "likeness": {},
+ "parts": {
+  "carrier": "0634e435b68502885be1476101669d5dbd3061eb7df140b1443e4b8f2fd795da",
+  "cover": "9f63e210320e40d1e613ec531b563515d46e66dec03cb16ef879f411d98b458b",
+  "leaf": "d17f65e8a70b9d50ccad148b43cd0213dc3bf101791c004addc03b8c629842b4",
+  "pin": "5288f5eecbb496a51148bb7b86c02ba83d0cae5ee0350aabcf16d7397a8ea403"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "carrier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-carrier.log": "d61e4ae9659700bdb7a0610255073323290566db0efa1c84dfc4dd437e082ce1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-carrier.log": "c1e46e13daf0c9338fab70c4432d3280d38876fb7a15f98afcbf2f5e937e9e98"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "cover": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-cover.log": "69097489d5839e75030cfdd3d70b7501dedd7bb72a988f1e79aac5ef2361fba3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-cover.log": "52ffc60805abccbc41805fd02e78f0ba4b52bc87820df9caea1a2fdc103eb917"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "leaf": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-leaf.log": "3f9200225ac363ea35354866fd7139059687c714774a77ba9439735a37de8502",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-leaf.log": "4d84ed3ee2170b9afdb5c5683a5a617efd5f8f211ab7fb9635b972f28d2ecf0d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-pin.log": "5ee55054082f61ee2b8ee1cd7f9255334b1a935dfa1b701b75725a521a746e49",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-pin.log": "3287de29589e3d8550be863cc8faf53d0a4dbb0da1ce826a673c52929b22ed85"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.4.6",
+   "scipy": "1.17.1"
+  },
+  "platform": "darwin",
+  "python": "<HOME>/.local/share/uv/python/cpython-3.11.12-macos-aarch64-none/bin/python3.11",
+  "python_version": "3.11.12 (main, Apr  9 2025, 03:49:53) [Clang 20.1.0 ]",
+  "sources": {
+   "check_overhang": "023717b7fef568061fc4808d9c53597821f2a32d0c985ac3574389e9c32c1c40",
+   "check_thickness": "6f68affa79e7053701100ce938dbf25b4fe498642a6f7befdecbf0606d35d2bb",
+   "make_round": "64acc0f7c3bbdfe9aa5a071c73ea61ae9386c5c36bd35f862c97fe990609330c",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 2,
+ "scope": "assembly"
+}

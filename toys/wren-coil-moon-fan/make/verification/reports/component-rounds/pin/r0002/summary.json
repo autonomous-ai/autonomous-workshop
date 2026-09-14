@@ -1,0 +1,69 @@
+{
+ "build": {
+  "pin": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "pin"
+ ],
+ "checked": [
+  "pin"
+ ],
+ "checks_ok": false,
+ "entry": "part_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pin"
+ ],
+ "print": {
+  "pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0002/overhang-pin.log": "637774354c710b075ab445f56a0b051fadd81cb126efce6f5ad1bc4f852207f3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0002/thickness-pin.log": "1aa52f4c09794294e1e264fb36c2ce37a0b2fc6a74ec45f4faa0cdc416d70121"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 17.5% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 1.1,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Lower barb ramp needs gentler slope",
+    "evidence": "Front and iso: short flared shoulder immediately below the thick barb band",
+    "part": "pin",
+    "repair": "Increase ramp rise from0.5 to0.8 while keeping0.5 radial extension"
+   }
+  ],
+  "observation": "Flat-sided split legs remove the thin edges, but the lower barb shoulder remains abrupt and its print overhang check fails.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0002/visual-packet.json",
+  "packet_sha256": "d6aba0b86956270115731e947a229531f2fdcf47e29d4feb1e28284a858b9abf",
+  "status": "fail"
+ }
+}

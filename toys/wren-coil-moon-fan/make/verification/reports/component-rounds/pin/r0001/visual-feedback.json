@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Feathered barb and slit edges",
+      "evidence": "Front and iso show sharp widest barb rim; top shows slit ending on circular perimeter",
+      "part": "pin",
+      "repair": "Use a thick barb band and flat sides on flexible legs to remove thin tangencies"
+    }
+  ],
+  "observation": "The split pin is continuous and accessible, but the barb has a sharp circumferential edge and the split exits into thin curved edges.",
+  "packet_sha256": "23f7204557deb7a0563c57492249f9ad64d8c734f6fbeaab9d032ae82361e3e5",
+  "status": "fail"
+}
