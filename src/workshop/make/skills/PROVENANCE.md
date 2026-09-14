@@ -443,6 +443,21 @@ schemas, frozen early-proof routing, or motion-review requirements. Concept
 image reconstruction and the source branch's verifier simplification are not
 part of this adaptation.
 
+## Harness verdict projection (2026-09-14)
+
+Workshop is also installed as a domain-specific harness of Autonomous Harness
+(`harness.json` at the repository root; `harness/` holds the agent-facing
+`AGENTS.md`, the workspace template, the toolchain scripts and the vendored 3D
+viewer). Harness reads one file for its pane header, `.harness/verdict.json`,
+so `cad/scripts/verify_project` gained `_write_harness_verdict`: at the end of
+a quick or final run, and on a refused preflight, it projects the pipeline
+record onto that file — `ready` only for a passing final run, one finding per
+failing, skipped, noted or accepted-failing row, the combined entry's STEP as
+the artifact. It runs only when `HARNESS_WORKSPACE` is set, which Harness sets
+on the engine it launches and nothing else does, so Workshop's own product runs
+write no extra file; it never raises. Upstream does not carry it; re-apply on
+the next resync. `tests/make/test_harness_verdict.py` covers it.
+
 ## `make-round`
 
 Local extension (2026-09-09, ADR 0060): each round renders native inspection
