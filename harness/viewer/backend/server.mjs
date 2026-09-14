@@ -21318,6 +21318,8 @@ var PYTHON_SOURCE_HASH_SKIPPED_PATH_PARTS = /* @__PURE__ */ new Set([
 ]);
 var CADJS_PACKAGE_ROOT = path3.resolve(path3.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 var VIEWER_SKIPPED_DIRECTORIES = /* @__PURE__ */ new Set([
+  "__cadgen__", // harness: Workshop's derived render cache, never a deliverable (local patch, see README.md)
+  ".harness",
   ".agents",
   ".cache",
   ".viewer",
@@ -23641,12 +23643,20 @@ function createLocalAssetBackend({
   const repoRoot = path7.resolve(workspaceRoot2);
   const defaultRootDir = normalizeViewerRootDir(rootDir2);
   const catalogCache = /* @__PURE__ */ new Map();
+  // harness: the page re-reads the catalog every couple of seconds, but this
+  // cache was filled once at startup and only refreshed by the server's own
+  // STEP-artifact generation -- so a STEP written by `gen --write` after start
+  // never appeared. Rescan when the cached scan is older than a second; the
+  // scan of a workspace is milliseconds. (Local patch, see README.md.)
+  const catalogScannedAt = /* @__PURE__ */ new Map();
+  const HARNESS_CATALOG_TTL_MS = 1e3;
   function resolveRoot(nextRootDir = defaultRootDir) {
     return resolveViewerRoot(repoRoot, nextRootDir);
   }
   function readCatalog({ rootDir: nextRootDir = defaultRootDir } = {}) {
     const normalizedDir = normalizeViewerRootDir(nextRootDir);
-    if (!catalogCache.has(normalizedDir)) {
+    const scannedAt = catalogScannedAt.get(normalizedDir) || 0;
+    if (!catalogCache.has(normalizedDir) || Date.now() - scannedAt > HARNESS_CATALOG_TTL_MS) {
       return refreshCatalog({ rootDir: normalizedDir });
     }
     return catalogCache.get(normalizedDir);
@@ -23666,6 +23676,7 @@ function createLocalAssetBackend({
       includeArtifactStatus: false
     }));
     catalogCache.set(normalizedDir, catalog);
+    catalogScannedAt.set(normalizedDir, Date.now()); // harness: see readCatalog
     return catalog;
   }
   function replaceCatalogEntry(catalog, fileRef, nextEntry) {
@@ -24153,6 +24164,67 @@ function serveStaticFile(filePath, req, res, next, { contentType, headers = {} }
     stream.pipe(res);
   });
 }
+// harness: a STEP rewritten in place (Workshop's `gen --write` keeps the name)
+// keeps its stale inline GLB, and the page regenerates only a MISSING artifact
+// on open -- so the pane kept showing the previous shape with a "stale" badge.
+// On every catalog read (the page polls it every couple of seconds) regenerate
+// the artifact of any STEP whose mtime/size changed, or whose artifact is
+// missing or stale on first sight; the next poll then carries the new GLB
+// hash. (Local patch, see README.md.)
+var harnessStepIdentity = /* @__PURE__ */ new Map();
+var harnessStepInFlight = /* @__PURE__ */ new Set();
+function harnessRefreshStaleStepArtifacts({ backend: backend2, catalog, rootDir: rootDir2, enabled, onCatalogChanged }) {
+  if (!enabled || typeof backend2?.generateStepArtifact !== "function" || typeof backend2?.resolveRoot !== "function") {
+    return;
+  }
+  let resolvedRoot;
+  try {
+    resolvedRoot = backend2.resolveRoot(rootDir2);
+  } catch {
+    return;
+  }
+  for (const entry of Array.isArray(catalog?.entries) ? catalog.entries : []) {
+    const file = String(entry?.file || "");
+    if (!/\.(step|stp)$/i.test(file) || harnessStepInFlight.has(file)) {
+      continue;
+    }
+    let identity;
+    try {
+      const st = fs7.statSync(path8.join(resolvedRoot.rootPath, file));
+      identity = `${st.mtimeMs}:${st.size}`;
+    } catch {
+      continue;
+    }
+    const seen = harnessStepIdentity.get(file);
+    harnessStepIdentity.set(file, identity);
+    if (seen !== void 0 && seen === identity) {
+      continue;
+    }
+    harnessStepInFlight.add(file);
+    (async () => {
+      try {
+        if (seen === void 0 && typeof backend2.readStepSourceStatus === "function") {
+          const status = await backend2.readStepSourceStatus({ fileRef: file, rootDir: rootDir2, catalog, resolvedRoot });
+          if (status?.artifact?.ok !== false) {
+            return;
+          }
+        }
+        const result = await backend2.generateStepArtifact({ fileRef: file, force: true, resolvedRoot, catalog });
+        if (typeof backend2.refreshCatalog === "function") {
+          backend2.refreshCatalog({ rootDir: rootDir2 });
+        }
+        onCatalogChanged(resolvedRoot);
+        if (!result?.ok) {
+          console.warn(`[harness] STEP artifact for ${file} was not regenerated: ${result?.error || "unknown error"}`);
+        }
+      } catch (error) {
+        console.warn(`[harness] STEP artifact for ${file} failed: ${errorMessage(error)}`);
+      } finally {
+        harnessStepInFlight.delete(file);
+      }
+    })();
+  }
+}
 function createCadViewerApiMiddleware({
   backend: backend2,
   serverInfo = () => ({}),
@@ -24173,7 +24245,9 @@ function createCadViewerApiMiddleware({
     }
     if (requestUrl.pathname === "/__cad/catalog") {
       try {
-        sendJson(res, 200, await backend2.readCatalog({ rootDir: rootDir2 }));
+        const catalog = await backend2.readCatalog({ rootDir: rootDir2 });
+        harnessRefreshStaleStepArtifacts({ backend: backend2, catalog, rootDir: rootDir2, enabled: enableStepArtifactBackend, onCatalogChanged }); // harness: see README.md
+        sendJson(res, 200, catalog);
       } catch (error) {
         sendJson(res, 400, {
           error: errorMessage(error)

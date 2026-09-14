@@ -39,4 +39,10 @@ else
   miss "harness/viewer/backend/server.mjs or dist/index.html"
 fi
 
+if [ -x .venv/bin/python ] && PYTHONPATH="$PWD/harness/viewer/packages/cadpy/src" .venv/bin/python -c 'import cadpy.step_artifact' 2>/dev/null; then
+  say ok "STEP-to-GLB converter (cadpy on the .venv)"
+else
+  miss "cadpy.step_artifact importable on .venv (harness/viewer/packages/cadpy); rerun harness/toolchain/setup.sh"
+fi
+
 exit $status

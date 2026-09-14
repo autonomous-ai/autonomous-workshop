@@ -13,9 +13,9 @@ Make stage of Autonomous Workshop on its own, with no Inventor, Wish packet, hos
   `make-round` (one repair round, batched), `step-parts` (purchasable parts), `image-to-cad`
   (reference images), `design-reference`, `electromechanical-integration`. Read
   `.agents/skills/cad/SKILL.md` before the first build; load its references by their triggers.
-- **A 3D pane is open beside this terminal.** It shows `model.step` and refreshes by itself a
-  couple of seconds after every `gen --write`. Never start a viewer, never print a URL, never ask
-  the user to open a file: writing the STEP *is* showing it.
+- **A 3D pane is open beside this terminal.** It shows `model.step` and redraws by itself a few
+  seconds after every `gen --write`. Never start a viewer, never print a URL, never ask the user
+  to open a file: writing the STEP *is* showing it.
 - `.harness/verdict.json` is written by `verify_project` and read by Harness for the pane header.
   Never write or edit it yourself.
 

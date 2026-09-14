@@ -71,8 +71,10 @@ they are not vendored in this repository:
 `harness/viewer/` vendors the prebuilt CAD viewer from
 [`autonomous-ai/autonomous-vibe`](https://github.com/autonomous-ai/autonomous-vibe)
 (`skills/cad-viewer/scripts/viewer/`, commit
-`81b886b01e79ee65eb259f8324767ef4c844bfad`): `backend/server.mjs`, `dist/` and
-`package.json`, byte-for-byte. MIT License, copyright 2026 earthtojake; the
-license text is included at `harness/viewer/LICENSE`. It is used only by
+`81b886b01e79ee65eb259f8324767ef4c844bfad`): `backend/server.mjs` (with two
+small local patches marked `// harness:` and listed in `harness/viewer/README.md`),
+`dist/`, `package.json`, and `packages/cadpy`, the Python STEP-to-GLB converter
+the server runs. MIT License, copyright 2026 earthtojake; the license text is
+included at `harness/viewer/LICENSE`. It is used only by
 `harness/toolchain/viewer.sh`, the 3D pane Autonomous Harness opens beside a
 Workshop agent, never by Workshop's own product runs.
