@@ -272,6 +272,16 @@ project. Session memory is useful continuity, but the durable checkpoint,
 sealed manifests, and reconciled receipts remain authoritative. If memory and
 files disagree, the files win.
 
+On macOS, remounting can renumber `st_dev` without changing runtime files.
+Legacy session fingerprints include that transient number. Resume can reproduce
+the saved fingerprint using a single previous device number only when all
+trusted Python and Codex paths share one device in Darwin's
+`0x01000000`–`0x010000ff` range. Every other fingerprint field must match,
+including paths, symlink targets, inodes, modes, and runtime policy. This bounded
+compatibility check leaves the checkpoint unchanged and launches with current
+device identities. Mixed-device layouts, devices outside that range, other
+platforms, and additional policy drift retain the normal refusal.
+
 A Wish command is a finite job, not a daemon. The host rejects new Wish
 creation when macOS reports that it is running beneath a `grid.serve.*`
 keepalive service, because every clean command exit would otherwise relaunch
