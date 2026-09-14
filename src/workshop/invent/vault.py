@@ -86,6 +86,8 @@ def close_in_meaning(query: str, hit: str) -> bool:
     return bool(words & (set(hit.split("-")) - _STOP_TOKENS))
 LEAD_ID_HEX = 16
 MAX_NOVEL_MECHANISMS = 16
+MAX_APPLIED_RULE_PATTERNS = 32
+RULE_PATTERN_FOLDER = "rule-patterns"
 NOVEL_DEFINITION_MIN = 20
 NOVEL_DEFINITION_MAX = 2_000
 # Where a product run finds the host-written phase snapshot and the query tool.
@@ -654,6 +656,36 @@ class Vault:
             raise VaultError("concept mechanisms must be a list")
         return {str(item): self.resolve(str(item)) for item in declared}
 
+    def resolve_concept_rule_patterns(
+        self, concept: Mapping[str, Any]
+    ) -> dict[str, Optional[str]]:
+        """Map each applied rule pattern to a ``rule-patterns`` node or ``None``.
+
+        ``applied_rule_patterns`` is optional.  An entry is a slug or the full
+        ``rule-patterns/<slug>`` path and resolves like a mechanism name, but
+        inside the ``rule-patterns`` folder: a mechanism whose ``requires``
+        edge points at a rule pattern is satisfied by the concept declaring
+        the rule its design applies, never by declaring the rule as a
+        mechanism.
+        """
+
+        declared = concept.get("applied_rule_patterns", ())
+        if not isinstance(declared, (list, tuple)):
+            raise VaultError("concept applied_rule_patterns must be a list")
+        if len(declared) > MAX_APPLIED_RULE_PATTERNS:
+            raise VaultError(
+                "concept applied_rule_patterns must hold at most %d entries"
+                % MAX_APPLIED_RULE_PATTERNS
+            )
+        resolved: dict[str, Optional[str]] = {}
+        for item in declared:
+            if not isinstance(item, str):
+                raise VaultError("concept applied_rule_patterns entries must be strings")
+            prefix = RULE_PATTERN_FOLDER + "/"
+            name = item[len(prefix):] if item.startswith(prefix) else item
+            resolved[item] = self.resolve(name, folder=RULE_PATTERN_FOLDER)
+        return resolved
+
     def mechanisms_named_in(self, text: str) -> tuple[str, ...]:
         """Mechanism slugs whose slug, name, or declared alias appears in ``text``.
 
@@ -679,15 +711,19 @@ class Vault:
         return tuple(found)
 
     def leads_for_concept(self, concept: Mapping[str, Any]) -> list[dict[str, Any]]:
-        """Compatibility findings for a concept's mechanisms plus every constraint.
+        """Compatibility findings for a concept's mechanisms, its applied rule
+        patterns, and every constraint.
 
         Each finding carries a stable ``id`` so evidence can answer it by name.
-        Unresolved mechanisms contribute nothing; the Invent gate is where
-        they are refused.
+        Unresolved mechanisms and rule patterns contribute nothing; the Invent
+        gate is where they are refused.
         """
 
         resolved = self.resolve_concept_mechanisms(concept)
         members = [node for node in resolved.values() if node is not None]
+        for node in self.resolve_concept_rule_patterns(concept).values():
+            if node is not None and node not in members:
+                members.append(node)
         members += [path for path in self.constraints() if path not in members]
         leads = []
         for finding in self.check_compatibility(members):
@@ -783,10 +819,13 @@ def assert_concept_compatible(vault: "Vault", concept: Mapping[str, Any]) -> dic
     """Refuse a concept whose mechanisms the vault cannot place or forbids.
 
     Every declared mechanism must resolve to a vault node or be declared under
-    ``novel_mechanisms`` with a definition; a declared combination that the
-    vault marks ``conflicts-with`` or leaves a ``requires`` unmet is refused.
-    Risks are leads for Playtest, never refusals.  Returns the resolution and
-    the leads so callers can bind them into evidence.
+    ``novel_mechanisms`` with a definition, every ``applied_rule_patterns``
+    entry must resolve to a rule-pattern node, and a declared combination that
+    the vault marks ``conflicts-with`` or leaves a ``requires`` unmet is
+    refused.  A ``requires`` edge to a rule pattern is met by naming that rule
+    under ``applied_rule_patterns``.  Risks are leads for Playtest, never
+    refusals.  Returns the resolution and the leads so callers can bind them
+    into evidence.
     """
 
     resolved = vault.resolve_concept_mechanisms(concept)
@@ -825,6 +864,14 @@ def assert_concept_compatible(vault: "Vault", concept: Mapping[str, Any]) -> dic
                 "vault_tools.py or declare it under novel_mechanisms (mechanism-unknown)"
                 % slug
             )
+    rule_patterns = vault.resolve_concept_rule_patterns(concept)
+    for slug, node in rule_patterns.items():
+        if node is None:
+            raise VaultError(
+                "concept applied rule pattern %r is not a design-vault rule-patterns "
+                "node; resolve it with vault_tools.py resolve --folder rule-patterns "
+                "(rule-pattern-unknown)" % slug
+            )
     leads = vault.leads_for_concept(concept)
     for finding in leads:
         if finding["kind"] == "conflict":
@@ -837,11 +884,17 @@ def assert_concept_compatible(vault: "Vault", concept: Mapping[str, Any]) -> dic
                 "concept mechanism %s requires %s, which the concept lacks "
                 "(vault-requirement)" % tuple(finding["nodes"])
             )
-    return {"mechanisms": resolved, "novel": novel, "leads": leads}
+    return {
+        "mechanisms": resolved,
+        "novel": novel,
+        "rule_patterns": rule_patterns,
+        "leads": leads,
+    }
 
 
 __all__ = [
     "LINK_TYPES",
+    "MAX_APPLIED_RULE_PATTERNS",
     "MAX_NODE_BYTES",
     "MAX_PACKED_BYTES",
     "MAX_VAULT_NODES",

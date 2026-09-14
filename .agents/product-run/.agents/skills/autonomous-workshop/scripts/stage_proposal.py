@@ -205,8 +205,10 @@ DIMENSION_KEYS = ("length_mm", "width_mm", "height_mm")
 HEDGED_COMPONENT_FIELDS = ("form", "duty", "placement", "interfaces")
 MAX_CONCEPT_COMPONENTS = 64
 MAX_CONCEPT_MECHANISMS = 16
+MAX_CONCEPT_RULE_PATTERNS = 32
 MAX_DIMENSION_MM = 2000.0
 CONCEPT_SLUG_RE = re.compile(r"^[a-z][a-z0-9_-]{0,62}$")
+RULE_PATTERN_RE = re.compile(r"^(?:rule-patterns/)?[a-z][a-z0-9_-]{0,62}$")
 # A physical description that hedges a quantity is a wish, not a contract.
 NUMERIC_HEDGE_RE = re.compile(
     r"(?i)\b(?:roughly|about|approximately|around|circa)\s+\d|~\s*\d"
@@ -1304,6 +1306,21 @@ def _validate_concept_contract(concept: Mapping[str, Any]) -> None:
         raise ProposalError(
             "Invented concept mechanisms must be at most %d unique slugs"
             % MAX_CONCEPT_MECHANISMS
+        )
+    rule_patterns = concept.get("applied_rule_patterns", [])
+    if (
+        not isinstance(rule_patterns, list)
+        or len(rule_patterns) > MAX_CONCEPT_RULE_PATTERNS
+        or any(
+            not isinstance(item, str) or RULE_PATTERN_RE.fullmatch(item) is None
+            for item in rule_patterns
+        )
+        or len(set(rule_patterns)) != len(rule_patterns)
+    ):
+        raise ProposalError(
+            "Invented concept applied_rule_patterns must be at most %d unique "
+            "rule-pattern slugs or rule-patterns/<slug> paths"
+            % MAX_CONCEPT_RULE_PATTERNS
         )
     components = _array(concept["components"], "Invented concept components", nonempty=True)
     if len(components) > MAX_CONCEPT_COMPONENTS:

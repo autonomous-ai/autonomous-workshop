@@ -349,10 +349,18 @@ class NativeStageGateTest(unittest.TestCase):
             )
         )
         self.assertEqual(novel.evidence.checks["vault_leads"], 0)
+        ruled = decide(
+            invented_for(
+                ["spring-latch"], applied_rule_patterns=["rule-patterns/fit-clearance"]
+            )
+        )
+        self.assertTrue(ruled.passed)
+        self.assertEqual(ruled.evidence.checks["vault_leads"], 0)
         for mechanisms, pattern in (
             (["rotating-drum"], "mechanism-unknown"),
             (["card-hand"], "vault-conflict"),
             (["hand-off"], "vault-requirement"),
+            (["spring-latch"], "vault-requirement"),
         ):
             with self.subTest(mechanisms=mechanisms):
                 with self.assertRaisesRegex(ContractError, "refused by the design vault.*" + pattern):

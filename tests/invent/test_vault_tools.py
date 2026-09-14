@@ -97,6 +97,13 @@ class VaultToolParityTest(unittest.TestCase):
             {"mechanisms": ["a", "single-token"], "novel_mechanisms": [{"id": "a", "definition": "short"}]},
             {"mechanisms": ["a", "single-token"], "novel_mechanisms": [{"id": "a", "definition": "x" * 30}]},
             {"mechanisms": "hand-off"},
+            {"mechanisms": ["spring-latch"]},
+            {"mechanisms": ["spring-latch"], "applied_rule_patterns": ["fit-clearance"]},
+            {"mechanisms": ["spring-latch"], "applied_rule_patterns": ["rule-patterns/fit-clearance"]},
+            {"mechanisms": ["spring-latch"], "applied_rule_patterns": ["no-such-rule"]},
+            {"mechanisms": ["spring-latch"], "applied_rule_patterns": "fit-clearance"},
+            {"mechanisms": ["spring-latch"], "applied_rule_patterns": [7]},
+            {"mechanisms": ["spring-latch"], "applied_rule_patterns": ["fit-clearance"] * 33},
         )
         for concept in concepts:
             with self.subTest(concept=concept):

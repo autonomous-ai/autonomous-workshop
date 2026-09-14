@@ -53,12 +53,17 @@ FIXTURE = {
         relations=(("conflicts-with", ("constraints/fdm-only",)),),
     ),
     "mechanisms/lonely": node("mechanism", "Lonely", status="seeded"),
+    "mechanisms/spring-latch": node(
+        "mechanism", "Spring Latch",
+        relations=(("requires", ("rule-patterns/fit-clearance",)),),
+    ),
     "anti-patterns/idle-player": node(
         "anti-pattern", "Idle Player",
         relations=(("mitigated-by", ("rule-patterns/simultaneous-reveal",)),),
         notes="- [yt:abc] first row\n- [run#ev-1] second row\nplain note",
     ),
     "rule-patterns/simultaneous-reveal": node("rule-pattern", "Simultaneous Reveal"),
+    "rule-patterns/fit-clearance": node("rule-pattern", "Fit Clearance"),
     "constraints/fdm-only": node(
         "constraint", "FDM Only",
         relations=(("conflicts-with", ("mechanisms/card-hand",)),),
@@ -492,6 +497,38 @@ class ConceptBindingTest(unittest.TestCase):
             ({"mechanisms": ["hand-off"], "novel_mechanisms": [{"id": "n%d" % i, "definition": "x" * 30} for i in range(17)]}, "at most 16"),
         )
         for concept, pattern in cases:
+            with self.subTest(pattern=pattern):
+                with self.assertRaisesRegex(VaultError, pattern):
+                    assert_concept_compatible(self.vault, concept)
+
+    def test_applied_rule_patterns_meet_rule_requirements(self):
+        with self.assertRaisesRegex(VaultError, "vault-requirement"):
+            assert_concept_compatible(self.vault, {"mechanisms": ["spring-latch"]})
+        for declared in (["fit-clearance"], ["rule-patterns/fit-clearance"], ["Fit Clearance"]):
+            with self.subTest(declared=declared):
+                binding = assert_concept_compatible(
+                    self.vault,
+                    {"mechanisms": ["spring-latch"], "applied_rule_patterns": declared},
+                )
+                self.assertEqual(binding["rule_patterns"], {declared[0]: "rule-patterns/fit-clearance"})
+                self.assertEqual(binding["mechanisms"], {"spring-latch": "mechanisms/spring-latch"})
+                self.assertEqual(binding["leads"], [])
+        self.assertEqual(
+            self.vault.leads_for_concept(
+                {"mechanisms": ["spring-latch"], "applied_rule_patterns": ["fit-clearance"]}
+            ),
+            [],
+        )
+        self.assertEqual(self.vault.resolve_concept_rule_patterns({"mechanisms": []}), {})
+        # a rule pattern is never a mechanism, and the wrong rule meets nothing
+        self.assertIsNone(self.vault.resolve("fit-clearance"))
+        for concept, pattern in (
+            ({"mechanisms": ["spring-latch"], "applied_rule_patterns": "fit-clearance"}, "must be a list"),
+            ({"mechanisms": ["spring-latch"], "applied_rule_patterns": [7]}, "must be strings"),
+            ({"mechanisms": ["spring-latch"], "applied_rule_patterns": ["no-such-rule"]}, "rule-pattern-unknown"),
+            ({"mechanisms": ["spring-latch"], "applied_rule_patterns": ["simultaneous-reveal"]}, "vault-requirement"),
+            ({"mechanisms": ["spring-latch"], "applied_rule_patterns": ["fit-clearance"] * 33}, "at most 32"),
+        ):
             with self.subTest(pattern=pattern):
                 with self.assertRaisesRegex(VaultError, pattern):
                     assert_concept_compatible(self.vault, concept)

@@ -867,6 +867,8 @@ class StageProposalToolTest(unittest.TestCase):
             (["rotating-dome"], {}, "mechanism-unknown"),
             (["card-hand"], {}, "vault-conflict"),
             (["hand-off"], {}, "vault-requirement"),
+            (["spring-latch"], {}, "vault-requirement"),
+            (["spring-latch"], {"applied_rule_patterns": ["no-such-rule"]}, "rule-pattern-unknown"),
             (
                 ["hand-off", "single-token"],
                 {"novel_mechanisms": [{"id": "hand-off", "definition": "x" * 30}]},
@@ -888,6 +890,26 @@ class StageProposalToolTest(unittest.TestCase):
             ),
         )
         self.run_tool("invent", "--source", "drafts/invent.json")
+        # a mechanism's requires edge to a rule pattern is met by declaring the applied rule
+        (self.run_root / "artifacts/invent/invented.json").unlink(missing_ok=True)
+        self.write_json(
+            "drafts/invent.json",
+            self.invent_source(
+                ["spring-latch"], applied_rule_patterns=["rule-patterns/fit-clearance"]
+            ),
+        )
+        self.run_tool("invent", "--source", "drafts/invent.json")
+        document, _ = self.assert_canonical_file("artifacts/invent/invented.json")
+        self.assertEqual(
+            document["concept"]["applied_rule_patterns"], ["rule-patterns/fit-clearance"]
+        )
+        (self.run_root / "artifacts/invent/invented.json").unlink(missing_ok=True)
+        self.write_json(
+            "drafts/invent.json",
+            self.invent_source(["spring-latch"], applied_rule_patterns="fit-clearance"),
+        )
+        completed = self.run_tool("invent", "--source", "drafts/invent.json", expected=2)
+        self.assertIn("applied_rule_patterns must be at most", completed.stderr)
 
     def test_invent_vault_snapshot_must_be_whole_or_absent(self):
         spec = importlib.util.spec_from_file_location("stage_proposal_vault_test", TOOL)

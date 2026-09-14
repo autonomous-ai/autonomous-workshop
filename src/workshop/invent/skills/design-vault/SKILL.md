@@ -44,6 +44,12 @@ Rules:
   vault marks `conflicts-with` or leaves a `requires` unmet is refused by the
   finalizer and the host. Risks are never refusals — they become Playtest
   leads.
+- A `requires` edge that points at a `rule-patterns/*` node is met by naming
+  that rule in the concept's optional `applied_rule_patterns` list (a slug or
+  the full `rule-patterns/<slug>` path, at most 32). Declare only rules the
+  design actually applies; an entry that is not a rule-pattern node is
+  refused (`rule-pattern-unknown`). `resolve "<name>" --folder rule-patterns`
+  answers what a rule is called.
 - A lead is a lead, not a verdict. Confirm or dismiss each one against the
   exact artifact and say why; the host banks what you confirmed and records
   what you dismissed in the vault for every later run.

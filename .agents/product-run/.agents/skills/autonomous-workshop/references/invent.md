@@ -140,10 +140,13 @@ The finalizer rejects, naming the rule in parentheses:
   entry that resolves to an existing node.
 - **build-plan** — a group names an unknown component, a component sits in
   two groups or in none, a group is empty, or a group name repeats.
-- **vault-conflict** / **vault-requirement** — the resolved mechanisms plus
-  every `constraints/*` node declare `conflicts-with`, or leave a `requires`
-  unmet. Run `vault_tools.py check <nodes> --with-constraints` before
-  finalizing. Risks reported there are not refusals; the host turns them into
+- **vault-conflict** / **vault-requirement** — the resolved mechanisms, the
+  concept's applied rule patterns, plus every `constraints/*` node declare
+  `conflicts-with`, or leave a `requires` unmet. A `requires` that names a
+  `rule-patterns/*` node is met by listing that rule under the optional
+  `applied_rule_patterns` (slug or full path, at most 32); **rule-pattern-unknown**
+  — an entry there that is not a rule-pattern node. Run
+  `vault_tools.py check <nodes> --with-constraints` before finalizing. Risks reported there are not refusals; the host turns them into
   `vault_leads` for Make and Playtest. `STAGE.json` may already carry
   `inputs.vault_leads` for Invent itself: on round one they are the findings
   for every mechanism the Wish names outright (plus the constraints), on a

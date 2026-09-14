@@ -42,6 +42,8 @@ def close_in_meaning(query: str, hit: str) -> bool:
 
 LEAD_ID_HEX = 16
 MAX_NOVEL_MECHANISMS = 16
+MAX_APPLIED_RULE_PATTERNS = 32
+RULE_PATTERN_FOLDER = "rule-patterns"
 NOVEL_DEFINITION_MIN = 20
 NOVEL_DEFINITION_MAX = 2_000
 EVIDENCE_ROW_RE = re.compile(r"^- \[([^\]]+)\]\s*(.*)$")
@@ -328,9 +330,36 @@ class PackedVault:
             raise VaultToolError("concept mechanisms must be a list")
         return {str(item): self.resolve(str(item)) for item in declared}
 
+    def resolve_concept_rule_patterns(
+        self, concept: Mapping[str, Any]
+    ) -> dict[str, Optional[str]]:
+        """Mirror of ``Vault.resolve_concept_rule_patterns``: an optional
+        ``applied_rule_patterns`` list of slugs or ``rule-patterns/<slug>``
+        paths, each resolved inside the ``rule-patterns`` folder."""
+
+        declared = concept.get("applied_rule_patterns", ())
+        if not isinstance(declared, (list, tuple)):
+            raise VaultToolError("concept applied_rule_patterns must be a list")
+        if len(declared) > MAX_APPLIED_RULE_PATTERNS:
+            raise VaultToolError(
+                "concept applied_rule_patterns must hold at most %d entries"
+                % MAX_APPLIED_RULE_PATTERNS
+            )
+        resolved: dict[str, Optional[str]] = {}
+        for item in declared:
+            if not isinstance(item, str):
+                raise VaultToolError("concept applied_rule_patterns entries must be strings")
+            prefix = RULE_PATTERN_FOLDER + "/"
+            name = item[len(prefix):] if item.startswith(prefix) else item
+            resolved[item] = self.resolve(name, folder=RULE_PATTERN_FOLDER)
+        return resolved
+
     def leads_for_concept(self, concept: Mapping[str, Any]) -> list[dict[str, Any]]:
         resolved = self.resolve_concept_mechanisms(concept)
         members = [node for node in resolved.values() if node is not None]
+        for node in self.resolve_concept_rule_patterns(concept).values():
+            if node is not None and node not in members:
+                members.append(node)
         members += [path for path in self.constraints() if path not in members]
         return [
             {"id": lead_id(finding["kind"], finding["nodes"]), **finding}
@@ -377,6 +406,14 @@ def assert_concept_compatible(vault: PackedVault, concept: Mapping[str, Any]) ->
                 "vault_tools.py or declare it under novel_mechanisms (mechanism-unknown)"
                 % slug
             )
+    rule_patterns = vault.resolve_concept_rule_patterns(concept)
+    for slug, node in rule_patterns.items():
+        if node is None:
+            raise VaultToolError(
+                "concept applied rule pattern %r is not a design-vault rule-patterns "
+                "node; resolve it with vault_tools.py resolve --folder rule-patterns "
+                "(rule-pattern-unknown)" % slug
+            )
     leads = vault.leads_for_concept(concept)
     for finding in leads:
         if finding["kind"] == "conflict":
@@ -389,7 +426,12 @@ def assert_concept_compatible(vault: PackedVault, concept: Mapping[str, Any]) ->
                 "concept mechanism %s requires %s, which the concept lacks "
                 "(vault-requirement)" % tuple(finding["nodes"])
             )
-    return {"mechanisms": resolved, "novel": novel, "leads": leads}
+    return {
+        "mechanisms": resolved,
+        "novel": novel,
+        "rule_patterns": rule_patterns,
+        "leads": leads,
+    }
 
 
 RUN_ROOT_MARKER = ".workshop-product-run-root"
