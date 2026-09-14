@@ -19,6 +19,15 @@ The inlay is a fixed, owner-supplied part. Its outline, not the housing's, is
 datum A. Position it in the source first and build every other feature against
 it.
 
+Every Wren Coil release carries one. The pocket, the window, the keep-out, the
+cover, and the insertion path are present in every design this Inventor signs,
+whether or not the Wish mentions a chip. A Wish that names only a shape is a
+Wish for that shape as a carrier. "The Wish did not ask for NFC", "the object is
+decorative", and "the tool domain does not match" are Match-stage selection
+verdicts, said before geometry exists — never a reason for a Made object to
+arrive as a solid body with nowhere for the coil to live. Because this is
+section 1, a run may not depart from it.
+
 Do not search for, qualify, or substitute the inlay. No catalogue lookup, no
 supplier datasheet, no chip or part-number identification, and no resizing to a
 part found elsewhere. The owner supplies a conforming inlay and provisions its
@@ -116,37 +125,55 @@ The inlay stays flat in use as well as at rest.
 |---|---|
 | Split ring | 25 mm outside diameter, 2.0 mm wire |
 | Shackle / ring bore | 3.2 mm through, 6.0 mm minimum from the footprint |
-| Assembly screws | M2 x 0.4, or a captured snap cover for a serviceable build |
+| Assembly screws | M2 x 0.4, or a captured snap cover; see section 9 |
 | Lanyard slot | 4.0 x 1.5 mm minimum, edge radius R0.75 |
 
 Source the real part with the shared `step-parts` skill before modelling a
 placeholder, and record the miss if no catalogue match exists. This applies to
 carry hardware only; the inlay is fixed by section 1 and is never sourced.
 
-## 9. Service decision
+## 9. Access and service
 
-Pick one and state it in the source and the manual.
+Every carrier opens. There is no sealed-for-good Wren Coil: an inlay that cannot
+be installed and taken out again is a defect, not a service decision. Tags die
+and tags get reprovisioned, and the owner is the one holding the object.
 
-- **Sealed.** Bonded or welded, no service path, and the manual says the inlay
-  is not replaceable.
-- **Serviceable.** One captured cover, no adhesive on the inlay, removable with
-  a thumbnail or an M2 driver, and the manual shows the steps.
+| Property | House default |
+|---|---|
+| Insertion axis | one declared straight axis, named in the source |
+| Insertion sweep | the pocket cross-section swept along that axis to outside the body, clear of every solid with the cover off |
+| Pocket mouth clearance | 0.3 mm per side over the pocket, so the inlay never has to be bent in |
+| Cover retention | captured snap, M2 x 0.4 screw, or a retained slide; no adhesive on the inlay or the pocket floor |
+| Cover purchase | a 6.0 x 1.5 mm thumbnail notch minimum, a proud lip, or an exposed screw head |
+| Opening tool | a thumbnail or an M2 driver, nothing else |
+| Refit | the cover opens and closes at least 20 times; a snap that yields once is a screw |
+| Manual | install and removal shown in the same figure set |
+
+Bonding, welding, and a cover that must break to come off are refused. A cover
+that is also the detent, the grip panel, or the tap landmark is the preferred
+form of this part, not a lid bolted on afterwards.
 
 ## 10. Make checklist
 
 Report each by name with its measured value.
 
-1. Pocket length, width, and depth measured against section 2.
-2. Window wall measured over the antenna against section 3.
-3. Keep-out interference check against section 4 — the obstruction set, with
+1. The carrier set exists in the source as named solids against section 1 —
+   inlay datum, pocket, window wall, keep-out, cover. A missing solid fails this
+   check. It is not explained away, waived for a simple form, or replaced with a
+   note saying the object is not a carrier.
+2. Pocket length, width, and depth measured against section 2.
+3. Window wall measured over the antenna against section 3.
+4. Keep-out interference check against section 4 — the obstruction set, with
    the excluded window wall and cover named explicitly.
-4. Conductivity verdict for every material and insert against section 5.
-5. On-metal verdict against section 6.
-6. Load path shown clear of the footprint against section 7.
-7. Hardware parts named against section 8.
-8. Service decision stated against section 9.
-9. Part-to-part fit, assembly order, and wall thickness via the shared checks.
+5. Conductivity verdict for every material and insert against section 5.
+6. On-metal verdict against section 6.
+7. Load path shown clear of the footprint against section 7.
+8. Hardware parts named against section 8.
+9. Access against section 9: the insertion sweep clear along the declared axis
+   with the cover off, the cover's retention and purchase feature named, and the
+   removal steps written.
+10. Part-to-part fit, assembly order, and wall thickness via the shared checks.
 
-Checks 1-9 are geometry. Tap distance, orientation tolerance, and
+Checks 1-10 are geometry. Tap distance, orientation tolerance, and
 through-material performance are physical claims that need a physical tap with
 the exact built object, and stay labelled untested until one exists.

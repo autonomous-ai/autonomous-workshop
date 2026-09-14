@@ -1,7 +1,7 @@
 {
   "extensions": [
     {
-      "artifact_sha256": "342242380c9b9f3592901d96c80392f93cd2188b3f92ec279864b137bc35e462",
+      "artifact_sha256": "21f353c755e8c8672fe7fb7adef405cec88e6f0ea4ce0c9d5e3d7b1f000ff18c",
       "kind": "codex-skill",
       "name": "wren-coil-inventor",
       "path": "skills/wren-coil-inventor"
