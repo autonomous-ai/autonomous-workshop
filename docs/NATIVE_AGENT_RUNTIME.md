@@ -1259,3 +1259,15 @@ duplicate its potentially large file inventory into the bounded native packet.
 The host still reads and validates the complete typed contract before preparing
 publication; modified sealed bytes remain refused. No native Release turn is
 introduced, and legacy PDF, Forge and Quest packet contracts remain unchanged.
+
+Factory transport opts into compressed Packs only when an uncompressed Pack
+would exceed the existing 50 MiB upload cap. Level-9 ZIP DEFLATE preserves all
+files and the logical manifest identity; small/default Packs retain their
+historical ZIP_STORED bytes. Validation enforces one compression method,
+canonical headers/order, exact file hashes, the 95 MiB per-file and 512 MiB
+expanded-tree caps, and exact archive reconstruction. Compressed byte identity
+is tied to the compressor implementation, not promised across zlib versions;
+the actual uploaded archive hash remains part of effect reconciliation.
+The local Factory backend import contract accepts ZIP compression and bounds
+upload and expanded size separately. No package files or gates are omitted to
+meet the transport limit.

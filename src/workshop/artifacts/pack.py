@@ -181,8 +181,10 @@ def validate_artifact_payload(content: bytes) -> Tuple[bytes, str, str]:
                 raise ContractError("Artifact needs exactly one inventory manifest")
             if any(info.is_dir() for info in infos):
                 raise ContractError("Artifact must contain files, not directory members")
+            compress_type = infos[0].compress_type
             if any(
-                info.compress_type != zipfile.ZIP_STORED
+                compress_type not in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED)
+                or info.compress_type != compress_type
                 or info.date_time != (1980, 1, 1, 0, 0, 0)
                 or info.create_system != 3
                 or info.extra
@@ -273,14 +275,14 @@ def validate_artifact_payload(content: bytes) -> Tuple[bytes, str, str]:
                 raise ContractError("Artifact identity is inconsistent")
             canonical_buffer = io.BytesIO()
             with zipfile.ZipFile(
-                canonical_buffer, "w", compression=zipfile.ZIP_STORED
+                canonical_buffer, "w", compression=compress_type, compresslevel=9
             ) as canonical_archive:
                 for entry in canonical_entries:
                     name = entry["path"]
                     info = zipfile.ZipInfo(
                         name, date_time=(1980, 1, 1, 0, 0, 0)
                     )
-                    info.compress_type = zipfile.ZIP_STORED
+                    info.compress_type = compress_type
                     info.create_system = 3
                     info.external_attr = (
                         (0o755 if entry["executable"] else 0o644) & 0xFFFF
@@ -288,13 +290,13 @@ def validate_artifact_payload(content: bytes) -> Tuple[bytes, str, str]:
                     canonical_archive.writestr(
                         info,
                         verified_members[name],
-                        compress_type=zipfile.ZIP_STORED,
+                        compress_type=compress_type, compresslevel=9,
                     )
                 info = zipfile.ZipInfo(
                     "_inventor-artifact.json",
                     date_time=(1980, 1, 1, 0, 0, 0),
                 )
-                info.compress_type = zipfile.ZIP_STORED
+                info.compress_type = compress_type
                 info.create_system = 3
                 info.external_attr = (0o644 & 0xFFFF) << 16
                 canonical_archive.writestr(
@@ -306,7 +308,7 @@ def validate_artifact_payload(content: bytes) -> Tuple[bytes, str, str]:
                         ensure_ascii=False,
                     ).encode("utf-8")
                     + b"\n",
-                    compress_type=zipfile.ZIP_STORED,
+                    compress_type=compress_type, compresslevel=9,
                 )
             if canonical_buffer.getvalue() != content:
                 raise ContractError(
