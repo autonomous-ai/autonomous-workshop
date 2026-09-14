@@ -1347,6 +1347,7 @@ def _final(
             [
                 sys.executable,
                 SCRIPTS_DIR / "check_motion",
+                "--progress",
                 _path_arg(project, runner.cwd),
                 "--manifest",
                 _path_arg(motion_manifest, runner.cwd),

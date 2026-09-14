@@ -951,6 +951,27 @@ def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
     elif inputs.get("obstacle_parts"):
         obstacles = resolve_parts(inputs["obstacle_parts"], parts, "obstacle_parts")
 
+    # Only the last exact placed pair per slot is retained. Long pose tables
+    # frequently move one member while all other pairs remain unchanged.
+    # IsEqual checks topology, orientation and location; hash equality alone
+    # cannot authorize reuse. Keep failures uncached and preserve traversal.
+    previous_pairs = {}
+    def measured_pair(slot, first, second):
+        if getattr(first, "wrapped", None) is None or getattr(second, "wrapped", None) is None:
+            return overlap_volume(first, second)
+        prior = previous_pairs.get(slot)
+        if prior is not None:
+            a, b, volume = prior
+            if a.IsEqual(first.wrapped) and b.IsEqual(second.wrapped):
+                return volume
+        volume = overlap_volume(first, second)
+        if slot in previous_pairs or len(previous_pairs) < 4096:
+            previous_pairs[slot] = (
+                first.wrapped.Located(first.wrapped.Location()),
+                second.wrapped.Located(second.wrapped.Location()), volume,
+            )
+        return volume
+
     def sweep_cycle():
         """First collision in the declared nominal poses, or None."""
         for step in range(1 if allow_seated else 0, steps + 1):
@@ -961,13 +982,13 @@ def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
             ]
             for first in range(len(posed)):
                 for second in range(first + 1, len(posed)):
-                    volume = overlap_volume(posed[first][1], posed[second][1])
+                    volume = measured_pair((first, second), posed[first][1], posed[second][1])
                     if volume > tol:
                         return {"step": step, "steps": steps,
                                 "between": [posed[first][0], posed[second][0]],
                                 "overlapMm3": round(volume, 6)}
-                for obstacle_name, obstacle in obstacles:
-                    volume = overlap_volume(posed[first][1], obstacle)
+                for obstacle_index, (obstacle_name, obstacle) in enumerate(obstacles):
+                    volume = measured_pair((first, len(posed) + obstacle_index), posed[first][1], obstacle)
                     if volume > tol:
                         return {"step": step, "steps": steps,
                                 "between": [posed[first][0], obstacle_name],
@@ -1631,6 +1652,7 @@ def main() -> int:
     parser.add_argument("--json", action="store_true", help="emit results as JSON")
     parser.add_argument("--self-check", action="store_true",
                         help="run the coupled-motion and retention fixtures, and exit")
+    parser.add_argument('--progress', action='store_true', help='emit bounded condition and sample progress on stderr')
     args = parser.parse_args()
 
     if args.self_check:
@@ -1650,7 +1672,7 @@ def main() -> int:
     try:
         manifest = load_manifest(args.manifest)
         entry = find_assembly_entry(project, manifest.get("assembly"))
-        with progress_scope('assembly', enabled=args.json):
+        with progress_scope('assembly', enabled=args.json or args.progress):
             report_progress('start')
             parts = index_parts(build_assembly(entry))
             report_progress('complete')
@@ -1670,7 +1692,7 @@ def main() -> int:
         print("check_motion: manifest has no conditions", file=sys.stderr)
         return 2
 
-    with progress_scope('checks', enabled=args.json):
+    with progress_scope('checks', enabled=args.json or args.progress):
         results = [run_condition(condition, parts, index)
                    for index, condition in enumerate(conditions)]
         with progress_scope('retention-closure'):

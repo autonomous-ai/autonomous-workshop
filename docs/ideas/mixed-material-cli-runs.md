@@ -1836,3 +1836,31 @@ budget remained 347,504,345 / 500,000,000 at the first post-recovery check.
 The CLI passed session validation and the native Manager resumed reasoning and
 reporting progress. This proves runtime recovery, not Make completion or
 publication. Twelve component architecture checks also passed.
+
+
+## 2026-09-14: repeated motion-pair work and missing verifier progress
+
+Atlas remained paused while repairing the deterministic motion tools. The
+coupled sweep measured every pair again at every sample, including pairs whose
+exact topology, orientation and placement remained unchanged. It now retains
+only the last successful measurement per pair slot, at most 4096 slots, scoped
+to one condition. Changed pairs still run the original Boolean consistency
+checks; samples, thresholds, traversal and first-collision reporting stay exact.
+No failed measurement is cached. Synthetic clear and blocked sequential-motion
+fixtures match the original loop; the clear fixture requires 42 measurements
+instead of 78. This is not a measured Atlas speedup or a completed motion gate.
+
+The final verifier previously invoked text-mode check_motion without enabling
+its JSON-only progress diagnostics. A separate --progress flag now enables the
+existing bounded stderr diagnostics without changing result formatting. The
+final verifier passes it. Samples are still limited to 32 notices per condition;
+condition start/completion remain visible. No gate timeout or skip was added.
+
+```bash
+cd /Users/ab/code/autonomous-workshop-mixed-material-products
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src" /Users/ab/code/autonomous-workshop/.venv/bin/python -m unittest discover -s tests/make -p 'test_check_motion*.py' -q
+uv pip install --python /Users/ab/code/autonomous-workshop/.venv/bin/python --target /private/tmp/workshop-motion-test-deps pytest==8.4.2
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:/private/tmp/workshop-motion-test-deps" /Users/ab/code/autonomous-workshop/.venv/bin/python -m pytest tests/make/test_skill_registry.py tests/make/test_verify_project_documented_entries.py tests/make/test_verify_project_review.py tests/make/test_verify_project_cache.py tests/make/test_verify_project_audits.py -q -p no:cacheprovider
+```
+
+The motion suite passed 112 tests. The CAD skill lock binds both changed scripts.
