@@ -1,0 +1,12 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_access_receiver.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0009/thickness-access_receiver.md
+(6.4s, exit 0)
+--- stdout
+part_access_receiver.step.py: 70.96 cm3 solid, grid 0.430 mm (442x339x77), 165860 surface samples, thickness resolved to 0.215 mm
+  PASS  wall >= 0.80 mm (+/-0.22)      0.0% of surface below (0 of 165860 samples); 2 more within measurement error of the limit
+  PASS  thickness distribution         median 7.31 mm, p95 32.04 mm, max 159.96 mm
+  WARN  hollowable at 1.20 mm wall     32.31 of 70.96 cm3 (46%) in 1 pocket(s)
+  PASS  filament that would save       4.85 cm3, 6.0 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0009/thickness-access_receiver.md
+
+--- stderr

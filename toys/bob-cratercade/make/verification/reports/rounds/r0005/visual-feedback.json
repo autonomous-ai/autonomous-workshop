@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Rendered opacity prevents inspection of interior geometry; source RGBA alpha is 0.18, so this is a presentation uncertainty, not an established geometry defect.",
+      "evidence": "Top: six opaque pale-blue roof panels hide craters, ramp and bucket. Front and iso: broad opaque panels similarly conceal the interior.",
+      "part": "clear PET canopy and side panels",
+      "repair": "Resolve faithful transparency or obtain explicitly identified targeted interior views, then inspect missing geometry before claiming visual pass."
+    }
+  ],
+  "observation": "Front, top and iso were inspected once. Exterior framing, controls, feet and collection cup appear coherently placed, but nominally clear PET renders opaque and hides the playfield and jackpot; interior placement and required action cannot be assessed from these views.",
+  "packet_sha256": "31b8d5fc29a121a5e01feb6f7a646f8ec7a748f12b4f8e1c61c2df006f78bf14",
+  "status": "inconclusive"
+}

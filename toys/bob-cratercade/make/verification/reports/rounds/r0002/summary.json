@@ -1,0 +1,499 @@
+{
+ "build": {
+  "flipper_left_guard": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "flipper_left_guard_base": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "flipper_left_rotor": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "flipper_pedestal": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "flipper_right_guard": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "flipper_right_guard_base": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "flipper_right_rotor": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "flipper_sleeve": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "jackpot_axle_cap": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "jackpot_frame": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "jackpot_rocker": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "jackpot_trim": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "landing_ramp": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "launcher_anchor": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "launcher_band_guard": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "launcher_guide_cap": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "launcher_housing": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "launcher_rod": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "flipper_left_guard",
+  "flipper_left_guard_base",
+  "flipper_left_rotor",
+  "flipper_pedestal",
+  "flipper_right_guard",
+  "flipper_right_guard_base",
+  "flipper_right_rotor",
+  "flipper_sleeve",
+  "jackpot_axle_cap",
+  "jackpot_frame",
+  "jackpot_rocker",
+  "jackpot_trim",
+  "landing_ramp",
+  "launcher_anchor",
+  "launcher_band_guard",
+  "launcher_guide_cap",
+  "launcher_housing",
+  "launcher_rod"
+ ],
+ "checked": [
+  "flipper_left_guard",
+  "flipper_left_guard_base",
+  "flipper_left_rotor",
+  "flipper_pedestal",
+  "flipper_right_guard",
+  "flipper_right_guard_base",
+  "flipper_right_rotor",
+  "flipper_sleeve",
+  "jackpot_axle_cap",
+  "jackpot_frame",
+  "jackpot_rocker",
+  "jackpot_trim",
+  "landing_ramp",
+  "launcher_anchor",
+  "launcher_band_guard",
+  "launcher_guide_cap",
+  "launcher_housing",
+  "launcher_rod"
+ ],
+ "checks_ok": false,
+ "entry": "cratercade.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "flipper_left_guard",
+  "flipper_left_guard_base",
+  "flipper_left_rotor",
+  "flipper_pedestal",
+  "flipper_right_guard",
+  "flipper_right_guard_base",
+  "flipper_right_rotor",
+  "flipper_sleeve",
+  "jackpot_axle_cap",
+  "jackpot_frame",
+  "jackpot_rocker",
+  "jackpot_trim",
+  "landing_ramp",
+  "launcher_anchor",
+  "launcher_band_guard",
+  "launcher_guide_cap",
+  "launcher_housing",
+  "launcher_rod"
+ ],
+ "print": {
+  "flipper_left_guard": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-flipper_left_guard.log": "88f5be5c4ec9fd435d0867f10c5c40d5bc895c63fb667018897c2d51c47d3d48",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-flipper_left_guard.log": "17e9f321ea054ce02e3e18c7ff7d1113956397c28a4fd2dc4f4377ee54c0afa8"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 26.7% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 19.4,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.13) 0.2% of surface below (427 of 198435 samples); thinnes"
+    ],
+    "thinnest_mm": 0.25,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  },
+  "flipper_left_guard_base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-flipper_left_guard_base.log": "314ebed5ba801faa9d902169850140912b38cc61dac27512e4bab7ef402f72e8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-flipper_left_guard_base.log": "6785f5d38403ae4a95e9552d4617cbea773a25cf2c1847450a68454585f967b7"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "flipper_left_rotor": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-flipper_left_rotor.log": "d66ffd76985c5751299287099494409b08003398a5398998d1c3805976445b46",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-flipper_left_rotor.log": "93c17ddf55ba77c2e4f23029d3f593174323d93d9b7c16e36d9a6058cffbcab2"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "flipper_pedestal": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-flipper_pedestal.log": "3b61bd5c9b6998f6affe7a731e8e4a8819701758415ee2e222c95bdaed2d2827",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-flipper_pedestal.log": "0c2fcb88a603522aa7d706842438114557fa5f5b05795818b51921b612da862c"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "flipper_right_guard": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-flipper_right_guard.log": "fad61f38d9fcd9a66da8ef285d735967859a75b8744b8ccefb98eb47121cb3fe",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-flipper_right_guard.log": "d8948b10cc5d99d48f3b8a16c9512d7ae4c7fac0b81b0729f32c442c10fe7e8b"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 27.1% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 15.8,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.10) 0.3% of surface below (443 of 208193 samples); thinnes"
+    ],
+    "thinnest_mm": 0.2,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  },
+  "flipper_right_guard_base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-flipper_right_guard_base.log": "ab54901623045e54a18dbf4b0f973d0ce3333ac91702269b0ef7cc09c3b7f607",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-flipper_right_guard_base.log": "eb9031e0b66a3cc9c03911be6a9e4b54a8be5d27601bebbb9b150ffcc4ec3829"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "flipper_right_rotor": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-flipper_right_rotor.log": "484084309e0ce887266043d15ee2de3199df21997bfdc61b05ad52b000221c27",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-flipper_right_rotor.log": "1f59b523cf784a14bf1ec4648cb887041c51ef5799d17a64a7416f47bffedb15"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "flipper_sleeve": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-flipper_sleeve.log": "a6b11bd1159c7aa6f2944a561e115dc3ea1ea34554aa785ae2c7196158d4c553",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-flipper_sleeve.log": "73e55b110f1ed78266d09ed62c00e89b7fd5330b85cb461cf74b52cd5c4bbb76"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "jackpot_axle_cap": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-jackpot_axle_cap.log": "d512c09c7e2722f66441548c8adbae19c586b4f5c2fa19a6e7dd1cc8f69d4885",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-jackpot_axle_cap.log": "eda20b5d0e53d62ea7f9ee590de1f77466a3a3388ddebdaa8cb425330340efe4"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "jackpot_frame": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-jackpot_frame.log": "cb23ac5f3ed19691fc4aafb72f9d270c791eeb477f163370510ef3f0d103f32c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-jackpot_frame.log": "b48770f8f4524096ecf9344104a1d4864ab4ee3f3ed3ed5eadeb4c579d485b30"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.15) 0.1% of surface below (76 of 170740 samples); thinnest"
+    ],
+    "thinnest_mm": 0.29,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  },
+  "jackpot_rocker": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-jackpot_rocker.log": "6060c2be661a3bfc75180a3394391658f18124a7f55162907e5f60c8aa678976",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-jackpot_rocker.log": "db786289c1701d1219311276fa5594e3b805a333726d59d191e0b169f3c2a93f"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.34,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "jackpot_trim": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-jackpot_trim.log": "f72bfbd41151d40a867578c4a822ea813c6a98d8ec5efc513d042a31b53153ff",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-jackpot_trim.log": "a2a549a716e542c13f074be4efb6f185e571c368e843b406428f17e46bbbf6d3"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "landing_ramp": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-landing_ramp.log": "b3c8b9cea253ea41ee5106b1b14b753bf418068cfa4a9a4868ae2e4f0aef2015",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-landing_ramp.log": "492ca692ae4e464a0634ed5cc00a4fb6a2c5ffb1a7bbb245c5d3c2b500440e0f"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 19.7% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 1888.1,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.15) 0.7% of surface below (995 of 147261 samples); thinnes"
+    ],
+    "thinnest_mm": 0.31,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  },
+  "launcher_anchor": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-launcher_anchor.log": "9024b0cd27748f7b7c90a9f2b221ef03d869378a028c6381cdc3a9569380a4f6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-launcher_anchor.log": "7b51130bf24a8146c3a50f4db4eb058fc6b533d67feb70850db873d79d0f2dc7"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "launcher_band_guard": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-launcher_band_guard.log": "53f3043790ccfd6946139f9d8697e920b165136b22f7d300c03c6e4436b3c567",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-launcher_band_guard.log": "c37d15f6474ab72b7efb0c9ef51d8b1b5649138062f59f0d4ae0f493d3115ff7"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.65,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "launcher_guide_cap": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-launcher_guide_cap.log": "91c33a37938865b14c7aa3d0695abf18bcb192237a080e262d5a3f380c340aed",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-launcher_guide_cap.log": "87a25fc79b8aca6fd3cab34b46221800f20cb308670afb48d54c310aa08a267e"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "launcher_housing": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-launcher_housing.log": "a1fa6df8991d6fe4159fe685a7cfecb1f608317afb5205436b3c12dcf711bc11",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-launcher_housing.log": "2e2e1dcad84f08910d4981d91a3b89ce44b79bc024d306cfaca748211fd5603a"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.13) 0.1% of surface below (151 of 322652 samples); thinnes"
+    ],
+    "thinnest_mm": 0.26,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  },
+  "launcher_rod": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-launcher_rod.log": "d38b32cd21977451e99dfe80f20c75894ddb63b19f653f0f2e2e68e16c9c2e81",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-launcher_rod.log": "77c5314e49f7bb3b4e4822c86d490518102846eb107c0589e963fb570484f658"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 15.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 492.2,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "visual": {
+  "detail": "Visual render failed or source changed; inspect visual-render.log",
+  "findings": [],
+  "status": "error"
+ }
+}

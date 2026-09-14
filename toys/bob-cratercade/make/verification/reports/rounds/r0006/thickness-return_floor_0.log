@@ -1,0 +1,12 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_return_floor_0.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0006/thickness-return_floor_0.md
+(4.7s, exit 0)
+--- stdout
+part_return_floor_0.step.py: 13.80 cm3 solid, grid 0.162 mm (557x649x29), 318256 surface samples, thickness resolved to 0.081 mm
+  PASS  wall >= 0.80 mm (+/-0.08)      0.0% of surface below (0 of 318256 samples)
+  PASS  thickness distribution         median 3.89 mm, p95 28.85 mm, max 127.63 mm
+  WARN  hollowable at 1.20 mm wall     4.98 of 13.80 cm3 (36%) in 1 pocket(s)
+  PASS  filament that would save       0.75 cm3, 0.9 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0006/thickness-return_floor_0.md
+
+--- stderr

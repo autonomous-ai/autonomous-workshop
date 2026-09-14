@@ -1,0 +1,16 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_jackpot_rocker.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/thickness-jackpot_rocker.md
+(4.6s, exit 0)
+--- stdout
+part_jackpot_rocker.step.py: 24.59 cm3 solid, grid 0.337 mm (223x324x165), 114712 surface samples, thickness resolved to 0.168 mm
+  PASS  wall >= 0.80 mm (+/-0.17)      0.0% of surface below (29 of 114712 samples); thinnest 0.34 mm at (-13.2, 4.0, 17.6) in 3 region(s); no region is a wall, 3 taper(s) at feature edges (0.03% of surface, budget 2%); 28 more within measurement error of the limit
+  PASS  thickness distribution         median 3.54 mm, p95 32.01 mm, max 74.63 mm
+  WARN  hollowable at 1.20 mm wall     9.64 of 24.59 cm3 (39%) in 2 pocket(s)
+  PASS  filament that would save       1.45 cm3, 1.8 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.34 mm at (-13.2, 4.0, 17.6)     15 samples, 1.9 mm2, runs 11.5 mm, band 0.16 mm
+        2. [taper] 0.34 mm at (6.7, 4.0, 17.6)      8 samples, 1.0 mm2, runs 6.4 mm, band 0.16 mm
+        3. [taper] 0.34 mm at (2.6, 4.0, 17.6)      6 samples, 0.8 mm2, runs 3.7 mm, band 0.20 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/thickness-jackpot_rocker.md
+
+--- stderr

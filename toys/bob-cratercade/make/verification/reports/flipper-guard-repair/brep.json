@@ -1,0 +1,48 @@
+{
+  "cap_radius": 5.0,
+  "sides": [
+    {
+      "side": "left",
+      "guard_solids": 1,
+      "guard_valid": true,
+      "guard_volume": 16021.289742613078,
+      "guard_tray_overlap_mm3": 0,
+      "sweep_47_failures": [],
+      "thumb_min_mm": 12.50497783499016,
+      "thumb_min_degrees": 46.0,
+      "guard_print_bed_z": -7.901447777046782e-15,
+      "guard_print_size": [
+        117.5,
+        63.5,
+        22.000000000000007
+      ],
+      "head_z": 6.0,
+      "nut_bottom_z": -8.2
+    },
+    {
+      "side": "right",
+      "guard_solids": 1,
+      "guard_valid": true,
+      "guard_volume": 9944.735176229968,
+      "guard_tray_overlap_mm3": 0,
+      "sweep_47_failures": [],
+      "thumb_min_mm": 12.0,
+      "thumb_min_degrees": 0.0,
+      "guard_print_bed_z": -4.440892098500626e-15,
+      "guard_print_size": [
+        77.5,
+        50.0,
+        22.000000000000004
+      ],
+      "head_z": 6.0,
+      "nut_bottom_z": -8.2,
+      "fixed_anchor_board_xy": [
+        255,
+        41
+      ],
+      "right_tray_valid": true,
+      "right_tray_solids": 1
+    }
+  ],
+  "final_state": "R5 caps and right fixedanchor(255,41)"
+}

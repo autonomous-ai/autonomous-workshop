@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Inspected front, top and iso once each. Front: both feet seat below the apron, two thumb controls align with the flipper ends, and the orange launcher is at the right edge. Top: three craters and two guide pieces lie within the retained field; roof frames and seams align across the six deck regions. Iso: canopy posts meet the perimeter, the rear bucket and yellow flag share the visible crossbar, and the collection cup sits below the front drain. No misplaced, floating, missing or extra geometry or visible solid intersection was found. Small nut surfaces and the cup relief are occluded at this scale; native validity and clearance checks own those geometric claims. These images do not establish physical play or cycle performance.",
+  "packet_sha256": "6af8b62542a8c8b48ad7c306b37b6bbb57ef969bd12e970c7528a3b8eb115c6d",
+  "status": "pass"
+}

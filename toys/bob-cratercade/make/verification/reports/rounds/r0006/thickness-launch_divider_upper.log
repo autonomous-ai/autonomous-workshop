@@ -1,0 +1,12 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_launch_divider_upper.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0006/thickness-launch_divider_upper.md
+(4.3s, exit 0)
+--- stdout
+part_launch_divider_upper.step.py: 12.66 cm3 solid, grid 0.170 mm (113x673x146), 259436 surface samples, thickness resolved to 0.085 mm
+  PASS  wall >= 0.80 mm (+/-0.09)      0.0% of surface below (0 of 259436 samples)
+  PASS  thickness distribution         median 3.91 mm, p95 23.99 mm, max 113.67 mm
+  WARN  hollowable at 1.20 mm wall     4.44 of 12.66 cm3 (35%) in 1 pocket(s)
+  PASS  filament that would save       0.67 cm3, 0.8 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0006/thickness-launch_divider_upper.md
+
+--- stderr

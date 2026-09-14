@@ -1,0 +1,15 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_deck_0_1.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/overhang-deck_0_1.md
+(10.6s, exit 1)
+--- stdout
+part_deck_0_1.step.py: 643.4 cm2 of surface, grid 0.400 mm, 7386 unsupported samples over 4 region(s)
+  FAIL  no face under 45 deg needs support     38.6% of the surface faces down that steeply; 1 region(s) need support, 3 bridge, 0 below 1 mm2; worst 220.6 mm2 spanning 6.9 mm
+  PASS  bridges within 12 mm                   3 region(s), longest span 10.2 mm
+        every unsupported region, largest first:
+        1. [bridge  ]   326.8 mm2 at (144.0, 41.1, 1.2)  span  10.2 mm of 32x10, 2.4 mm of air below
+        2. [bridge  ]   320.1 mm2 at (144.2, 14.9, 1.2)  span  10.0 mm of 32x10, 2.4 mm of air below
+        3. [bridge  ]   313.8 mm2 at (143.8, 28.2, 1.2)  span   9.8 mm of 32x10, 2.4 mm of air below
+        4. [overhang]   220.6 mm2 at (144.0, 3.5, 1.2)  span   6.9 mm of 32x7, 2.4 mm of air below
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/overhang-deck_0_1.md
+
+--- stderr

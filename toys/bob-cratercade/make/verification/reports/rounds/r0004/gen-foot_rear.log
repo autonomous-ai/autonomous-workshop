@@ -1,0 +1,7 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_foot_rear.step.py --write --json
+(4.8s, exit 0)
+--- stdout
+{"ok":true,"sourceRef":"part_foot_rear.step.py","cadPath":"part_foot_rear","kind":"part","outcome":"built","packagePath":"__cadgen__/models/part_foot_rear.step.py"}
+
+--- stderr
+[scripts/gen] generated part GLB/topology artifact: __cadgen__/models/part_foot_rear.step.py

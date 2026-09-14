@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Inspected front, top and iso once each. Front shows roof carriers seated on taller posts and full-height end panels, with paired flippers, right plunger, cup and feet retained. Top shows the unchanged three crater positions and rectangular six-cell arrangement; roof rails naturally obscure portions of internal hardware. Iso shows continuous taller side panels, aligned supports and roof joints, inclined playfield, return structure and visible gold flag/arm portions. No misplaced, missing, extra, floating or visibly intersecting geometry was found in these views. This passes the repair-round placement/form inspection only; raised-state linkage visibility and final independent review remain pending at the specified rear camera.",
+  "packet_sha256": "deccab2c1786674a79a15c6972e6ca7adc40e7453f1769a95200c35253ced32c",
+  "status": "pass"
+}

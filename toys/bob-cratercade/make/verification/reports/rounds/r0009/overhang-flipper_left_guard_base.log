@@ -1,0 +1,12 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_flipper_left_guard_base.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0009/overhang-flipper_left_guard_base.md
+(4.6s, exit 0)
+--- stdout
+part_flipper_left_guard_base.step.py: 148.7 cm2 of surface, grid 0.400 mm, 363 unsupported samples over 1 region(s)
+  PASS  no face under 45 deg needs support     39.9% of the surface faces down that steeply; 0 region(s) need support, 1 bridge, 0 below 1 mm2
+  PASS  bridges within 12 mm                   1 region(s), longest span 9.7 mm
+        every unsupported region, largest first:
+        1. [bridge  ]    48.0 mm2 at (-56.1, -29.1, 17.6)  span   9.7 mm of 10x10, 14.8 mm of air below
+RESULT: prints unsupported
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0009/overhang-flipper_left_guard_base.md
+
+--- stderr

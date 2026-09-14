@@ -1,0 +1,17 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_landing_ramp.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-landing_ramp.md
+(4.2s, exit 1)
+--- stdout
+part_landing_ramp.step.py: 39.61 cm3 solid, grid 0.306 mm (155x342x201), 147261 surface samples, thickness resolved to 0.153 mm
+  FAIL  wall >= 0.80 mm (+/-0.15)      0.7% of surface below (995 of 147261 samples); thinnest 0.31 mm at (0.5, 1.4, 22.7) in 4 region(s); 1 wall(s) (widest band 2.81 mm), 3 taper(s) at feature edges (0.05% of surface, budget 2%); 145 more within measurement error of the limit
+  PASS  thickness distribution         median 5.81 mm, p95 31.78 mm, max 75.79 mm
+  WARN  hollowable at 1.20 mm wall     23.73 of 39.61 cm3 (60%) in 1 pocket(s), 14 too small to shell
+  PASS  filament that would save       3.56 cm3, 4.4 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.31 mm at (0.5, 1.4, 22.7)    928 samples, 88.8 mm2, runs 31.6 mm, band 2.81 mm
+        2. [taper] 0.46 mm at (35.9, 102.9, 26.6)     62 samples, 6.7 mm2, runs 26.4 mm, band 0.25 mm
+        3. [taper] 0.31 mm at (45.7, 103.2, 0.9)      3 samples, 0.4 mm2, runs 1.2 mm, band 0.31 mm
+        4. [taper] 0.46 mm at (45.9, 102.9, 30.1)      2 samples, 0.3 mm2, runs 1.4 mm, band 0.18 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-landing_ramp.md
+
+--- stderr

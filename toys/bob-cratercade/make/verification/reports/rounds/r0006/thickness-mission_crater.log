@@ -1,0 +1,20 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_mission_crater.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0006/thickness-mission_crater.md
+(6.6s, exit 0)
+--- stdout
+part_mission_crater.step.py: 11.76 cm3 solid, grid 0.133 mm (320x320x110), 265180 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.6% of surface below (1379 of 265180 samples); thinnest 0.13 mm at (-9.5, -6.1, 12.2) in 8 region(s); no region is a wall, 8 taper(s) at feature edges (0.59% of surface, budget 2%); 211 more within measurement error of the limit
+  PASS  thickness distribution         median 8.80 mm, p95 41.93 mm, max 42.07 mm
+  WARN  hollowable at 1.20 mm wall     6.28 of 11.76 cm3 (53%) in 1 pocket(s)
+  PASS  filament that would save       0.94 cm3, 1.2 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.13 mm at (12.7, -6.0, 8.4)    285 samples, 6.1 mm2, runs 10.3 mm, band 0.59 mm
+        2. [taper] 0.13 mm at (9.4, 6.1, 12.4)    289 samples, 6.0 mm2, runs 10.3 mm, band 0.59 mm
+        3. [taper] 0.13 mm at (-9.5, -6.1, 12.2)    288 samples, 6.0 mm2, runs 10.2 mm, band 0.59 mm
+        4. [taper] 0.20 mm at (-11.2, 6.0, 10.1)    286 samples, 6.0 mm2, runs 10.2 mm, band 0.59 mm
+        5. [taper] 0.13 mm at (18.4, -6.0, 9.0)     76 samples, 1.6 mm2, runs 4.0 mm, band 0.41 mm
+        6. [taper] 0.13 mm at (-18.8, -6.0, 8.2)     72 samples, 1.5 mm2, runs 4.2 mm, band 0.37 mm
+        ... and 2 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0006/thickness-mission_crater.md
+
+--- stderr

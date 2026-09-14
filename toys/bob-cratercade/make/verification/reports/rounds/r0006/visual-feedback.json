@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Inspected front, top and iso once. Transparent panels now reveal the complete playfield. Top shows three crater pieces, two flippers, right launch lane, ramp and rear bucket/axle arrangement; front exposes the gold flag and marble behind the ramp. Feet, cup, plunger and thumb controls align with the enclosure. No misplaced, floating, extra or visibly intersecting geometry found. Canopy mullions locally occlude parts in individual views, resolved by the other supplied views. This placement/form inspection does not establish the pending operating-motion verdict or independent signature review.",
+  "packet_sha256": "86f95fac6fffae35038510ffef509ec5f9cfd5acb012cf9f0282d8aa7a43c105",
+  "status": "pass"
+}

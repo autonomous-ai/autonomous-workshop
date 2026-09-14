@@ -1,0 +1,33 @@
+{
+  "basis": "Current-source endpoint nominal clearance BReps, not elasticity or physical testing",
+  "fixed_anchor_board": [
+    255,
+    41
+  ],
+  "states": [
+    {
+      "degrees": 0,
+      "valid": true,
+      "solids": 1,
+      "self_intersection_fault": false,
+      "analyzer_error": false,
+      "self_intersection_findings": 0,
+      "rotor_overlap_mm3": 0,
+      "tray_overlap_mm3": 0,
+      "cover_overlap_mm3": 0,
+      "nominal_route_length_mm": 142.5159179495887
+    },
+    {
+      "degrees": 46,
+      "valid": true,
+      "solids": 1,
+      "self_intersection_fault": false,
+      "analyzer_error": false,
+      "self_intersection_findings": 0,
+      "rotor_overlap_mm3": 0,
+      "tray_overlap_mm3": 0,
+      "cover_overlap_mm3": 0,
+      "nominal_route_length_mm": 233.2582799262489
+    }
+  ]
+}

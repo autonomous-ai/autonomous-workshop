@@ -1,0 +1,14 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_return_hood_3.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0009/thickness-return_hood_3.md
+(4.5s, exit 0)
+--- stdout
+part_return_hood_3.step.py: 35.70 cm3 solid, grid 0.321 mm (486x303x80), 253041 surface samples, thickness resolved to 0.160 mm
+  PASS  wall >= 0.80 mm (+/-0.16)      0.0% of surface below (2 of 253041 samples); thinnest 0.48 mm at (154.3, 72.0, 22.8) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.00% of surface, budget 2%); 6 more within measurement error of the limit
+  PASS  thickness distribution         median 2.89 mm, p95 24.07 mm, max 170.23 mm
+  WARN  hollowable at 1.20 mm wall     6.26 of 35.70 cm3 (18%) in 1 pocket(s), 3 too small to shell
+  PASS  filament that would save       0.94 cm3, 1.2 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.48 mm at (154.3, 72.0, 22.8)      2 samples, 0.3 mm2, runs 0.4 mm, band 0.61 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0009/thickness-return_hood_3.md
+
+--- stderr

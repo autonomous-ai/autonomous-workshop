@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Inspected front, top and isometric PNGs once each. The two-by-three roof/deck arrangement retains the long tabletop proportions; roof frames, end posts and feet are aligned. Top view shows three crater targets, the right launch lane, both lower flippers and the central raised jackpot without a missing or duplicated visible module. Front and iso show the distinct thumb controls, front-right plunger, mounted under-deck cup, hopper and physically continuous gold bucket/flag assembly. Access hinges and latch pillars sit on their receiver edges; no floating part or visible interpenetration was found. Roof rails and apron occlude some internal interfaces; this visual pass does not replace the source-bound local access/arrival checks or pending full motion gate.",
+  "packet_sha256": "5bdd3fbf92740d59f443dd2752b7d68409f483c5751502eaf38a7adc7fb4935d",
+  "status": "pass"
+}

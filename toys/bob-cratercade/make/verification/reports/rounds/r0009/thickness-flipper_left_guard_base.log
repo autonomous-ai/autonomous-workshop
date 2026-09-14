@@ -1,0 +1,12 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_flipper_left_guard_base.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0009/thickness-flipper_left_guard_base.md
+(6.3s, exit 0)
+--- stdout
+part_flipper_left_guard_base.step.py: 18.65 cm3 solid, grid 0.291 mm (504x307x72), 165655 surface samples, thickness resolved to 0.146 mm
+  PASS  wall >= 0.80 mm (+/-0.15)      0.0% of surface below (0 of 165655 samples)
+  PASS  thickness distribution         median 2.91 mm, p95 28.09 mm, max 148.00 mm
+  WARN  hollowable at 1.20 mm wall     3.52 of 18.65 cm3 (19%) in 1 pocket(s)
+  PASS  filament that would save       0.53 cm3, 0.7 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0009/thickness-flipper_left_guard_base.md
+
+--- stderr

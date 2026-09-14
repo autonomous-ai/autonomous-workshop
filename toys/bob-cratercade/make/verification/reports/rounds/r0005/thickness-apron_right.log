@@ -1,0 +1,12 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_apron_right.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/thickness-apron_right.md
+(13.8s, exit 0)
+--- stdout
+part_apron_right.step.py: 47.53 cm3 solid, grid 0.291 mm (504x225x103), 250787 surface samples, thickness resolved to 0.146 mm
+  PASS  wall >= 0.80 mm (+/-0.15)      0.0% of surface below (0 of 250787 samples)
+  PASS  thickness distribution         median 4.66 mm, p95 28.52 mm, max 147.27 mm
+  WARN  hollowable at 1.20 mm wall     22.58 of 47.53 cm3 (48%) in 1 pocket(s)
+  PASS  filament that would save       3.39 cm3, 4.2 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/thickness-apron_right.md
+
+--- stderr

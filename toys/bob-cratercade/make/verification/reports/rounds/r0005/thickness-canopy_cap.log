@@ -1,0 +1,20 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_canopy_cap.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/thickness-canopy_cap.md
+(6.0s, exit 0)
+--- stdout
+part_canopy_cap.step.py: 15.47 cm3 solid, grid 0.197 mm (816x735x20), 351504 surface samples, thickness resolved to 0.098 mm
+  PASS  wall >= 0.80 mm (+/-0.10)      0.0% of surface below (61 of 351504 samples); thinnest 0.59 mm at (6.2, 70.3, 0.0) in 13 region(s); no region is a wall, 13 taper(s) at feature edges (0.02% of surface, budget 2%); 312 more within measurement error of the limit
+  PASS  thickness distribution         median 2.95 mm, p95 7.98 mm, max 159.76 mm
+  WARN  hollowable at 1.20 mm wall     2.06 of 15.47 cm3 (13%) in 1 pocket(s)
+  PASS  filament that would save       0.31 cm3, 0.4 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.59 mm at (154.0, 70.6, 0.0)     11 samples, 0.5 mm2, runs 3.0 mm, band 0.16 mm
+        2. [taper] 0.59 mm at (6.2, 70.3, 0.0)     11 samples, 0.5 mm2, runs 3.0 mm, band 0.16 mm
+        3. [taper] 0.59 mm at (78.9, 5.9, 0.0)     11 samples, 0.4 mm2, runs 5.4 mm, band 0.08 mm
+        4. [taper] 0.59 mm at (150.2, 70.3, 0.0)      9 samples, 0.3 mm2, runs 3.4 mm, band 0.10 mm
+        5. [taper] 0.59 mm at (79.8, 138.3, 0.0)      6 samples, 0.2 mm2, runs 1.4 mm, band 0.18 mm
+        6. [taper] 0.59 mm at (78.2, 9.8, 0.0)      3 samples, 0.1 mm2, runs 2.3 mm, band 0.05 mm
+        ... and 7 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/thickness-canopy_cap.md
+
+--- stderr

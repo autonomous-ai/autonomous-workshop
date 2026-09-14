@@ -1,0 +1,642 @@
+{
+  "kind": "cratercade.quasistatic-jackpot-audit",
+  "schema_version": 1,
+  "physical_test": false,
+  "source_brep_measurement": true,
+  "mass_model": "solid PLA and steel, assumed densities; friction excluded",
+  "mass_integration": "BRepGProp adaptive volume and centroid, epsilon 1e-12; reported error is not a total-error bound",
+  "trim_y_mm": -42.0,
+  "parts": {
+    "rocker": {
+      "volume_mm3": 22856.5788426109,
+      "mass_g": 28.342157764837516,
+      "com_axis_mm": [
+        8.569571036518859,
+        3.713832304969021,
+        0.6163038517446751
+      ],
+      "default_nonadaptive_volume_mm3": 22856.57884261089,
+      "adaptive_reported_relative_error": 5.026061718855932e-16
+    },
+    "trim": {
+      "volume_mm3": 1224.524535228968,
+      "mass_g": 1.5184104236839204,
+      "com_axis_mm": [
+        38.0,
+        -42.0,
+        -12.805188738693076
+      ],
+      "default_nonadaptive_volume_mm3": 1224.5245352289678,
+      "adaptive_reported_relative_error": 5.333494737368514e-15
+    },
+    "trim_bolt": {
+      "volume_mm3": 163.56537687389232,
+      "mass_g": 1.2839882084600547,
+      "com_axis_mm": [
+        37.99999999999999,
+        -42.00000000000001,
+        -11.406932668535209
+      ],
+      "default_nonadaptive_volume_mm3": 163.56537687389653,
+      "adaptive_reported_relative_error": 3.6389618771353675e-15
+    },
+    "trim_nut": {
+      "volume_mm3": 65.36525935943547,
+      "mass_g": 0.5131172859715684,
+      "com_axis_mm": [
+        38.000000000004036,
+        -42.000000000000945,
+        -3.8999999999999506
+      ],
+      "default_nonadaptive_volume_mm3": 65.09360986313014,
+      "adaptive_reported_relative_error": 6.924564845019831e-14
+    }
+  },
+  "total_moving_mass_g": 31.65767368295306,
+  "moving_com_axis_mm": [
+    11.651827069688332,
+    -1.0737885481325173,
+    -0.5882831348805461
+  ],
+  "marble_seat_axis_mm": [
+    0,
+    25.75,
+    7.75
+  ],
+  "marble_mass_g": 4.0,
+  "contacts": {
+    "marble_rocker_overlap_mm3": 0.0,
+    "marble_rocker_distance_mm": 4.7523975766486515e-11
+  },
+  "bounds": {
+    "empty_restore_mNm": [
+      0.31244695451500215,
+      0.37750613588756465
+    ],
+    "loaded_tip_min_mNm": 0.6603273487585495,
+    "max_fixed_overlap_mm3": 0.0,
+    "minimum_reaction_per_weight": 0.42588321426209236,
+    "minimum_deck_clearance_mm": 2.0354429968365153
+  },
+  "checks": {
+    "empty_restoring_full_range": true,
+    "light_marble_tips_full_range": true,
+    "free_marble_seat_supported": true,
+    "fixed_solids_clear": true,
+    "deck_clear": true,
+    "both_hard_stops_block_overtravel": true,
+    "axle_ends_blocked_by_installed_caps": true
+  },
+  "samples": [
+    {
+      "rocker_angle_deg": 0.0,
+      "empty_restore_mNm": 0.31244695451500215,
+      "loaded_tip_mNm": 0.6603273487585495,
+      "floor_reaction_per_weight": 1.12712481475071,
+      "back_reaction_per_weight": 0.42588321426209236,
+      "deck_clearance_mm": 8.0,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -0.5,
+      "empty_restore_mNm": 0.3143241898972878,
+      "loaded_tip_mNm": 0.6619728311430881,
+      "floor_reaction_per_weight": 1.1281156914828028,
+      "back_reaction_per_weight": 0.4350322199422715,
+      "deck_clearance_mm": 8.31484066278638,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -1.0,
+      "empty_restore_mNm": 0.31617748827555714,
+      "loaded_tip_mNm": 0.6635679017336027,
+      "floor_reaction_per_weight": 1.1290206578373116,
+      "back_reaction_per_weight": 0.44414809623460616,
+      "deck_clearance_mm": 8.631028118927166,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -1.5,
+      "empty_restore_mNm": 0.3180067085139633,
+      "loaded_tip_mNm": 0.665112439059293,
+      "floor_reaction_per_weight": 1.129839644897545,
+      "back_reaction_per_weight": 0.4532301489298233,
+      "deck_clearance_mm": 8.948538289523402,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -2.0,
+      "empty_restore_mNm": 0.31981171131030317,
+      "loaded_tip_mNm": 0.6666063254976612,
+      "floor_reaction_per_weight": 1.1305725902944674,
+      "back_reaction_per_weight": 0.46227768639444766,
+      "deck_clearance_mm": 9.267346994946312,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -2.5,
+      "empty_restore_mNm": 0.3215923592066254,
+      "loaded_tip_mNm": 0.6680494472834715,
+      "floor_reaction_per_weight": 1.1312194382114493,
+      "back_reaction_per_weight": 0.4712900196234723,
+      "deck_clearance_mm": 9.587429956678655,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -3.0,
+      "empty_restore_mNm": 0.3233485165996985,
+      "loaded_tip_mNm": 0.6694416945174126,
+      "floor_reaction_per_weight": 1.1317801393885172,
+      "back_reaction_per_weight": 0.48026646229282893,
+      "deck_clearance_mm": 9.90876279916365,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -3.5,
+      "empty_restore_mNm": 0.3250800497513379,
+      "loaded_tip_mNm": 0.6707829611744673,
+      "floor_reaction_per_weight": 1.1322546511261056,
+      "back_reaction_per_weight": 0.48920633081165477,
+      "deck_clearance_mm": 10.231321051661244,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -4.0,
+      "empty_restore_mNm": 0.32678682679859017,
+      "loaded_tip_mNm": 0.6720731451119868,
+      "floor_reaction_per_weight": 1.1326429372883084,
+      "back_reaction_per_weight": 0.4981089443743501,
+      "deck_clearance_mm": 10.555080150111674,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -4.5,
+      "empty_restore_mNm": 0.328468717763775,
+      "loaded_tip_mNm": 0.6733121480774689,
+      "floor_reaction_per_weight": 1.1329449683056316,
+      "back_reaction_per_weight": 0.5069736250124239,
+      "deck_clearance_mm": 10.880015439006115,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -5.0,
+      "empty_restore_mNm": 0.3301255945643839,
+      "loaded_tip_mNm": 0.674499875716041,
+      "floor_reaction_per_weight": 1.1331607211772436,
+      "back_reaction_per_weight": 0.5157996976461252,
+      "deck_clearance_mm": 11.206102173264274,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -5.5,
+      "empty_restore_mNm": 0.33175733102283345,
+      "loaded_tip_mNm": 0.6756362375776448,
+      "floor_reaction_per_weight": 1.1332901794727275,
+      "back_reaction_per_weight": 0.5245864901358508,
+      "deck_clearance_mm": 11.533315520118844,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -6.0,
+      "empty_restore_mNm": 0.33336380287607487,
+      "loaded_tip_mNm": 0.6767211471239252,
+      "floor_reaction_per_weight": 1.1333333333333333,
+      "back_reaction_per_weight": 0.5333333333333333,
+      "deck_clearance_mm": 11.861630561006606,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -6.5,
+      "empty_restore_mNm": 0.3349448877850568,
+      "loaded_tip_mNm": 0.6777545217348194,
+      "floor_reaction_per_weight": 1.1332901794727277,
+      "back_reaction_per_weight": 0.5420395611325988,
+      "deck_clearance_mm": 12.191022293466068,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -7.0,
+      "empty_restore_mNm": 0.3365004653440421,
+      "loaded_tip_mNm": 0.6787362827148503,
+      "floor_reaction_per_weight": 1.1331607211772434,
+      "back_reaction_per_weight": 0.5507045105206921,
+      "deck_clearance_mm": 12.521465633041512,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -7.5,
+      "empty_restore_mNm": 0.3380304170897768,
+      "loaded_tip_mNm": 0.6796663552991182,
+      "floor_reaction_per_weight": 1.1329449683056318,
+      "back_reaction_per_weight": 0.5593275216281703,
+      "deck_clearance_mm": 12.85293541519327,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -8.0,
+      "empty_restore_mNm": 0.3395346265105124,
+      "loaded_tip_mNm": 0.6805446686589947,
+      "floor_reaction_per_weight": 1.1326429372883084,
+      "back_reaction_per_weight": 0.567907937779352,
+      "deck_clearance_mm": 13.067623815505081,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -8.5,
+      "empty_restore_mNm": 0.3410129790548773,
+      "loaded_tip_mNm": 0.6813711559075171,
+      "floor_reaction_per_weight": 1.1322546511261053,
+      "back_reaction_per_weight": 0.5764451055423268,
+      "deck_clearance_mm": 12.76673429243868,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -9.0,
+      "empty_restore_mNm": 0.3424653621406017,
+      "loaded_tip_mNm": 0.6821457541044809,
+      "floor_reaction_per_weight": 1.131780139388517,
+      "back_reaction_per_weight": 0.5849383747787165,
+      "deck_clearance_mm": 12.466852533790586,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -9.5,
+      "empty_restore_mNm": 0.3438916651630905,
+      "loaded_tip_mNm": 0.6828684042612356,
+      "floor_reaction_per_weight": 1.1312194382114493,
+      "back_reaction_per_weight": 0.5933870986931861,
+      "deck_clearance_mm": 12.168001376717754,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -10.0,
+      "empty_restore_mNm": 0.3452917795038466,
+      "loaded_tip_mNm": 0.6835390513451729,
+      "floor_reaction_per_weight": 1.1305725902944674,
+      "back_reaction_per_weight": 0.6017906338826984,
+      "deck_clearance_mm": 11.870203579892841,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -10.5,
+      "empty_restore_mNm": 0.3466655985387419,
+      "loaded_tip_mNm": 0.6841576442839215,
+      "floor_reaction_per_weight": 1.129839644897545,
+      "back_reaction_per_weight": 0.6101483403855132,
+      "deck_clearance_mm": 11.573481821771054,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -11.0,
+      "empty_restore_mNm": 0.34801301764613796,
+      "loaded_tip_mNm": 0.6847241359692338,
+      "floor_reaction_per_weight": 1.1290206578373116,
+      "back_reaction_per_weight": 0.6184595817299224,
+      "deck_clearance_mm": 11.277858698863074,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -11.5,
+      "empty_restore_mNm": 0.3493339342148532,
+      "loaded_tip_mNm": 0.6852384832605749,
+      "floor_reaction_per_weight": 1.1281156914828026,
+      "back_reaction_per_weight": 0.6267237249827194,
+      "deck_clearance_mm": 10.983356724014264,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -12.0,
+      "empty_restore_mNm": 0.35062824765197664,
+      "loaded_tip_mNm": 0.6857006469884066,
+      "floor_reaction_per_weight": 1.1271248147507098,
+      "back_reaction_per_weight": 0.6349401407973994,
+      "deck_clearance_mm": 10.689998324690219,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -12.5,
+      "empty_restore_mNm": 0.35189585939052886,
+      "loaded_tip_mNm": 0.6861105919571724,
+      "floor_reaction_per_weight": 1.1260481031001326,
+      "back_reaction_per_weight": 0.6431082034620867,
+      "deck_clearance_mm": 10.397805841268829,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -13.0,
+      "empty_restore_mNm": 0.3531366728969684,
+      "loaded_tip_mNm": 0.6864682869479753,
+      "floor_reaction_per_weight": 1.1248856385268318,
+      "back_reaction_per_weight": 0.651227290947186,
+      "deck_clearance_mm": 10.106801525338977,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -13.5,
+      "empty_restore_mNm": 0.35435059367854244,
+      "loaded_tip_mNm": 0.6867737047209577,
+      "floor_reaction_per_weight": 1.1236375095569853,
+      "back_reaction_per_weight": 0.6592967849527505,
+      "deck_clearance_mm": 9.817007538005992,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -14.0,
+      "empty_restore_mNm": 0.3555375292904839,
+      "loaded_tip_mNm": 0.6870268220173723,
+      "floor_reaction_per_weight": 1.1223038112404464,
+      "back_reaction_per_weight": 0.6673160709555696,
+      "deck_clearance_mm": 9.528445948203991,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -14.5,
+      "empty_restore_mNm": 0.3566973893430503,
+      "loaded_tip_mNm": 0.6872276195613585,
+      "floor_reaction_per_weight": 1.1208846451435057,
+      "back_reaction_per_weight": 0.6752845382559663,
+      "deck_clearance_mm": 9.241138731015248,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -15.0,
+      "empty_restore_mNm": 0.35783008550840817,
+      "loaded_tip_mNm": 0.6873760820614045,
+      "floor_reaction_per_weight": 1.119380119341156,
+      "back_reaction_per_weight": 0.6832015800243044,
+      "deck_clearance_mm": 8.955107765996708,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -15.5,
+      "empty_restore_mNm": 0.358935531527359,
+      "loaded_tip_mNm": 0.6874721982115173,
+      "floor_reaction_per_weight": 1.117790348408862,
+      "back_reaction_per_weight": 0.6910665933472009,
+      "deck_clearance_mm": 8.670374835513766,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -16.0,
+      "empty_restore_mNm": 0.3600136432159086,
+      "loaded_tip_mNm": 0.6875159606920793,
+      "floor_reaction_per_weight": 1.1161154534138356,
+      "back_reaction_per_weight": 0.6988789792734413,
+      "deck_clearance_mm": 8.38696162308148,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -16.5,
+      "empty_restore_mNm": 0.36106433847167796,
+      "loaded_tip_mNm": 0.6875073661704082,
+      "floor_reaction_per_weight": 1.1143555619058152,
+      "back_reaction_per_weight": 0.7066381428595901,
+      "deck_clearance_mm": 8.104889711713241,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -17.0,
+      "empty_restore_mNm": 0.3620875372801552,
+      "loaded_tip_mNm": 0.6874464153010104,
+      "floor_reaction_per_weight": 1.1125108079073525,
+      "back_reaction_per_weight": 0.7143434932152988,
+      "deck_clearance_mm": 7.82418058227719,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -17.5,
+      "empty_restore_mNm": 0.36308316172078964,
+      "loaded_tip_mNm": 0.6873331127255302,
+      "floor_reaction_per_weight": 1.110581331903607,
+      "back_reaction_per_weight": 0.7219944435483064,
+      "deck_clearance_mm": 7.544855611860353,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -18.0,
+      "empty_restore_mNm": 0.36405113597292543,
+      "loaded_tip_mNm": 0.687167467072398,
+      "floor_reaction_per_weight": 1.1085672808316462,
+      "back_reaction_per_weight": 0.7295904112091224,
+      "deck_clearance_mm": 7.266936072140663,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -18.5,
+      "empty_restore_mNm": 0.3649913863215756,
+      "loaded_tip_mNm": 0.6869494909561707,
+      "floor_reaction_per_weight": 1.1064688080692577,
+      "back_reaction_per_weight": 0.7371308177354007,
+      "deck_clearance_mm": 6.990443127767087,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -19.0,
+      "empty_restore_mNm": 0.36590384116303576,
+      "loaded_tip_mNm": 0.6866792009765743,
+      "floor_reaction_per_weight": 1.1042860734232665,
+      "back_reaction_per_weight": 0.7446150888959905,
+      "deck_clearance_mm": 6.715397834747822,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -19.5,
+      "empty_restore_mNm": 0.366788431010337,
+      "loaded_tip_mNm": 0.686356617717237,
+      "floor_reaction_per_weight": 1.102019243117367,
+      "back_reaction_per_weight": 0.7520426547346661,
+      "deck_clearance_mm": 6.441821138846819,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -20.0,
+      "empty_restore_mNm": 0.36764508849853766,
+      "loaded_tip_mNm": 0.685981765744123,
+      "floor_reaction_per_weight": 1.0996684897794626,
+      "back_reaction_per_weight": 0.7594129496135327,
+      "deck_clearance_mm": 6.169733873988658,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -20.5,
+      "empty_restore_mNm": 0.36847374838985336,
+      "loaded_tip_mNm": 0.6855546736036607,
+      "floor_reaction_per_weight": 1.0972339924285224,
+      "back_reaction_per_weight": 0.7667254122560991,
+      "deck_clearance_mm": 5.899156760671989,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -21.0,
+      "empty_restore_mNm": 0.36927434757862504,
+      "loaded_tip_mNm": 0.6850753738205708,
+      "floor_reaction_per_weight": 1.094715936460944,
+      "back_reaction_per_weight": 0.7739794857900238,
+      "deck_clearance_mm": 5.630110404391576,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -21.5,
+      "empty_restore_mNm": 0.37004682509612485,
+      "loaded_tip_mNm": 0.6845439028953875,
+      "floor_reaction_per_weight": 1.0921145136364394,
+      "back_reaction_per_weight": 0.7811746177895222,
+      "deck_clearance_mm": 5.362615294069101,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -22.0,
+      "empty_restore_mNm": 0.37079112211519905,
+      "loaded_tip_mNm": 0.683960301301679,
+      "floor_reaction_per_weight": 1.089429922063428,
+      "back_reaction_per_weight": 0.7883102603174361,
+      "deck_clearance_mm": 5.09669180049287,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -22.5,
+      "empty_restore_mNm": 0.37150718195474797,
+      "loaded_tip_mNm": 0.6833246134829665,
+      "floor_reaction_per_weight": 1.086662366183952,
+      "back_reaction_per_weight": 0.7953858699669589,
+      "deck_clearance_mm": 4.832360174766475,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -23.0,
+      "empty_restore_mNm": 0.3721949500840425,
+      "loaded_tip_mNm": 0.6826368878493383,
+      "floor_reaction_per_weight": 1.0838120567581069,
+      "back_reaction_per_weight": 0.8024009079030223,
+      "deck_clearance_mm": 4.569640546766621,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -23.5,
+      "empty_restore_mNm": 0.3728543741268768,
+      "loaded_tip_mNm": 0.6818971767737643,
+      "floor_reaction_per_weight": 1.0808792108479905,
+      "back_reaction_per_weight": 0.8093548399033275,
+      "deck_clearance_mm": 4.308552923610144,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -24.0,
+      "empty_restore_mNm": 0.37348540386555684,
+      "loaded_tip_mNm": 0.6811055365881069,
+      "floor_reaction_per_weight": 1.0778640518011744,
+      "back_reaction_per_weight": 0.8162471363990296,
+      "deck_clearance_mm": 4.049117188130381,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -24.5,
+      "empty_restore_mNm": 0.37408799124472514,
+      "loaded_tip_mNm": 0.6802620275788308,
+      "floor_reaction_per_weight": 1.0747668092336928,
+      "back_reaction_per_weight": 0.8230772725150652,
+      "deck_clearance_mm": 3.79135309736305,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -25.0,
+      "empty_restore_mNm": 0.3746620903750195,
+      "loaded_tip_mNm": 0.6793667139824131,
+      "floor_reaction_per_weight": 1.071587719012559,
+      "back_reaction_per_weight": 0.8298447281101257,
+      "deck_clearance_mm": 3.535280281041622,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -25.5,
+      "empty_restore_mNm": 0.3752076575365686,
+      "loaded_tip_mNm": 0.6784196639804505,
+      "floor_reaction_per_weight": 1.0683270232378024,
+      "back_reaction_per_weight": 0.8365489878162662,
+      "deck_clearance_mm": 3.2809182401024906,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -26.0,
+      "empty_restore_mNm": 0.3757246511823208,
+      "loaded_tip_mNm": 0.6774209496944671,
+      "floor_reaction_per_weight": 1.0649849702240295,
+      "back_reaction_per_weight": 0.8431895410781532,
+      "deck_clearance_mm": 3.028286345199877,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -26.5,
+      "empty_restore_mNm": 0.37621303194120814,
+      "loaded_tip_mNm": 0.6763706471804228,
+      "floor_reaction_per_weight": 1.0615618144815175,
+      "back_reaction_per_weight": 0.8497658821919463,
+      "deck_clearance_mm": 2.777403835230686,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -27.0,
+      "empty_restore_mNm": 0.3766727626211454,
+      "loaded_tip_mNm": 0.67526883642292,
+      "floor_reaction_per_weight": 1.0580578166968284,
+      "back_reaction_per_weight": 0.8562775103438078,
+      "deck_clearance_mm": 2.5282898158693747,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -27.5,
+      "empty_restore_mNm": 0.37710380821186107,
+      "loaded_tip_mNm": 0.6741156013291144,
+      "floor_reaction_per_weight": 1.0544732437129611,
+      "back_reaction_per_weight": 0.8627239296480437,
+      "deck_clearance_mm": 2.2809632581130046,
+      "collisions_mm3": {}
+    },
+    {
+      "rocker_angle_deg": -28.0,
+      "empty_restore_mNm": 0.37750613588756465,
+      "loaded_tip_mNm": 0.6729110297223229,
+      "floor_reaction_per_weight": 1.050808368509026,
+      "back_reaction_per_weight": 0.8691046491848654,
+      "deck_clearance_mm": 2.0354429968365153,
+      "collisions_mm3": {}
+    }
+  ],
+  "overtravel_overlap_mm3": {
+    "empty_rest": 1.2615429952435955,
+    "loaded_limit": 2.2659627524253834
+  },
+  "axle_end_escape_overlap_mm3": {
+    "left": 2.5132741228718682,
+    "right": 2.513274122871872
+  },
+  "fixed_obstacles": [
+    "frame",
+    "axle",
+    "ramp",
+    "left_cap",
+    "right_cap",
+    "jackpot_frame_0_bolt",
+    "jackpot_frame_0_nut",
+    "jackpot_frame_1_bolt",
+    "jackpot_frame_1_nut",
+    "jackpot_frame_2_bolt",
+    "jackpot_frame_2_nut",
+    "jackpot_frame_3_bolt",
+    "jackpot_frame_3_nut",
+    "ramp_root_0_bolt",
+    "ramp_root_0_nut",
+    "ramp_root_1_bolt",
+    "ramp_root_1_nut",
+    "jackpot_left_cap_0_bolt",
+    "jackpot_left_cap_0_nut",
+    "jackpot_left_cap_1_bolt",
+    "jackpot_left_cap_1_nut",
+    "jackpot_right_cap_0_bolt",
+    "jackpot_right_cap_0_nut",
+    "jackpot_right_cap_1_bolt",
+    "jackpot_right_cap_1_nut"
+  ],
+  "retention_limit": "Cap fasteners and real thread engagement need the separate retention/specification audit; this is an installed-geometry check.",
+  "pass": true
+}

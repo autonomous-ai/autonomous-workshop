@@ -1,0 +1,2733 @@
+{
+  "pass": true,
+  "poses": 94,
+  "results": [
+    {
+      "side": "left",
+      "angle_deg": 0.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.236588170497027,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.329482655684563,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 82.1,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 82.1,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 1.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.239869700940375,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.34400300939684,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 81.0495049072036,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 81.0495049072036,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 2.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.238087006523816,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.342235355852159,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 79.99262839227005,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 79.99262839227005,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 3.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.246822458815219,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.350897147079674,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 78.92969239002399,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 78.92969239002399,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 4.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237124375807795,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341280848801283,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 77.86102068106861,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 77.86102068106861,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 5.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.24125234820914,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.34537399403258,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 76.78693879315891,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 76.78693879315891,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 6.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.243528956928523,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.347631405218873,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 75.7077739020428,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 75.7077739020428,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 7.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237443010735355,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341596794620848,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 74.62385473180024,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 74.62385473180024,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 8.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237384900509388,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341539174803732,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 73.53551145471062,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 73.53551145471062,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 9.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.240825959236215,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.344951201374236,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 72.44307559067917,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 72.44307559067917,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 10.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.247742026755162,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.351808966865729,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 71.34687990625275,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 71.34687990625275,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 11.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237136185942584,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341292559262396,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 70.24725831325591,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 70.24725831325591,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 12.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.24486717884271,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.348958345848423,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 69.14454576707816,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 69.14454576707816,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 13.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.256726053534736,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.36071735585752,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 68.03907816464326,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 68.03907816464326,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 14.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.249118521704776,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.353173865803523,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 66.93119224209185,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 66.93119224209185,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 15.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.239065729488166,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.343205820642046,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 65.82122547220825,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 65.82122547220825,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 16.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.249608030075134,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.35365925102685,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 64.70951596162305,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 64.70951596162305,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 17.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.244085920804988,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.34818367356329,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 63.59640234782256,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 63.59640234782256,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 18.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237115977963352,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341272521832016,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 62.48222369599654,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 62.48222369599654,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 19.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.247717576138346,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.351784722251606,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 61.36731939575557,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 61.36731939575557,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 20.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.240746414143201,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.344872327219905,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 60.252029057749866,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 60.252029057749866,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 21.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.23741921372726,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341573198441974,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 59.13669241022042,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 59.13669241022042,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 22.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237483807323333,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341637246917477,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 58.0216491955146,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 58.0216491955146,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 23.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.243606712661002,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.347708505399602,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 56.907239066597256,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 56.907239066597256,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 24.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.24118860699724,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.345310790420758,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 55.793801483589206,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 55.793801483589206,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 25.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237145388160208,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341301683816445,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 54.68167561036432,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 54.68167561036432,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 26.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.247481328977631,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.350885165984892,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 53.57120021123703,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 53.57120021123703,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 27.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.239316728176325,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.34217360551701,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 52.46271354777129,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 52.46271354777129,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 28.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.238900144780658,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.34414485865583,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 51.356553275742954,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 51.356553275742954,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 29.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.256505983548536,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.351606519588147,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 50.25305634228647,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 50.25305634228647,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 30.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.25645812749519,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341173708351164,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 49.152558883257655,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 49.152558883257655,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 31.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.238817226384649,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.346998406173222,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 48.05539612084321,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 48.05539612084321,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 32.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.239364485059253,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.352646456971522,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 46.96190226144907,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 46.96190226144907,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 33.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.247479423199211,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.342207593384986,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 45.872410393897695,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 45.872410393897695,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 34.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237124375807783,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.352165165564973,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 44.78725238796609,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 44.78725238796609,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 35.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.241785264147232,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.360934106058421,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 43.70675879329505,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 43.70675879329505,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 36.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.24809171477809,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.35040050673662,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 42.63125873870045,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 42.63125873870045,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 37.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237483807323327,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.34159679462084,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 41.56107983191754,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 41.56107983191754,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 38.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.243606712660993,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.352118426631122,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 40.49654805980839,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 40.49654805980839,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 39.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.241188606997243,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.345810443729498,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 39.43798768906311,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 39.43798768906311,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 40.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237145388160195,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341301683816434,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 38.38572116742516,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 38.38572116742516,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 41.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.246810375903827,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.350885165984897,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 37.34006902547054,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 37.34006902547054,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 42.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.238024730679411,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.342173605517015,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 36.30134977897117,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 36.30134977897117,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 43.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237543524648483,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341696460279117,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 35.26987983187183,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 35.26987983187183,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 44.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.237016707046147,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.341174088737526,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 34.24597337991048,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 34.24597337991048,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 45.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.243754232174476,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.347854781211614,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 33.2299423149112,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 33.2299423149112,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "left",
+      "angle_deg": 46.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 12.227326041076694,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_left_guard_base": {
+          "value": 12.331565274319082,
+          "kind": "exact_BRep_distance"
+        },
+        "apron_right": {
+          "value": 32.222096129778876,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_right_guard_base": {
+          "value": 32.222096129778876,
+          "kind": "bbox_lower_bound"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -0.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 82.1,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 82.1,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.344484443754594,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.106196760337244,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -1.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 81.04950490720358,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 81.04950490720358,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.27965003468019,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.344003009396832,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -2.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 79.99262839227003,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 79.99262839227003,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.246496192232076,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.34223535585216,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -3.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 78.92969239002397,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 78.92969239002397,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.238059007792444,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.350897147079664,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -4.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 77.8610206810686,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 77.8610206810686,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.244494635174243,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.341280848801267,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -5.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 76.7869387931589,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 76.7869387931589,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.240511971351308,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.345373994032576,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -6.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 75.70777390204279,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 75.70777390204279,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237502115169068,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.347631405218864,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -7.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 74.62385473180024,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 74.62385473180024,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.246749603833344,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.341596794620843,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -8.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 73.53551145471062,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 73.53551145471062,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237460475390224,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.352118426631126,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -9.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 72.44307559067917,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 72.44307559067917,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.240571025832779,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.345810443729492,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -10.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 71.34687990625275,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 71.34687990625275,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.244412228387361,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.341301683816434,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -11.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 70.24725831325591,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 70.24725831325591,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237997639826895,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.350885165984877,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -12.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 69.14454576707817,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 69.14454576707817,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237849264076953,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.342173605517013,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -13.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 68.03907816464326,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 68.03907816464326,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237545677447207,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.344144958216116,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -14.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 66.93119224209184,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 66.93119224209184,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237016719138643,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.3516143619472,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -15.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 65.82122547220825,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 65.82122547220825,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.247004736143685,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.341190170249961,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -16.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 64.70951596162305,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 64.70951596162305,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.238817226384654,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.34612235186617,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -17.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 63.59640234782259,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 63.59640234782259,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.239364485059252,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.34681138135386,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -18.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 62.48222369599654,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 62.48222369599654,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.247479423199207,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.34127252183202,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -19.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 61.36731939575557,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 61.36731939575557,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237124375807781,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.351784722251605,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -20.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 60.25202905774984,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 60.25202905774984,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.24178526414724,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.344872327219905,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -21.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 59.136692410220405,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 59.136692410220405,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.248091714778099,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.341655400260029,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -22.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 58.02164919551461,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 58.02164919551461,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237483807323333,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.351650237402804,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -23.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 56.90723906659727,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 56.90723906659727,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.246467212480834,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.343054394804868,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -24.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 55.79380148358919,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 55.79380148358919,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.256942675822154,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.343994236936796,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -25.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 54.68167561036432,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 54.68167561036432,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.247951701597083,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.348303959161052,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -26.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 53.57120021123703,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 53.57120021123703,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237997639826897,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.342146743269938,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -27.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 52.46271354777127,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 52.46271354777127,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.24853591481097,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.341999619602518,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -28.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 51.356553275742954,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 51.356553275742954,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.242784624492792,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.341698594910147,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -29.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 50.25305634228647,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 50.25305634228647,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237016719138637,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.341174100727958,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -30.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 49.152558883257655,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 49.152558883257655,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.247004736143687,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.351077888472968,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -31.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 48.0553961208432,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 48.0553961208432,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.238817226384652,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.342959414210586,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -32.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 46.96190226144907,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 46.96190226144907,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.239364485059246,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.343502055661903,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -33.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 45.872410393897695,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 45.872410393897695,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.2474794231992,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.351548575854283,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -34.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 44.787252387966106,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 44.787252387966106,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237124375807776,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.341280848801263,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -35.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 43.70675879329505,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 43.70675879329505,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.241252348209127,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.345373994032567,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -36.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 42.63125873870044,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 42.63125873870044,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.243528956928534,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.34763140521888,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -37.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 41.56107983191754,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 41.56107983191754,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237443010735356,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.34159679462085,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -38.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 40.49654805980839,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 40.49654805980839,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.248054115879818,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.341539174803744,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -39.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 39.437987689063135,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 39.437987689063135,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.241692510127029,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.34495120137424,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -40.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 38.385721167425146,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 38.385721167425146,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237145388160199,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.351808966865724,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -41.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 37.34006902547054,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 37.34006902547054,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.246810375903836,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.34129255926238,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -42.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 36.30134977897117,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 36.30134977897117,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.238024730679426,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.34687912741554,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -43.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 35.26987983187183,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 35.26987983187183,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237545677447205,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.346033079778165,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -44.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 34.24597337991048,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 34.24597337991048,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.237016719138628,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.34117410072795,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -45.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 33.2299423149112,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 33.2299423149112,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.243753259140304,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.347853816380768,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    },
+    {
+      "side": "right",
+      "angle_deg": -46.0,
+      "intersections": {
+        "apron_left": 0.0,
+        "flipper_left_guard_base": 0.0,
+        "apron_right": 0.0,
+        "flipper_right_guard_base": 0.0
+      },
+      "thumb_clearances_mm": {
+        "apron_left": {
+          "value": 32.22209612977886,
+          "kind": "bbox_lower_bound"
+        },
+        "flipper_left_guard_base": {
+          "value": 32.22209612977886,
+          "kind": "bbox_lower_bound"
+        },
+        "apron_right": {
+          "value": 12.23022146173265,
+          "kind": "exact_BRep_distance"
+        },
+        "flipper_right_guard_base": {
+          "value": 12.335738917144491,
+          "kind": "exact_BRep_distance"
+        }
+      },
+      "pass": true
+    }
+  ],
+  "scope": "Sampled rigid intersections and thumb-pad clearance only; no interpolation, impact, friction, access certification or physical-play claim"
+}

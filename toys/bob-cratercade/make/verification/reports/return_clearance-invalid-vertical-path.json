@@ -1,0 +1,3897 @@
+{
+  "scope": "Source free-space samples against return parts/hardware only; not a predicted trajectory or physical test",
+  "sample_count": 414,
+  "marble_diameter_mm": 16.5,
+  "downhill_centerline": true,
+  "failures": [
+    {
+      "pose": "cup_drop_1",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -22.0
+      ],
+      "overlap_mm3": 0.7344487179259406
+    },
+    {
+      "pose": "cup_drop_2",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -22.25
+      ],
+      "overlap_mm3": 2.984656071437879
+    },
+    {
+      "pose": "cup_drop_3",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -22.5
+      ],
+      "overlap_mm3": 6.72159831201805
+    },
+    {
+      "pose": "cup_drop_4",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -22.75
+      ],
+      "overlap_mm3": 11.903515148453073
+    },
+    {
+      "pose": "cup_drop_5",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -23.0
+      ],
+      "overlap_mm3": 18.485651347284758
+    },
+    {
+      "pose": "cup_drop_6",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -23.25
+      ],
+      "overlap_mm3": 26.42191127291541
+    },
+    {
+      "pose": "cup_drop_7",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -23.5
+      ],
+      "overlap_mm3": 35.66545659138672
+    },
+    {
+      "pose": "cup_drop_8",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -23.75
+      ],
+      "overlap_mm3": 46.16898495607333
+    },
+    {
+      "pose": "cup_drop_9",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -24.0
+      ],
+      "overlap_mm3": 57.88488072578326
+    },
+    {
+      "pose": "cup_drop_10",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -24.25
+      ],
+      "overlap_mm3": 70.76530464949543
+    },
+    {
+      "pose": "cup_drop_11",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -24.5
+      ],
+      "overlap_mm3": 84.76225134758336
+    },
+    {
+      "pose": "cup_drop_12",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -24.75
+      ],
+      "overlap_mm3": 99.82758770390879
+    },
+    {
+      "pose": "cup_drop_13",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -25.0
+      ],
+      "overlap_mm3": 115.91308032432907
+    },
+    {
+      "pose": "cup_drop_14",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -25.25
+      ],
+      "overlap_mm3": 132.97041512615326
+    },
+    {
+      "pose": "cup_drop_15",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -25.5
+      ],
+      "overlap_mm3": 150.9512121384305
+    },
+    {
+      "pose": "cup_drop_16",
+      "part": "return_floor_3",
+      "center": [
+        160.0,
+        0.0,
+        -25.75
+      ],
+      "overlap_mm3": 169.80703686583186
+    }
+  ],
+  "samples": [
+    {
+      "pose": "channel_0_0",
+      "center": [
+        84.0,
+        412.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_1",
+      "center": [
+        82.69934475650581,
+        410.52592405737323,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_2",
+      "center": [
+        81.3986895130116,
+        409.05184811474646,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_3",
+      "center": [
+        80.09803426951741,
+        407.57777217211975,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_4",
+      "center": [
+        78.79737902602322,
+        406.103696229493,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_5",
+      "center": [
+        77.49672378252902,
+        404.6296202868662,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_6",
+      "center": [
+        76.19606853903483,
+        403.15554434423944,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_7",
+      "center": [
+        74.89541329554064,
+        401.68146840161273,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_8",
+      "center": [
+        73.59475805204643,
+        400.20739245898596,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_9",
+      "center": [
+        72.29410280855224,
+        398.7333165163592,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_10",
+      "center": [
+        70.99344756505803,
+        397.2592405737324,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_11",
+      "center": [
+        69.69279232156384,
+        395.7851646311057,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_12",
+      "center": [
+        68.39213707806965,
+        394.31108868847895,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_13",
+      "center": [
+        67.09148183457545,
+        392.8370127458522,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_14",
+      "center": [
+        65.79082659108126,
+        391.3629368032254,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_15",
+      "center": [
+        64.49017134758707,
+        389.8888608605987,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_16",
+      "center": [
+        63.18951610409287,
+        388.41478491797193,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_17",
+      "center": [
+        61.88886086059867,
+        386.94070897534516,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_18",
+      "center": [
+        60.58820561710447,
+        385.4666330327184,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_19",
+      "center": [
+        59.28755037361027,
+        383.9925570900916,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_20",
+      "center": [
+        57.98689513011608,
+        382.5184811474649,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_21",
+      "center": [
+        56.686239886621884,
+        381.04440520483814,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_22",
+      "center": [
+        55.385584643127686,
+        379.5703292622114,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_23",
+      "center": [
+        54.084929399633495,
+        378.0962533195846,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_24",
+      "center": [
+        52.784274156139304,
+        376.6221773769579,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_25",
+      "center": [
+        51.4836189126451,
+        375.1481014343311,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_26",
+      "center": [
+        50.1829636691509,
+        373.67402549170436,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_27",
+      "center": [
+        48.88230842565671,
+        372.1999495490776,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_28",
+      "center": [
+        47.58165318216251,
+        370.7258736064508,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_29",
+      "center": [
+        46.280997938668314,
+        369.2517976638241,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_30",
+      "center": [
+        44.98034269517412,
+        367.77772172119734,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_31",
+      "center": [
+        43.67968745167992,
+        366.30364577857057,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_32",
+      "center": [
+        42.379032208185734,
+        364.82956983594386,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_33",
+      "center": [
+        41.078376964691536,
+        363.3554938933171,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_34",
+      "center": [
+        39.77772172119734,
+        361.8814179506903,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_35",
+      "center": [
+        38.47706647770313,
+        360.40734200806355,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_36",
+      "center": [
+        37.17641123420894,
+        358.9332660654368,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_37",
+      "center": [
+        35.875755990714744,
+        357.45919012281,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_38",
+      "center": [
+        34.575100747220546,
+        355.9851141801833,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_39",
+      "center": [
+        33.274445503726355,
+        354.51103823755653,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_40",
+      "center": [
+        31.973790260232157,
+        353.03696229492976,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_41",
+      "center": [
+        30.673135016737966,
+        351.56288635230305,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_42",
+      "center": [
+        29.372479773243768,
+        350.0888104096763,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_43",
+      "center": [
+        28.080760498952948,
+        348.6070395441074,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_44",
+      "center": [
+        26.919711735502297,
+        347.02188027947886,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_45",
+      "center": [
+        25.938358761963613,
+        345.31961400574994,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_46",
+      "center": [
+        25.148395320171915,
+        343.5205248234189,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_47",
+      "center": [
+        24.559234566042022,
+        341.64605056882345,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_48",
+      "center": [
+        24.177896902980137,
+        339.7185273621983,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_49",
+      "center": [
+        24.00892632718748,
+        337.7609234518364,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_50",
+      "center": [
+        24.0,
+        335.79515756970443,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_51",
+      "center": [
+        24.0,
+        333.82929797475373,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_52",
+      "center": [
+        24.0,
+        331.863438379803,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_53",
+      "center": [
+        24.0,
+        329.8975787848522,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_54",
+      "center": [
+        24.0,
+        327.9317191899015,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_55",
+      "center": [
+        24.0,
+        325.96585959495076,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_0_56",
+      "center": [
+        24.0,
+        324.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_0",
+      "center": [
+        24.0,
+        324.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_1",
+      "center": [
+        24.0,
+        322.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_2",
+      "center": [
+        24.0,
+        320.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_3",
+      "center": [
+        24.0,
+        318.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_4",
+      "center": [
+        24.0,
+        316.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_5",
+      "center": [
+        24.0,
+        314.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_6",
+      "center": [
+        24.0,
+        312.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_7",
+      "center": [
+        24.0,
+        310.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_8",
+      "center": [
+        24.0,
+        308.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_9",
+      "center": [
+        24.0,
+        306.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_10",
+      "center": [
+        24.0,
+        304.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_11",
+      "center": [
+        24.0,
+        302.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_12",
+      "center": [
+        24.0,
+        300.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_13",
+      "center": [
+        24.0,
+        298.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_14",
+      "center": [
+        24.0,
+        296.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_15",
+      "center": [
+        24.0,
+        294.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_16",
+      "center": [
+        24.0,
+        292.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_17",
+      "center": [
+        24.0,
+        290.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_18",
+      "center": [
+        24.0,
+        288.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_19",
+      "center": [
+        24.0,
+        286.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_20",
+      "center": [
+        24.0,
+        284.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_21",
+      "center": [
+        24.0,
+        282.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_22",
+      "center": [
+        24.0,
+        280.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_23",
+      "center": [
+        24.0,
+        278.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_24",
+      "center": [
+        24.0,
+        276.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_25",
+      "center": [
+        24.0,
+        274.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_26",
+      "center": [
+        24.0,
+        272.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_27",
+      "center": [
+        24.0,
+        270.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_28",
+      "center": [
+        24.0,
+        268.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_29",
+      "center": [
+        24.0,
+        266.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_30",
+      "center": [
+        24.0,
+        264.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_31",
+      "center": [
+        24.0,
+        262.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_32",
+      "center": [
+        24.0,
+        260.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_33",
+      "center": [
+        24.0,
+        258.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_34",
+      "center": [
+        24.0,
+        256.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_35",
+      "center": [
+        24.0,
+        254.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_36",
+      "center": [
+        24.0,
+        252.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_37",
+      "center": [
+        24.0,
+        250.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_38",
+      "center": [
+        24.0,
+        248.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_39",
+      "center": [
+        24.0,
+        246.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_40",
+      "center": [
+        24.0,
+        244.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_41",
+      "center": [
+        24.0,
+        242.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_42",
+      "center": [
+        24.0,
+        240.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_43",
+      "center": [
+        24.0,
+        238.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_44",
+      "center": [
+        24.0,
+        236.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_45",
+      "center": [
+        24.0,
+        234.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_46",
+      "center": [
+        24.0,
+        232.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_47",
+      "center": [
+        24.0,
+        230.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_48",
+      "center": [
+        24.0,
+        228.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_49",
+      "center": [
+        24.0,
+        226.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_50",
+      "center": [
+        24.0,
+        224.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_51",
+      "center": [
+        24.0,
+        222.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_52",
+      "center": [
+        24.0,
+        220.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_53",
+      "center": [
+        24.0,
+        218.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_54",
+      "center": [
+        24.0,
+        216.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_55",
+      "center": [
+        24.0,
+        214.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_56",
+      "center": [
+        24.0,
+        212.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_57",
+      "center": [
+        24.0,
+        210.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_58",
+      "center": [
+        24.0,
+        208.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_59",
+      "center": [
+        24.0,
+        206.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_60",
+      "center": [
+        24.0,
+        204.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_61",
+      "center": [
+        24.0,
+        202.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_62",
+      "center": [
+        24.0,
+        200.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_63",
+      "center": [
+        24.0,
+        198.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_64",
+      "center": [
+        24.0,
+        196.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_1_65",
+      "center": [
+        24.0,
+        194.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_0",
+      "center": [
+        24.0,
+        194.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_1",
+      "center": [
+        24.0,
+        192.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_2",
+      "center": [
+        24.0,
+        190.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_3",
+      "center": [
+        24.0,
+        188.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_4",
+      "center": [
+        24.0,
+        186.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_5",
+      "center": [
+        24.0,
+        184.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_6",
+      "center": [
+        24.0,
+        182.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_7",
+      "center": [
+        24.0,
+        180.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_8",
+      "center": [
+        24.0,
+        178.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_9",
+      "center": [
+        24.0,
+        176.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_10",
+      "center": [
+        24.0,
+        174.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_11",
+      "center": [
+        24.0,
+        172.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_12",
+      "center": [
+        24.0,
+        170.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_13",
+      "center": [
+        24.0,
+        168.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_14",
+      "center": [
+        24.0,
+        166.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_15",
+      "center": [
+        24.0,
+        164.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_16",
+      "center": [
+        24.0,
+        162.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_17",
+      "center": [
+        24.0,
+        160.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_18",
+      "center": [
+        24.0,
+        158.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_19",
+      "center": [
+        24.0,
+        156.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_20",
+      "center": [
+        24.0,
+        154.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_21",
+      "center": [
+        24.0,
+        152.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_22",
+      "center": [
+        24.0,
+        150.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_23",
+      "center": [
+        24.0,
+        148.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_24",
+      "center": [
+        24.0,
+        146.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_25",
+      "center": [
+        24.0,
+        144.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_26",
+      "center": [
+        24.0,
+        142.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_27",
+      "center": [
+        24.0,
+        140.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_28",
+      "center": [
+        24.0,
+        138.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_29",
+      "center": [
+        24.0,
+        136.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_30",
+      "center": [
+        24.0,
+        134.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_31",
+      "center": [
+        24.0,
+        132.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_32",
+      "center": [
+        24.0,
+        130.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_33",
+      "center": [
+        24.0,
+        128.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_34",
+      "center": [
+        24.0,
+        126.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_35",
+      "center": [
+        24.0,
+        124.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_36",
+      "center": [
+        24.0,
+        122.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_37",
+      "center": [
+        24.0,
+        120.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_38",
+      "center": [
+        24.0,
+        118.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_39",
+      "center": [
+        24.0,
+        116.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_40",
+      "center": [
+        24.0,
+        114.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_41",
+      "center": [
+        24.0,
+        112.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_42",
+      "center": [
+        24.0,
+        110.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_43",
+      "center": [
+        24.0,
+        108.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_44",
+      "center": [
+        24.0,
+        106.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_45",
+      "center": [
+        24.0,
+        104.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_46",
+      "center": [
+        24.0,
+        102.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_47",
+      "center": [
+        24.0,
+        100.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_48",
+      "center": [
+        24.0,
+        98.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_49",
+      "center": [
+        24.0,
+        96.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_50",
+      "center": [
+        24.0,
+        94.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_51",
+      "center": [
+        24.0,
+        92.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_52",
+      "center": [
+        24.0,
+        90.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_53",
+      "center": [
+        24.0,
+        88.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_54",
+      "center": [
+        24.0,
+        86.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_2_55",
+      "center": [
+        24.0,
+        84.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_0",
+      "center": [
+        24.0,
+        84.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_1",
+      "center": [
+        24.0,
+        82.00216998006778,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_2",
+      "center": [
+        24.0,
+        80.00433996013555,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_3",
+      "center": [
+        24.0,
+        78.00650994020333,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_4",
+      "center": [
+        24.0,
+        76.0086799202711,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_5",
+      "center": [
+        24.05535729227084,
+        74.01229773914498,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_6",
+      "center": [
+        24.322015288997793,
+        72.03337818848028,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_7",
+      "center": [
+        24.806223207425443,
+        70.0961709804219,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_8",
+      "center": [
+        25.502022257767354,
+        68.2245158955399,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_9",
+      "center": [
+        26.4008497542086,
+        66.44144601276398,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_10",
+      "center": [
+        27.4916444895658,
+        64.76890425826622,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_11",
+      "center": [
+        28.7609828574071,
+        63.22747337004989,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_12",
+      "center": [
+        30.19324404647773,
+        61.83612260137098,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_13",
+      "center": [
+        31.770802274504923,
+        60.61197428012674,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_14",
+      "center": [
+        33.47424369570275,
+        59.57009309699262,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_15",
+      "center": [
+        35.27049635612495,
+        58.69623700888238,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_16",
+      "center": [
+        37.078170321978206,
+        57.845566907304374,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_17",
+      "center": [
+        38.88584428783147,
+        56.99489680572637,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_18",
+      "center": [
+        40.69351825368473,
+        56.144226704148366,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_19",
+      "center": [
+        42.501192219538,
+        55.29355660257035,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_20",
+      "center": [
+        44.30886618539126,
+        54.442886500992344,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_21",
+      "center": [
+        46.11654015124452,
+        53.59221639941434,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_22",
+      "center": [
+        47.924214117097776,
+        52.74154629783634,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_23",
+      "center": [
+        49.731888082951045,
+        51.89087619625833,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_24",
+      "center": [
+        51.5395620488043,
+        51.04020609468033,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_25",
+      "center": [
+        53.34723601465757,
+        50.18953599310232,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_26",
+      "center": [
+        55.15490998051082,
+        49.338865891524314,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_27",
+      "center": [
+        56.96258394636409,
+        48.48819578994631,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_28",
+      "center": [
+        58.77025791221735,
+        47.63752568836831,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_29",
+      "center": [
+        60.57793187807061,
+        46.786855586790296,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_30",
+      "center": [
+        62.38560584392387,
+        45.93618548521229,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_31",
+      "center": [
+        64.19327980977714,
+        45.08551538363428,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_32",
+      "center": [
+        66.00095377563039,
+        44.234845282056284,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_33",
+      "center": [
+        67.80862774148365,
+        43.38417518047828,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_34",
+      "center": [
+        69.6163017073369,
+        42.533505078900276,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_35",
+      "center": [
+        71.42397567319018,
+        41.682834977322266,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_36",
+      "center": [
+        73.23164963904344,
+        40.83216487574426,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_37",
+      "center": [
+        75.03932360489671,
+        39.98149477416625,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_38",
+      "center": [
+        76.84699757074996,
+        39.13082467258825,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_39",
+      "center": [
+        78.65467153660322,
+        38.28015457101024,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_40",
+      "center": [
+        80.46234550245649,
+        37.42948446943224,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_41",
+      "center": [
+        82.27001946830975,
+        36.578814367854235,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_42",
+      "center": [
+        84.07769343416301,
+        35.728144266276225,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_43",
+      "center": [
+        85.88536740001626,
+        34.87747416469822,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_44",
+      "center": [
+        87.69304136586953,
+        34.02680406312022,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_45",
+      "center": [
+        89.50071533172279,
+        33.17613396154221,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_46",
+      "center": [
+        91.30838929757607,
+        32.3254638599642,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_47",
+      "center": [
+        93.11606326342931,
+        31.474793758386205,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_48",
+      "center": [
+        94.92373722928257,
+        30.624123656808194,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_49",
+      "center": [
+        96.73141119513585,
+        29.773453555230184,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_50",
+      "center": [
+        98.5390851609891,
+        28.92278345365218,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_51",
+      "center": [
+        100.34675912684236,
+        28.072113352074183,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_52",
+      "center": [
+        102.15443309269563,
+        27.221443250496172,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_53",
+      "center": [
+        103.9621070585489,
+        26.37077314891817,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_54",
+      "center": [
+        105.76978102440215,
+        25.520103047340157,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_55",
+      "center": [
+        107.5774549902554,
+        24.669432945762154,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_56",
+      "center": [
+        109.38512895610866,
+        23.818762844184157,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_57",
+      "center": [
+        111.19280292196193,
+        22.968092742606146,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_58",
+      "center": [
+        113.0004768878152,
+        22.117422641028142,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_59",
+      "center": [
+        114.80815085366845,
+        21.266752539450138,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_60",
+      "center": [
+        116.61582481952172,
+        20.416082437872127,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_61",
+      "center": [
+        118.42349878537497,
+        19.56541233629413,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_62",
+      "center": [
+        120.23117275122824,
+        18.714742234716113,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_63",
+      "center": [
+        122.0388467170815,
+        17.86407213313811,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_64",
+      "center": [
+        123.84652068293475,
+        17.013402031560105,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_65",
+      "center": [
+        125.65419464878802,
+        16.1627319299821,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_66",
+      "center": [
+        127.46186861464128,
+        15.312061828404097,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_67",
+      "center": [
+        129.26954258049454,
+        14.46139172682608,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_68",
+      "center": [
+        131.0772165463478,
+        13.61072162524809,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_69",
+      "center": [
+        132.88489051220108,
+        12.760051523670072,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_70",
+      "center": [
+        134.69256447805435,
+        11.909381422092068,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_71",
+      "center": [
+        136.50023844390762,
+        11.058711320514064,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_72",
+      "center": [
+        138.30791240976083,
+        10.208041218936074,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_73",
+      "center": [
+        140.1155863756141,
+        9.357371117358056,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_74",
+      "center": [
+        141.92326034146737,
+        8.506701015780052,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_75",
+      "center": [
+        143.73093430732064,
+        7.656030914202034,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_76",
+      "center": [
+        145.5386082731739,
+        6.805360812624031,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_77",
+      "center": [
+        147.34628223902718,
+        5.954690711046027,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_78",
+      "center": [
+        149.15395620488044,
+        5.104020609468023,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_79",
+      "center": [
+        150.96163017073368,
+        4.253350507890019,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_80",
+      "center": [
+        152.76930413658695,
+        3.4026804063120153,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_81",
+      "center": [
+        154.57697810244022,
+        2.5520103047340115,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_82",
+      "center": [
+        156.38465206829346,
+        1.7013402031560076,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_83",
+      "center": [
+        158.19232603414673,
+        0.8506701015780038,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "channel_3_84",
+      "center": [
+        160.0,
+        0.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_0",
+      "center": [
+        84.0,
+        412.0,
+        44.0
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_1",
+      "center": [
+        84.0,
+        412.0,
+        43.50189393939394
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_2",
+      "center": [
+        84.0,
+        412.0,
+        43.003787878787875
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_3",
+      "center": [
+        84.0,
+        412.0,
+        42.50568181818182
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_4",
+      "center": [
+        84.0,
+        412.0,
+        42.00757575757576
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_5",
+      "center": [
+        84.0,
+        412.0,
+        41.509469696969695
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_6",
+      "center": [
+        84.0,
+        412.0,
+        41.01136363636363
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_7",
+      "center": [
+        84.0,
+        412.0,
+        40.51325757575758
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_8",
+      "center": [
+        84.0,
+        412.0,
+        40.015151515151516
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_9",
+      "center": [
+        84.0,
+        412.0,
+        39.51704545454545
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_10",
+      "center": [
+        84.0,
+        412.0,
+        39.01893939393939
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_11",
+      "center": [
+        84.0,
+        412.0,
+        38.520833333333336
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_12",
+      "center": [
+        84.0,
+        412.0,
+        38.02272727272727
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_13",
+      "center": [
+        84.0,
+        412.0,
+        37.52462121212121
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_14",
+      "center": [
+        84.0,
+        412.0,
+        37.02651515151515
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_15",
+      "center": [
+        84.0,
+        412.0,
+        36.52840909090909
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_16",
+      "center": [
+        84.0,
+        412.0,
+        36.03030303030303
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_17",
+      "center": [
+        84.0,
+        412.0,
+        35.53219696969697
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_18",
+      "center": [
+        84.0,
+        412.0,
+        35.03409090909091
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_19",
+      "center": [
+        84.0,
+        412.0,
+        34.535984848484844
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_20",
+      "center": [
+        84.0,
+        412.0,
+        34.03787878787879
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_21",
+      "center": [
+        84.0,
+        412.0,
+        33.53977272727273
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_22",
+      "center": [
+        84.0,
+        412.0,
+        33.041666666666664
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_23",
+      "center": [
+        84.0,
+        412.0,
+        32.54356060606061
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_24",
+      "center": [
+        84.0,
+        412.0,
+        32.04545454545455
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_25",
+      "center": [
+        84.0,
+        412.0,
+        31.547348484848484
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_26",
+      "center": [
+        84.0,
+        412.0,
+        31.049242424242422
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_27",
+      "center": [
+        84.0,
+        412.0,
+        30.551136363636363
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_28",
+      "center": [
+        84.0,
+        412.0,
+        30.053030303030305
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_29",
+      "center": [
+        84.0,
+        412.0,
+        29.554924242424242
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_30",
+      "center": [
+        84.0,
+        412.0,
+        29.05681818181818
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_31",
+      "center": [
+        84.0,
+        412.0,
+        28.55871212121212
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_32",
+      "center": [
+        84.0,
+        412.0,
+        28.060606060606062
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_33",
+      "center": [
+        84.0,
+        412.0,
+        27.5625
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_34",
+      "center": [
+        84.0,
+        412.0,
+        27.064393939393938
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_35",
+      "center": [
+        84.0,
+        412.0,
+        26.56628787878788
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_36",
+      "center": [
+        84.0,
+        412.0,
+        26.068181818181817
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_37",
+      "center": [
+        84.0,
+        412.0,
+        25.570075757575758
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_38",
+      "center": [
+        84.0,
+        412.0,
+        25.071969696969695
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_39",
+      "center": [
+        84.0,
+        412.0,
+        24.573863636363637
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_40",
+      "center": [
+        84.0,
+        412.0,
+        24.075757575757574
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_41",
+      "center": [
+        84.0,
+        412.0,
+        23.577651515151516
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_42",
+      "center": [
+        84.0,
+        412.0,
+        23.079545454545453
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_43",
+      "center": [
+        84.0,
+        412.0,
+        22.581439393939394
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_44",
+      "center": [
+        84.0,
+        412.0,
+        22.083333333333332
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_45",
+      "center": [
+        84.0,
+        412.0,
+        21.585227272727273
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_46",
+      "center": [
+        84.0,
+        412.0,
+        21.08712121212121
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_47",
+      "center": [
+        84.0,
+        412.0,
+        20.589015151515152
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_48",
+      "center": [
+        84.0,
+        412.0,
+        20.09090909090909
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_49",
+      "center": [
+        84.0,
+        412.0,
+        19.59280303030303
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_50",
+      "center": [
+        84.0,
+        412.0,
+        19.09469696969697
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_51",
+      "center": [
+        84.0,
+        412.0,
+        18.59659090909091
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_52",
+      "center": [
+        84.0,
+        412.0,
+        18.098484848484848
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_53",
+      "center": [
+        84.0,
+        412.0,
+        17.60037878787879
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_54",
+      "center": [
+        84.0,
+        412.0,
+        17.102272727272727
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_55",
+      "center": [
+        84.0,
+        412.0,
+        16.604166666666668
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_56",
+      "center": [
+        84.0,
+        412.0,
+        16.106060606060606
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_57",
+      "center": [
+        84.0,
+        412.0,
+        15.607954545454547
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_58",
+      "center": [
+        84.0,
+        412.0,
+        15.109848484848484
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_59",
+      "center": [
+        84.0,
+        412.0,
+        14.611742424242426
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_60",
+      "center": [
+        84.0,
+        412.0,
+        14.113636363636363
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_61",
+      "center": [
+        84.0,
+        412.0,
+        13.615530303030305
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_62",
+      "center": [
+        84.0,
+        412.0,
+        13.117424242424242
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_63",
+      "center": [
+        84.0,
+        412.0,
+        12.619318181818183
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_64",
+      "center": [
+        84.0,
+        412.0,
+        12.121212121212121
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_65",
+      "center": [
+        84.0,
+        412.0,
+        11.623106060606062
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_66",
+      "center": [
+        84.0,
+        412.0,
+        11.125
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_67",
+      "center": [
+        84.0,
+        412.0,
+        10.626893939393938
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_68",
+      "center": [
+        84.0,
+        412.0,
+        10.128787878787875
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_69",
+      "center": [
+        84.0,
+        412.0,
+        9.63068181818182
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_70",
+      "center": [
+        84.0,
+        412.0,
+        9.132575757575758
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_71",
+      "center": [
+        84.0,
+        412.0,
+        8.634469696969695
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_72",
+      "center": [
+        84.0,
+        412.0,
+        8.136363636363633
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_73",
+      "center": [
+        84.0,
+        412.0,
+        7.638257575757578
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_74",
+      "center": [
+        84.0,
+        412.0,
+        7.140151515151516
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_75",
+      "center": [
+        84.0,
+        412.0,
+        6.642045454545453
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_76",
+      "center": [
+        84.0,
+        412.0,
+        6.143939393939391
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_77",
+      "center": [
+        84.0,
+        412.0,
+        5.645833333333336
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_78",
+      "center": [
+        84.0,
+        412.0,
+        5.147727272727273
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_79",
+      "center": [
+        84.0,
+        412.0,
+        4.649621212121211
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_80",
+      "center": [
+        84.0,
+        412.0,
+        4.151515151515149
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_81",
+      "center": [
+        84.0,
+        412.0,
+        3.6534090909090935
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_82",
+      "center": [
+        84.0,
+        412.0,
+        3.155303030303031
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_83",
+      "center": [
+        84.0,
+        412.0,
+        2.657196969696969
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_84",
+      "center": [
+        84.0,
+        412.0,
+        2.1590909090909065
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_85",
+      "center": [
+        84.0,
+        412.0,
+        1.6609848484848513
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_86",
+      "center": [
+        84.0,
+        412.0,
+        1.162878787878789
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_87",
+      "center": [
+        84.0,
+        412.0,
+        0.6647727272727266
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_88",
+      "center": [
+        84.0,
+        412.0,
+        0.1666666666666643
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_89",
+      "center": [
+        84.0,
+        412.0,
+        -0.3314393939393909
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_90",
+      "center": [
+        84.0,
+        412.0,
+        -0.8295454545454533
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_91",
+      "center": [
+        84.0,
+        412.0,
+        -1.3276515151515156
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_92",
+      "center": [
+        84.0,
+        412.0,
+        -1.825757575757578
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_93",
+      "center": [
+        84.0,
+        412.0,
+        -2.323863636363633
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_94",
+      "center": [
+        84.0,
+        412.0,
+        -2.8219696969696955
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_95",
+      "center": [
+        84.0,
+        412.0,
+        -3.320075757575758
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_96",
+      "center": [
+        84.0,
+        412.0,
+        -3.81818181818182
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_97",
+      "center": [
+        84.0,
+        412.0,
+        -4.316287878787875
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_98",
+      "center": [
+        84.0,
+        412.0,
+        -4.814393939393938
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_99",
+      "center": [
+        84.0,
+        412.0,
+        -5.3125
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_100",
+      "center": [
+        84.0,
+        412.0,
+        -5.810606060606062
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_101",
+      "center": [
+        84.0,
+        412.0,
+        -6.308712121212125
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_102",
+      "center": [
+        84.0,
+        412.0,
+        -6.80681818181818
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_103",
+      "center": [
+        84.0,
+        412.0,
+        -7.304924242424242
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_104",
+      "center": [
+        84.0,
+        412.0,
+        -7.8030303030303045
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_105",
+      "center": [
+        84.0,
+        412.0,
+        -8.301136363636367
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_106",
+      "center": [
+        84.0,
+        412.0,
+        -8.799242424242422
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_107",
+      "center": [
+        84.0,
+        412.0,
+        -9.297348484848484
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_108",
+      "center": [
+        84.0,
+        412.0,
+        -9.795454545454547
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_109",
+      "center": [
+        84.0,
+        412.0,
+        -10.293560606060609
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_110",
+      "center": [
+        84.0,
+        412.0,
+        -10.791666666666664
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_111",
+      "center": [
+        84.0,
+        412.0,
+        -11.289772727272727
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_112",
+      "center": [
+        84.0,
+        412.0,
+        -11.787878787878789
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_113",
+      "center": [
+        84.0,
+        412.0,
+        -12.285984848484851
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_114",
+      "center": [
+        84.0,
+        412.0,
+        -12.784090909090907
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_115",
+      "center": [
+        84.0,
+        412.0,
+        -13.282196969696969
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_116",
+      "center": [
+        84.0,
+        412.0,
+        -13.780303030303031
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_117",
+      "center": [
+        84.0,
+        412.0,
+        -14.278409090909093
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_118",
+      "center": [
+        84.0,
+        412.0,
+        -14.776515151515149
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_119",
+      "center": [
+        84.0,
+        412.0,
+        -15.274621212121211
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_120",
+      "center": [
+        84.0,
+        412.0,
+        -15.772727272727273
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_121",
+      "center": [
+        84.0,
+        412.0,
+        -16.270833333333336
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_122",
+      "center": [
+        84.0,
+        412.0,
+        -16.76893939393939
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_123",
+      "center": [
+        84.0,
+        412.0,
+        -17.267045454545453
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_124",
+      "center": [
+        84.0,
+        412.0,
+        -17.765151515151516
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_125",
+      "center": [
+        84.0,
+        412.0,
+        -18.263257575757578
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_126",
+      "center": [
+        84.0,
+        412.0,
+        -18.761363636363633
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_127",
+      "center": [
+        84.0,
+        412.0,
+        -19.259469696969695
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_128",
+      "center": [
+        84.0,
+        412.0,
+        -19.757575757575758
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_129",
+      "center": [
+        84.0,
+        412.0,
+        -20.255681818181813
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_130",
+      "center": [
+        84.0,
+        412.0,
+        -20.753787878787875
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_131",
+      "center": [
+        84.0,
+        412.0,
+        -21.251893939393938
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "hopper_drop_132",
+      "center": [
+        84.0,
+        412.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "cup_drop_0",
+      "center": [
+        160.0,
+        0.0,
+        -21.75
+      ],
+      "maximum_overlap_mm3": 0.0
+    },
+    {
+      "pose": "cup_drop_1",
+      "center": [
+        160.0,
+        0.0,
+        -22.0
+      ],
+      "maximum_overlap_mm3": 0.7344487179259406
+    },
+    {
+      "pose": "cup_drop_2",
+      "center": [
+        160.0,
+        0.0,
+        -22.25
+      ],
+      "maximum_overlap_mm3": 2.984656071437879
+    },
+    {
+      "pose": "cup_drop_3",
+      "center": [
+        160.0,
+        0.0,
+        -22.5
+      ],
+      "maximum_overlap_mm3": 6.72159831201805
+    },
+    {
+      "pose": "cup_drop_4",
+      "center": [
+        160.0,
+        0.0,
+        -22.75
+      ],
+      "maximum_overlap_mm3": 11.903515148453073
+    },
+    {
+      "pose": "cup_drop_5",
+      "center": [
+        160.0,
+        0.0,
+        -23.0
+      ],
+      "maximum_overlap_mm3": 18.485651347284758
+    },
+    {
+      "pose": "cup_drop_6",
+      "center": [
+        160.0,
+        0.0,
+        -23.25
+      ],
+      "maximum_overlap_mm3": 26.42191127291541
+    },
+    {
+      "pose": "cup_drop_7",
+      "center": [
+        160.0,
+        0.0,
+        -23.5
+      ],
+      "maximum_overlap_mm3": 35.66545659138672
+    },
+    {
+      "pose": "cup_drop_8",
+      "center": [
+        160.0,
+        0.0,
+        -23.75
+      ],
+      "maximum_overlap_mm3": 46.16898495607333
+    },
+    {
+      "pose": "cup_drop_9",
+      "center": [
+        160.0,
+        0.0,
+        -24.0
+      ],
+      "maximum_overlap_mm3": 57.88488072578326
+    },
+    {
+      "pose": "cup_drop_10",
+      "center": [
+        160.0,
+        0.0,
+        -24.25
+      ],
+      "maximum_overlap_mm3": 70.76530464949543
+    },
+    {
+      "pose": "cup_drop_11",
+      "center": [
+        160.0,
+        0.0,
+        -24.5
+      ],
+      "maximum_overlap_mm3": 84.76225134758336
+    },
+    {
+      "pose": "cup_drop_12",
+      "center": [
+        160.0,
+        0.0,
+        -24.75
+      ],
+      "maximum_overlap_mm3": 99.82758770390879
+    },
+    {
+      "pose": "cup_drop_13",
+      "center": [
+        160.0,
+        0.0,
+        -25.0
+      ],
+      "maximum_overlap_mm3": 115.91308032432907
+    },
+    {
+      "pose": "cup_drop_14",
+      "center": [
+        160.0,
+        0.0,
+        -25.25
+      ],
+      "maximum_overlap_mm3": 132.97041512615326
+    },
+    {
+      "pose": "cup_drop_15",
+      "center": [
+        160.0,
+        0.0,
+        -25.5
+      ],
+      "maximum_overlap_mm3": 150.9512121384305
+    },
+    {
+      "pose": "cup_drop_16",
+      "center": [
+        160.0,
+        0.0,
+        -25.75
+      ],
+      "maximum_overlap_mm3": 169.80703686583186
+    }
+  ],
+  "pass": false
+}

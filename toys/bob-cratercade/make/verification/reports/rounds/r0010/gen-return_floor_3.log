@@ -1,0 +1,7 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_return_floor_3.step.py --write --json
+(3.2s, exit 0)
+--- stdout
+{"ok":true,"sourceRef":"part_return_floor_3.step.py","cadPath":"part_return_floor_3","kind":"part","outcome":"built","packagePath":"__cadgen__/models/part_return_floor_3.step.py"}
+
+--- stderr
+[scripts/gen] generated part GLB/topology artifact: __cadgen__/models/part_return_floor_3.step.py

@@ -1,0 +1,15 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_jackpot_frame.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-jackpot_frame.md
+(4.6s, exit 1)
+--- stdout
+part_jackpot_frame.step.py: 28.27 cm3 solid, grid 0.291 mm (355x225x149), 170740 surface samples, thickness resolved to 0.146 mm
+  FAIL  wall >= 0.80 mm (+/-0.15)      0.1% of surface below (76 of 170740 samples); thinnest 0.29 mm at (58.0, -4.4, 6.4) in 2 region(s); 1 wall(s) (widest band 1.38 mm), 1 taper(s) at feature edges (0.02% of surface, budget 2%); 9 more within measurement error of the limit
+  PASS  thickness distribution         median 5.82 mm, p95 33.47 mm, max 101.87 mm
+  WARN  hollowable at 1.20 mm wall     12.64 of 28.27 cm3 (45%) in 1 pocket(s)
+  PASS  filament that would save       1.90 cm3, 2.4 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.29 mm at (58.0, -4.4, 6.4)     48 samples, 5.1 mm2, runs 3.7 mm, band 1.38 mm
+        2. [taper] 0.29 mm at (58.0, -7.8, 5.3)     28 samples, 2.8 mm2, runs 3.6 mm, band 0.80 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-jackpot_frame.md
+
+--- stderr
