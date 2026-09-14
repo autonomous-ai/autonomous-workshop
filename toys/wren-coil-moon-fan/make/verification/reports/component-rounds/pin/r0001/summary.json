@@ -1,0 +1,69 @@
+{
+ "build": {
+  "pin": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "pin"
+ ],
+ "checked": [
+  "pin"
+ ],
+ "checks_ok": false,
+ "entry": "part_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pin"
+ ],
+ "print": {
+  "pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0001/overhang-pin.log": "daf8466ebe8a32f85897f4a0fb667a12f23b2bdaf46645b3510231c97cb51550",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0001/thickness-pin.log": "66077db4ea37a8e28b5c5c9223a304439f1b6ae7365da60df122554aa8b3cc40"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 3.8% of surface below (512 of 15689 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Feathered barb and slit edges",
+    "evidence": "Front and iso show sharp widest barb rim; top shows slit ending on circular perimeter",
+    "part": "pin",
+    "repair": "Use a thick barb band and flat sides on flexible legs to remove thin tangencies"
+   }
+  ],
+  "observation": "The split pin is continuous and accessible, but the barb has a sharp circumferential edge and the split exits into thin curved edges.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pin/r0001/visual-packet.json",
+  "packet_sha256": "23f7204557deb7a0563c57492249f9ad64d8c734f6fbeaab9d032ae82361e3e5",
+  "status": "fail"
+ }
+}

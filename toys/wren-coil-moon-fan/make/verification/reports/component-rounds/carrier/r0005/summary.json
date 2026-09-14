@@ -1,0 +1,60 @@
+{
+ "build": {
+  "carrier": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "carrier"
+ ],
+ "checked": [
+  "carrier"
+ ],
+ "checks_ok": true,
+ "entry": "part_carrier.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "carrier"
+ ],
+ "print": {
+  "carrier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0005/overhang-carrier.log": "49e67648cb346e22f96b65b2694630055d2e240cc3e4f1ad30c71e86c0ec1c05",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0005/thickness-carrier.log": "d2eeefb6071cc2fb5b35173457548c00264ab16848d95ef5de81d6e0a59949a2"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:carrier",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso show continuous crescent structure, enclosed pocket and extended stop track. Additional az0_el-90 underside view shows a recessed rectangular tap landmark enclosing a flat landing, without protrusions. No missing carrier feature remains.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0005/visual-packet.json",
+  "packet_sha256": "ec8444a62ad3bc6da68a0c4fcd4ee867eb954d24cd974597072092347376e8e5",
+  "status": "pass"
+ }
+}
