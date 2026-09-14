@@ -1,0 +1,59 @@
+{
+ "build": {
+  "fork_01": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "fork_01"
+ ],
+ "checked": [
+  "fork_01"
+ ],
+ "checks_ok": true,
+ "entry": "part_fork_01.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_01/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_01"
+ ],
+ "print": {
+  "fork_01": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_01/r0002/overhang-fork_01.log": "ed41061dada80173529a431a68a477c3ebec970ae9e0958c47b3e5bd80b0bcee",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_01/r0002/thickness-fork_01.log": "48a3a00ed5715199b023f64073cdb1ccc9a2854e86edbef51568d4bed5176e45"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:fork_01",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_01/r0002/visual-packet.json",
+  "packet_sha256": "3cecdd2aff06c1dab5a774e4a81141d9c1f1273797d6cddc04b3ccf790103ea9",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_single_14.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_14/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "single_14"
+ ],
+ "print": {
+  "single_14": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_14/r0001/overhang-single_14.log": "ef010607df7018088c3f2d951c5d5f5cdfeb998b9d639c1214497272de28647b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_14/r0001/thickness-single_14.log": "cefeb3e4b50e784c6a29849d9f8ee665140ad96cfb9b2575369de8e966a56ec2"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "single_14"
+ ],
+ "round": 2,
+ "scope": "component:single_14",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows uniform four-millimeter extrusion with flat top/base. Top and iso show a single continuous curved tail into a broad rounded body. No added shoulders, detached parts, holes or visible intersections; preserved12\u00d78 plan. These current render bytes exactly match the current-attempt views already inspected; only the evidence source binding was refreshed, without geometry or image changes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_14/r0002/visual-packet.json",
+  "packet_sha256": "6b9532db3cadcffd3d4bb69eb9879b11db73c7a1e0469de5053007784db60842",
+  "status": "pass"
+ }
+}

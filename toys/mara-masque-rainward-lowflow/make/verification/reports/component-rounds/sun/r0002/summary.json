@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_sun.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun"
+ ],
+ "print": {
+  "sun": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun/r0001/overhang-sun.log": "92cae62f7352317877d4bcb6ca0262ea93072728e76ddb329b6134f9fcaf8fa1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun/r0001/thickness-sun.log": "0584e7487fdf13753d7c9a75d15cb28c0e22089428620aa62fc640139e2257c1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.39,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "sun"
+ ],
+ "round": 2,
+ "scope": "component:sun",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front confirms center is low and overall outline shallow. Iso shows24 broad coplanar raised sectors with open narrow channels and unobstructed circular center, original scalloped perimeter intact. Top shows four short boundary dashes between sectors; they are subtle at overview scale and require canonical close detail. No lane-end dots, tall rails, missing sectors or intersections visible. These current render bytes exactly match the current-attempt views already inspected; only the evidence source binding was refreshed, without geometry or image changes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun/r0002/visual-packet.json",
+  "packet_sha256": "04142766da48e63570ad94e699dec85d38102305afcd44455040af4b02ca125d",
+  "status": "pass"
+ }
+}

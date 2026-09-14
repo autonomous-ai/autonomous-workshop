@@ -1,0 +1,7 @@
+{
+  "snapshot_sha256": "857448d95613d0df95d7eb87b72f9d1c98140945ff54c83c0eae773a7a6aa0ba",
+  "source_path": "revision-work/make/source/cad",
+  "rules_sha256": "d601a858b70b4c1685dced91c7f176d73e4779a3ad784e9b13c7fc88d1fd9d66",
+  "source_files_match_archive": true,
+  "historical_evidence_reused_as_pass": false
+}

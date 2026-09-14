@@ -1,0 +1,209 @@
+{
+  "status": "PASS",
+  "method": "Actual STEP B-rep planes and faces projected by tessellation, 0.002mm deflection; exact B-rep face areas and bounds checked separately. No nominal sector substitution.",
+  "source_sha256": "20eb910707c32018e194796646d8e38ed0f7486b117d9d7d1cf9a8c216bbb0d7",
+  "step_sha256": {
+    "part_sun.step": "64c071c8e39da398a4493fb371459d161d6fe70db6fe81e188e4f5e963a48aec",
+    "part_single_01.step": "b402e400ac33b9d9099bd6760c63a19cc633dd00c3fe98c065437ea5d91182f6",
+    "part_fork_01.step": "c0b0c7d994cdef3bb7775e44137fd829d1072989cc979b6297d61241088d75ef",
+    "part_die_1.step": "26603dbed5eafb628dd21450e1064bbcd8ec8065cbeb54394b2bfe17c51c8d39",
+    "part_cup_1.step": "3d950a6f11937b5556d9b3a0b1a657684e7f465d05f183d155a00ddc733df583"
+  },
+  "sun_mm": [
+    190.0,
+    190.0,
+    17.0000001
+  ],
+  "continuous_bar_area_mm2": 1809.5573684677213,
+  "bar_radius_mm": 24,
+  "bar_inner_wires": 0,
+  "lane_flat_count": 24,
+  "lane_top_mm": 16.8,
+  "marker_top_count": 4,
+  "markers": [
+    {
+      "after_lane": 6,
+      "radius_mm": 64.99999999999982,
+      "boundary_offset_mm": 1.723066134218243e-13,
+      "footprint_bounds_in_boundary_frame": [
+        59.99999999999984,
+        -0.4000000000000359,
+        69.99999999999986,
+        0.4000000000003734
+      ],
+      "minimum_lane_flat_clearance_mm": 0.5499999999994173
+    },
+    {
+      "after_lane": 12,
+      "radius_mm": 64.99999999999987,
+      "boundary_offset_mm": 1.5276668818842154e-13,
+      "footprint_bounds_in_boundary_frame": [
+        59.99999999999984,
+        -0.40000000000002167,
+        69.99999999999986,
+        0.4000000000003867
+      ],
+      "minimum_lane_flat_clearance_mm": 0.54999999999714
+    },
+    {
+      "after_lane": 18,
+      "radius_mm": 64.99999999999358,
+      "boundary_offset_mm": 8.686384944667225e-13,
+      "footprint_bounds_in_boundary_frame": [
+        59.99999999999191,
+        -0.3999999999993644,
+        69.99999999999292,
+        0.40000000000110525
+      ],
+      "minimum_lane_flat_clearance_mm": 0.5499999999967853
+    },
+    {
+      "after_lane": 24,
+      "radius_mm": 64.99999999999366,
+      "boundary_offset_mm": 8.57980353430321e-13,
+      "footprint_bounds_in_boundary_frame": [
+        59.99999999999191,
+        -0.39999999999942126,
+        69.99999999999292,
+        0.4000000000010484
+      ],
+      "minimum_lane_flat_clearance_mm": 0.5499999999994778
+    }
+  ],
+  "gaps": [
+    {
+      "after_lane": 1,
+      "floor_width_mm": 0.7999999999998563,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 2,
+      "floor_width_mm": 0.8000000000024133,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 3,
+      "floor_width_mm": 0.7999999999976468,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 4,
+      "floor_width_mm": 0.7999999999924847,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 5,
+      "floor_width_mm": 0.7999999999966438,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 6,
+      "floor_width_mm": 1.6000000000006873,
+      "expected_mm": 1.6
+    },
+    {
+      "after_lane": 7,
+      "floor_width_mm": 0.8000000000006183,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 8,
+      "floor_width_mm": 0.8000000000010192,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 9,
+      "floor_width_mm": 0.8000000000000242,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 10,
+      "floor_width_mm": 0.8000000000006183,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 11,
+      "floor_width_mm": 0.7999999999992438,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 12,
+      "floor_width_mm": 1.5999999999983765,
+      "expected_mm": 1.6
+    },
+    {
+      "after_lane": 13,
+      "floor_width_mm": 0.7999999999923065,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 14,
+      "floor_width_mm": 0.799999999998073,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 15,
+      "floor_width_mm": 0.8000000000018533,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 16,
+      "floor_width_mm": 0.7999999999998563,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 17,
+      "floor_width_mm": 0.7999999999993866,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 18,
+      "floor_width_mm": 1.5999999999980223,
+      "expected_mm": 1.6
+    },
+    {
+      "after_lane": 19,
+      "floor_width_mm": 0.7999999999915391,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 20,
+      "floor_width_mm": 0.7999999999994715,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 21,
+      "floor_width_mm": 0.7999999999994715,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 22,
+      "floor_width_mm": 0.7999999999915418,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 23,
+      "floor_width_mm": 0.7999999999967867,
+      "expected_mm": 0.8
+    },
+    {
+      "after_lane": 24,
+      "floor_width_mm": 1.600000000000335,
+      "expected_mm": 1.6
+    }
+  ],
+  "dice_pips_by_normal": {
+    "(-1, 0, 0)": 5,
+    "(0, -1, 0)": 4,
+    "(0, 0, 1)": 1,
+    "(0, 0, -1)": 6,
+    "(0, 1, 0)": 3,
+    "(1, 0, 0)": 2
+  },
+  "pip_cones": 21,
+  "counter_planar_footprints_mm2": {
+    "single": 49.8379325052386,
+    "fork": 61.492886489045446
+  },
+  "limitations": "CAD evidence only, not physical testing or statistical dice fairness."
+}

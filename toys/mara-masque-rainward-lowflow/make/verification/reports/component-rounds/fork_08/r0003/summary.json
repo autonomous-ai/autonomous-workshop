@@ -1,0 +1,60 @@
+{
+ "build": {
+  "fork_08": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "fork_08"
+ ],
+ "checked": [
+  "fork_08"
+ ],
+ "checks_ok": true,
+ "entry": "part_fork_08.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_08/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_08"
+ ],
+ "print": {
+  "fork_08": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_08/r0003/overhang-fork_08.log": "b79ddfa59764faec6355da57de71a513e791b09301e1522265d247f9af36582e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_08/r0003/thickness-fork_08.log": "f9f4e881785cda537a37e101ac6a0b9b2c792341a71e6ddcc8b13a3b4473db5a"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:fork_08",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Fresh fork_08 r0003 front/top/isometric images inspected together in the normalized component contact sheet. Front shows constant flat slab thickness; top shows one broad rounded head with flowing taper and two short separated tail tips; isometric confirms an uninterrupted planar top, vertical perimeter and intact late fork. No extra solids, missing fork, deformation or visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_08/r0003/visual-packet.json",
+  "packet_sha256": "dd7d52f6f01a921003d9574162615b57d985a43450d2581ab58674373cd67b62",
+  "status": "pass"
+ }
+}

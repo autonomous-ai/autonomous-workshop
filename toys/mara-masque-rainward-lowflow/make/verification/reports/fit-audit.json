@@ -1,0 +1,4166 @@
+{
+  "status": "PASS",
+  "method": "Actual exported STEP B-rep face triangulations at 0.002mm deflection, verified against native face areas. Contacts and clearance use measured polygons. Aligned extruded stack non-interpenetration follows measured equal planar top/bottom faces and disjoint Z interiors.",
+  "source_sha256": "20eb910707c32018e194796646d8e38ed0f7486b117d9d7d1cf9a8c216bbb0d7",
+  "step_sha256": {
+    "part_sun.step": "64c071c8e39da398a4493fb371459d161d6fe70db6fe81e188e4f5e963a48aec",
+    "part_single_01.step": "b402e400ac33b9d9099bd6760c63a19cc633dd00c3fe98c065437ea5d91182f6",
+    "part_fork_01.step": "c0b0c7d994cdef3bb7775e44137fd829d1072989cc979b6297d61241088d75ef",
+    "part_die_1.step": "26603dbed5eafb628dd21450e1064bbcd8ec8065cbeb54394b2bfe17c51c8d39",
+    "part_cup_1.step": "3d950a6f11937b5556d9b3a0b1a657684e7f465d05f183d155a00ddc733df583"
+  },
+  "support_checks": [
+    {
+      "lane": 1,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523859,
+      "own_flat_contact_mm2": 46.66370845696961,
+      "own_flat_support_fraction": 0.9363090744597936,
+      "free_tail_fraction": 0.06369092554020639,
+      "centroid_support_hull_margin_mm": 2.4863936421047486,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 14.873944904442231
+    },
+    {
+      "lane": 1,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904523,
+      "own_flat_contact_mm2": 58.31866244077639,
+      "own_flat_support_fraction": 0.9483806301915211,
+      "free_tail_fraction": 0.05161936980847892,
+      "centroid_support_hull_margin_mm": 2.8100101488339426,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 12.926916993671728
+    },
+    {
+      "lane": 1,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238655,
+      "own_flat_contact_mm2": 49.83793250523843,
+      "own_flat_support_fraction": 0.9999999999999954,
+      "free_tail_fraction": 4.551914400963142e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104773,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 6.618037936840443
+    },
+    {
+      "lane": 1,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904527,
+      "own_flat_contact_mm2": 61.492886489045354,
+      "own_flat_support_fraction": 1.0000000000000013,
+      "free_tail_fraction": -1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339235,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 6.182908326135355
+    },
+    {
+      "lane": 1,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523867,
+      "own_flat_contact_mm2": 49.8379325052385,
+      "own_flat_support_fraction": 0.9999999999999966,
+      "free_tail_fraction": 3.4416913763379853e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104765,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 3.7028854361720778
+    },
+    {
+      "lane": 1,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045446,
+      "own_flat_contact_mm2": 61.492886489045304,
+      "own_flat_support_fraction": 0.9999999999999977,
+      "free_tail_fraction": 2.3314683517128287e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833925,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 3.6809146627762654
+    },
+    {
+      "lane": 1,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238626,
+      "own_flat_contact_mm2": 49.837932505238506,
+      "own_flat_support_fraction": 0.9999999999999976,
+      "free_tail_fraction": 2.4424906541753444e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421048103,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 9.47713171250048
+    },
+    {
+      "lane": 1,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045354,
+      "own_flat_contact_mm2": 61.492886489045354,
+      "own_flat_support_fraction": 1.0,
+      "free_tail_fraction": 0.0,
+      "centroid_support_hull_margin_mm": 2.8100101488339106,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 9.47713171250048
+    },
+    {
+      "lane": 1,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523864,
+      "own_flat_contact_mm2": 47.48514252652778,
+      "own_flat_support_fraction": 0.9527911801224188,
+      "free_tail_fraction": 0.04720881987758119,
+      "centroid_support_hull_margin_mm": 2.4689916759518837,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.454725696083223
+    },
+    {
+      "lane": 1,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904531,
+      "own_flat_contact_mm2": 58.931523381424725,
+      "own_flat_support_fraction": 0.9583470015173725,
+      "free_tail_fraction": 0.04165299848262749,
+      "centroid_support_hull_margin_mm": 2.787549411089531,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.454725696083223
+    },
+    {
+      "lane": 2,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523844,
+      "own_flat_contact_mm2": 46.66384086744134,
+      "own_flat_support_fraction": 0.9363117312809178,
+      "free_tail_fraction": 0.06368826871908218,
+      "centroid_support_hull_margin_mm": 2.4863936421047046,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 31.376172985043308
+    },
+    {
+      "lane": 2,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904527,
+      "own_flat_contact_mm2": 58.31879485124813,
+      "own_flat_support_fraction": 0.9483827834563825,
+      "free_tail_fraction": 0.051617216543617506,
+      "centroid_support_hull_margin_mm": 2.810010148833935,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 29.602776862853666
+    },
+    {
+      "lane": 2,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523838,
+      "own_flat_contact_mm2": 49.83793250523867,
+      "own_flat_support_fraction": 1.0000000000000058,
+      "free_tail_fraction": -5.773159728050814e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047432,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 24.380370466032364
+    },
+    {
+      "lane": 2,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904541,
+      "own_flat_contact_mm2": 61.4928864890453,
+      "own_flat_support_fraction": 0.9999999999999981,
+      "free_tail_fraction": 1.887379141862766e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833876,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 24.1594966353971
+    },
+    {
+      "lane": 2,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523851,
+      "own_flat_contact_mm2": 49.837932505238435,
+      "own_flat_support_fraction": 0.9999999999999984,
+      "free_tail_fraction": 1.5543122344752192e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047494,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.570995684975394
+    },
+    {
+      "lane": 2,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045375,
+      "own_flat_contact_mm2": 61.492886489045354,
+      "own_flat_support_fraction": 0.9999999999999997,
+      "free_tail_fraction": 3.3306690738754696e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833912,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.48160952655524
+    },
+    {
+      "lane": 2,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.8379325052386,
+      "own_flat_contact_mm2": 49.837932505238534,
+      "own_flat_support_fraction": 0.9999999999999987,
+      "free_tail_fraction": 1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104774,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.73582386283121
+    },
+    {
+      "lane": 2,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.4928864890453,
+      "own_flat_contact_mm2": 61.49288648904537,
+      "own_flat_support_fraction": 1.000000000000001,
+      "free_tail_fraction": -1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833876,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.73582386283121
+    },
+    {
+      "lane": 2,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523864,
+      "own_flat_contact_mm2": 47.86838727858043,
+      "own_flat_support_fraction": 0.9604810005621484,
+      "free_tail_fraction": 0.03951899943785164,
+      "centroid_support_hull_margin_mm": 2.4689916759521284,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.284311448430376
+    },
+    {
+      "lane": 2,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904533,
+      "own_flat_contact_mm2": 59.52334126238708,
+      "own_flat_support_fraction": 0.967971169689536,
+      "free_tail_fraction": 0.032028830310463996,
+      "centroid_support_hull_margin_mm": 2.787549411089803,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.284311448430376
+    },
+    {
+      "lane": 3,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523864,
+      "own_flat_contact_mm2": 49.837932505238726,
+      "own_flat_support_fraction": 1.0000000000000018,
+      "free_tail_fraction": -1.7763568394002505e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104742,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 49.308897481732146
+    },
+    {
+      "lane": 3,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904543,
+      "own_flat_contact_mm2": 61.492886489045425,
+      "own_flat_support_fraction": 0.9999999999999999,
+      "free_tail_fraction": 1.1102230246251565e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488338947,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 47.38034106689752
+    },
+    {
+      "lane": 3,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523853,
+      "own_flat_contact_mm2": 49.837932505238705,
+      "own_flat_support_fraction": 1.0000000000000036,
+      "free_tail_fraction": -3.552713678800501e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047246,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 41.403588900054196
+    },
+    {
+      "lane": 3,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904552,
+      "own_flat_contact_mm2": 61.49288648904535,
+      "own_flat_support_fraction": 0.9999999999999972,
+      "free_tail_fraction": 2.7755575615628914e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833968,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 40.11422669613604
+    },
+    {
+      "lane": 3,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.8379325052385,
+      "own_flat_contact_mm2": 49.837932505238726,
+      "own_flat_support_fraction": 1.0000000000000047,
+      "free_tail_fraction": -4.6629367034256575e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421046793,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 35.04500195603033
+    },
+    {
+      "lane": 3,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045446,
+      "own_flat_contact_mm2": 61.49288648904533,
+      "own_flat_support_fraction": 0.9999999999999981,
+      "free_tail_fraction": 1.887379141862766e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339826,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.86304520479951
+    },
+    {
+      "lane": 3,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238506,
+      "own_flat_contact_mm2": 49.83793250523864,
+      "own_flat_support_fraction": 1.0000000000000027,
+      "free_tail_fraction": -2.6645352591003757e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047237,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.38564745492366
+    },
+    {
+      "lane": 3,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.4928864890455,
+      "own_flat_contact_mm2": 61.492886489045404,
+      "own_flat_support_fraction": 0.9999999999999983,
+      "free_tail_fraction": 1.6653345369377348e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339138,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.384563558700485
+    },
+    {
+      "lane": 3,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523839,
+      "own_flat_contact_mm2": 47.86838727859081,
+      "own_flat_support_fraction": 0.9604810005623615,
+      "free_tail_fraction": 0.03951899943763848,
+      "centroid_support_hull_margin_mm": 2.4689916759523456,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.301767863024544
+    },
+    {
+      "lane": 3,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904538,
+      "own_flat_contact_mm2": 59.52334126239765,
+      "own_flat_support_fraction": 0.9679711696897072,
+      "free_tail_fraction": 0.0320288303102928,
+      "centroid_support_hull_margin_mm": 2.787549411090096,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.301767863024544
+    },
+    {
+      "lane": 4,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.8379325052385,
+      "own_flat_contact_mm2": 46.66313332149488,
+      "own_flat_support_fraction": 0.9362975343447502,
+      "free_tail_fraction": 0.06370246565524984,
+      "centroid_support_hull_margin_mm": 2.486393642104695,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 44.928841042387674
+    },
+    {
+      "lane": 4,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904547,
+      "own_flat_contact_mm2": 58.318087305301695,
+      "own_flat_support_fraction": 0.948371277313363,
+      "free_tail_fraction": 0.051628722686636985,
+      "centroid_support_hull_margin_mm": 2.8100101488339635,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 44.928841042387674
+    },
+    {
+      "lane": 4,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523849,
+      "own_flat_contact_mm2": 49.83793250523854,
+      "own_flat_support_fraction": 1.0000000000000009,
+      "free_tail_fraction": -8.881784197001252e-16,
+      "centroid_support_hull_margin_mm": 2.486393642104694,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 37.39270712043572
+    },
+    {
+      "lane": 4,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904543,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 0.9999999999999989,
+      "free_tail_fraction": 1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488338933,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 37.39270712043572
+    },
+    {
+      "lane": 4,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523849,
+      "own_flat_contact_mm2": 49.83793250523861,
+      "own_flat_support_fraction": 1.0000000000000024,
+      "free_tail_fraction": -2.4424906541753444e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047286,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.91301978425526
+    },
+    {
+      "lane": 4,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.4928864890454,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 0.9999999999999994,
+      "free_tail_fraction": 5.551115123125783e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833993,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.91301978425526
+    },
+    {
+      "lane": 4,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238555,
+      "own_flat_contact_mm2": 49.83793250523856,
+      "own_flat_support_fraction": 1.0000000000000002,
+      "free_tail_fraction": -2.220446049250313e-16,
+      "centroid_support_hull_margin_mm": 2.4863936421047463,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 33.00820513913904
+    },
+    {
+      "lane": 4,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904527,
+      "own_flat_contact_mm2": 61.492886489045375,
+      "own_flat_support_fraction": 1.0000000000000018,
+      "free_tail_fraction": -1.7763568394002505e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833957,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 33.00820513913904
+    },
+    {
+      "lane": 4,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523854,
+      "own_flat_contact_mm2": 47.86838727856918,
+      "own_flat_support_fraction": 0.9604810005619246,
+      "free_tail_fraction": 0.03951899943807535,
+      "centroid_support_hull_margin_mm": 2.468991675952002,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 36.20426202898228
+    },
+    {
+      "lane": 4,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045254,
+      "own_flat_contact_mm2": 59.52334126237602,
+      "own_flat_support_fraction": 0.9679711696893575,
+      "free_tail_fraction": 0.03202883031064252,
+      "centroid_support_hull_margin_mm": 2.7875494110895667,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 36.20426202898228
+    },
+    {
+      "lane": 5,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523829,
+      "own_flat_contact_mm2": 46.663840867441394,
+      "own_flat_support_fraction": 0.9363117312809218,
+      "free_tail_fraction": 0.06368826871907818,
+      "centroid_support_hull_margin_mm": 2.4863936421047743,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.979735241886086
+    },
+    {
+      "lane": 5,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904554,
+      "own_flat_contact_mm2": 58.318794851248256,
+      "own_flat_support_fraction": 0.9483827834563804,
+      "free_tail_fraction": 0.051617216543619615,
+      "centroid_support_hull_margin_mm": 2.810010148833952,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.979735241886086
+    },
+    {
+      "lane": 5,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523829,
+      "own_flat_contact_mm2": 49.83793250523843,
+      "own_flat_support_fraction": 1.0000000000000027,
+      "free_tail_fraction": -2.6645352591003757e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421048307,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.471319107233615
+    },
+    {
+      "lane": 5,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045446,
+      "own_flat_contact_mm2": 61.49288648904543,
+      "own_flat_support_fraction": 0.9999999999999998,
+      "free_tail_fraction": 2.220446049250313e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833967,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.471319107233615
+    },
+    {
+      "lane": 5,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523829,
+      "own_flat_contact_mm2": 49.837932505238534,
+      "own_flat_support_fraction": 1.0000000000000049,
+      "free_tail_fraction": -4.884981308350689e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047774,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 18.78458963289396
+    },
+    {
+      "lane": 5,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904551,
+      "own_flat_contact_mm2": 61.49288648904549,
+      "own_flat_support_fraction": 0.9999999999999997,
+      "free_tail_fraction": 3.3306690738754696e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339537,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 18.78458963289396
+    },
+    {
+      "lane": 5,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523832,
+      "own_flat_contact_mm2": 49.83793250523875,
+      "own_flat_support_fraction": 1.0000000000000087,
+      "free_tail_fraction": -8.659739592076221e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421048107,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.65436290440471
+    },
+    {
+      "lane": 5,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.4928864890454,
+      "own_flat_contact_mm2": 61.492886489045375,
+      "own_flat_support_fraction": 0.9999999999999997,
+      "free_tail_fraction": 3.3306690738754696e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339133,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.65436290440471
+    },
+    {
+      "lane": 5,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238385,
+      "own_flat_contact_mm2": 47.868387278566445,
+      "own_flat_support_fraction": 0.9604810005618727,
+      "free_tail_fraction": 0.03951899943812731,
+      "centroid_support_hull_margin_mm": 2.468991675951905,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 27.80274011426165
+    },
+    {
+      "lane": 5,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904535,
+      "own_flat_contact_mm2": 59.523341262373194,
+      "own_flat_support_fraction": 0.9679711696893101,
+      "free_tail_fraction": 0.032028830310689926,
+      "centroid_support_hull_margin_mm": 2.7875494110894743,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 27.80274011426165
+    },
+    {
+      "lane": 6,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238584,
+      "own_flat_contact_mm2": 49.83793250523848,
+      "own_flat_support_fraction": 0.9999999999999979,
+      "free_tail_fraction": 2.1094237467877974e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047543,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 11.17894381859766
+    },
+    {
+      "lane": 6,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045446,
+      "own_flat_contact_mm2": 61.492886489045404,
+      "own_flat_support_fraction": 0.9999999999999993,
+      "free_tail_fraction": 6.661338147750939e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339564,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 11.17894381859766
+    },
+    {
+      "lane": 6,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238584,
+      "own_flat_contact_mm2": 49.83793250523848,
+      "own_flat_support_fraction": 0.9999999999999979,
+      "free_tail_fraction": 2.1094237467877974e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047153,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.371226145240343
+    },
+    {
+      "lane": 6,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045446,
+      "own_flat_contact_mm2": 61.492886489045404,
+      "own_flat_support_fraction": 0.9999999999999993,
+      "free_tail_fraction": 6.661338147750939e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339426,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.371226145240343
+    },
+    {
+      "lane": 6,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523861,
+      "own_flat_contact_mm2": 49.837932505238506,
+      "own_flat_support_fraction": 0.9999999999999979,
+      "free_tail_fraction": 2.1094237467877974e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047472,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.8961094557726055
+    },
+    {
+      "lane": 6,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045425,
+      "own_flat_contact_mm2": 61.49288648904539,
+      "own_flat_support_fraction": 0.9999999999999994,
+      "free_tail_fraction": 5.551115123125783e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833914,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.8961094557726055
+    },
+    {
+      "lane": 6,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523861,
+      "own_flat_contact_mm2": 49.83793250523852,
+      "own_flat_support_fraction": 0.9999999999999981,
+      "free_tail_fraction": 1.887379141862766e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047557,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 10.648579088285647
+    },
+    {
+      "lane": 6,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904544,
+      "own_flat_contact_mm2": 61.492886489045404,
+      "own_flat_support_fraction": 0.9999999999999994,
+      "free_tail_fraction": 5.551115123125783e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833885,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 10.648579088285647
+    },
+    {
+      "lane": 6,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523861,
+      "own_flat_contact_mm2": 46.289056584080726,
+      "own_flat_support_fraction": 0.9287916704653658,
+      "free_tail_fraction": 0.07120832953463418,
+      "centroid_support_hull_margin_mm": 2.4338399684038823,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 22.08115268129913
+    },
+    {
+      "lane": 6,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904544,
+      "own_flat_contact_mm2": 57.944010567887595,
+      "own_flat_support_fraction": 0.9422880251069357,
+      "free_tail_fraction": 0.057711974893064344,
+      "centroid_support_hull_margin_mm": 2.742098412067094,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 22.08115268129913
+    },
+    {
+      "lane": 7,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523849,
+      "own_flat_contact_mm2": 46.663708456969665,
+      "own_flat_support_fraction": 0.9363090744597966,
+      "free_tail_fraction": 0.06369092554020339,
+      "centroid_support_hull_margin_mm": 2.4863936421047486,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 14.87394490443899
+    },
+    {
+      "lane": 7,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904541,
+      "own_flat_contact_mm2": 58.31866244077646,
+      "own_flat_support_fraction": 0.9483806301915194,
+      "free_tail_fraction": 0.051619369808480586,
+      "centroid_support_hull_margin_mm": 2.8100101488339426,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 12.926916993667712
+    },
+    {
+      "lane": 7,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523824,
+      "own_flat_contact_mm2": 49.837932505238555,
+      "own_flat_support_fraction": 1.0000000000000062,
+      "free_tail_fraction": -6.217248937900877e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104773,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 6.618037936838147
+    },
+    {
+      "lane": 7,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904541,
+      "own_flat_contact_mm2": 61.49288648904534,
+      "own_flat_support_fraction": 0.9999999999999989,
+      "free_tail_fraction": 1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339235,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 6.182908326134004
+    },
+    {
+      "lane": 7,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.8379325052384,
+      "own_flat_contact_mm2": 49.837932505238534,
+      "own_flat_support_fraction": 1.0000000000000027,
+      "free_tail_fraction": -2.6645352591003757e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104765,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 3.7028854361722328
+    },
+    {
+      "lane": 7,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904531,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 1.0000000000000009,
+      "free_tail_fraction": -8.881784197001252e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833925,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 3.680914662776376
+    },
+    {
+      "lane": 7,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523838,
+      "own_flat_contact_mm2": 49.83793250523856,
+      "own_flat_support_fraction": 1.0000000000000038,
+      "free_tail_fraction": -3.774758283725532e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421048103,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 9.477131712508122
+    },
+    {
+      "lane": 7,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904543,
+      "own_flat_contact_mm2": 61.492886489045354,
+      "own_flat_support_fraction": 0.9999999999999988,
+      "free_tail_fraction": 1.2212453270876722e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339106,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 9.477131712508122
+    },
+    {
+      "lane": 7,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523842,
+      "own_flat_contact_mm2": 47.48514252653047,
+      "own_flat_support_fraction": 0.9527911801224769,
+      "free_tail_fraction": 0.04720881987752312,
+      "centroid_support_hull_margin_mm": 2.4689916759518837,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.454725696091216
+    },
+    {
+      "lane": 7,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904537,
+      "own_flat_contact_mm2": 58.931523381428384,
+      "own_flat_support_fraction": 0.9583470015174311,
+      "free_tail_fraction": 0.04165299848256887,
+      "centroid_support_hull_margin_mm": 2.787549411089531,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.454725696091216
+    },
+    {
+      "lane": 8,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523858,
+      "own_flat_contact_mm2": 46.663840867441245,
+      "own_flat_support_fraction": 0.9363117312809135,
+      "free_tail_fraction": 0.0636882687190865,
+      "centroid_support_hull_margin_mm": 2.486393642104714,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 31.37617298504195
+    },
+    {
+      "lane": 8,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904536,
+      "own_flat_contact_mm2": 58.31879485124817,
+      "own_flat_support_fraction": 0.9483827834563818,
+      "free_tail_fraction": 0.05161721654361817,
+      "centroid_support_hull_margin_mm": 2.810010148833938,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 29.602776862853602
+    },
+    {
+      "lane": 8,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523857,
+      "own_flat_contact_mm2": 49.83793250523841,
+      "own_flat_support_fraction": 0.9999999999999969,
+      "free_tail_fraction": 3.1086244689504383e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104762,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 24.38037046603352
+    },
+    {
+      "lane": 8,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904535,
+      "own_flat_contact_mm2": 61.492886489045354,
+      "own_flat_support_fraction": 1.0000000000000002,
+      "free_tail_fraction": -2.220446049250313e-16,
+      "centroid_support_hull_margin_mm": 2.810010148834009,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 24.1594966353981
+    },
+    {
+      "lane": 8,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238555,
+      "own_flat_contact_mm2": 49.83793250523851,
+      "own_flat_support_fraction": 0.9999999999999991,
+      "free_tail_fraction": 8.881784197001252e-16,
+      "centroid_support_hull_margin_mm": 2.486393642104741,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.57099568497737
+    },
+    {
+      "lane": 8,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045404,
+      "own_flat_contact_mm2": 61.49288648904532,
+      "own_flat_support_fraction": 0.9999999999999987,
+      "free_tail_fraction": 1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339755,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.48160952655744
+    },
+    {
+      "lane": 8,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238555,
+      "own_flat_contact_mm2": 49.83793250523855,
+      "own_flat_support_fraction": 0.9999999999999999,
+      "free_tail_fraction": 1.1102230246251565e-16,
+      "centroid_support_hull_margin_mm": 2.4863936421047357,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.735823862837037
+    },
+    {
+      "lane": 8,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045375,
+      "own_flat_contact_mm2": 61.49288648904532,
+      "own_flat_support_fraction": 0.9999999999999991,
+      "free_tail_fraction": 8.881784197001252e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833877,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.735823862837037
+    },
+    {
+      "lane": 8,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238605,
+      "own_flat_contact_mm2": 47.86838727856751,
+      "own_flat_support_fraction": 0.9604810005618899,
+      "free_tail_fraction": 0.0395189994381101,
+      "centroid_support_hull_margin_mm": 2.4689916759518584,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.284311448437972
+    },
+    {
+      "lane": 8,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.4928864890453,
+      "own_flat_contact_mm2": 59.52334126237444,
+      "own_flat_support_fraction": 0.9679711696893311,
+      "free_tail_fraction": 0.03202883031066894,
+      "centroid_support_hull_margin_mm": 2.7875494110894747,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.284311448437972
+    },
+    {
+      "lane": 9,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523847,
+      "own_flat_contact_mm2": 49.837932505238584,
+      "own_flat_support_fraction": 1.0000000000000022,
+      "free_tail_fraction": -2.220446049250313e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104735,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 49.30889748173328
+    },
+    {
+      "lane": 9,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045375,
+      "own_flat_contact_mm2": 61.49288648904531,
+      "own_flat_support_fraction": 0.999999999999999,
+      "free_tail_fraction": 9.992007221626409e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833855,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 47.38034106689789
+    },
+    {
+      "lane": 9,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238484,
+      "own_flat_contact_mm2": 49.83793250523851,
+      "own_flat_support_fraction": 1.0000000000000007,
+      "free_tail_fraction": -6.661338147750939e-16,
+      "centroid_support_hull_margin_mm": 2.486393642104835,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 41.40358890005534
+    },
+    {
+      "lane": 9,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904536,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 1.0,
+      "free_tail_fraction": 0.0,
+      "centroid_support_hull_margin_mm": 2.8100101488340283,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 40.11422669613847
+    },
+    {
+      "lane": 9,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523849,
+      "own_flat_contact_mm2": 49.837932505238534,
+      "own_flat_support_fraction": 1.0000000000000009,
+      "free_tail_fraction": -8.881784197001252e-16,
+      "centroid_support_hull_margin_mm": 2.486393642104708,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 35.04500195603356
+    },
+    {
+      "lane": 9,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904535,
+      "own_flat_contact_mm2": 61.492886489045304,
+      "own_flat_support_fraction": 0.9999999999999993,
+      "free_tail_fraction": 6.661338147750939e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833965,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.86304520480294
+    },
+    {
+      "lane": 9,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238484,
+      "own_flat_contact_mm2": 49.83793250523855,
+      "own_flat_support_fraction": 1.0000000000000013,
+      "free_tail_fraction": -1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.48639364210475,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.38564745492916
+    },
+    {
+      "lane": 9,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045326,
+      "own_flat_contact_mm2": 61.492886489045354,
+      "own_flat_support_fraction": 1.0000000000000004,
+      "free_tail_fraction": -4.440892098500626e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833845,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.38456355870599
+    },
+    {
+      "lane": 9,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523855,
+      "own_flat_contact_mm2": 47.86838727856893,
+      "own_flat_support_fraction": 0.9604810005619195,
+      "free_tail_fraction": 0.03951899943808046,
+      "centroid_support_hull_margin_mm": 2.4689916759519264,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.30176786303167
+    },
+    {
+      "lane": 9,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904535,
+      "own_flat_contact_mm2": 59.52334126237584,
+      "own_flat_support_fraction": 0.967971169689353,
+      "free_tail_fraction": 0.03202883031064696,
+      "centroid_support_hull_margin_mm": 2.7875494110895445,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.30176786303167
+    },
+    {
+      "lane": 10,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.8379325052386,
+      "own_flat_contact_mm2": 46.663133321494854,
+      "own_flat_support_fraction": 0.9362975343447477,
+      "free_tail_fraction": 0.06370246565525228,
+      "centroid_support_hull_margin_mm": 2.486393642104649,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 44.92884104238769
+    },
+    {
+      "lane": 10,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045254,
+      "own_flat_contact_mm2": 58.318087305301724,
+      "own_flat_support_fraction": 0.9483712773133668,
+      "free_tail_fraction": 0.05162872268663321,
+      "centroid_support_hull_margin_mm": 2.810010148833958,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 44.92884104238769
+    },
+    {
+      "lane": 10,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238534,
+      "own_flat_contact_mm2": 49.83793250523841,
+      "own_flat_support_fraction": 0.9999999999999976,
+      "free_tail_fraction": 2.4424906541753444e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421046846,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 37.39270712043574
+    },
+    {
+      "lane": 10,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904534,
+      "own_flat_contact_mm2": 61.492886489045326,
+      "own_flat_support_fraction": 0.9999999999999998,
+      "free_tail_fraction": 2.220446049250313e-16,
+      "centroid_support_hull_margin_mm": 2.810010148834071,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 37.39270712043574
+    },
+    {
+      "lane": 10,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523842,
+      "own_flat_contact_mm2": 49.83793250523849,
+      "own_flat_support_fraction": 1.0000000000000013,
+      "free_tail_fraction": -1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104743,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.91301978425527
+    },
+    {
+      "lane": 10,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904519,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 1.0000000000000027,
+      "free_tail_fraction": -2.6645352591003757e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339764,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.91301978425527
+    },
+    {
+      "lane": 10,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238555,
+      "own_flat_contact_mm2": 49.83793250523845,
+      "own_flat_support_fraction": 0.9999999999999979,
+      "free_tail_fraction": 2.1094237467877974e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104682,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 33.008205139139044
+    },
+    {
+      "lane": 10,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904528,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 1.0000000000000013,
+      "free_tail_fraction": -1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488340514,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 33.008205139139044
+    },
+    {
+      "lane": 10,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238456,
+      "own_flat_contact_mm2": 47.86838727856858,
+      "own_flat_support_fraction": 0.9604810005619141,
+      "free_tail_fraction": 0.0395189994380859,
+      "centroid_support_hull_margin_mm": 2.4689916759519033,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 36.20426202898229
+    },
+    {
+      "lane": 10,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904531,
+      "own_flat_contact_mm2": 59.523341262375325,
+      "own_flat_support_fraction": 0.9679711696893453,
+      "free_tail_fraction": 0.03202883031065473,
+      "centroid_support_hull_margin_mm": 2.7875494110895325,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 36.20426202898229
+    },
+    {
+      "lane": 11,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523857,
+      "own_flat_contact_mm2": 46.66384086744138,
+      "own_flat_support_fraction": 0.9363117312809163,
+      "free_tail_fraction": 0.06368826871908373,
+      "centroid_support_hull_margin_mm": 2.4863936421047743,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.979735241886086
+    },
+    {
+      "lane": 11,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045276,
+      "own_flat_contact_mm2": 58.31879485124825,
+      "own_flat_support_fraction": 0.9483827834563844,
+      "free_tail_fraction": 0.05161721654361562,
+      "centroid_support_hull_margin_mm": 2.810010148833952,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.979735241886086
+    },
+    {
+      "lane": 11,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523854,
+      "own_flat_contact_mm2": 49.83793250523861,
+      "own_flat_support_fraction": 1.0000000000000013,
+      "free_tail_fraction": -1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421048307,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.471319107233615
+    },
+    {
+      "lane": 11,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904528,
+      "own_flat_contact_mm2": 61.49288648904539,
+      "own_flat_support_fraction": 1.0000000000000018,
+      "free_tail_fraction": -1.7763568394002505e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833967,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.471319107233615
+    },
+    {
+      "lane": 11,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238506,
+      "own_flat_contact_mm2": 49.83793250523858,
+      "own_flat_support_fraction": 1.0000000000000013,
+      "free_tail_fraction": -1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047774,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 18.78458963289396
+    },
+    {
+      "lane": 11,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904524,
+      "own_flat_contact_mm2": 61.49288648904537,
+      "own_flat_support_fraction": 1.000000000000002,
+      "free_tail_fraction": -1.9984014443252818e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339537,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 18.78458963289396
+    },
+    {
+      "lane": 11,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523859,
+      "own_flat_contact_mm2": 49.83793250523853,
+      "own_flat_support_fraction": 0.9999999999999987,
+      "free_tail_fraction": 1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421048107,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.65436290440471
+    },
+    {
+      "lane": 11,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045304,
+      "own_flat_contact_mm2": 61.49288648904537,
+      "own_flat_support_fraction": 1.000000000000001,
+      "free_tail_fraction": -1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339133,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.65436290440471
+    },
+    {
+      "lane": 11,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523861,
+      "own_flat_contact_mm2": 47.86838727856589,
+      "own_flat_support_fraction": 0.9604810005618573,
+      "free_tail_fraction": 0.03951899943814274,
+      "centroid_support_hull_margin_mm": 2.468991675951883,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 27.80274011426165
+    },
+    {
+      "lane": 11,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045326,
+      "own_flat_contact_mm2": 59.52334126237261,
+      "own_flat_support_fraction": 0.9679711696893009,
+      "free_tail_fraction": 0.03202883031069914,
+      "centroid_support_hull_margin_mm": 2.7875494110894454,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 27.80274011426165
+    },
+    {
+      "lane": 12,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238584,
+      "own_flat_contact_mm2": 49.837932505238534,
+      "own_flat_support_fraction": 0.999999999999999,
+      "free_tail_fraction": 9.992007221626409e-16,
+      "centroid_support_hull_margin_mm": 2.4863936421047543,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 11.17894381859766
+    },
+    {
+      "lane": 12,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904542,
+      "own_flat_contact_mm2": 61.49288648904537,
+      "own_flat_support_fraction": 0.9999999999999992,
+      "free_tail_fraction": 7.771561172376096e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339564,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 11.17894381859766
+    },
+    {
+      "lane": 12,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238584,
+      "own_flat_contact_mm2": 49.837932505238534,
+      "own_flat_support_fraction": 0.999999999999999,
+      "free_tail_fraction": 9.992007221626409e-16,
+      "centroid_support_hull_margin_mm": 2.4863936421047153,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.371226145240343
+    },
+    {
+      "lane": 12,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904542,
+      "own_flat_contact_mm2": 61.49288648904537,
+      "own_flat_support_fraction": 0.9999999999999992,
+      "free_tail_fraction": 7.771561172376096e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339426,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.371226145240343
+    },
+    {
+      "lane": 12,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523862,
+      "own_flat_contact_mm2": 49.83793250523854,
+      "own_flat_support_fraction": 0.9999999999999984,
+      "free_tail_fraction": 1.5543122344752192e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047472,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.8961094557726055
+    },
+    {
+      "lane": 12,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904538,
+      "own_flat_contact_mm2": 61.492886489045276,
+      "own_flat_support_fraction": 0.9999999999999982,
+      "free_tail_fraction": 1.7763568394002505e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833914,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.8961094557726055
+    },
+    {
+      "lane": 12,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523862,
+      "own_flat_contact_mm2": 49.83793250523854,
+      "own_flat_support_fraction": 0.9999999999999984,
+      "free_tail_fraction": 1.5543122344752192e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047557,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 10.648579088285647
+    },
+    {
+      "lane": 12,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045375,
+      "own_flat_contact_mm2": 61.492886489045304,
+      "own_flat_support_fraction": 0.9999999999999989,
+      "free_tail_fraction": 1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833885,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 10.648579088285647
+    },
+    {
+      "lane": 12,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238626,
+      "own_flat_contact_mm2": 46.28905658407994,
+      "own_flat_support_fraction": 0.9287916704653497,
+      "free_tail_fraction": 0.07120832953465028,
+      "centroid_support_hull_margin_mm": 2.433839968403848,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 22.08115268129913
+    },
+    {
+      "lane": 12,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904544,
+      "own_flat_contact_mm2": 57.94401056788677,
+      "own_flat_support_fraction": 0.9422880251069223,
+      "free_tail_fraction": 0.05771197489307767,
+      "centroid_support_hull_margin_mm": 2.7420984120670493,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 22.08115268129913
+    },
+    {
+      "lane": 13,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523861,
+      "own_flat_contact_mm2": 46.663708456969616,
+      "own_flat_support_fraction": 0.9363090744597934,
+      "free_tail_fraction": 0.06369092554020661,
+      "centroid_support_hull_margin_mm": 2.486393642104738,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 14.873944904438998
+    },
+    {
+      "lane": 13,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045226,
+      "own_flat_contact_mm2": 58.318662440776386,
+      "own_flat_support_fraction": 0.9483806301915211,
+      "free_tail_fraction": 0.05161936980847892,
+      "centroid_support_hull_margin_mm": 2.8100101488339706,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 12.926916993667719
+    },
+    {
+      "lane": 13,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523866,
+      "own_flat_contact_mm2": 49.83793250523845,
+      "own_flat_support_fraction": 0.9999999999999957,
+      "free_tail_fraction": 4.3298697960381105e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047153,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 6.618037936838154
+    },
+    {
+      "lane": 13,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904528,
+      "own_flat_contact_mm2": 61.492886489045375,
+      "own_flat_support_fraction": 1.0000000000000016,
+      "free_tail_fraction": -1.5543122344752192e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339426,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 6.182908326134011
+    },
+    {
+      "lane": 13,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.8379325052387,
+      "own_flat_contact_mm2": 49.837932505238534,
+      "own_flat_support_fraction": 0.9999999999999967,
+      "free_tail_fraction": 3.3306690738754696e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104749,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 3.70288543617224
+    },
+    {
+      "lane": 13,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904547,
+      "own_flat_contact_mm2": 61.49288648904535,
+      "own_flat_support_fraction": 0.999999999999998,
+      "free_tail_fraction": 1.9984014443252818e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339186,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 3.6809146627763836
+    },
+    {
+      "lane": 13,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238626,
+      "own_flat_contact_mm2": 49.837932505238506,
+      "own_flat_support_fraction": 0.9999999999999976,
+      "free_tail_fraction": 2.4424906541753444e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104778,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 9.477131712508124
+    },
+    {
+      "lane": 13,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904541,
+      "own_flat_contact_mm2": 61.49288648904534,
+      "own_flat_support_fraction": 0.9999999999999989,
+      "free_tail_fraction": 1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339133,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 9.477131712508124
+    },
+    {
+      "lane": 13,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523864,
+      "own_flat_contact_mm2": 47.48514252653145,
+      "own_flat_support_fraction": 0.9527911801224924,
+      "free_tail_fraction": 0.04720881987750758,
+      "centroid_support_hull_margin_mm": 2.4689916759518793,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.454725696091216
+    },
+    {
+      "lane": 13,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904535,
+      "own_flat_contact_mm2": 58.93152338142987,
+      "own_flat_support_fraction": 0.9583470015174557,
+      "free_tail_fraction": 0.041652998482544334,
+      "centroid_support_hull_margin_mm": 2.7875494110895045,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.454725696091216
+    },
+    {
+      "lane": 14,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523845,
+      "own_flat_contact_mm2": 46.66384086744136,
+      "own_flat_support_fraction": 0.9363117312809182,
+      "free_tail_fraction": 0.06368826871908184,
+      "centroid_support_hull_margin_mm": 2.4863936421047663,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 31.376172985041944
+    },
+    {
+      "lane": 14,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904531,
+      "own_flat_contact_mm2": 58.31879485124808,
+      "own_flat_support_fraction": 0.948382783456381,
+      "free_tail_fraction": 0.05161721654361895,
+      "centroid_support_hull_margin_mm": 2.810010148833946,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 29.602776862853595
+    },
+    {
+      "lane": 14,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238385,
+      "own_flat_contact_mm2": 49.837932505238626,
+      "own_flat_support_fraction": 1.0000000000000049,
+      "free_tail_fraction": -4.884981308350689e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104716,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 24.380370466033504
+    },
+    {
+      "lane": 14,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904526,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 1.0000000000000016,
+      "free_tail_fraction": -1.5543122344752192e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339875,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 24.159496635398092
+    },
+    {
+      "lane": 14,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.8379325052385,
+      "own_flat_contact_mm2": 49.83793250523851,
+      "own_flat_support_fraction": 1.0000000000000002,
+      "free_tail_fraction": -2.220446049250313e-16,
+      "centroid_support_hull_margin_mm": 2.486393642104724,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.570995684977362
+    },
+    {
+      "lane": 14,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.4928864890454,
+      "own_flat_contact_mm2": 61.4928864890454,
+      "own_flat_support_fraction": 1.0,
+      "free_tail_fraction": 0.0,
+      "centroid_support_hull_margin_mm": 2.8100101488339595,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.481609526557435
+    },
+    {
+      "lane": 14,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523863,
+      "own_flat_contact_mm2": 49.8379325052386,
+      "own_flat_support_fraction": 0.9999999999999993,
+      "free_tail_fraction": 6.661338147750939e-16,
+      "centroid_support_hull_margin_mm": 2.486393642104727,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.73582386283704
+    },
+    {
+      "lane": 14,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045375,
+      "own_flat_contact_mm2": 61.49288648904535,
+      "own_flat_support_fraction": 0.9999999999999996,
+      "free_tail_fraction": 4.440892098500626e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488338747,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.73582386283704
+    },
+    {
+      "lane": 14,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238605,
+      "own_flat_contact_mm2": 47.868387278545896,
+      "own_flat_support_fraction": 0.9604810005614561,
+      "free_tail_fraction": 0.03951899943854387,
+      "centroid_support_hull_margin_mm": 2.468991675951455,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.28431144843797
+    },
+    {
+      "lane": 14,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904533,
+      "own_flat_contact_mm2": 59.52334126235258,
+      "own_flat_support_fraction": 0.967971169688975,
+      "free_tail_fraction": 0.03202883031102499,
+      "centroid_support_hull_margin_mm": 2.7875494110889316,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.28431144843797
+    },
+    {
+      "lane": 15,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523842,
+      "own_flat_contact_mm2": 49.837932505238584,
+      "own_flat_support_fraction": 1.0000000000000033,
+      "free_tail_fraction": -3.3306690738754696e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104735,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 49.30889748173328
+    },
+    {
+      "lane": 15,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045446,
+      "own_flat_contact_mm2": 61.49288648904531,
+      "own_flat_support_fraction": 0.9999999999999978,
+      "free_tail_fraction": 2.220446049250313e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833855,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 47.38034106689789
+    },
+    {
+      "lane": 15,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238484,
+      "own_flat_contact_mm2": 49.837932505238705,
+      "own_flat_support_fraction": 1.0000000000000044,
+      "free_tail_fraction": -4.440892098500626e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104835,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 41.40358890005534
+    },
+    {
+      "lane": 15,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904546,
+      "own_flat_contact_mm2": 61.49288648904538,
+      "own_flat_support_fraction": 0.9999999999999988,
+      "free_tail_fraction": 1.2212453270876722e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488340283,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 40.11422669613847
+    },
+    {
+      "lane": 15,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.8379325052385,
+      "own_flat_contact_mm2": 49.83793250523867,
+      "own_flat_support_fraction": 1.0000000000000033,
+      "free_tail_fraction": -3.3306690738754696e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104708,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 35.04500195603356
+    },
+    {
+      "lane": 15,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045354,
+      "own_flat_contact_mm2": 61.49288648904524,
+      "own_flat_support_fraction": 0.9999999999999981,
+      "free_tail_fraction": 1.887379141862766e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833965,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.86304520480294
+    },
+    {
+      "lane": 15,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523848,
+      "own_flat_contact_mm2": 49.837932505238626,
+      "own_flat_support_fraction": 1.0000000000000029,
+      "free_tail_fraction": -2.886579864025407e-15,
+      "centroid_support_hull_margin_mm": 2.48639364210475,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.38564745492916
+    },
+    {
+      "lane": 15,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904555,
+      "own_flat_contact_mm2": 61.4928864890455,
+      "own_flat_support_fraction": 0.9999999999999992,
+      "free_tail_fraction": 7.771561172376096e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833845,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.38456355870599
+    },
+    {
+      "lane": 15,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523846,
+      "own_flat_contact_mm2": 47.868387278554124,
+      "own_flat_support_fraction": 0.960481000561624,
+      "free_tail_fraction": 0.039518999438376,
+      "centroid_support_hull_margin_mm": 2.468991675951641,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.30176786303167
+    },
+    {
+      "lane": 15,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904529,
+      "own_flat_contact_mm2": 59.52334126236097,
+      "own_flat_support_fraction": 0.9679711696891122,
+      "free_tail_fraction": 0.03202883031088777,
+      "centroid_support_hull_margin_mm": 2.787549411089175,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.30176786303167
+    },
+    {
+      "lane": 16,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.8379325052385,
+      "own_flat_contact_mm2": 46.66313332149491,
+      "own_flat_support_fraction": 0.9362975343447507,
+      "free_tail_fraction": 0.06370246565524929,
+      "centroid_support_hull_margin_mm": 2.486393642104695,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 44.92884104238839
+    },
+    {
+      "lane": 16,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904547,
+      "own_flat_contact_mm2": 58.31808730530171,
+      "own_flat_support_fraction": 0.9483712773133632,
+      "free_tail_fraction": 0.05162872268663676,
+      "centroid_support_hull_margin_mm": 2.8100101488339635,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 44.92884104238839
+    },
+    {
+      "lane": 16,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523849,
+      "own_flat_contact_mm2": 49.83793250523854,
+      "own_flat_support_fraction": 1.0000000000000009,
+      "free_tail_fraction": -8.881784197001252e-16,
+      "centroid_support_hull_margin_mm": 2.486393642104694,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 37.392707120435645
+    },
+    {
+      "lane": 16,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904543,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 0.9999999999999989,
+      "free_tail_fraction": 1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488338933,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 37.392707120435645
+    },
+    {
+      "lane": 16,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523849,
+      "own_flat_contact_mm2": 49.83793250523861,
+      "own_flat_support_fraction": 1.0000000000000024,
+      "free_tail_fraction": -2.4424906541753444e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047286,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.91301978425256
+    },
+    {
+      "lane": 16,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.4928864890454,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 0.9999999999999994,
+      "free_tail_fraction": 5.551115123125783e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833993,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.91301978425256
+    },
+    {
+      "lane": 16,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238555,
+      "own_flat_contact_mm2": 49.83793250523856,
+      "own_flat_support_fraction": 1.0000000000000002,
+      "free_tail_fraction": -2.220446049250313e-16,
+      "centroid_support_hull_margin_mm": 2.4863936421047463,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 33.00820513913385
+    },
+    {
+      "lane": 16,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904527,
+      "own_flat_contact_mm2": 61.492886489045375,
+      "own_flat_support_fraction": 1.0000000000000018,
+      "free_tail_fraction": -1.7763568394002505e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833957,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 33.00820513913385
+    },
+    {
+      "lane": 16,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523854,
+      "own_flat_contact_mm2": 47.86838727855629,
+      "own_flat_support_fraction": 0.960481000561666,
+      "free_tail_fraction": 0.039518999438334035,
+      "centroid_support_hull_margin_mm": 2.4689916759517434,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 36.20426202897637
+    },
+    {
+      "lane": 16,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045254,
+      "own_flat_contact_mm2": 59.52334126236313,
+      "own_flat_support_fraction": 0.9679711696891479,
+      "free_tail_fraction": 0.03202883031085213,
+      "centroid_support_hull_margin_mm": 2.787549411089233,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 36.20426202897637
+    },
+    {
+      "lane": 17,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523829,
+      "own_flat_contact_mm2": 46.663840867441415,
+      "own_flat_support_fraction": 0.9363117312809223,
+      "free_tail_fraction": 0.06368826871907773,
+      "centroid_support_hull_margin_mm": 2.486393642104633,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.97973524188834
+    },
+    {
+      "lane": 17,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904538,
+      "own_flat_contact_mm2": 58.318794851248164,
+      "own_flat_support_fraction": 0.9483827834563814,
+      "free_tail_fraction": 0.051617216543618616,
+      "centroid_support_hull_margin_mm": 2.8100101488338285,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.97973524188834
+    },
+    {
+      "lane": 17,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.8379325052384,
+      "own_flat_contact_mm2": 49.83793250523848,
+      "own_flat_support_fraction": 1.0000000000000016,
+      "free_tail_fraction": -1.5543122344752192e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104831,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.471319107234375
+    },
+    {
+      "lane": 17,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045574,
+      "own_flat_contact_mm2": 61.49288648904541,
+      "own_flat_support_fraction": 0.9999999999999973,
+      "free_tail_fraction": 2.6645352591003757e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488338995,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.471319107234375
+    },
+    {
+      "lane": 17,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523836,
+      "own_flat_contact_mm2": 49.83793250523854,
+      "own_flat_support_fraction": 1.0000000000000036,
+      "free_tail_fraction": -3.552713678800501e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104746,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 18.7845896328913
+    },
+    {
+      "lane": 17,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045425,
+      "own_flat_contact_mm2": 61.4928864890454,
+      "own_flat_support_fraction": 0.9999999999999996,
+      "free_tail_fraction": 4.440892098500626e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833957,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 18.7845896328913
+    },
+    {
+      "lane": 17,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238385,
+      "own_flat_contact_mm2": 49.83793250523852,
+      "own_flat_support_fraction": 1.0000000000000027,
+      "free_tail_fraction": -2.6645352591003757e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047472,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.654362904400646
+    },
+    {
+      "lane": 17,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045276,
+      "own_flat_contact_mm2": 61.492886489045354,
+      "own_flat_support_fraction": 1.0000000000000013,
+      "free_tail_fraction": -1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833945,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.654362904400646
+    },
+    {
+      "lane": 17,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238605,
+      "own_flat_contact_mm2": 47.8683872785633,
+      "own_flat_support_fraction": 0.9604810005618053,
+      "free_tail_fraction": 0.0395189994381947,
+      "centroid_support_hull_margin_mm": 2.468991675951808,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 27.80274011425514
+    },
+    {
+      "lane": 17,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904555,
+      "own_flat_contact_mm2": 59.523341262370025,
+      "own_flat_support_fraction": 0.9679711696892552,
+      "free_tail_fraction": 0.03202883031074477,
+      "centroid_support_hull_margin_mm": 2.787549411089401,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 27.80274011425514
+    },
+    {
+      "lane": 18,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238584,
+      "own_flat_contact_mm2": 49.83793250523848,
+      "own_flat_support_fraction": 0.9999999999999979,
+      "free_tail_fraction": 2.1094237467877974e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047543,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 11.178943818603779
+    },
+    {
+      "lane": 18,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045446,
+      "own_flat_contact_mm2": 61.492886489045404,
+      "own_flat_support_fraction": 0.9999999999999993,
+      "free_tail_fraction": 6.661338147750939e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339564,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 11.178943818603779
+    },
+    {
+      "lane": 18,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238584,
+      "own_flat_contact_mm2": 49.83793250523848,
+      "own_flat_support_fraction": 0.9999999999999979,
+      "free_tail_fraction": 2.1094237467877974e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047153,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.371226145241035
+    },
+    {
+      "lane": 18,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045446,
+      "own_flat_contact_mm2": 61.492886489045404,
+      "own_flat_support_fraction": 0.9999999999999993,
+      "free_tail_fraction": 6.661338147750939e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339426,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.371226145241035
+    },
+    {
+      "lane": 18,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523861,
+      "own_flat_contact_mm2": 49.837932505238506,
+      "own_flat_support_fraction": 0.9999999999999979,
+      "free_tail_fraction": 2.1094237467877974e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047472,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.896109455769922
+    },
+    {
+      "lane": 18,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045425,
+      "own_flat_contact_mm2": 61.49288648904539,
+      "own_flat_support_fraction": 0.9999999999999994,
+      "free_tail_fraction": 5.551115123125783e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833914,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.896109455769922
+    },
+    {
+      "lane": 18,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523861,
+      "own_flat_contact_mm2": 49.83793250523852,
+      "own_flat_support_fraction": 0.9999999999999981,
+      "free_tail_fraction": 1.887379141862766e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047557,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 10.648579088279455
+    },
+    {
+      "lane": 18,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904544,
+      "own_flat_contact_mm2": 61.492886489045404,
+      "own_flat_support_fraction": 0.9999999999999994,
+      "free_tail_fraction": 5.551115123125783e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833885,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 10.648579088279455
+    },
+    {
+      "lane": 18,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523861,
+      "own_flat_contact_mm2": 46.289056584083816,
+      "own_flat_support_fraction": 0.9287916704654279,
+      "free_tail_fraction": 0.07120832953457212,
+      "centroid_support_hull_margin_mm": 2.4338399684039422,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 22.081152681291634
+    },
+    {
+      "lane": 18,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904544,
+      "own_flat_contact_mm2": 57.94401056789069,
+      "own_flat_support_fraction": 0.9422880251069861,
+      "free_tail_fraction": 0.05771197489301394,
+      "centroid_support_hull_margin_mm": 2.7420984120671714,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 22.081152681291634
+    },
+    {
+      "lane": 19,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523846,
+      "own_flat_contact_mm2": 46.66370845696967,
+      "own_flat_support_fraction": 0.9363090744597973,
+      "free_tail_fraction": 0.06369092554020273,
+      "centroid_support_hull_margin_mm": 2.4863936421047295,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 14.873944904442212
+    },
+    {
+      "lane": 19,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045425,
+      "own_flat_contact_mm2": 58.318662440776485,
+      "own_flat_support_fraction": 0.9483806301915196,
+      "free_tail_fraction": 0.051619369808480364,
+      "centroid_support_hull_margin_mm": 2.8100101488339657,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 12.926916993671714
+    },
+    {
+      "lane": 19,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523826,
+      "own_flat_contact_mm2": 49.83793250523849,
+      "own_flat_support_fraction": 1.0000000000000047,
+      "free_tail_fraction": -4.6629367034256575e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047845,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 6.618037936840421
+    },
+    {
+      "lane": 19,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904541,
+      "own_flat_contact_mm2": 61.492886489045354,
+      "own_flat_support_fraction": 0.9999999999999991,
+      "free_tail_fraction": 8.881784197001252e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488338756,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 6.182908326135327
+    },
+    {
+      "lane": 19,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523848,
+      "own_flat_contact_mm2": 49.837932505238506,
+      "own_flat_support_fraction": 1.0000000000000007,
+      "free_tail_fraction": -6.661338147750939e-16,
+      "centroid_support_hull_margin_mm": 2.486393642104769,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 3.702885436172052
+    },
+    {
+      "lane": 19,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904537,
+      "own_flat_contact_mm2": 61.492886489045205,
+      "own_flat_support_fraction": 0.9999999999999973,
+      "free_tail_fraction": 2.6645352591003757e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833908,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 3.6809146627762424
+    },
+    {
+      "lane": 19,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523851,
+      "own_flat_contact_mm2": 49.83793250523845,
+      "own_flat_support_fraction": 0.9999999999999987,
+      "free_tail_fraction": 1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047597,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 9.477131712500467
+    },
+    {
+      "lane": 19,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045425,
+      "own_flat_contact_mm2": 61.49288648904531,
+      "own_flat_support_fraction": 0.9999999999999981,
+      "free_tail_fraction": 1.887379141862766e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833912,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 9.477131712500467
+    },
+    {
+      "lane": 19,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523855,
+      "own_flat_contact_mm2": 47.48514252652893,
+      "own_flat_support_fraction": 0.9527911801224437,
+      "free_tail_fraction": 0.04720881987755632,
+      "centroid_support_hull_margin_mm": 2.4689916759519144,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.454725696083223
+    },
+    {
+      "lane": 19,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045354,
+      "own_flat_contact_mm2": 58.93152338142624,
+      "own_flat_support_fraction": 0.9583470015173965,
+      "free_tail_fraction": 0.04165299848260351,
+      "centroid_support_hull_margin_mm": 2.7875494110895036,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.454725696083223
+    },
+    {
+      "lane": 20,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523861,
+      "own_flat_contact_mm2": 46.663840867441216,
+      "own_flat_support_fraction": 0.9363117312809123,
+      "free_tail_fraction": 0.06368826871908773,
+      "centroid_support_hull_margin_mm": 2.4863936421047046,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 31.376172985043308
+    },
+    {
+      "lane": 20,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904533,
+      "own_flat_contact_mm2": 58.31879485124812,
+      "own_flat_support_fraction": 0.9483827834563814,
+      "free_tail_fraction": 0.051617216543618616,
+      "centroid_support_hull_margin_mm": 2.810010148833935,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 29.602776862853666
+    },
+    {
+      "lane": 20,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238605,
+      "own_flat_contact_mm2": 49.83793250523843,
+      "own_flat_support_fraction": 0.9999999999999964,
+      "free_tail_fraction": 3.552713678800501e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047432,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 24.380370466032364
+    },
+    {
+      "lane": 20,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045354,
+      "own_flat_contact_mm2": 61.49288648904531,
+      "own_flat_support_fraction": 0.9999999999999993,
+      "free_tail_fraction": 6.661338147750939e-16,
+      "centroid_support_hull_margin_mm": 2.810010148833876,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 24.1594966353971
+    },
+    {
+      "lane": 20,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523861,
+      "own_flat_contact_mm2": 49.837932505238435,
+      "own_flat_support_fraction": 0.9999999999999964,
+      "free_tail_fraction": 3.552713678800501e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047494,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.570995684975394
+    },
+    {
+      "lane": 20,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045404,
+      "own_flat_contact_mm2": 61.49288648904533,
+      "own_flat_support_fraction": 0.9999999999999989,
+      "free_tail_fraction": 1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833912,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.48160952655524
+    },
+    {
+      "lane": 20,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238605,
+      "own_flat_contact_mm2": 49.83793250523855,
+      "own_flat_support_fraction": 0.9999999999999989,
+      "free_tail_fraction": 1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104774,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.73582386283121
+    },
+    {
+      "lane": 20,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904539,
+      "own_flat_contact_mm2": 61.49288648904528,
+      "own_flat_support_fraction": 0.9999999999999982,
+      "free_tail_fraction": 1.7763568394002505e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833876,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 19.73582386283121
+    },
+    {
+      "lane": 20,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523858,
+      "own_flat_contact_mm2": 47.8683872785586,
+      "own_flat_support_fraction": 0.9604810005617116,
+      "free_tail_fraction": 0.039518999438288405,
+      "centroid_support_hull_margin_mm": 2.46899167595172,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.284311448430376
+    },
+    {
+      "lane": 20,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904532,
+      "own_flat_contact_mm2": 59.52334126236543,
+      "own_flat_support_fraction": 0.9679711696891842,
+      "free_tail_fraction": 0.032028830310815826,
+      "centroid_support_hull_margin_mm": 2.787549411089276,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.284311448430376
+    },
+    {
+      "lane": 21,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523852,
+      "own_flat_contact_mm2": 49.83793250523859,
+      "own_flat_support_fraction": 1.0000000000000013,
+      "free_tail_fraction": -1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104729,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 49.308897481732124
+    },
+    {
+      "lane": 21,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045354,
+      "own_flat_contact_mm2": 61.49288648904532,
+      "own_flat_support_fraction": 0.9999999999999994,
+      "free_tail_fraction": 5.551115123125783e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339804,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 47.380341066897515
+    },
+    {
+      "lane": 21,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238534,
+      "own_flat_contact_mm2": 49.837932505238534,
+      "own_flat_support_fraction": 1.0,
+      "free_tail_fraction": 0.0,
+      "centroid_support_hull_margin_mm": 2.486393642104792,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 41.403588900054174
+    },
+    {
+      "lane": 21,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904535,
+      "own_flat_contact_mm2": 61.49288648904538,
+      "own_flat_support_fraction": 1.0000000000000007,
+      "free_tail_fraction": -6.661338147750939e-16,
+      "centroid_support_hull_margin_mm": 2.81001014883398,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 40.11422669613603
+    },
+    {
+      "lane": 21,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523852,
+      "own_flat_contact_mm2": 49.83793250523857,
+      "own_flat_support_fraction": 1.0000000000000009,
+      "free_tail_fraction": -8.881784197001252e-16,
+      "centroid_support_hull_margin_mm": 2.486393642104696,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 35.04500195603033
+    },
+    {
+      "lane": 21,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904533,
+      "own_flat_contact_mm2": 61.49288648904528,
+      "own_flat_support_fraction": 0.9999999999999992,
+      "free_tail_fraction": 7.771561172376096e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339457,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.86304520479949
+    },
+    {
+      "lane": 21,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523854,
+      "own_flat_contact_mm2": 49.837932505238584,
+      "own_flat_support_fraction": 1.0000000000000009,
+      "free_tail_fraction": -8.881784197001252e-16,
+      "centroid_support_hull_margin_mm": 2.4863936421048005,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.38564745492366
+    },
+    {
+      "lane": 21,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904538,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 0.9999999999999997,
+      "free_tail_fraction": 3.3306690738754696e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339044,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.38456355870048
+    },
+    {
+      "lane": 21,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523858,
+      "own_flat_contact_mm2": 47.868387278575796,
+      "own_flat_support_fraction": 0.9604810005620567,
+      "free_tail_fraction": 0.03951899943794335,
+      "centroid_support_hull_margin_mm": 2.468991675952047,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.30176786302454
+    },
+    {
+      "lane": 21,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904535,
+      "own_flat_contact_mm2": 59.52334126238274,
+      "own_flat_support_fraction": 0.9679711696894653,
+      "free_tail_fraction": 0.03202883031053472,
+      "centroid_support_hull_margin_mm": 2.7875494110897088,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 34.30176786302454
+    },
+    {
+      "lane": 22,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523853,
+      "own_flat_contact_mm2": 46.663133321494826,
+      "own_flat_support_fraction": 0.9362975343447485,
+      "free_tail_fraction": 0.0637024656552515,
+      "centroid_support_hull_margin_mm": 2.486393642104789,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 44.928841042388434
+    },
+    {
+      "lane": 22,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904526,
+      "own_flat_contact_mm2": 58.31808730530172,
+      "own_flat_support_fraction": 0.9483712773133666,
+      "free_tail_fraction": 0.05162872268663343,
+      "centroid_support_hull_margin_mm": 2.8100101488338907,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 44.928841042388434
+    },
+    {
+      "lane": 22,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523855,
+      "own_flat_contact_mm2": 49.83793250523847,
+      "own_flat_support_fraction": 0.9999999999999984,
+      "free_tail_fraction": 1.5543122344752192e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047086,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 37.39270712043568
+    },
+    {
+      "lane": 22,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045304,
+      "own_flat_contact_mm2": 61.4928864890454,
+      "own_flat_support_fraction": 1.0000000000000016,
+      "free_tail_fraction": -1.5543122344752192e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833977,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 37.39270712043568
+    },
+    {
+      "lane": 22,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523852,
+      "own_flat_contact_mm2": 49.837932505238534,
+      "own_flat_support_fraction": 1.0000000000000002,
+      "free_tail_fraction": -2.220446049250313e-16,
+      "centroid_support_hull_margin_mm": 2.4863936421047423,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.91301978425259
+    },
+    {
+      "lane": 22,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.4928864890453,
+      "own_flat_contact_mm2": 61.492886489045375,
+      "own_flat_support_fraction": 1.0000000000000013,
+      "free_tail_fraction": -1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339604,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 32.91301978425259
+    },
+    {
+      "lane": 22,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238484,
+      "own_flat_contact_mm2": 49.837932505238506,
+      "own_flat_support_fraction": 1.0000000000000004,
+      "free_tail_fraction": -4.440892098500626e-16,
+      "centroid_support_hull_margin_mm": 2.4863936421047947,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 33.00820513913388
+    },
+    {
+      "lane": 22,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904529,
+      "own_flat_contact_mm2": 61.492886489045354,
+      "own_flat_support_fraction": 1.000000000000001,
+      "free_tail_fraction": -1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833929,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 33.00820513913388
+    },
+    {
+      "lane": 22,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523839,
+      "own_flat_contact_mm2": 47.868387278557165,
+      "own_flat_support_fraction": 0.9604810005616864,
+      "free_tail_fraction": 0.03951899943831361,
+      "centroid_support_hull_margin_mm": 2.4689916759517008,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 36.204262028976395
+    },
+    {
+      "lane": 22,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904528,
+      "own_flat_contact_mm2": 59.52334126236391,
+      "own_flat_support_fraction": 0.96797116968916,
+      "free_tail_fraction": 0.03202883031084003,
+      "centroid_support_hull_margin_mm": 2.7875494110892434,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 36.204262028976395
+    },
+    {
+      "lane": 23,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238584,
+      "own_flat_contact_mm2": 46.66384086744139,
+      "own_flat_support_fraction": 0.9363117312809162,
+      "free_tail_fraction": 0.06368826871908384,
+      "centroid_support_hull_margin_mm": 2.486393642104855,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.979735241888303
+    },
+    {
+      "lane": 23,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904528,
+      "own_flat_contact_mm2": 58.31879485124823,
+      "own_flat_support_fraction": 0.9483827834563839,
+      "free_tail_fraction": 0.05161721654361606,
+      "centroid_support_hull_margin_mm": 2.8100101488340012,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 26.979735241888303
+    },
+    {
+      "lane": 23,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523854,
+      "own_flat_contact_mm2": 49.837932505238605,
+      "own_flat_support_fraction": 1.0000000000000013,
+      "free_tail_fraction": -1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104852,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.47131910723435
+    },
+    {
+      "lane": 23,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904528,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 1.0000000000000013,
+      "free_tail_fraction": -1.3322676295501878e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833857,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.47131910723435
+    },
+    {
+      "lane": 23,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523851,
+      "own_flat_contact_mm2": 49.837932505238555,
+      "own_flat_support_fraction": 1.0000000000000009,
+      "free_tail_fraction": -8.881784197001252e-16,
+      "centroid_support_hull_margin_mm": 2.4863936421047543,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 18.78458963289128
+    },
+    {
+      "lane": 23,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045254,
+      "own_flat_contact_mm2": 61.49288648904536,
+      "own_flat_support_fraction": 1.0000000000000018,
+      "free_tail_fraction": -1.7763568394002505e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833982,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 18.78458963289128
+    },
+    {
+      "lane": 23,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238584,
+      "own_flat_contact_mm2": 49.83793250523853,
+      "own_flat_support_fraction": 0.9999999999999989,
+      "free_tail_fraction": 1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.486393642104819,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.654362904400625
+    },
+    {
+      "lane": 23,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045326,
+      "own_flat_contact_mm2": 61.49288648904539,
+      "own_flat_support_fraction": 1.000000000000001,
+      "free_tail_fraction": -1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.8100101488339466,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 21.654362904400625
+    },
+    {
+      "lane": 23,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523861,
+      "own_flat_contact_mm2": 47.868387278563745,
+      "own_flat_support_fraction": 0.9604810005618142,
+      "free_tail_fraction": 0.03951899943818582,
+      "centroid_support_hull_margin_mm": 2.4689916759518367,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 27.802740114255133
+    },
+    {
+      "lane": 23,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045304,
+      "own_flat_contact_mm2": 59.52334126237048,
+      "own_flat_support_fraction": 0.9679711696892666,
+      "free_tail_fraction": 0.03202883031073345,
+      "centroid_support_hull_margin_mm": 2.787549411089401,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 27.802740114255133
+    },
+    {
+      "lane": 24,
+      "radius_mm": 85.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238584,
+      "own_flat_contact_mm2": 49.837932505238534,
+      "own_flat_support_fraction": 0.999999999999999,
+      "free_tail_fraction": 9.992007221626409e-16,
+      "centroid_support_hull_margin_mm": 2.4863936421047543,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 11.178943818603779
+    },
+    {
+      "lane": 24,
+      "radius_mm": 85.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904542,
+      "own_flat_contact_mm2": 61.49288648904537,
+      "own_flat_support_fraction": 0.9999999999999992,
+      "free_tail_fraction": 7.771561172376096e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339564,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 11.178943818603779
+    },
+    {
+      "lane": 24,
+      "radius_mm": 72.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238584,
+      "own_flat_contact_mm2": 49.837932505238534,
+      "own_flat_support_fraction": 0.999999999999999,
+      "free_tail_fraction": 9.992007221626409e-16,
+      "centroid_support_hull_margin_mm": 2.4863936421047153,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.371226145241035
+    },
+    {
+      "lane": 24,
+      "radius_mm": 72.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904542,
+      "own_flat_contact_mm2": 61.49288648904537,
+      "own_flat_support_fraction": 0.9999999999999992,
+      "free_tail_fraction": 7.771561172376096e-16,
+      "centroid_support_hull_margin_mm": 2.8100101488339426,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.371226145241035
+    },
+    {
+      "lane": 24,
+      "radius_mm": 59.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523862,
+      "own_flat_contact_mm2": 49.83793250523854,
+      "own_flat_support_fraction": 0.9999999999999984,
+      "free_tail_fraction": 1.5543122344752192e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047472,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.896109455769922
+    },
+    {
+      "lane": 24,
+      "radius_mm": 59.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904538,
+      "own_flat_contact_mm2": 61.492886489045276,
+      "own_flat_support_fraction": 0.9999999999999982,
+      "free_tail_fraction": 1.7763568394002505e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833914,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 4.896109455769922
+    },
+    {
+      "lane": 24,
+      "radius_mm": 46.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.83793250523862,
+      "own_flat_contact_mm2": 49.83793250523854,
+      "own_flat_support_fraction": 0.9999999999999984,
+      "free_tail_fraction": 1.5543122344752192e-15,
+      "centroid_support_hull_margin_mm": 2.4863936421047557,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 10.648579088279455
+    },
+    {
+      "lane": 24,
+      "radius_mm": 46.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.492886489045375,
+      "own_flat_contact_mm2": 61.492886489045304,
+      "own_flat_support_fraction": 0.9999999999999989,
+      "free_tail_fraction": 1.1102230246251565e-15,
+      "centroid_support_hull_margin_mm": 2.810010148833885,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 10.648579088279455
+    },
+    {
+      "lane": 24,
+      "radius_mm": 33.0,
+      "kind": "single",
+      "footprint_area_mm2": 49.837932505238626,
+      "own_flat_contact_mm2": 46.289056584084555,
+      "own_flat_support_fraction": 0.9287916704654424,
+      "free_tail_fraction": 0.07120832953455758,
+      "centroid_support_hull_margin_mm": 2.433839968403976,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 22.081152681291634
+    },
+    {
+      "lane": 24,
+      "radius_mm": 33.0,
+      "kind": "fork",
+      "footprint_area_mm2": 61.49288648904544,
+      "own_flat_contact_mm2": 57.94401056789139,
+      "own_flat_support_fraction": 0.9422880251069974,
+      "free_tail_fraction": 0.057711974893002616,
+      "centroid_support_hull_margin_mm": 2.742098412067215,
+      "neighbor_flat_contact_mm2": 0.0,
+      "marker_clearance_mm": 22.081152681291634
+    }
+  ],
+  "minimum_support": {
+    "lane": 12,
+    "radius_mm": 33.0,
+    "kind": "single",
+    "footprint_area_mm2": 49.837932505238626,
+    "own_flat_contact_mm2": 46.28905658407994,
+    "own_flat_support_fraction": 0.9287916704653497,
+    "free_tail_fraction": 0.07120832953465028,
+    "centroid_support_hull_margin_mm": 2.433839968403848,
+    "neighbor_flat_contact_mm2": 0.0,
+    "marker_clearance_mm": 22.08115268129913
+  },
+  "minimum_centroid_margin": {
+    "lane": 12,
+    "radius_mm": 33.0,
+    "kind": "single",
+    "footprint_area_mm2": 49.837932505238626,
+    "own_flat_contact_mm2": 46.28905658407994,
+    "own_flat_support_fraction": 0.9287916704653497,
+    "free_tail_fraction": 0.07120832953465028,
+    "centroid_support_hull_margin_mm": 2.433839968403848,
+    "neighbor_flat_contact_mm2": 0.0,
+    "marker_clearance_mm": 22.08115268129913
+  },
+  "minimum_marker_clearance": {
+    "lane": 19,
+    "radius_mm": 59.0,
+    "kind": "fork",
+    "footprint_area_mm2": 61.49288648904537,
+    "own_flat_contact_mm2": 61.492886489045205,
+    "own_flat_support_fraction": 0.9999999999999973,
+    "free_tail_fraction": 2.6645352591003757e-15,
+    "centroid_support_hull_margin_mm": 2.810010148833908,
+    "neighbor_flat_contact_mm2": 0.0,
+    "marker_clearance_mm": 3.6809146627762424
+  },
+  "fractional_tail_contact_note": "Some asymmetric checker tails extend beyond their own lane flat into a shallow gap or beyond the board perimeter. Reported fractions measure actual flat contact; do not describe them as fully supported footprints. Mass centroids remain inside the support hull.",
+  "lane_capacity_checks": [
+    {
+      "lane": 1,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009102,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 1,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829614,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 2,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009104,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 2,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829567,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 3,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009102,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 3,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.11874477008296,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 4,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009092,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 4,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829665,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 5,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009098,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 5,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829645,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 6,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009104,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 6,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829616,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 7,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009102,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 7,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829614,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 8,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009099,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 8,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829567,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 9,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009102,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 9,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829578,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 10,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009106,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 10,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.118744770082953,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 11,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009098,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 11,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829645,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 12,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009104,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 12,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829616,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 13,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009102,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 13,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829614,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 14,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009099,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 14,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829567,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 15,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009102,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 15,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829578,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 16,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009092,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 16,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829665,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 17,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.3525998030091095,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 17,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829554,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 18,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009104,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 18,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829616,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 19,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009106,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 19,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829596,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 20,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009104,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 20,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829567,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 21,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009102,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 21,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829578,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 22,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009106,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 22,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829665,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 23,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009098,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 23,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829645,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 24,
+      "kind": "single",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 2.352599803009104,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    },
+    {
+      "lane": 24,
+      "kind": "fork",
+      "positions": 5,
+      "aligned_layers": 3,
+      "capacity": 15,
+      "bottom_z_mm": [
+        16.8,
+        20.8,
+        24.8
+      ],
+      "minimum_intralane_outline_gap_mm": 1.1187447700829616,
+      "interlayer_contact_fraction": 1.0,
+      "positive_volume_overlap_mm3": 0.0
+    }
+  ],
+  "adjacent_lane_clearance_checks": [
+    {
+      "lane_pair": [
+        1,
+        2
+      ],
+      "minimum_gap_mm": 2.4067219207745634,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        2,
+        3
+      ],
+      "minimum_gap_mm": 2.406721920774559,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        3,
+        4
+      ],
+      "minimum_gap_mm": 2.406721920774562,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        4,
+        5
+      ],
+      "minimum_gap_mm": 2.4067219207745567,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        5,
+        6
+      ],
+      "minimum_gap_mm": 2.4067219207745585,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        6,
+        7
+      ],
+      "minimum_gap_mm": 2.4067219207745607,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        7,
+        8
+      ],
+      "minimum_gap_mm": 2.4067219207745585,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        8,
+        9
+      ],
+      "minimum_gap_mm": 2.406721920774559,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        9,
+        10
+      ],
+      "minimum_gap_mm": 2.406721920774562,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        10,
+        11
+      ],
+      "minimum_gap_mm": 2.406721920774564,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        11,
+        12
+      ],
+      "minimum_gap_mm": 2.4067219207745585,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        12,
+        13
+      ],
+      "minimum_gap_mm": 2.406721920774564,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        13,
+        14
+      ],
+      "minimum_gap_mm": 2.406721920774553,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        14,
+        15
+      ],
+      "minimum_gap_mm": 2.406721920774562,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        15,
+        16
+      ],
+      "minimum_gap_mm": 2.406721920774566,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        16,
+        17
+      ],
+      "minimum_gap_mm": 2.406721920774548,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        17,
+        18
+      ],
+      "minimum_gap_mm": 2.406721920774568,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        18,
+        19
+      ],
+      "minimum_gap_mm": 2.4067219207745496,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        19,
+        20
+      ],
+      "minimum_gap_mm": 2.406721920774576,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        20,
+        21
+      ],
+      "minimum_gap_mm": 2.4067219207745536,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        21,
+        22
+      ],
+      "minimum_gap_mm": 2.4067219207745487,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        22,
+        23
+      ],
+      "minimum_gap_mm": 2.4067219207745802,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        23,
+        24
+      ],
+      "minimum_gap_mm": 2.4067219207745554,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    },
+    {
+      "lane_pair": [
+        24,
+        1
+      ],
+      "minimum_gap_mm": 2.4067219207745607,
+      "worst_case": [
+        33.0,
+        33.0,
+        "single",
+        "fork"
+      ]
+    }
+  ],
+  "minimum_adjacent_gap_mm": 2.406721920774548,
+  "bar_support_checks": [
+    {
+      "kind": "single",
+      "site_xy_mm": [
+        -12,
+        -5
+      ],
+      "support_fraction": 1.0000000000000002,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    },
+    {
+      "kind": "single",
+      "site_xy_mm": [
+        -12,
+        5
+      ],
+      "support_fraction": 0.9999999999999993,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    },
+    {
+      "kind": "single",
+      "site_xy_mm": [
+        0,
+        -5
+      ],
+      "support_fraction": 1.0000000000000002,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    },
+    {
+      "kind": "single",
+      "site_xy_mm": [
+        0,
+        5
+      ],
+      "support_fraction": 0.9999999999999989,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    },
+    {
+      "kind": "single",
+      "site_xy_mm": [
+        12,
+        -5
+      ],
+      "support_fraction": 1.0000000000000007,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    },
+    {
+      "kind": "single",
+      "site_xy_mm": [
+        12,
+        5
+      ],
+      "support_fraction": 0.9999999999999991,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    },
+    {
+      "kind": "fork",
+      "site_xy_mm": [
+        -12,
+        -5
+      ],
+      "support_fraction": 1.0000000000000024,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    },
+    {
+      "kind": "fork",
+      "site_xy_mm": [
+        -12,
+        5
+      ],
+      "support_fraction": 1.0000000000000004,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    },
+    {
+      "kind": "fork",
+      "site_xy_mm": [
+        0,
+        -5
+      ],
+      "support_fraction": 1.0000000000000027,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    },
+    {
+      "kind": "fork",
+      "site_xy_mm": [
+        0,
+        5
+      ],
+      "support_fraction": 1.0000000000000007,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    },
+    {
+      "kind": "fork",
+      "site_xy_mm": [
+        12,
+        -5
+      ],
+      "support_fraction": 1.0000000000000024,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    },
+    {
+      "kind": "fork",
+      "site_xy_mm": [
+        12,
+        5
+      ],
+      "support_fraction": 1.0000000000000004,
+      "aligned_layers": 5,
+      "bottom_z_mm": [
+        17,
+        21,
+        25,
+        29,
+        33
+      ]
+    }
+  ],
+  "bar_geometric_capacity": 30,
+  "minimum_bar_site_outline_gap_mm": 0.1475149202508712,
+  "signature_displacement_mm": 80.0,
+  "limitations": "CAD only. No physical stability, manufacture, handling, dice fairness or reachable 30-counter bar-state claim. Tiny tessellation error is controlled by face-area agreement, not a physical tolerance study."
+}

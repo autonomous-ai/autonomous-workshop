@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front shows vertical cylindrical sides and flat base; top is circular; iso exposes open cavity, continuous uniform rim and flat floor. No missing wall, detached body, incorrect orientation or extra feature. These current render bytes exactly match the current-attempt views already inspected; only the evidence source binding was refreshed, without geometry or image changes.",
+  "packet_sha256": "72ce7471a29174e5ccb4554f450ba3347dc402ce232927e959a41df39a20e0b6",
+  "status": "pass"
+}
