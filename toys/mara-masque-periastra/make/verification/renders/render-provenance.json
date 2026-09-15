@@ -1,0 +1,28 @@
+{
+  "renderer": "shared render_review; exact STEP import; per-pixel z-buffer",
+  "camera": {
+    "azimuth_deg": -75.0,
+    "elevation_deg": 25.0,
+    "projection": "orthographic"
+  },
+  "signature_common_framing": true,
+  "framing_min_mm": [
+    -95.0,
+    -95.0,
+    0.0
+  ],
+  "framing_max_mm": [
+    95.0,
+    95.000000000177,
+    177.2320406821335
+  ],
+  "inputs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/periastra.step": "7d91becc16ab5d99870e5a6f6421c156d7fd12313c15c5b3b27a5a0311af53aa",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/opened.step": "6624dd9a95185ce0fd0fb08821efbbd638d41908b1035ff4355d15e9ebd649e5"
+  },
+  "outputs": {
+    "iso.png": "8347bc99d8a0aa7be18473635fc9b02e0d7a14bc313cac912b95568b00d3a761",
+    "signature.png": "7dab17e5aef795337aca1757ebc14445e5582417791ff153f76b7e45e2c9fbac"
+  },
+  "limitations": "Appearance evidence only; review visibility before design acceptance. No physical test implied."
+}

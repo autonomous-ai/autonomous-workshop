@@ -1,0 +1,59 @@
+{
+ "build": {
+  "white_queen": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_queen"
+ ],
+ "checked": [
+  "white_queen"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_queen.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_queen"
+ ],
+ "print": {
+  "white_queen": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0005/overhang-white_queen.log": "17e3ae481d7e5a118b4658eacc8b51eabca0e79c2a436a91b3098fe22a378360",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0005/thickness-white_queen.log": "6cdfbe6e2e764e71743d5eb79d025463daa1ba28b6f8dc626f2e21fcdd9b110c"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:white_queen",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0005/visual-packet.json",
+  "packet_sha256": "3d2eb5de8840183a694fdfc5517d498e9b5549899573822e5c37428d2f8fcf56",
+  "status": "pending"
+ }
+}

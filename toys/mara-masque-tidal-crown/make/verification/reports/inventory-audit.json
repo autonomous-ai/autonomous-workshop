@@ -1,0 +1,23 @@
+{
+  "status": "pass",
+  "occurrences": 35,
+  "chessmen": 34,
+  "boards": 1,
+  "counts": {
+    "board": 1,
+    "white_rook": 2,
+    "white_knight": 2,
+    "white_bishop": 2,
+    "white_queen": 2,
+    "white_king": 1,
+    "white_pawn": 8,
+    "black_rook": 2,
+    "black_knight": 2,
+    "black_bishop": 2,
+    "black_queen": 2,
+    "black_king": 1,
+    "black_pawn": 8
+  },
+  "production_parts_match_exact_prototypes": true,
+  "all_occurrences_have_srgb_colors": true
+}

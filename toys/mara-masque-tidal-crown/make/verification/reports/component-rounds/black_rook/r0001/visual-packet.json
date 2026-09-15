@@ -1,0 +1,40 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_rook/r0001/visual/front.png": "acb5a65ae8dbc53a2ad4fa9a21baae1626a379f7f32099d8efb8b60d5779fc04",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_rook/r0001/visual/iso.png": "64c2ef08f635d86b6afdbd868f003d3c4feb9e10e52a9eec81ec60a223b718fb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_rook/r0001/visual/top.png": "df0b68f4c1e2a68f2df438ec7a83948007093d4e81611aae796090b0960a495b"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "README.md": "f6cb59274f788254ebcf6fc8344308718a99b374af1bc63d5f731bec79218cd1",
+    "part_black_bishop.step": "f07800ea5bfb72ce2318db75084253e837afc7349f2337ec07f058ae0b998bc6",
+    "part_black_bishop.step.py": "e7ec7dd984ae6ded62132be1bd276764c39d22e6cda76028f6c030b0fb15a149",
+    "part_black_king.step": "de598e5fe63241ba5ea50876848fc31323fdde5c0873f30fdda5c9750fe031f1",
+    "part_black_king.step.py": "37410dab213950054818f1406223ba84eca6dfe095720f29abc9f41ce2c7afbe",
+    "part_black_knight.step": "4c6514888a076388427764ef6c7dbb00850bdd7b6318bea1a4e7559dc6b94c30",
+    "part_black_knight.step.py": "d829c578179787f4ebf70bd5b2ff807391307493a541e8a41ab4746148a406fc",
+    "part_black_pawn.step": "9595f2efb11d0d4d590b0c38ed224d5a60df1aba13836a67868887bc747a6960",
+    "part_black_pawn.step.py": "185fc48755c939da0cc5d2a812a1300922d723ff74a2eaa876dcb85577eb4671",
+    "part_black_queen.step": "4961ebb2a0b69539bfee8453f70387d60c3c5976eef94a3b0acf585c9f4f9803",
+    "part_black_queen.step.py": "85f46e85e74fa62a2502c4dc7c105e5ea8adc0c2fa995881f79d09b74c0b5d41",
+    "part_black_rook.step": "5ca2ec748bfc5abfbcaa8bd7dd53ef5d99a21b3a80b60d36ab8ab2e50d76bcc6",
+    "part_black_rook.step.py": "2dd2be03cfe0d6c36c7536bdbdfb490b04c90e0e29044c7ab4be13a5077ebf1c",
+    "part_board.step": "e7788702970091743fee08d04eb6dfb86a6bf239ab4f79006c0113204840284d",
+    "part_board.step.py": "454064a083b5b9a1d222d3df50afb66c627329b6ca509312d5497f46af1801a2",
+    "part_white_bishop.step": "ad3f525cfbb2cd07e15a6f0816902c53e533b62f364a05ba94b0ac0e93f120da",
+    "part_white_bishop.step.py": "d5974c15647fb8f686e099536da31335758f509e82c699ca7f3f8fd2c498175f",
+    "part_white_king.step": "8d8b1a31389fa550bd15167e82de6a304f98d644d1b46b38ebbb8c5aa8effb4c",
+    "part_white_king.step.py": "2a2e9f6be4862f3263a2982a21cf8dbbdd35e729ecc193d07f5a86e1ca4fd065",
+    "part_white_knight.step": "e810f1fce64ff160d436c63a9d7ce506f2434f82670e439e092b1ba4febc69be",
+    "part_white_knight.step.py": "310963c94db5abe204b8787c9ff12afab144119a802d9e0059e5283ad6aacba8",
+    "part_white_pawn.step": "80dbafabdb894f61026af7c30306eeb4dd534fc857e32c367ada58f8b4871d84",
+    "part_white_pawn.step.py": "82fa9539dc886c0cae5c0ba54476adfbd97fd2715370253986ff3a4e12513f82",
+    "part_white_queen.step": "5c9c4161517451b89099bdad007e476ddb2939214c315d3b24a658d516d094d0",
+    "part_white_queen.step.py": "06193003bd345be91e0f8c45d3780700ec9310f3a922c886513a18c797980755",
+    "part_white_rook.step": "f8ce999b1f29c4f65c7ca3450076cc0c47e53516a1fd9f6ffd08ee8d33c96423",
+    "part_white_rook.step.py": "f5621acc795c7a2b5f0fa73077bec37e275dcfc922ed2e85d93ccd439ad79295",
+    "tidal_lib.py": "dd83bb399ab95e02354c702486dc9f8b14685cfce24af1be3609789d06c95a00",
+    "tidal_spec.md": "bdd82f561e6e3891f4b63d9c1efa000b596809bee0cd2dc7650f3828cc061a9a"
+  }
+}

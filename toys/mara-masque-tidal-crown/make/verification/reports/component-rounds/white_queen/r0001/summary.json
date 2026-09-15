@@ -1,0 +1,67 @@
+{
+ "build": {
+  "white_queen": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_queen"
+ ],
+ "checked": [
+  "white_queen"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_queen.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_queen"
+ ],
+ "print": {
+  "white_queen": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0001/overhang-white_queen.log": "a609198b81620c4b01338123ccb8a61357b9854e013567ca11f82ae7b2c74b08",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0001/thickness-white_queen.log": "ce667757bbcd60fb659239f48e7b916c025e6f75f07167331fc6290812c721f0"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:white_queen",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Crown center gap only0.5mm and mismatched sector facets create small ledges",
+    "evidence": "Iso shows nearly touching central post and curved walls; source radii2 and2.5.",
+    "part": "white_queen",
+    "repair": "Enlarge crown to12mm, radius4 inner wall, radius2 center post; align terminal facet angles."
+   }
+  ],
+  "observation": "Front and iso show raised opposed curved crown lobes, but narrow central gap is below required2mm; top flattens all horizontal surfaces.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0001/visual-packet.json",
+  "packet_sha256": "c53cb5363b30600afff66c3f2ffe30b3481e19925f521cb5f5342b87c65cf8e3",
+  "status": "fail"
+ }
+}

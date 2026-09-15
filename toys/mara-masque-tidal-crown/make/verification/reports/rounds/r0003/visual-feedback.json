@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "All three views inspected. Correct 32 starting men and two spare queens; no missing, floating or overlapping pieces. Isometric now shows two open winding crown arms on all four queens. Heights and footprints remain proportionate; board curls and all other roles unchanged.",
+  "packet_sha256": "bd068d8ae924b25d066c0ddeb06b5837713d83f8c0174fd941962fb135016c0c",
+  "status": "pass"
+}

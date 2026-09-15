@@ -1,0 +1,20 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0004/visual/front.png": "de49cb181e7c21f5a9d79e214a8be98771d019157399b8335fbc8c8318a473de",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0004/visual/iso.png": "6fed491248cd8cacdc3fcac6aabd1ddf1699ef0afa4f8dd67f7230aa191349ec",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0004/visual/top.png": "8046e4ab854176516d2f776199cd026fbf806d83703eb339497a11d3ee839b31"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "part_base.step": "06330cd570e5ea322b16b6ed2695f0ffe0f1702f55c3e2086332354e2f35ea04",
+    "part_base.step.py": "d0f221cec878d0862ec283a0c1cd764bc9add7ac5b5c612278464f232969614c",
+    "part_forked_comet.step": "069fa3e09e1729715f41761835f5623f7c19ccaa786df9e038cbf624b9777c28",
+    "part_forked_comet.step.py": "9d0809d61b552d7f2f14fcd40c0e564a373fcd5b17702082874b97acd80e0d95",
+    "part_roof.step": "ccc484719ce87cc9d3ea33dcfe5e3cde89a33315923484240480ab8dbacf92be",
+    "part_roof.step.py": "6df733b532bd9da90e51b13c7e24fb0a7d415764607b1ef15f88e824c29bab99",
+    "part_single_comet.step": "dc16053e6a28841b048039e1caa4e52252595073c4052691fa92a15fd47b0d4f",
+    "part_single_comet.step.py": "11919bf1480752454d5d80529fc24c7160a98a34af334ada5297ed2aace75146",
+    "periastra_lib.py": "429522aad341be857a2a30f928968a4ae11baa5afd26a1b442433433a1ea44d4"
+  }
+}

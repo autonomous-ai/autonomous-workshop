@@ -1,0 +1,63 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion <WORKSHOP_RUN>/artifacts/make/r0001/product/cad --manifest <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/motion.json --json
+(8.0s, exit 0)
+--- stdout
+{
+  "ok": true,
+  "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+  "assembly": "periastra.step.py",
+  "deadlineSeconds": null,
+  "results": [
+    {
+      "id": "roof-lifts-clear",
+      "check": "linear_motion_collision",
+      "description": "Loose populated-box roof moves directly upward 100 mm, removed for play.",
+      "clear": true,
+      "steps": 10,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        0.0,
+        100.0
+      ],
+      "stepMm": 10.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 10 steps (step 10.000 mm)"
+    },
+    {
+      "id": "roof-supported-downward",
+      "check": "linear_motion_collision",
+      "description": "Four integral base ledges support the closed roof against gravity; no upward retention claimed.",
+      "clear": false,
+      "step": 1,
+      "steps": 2,
+      "obstacle": "base",
+      "overlapMm3": 9.061947,
+      "translation": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "stepMm": 0.5,
+      "expect": "blocked",
+      "status": "pass",
+      "detail": "blocked by base at step 1/2 (9.061947 mm3) - retained, as expected"
+    }
+  ]
+}
+
+--- stderr
+check_motion: building periastra.step.py ...
+check_motion: building periastra.step.py done in 6s
+check_motion: 2 condition(s), up to ~278 sampled Boolean/distance operations before any stops early
+check_motion condition: 2 to go
+check_motion condition 1/2: roof-lifts-clear [linear_motion_collision] (0s elapsed)
+[roof-lifts-clear] sweep: 10 to go
+[roof-lifts-clear] sweep: 1/10 (10%), 0s elapsed, ~1s left
+[roof-lifts-clear] sweep: 10/10 (100%), 2s elapsed, ~0s left
+check_motion condition 2/2: roof-supported-downward [linear_motion_collision] (2s elapsed)
+[roof-supported-downward] sweep: 2 to go
+[roof-supported-downward] sweep: 0 done in 0s - collision at step 1
+check_motion condition: 2 done in 2s
+check_motion: retention closure ...
+check_motion: retention closure done in 0s

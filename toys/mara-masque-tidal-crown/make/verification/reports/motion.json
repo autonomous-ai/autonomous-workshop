@@ -1,0 +1,30 @@
+{
+  "assembly": "before.py",
+  "conditions": [
+    {
+      "id": "queen_h1_h8",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "User-guided ordinary queen move. Sampled collision clearance, not friction or driven mechanism. Board top never exceeds base bottom12; kings are outside swept file.",
+      "inputs": {
+        "moving_part": "white_queen",
+        "obstacle_parts": [
+          "board",
+          "white_king",
+          "black_king"
+        ],
+        "translation": [
+          0,
+          126,
+          0
+        ],
+        "steps": 14,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 9.01
+      }
+    }
+  ]
+}

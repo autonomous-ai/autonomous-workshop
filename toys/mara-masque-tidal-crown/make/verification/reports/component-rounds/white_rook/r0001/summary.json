@@ -1,0 +1,60 @@
+{
+ "build": {
+  "white_rook": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_rook"
+ ],
+ "checked": [
+  "white_rook"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_rook.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_rook/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_rook"
+ ],
+ "print": {
+  "white_rook": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_rook/r0001/overhang-white_rook.log": "0c2c0608b81c924d98a9c41b2ad45f1e926500c4b937a09afdb057abb6b0f252",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_rook/r0001/thickness-white_rook.log": "7fc75e79bb8dde7ce060a1e656b04232c5363f20cff5dcce725aec894d779849"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:white_rook",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show squared bar tower, two broad battlements and deep central notch. Top confirms circular base envelope. No missing or detached geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_rook/r0001/visual-packet.json",
+  "packet_sha256": "d9e4417cecae6e5bd90fb3af6bd89eced9372810153ab3a96ff9aa95cb52e936",
+  "status": "pass"
+ }
+}

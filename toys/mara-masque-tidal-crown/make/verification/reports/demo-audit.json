@@ -1,0 +1,40 @@
+{
+  "status": "pass",
+  "before": "5k2/8/5K2/8/8/8/8/7Q w - - 0 1",
+  "after": "5k1Q/8/5K2/8/8/8/8/8 b - - 1 1",
+  "move": "Qh8#",
+  "queen_displacement_mm": 126,
+  "black_king_responses": [
+    {
+      "square": "e7",
+      "attacked_by_white_king": true,
+      "attacked_by_white_queen": false,
+      "legal": false
+    },
+    {
+      "square": "e8",
+      "attacked_by_white_king": false,
+      "attacked_by_white_queen": true,
+      "legal": false
+    },
+    {
+      "square": "f7",
+      "attacked_by_white_king": true,
+      "attacked_by_white_queen": false,
+      "legal": false
+    },
+    {
+      "square": "g7",
+      "attacked_by_white_king": true,
+      "attacked_by_white_queen": true,
+      "legal": false
+    },
+    {
+      "square": "g8",
+      "attacked_by_white_king": false,
+      "attacked_by_white_queen": true,
+      "legal": false
+    }
+  ],
+  "limitations": "Three-piece move legality and mate only; not full rules, human usability or physical testing."
+}

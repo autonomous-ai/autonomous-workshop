@@ -1,0 +1,17 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_white_queen.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0001/thickness-white_queen.md
+(4.0s, exit 0)
+--- stdout
+part_white_queen.step.py: 1.66 cm3 solid, grid 0.133 mm (110x110x200), 62634 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (5 of 62634 samples); thinnest 0.13 mm at (-2.5, 4.3, 23.0) in 4 region(s); no region is a wall, 4 taper(s) at feature edges (0.01% of surface, budget 2%); 3 more within measurement error of the limit
+  PASS  thickness distribution         median 7.93 mm, p95 23.93 mm, max 26.00 mm
+  WARN  hollowable at 1.20 mm wall     0.55 of 1.66 cm3 (33%) in 1 pocket(s), 3 too small to shell
+  PASS  filament that would save       0.08 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.40 mm at (-1.2, -4.8, 24.1)      2 samples, 0.0 mm2, runs 0.1 mm, band 0.26 mm
+        2. [taper] 0.20 mm at (1.2, -2.2, 21.3)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.14 mm
+        3. [taper] 0.13 mm at (-2.5, 4.3, 23.0)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.14 mm
+        4. [taper] 0.33 mm at (-0.6, -2.4, 24.3)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.14 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0001/thickness-white_queen.md
+
+--- stderr

@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_white_pawn.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001/thickness-white_pawn.md
+(2.7s, exit 0)
+--- stdout
+part_white_pawn.step.py: 0.94 cm3 solid, grid 0.133 mm (110x110x95), 36900 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 36900 samples)
+  PASS  thickness distribution         median 8.73 mm, p95 14.00 mm, max 15.13 mm
+  WARN  hollowable at 1.20 mm wall     0.28 of 0.94 cm3 (30%) in 1 pocket(s)
+  PASS  filament that would save       0.04 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001/thickness-white_pawn.md
+
+--- stderr

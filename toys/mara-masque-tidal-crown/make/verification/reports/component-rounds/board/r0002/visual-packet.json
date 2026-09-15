@@ -1,0 +1,28 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0002/visual/front.png": "3ef13c8ee33db3e1b590656b4b6c0923d86a5d5733cd61950a1bbedb5321ef93",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0002/visual/iso.png": "534fd9fbe91c9612b01a0e018e981c0327e76143e105d3494748fe5cd142757f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0002/visual/top.png": "6b91dbdf906cf5513215270f16730f738407fbeff762f66375fe496b171b77cb"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "README.md": "f6cb59274f788254ebcf6fc8344308718a99b374af1bc63d5f731bec79218cd1",
+    "part_black_bishop.step.py": "d64922f3c526fded72932ff03b4818668cd2df24cf60321fdb19429e7f9ae670",
+    "part_black_king.step.py": "37410dab213950054818f1406223ba84eca6dfe095720f29abc9f41ce2c7afbe",
+    "part_black_knight.step.py": "d829c578179787f4ebf70bd5b2ff807391307493a541e8a41ab4746148a406fc",
+    "part_black_pawn.step.py": "185fc48755c939da0cc5d2a812a1300922d723ff74a2eaa876dcb85577eb4671",
+    "part_black_queen.step.py": "4d07bad69d830d3cdbecd070e6b2335c273b1302af4efbf3919cf02a338b9e13",
+    "part_black_rook.step.py": "2dd2be03cfe0d6c36c7536bdbdfb490b04c90e0e29044c7ab4be13a5077ebf1c",
+    "part_board.step": "a4a6ff42215a81c391d8f14cbea27a8008ab18a49e6bc8f3bf0d5d1e7fa0c574",
+    "part_board.step.py": "81cbcdf00b6838687667adae8b0e730d9448837a6dc6ec2d51722b55bb943cd7",
+    "part_white_bishop.step.py": "b61b86622a9a28d57713c79532487fb8cd5768b8ee056fc7d0de8148aefad76f",
+    "part_white_king.step.py": "2a2e9f6be4862f3263a2982a21cf8dbbdd35e729ecc193d07f5a86e1ca4fd065",
+    "part_white_knight.step.py": "310963c94db5abe204b8787c9ff12afab144119a802d9e0059e5283ad6aacba8",
+    "part_white_pawn.step.py": "82fa9539dc886c0cae5c0ba54476adfbd97fd2715370253986ff3a4e12513f82",
+    "part_white_queen.step.py": "6da5529d472e94ebdcba24640dea8ea7f4b00a16c3e5e1cb6dd92a5df8416876",
+    "part_white_rook.step.py": "f5621acc795c7a2b5f0fa73077bec37e275dcfc922ed2e85d93ccd439ad79295",
+    "tidal_lib.py": "2dc1356099d911c2d8df2af82435afb422ef9edd64d859b6729ea384be92cb06",
+    "tidal_spec.md": "bdd82f561e6e3891f4b63d9c1efa000b596809bee0cd2dc7650f3828cc061a9a"
+  }
+}

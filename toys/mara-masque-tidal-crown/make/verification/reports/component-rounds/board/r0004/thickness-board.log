@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_board.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0004/thickness-board.md
+(15.2s, exit 0)
+--- stdout
+part_board.step.py: 325.56 cm3 solid, grid 0.371 mm (532x532x37), 362752 surface samples, thickness resolved to 0.186 mm
+  PASS  wall >= 0.80 mm (+/-0.19)      0.0% of surface below (0 of 362752 samples)
+  PASS  thickness distribution         median 11.89 mm, p95 151.93 mm, max 203.19 mm
+  WARN  hollowable at 1.20 mm wall     243.95 of 325.56 cm3 (75%) in 1 pocket(s)
+  PASS  filament that would save       36.59 cm3, 45.4 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0004/thickness-board.md
+
+--- stderr

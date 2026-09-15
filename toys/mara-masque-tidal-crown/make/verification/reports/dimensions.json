@@ -1,0 +1,136 @@
+{
+  "status": "pass",
+  "method": "Exact STEP BREP bounding boxes and solid counts; circumscribed rounded-square base separately checked by check_fit.py",
+  "parts": [
+    {
+      "part": "part_black_bishop.step",
+      "size_mm": [
+        11.6,
+        11.6,
+        23.000000000000206
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_black_king.step",
+      "size_mm": [
+        11.6,
+        11.6,
+        28.0
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_black_knight.step",
+      "size_mm": [
+        11.6,
+        11.6,
+        21.0
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_black_pawn.step",
+      "size_mm": [
+        11.6,
+        11.6,
+        12.0
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_black_queen.step",
+      "size_mm": [
+        12.0,
+        12.0,
+        26.0
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_black_rook.step",
+      "size_mm": [
+        11.6,
+        11.6,
+        18.0000001
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_board.step",
+      "size_mm": [
+        195.999763532961,
+        195.9981022052255,
+        12.0000001
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_white_bishop.step",
+      "size_mm": [
+        14.0,
+        14.0,
+        23.000000000000206
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_white_king.step",
+      "size_mm": [
+        14.0,
+        14.0,
+        28.0
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_white_knight.step",
+      "size_mm": [
+        14.0,
+        14.0,
+        21.0
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_white_pawn.step",
+      "size_mm": [
+        14.0,
+        14.0,
+        12.0
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_white_queen.step",
+      "size_mm": [
+        14.0,
+        14.0,
+        26.0
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    },
+    {
+      "part": "part_white_rook.step",
+      "size_mm": [
+        14.0,
+        14.0,
+        18.0000001
+      ],
+      "zmin_mm": 0.0,
+      "solids": 1
+    }
+  ]
+}

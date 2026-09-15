@@ -1,0 +1,60 @@
+{
+ "build": {
+  "base": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "base"
+ ],
+ "checked": [
+  "base"
+ ],
+ "checks_ok": true,
+ "entry": "part_base.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "base"
+ ],
+ "print": {
+  "base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0006/overhang-base.log": "2369e43cbad250bc96f7d27672d829a2328f271b007ec9b3ba11a2fd7e5e6b39",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0006/thickness-base.log": "1dfce536808301843f887224579d505d74093b56211a63a99b780ea46c1d5ace"
+   },
+   "measured_round": 6,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 6,
+ "scope": "component:base",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows unchanged low sills and four high corner seats; top shows32 separate rounded-corner recessed squares with continuous material at diagonal junctions, two low halfdiscs beyond board, clear margins. Iso shows solid floor and coherent tray; no intersections or missing geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0006/visual-packet.json",
+  "packet_sha256": "71b58d4ef19abb18b7c3444af7817b558bdd1f0a17e72af7615ccf29c016b277",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,60 @@
+{
+ "build": {
+  "black_queen": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "black_queen"
+ ],
+ "checked": [
+  "black_queen"
+ ],
+ "checks_ok": true,
+ "entry": "part_black_queen.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_queen/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "black_queen"
+ ],
+ "print": {
+  "black_queen": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_queen/r0004/overhang-black_queen.log": "e63b738f39b25fb2c7b7063d6b7dddf41a5dd2e88e4ff264ac93042db3b642c4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_queen/r0004/thickness-black_queen.log": "67d1b8fa83012d5f25b24f86006b1aee19e2064e9e61680934bb9b6055ff2446"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:black_queen",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows flat square base, stable upright shaft and contained crown. Top lighting is flat; isometric resolves two winding open arms with a wide central gap, clear from the cup and distinct from a battlement. No missing geometry, loose islands or intersections.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_queen/r0004/visual-packet.json",
+  "packet_sha256": "dd42fdd7d572d340a3dd4a8036af6f11a893360b42461b7a262229071c8bfa3b",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,15 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_white_bishop.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0001/thickness-white_bishop.md
+(2.8s, exit 1)
+--- stdout
+part_white_bishop.step.py: 1.25 cm3 solid, grid 0.133 mm (110x110x177), 50328 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      0.7% of surface below (314 of 50328 samples); thinnest 0.13 mm at (1.9, 3.5, 10.0) in 2 region(s); 1 wall(s) (widest band 1.31 mm), 1 taper(s) at feature edges (0.00% of surface, budget 2%); 27 more within measurement error of the limit
+  PASS  thickness distribution         median 5.60 mm, p95 14.00 mm, max 22.93 mm
+  WARN  hollowable at 1.20 mm wall     0.36 of 1.25 cm3 (29%) in 1 pocket(s)
+  PASS  filament that would save       0.05 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.13 mm at (4.0, -2.4, 18.7)    313 samples, 6.3 mm2, runs 4.8 mm, band 1.31 mm
+        2. [taper] 0.13 mm at (1.9, 3.5, 10.0)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.13 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0001/thickness-white_bishop.md
+
+--- stderr

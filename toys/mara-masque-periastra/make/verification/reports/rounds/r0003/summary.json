@@ -1,0 +1,137 @@
+{
+ "build": {
+  "base": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "base"
+ ],
+ "checked": [
+  "base"
+ ],
+ "checks_ok": true,
+ "entry": "periastra.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": {
+  "conditions": [
+   {
+    "detail": "clear across 10 steps (step 10.000 mm)",
+    "id": "roof-lifts-clear",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by base at step 1/2 (9.061947 mm3) - retained, as expected",
+    "id": "roof-supported-downward",
+    "status": "pass"
+   }
+  ],
+  "detail": "2 condition(s): all pass",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "base",
+  "forked_comet",
+  "roof",
+  "single_comet"
+ ],
+ "print": {
+  "base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/overhang-base.log": "91c02350d9d938b298319abd6a79b4d5f90cbff714a84b90738731fcb8a71f43",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/thickness-base.log": "c8e9416a32a3ef8e54978afee51621ece2adc8f06478b8f96bf711d8baf13f8f"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "forked_comet": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-forked_comet.log": "3adb647c5c591c55430c760d7a94831ae8157db8eec59f6d07e9e6ed4bb1979e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-forked_comet.log": "26bfa6b6a83c5fc7330c416338ecee98f995b44f556ce37aeb4427582a3c528e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-roof.log": "027f8cf940eb0a66352c972ec4e4790010b18d577a47c0efda505aafcff0dd34",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-roof.log": "5f2c78650a18044395c7ca83eceda13b5b24c3736b4a72f3ae78365d3c455da1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "single_comet": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_comet.log": "41241300cdc0b2aa9da0fa67e81b26894616ba8fa41f8007cf71a4db5519fa4e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_comet.log": "e2cce72d1a8d7eb9e53b46181e8542bda2f3c58f7292552d0b45a85507dd3468"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "forked_comet",
+  "roof",
+  "single_comet"
+ ],
+ "round": 3,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "All three closed views show broad conical telescope roof seated within four cornerpiers, unchanged intentional ventilation gap with partial counteredge visibility. No roof/counter intersection or extra/missing exterior geometry. Cornerrepair is hidden under seated roof and reviewed separately onbase.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/visual-packet.json",
+  "packet_sha256": "d67406909c3a1c9ae6e863f211392eb8c2e6366f552bd3bf05880210dcccb60c",
+  "status": "pass"
+ }
+}

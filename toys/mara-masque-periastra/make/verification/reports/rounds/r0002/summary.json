@@ -1,0 +1,137 @@
+{
+ "build": {
+  "base": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "base"
+ ],
+ "checked": [
+  "base"
+ ],
+ "checks_ok": true,
+ "entry": "periastra.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": {
+  "conditions": [
+   {
+    "detail": "clear across 10 steps (step 10.000 mm)",
+    "id": "roof-lifts-clear",
+    "status": "pass"
+   },
+   {
+    "detail": "blocked by base at step 1/2 (9.061947 mm3) - retained, as expected",
+    "id": "roof-supported-downward",
+    "status": "pass"
+   }
+  ],
+  "detail": "2 condition(s): all pass",
+  "returncode": 0,
+  "verdict": "pass"
+ },
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "base",
+  "forked_comet",
+  "roof",
+  "single_comet"
+ ],
+ "print": {
+  "base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-base.log": "7a1975dd7ab6a35a605a23d057e356fd70782a5c505b149701b16a88806187ff",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-base.log": "8f3650bd2a44e25a5de7f843d196fc9a1fbd274dc93ee014ad1e622d9885de53"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "forked_comet": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-forked_comet.log": "3adb647c5c591c55430c760d7a94831ae8157db8eec59f6d07e9e6ed4bb1979e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-forked_comet.log": "26bfa6b6a83c5fc7330c416338ecee98f995b44f556ce37aeb4427582a3c528e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-roof.log": "027f8cf940eb0a66352c972ec4e4790010b18d577a47c0efda505aafcff0dd34",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-roof.log": "5f2c78650a18044395c7ca83eceda13b5b24c3736b4a72f3ae78365d3c455da1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "single_comet": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_comet.log": "41241300cdc0b2aa9da0fa67e81b26894616ba8fa41f8007cf71a4db5519fa4e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_comet.log": "e2cce72d1a8d7eb9e53b46181e8542bda2f3c58f7292552d0b45a85507dd3468"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "forked_comet",
+  "roof",
+  "single_comet"
+ ],
+ "round": 2,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show broad conical roof seated level within four corner piers; lowered walls create intentional narrow ventilation gap. Dome and telescope remain complete; closed roof conceals the playing area apart from edge glimpses through ventilation. No visible intersections or unsupported model parts. Exact lifted state is reviewed separately.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/visual-packet.json",
+  "packet_sha256": "3ccfcc6b5f7c3c97c7403c6c2b1539ac757a362e056e3bd5d03749e30d0d3791",
+  "status": "pass"
+ }
+}

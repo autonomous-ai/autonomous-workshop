@@ -1,0 +1,67 @@
+{
+ "build": {
+  "board": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "board"
+ ],
+ "checked": [
+  "board"
+ ],
+ "checks_ok": true,
+ "entry": "part_board.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "board"
+ ],
+ "print": {
+  "board": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0001/overhang-board.log": "e278cc11d05a3a4656036f0ccc0c4aa6de2ad973ec3cac26103e7e24a120d211",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0001/thickness-board.log": "20c5c116642c5f497952036a0ec5fa541442cc6fa341f5f05b9d6cab1e328152"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:board",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Missing entire chess grid; negative Z extrusion",
+    "evidence": "Top and iso are blank across central square; bounds Z-12 to0.",
+    "part": "board",
+    "repair": "Normalize polygon winding before extrusion; cut recesses into Z10\u201312 top."
+   }
+  ],
+  "observation": "Front shows flat slab but top and iso show no chess grid. Source geometry bounds reveal extrusion extends below bed, so recess cutters miss slab.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0001/visual-packet.json",
+  "packet_sha256": "1ea8100dcb12aabfd838f40fb0cba08ee0079354b7cf67c38ba2719abde0c438",
+  "status": "fail"
+ }
+}

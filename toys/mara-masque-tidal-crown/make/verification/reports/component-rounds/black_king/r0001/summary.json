@@ -1,0 +1,60 @@
+{
+ "build": {
+  "black_king": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "black_king"
+ ],
+ "checked": [
+  "black_king"
+ ],
+ "checks_ok": true,
+ "entry": "part_black_king.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_king/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "black_king"
+ ],
+ "print": {
+  "black_king": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_king/r0001/overhang-black_king.log": "a91659d95cf07b32ddcf9bef07cd9041911d2e44ce0e4d7311e44862c2fedce1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_king/r0001/thickness-black_king.log": "32fd0069eb6fd79b8510918e2d2ac4053781ca1eba5f6f859c53e43e653b3cb1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:black_king",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows cross and broad lateral jets; iso shows upright core and stem on rounded-square base. Top clearly differentiates side footprint; no extra or floating geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_king/r0001/visual-packet.json",
+  "packet_sha256": "cb5f405b5f079dab1e162add72dce41fc57537fa7e8320ffebed1ad7b7067b1d",
+  "status": "pass"
+ }
+}

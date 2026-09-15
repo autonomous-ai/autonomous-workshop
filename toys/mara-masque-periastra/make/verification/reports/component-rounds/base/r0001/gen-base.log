@@ -1,0 +1,15 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_base.step.py --write --json
+(3.6s, exit 1)
+--- stdout
+
+--- stderr
+[scripts/gen] FAILED: ValueError: explicit clearance 0.8 mm is outside the hand-assembly band -0.2..0.6 mm; if that is intended, say so in the project spec and widen this band deliberately
+[scripts/gen]   part_base.step.py:1 in <module>
+[scripts/gen]       from periastra_lib import build_base
+[scripts/gen]   periastra_lib.py:12 in <module>
+[scripts/gen]       ROOF_SIZE = cadfits.peg_for(OPENING, ROOF_CLEARANCE)
+[scripts/gen]   …/cad/scripts/cadfits.py:125 in peg_for
+[scripts/gen]       peg = hole - 2 * mating_clearance(fit)
+[scripts/gen]   …/cad/scripts/cadfits.py:92 in mating_clearance
+[scripts/gen]       raise ValueError(
+[scripts/gen] re-run with --verbose for the full traceback

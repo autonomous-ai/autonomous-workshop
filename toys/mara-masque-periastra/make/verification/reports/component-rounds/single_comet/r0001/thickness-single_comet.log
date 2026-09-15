@@ -1,0 +1,15 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_single_comet.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_comet/r0001/thickness-single_comet.md
+(2.5s, exit 0)
+--- stdout
+part_single_comet.step.py: 0.89 cm3 solid, grid 0.133 mm (95x125x57), 31501 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (3 of 31501 samples); thinnest 0.33 mm at (2.0, 4.8, 6.6) in 2 region(s); no region is a wall, 2 taper(s) at feature edges (0.02% of surface, budget 2%); 2 more within measurement error of the limit
+  PASS  thickness distribution         median 6.93 mm, p95 15.80 mm, max 16.07 mm
+  WARN  hollowable at 1.20 mm wall     0.34 of 0.89 cm3 (38%) in 1 pocket(s)
+  PASS  filament that would save       0.05 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.33 mm at (2.0, 4.8, 6.6)      2 samples, 0.1 mm2, runs 0.2 mm, band 0.34 mm
+        2. [taper] 0.40 mm at (-1.8, 4.7, 6.6)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.30 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_comet/r0001/thickness-single_comet.md
+
+--- stderr

@@ -1,0 +1,61 @@
+{
+  "status": "pass",
+  "queen_crown_section_z_mm": 24,
+  "queen_separate_arms": 2,
+  "queen_arm_clearance_mm": 2.0717789443686336,
+  "queen_nominal_width_mm": 2.2,
+  "polygon_simplification_max_deviation_mm": 0.03,
+  "conservative_arm_width_mm": 2.14,
+  "exact_step_state_centers": {
+    "before": {
+      "board": [
+        4.973799150320701e-13,
+        1.4992451724538114e-12,
+        6.00000005
+      ],
+      "white_king": [
+        27.0,
+        27.0,
+        26.0
+      ],
+      "white_queen": [
+        63.0,
+        -63.0,
+        25.0
+      ],
+      "black_king": [
+        27.0,
+        63.0,
+        26.0
+      ]
+    },
+    "after": {
+      "board": [
+        4.973799150320701e-13,
+        1.4992451724538114e-12,
+        6.00000005
+      ],
+      "white_king": [
+        27.0,
+        27.0,
+        26.0
+      ],
+      "white_queen": [
+        63.0,
+        63.0,
+        25.0
+      ],
+      "black_king": [
+        27.0,
+        63.0,
+        26.0
+      ]
+    }
+  },
+  "queen_displacement_mm": [
+    0.0,
+    126.0,
+    0.0
+  ],
+  "other_designed_features": "Base thickness3; board relief width/depth2; king cross thickness3; bishop normal slit width2 and slab thickness5; rook merlons3 and notch depth2; knight slab5 with blunt neck/profile; pawn knob tiers2 and diameter10. These describe designed features, not zero-radius mathematical edges."
+}

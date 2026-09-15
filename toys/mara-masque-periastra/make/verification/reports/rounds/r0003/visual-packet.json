@@ -1,0 +1,28 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/visual/front.png": "21a1a3e5eb2395a2673c5db6c43e32b05a59e644390e1e6110c0a40e69f4a0bc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/visual/iso.png": "6b7ab4eaca330951e3d17392e2307d87b82cb2fc89e137b671881851506a6411",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/visual/top.png": "73356a743473cfa799057738e7d5223ed87d4f51d324926f4f8c25d41943beec"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "README.md": "6d93e8fd9537aa8a3126da204f43f46b0c4d589175e215c427d8554e88efe2f0",
+    "assembly.py": "57db9cecf7a705e01710c19806ea020b97336d7625a7eb99f5ade0e57d800110",
+    "export_delivery.py": "f15561b609c1840e3ede11e491689fbc83033667f95f600367d35a52fa325a70",
+    "measure/check_fit.py": "3e42e30cfa603fb75a73b91e455c9abe387b2eb21d75dd0ff79f71360092a6ef",
+    "part_base.step": "590aa6c78a8480f8d07e9344af11f075f2dc4350cd8a27462bc8ae4453e8f72c",
+    "part_base.step.py": "d0f221cec878d0862ec283a0c1cd764bc9add7ac5b5c612278464f232969614c",
+    "part_forked_comet.step": "069fa3e09e1729715f41761835f5623f7c19ccaa786df9e038cbf624b9777c28",
+    "part_forked_comet.step.py": "9d0809d61b552d7f2f14fcd40c0e564a373fcd5b17702082874b97acd80e0d95",
+    "part_roof.step": "ccc484719ce87cc9d3ea33dcfe5e3cde89a33315923484240480ab8dbacf92be",
+    "part_roof.step.py": "6df733b532bd9da90e51b13c7e24fb0a7d415764607b1ef15f88e824c29bab99",
+    "part_single_comet.step": "dc16053e6a28841b048039e1caa4e52252595073c4052691fa92a15fd47b0d4f",
+    "part_single_comet.step.py": "11919bf1480752454d5d80529fc24c7160a98a34af334ada5297ed2aace75146",
+    "periastra.step": "9a15cb9945c23eca9897a5b7da4e8562af154685b66e595f8c69c58bb87e290f",
+    "periastra.step.py": "05488ac7310df1ea5fc4a9cc9e3876c46f3cb25d7a289943110ded8cccd84d1e",
+    "periastra_lib.py": "4ae98d27b8fe55aed9eee65a18c0a59cb1b3c0713cf762d81d835dc522f13f28",
+    "render_evidence.py": "80b0729b28c1074b36f8050f463a53022e4e1f94bf268942657dacdcf82af6a6",
+    "write_states.py": "a4b2f7d7baa5a513d53245ced5f3c53431467d2a3ca2af4790839d2415dbc42f"
+  }
+}

@@ -1,0 +1,57 @@
+{
+ "build": {
+  "black_queen": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "black_queen"
+ ],
+ "checked": [
+  "black_queen"
+ ],
+ "checks_ok": true,
+ "entry": "part_black_queen.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_queen/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "black_queen"
+ ],
+ "print": {
+  "black_queen": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_queen/r0003/overhang-black_queen.log": "28413092071ec50f616fb113c436b126d1daec2095840b7b2fce3feb5dbc8df6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_queen/r0003/thickness-black_queen.log": "7dca76afbd9fff2cb01260212e170f401d63b83c47e97cb25fec39059c0c633c"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:black_queen",
+ "visual": {
+  "detail": "Visual render failed or source changed; inspect visual-render.log",
+  "findings": [],
+  "status": "error"
+ }
+}

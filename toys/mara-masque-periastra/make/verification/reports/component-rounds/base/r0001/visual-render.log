@@ -1,0 +1,31 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_base.step.py --view front --view top --view iso -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0001/visual
+(2.0s, exit 1)
+--- stdout
+
+--- stderr
+Traceback (most recent call last):
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 326, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 313, in main
+    source, shape = build_shape(args.source)
+                    ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 101, in build_shape
+    module = _load_entry(source)
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 90, in _load_entry
+    spec.loader.exec_module(module)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_base.step.py", line 1, in <module>
+    from periastra_lib import build_base
+  File "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/periastra_lib.py", line 12, in <module>
+    ROOF_SIZE = cadfits.peg_for(OPENING, ROOF_CLEARANCE)
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/cadfits.py", line 125, in peg_for
+    peg = hole - 2 * mating_clearance(fit)
+                     ~~~~~~~~~~~~~~~~^^^^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/cadfits.py", line 92, in mating_clearance
+    raise ValueError(
+    ...<3 lines>...
+    )
+ValueError: explicit clearance 0.8 mm is outside the hand-assembly band -0.2..0.6 mm; if that is intended, say so in the project spec and widen this band deliberately

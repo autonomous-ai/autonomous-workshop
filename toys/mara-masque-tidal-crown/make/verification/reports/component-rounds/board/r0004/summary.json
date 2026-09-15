@@ -1,0 +1,60 @@
+{
+ "build": {
+  "board": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "board"
+ ],
+ "checked": [
+  "board"
+ ],
+ "checks_ok": true,
+ "entry": "part_board.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "board"
+ ],
+ "print": {
+  "board": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0004/overhang-board.log": "fd294a1c16aa743c890b8903347cab75570116049fb1998544a390ffdd8e654f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0004/thickness-board.log": "c7a1ade788cc2b9720d8b69612d9af2b11ee64887dcc95c6b0fe736a57968888"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:board",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows uniform flat slab; top and iso show32 alternating rounded recesses, full8x8 field and two broad opposed curls. All64 positions supported; no floating parts or visible intersections. Sloped relief is now visible in top view.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0004/visual-packet.json",
+  "packet_sha256": "b57aab921439fa3028f1823b33951eca19b545e08c8a65660da02f2b9e3cd019",
+  "status": "pass"
+ }
+}

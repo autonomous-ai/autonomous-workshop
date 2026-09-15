@@ -1,0 +1,60 @@
+{
+ "build": {
+  "white_bishop": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_bishop"
+ ],
+ "checked": [
+  "white_bishop"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_bishop.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_bishop"
+ ],
+ "print": {
+  "white_bishop": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0002/overhang-white_bishop.log": "b2104bfc088d3fb629a0370a26b0c7dae3df70f6be905ee008973eb1c8c688ad",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0002/thickness-white_bishop.log": "f2aff5d56c388d5381e916fffd220758e0b8db4f9f382f031fbd3c4b949c5220"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:white_bishop",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show broad lens shoulders with open diagonal slit and blunt upper prongs; top confirms through-lane. Thin pointed prong removed; flat circular base remains.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0002/visual-packet.json",
+  "packet_sha256": "2d9a95e94bc7f9c02369f0e395897597f37e700cc7e05c02304bbe0e7d77b19a",
+  "status": "pass"
+ }
+}

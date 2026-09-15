@@ -1,0 +1,72 @@
+{
+  "status": "passed",
+  "revision": "rounded-recess assembly r0003",
+  "method": "Documented inspect refs/measure/align/frame/interfere on uniquely named byte-identical STEP inputs; exact STEP import for inventory.",
+  "inspected_sha256": {
+    "closed": "7d91becc16ab5d99870e5a6f6421c156d7fd12313c15c5b3b27a5a0311af53aa",
+    "opened": "6624dd9a95185ce0fd0fb08821efbbd638d41908b1035ff4355d15e9ebd649e5"
+  },
+  "live_sha256": {
+    "cad/periastra.step": "7d91becc16ab5d99870e5a6f6421c156d7fd12313c15c5b3b27a5a0311af53aa",
+    "evidence-states/opened.step": "6624dd9a95185ce0fd0fb08821efbbd638d41908b1035ff4355d15e9ebd649e5"
+  },
+  "inspection_targets": {
+    "closed": "artifacts/make/r0001/exact-inputs/assembly-r0003.step",
+    "opened": "artifacts/make/r0001/exact-inputs/opened-r0003.step"
+  },
+  "checks": {
+    "storage_height_mm": 10,
+    "recess_depth_mm": 0.8,
+    "roof_seat_z_mm": 21,
+    "roof_seat_alignment_delta_mm": [
+      0,
+      0,
+      0
+    ],
+    "roof_lift_translation_mm": [
+      0,
+      0,
+      100
+    ],
+    "roof_axes_unchanged": true,
+    "occurrences": 26,
+    "faces": 1334,
+    "counters": 24,
+    "side_counts": {
+      "single": 12,
+      "forked": 12
+    },
+    "counter_z_bounds_mm": [
+      10.2,
+      17.2
+    ],
+    "counter_to_closed_roof_clearance_mm": 3.8,
+    "unique_counter_positions": 24,
+    "positive_intersections_above_tolerance": 0,
+    "intersection_tolerance_mm3": 1e-06,
+    "pair_stats": {
+      "occurrences": 26,
+      "pairs_total": 325,
+      "pairs_tested": 25,
+      "pairs_skipped_bbox": 300,
+      "pairs_truncated": 0
+    }
+  },
+  "geometry_reexport_binding": {
+    "method": "Exact STEP DATA prefix equality before first presentation representation",
+    "identical": true,
+    "geometric_entity_prefix_sha256": "e38a987319b514e793a6064ef0f38ff21f22101c575e12fdac4c31e0708b527e"
+  },
+  "evidence_sha256": {
+    "assembly-refs.json": "cbcb72505c0b931fc8e2c769591b6096c9e2c3067fd7acba8a23d4d9616ee3a5",
+    "dimensions.jsonl": "812d3d7e72b42c5efb7fda5ead84935bc74b534657fe844108079f0f4497dd45",
+    "interference.json": "0c9adaef65fb9897170a5da141151295d66b94298e9aab1ceb97394ea45379d0"
+  },
+  "prior_revision_evidence": "artifacts/make/r0001/prior-geometry-audit",
+  "limitations": [
+    "No physical fit or handling claim.",
+    "Unique exact-input names avoid stale topology resolution.",
+    "Distinct occurrence selectors and24 distinct positions identify counters despite repeated imported prototype labels."
+  ],
+  "dimensions_serialization_note": "Same measurement records retained as dimensions.json array; original JSONL preserved outside product as dimensions-final.jsonl because delivery manifest excludes JSONL."
+}

@@ -1,0 +1,135 @@
+{
+ "build": {
+  "base": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "forked_comet": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "roof": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "single_comet": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "base",
+  "forked_comet",
+  "roof",
+  "single_comet"
+ ],
+ "checked": [
+  "base",
+  "forked_comet",
+  "roof",
+  "single_comet"
+ ],
+ "checks_ok": true,
+ "entry": "periastra.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "base",
+  "forked_comet",
+  "roof",
+  "single_comet"
+ ],
+ "print": {
+  "base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-base.log": "7d0508dfa77f4b6bc9577d29b57103031fa068280fc89fc0e50be4ef3e492b89",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-base.log": "537b35618daff0081e636436d2d9e7fc6045442eb0eeca6c44699649aa0507cb"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "forked_comet": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-forked_comet.log": "3adb647c5c591c55430c760d7a94831ae8157db8eec59f6d07e9e6ed4bb1979e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-forked_comet.log": "26bfa6b6a83c5fc7330c416338ecee98f995b44f556ce37aeb4427582a3c528e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-roof.log": "027f8cf940eb0a66352c972ec4e4790010b18d577a47c0efda505aafcff0dd34",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-roof.log": "5f2c78650a18044395c7ca83eceda13b5b24c3736b4a72f3ae78365d3c455da1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "single_comet": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-single_comet.log": "41241300cdc0b2aa9da0fa67e81b26894616ba8fa41f8007cf71a4db5519fa4e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-single_comet.log": "e2cce72d1a8d7eb9e53b46181e8542bda2f3c58f7292552d0b45a85507dd3468"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Closed front/top/iso show low observatory base, broad full roof, blunt tilted telescope hood and uniform inset roof gap. No exposed stored counters, floating parts or exterior collisions. Interior population is intentionally covered in this state and is subject to separate exact-open-state inspection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/visual-packet.json",
+  "packet_sha256": "0cbaf26f3e1addd07d7002f98ae66cfa32c8d083a2b796162f8e6957fc6435b1",
+  "status": "pass"
+ }
+}

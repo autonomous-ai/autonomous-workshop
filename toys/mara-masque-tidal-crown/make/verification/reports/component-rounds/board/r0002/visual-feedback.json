@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Grid contrast vanishes in straight top view",
+      "evidence": "Top view shows blank central field, while iso shows32 alternating rings.",
+      "part": "board",
+      "repair": "Assign contrasting surface colors to dark plateaus while preserving tactile relief; broaden recess-corner land to2mm."
+    }
+  ],
+  "observation": "Iso reveals complete alternating recess pattern and two broad curls; front is flat-bottomed. Top lighting conceals all grid boundaries.",
+  "packet_sha256": "6178fd4841e99fc2b065b3c3857768becbee418c15d87b4c14a12ee5d9a2e219",
+  "status": "fail"
+}

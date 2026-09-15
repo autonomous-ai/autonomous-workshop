@@ -1,0 +1,33 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-14T04:39:46+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 164.03 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=d003f10668a6a4bff9d71c57bb1e6ea9fff028346f18e9bc70144d252882525a` | note | 0.00 |
+| 2 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout' artifacts/make/r0001/product/cad` | rc=0 | 0.05 |
+| 3 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/gen' artifacts/make/r0001/product/cad/periastra.step.py artifacts/make/r0001/product/cad/part_base.step.py artifacts/make/r0001/product/cad/part_forked_comet.step.py artifacts/make/r0001/product/cad/part_roof.step.py artifacts/make/r0001/product/cad/part_single_comet.step.py --write --json` | rc=0 | 25.74 |
+| 4 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit' artifacts/make/r0001/product/cad --bed 220.0 220.0 --entry artifacts/make/r0001/product/cad/part_base.step.py --entry artifacts/make/r0001/product/cad/part_forked_comet.step.py --entry artifacts/make/r0001/product/cad/part_roof.step.py --entry artifacts/make/r0001/product/cad/part_single_comet.step.py --strict` | rc=0 | 7.61 |
+| 5 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 artifacts/make/r0001/product/cad/measure/check_fit.py` | rc=0 | 2.08 |
+| 6 | `check_spec_numbers  # NOT RUN: no *_spec.md; no written parameter claims to hold the source to` | skipped | 0.00 |
+| 7 | `check_spec_format  # NOT RUN: no *_spec.md; no analysis claims to hold the document to` | skipped | 0.00 |
+| 8 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 9 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 10 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion' artifacts/make/r0001/product/cad --manifest artifacts/make/r0001/product/cad/measure/motion.json --deadline 900` | rc=0 | 11.97 |
+| 11 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect' batch (11 JSONL requests)` | rc=0 | 54.45 |
+| 12 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_base.step.py --bed 220x220x220` | rc=0 | 10.74 |
+| 13 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_base.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-base.md` | rc=0 | 10.83 |
+| 14 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_base.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-base.md` | rc=0 | 15.19 |
+| 15 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_forked_comet.step.py --bed 220x220x220` | rc=0 | 2.78 |
+| 16 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_forked_comet.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-forked_comet.md` | rc=0 | 2.44 |
+| 17 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_forked_comet.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-forked_comet.md` | rc=0 | 2.70 |
+| 18 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_roof.step.py --bed 220x220x220` | rc=0 | 2.19 |
+| 19 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_roof.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-roof.md` | rc=0 | 2.56 |
+| 20 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_roof.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-roof.md` | rc=0 | 5.26 |
+| 21 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_single_comet.step.py --bed 220x220x220` | rc=0 | 2.31 |
+| 22 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_single_comet.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-single_comet.md` | rc=0 | 2.42 |
+| 23 | `<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_single_comet.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-single_comet.md` | rc=0 | 2.69 |

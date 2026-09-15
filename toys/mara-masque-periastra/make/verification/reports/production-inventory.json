@@ -1,0 +1,444 @@
+[
+  {
+    "name": "base",
+    "path": "parts/base.step",
+    "sha256": "dae355bc4c187db09a98d2e36d06eeb58d3cbca5d47dc9c730fdc2b7ba6e0450",
+    "solids": 1,
+    "bounds_mm": [
+      190.0,
+      190.000000000347,
+      24.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.72,
+      0.78,
+      0.81
+    ]
+  },
+  {
+    "name": "roof",
+    "path": "parts/roof.step",
+    "sha256": "b045bda4360e99729b3d03f5c45a7b9cc35ae3de999107a81725c20864799570",
+    "solids": 1,
+    "bounds_mm": [
+      182.4,
+      182.400000001105,
+      56.23401881576793
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.19,
+      0.36,
+      0.43
+    ]
+  },
+  {
+    "name": "single_01",
+    "path": "parts/single_01.step",
+    "sha256": "404cfdd58567abda5eb8606887846d877f4eae6f2f9e3610c4128761b09bcb35",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_02",
+    "path": "parts/single_02.step",
+    "sha256": "39cdc2b1c7bbf2276d64c706bc6d6762de2950edc672507a630de0665206b402",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_03",
+    "path": "parts/single_03.step",
+    "sha256": "36fbadb4fae7cb49e33e89a015b68a8e0671e7c7df1afb2767364577e95298c0",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_04",
+    "path": "parts/single_04.step",
+    "sha256": "f667ab3b162fd8f74d2efb0927f995edd2c376557a67240acf34d506f272d68a",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_05",
+    "path": "parts/single_05.step",
+    "sha256": "4afd3d3dfe9833e1af7bcb85f58e5451a2321e39c5439ef7952ead4121af4314",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_06",
+    "path": "parts/single_06.step",
+    "sha256": "02e30b57c389f90087b5b32ab117c30b0f085b1290fcf8e7d3384b9fa83227d7",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_07",
+    "path": "parts/single_07.step",
+    "sha256": "49408414acdabdf95634b3d6f6b04676736929c64d5b8a1dce43a68484595b59",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_08",
+    "path": "parts/single_08.step",
+    "sha256": "c05639725cebd2ea84be0bf1dde1ece52e63071aceeb70ab9cc33c561a23f5d0",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_09",
+    "path": "parts/single_09.step",
+    "sha256": "29b149506a5b09e50f7edcca50f4a228c23bcf50197cd3b0df7026a9797b2916",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_10",
+    "path": "parts/single_10.step",
+    "sha256": "d3a2f6aaa66852744921f12620c9a47b33334f2bf7757bc1891556cc046af575",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_11",
+    "path": "parts/single_11.step",
+    "sha256": "1ecaf8d9716917445b69df3f5a08a3e836281cca769b0dec8409fbdd73fb1839",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_12",
+    "path": "parts/single_12.step",
+    "sha256": "c5615bcec9731c48eee1b6b6e6f09d313b7a6cacf8511308f7869c948ebc4486",
+    "solids": 1,
+    "bounds_mm": [
+      12.0000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "forked_01",
+    "path": "parts/forked_01.step",
+    "sha256": "e7424515a8e674998da773f5cac95711f825c044ea8b2ce3a3bfd88850c8ced1",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_02",
+    "path": "parts/forked_02.step",
+    "sha256": "738b9067ef7ed737d2166655c912b2a41f1f0fffb0955dea0cbe7a617c5e27d1",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_03",
+    "path": "parts/forked_03.step",
+    "sha256": "a8eccc4238c8e81b2261d5cd2d4fc3d76309263a60826ae3a969a00364f30d32",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_04",
+    "path": "parts/forked_04.step",
+    "sha256": "90d9ea0986ce6349a39777a330bf8aeb9057aa713c161b1adacdefa3a6c29e37",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_05",
+    "path": "parts/forked_05.step",
+    "sha256": "747672e903d89652c64e67254f7fc047cf554bb2c4f15beca175568f21f1a58a",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_06",
+    "path": "parts/forked_06.step",
+    "sha256": "7d0f31fa167e8c8eb20fc32093b006ac2dfca4f2286cf5eb42d2591d37650af4",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_07",
+    "path": "parts/forked_07.step",
+    "sha256": "a54d1c24d5b4f8396b29feda7fc8148a2af31852d1d40769e21e9c8c8a589103",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_08",
+    "path": "parts/forked_08.step",
+    "sha256": "cba0fd6262dbec86959d45f7f8dec8c2a455fd3545a80d4c8fca0d7ce79f71f0",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_09",
+    "path": "parts/forked_09.step",
+    "sha256": "81b25254ad5de6497fc277c1a0b9c9b3a6e8d290f2fe51e3fab28bf7846dd3c2",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_10",
+    "path": "parts/forked_10.step",
+    "sha256": "4568ba045f9a1b89438406a91feec4605634a657ab4f08b44e0e0d4d195289ef",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_11",
+    "path": "parts/forked_11.step",
+    "sha256": "70ddc77189ca57c2e9857b213f6f452b9ec41f09e623dca1064ed04fef9c3080",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_12",
+    "path": "parts/forked_12.step",
+    "sha256": "371a9f679eb6b0d1f42c9389fe91585f1b3ce8b9410c8e7f84cd696a2edf0d20",
+    "solids": 1,
+    "bounds_mm": [
+      12.000000200000002,
+      16.0000002,
+      7.0000001
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  }
+]

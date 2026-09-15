@@ -1,0 +1,60 @@
+{
+ "build": {
+  "white_queen": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_queen"
+ ],
+ "checked": [
+  "white_queen"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_queen.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_queen"
+ ],
+ "print": {
+  "white_queen": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0002/overhang-white_queen.log": "c15de47907496d4cd15d3bb95f9ca30a88d9082611300eff64f97ce22670bcd9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0002/thickness-white_queen.log": "3b7fca2914865797ac3a70fa05dfc6fea584bd9ae47d1548ec7defe2fd5713ca"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:white_queen",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows three-height crown skyline; iso shows two broad opposed curled walls separated clearly from center post. Top confirms head within circular14mm envelope. Narrow gap repaired; no detached geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_queen/r0002/visual-packet.json",
+  "packet_sha256": "706deb6980c99c1d2720d1c88ecff89c917a13054008a92a1e52ed6945ec4108",
+  "status": "pass"
+ }
+}

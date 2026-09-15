@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin pointed slit prong",
+      "evidence": "Front upper-right prong tapers to zero at slot/outer-edge crossing; wall gate reports0.7percent thin surface.",
+      "part": "white_bishop",
+      "repair": "Open diagonal slot through broad truncated upper lens, maintaining at least2mm shoulders."
+    }
+  ],
+  "observation": "Front and iso identify slit bishop but right slit prong ends in needle point; wall gate fails. Top confirms open through-lane.",
+  "packet_sha256": "d82a65a4ae5445ec4606a272ec1d1ec3aa1c99ea1736a78baf026fe589069d7f",
+  "status": "fail"
+}

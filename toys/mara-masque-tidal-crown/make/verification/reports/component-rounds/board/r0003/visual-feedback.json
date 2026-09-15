@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Straight-down grid visibility unresolved",
+      "evidence": "Top packet still blank; iso has32 rounded recess rings.",
+      "part": "board",
+      "repair": "Use sloped2mm recess walls to make relief readable under top lighting, preserving common Z12 plateaus."
+    }
+  ],
+  "observation": "Broader rounded recess corners are clean in iso, but face-color assignment is not represented by renderer and top remains blank.",
+  "packet_sha256": "ff1dce99962bee6308d80a4af957609da29bb1ba756d8f4de10e8f15d9137efd",
+  "status": "fail"
+}

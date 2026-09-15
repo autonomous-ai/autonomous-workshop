@@ -1,0 +1,69 @@
+{
+ "build": {
+  "white_bishop": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_bishop"
+ ],
+ "checked": [
+  "white_bishop"
+ ],
+ "checks_ok": false,
+ "entry": "part_white_bishop.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_bishop"
+ ],
+ "print": {
+  "white_bishop": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0001/overhang-white_bishop.log": "6a256bb4d56806fe78d5f4747627e7de3a3147079d3ce004556ff2f0b2b1059a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0001/thickness-white_bishop.log": "a97b9ab39469e8bf6f1e1676531fbf1f231715ed551f9bcd4f728a5665b640dd"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.7% of surface below (314 of 50328 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:white_bishop",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin pointed slit prong",
+    "evidence": "Front upper-right prong tapers to zero at slot/outer-edge crossing; wall gate reports0.7percent thin surface.",
+    "part": "white_bishop",
+    "repair": "Open diagonal slot through broad truncated upper lens, maintaining at least2mm shoulders."
+   }
+  ],
+  "observation": "Front and iso identify slit bishop but right slit prong ends in needle point; wall gate fails. Top confirms open through-lane.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_bishop/r0001/visual-packet.json",
+  "packet_sha256": "d82a65a4ae5445ec4606a272ec1d1ec3aa1c99ea1736a78baf026fe589069d7f",
+  "status": "fail"
+ }
+}

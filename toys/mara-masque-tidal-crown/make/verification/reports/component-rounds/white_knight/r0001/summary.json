@@ -1,0 +1,60 @@
+{
+ "build": {
+  "white_knight": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_knight"
+ ],
+ "checked": [
+  "white_knight"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_knight.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_knight"
+ ],
+ "print": {
+  "white_knight": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0001/overhang-white_knight.log": "507ff196270bb038d358c780c47874073dff7228e9a177587db47d554c0296ba",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0001/thickness-white_knight.log": "650aeb7563dff488a152563d9ec70c86c77a61ad8e855d10149b0348a276ee49"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:white_knight",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows bent neck, forward muzzle and blunt upper ear; iso confirms thick horse-head profile on round base; top shows narrow head within base. No floating parts.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_knight/r0001/visual-packet.json",
+  "packet_sha256": "6c42a9ea49a6fe3e968f77889523ebc801ea6e59527685e86d17736efe6f13c4",
+  "status": "pass"
+ }
+}

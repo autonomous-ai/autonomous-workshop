@@ -1,0 +1,60 @@
+{
+ "build": {
+  "black_pawn": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "black_pawn"
+ ],
+ "checked": [
+  "black_pawn"
+ ],
+ "checks_ok": true,
+ "entry": "part_black_pawn.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_pawn/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "black_pawn"
+ ],
+ "print": {
+  "black_pawn": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_pawn/r0001/overhang-black_pawn.log": "28bb6bf18eb73a5f37b2b1e8140a44caf0206671118957ede3d2320bb54f908a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_pawn/r0001/thickness-black_pawn.log": "03f854baa02211587bf85b70fcd71af70b6aa4b1e2aeeed02fce1880c9f4b123"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:black_pawn",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show low rounded knot with broad supported shoulders and short stalk. Top shows concentric knot on rounded-square ownership base. No detached or intersecting pieces.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/black_pawn/r0001/visual-packet.json",
+  "packet_sha256": "6235acc8c6504174e9837cf27bb624e44c0116ff89840a25f4d393c4aca36e45",
+  "status": "pass"
+ }
+}

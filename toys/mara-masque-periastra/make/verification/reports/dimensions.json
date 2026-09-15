@@ -1,0 +1,685 @@
+[
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "z",
+      "from": {
+        "cadPath": "artifacts/make/r0001/exact-inputs/assembly-r0003",
+        "stepPath": "artifacts/make/r0001/exact-inputs/assembly-r0003.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.1.f32",
+        "displaySelector": "o1.1.f32",
+        "copyText": "#o1.1.f32",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.1.f32",
+          "bbox": {
+            "min": [
+              -92.0,
+              -92.0,
+              11.0
+            ],
+            "max": [
+              92.0,
+              92.0,
+              11.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              184.0,
+              184.0,
+              0.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              0.0,
+              11.0
+            ],
+            "diag": 260.2152954766495
+          },
+          "center": [
+            -0.033582,
+            0.0,
+            11.0
+          ],
+          "occurrenceId": "o1.1",
+          "shapeId": "o1.1.s1",
+          "kind": "plane",
+          "area": 18367.661262,
+          "origin": [
+            -92.0,
+            -92.0,
+            11.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 11.0,
+          "planeOffset": 11.0
+        },
+        "coordinate": 11.0,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/exact-inputs/assembly-r0003",
+        "stepPath": "artifacts/make/r0001/exact-inputs/assembly-r0003.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.2.f4",
+        "displaySelector": "o1.2.f4",
+        "copyText": "#o1.2.f4",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.2.f4",
+          "bbox": {
+            "min": [
+              -91.2,
+              -91.2,
+              21.0
+            ],
+            "max": [
+              91.2,
+              91.2,
+              21.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              182.4,
+              182.4,
+              0.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              0.0,
+              21.0
+            ],
+            "diag": 257.95255377685254
+          },
+          "center": [
+            -0.0,
+            -0.0,
+            21.0
+          ],
+          "occurrenceId": "o1.2",
+          "shapeId": "o1.2.s1",
+          "kind": "plane",
+          "area": 33268.486014,
+          "origin": [
+            0.0,
+            0.0,
+            21.0
+          ],
+          "normal": [
+            -0.0,
+            -0.0,
+            -1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 21.0,
+          "planeOffset": -21.0
+        },
+        "coordinate": 21.0,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 10.0,
+        "absoluteDistance": 10.0,
+        "euclideanDistance": 130.49137902558928,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "storage-height"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "z",
+      "from": {
+        "cadPath": "artifacts/make/r0001/exact-inputs/assembly-r0003",
+        "stepPath": "artifacts/make/r0001/exact-inputs/assembly-r0003.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.1.f32",
+        "displaySelector": "o1.1.f32",
+        "copyText": "#o1.1.f32",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.1.f32",
+          "bbox": {
+            "min": [
+              -92.0,
+              -92.0,
+              11.0
+            ],
+            "max": [
+              92.0,
+              92.0,
+              11.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              184.0,
+              184.0,
+              0.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              0.0,
+              11.0
+            ],
+            "diag": 260.2152954766495
+          },
+          "center": [
+            -0.033582,
+            0.0,
+            11.0
+          ],
+          "occurrenceId": "o1.1",
+          "shapeId": "o1.1.s1",
+          "kind": "plane",
+          "area": 18367.661262,
+          "origin": [
+            -92.0,
+            -92.0,
+            11.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 11.0,
+          "planeOffset": 11.0
+        },
+        "coordinate": 11.0,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/exact-inputs/assembly-r0003",
+        "stepPath": "artifacts/make/r0001/exact-inputs/assembly-r0003.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.1.f561",
+        "displaySelector": "o1.1.f561",
+        "copyText": "#o1.1.f561",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.1.f561",
+          "bbox": {
+            "min": [
+              -87.7,
+              -87.7,
+              10.2
+            ],
+            "max": [
+              -66.3,
+              -66.3,
+              10.2
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              21.400000000000006,
+              21.400000000000006,
+              0.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              -77.0,
+              -77.0,
+              10.2
+            ],
+            "diag": 30.264170234784242
+          },
+          "center": [
+            -77.0,
+            -77.0,
+            10.2
+          ],
+          "occurrenceId": "o1.1",
+          "shapeId": "o1.1.s1",
+          "kind": "plane",
+          "area": 456.686022,
+          "origin": [
+            -86.5,
+            -86.5,
+            10.2
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 10.2,
+          "planeOffset": 10.2
+        },
+        "coordinate": 10.2,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -0.8000000000000007,
+        "absoluteDistance": 0.8000000000000007,
+        "euclideanDistance": 7.819207120929845,
+        "vectorRelationship": {
+          "relation": "parallel",
+          "dot": 1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "recess-depth"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "mode": "flush",
+      "axis": "z",
+      "offset": 0.0,
+      "moving": {
+        "cadPath": "artifacts/make/r0001/exact-inputs/assembly-r0003",
+        "stepPath": "artifacts/make/r0001/exact-inputs/assembly-r0003.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.2.f4",
+        "displaySelector": "o1.2.f4",
+        "copyText": "#o1.2.f4",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.2.f4",
+          "bbox": {
+            "min": [
+              -91.2,
+              -91.2,
+              21.0
+            ],
+            "max": [
+              91.2,
+              91.2,
+              21.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              182.4,
+              182.4,
+              0.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              0.0,
+              21.0
+            ],
+            "diag": 257.95255377685254
+          },
+          "center": [
+            -0.0,
+            -0.0,
+            21.0
+          ],
+          "occurrenceId": "o1.2",
+          "shapeId": "o1.2.s1",
+          "kind": "plane",
+          "area": 33268.486014,
+          "origin": [
+            0.0,
+            0.0,
+            21.0
+          ],
+          "normal": [
+            -0.0,
+            -0.0,
+            -1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 21.0,
+          "planeOffset": -21.0
+        }
+      },
+      "target": {
+        "cadPath": "artifacts/make/r0001/exact-inputs/assembly-r0003",
+        "stepPath": "artifacts/make/r0001/exact-inputs/assembly-r0003.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.1.f30",
+        "displaySelector": "o1.1.f30",
+        "copyText": "#o1.1.f30",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.1.f30",
+          "bbox": {
+            "min": [
+              -92.0,
+              89.0,
+              21.0
+            ],
+            "max": [
+              -89.0,
+              92.0,
+              21.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              3.0,
+              3.0,
+              0.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              -90.5,
+              90.5,
+              21.0
+            ],
+            "diag": 4.242640687119285
+          },
+          "center": [
+            -90.5,
+            90.5,
+            21.0
+          ],
+          "occurrenceId": "o1.1",
+          "shapeId": "o1.1.s1",
+          "kind": "plane",
+          "area": 9.0,
+          "origin": [
+            -92.0,
+            89.0,
+            21.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 21.0,
+          "planeOffset": 21.0
+        }
+      },
+      "alignment": {
+        "translationVector": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "transformTranslationDelta": {
+          "3": 0.0,
+          "7": 0.0,
+          "11": 0.0
+        },
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        },
+        "rotationRequired": false
+      }
+    },
+    "id": "roof-seated"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/exact-inputs/assembly-r0003",
+      "stepPath": "artifacts/make/r0001/exact-inputs/assembly-r0003.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.2",
+      "displaySelector": "o1.2",
+      "copyText": "#o1.2",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.2",
+        "bbox": {
+          "min": [
+            -91.2,
+            -91.2,
+            21.0
+          ],
+          "max": [
+            91.2,
+            91.2,
+            77.234019
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            182.4,
+            182.4,
+            56.234019
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            0.0,
+            49.1170095
+          ],
+          "diag": 264.0109560092012
+        },
+        "center": [
+          0.0,
+          0.0,
+          49.1170095
+        ],
+        "kind": "frame",
+        "name": "roof",
+        "translation": [
+          0.0,
+          0.0,
+          21.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          21.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "roof-closed-frame"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/exact-inputs/opened-r0003",
+      "stepPath": "artifacts/make/r0001/exact-inputs/opened-r0003.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.2",
+      "displaySelector": "o1.2",
+      "copyText": "#o1.2",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.2",
+        "bbox": {
+          "min": [
+            -91.2,
+            -91.2,
+            121.0
+          ],
+          "max": [
+            91.2,
+            91.2,
+            177.234019
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            182.4,
+            182.4,
+            56.23401899999999
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            0.0,
+            149.1170095
+          ],
+          "diag": 264.0109560092012
+        },
+        "center": [
+          0.0,
+          0.0,
+          149.1170095
+        ],
+        "kind": "frame",
+        "name": "roof",
+        "translation": [
+          0.0,
+          0.0,
+          121.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          121.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "roof-open-frame"
+  }
+]

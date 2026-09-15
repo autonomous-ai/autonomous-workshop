@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Missing entire chess grid; negative Z extrusion",
+      "evidence": "Top and iso are blank across central square; bounds Z-12 to0.",
+      "part": "board",
+      "repair": "Normalize polygon winding before extrusion; cut recesses into Z10\u201312 top."
+    }
+  ],
+  "observation": "Front shows flat slab but top and iso show no chess grid. Source geometry bounds reveal extrusion extends below bed, so recess cutters miss slab.",
+  "packet_sha256": "1ea8100dcb12aabfd838f40fb0cba08ee0079354b7cf67c38ba2719abde0c438",
+  "status": "fail"
+}

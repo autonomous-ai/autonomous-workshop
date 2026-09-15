@@ -1,0 +1,60 @@
+{
+ "build": {
+  "white_king": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_king"
+ ],
+ "checked": [
+  "white_king"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_king.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_king/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_king"
+ ],
+ "print": {
+  "white_king": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_king/r0001/overhang-white_king.log": "1b391cb26bfbc911c55241cdc41ca790eabddb0ef031ad191440d254c9448b40",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_king/r0001/thickness-white_king.log": "82552358d273a5f767ce52c47e07e375f79109b440690bedea06bea69afd3696"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:white_king",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front has clear cross and paired horizontal arms; iso shows solid nucleus on upright stem and round flat base. Top confirms all geometry inside circular footprint.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_king/r0001/visual-packet.json",
+  "packet_sha256": "49e96a45d5992e70f07f1152947d0112385dd338f6623bbf62a72b8f1713bda5",
+  "status": "pass"
+ }
+}

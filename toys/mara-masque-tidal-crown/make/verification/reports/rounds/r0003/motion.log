@@ -1,0 +1,41 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion <WORKSHOP_RUN>/artifacts/make/r0001/product/cad --manifest <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/motion.json --json
+(14.8s, exit 0)
+--- stdout
+{
+  "ok": true,
+  "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+  "assembly": "before.py",
+  "deadlineSeconds": null,
+  "results": [
+    {
+      "id": "queen_h1_h8",
+      "check": "linear_motion_collision",
+      "description": "User-guided ordinary queen move. Sampled collision clearance, not friction or driven mechanism. Board top never exceeds base bottom12; kings are outside swept file.",
+      "clear": true,
+      "steps": 14,
+      "skippedSeatedStep": true,
+      "translation": [
+        0.0,
+        126.0,
+        0.0
+      ],
+      "stepMm": 9.0,
+      "expect": "clear",
+      "status": "pass",
+      "detail": "clear across 14 steps (step 9.000 mm)"
+    }
+  ]
+}
+
+--- stderr
+check_motion: building before.py ...
+check_motion: building before.py done in 6s
+check_motion: 1 condition(s), up to ~45 sampled Boolean/distance operations before any stops early
+check_motion condition: 1 to go
+check_motion condition 1/1: queen_h1_h8 [linear_motion_collision] (0s elapsed)
+[queen_h1_h8] sweep: 14 to go
+[queen_h1_h8] sweep: 1/14 (7%), 1s elapsed, ~8s left
+[queen_h1_h8] sweep: 14/14 (100%), 8s elapsed, ~0s left
+check_motion condition: 1 done in 8s
+check_motion: retention closure ...
+check_motion: retention closure done in 0s

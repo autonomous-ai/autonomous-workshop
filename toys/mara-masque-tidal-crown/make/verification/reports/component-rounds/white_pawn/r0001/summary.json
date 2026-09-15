@@ -1,0 +1,60 @@
+{
+ "build": {
+  "white_pawn": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "white_pawn"
+ ],
+ "checked": [
+  "white_pawn"
+ ],
+ "checks_ok": true,
+ "entry": "part_white_pawn.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "white_pawn"
+ ],
+ "print": {
+  "white_pawn": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001/overhang-white_pawn.log": "57319751f547e005a4a00e3d04cba361494b31279d6efe5815e6689392cc1a1f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001/thickness-white_pawn.log": "e9c3ae87f427821284329219ea8b287dd515bb7188472346a07088539035cb78"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:white_pawn",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show low rounded rotational knot on short stalk; top shows concentric head within broad circular base. Flat underside and compact proportions.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/white_pawn/r0001/visual-packet.json",
+  "packet_sha256": "604eb13c86ca4f59ded084fca9fe22611404a622f927da52a97f26016a47457d",
+  "status": "pass"
+ }
+}

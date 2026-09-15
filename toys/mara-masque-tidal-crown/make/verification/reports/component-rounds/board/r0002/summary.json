@@ -1,0 +1,67 @@
+{
+ "build": {
+  "board": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "board"
+ ],
+ "checked": [
+  "board"
+ ],
+ "checks_ok": true,
+ "entry": "part_board.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "board"
+ ],
+ "print": {
+  "board": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0002/overhang-board.log": "8f2def963fcdef2739c955d118f5afe94c4ec418af64367b016d6f17cf0fd57b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0002/thickness-board.log": "9bc8fd652b681ce1f1acbf20ebd8419dcaa570132f7e9efba90634fa99c66282"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.56,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:board",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Grid contrast vanishes in straight top view",
+    "evidence": "Top view shows blank central field, while iso shows32 alternating rings.",
+    "part": "board",
+    "repair": "Assign contrasting surface colors to dark plateaus while preserving tactile relief; broaden recess-corner land to2mm."
+   }
+  ],
+  "observation": "Iso reveals complete alternating recess pattern and two broad curls; front is flat-bottomed. Top lighting conceals all grid boundaries.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0002/visual-packet.json",
+  "packet_sha256": "6178fd4841e99fc2b065b3c3857768becbee418c15d87b4c14a12ee5d9a2e219",
+  "status": "fail"
+ }
+}

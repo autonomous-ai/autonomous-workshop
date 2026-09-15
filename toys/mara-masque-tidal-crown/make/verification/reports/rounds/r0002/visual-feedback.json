@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front now shows both knight profiles. Top confirms orthodox 32-piece placement and separate spare queens; all bases sit within squares. Isometric shows complete paired curled arms and no visible overlaps, missing parts or floating pieces. Six head families remain distinct.",
+  "packet_sha256": "2f091e24cae1f541dd66bbb5f8719ee06f3ee5cdb5c8fe4ef4822eeb90e7a2fd",
+  "status": "pass"
+}

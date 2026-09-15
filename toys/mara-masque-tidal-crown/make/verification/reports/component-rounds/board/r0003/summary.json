@@ -1,0 +1,67 @@
+{
+ "build": {
+  "board": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "board"
+ ],
+ "checked": [
+  "board"
+ ],
+ "checks_ok": true,
+ "entry": "part_board.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "board"
+ ],
+ "print": {
+  "board": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0003/overhang-board.log": "49ca66524e60ae7ffeb0595d289642ad19df242d280807ef63cffc5fad1dcd35",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0003/thickness-board.log": "8558d96dcf5098b5b788b1a6c69a713a590aa9c14bb4d667a17057df1ed95b6f"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:board",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Straight-down grid visibility unresolved",
+    "evidence": "Top packet still blank; iso has32 rounded recess rings.",
+    "part": "board",
+    "repair": "Use sloped2mm recess walls to make relief readable under top lighting, preserving common Z12 plateaus."
+   }
+  ],
+  "observation": "Broader rounded recess corners are clean in iso, but face-color assignment is not represented by renderer and top remains blank.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/board/r0003/visual-packet.json",
+  "packet_sha256": "ff1dce99962bee6308d80a4af957609da29bb1ba756d8f4de10e8f15d9137efd",
+  "status": "fail"
+ }
+}

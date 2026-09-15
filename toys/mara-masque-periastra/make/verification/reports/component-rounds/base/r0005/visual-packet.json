@@ -1,0 +1,30 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0005/visual/front.png": "947bf69bd466b15946f0cadda6e646fee2a13210af6a10faa392ad03380c429b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0005/visual/iso.png": "eb01c90e564db8b7d1403429355ec3bdbd0849675794adbc6509d272e0f3eae4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0005/visual/top.png": "0aaf3389d55e871f66bce0def9d65652abff5ed2f8203eb666d86b006349e67c"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "README.md": "6d93e8fd9537aa8a3126da204f43f46b0c4d589175e215c427d8554e88efe2f0",
+    "assembly.py": "57db9cecf7a705e01710c19806ea020b97336d7625a7eb99f5ade0e57d800110",
+    "measure/check_fit.py": "3e42e30cfa603fb75a73b91e455c9abe387b2eb21d75dd0ff79f71360092a6ef",
+    "part_base.step": "681cc94531053a657eeb84914d8261a1c3ba045a16d4e7febf0dd395641f6d84",
+    "part_base.step.py": "d0f221cec878d0862ec283a0c1cd764bc9add7ac5b5c612278464f232969614c",
+    "part_forked_comet.step": "069fa3e09e1729715f41761835f5623f7c19ccaa786df9e038cbf624b9777c28",
+    "part_forked_comet.step.py": "9d0809d61b552d7f2f14fcd40c0e564a373fcd5b17702082874b97acd80e0d95",
+    "part_roof.step": "ccc484719ce87cc9d3ea33dcfe5e3cde89a33315923484240480ab8dbacf92be",
+    "part_roof.step.py": "6df733b532bd9da90e51b13c7e24fb0a7d415764607b1ef15f88e824c29bab99",
+    "part_single_comet.step": "dc16053e6a28841b048039e1caa4e52252595073c4052691fa92a15fd47b0d4f",
+    "part_single_comet.step.py": "11919bf1480752454d5d80529fc24c7160a98a34af334ada5297ed2aace75146",
+    "periastra.step": "435215c4f4af486621bcbffe9b9f81cf6e3167436b4b07af2a8def3e74867804",
+    "periastra.step.py": "05488ac7310df1ea5fc4a9cc9e3876c46f3cb25d7a289943110ded8cccd84d1e",
+    "periastra_lib.py": "b3b78568c79f146340764e9c20d5f81f5e4b629fb5b4712b03843b03d2ee3056",
+    "render_evidence.py": "c15d523a9b71f7a75265c1dc12eb2fe3156c9715b099eebcd4fdfe86ba267140",
+    "states/counter_states.step": "bc16305026e1692ab61cd4e8a5d1bd55bf9e59f8f61612008a1bb516ee7f1878",
+    "states/opened.step": "f7fc043b5a457eafb11cf9b60b6ee243cab890c4d9c7fb8792c3383314e07261",
+    "states/playing.step": "8761c0730aafb56ba0bced32055cb5d8490474c0fb502d95ae80dc57183491bb",
+    "write_states.py": "7a4a4370b2d731bb11bcf4321a3de5c55fd3a9f5bcd78b2f88acc6bd394799db"
+  }
+}

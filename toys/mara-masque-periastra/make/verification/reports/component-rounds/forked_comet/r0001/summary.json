@@ -1,0 +1,60 @@
+{
+ "build": {
+  "forked_comet": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "forked_comet"
+ ],
+ "checked": [
+  "forked_comet"
+ ],
+ "checks_ok": true,
+ "entry": "part_forked_comet.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/forked_comet/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "forked_comet"
+ ],
+ "print": {
+  "forked_comet": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/forked_comet/r0001/overhang-forked_comet.log": "854d95fd23ac36bdfcb5a594cb1d83b74f5036f628d48457186ad23dfdc61155",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/forked_comet/r0001/thickness-forked_comet.log": "9f753ab99cd2903762f84e138d490567263ffd1c62e1b93181318c7146c01a57"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:forked_comet",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows two solid blunt legs connected to head; top unambiguously shows bifurcated tail silhouette; iso confirms continuous thick counter, rounded tail corners and broad recessed orbit-crown. No floating or intersecting parts.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/forked_comet/r0001/visual-packet.json",
+  "packet_sha256": "aa8dc2d037473fcfd78541e85fb3afdb9877124ed47a2e6614fcfbd06343202c",
+  "status": "pass"
+ }
+}

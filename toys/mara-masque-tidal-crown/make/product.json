@@ -1,0 +1,20 @@
+{
+  "title": "Tidal Crown",
+  "summary": "A compact chess set shaped by interacting galaxies, with curled platter arms, stellar chessmen and tactile side markings. Includes the full starting set and a spare queen for each side.",
+  "inventory": {
+    "chessmen": 34,
+    "board": 1,
+    "physical_parts": 35
+  },
+  "rules": "Standard two-player chess, FIDE January2023; no rule changes. Every promotion choice remains legal irrespective of supplied inventory.",
+  "playtest": "not-run",
+  "physical_testing": "No physical printing or human play established.",
+  "cad_project": "cad",
+  "board_envelope_mm": [
+    196,
+    196,
+    12
+  ],
+  "status": "full-with-thickness",
+  "print_ready_claim": true
+}

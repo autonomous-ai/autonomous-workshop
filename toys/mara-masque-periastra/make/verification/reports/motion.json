@@ -1,0 +1,73 @@
+{
+  "assembly": "periastra.step.py",
+  "conditions": [
+    {
+      "id": "roof-lifts-clear",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Loose populated-box roof moves directly upward 100 mm, removed for play.",
+      "inputs": {
+        "moving_part": "roof",
+        "obstacle_parts": [
+          "base",
+          "single_01",
+          "single_02",
+          "single_03",
+          "single_04",
+          "single_05",
+          "single_06",
+          "single_07",
+          "single_08",
+          "single_09",
+          "single_10",
+          "single_11",
+          "single_12",
+          "forked_01",
+          "forked_02",
+          "forked_03",
+          "forked_04",
+          "forked_05",
+          "forked_06",
+          "forked_07",
+          "forked_08",
+          "forked_09",
+          "forked_10",
+          "forked_11",
+          "forked_12"
+        ],
+        "translation": [
+          0,
+          0,
+          100
+        ],
+        "steps": 10,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "roof-supported-downward",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Four integral base ledges support the closed roof against gravity; no upward retention claimed.",
+      "inputs": {
+        "moving_part": "roof",
+        "obstacle_parts": [
+          "base"
+        ],
+        "translation": [
+          0,
+          0,
+          -1
+        ],
+        "steps": 2,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    }
+  ]
+}

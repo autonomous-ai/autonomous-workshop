@@ -1,0 +1,1 @@
+{"ok":true,"entry":"artifacts/make/r0001/exact-inputs/assembly-r0003","tolerance":1e-06,"stats":{"occurrences":26,"pairs_total":325,"pairs_tested":25,"pairs_skipped_bbox":300,"pairs_truncated":0},"clashCount":0,"clashes":[],"errors":[]}
