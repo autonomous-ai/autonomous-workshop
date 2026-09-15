@@ -61,6 +61,9 @@ fit the installed roster. The 4 MiB aggregate input and 256 KiB checkpoint byte
 limits remain enforced. Tests cover materializing the complete installed
 inventory, reopening and refreshing at the count limit, and refusing an
 oversized creation or refresh before mutation.
+The existing 64 KiB correction-record allowance is also checked before tool
+writes; rejecting a large change list must not leave new tools and a moved
+checkpoint without the correction evidence needed for session rebinding.
 
 ## Validation and limits
 

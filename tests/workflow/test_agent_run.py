@@ -349,6 +349,26 @@ class AgentRunTest(unittest.TestCase):
             self.create(domain_skill_roots={"cad": cad})
         self.assertFalse(self.run_root.exists())
 
+    def test_oversized_refresh_record_is_refused_before_changing_inputs(self):
+        cad = self.root / "cad"
+        cad.mkdir()
+        (cad / "SKILL.md").write_text("Original CAD tools")
+        run = self.create(domain_skill_roots={"cad": cad})
+        before = run.snapshot()
+        checkpoint_bytes = (run.host_state_root / "agent-run.json").read_bytes()
+        # The individual files and resulting manifest fit their budgets; the
+        # detailed change record does not. This formerly failed after writes.
+        for index in range(agent_run_module.MAX_AGENT_INPUT_FILES - len(before.input_sha256s)):
+            (cad / ("tool-%03d.txt" % index)).write_text("small tool")
+        (cad / "SKILL.md").write_text("New CAD tools")
+        with self.assertRaisesRegex(ContractError, "correction record is too large"):
+            run.refresh_domain_skill_tools({"cad": cad}, reason="oversized correction")
+        self.assertEqual(run.snapshot(), before)
+        self.assertEqual((run.host_state_root / "agent-run.json").read_bytes(), checkpoint_bytes)
+        self.assertEqual((run.run_root / ".agents/skills/cad/SKILL.md").read_text(), "Original CAD tools")
+        self.assertFalse((run.host_state_root / "host-corrections.jsonl").exists())
+        self.assertFalse((run.run_root / ".agents/skills/cad/tool-000.txt").exists())
+
     def test_create_materializes_wish_references_read_only_with_their_own_budget(self):
         big = b"\x89PNG" + b"\0" * (5 * 1024 * 1024)
         small = b"\xff\xd8\xff" + b"\0" * 64
