@@ -67,6 +67,24 @@ these changes. Lifecycle instructions, sealed artifacts and token usage stay
 intact. A plain `--refresh-tools` operation still preserves the root option. See
 [ADR 0066](adr/0066-optional-motion-verification.md).
 
+### Geometry tools on operator resume
+
+An explicit `resume` of an unfinished run carrying CAD tools adopts the
+geometry-inspection-v1 correction once, including runs that already have
+`MAKE-OPTIONS.json`. The host refreshes the carried CAD skill from the installed
+version and rebinds the same native session under the mutation lock. A private
+completion record makes interruption before or after session rebinding
+retryable. New runs already carry the marker; subsequent resumes keep their
+materialized tool tree.
+
+This correction removes duplicate self-intersection work and relays batch
+progress. It does not skip geometry checks, reset budgets or review allowances,
+replace product sources, or rebuild accepted artifacts. An unaccepted Make
+proposal is preserved privately and must be finalized again against the new
+checkpoint. Read-only status and terminal resumes do not migrate tools. The
+existing motion-option behavior above still applies independently. See
+[ADR 0067](adr/0067-resume-geometry-inspection-correction.md).
+
 ### Current token-budget and Spark handoff policy
 
 New Spark v4 runs compact at 192k; frozen v3 runs retain 64k. This

@@ -841,5 +841,25 @@ measured again after those tests completed, retaining all attempted trials in
 private local evidence. These are subcheck measurements, not full-product runs
 or evidence that the reported delay is resolved. Repeated occurrence validation,
 pairwise interference cost and the affected machine remain unverified causes.
-Existing materialized runs retain their frozen tools until an authorized host
-tool refresh; this source patch does not modify or resume any live run.
+Existing materialized runs retain their frozen tools until a host tool refresh;
+this source patch does not modify or resume any live run.
+
+### Existing-run adoption
+
+An operator's plain `resume` now adopts this correction once for an unfinished
+run carrying CAD tools, including runs that already carry motion options.
+The host recognizes a versioned marker in the hash-bound inspection reference,
+refreshes the complete carried CAD skill from the installed source, and rebinds
+the original native session before recording completion. Later resumes retain
+that materialized tree. The native agent cannot modify its own tools. Other
+domain skills, lifecycle instructions, review allowances, budget usage and
+accepted product artifacts remain intact; ADR 0066's existing motion-option
+migration still applies independently.
+
+Regression tests use real immutable-input materialization and the actual saved
+session rebind with deterministic native launchers. They cover plain CLI
+resume, saved product/review/budget preservation, interrupted rebind and
+completion recovery, changed motion choice on retry, idempotency, missing
+installed correction, input tampering, pending Make refinalization and
+read-only/terminal behavior. These are host contract tests, not a new native
+Wish or the affected operator's session. See ADR 0067 for the migration boundary.
