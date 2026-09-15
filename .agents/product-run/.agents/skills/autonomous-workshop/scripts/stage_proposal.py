@@ -2098,6 +2098,13 @@ def _validate_signature_review(
     project_path = run_root.joinpath(*project_relative.parts)
     motion_path = project_path / "measure/motion.json"
     if motion_path.exists() or motion_path.is_symlink():
+        policy = run_root / ".agents/skills/cad/scripts/motion_policy.py"
+        try:
+            check_motion = runpy.run_path(str(policy))["enabled"]()
+        except (OSError, ValueError) as exc:
+            raise ProposalError("Make motion policy is invalid: %s" % exc) from exc
+        if not check_motion:
+            return
         helper = run_root / ".agents/skills/cad/scripts/motion_presentation.py"
         try:
             runpy.run_path(str(helper))["validate"](project_path, review)

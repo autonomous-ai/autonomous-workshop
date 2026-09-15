@@ -225,6 +225,34 @@ class MakeRoundTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "stale images or references"):
                 module.record_visual(project, feedback)
 
+    def test_full_forwards_explicit_motion_option(self):
+        for value in ("true", "false"):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as tmp:
+                project = Path(tmp)
+                module, summary = self._round(project)
+                feedback = self._feedback(project, summary)
+                with mock.patch.object(module, "skills_root", return_value=project), \
+                        mock.patch.object(module, "run", return_value=subprocess.CompletedProcess([], 0, "", "")) as run, \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(module.main([str(project), "--record-visual", str(feedback),
+                                                  "--full", "--check-motion", value]), 0)
+                command = run.call_args.args[0]
+                self.assertEqual(command[command.index("--check-motion") + 1], value)
+
+    def test_full_uses_current_motion_policy_instead_of_previous_round_option(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, summary = self._round(project)
+            summary["check_motion"] = True
+            (project / "measure/rounds/r0001/summary.json").write_text(json.dumps(summary))
+            feedback = self._feedback(project, summary)
+            with mock.patch.object(module, "skills_root", return_value=project), \
+                    mock.patch.object(module, "run", return_value=subprocess.CompletedProcess([], 0, "", "")) as run, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(module.main([str(project), "--record-visual", str(feedback), "--full"]), 0)
+            command = run.call_args.args[0]
+            self.assertEqual(command[command.index("--check-motion") + 1], "false")
+
     def test_full_runs_only_after_clean_visual_feedback_and_retains_verifier_failure(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)

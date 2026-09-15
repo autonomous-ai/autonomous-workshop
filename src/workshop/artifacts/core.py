@@ -820,15 +820,20 @@ def build_pack(
     destination: Path,
     extra_excludes: Iterable[str] = (),
     maximum_bytes: int = MAX_PACK_BYTES,
+    *,
+    compression: str = "stored",
 ) -> Dict[str, Any]:
     """Write a reproducible zip and return its immutable identity.
 
     Zip timestamps, permissions, ordering, and compression settings are
-    fixed, so identical input bytes produce identical Pack bytes on every
-    inventor machine.
+    fixed. Stored Packs are cross-machine reproducible; optional compressed
+    transport is reproducible with the same compressor implementation, and
+    always carries an exact archive hash as well as the logical file identity.
     """
 
     maximum_bytes = _validate_pack_limit(maximum_bytes)
+    if compression not in ("stored", "auto"):
+        raise ArtifactError("Pack compression must be stored or auto")
     root = Path(root).resolve()
     extra_excludes = _normalize_extra_excludes(extra_excludes)
     requested_destination = Path(destination)
@@ -866,7 +871,9 @@ def build_pack(
         size + 76 + 2 * len(path.encode("utf-8"))
         for path, size in planned_members
     )
-    if planned_bytes > maximum_bytes:
+    compress_type = (zipfile.ZIP_DEFLATED if compression == "auto"
+                     and planned_bytes > maximum_bytes else zipfile.ZIP_STORED)
+    if planned_bytes > maximum_bytes and compress_type == zipfile.ZIP_STORED:
         largest = sorted(
             manifest.entries,
             key=lambda entry: (-entry.bytes, entry.path),
@@ -886,12 +893,13 @@ def build_pack(
     size = None
     pack_sha = None
     try:
-        # Stored members avoid zlib-version-dependent DEFLATE byte streams.
-        # The backend expands the archive anyway; exact cross-machine Pack
-        # identity is more valuable here than local transfer compression.
+        # Small/default Packs retain their historical stored bytes. Explicit
+        # auto transport uses level-9 DEFLATE only when storage exceeds the cap.
+        # The exact compressed bytes remain hashed and reconciled, not guessed
+        # equivalent across different compressor versions.
         with os.fdopen(fd, "w+b", closefd=False) as handle:
             with zipfile.ZipFile(
-                handle, "w", compression=zipfile.ZIP_STORED
+                handle, "w", compression=compress_type, compresslevel=9
             ) as archive:
                 for relative, absolute in files:
                     del absolute
@@ -911,23 +919,23 @@ def build_pack(
                     info = zipfile.ZipInfo(
                         relative.as_posix(), date_time=(1980, 1, 1, 0, 0, 0)
                     )
-                    info.compress_type = zipfile.ZIP_STORED
+                    info.compress_type = compress_type
                     info.create_system = 3
                     executable = expected.executable
                     info.external_attr = (
                         (0o755 if executable else 0o644) & 0xFFFF
                     ) << 16
                     archive.writestr(
-                        info, content, compress_type=zipfile.ZIP_STORED
+                        info, content, compress_type=compress_type, compresslevel=9
                     )
                 info = zipfile.ZipInfo(
                     "_inventor-artifact.json",
                     date_time=(1980, 1, 1, 0, 0, 0),
                 )
-                info.compress_type = zipfile.ZIP_STORED
+                info.compress_type = compress_type
                 info.create_system = 3
                 info.external_attr = (0o644 & 0xFFFF) << 16
-                archive.writestr(info, manifest_content)
+                archive.writestr(info, manifest_content, compress_type=compress_type, compresslevel=9)
             handle.flush()
             os.fsync(fd)
         completed = os.fstat(fd)

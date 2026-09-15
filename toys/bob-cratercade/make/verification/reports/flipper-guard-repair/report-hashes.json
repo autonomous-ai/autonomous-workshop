@@ -1,0 +1,57 @@
+{
+  "owned_flipper_parameters_sha256": "2e2c8047e54397477a86610f75345cb79811bb9110c48b22359eeb6944d23650",
+  "files": [
+    {
+      "path": "artifacts/make/r0001/product/cad/parts/flipper_guard.py",
+      "sha256": "afa44e7e69b9b13de7889d67bde96a92fe1fee94d1bf0441f213ba3323ca99a4"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/check_overhang-left.md",
+      "sha256": "f32598d47e8115c0594823fbed8d3ba0df9096e3a7b5c7d1cc7269e869fa6317"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/check_overhang-left_guard_base-capR5.md",
+      "sha256": "b2b17329a0fc6cf0dca467fb6c74ed7b84a7bc460282a132499d449d984476fa"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/check_overhang-left_rotor-capR5.md",
+      "sha256": "548e3a07fd1acf478d842b0385224952ea48ee0ae6090056fe3504d0c914ff1f"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/check_overhang-right.md",
+      "sha256": "b5d53fe88df121f43bfaa994ca25b193dcc8d0d7d462461e3c9f2ef4e65dcc9c"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/check_overhang-right_guard_base-capR5.md",
+      "sha256": "57844501d9402e6cd0c771b5b2b928887619b11cf74fca26ab8692496005e51f"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/check_overhang-right_guard_base-final.md",
+      "sha256": "fb52d5294641456a36558bcc22ac5aae31b9742ee4c915076e854711a0843d76"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/check_overhang-right_rotor-capR5.md",
+      "sha256": "be60c8e18dc293608b3240452436a31d4d1df015b931155130924e409dad3ebe"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/check_thickness-left.md",
+      "sha256": "99e9295fce24ac654e0abaea169c9a68ac2383495dad8436aab1be2511aa46a1"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/check_thickness-right.md",
+      "sha256": "378eb384559beef00d6f59e83575d07d68a8284279556298ae14c263b4142266"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/check_thickness-right_guard_base-final.md",
+      "sha256": "e8e390e42265b1a7e22a37acaaba61ccc04ffd593b0c8db7b1fa88132d846ebd"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/brep.json",
+      "sha256": "0afb1a9d199b92a878ac4e3ca19dcb161c9c1d6e4187d7feff1f5bfe5ec5bbf9"
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/flipper-guard-repair/band-right-final.json",
+      "sha256": "4568cc3f6c77f0f6a9e46dcc4cb296b8ffbf4fdcd7d42d7fccdf8a2aff9c5020"
+    }
+  ]
+}

@@ -364,6 +364,7 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
         print("Workflow: %s" % workflow.title())
     model = receipt.get("model")
     effort = receipt.get("effort")
+    initial_effort = receipt.get("initial_effort")
     if isinstance(model, str) and model:
         print(
             "Model: %s%s"
@@ -374,6 +375,8 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                 else "",
             )
         )
+    if isinstance(initial_effort, str) and initial_effort != effort:
+        print("Initial effort: %s; operator override applies to subsequent turns." % initial_effort)
     print("%s: %s at %s" % (verb, status, stage))
     budget = receipt.get("budget")
     if isinstance(budget, Mapping) and budget.get("unit") == "tokens":
@@ -512,6 +515,12 @@ MAX_TURN_MINUTES = MAX_NATIVE_TURN_SECONDS // 60
 MIN_TURN_MINUTES = MIN_AGENT_TURN_SECONDS // 60
 
 
+def _check_motion(value: str) -> bool:
+    if value.lower() not in ("true", "false"):
+        raise argparse.ArgumentTypeError("expected true or false")
+    return value.lower() == "true"
+
+
 def _turn_minutes(value: str):
     """Parse one native turn boundary: exact minutes, or ``none`` for no clock."""
 
@@ -550,6 +559,7 @@ def _start_run(
     max_rounds: int = DEFAULT_MAX_ROUNDS,
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     turn_minutes: Any = None,
+    check_motion: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     revision_snapshot: Optional[bytes] = None,
     progress: TextIO,
@@ -629,6 +639,7 @@ def _start_run(
         max_rounds=max_rounds,
         **({"max_tokens": max_tokens} if max_tokens != DEFAULT_PRODUCT_TOKENS else {}),
         **_turn_boundary_options(turn_minutes),
+        **({"check_motion": True} if check_motion else {}),
         wish_reference_files=wish_reference_files,
         **({"revision_snapshot": revision_snapshot} if revision_snapshot is not None else {}),
         github_publish_requested=github,
@@ -667,6 +678,7 @@ def _wish(args: argparse.Namespace) -> int:
         max_rounds=args.max_rounds,
         max_tokens=args.max_tokens,
         turn_minutes=args.turn_minutes,
+        check_motion=args.check_motion,
         wish_reference_files=wish_reference_files(loaded_references),
         progress=progress,
         live_progress=live_progress,
@@ -696,7 +708,7 @@ def _fix(args: argparse.Namespace) -> int:
     receipt = _start_run(
         wish, workflow=workshop_effort("spark"), runtime=runtime,
         github=args.github, max_tokens=args.max_tokens,
-        turn_minutes=args.turn_minutes, revision_snapshot=snapshot,
+        turn_minutes=args.turn_minutes, check_motion=args.check_motion, revision_snapshot=snapshot,
         progress=progress, live_progress=_LiveWishProgress(progress, runtime.spec.display_name),
     )
     if args.json:
@@ -966,6 +978,7 @@ def _start(args: argparse.Namespace) -> int:
                     max_rounds=args.max_rounds,
                     max_tokens=args.max_tokens,
                     turn_minutes=args.turn_minutes,
+                    check_motion=args.check_motion,
                     wish_reference_files=reference_files,
                     progress=progress,
                     live_progress=live_progress,
@@ -1112,8 +1125,10 @@ def _resume(args: argparse.Namespace) -> int:
         )
     receipt = resume_native_run(
         args.product_id,
+        check_motion=args.check_motion,
         **({"adopt_turn_budget": True} if args.turn_budget else {}),
         **({"max_tokens": args.max_tokens} if args.max_tokens is not None else {}),
+        **({"reasoning_effort": args.effort} if args.effort is not None else {}),
         **_turn_boundary_options(args.turn_minutes),
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
@@ -1784,6 +1799,8 @@ def parser() -> argparse.ArgumentParser:
         "--strict", action="store_true", help="with --once: exit 1 when the run waits"
     )
     start.set_defaults(handler=_start)
+    start.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
+                       help="enable Make motion checks and animation review for each new run (default: false)")
     start.add_argument(
         "--turn-minutes",
         type=_turn_minutes,
@@ -1954,6 +1971,8 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     wish.set_defaults(handler=_wish)
+    wish.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
+                      help="enable Make motion checks and animation review (default: false)")
     wish.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
                       help="Codex input-plus-output token cap for the whole product (default: %(default)s)")
 
@@ -1965,6 +1984,8 @@ def parser() -> argparse.ArgumentParser:
     fix.add_argument("--agent", choices=tuple(SUPPORTED_MANAGER_IDS), default=DEFAULT_MANAGER_ID)
     fix.add_argument("--model")
     fix.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS)
+    fix.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
+                      help="enable Make motion checks and animation review (default: false)")
     fix.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS)
     fix.add_argument("--turn-minutes", type=_turn_minutes, default=None)
     fix.add_argument("--github", action="store_true", help="also commit and push the new public archive")
@@ -1983,6 +2004,10 @@ def parser() -> argparse.ArgumentParser:
         "resume", help="resume the exact frozen native Manager session for one Wish"
     )
     resume.add_argument("product_id", help="saved Wish id")
+    resume.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS, default=None,
+                        help="explicit reasoning effort for this and later resumes; omitted keeps the saved selection")
+    resume.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
+                        help="enable Make motion checks and animation review on resume, including older runs (default: false)")
     resume.add_argument("--max-tokens", type=_token_budget, default=None, metavar="N",
                         help="explicit total Codex token cap; prior usage remains charged; omitted keeps the saved budget")
     resume.add_argument(

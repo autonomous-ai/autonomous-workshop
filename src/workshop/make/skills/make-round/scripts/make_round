@@ -25,6 +25,7 @@ from importlib.metadata import PackageNotFoundError, version as package_version
 import json
 import os
 import re
+import runpy
 import subprocess
 import sys
 import tempfile
@@ -104,7 +105,7 @@ def state_and_round_root(project: Path, component: str | None) -> tuple[Path, Pa
     return root / STATE_NAME, root
 
 
-def record_visual(project, feedback_path, full=False, component=None):
+def record_visual(project, feedback_path, full=False, component=None, check_motion=None):
     """Attach native observations to the last round without rebuilding it."""
     if component is not None and full:
         raise ValueError("--full is only valid for the assembled-object round")
@@ -171,6 +172,9 @@ def record_visual(project, feedback_path, full=False, component=None):
         command = [sys.executable, str(cad / "verify_project"), str(project),
                    "--strict-fit", "--print-gates", "--nozzle", str(summary.get("nozzle", 0.4)),
                    "--report", str(project / "measure/verification-pipeline.md")]
+        motion_option = summary.get("check_motion") if check_motion is None else check_motion
+        if motion_option is not None:
+            command += ["--check-motion", str(motion_option).lower()]
         if summary["refs"]:
             command.append("--image-derived")
             for label, ref in summary["refs"]:
@@ -395,6 +399,8 @@ def render_summary(summary: dict) -> str:
             "  like  %-4s %-10s IoU %.3f vs %.2f%s  pose az %.1f el %.1f fov %s%s"
             % ("ok" if item["ok"] else "FAIL", item["label"], item["iou"], summary["min"], delta, item["az"], item["el"], item["fov"], "  (re-searched)" if item.get("searched") else "")
         )
+    if summary.get("motion_status") == "not-run":
+        lines.append("  move  SKIP motion unverified")
     if summary.get("motion") is not None:
         motion = summary["motion"]
         lines.append("  move  %-4s %s" % (motion["verdict"].upper()[:4], motion["detail"][:90]))
@@ -569,14 +575,29 @@ def tail(text: str) -> str:
     return " ".join((text or "").split())[-MAX_TAIL_CHARS:]
 
 
+def motion_policy():
+    return runpy.run_path(str(Path(__file__).resolve().parents[2] / "cad/scripts/motion_policy.py"))
+
+
 def make_round(args) -> int:
     project = Path(args.project).resolve()
     if not project.is_dir():
         print("make_round: not a directory: %s" % project, file=sys.stderr)
         return 2
+    try:
+        option = getattr(args, "check_motion", None)
+        if args.no_motion:
+            if option is True:
+                raise ValueError("--no-motion conflicts with --check-motion true")
+            option = False
+        check_motion = motion_policy()["enabled"](option)
+    except (OSError, ValueError) as exc:
+        print("make_round: %s" % exc, file=sys.stderr)
+        return 2
     if args.record_visual:
         try:
-            summary = record_visual(project, args.record_visual, args.full, args.component)
+            summary = record_visual(project, args.record_visual, args.full, args.component,
+                                    check_motion=check_motion)
         except (ValueError, KeyError, OSError, TypeError) as exc:
             print("make_round: %s" % exc, file=sys.stderr)
             return 2
@@ -825,7 +846,7 @@ def make_round(args) -> int:
     # 4. motion gate when the project declares a manifest.
     motion = None
     manifest = measure / "motion.json"
-    if component is None and manifest.is_file() and not args.no_motion:
+    if component is None and manifest.is_file() and check_motion:
         done = run([python, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"], cwd=project, log=out / "motion.log")
         motion = parse_motion(done.stdout, done.returncode, done.stderr)
 
@@ -856,6 +877,8 @@ def make_round(args) -> int:
         "likeness": likeness,
         "min": args.min,
         "motion": motion,
+        "check_motion": check_motion,
+        "motion_status": (motion["verdict"] if motion is not None else "not-run"),
         "full": full,
         "checks_ok": ok,
         "visual": visual,
@@ -1015,6 +1038,8 @@ def main(argv=None) -> int:
     parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle diameter for the wall gate (default 0.4 mm)")
     parser.add_argument("--overhang-angle", type=float, default=45.0, help="slope from vertical the printer bridges unsupported (default 45 deg)")
     parser.add_argument("--all-parts", action="store_true", help="report every built part, not only the changed ones")
+    parser.add_argument("--check-motion", type=motion_policy()["boolean"], default=None,
+                        metavar="true|false", help="enable motion checks (default: false, or frozen Make option)")
     parser.add_argument("--no-motion", action="store_true", help="skip check_motion even when measure/motion.json exists")
     parser.add_argument("--record-visual", help="record native Manager feedback for the last round without rebuilding")
     parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")

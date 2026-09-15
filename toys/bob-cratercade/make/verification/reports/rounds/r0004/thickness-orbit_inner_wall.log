@@ -1,0 +1,15 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_orbit_inner_wall.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/thickness-orbit_inner_wall.md
+(6.1s, exit 0)
+--- stdout
+part_orbit_inner_wall.step.py: 7.54 cm3 solid, grid 0.147 mm (316x209x168), 210437 surface samples, thickness resolved to 0.074 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (10 of 210437 samples); thinnest 0.15 mm at (3.8, 12.6, 0.7) in 2 region(s); no region is a wall, 2 taper(s) at feature edges (0.00% of surface, budget 2%)
+  PASS  thickness distribution         median 3.97 mm, p95 23.96 mm, max 23.96 mm
+  WARN  hollowable at 1.20 mm wall     2.47 of 7.54 cm3 (33%) in 1 pocket(s)
+  PASS  filament that would save       0.37 cm3, 0.5 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.15 mm at (3.8, 12.6, 0.7)      8 samples, 0.2 mm2, runs 1.2 mm, band 0.14 mm
+        2. [taper] 0.22 mm at (0.0, 13.9, 23.2)      2 samples, 0.0 mm2, runs 0.1 mm, band 0.30 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/thickness-orbit_inner_wall.md
+
+--- stderr

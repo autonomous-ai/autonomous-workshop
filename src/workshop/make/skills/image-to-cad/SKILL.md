@@ -3,6 +3,18 @@ name: image-to-cad
 description: Turn a reference image (photo, render, screenshot, sketch, or orthographic drawing) into a structured, buildable CAD spec — overall read, top/front/side views, real-world size, part and feature decomposition, per-feature detail, and the exact build123d operation each feature is built with. Use when the user attaches an image and wants a 3D model, a printable part, "make this", "recreate this in CAD", or asks how an object would be modelled. Produces the spec that the `cad` skill implements; it writes no geometry itself.
 ---
 
+**Motion verification is opt-in.** Standalone `make_round` and `verify_project`
+default to false; pass `--check-motion true` to enable it. Inside Workshop,
+read the immutable run-root `MAKE-OPTIONS.json`: the tools inherit its
+`check_motion` value and reject contradictory flags. A missing options file
+in an older materialized run retains its mandatory motion policy. When false,
+skip motion sweeps and required animation/reconstruction/review, even if a
+manifest or assembly claims exist. Motion is unverified, never passed; do not
+claim assemblability or working motion from skipped evidence. Build, fit,
+print gates and still-image review remain required. These rules take
+precedence over motion-specific requirements in references and templates.
+
+
 # image-to-cad — read a reference image into a buildable CAD spec
 
 ## Purpose

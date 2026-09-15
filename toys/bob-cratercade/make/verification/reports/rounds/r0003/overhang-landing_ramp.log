@@ -1,0 +1,13 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_landing_ramp.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/overhang-landing_ramp.md
+(2.4s, exit 1)
+--- stdout
+part_landing_ramp.step.py: 154.1 cm2 of surface, grid 0.400 mm, 1844 unsupported samples over 2 region(s)
+  FAIL  no face under 45 deg needs support     17.7% of the surface faces down that steeply; 2 region(s) need support, 0 bridge, 0 below 1 mm2; worst 177.0 mm2 spanning 5.2 mm
+  PASS  bridges within 12 mm                   0 region(s), longest span 0.0 mm
+        every unsupported region, largest first:
+        1. [overhang]   177.0 mm2 at (0.4, 100.6, 33.9)  span   5.2 mm of 32x5, 20.0 mm of air below
+        2. [overhang]   117.3 mm2 at (0.4, 67.4, 2.4)  span   4.1 mm of 30x4, 5.6 mm of air below
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/overhang-landing_ramp.md
+
+--- stderr

@@ -1,0 +1,14 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_apron_left.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0006/thickness-apron_left.md
+(14.0s, exit 0)
+--- stdout
+part_apron_left.step.py: 66.63 cm3 solid, grid 0.291 mm (504x225x103), 313857 surface samples, thickness resolved to 0.146 mm
+  PASS  wall >= 0.80 mm (+/-0.15)      0.0% of surface below (1 of 313857 samples); thinnest 0.58 mm at (138.8, -6.7, 25.4) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.00% of surface, budget 2%)
+  PASS  thickness distribution         median 5.53 mm, p95 28.52 mm, max 146.54 mm
+  WARN  hollowable at 1.20 mm wall     35.51 of 66.63 cm3 (53%) in 1 pocket(s)
+  PASS  filament that would save       5.33 cm3, 6.6 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.58 mm at (138.8, -6.7, 25.4)      1 samples, 0.1 mm2, runs 0.0 mm, band 0.29 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0006/thickness-apron_left.md
+
+--- stderr

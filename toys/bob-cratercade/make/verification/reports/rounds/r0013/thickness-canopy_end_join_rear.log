@@ -1,0 +1,12 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_canopy_end_join_rear.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0013/thickness-canopy_end_join_rear.md
+(3.7s, exit 0)
+--- stdout
+part_canopy_end_join_rear.step.py: 11.68 cm3 solid, grid 0.239 mm (205x133x439), 137146 surface samples, thickness resolved to 0.120 mm
+  PASS  wall >= 0.80 mm (+/-0.12)      0.0% of surface below (0 of 137146 samples)
+  PASS  thickness distribution         median 3.95 mm, p95 29.93 mm, max 103.92 mm
+  WARN  hollowable at 1.20 mm wall     2.67 of 11.68 cm3 (23%) in 1 pocket(s)
+  PASS  filament that would save       0.40 cm3, 0.5 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0013/thickness-canopy_end_join_rear.md
+
+--- stderr

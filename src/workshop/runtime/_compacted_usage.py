@@ -1,8 +1,9 @@
-"""Bounded-memory validator for supported oversized native records.
+"""Bounded-memory validator for an oversized native compaction.
 
-All JSON syntax and duplicate keys are checked; bodies are discarded. Native
-compactions and visual custom-tool results carry no top-level token_count event
-in the frozen native protocol. Other oversized kinds remain rejected.
+The outer record must be a compaction or visual custom-tool result. All JSON syntax and duplicate keys
+are checked; bodies are discarded. Only the bounded latest_token_usage_record
+inside its payload can survive, for corroboration rather than new consumption.
+Other oversized kinds remain rejected.
 """
 import codecs
 import json
@@ -13,6 +14,7 @@ MAX_DEPTH = 64
 MAX_OBJECT_KEYS = 4096
 MAX_KEY_BYTES = 4096
 MAX_ATOM_BYTES = 128
+MAX_USAGE_METADATA_BYTES = 16 * 1024
 STRING_RUN = re.compile(rb'[^"\\\x00-\x1f]+')
 NUMBER = re.compile(rb'-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?')
 SPACE = b' \t\r\n'
@@ -36,14 +38,29 @@ class Reader:
         self.complete = prefix.endswith(b'\n')
         self.record_type = None
         self.payload_type = None
+        self.latest_usage_present = False
+        self.latest_usage = None
+        self.captured_metadata = None
+        self.capture_start = 0
+
+    def capture_consumed(self):
+        if self.captured_metadata is None:
+            return
+        length = self.position - self.capture_start
+        if len(self.captured_metadata) + length > MAX_USAGE_METADATA_BYTES:
+            raise InvalidRecord('compacted usage metadata exceeds safe bounds')
+        self.captured_metadata.extend(self.buffer[self.capture_start:self.position])
+        self.capture_start = self.position
 
     def peek(self):
         if self.position < len(self.buffer):
             return self.buffer[self.position]
         if self.complete or self.remaining == 0:
             return None
+        self.capture_consumed()
         self.buffer = self.stream.readline(min(CHUNK_BYTES, self.remaining))
         self.position = 0
+        self.capture_start = 0
         if not self.buffer:
             raise InvalidRecord('native usage file shrank during read')
         self.remaining -= len(self.buffer)
@@ -126,7 +143,7 @@ class Reader:
                 raise IncompleteRecord()
             raise InvalidRecord('malformed compacted atom')
 
-    def value(self, depth, capture=False, capture_payload_type=False):
+    def value(self, depth, capture=False, payload=False):
         if depth > MAX_DEPTH:
             raise InvalidRecord('compacted nesting exceeds safe bounds')
         self.space()
@@ -136,12 +153,26 @@ class Reader:
         if ch == 34:
             return self.string(MAX_ATOM_BYTES if capture else None)
         if ch == 123:
-            return self.object(depth + 1, payload=capture_payload_type)
+            return self.object(depth + 1, payload=payload)
         if ch == 91:
             self.array(depth + 1)
             return None
         self.atom()
         return None
+
+    def usage_metadata(self, depth):
+        """Capture one small value while the normal parser validates every byte."""
+        self.captured_metadata = bytearray()
+        self.capture_start = self.position
+        try:
+            self.value(depth)
+            self.capture_consumed()
+            value = json.loads(self.captured_metadata)
+        finally:
+            self.captured_metadata = None
+        if value is not None and not isinstance(value, dict):
+            raise InvalidRecord('compacted usage metadata must be an object or null')
+        return value
 
     def object(self, depth=0, root=False, payload=False):
         if depth > MAX_DEPTH:
@@ -163,16 +194,20 @@ class Reader:
                 raise InvalidRecord('compacted object exceeds safe bounds')
             self.space()
             self.expect(58)
-            value = self.value(
-                depth,
-                capture=(root or payload) and key == 'type',
-                capture_payload_type=root and key == 'payload',
-            )
+            if payload and key == 'latest_token_usage_record':
+                self.latest_usage = self.usage_metadata(depth)
+                self.latest_usage_present = True
+                value = None
+            else:
+                value = self.value(
+                    depth, capture=(root or payload) and key == 'type',
+                    payload=root and key == 'payload',
+                )
+            if payload and key == 'type':
+                self.payload_type = value
             if root and key == 'type':
                 record_type = value
                 self.record_type = value
-            if payload and key == 'type':
-                self.payload_type = value
             self.space()
             end = self.take()
             if end == 125:
@@ -220,7 +255,10 @@ def consume_compacted_record(prefix, stream, remaining):
             return None, reader.remaining
         if not supported:
             raise InvalidRecord('native usage record exceeds safe bounds')
-        return {'type': kind}, reader.remaining
+        result = {'type': kind}
+        if kind == 'compacted' and reader.latest_usage_present:
+            result['payload'] = {'latest_token_usage_record': reader.latest_usage}
+        return result, reader.remaining
     except IncompleteRecord:
         supported = (
             reader.record_type == 'compacted'

@@ -8,12 +8,12 @@ from workshop.workflow.budgets import LifetimeBudget, LifetimeTurnBudget
 
 TOKEN_BUDGET_CAPABILITY_PATH = ".agents/skills/autonomous-workshop/references/token-budget-v1.md"
 DEFAULT_PRODUCT_TOKENS = 30_000_000
-MAX_PRODUCT_TOKENS = 200_000_000
+MAX_PRODUCT_TOKENS = 1_000_000_000
 
 
 def validate_limit(value):
     if type(value) is not int or not 1_000 <= value <= MAX_PRODUCT_TOKENS:
-        raise ContractError("product token limit must be an integer from 1,000 to 200,000,000")
+        raise ContractError("product token limit must be an integer from 1,000 to 1,000,000,000")
     return value
 
 

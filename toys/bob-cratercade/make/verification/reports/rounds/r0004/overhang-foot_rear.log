@@ -1,0 +1,14 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_foot_rear.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/overhang-foot_rear.md
+(4.8s, exit 1)
+--- stdout
+part_foot_rear.step.py: 180.9 cm2 of surface, grid 0.400 mm, 4534 unsupported samples over 3 region(s)
+  FAIL  no face under 45 deg needs support     8.2% of the surface faces down that steeply; 1 region(s) need support, 2 bridge, 0 below 1 mm2; worst 4.2 mm2 spanning 1.5 mm
+  PASS  bridges within 12 mm                   2 region(s), longest span 11.2 mm
+        every unsupported region, largest first:
+        1. [bridge  ]   361.5 mm2 at (7.4, 0.2, 80.0)  span  11.2 mm of 11x32, 20.0 mm of air below
+        2. [bridge  ]   359.1 mm2 at (-7.1, -0.1, 80.1)  span  11.1 mm of 11x32, 20.0 mm of air below
+        3. [overhang]     4.2 mm2 at (-14.7, -11.1, 8.1)  span   1.5 mm of 2x2, 10.0 mm of air below
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/overhang-foot_rear.md
+
+--- stderr

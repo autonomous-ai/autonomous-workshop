@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Fresh inspection of all three R12 views. The front controls sit within matching apron wells, with the right launcher outside the playing lane and both front feet supporting the base. In top view the three crater rings, two guides, side launch route and rear jackpot remain inside aligned roof cells. The iso view shows attached perimeter posts and roof hinges, the rear flag and bucket linked through the yellow bar, and the cup below the front opening. No visible missing, additional, misplaced, floating or intersecting part was found. Fine nut/seat geometry is below this viewing scale and is covered by the passing native validity, mounting and both mission static checks. Operating motion and physical fit are not inferred from still images.",
+  "packet_sha256": "e865084bb15600e6afffeee8fe9efc44b525252c4a7adbf1ad49cfb17dab2a56",
+  "status": "pass"
+}

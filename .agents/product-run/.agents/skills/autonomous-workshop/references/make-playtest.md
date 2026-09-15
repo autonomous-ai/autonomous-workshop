@@ -1,5 +1,12 @@
 # Make contract
 
+**Motion policy:** read run-root `MAKE-OPTIONS.json`. When `check_motion` is
+false (the default for new runs), skip motion sweeps, required animation and
+motion review below; report motion unverified. When true, retain the full
+motion contract. A missing options file in an older run retains mandatory
+motion verification. See the root `AGENTS.md` operator-selected policy.
+
+
 Read `STAGE.json`. It binds the exact sealed upstream artifacts, universal
 blueprint, canonical output paths, current round, and any host rejection
 feedback. Verify those bytes before acting. Host checkpoints bound the work;

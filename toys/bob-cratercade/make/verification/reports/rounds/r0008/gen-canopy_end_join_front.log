@@ -1,0 +1,7 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_canopy_end_join_front.step.py --write --json
+(2.7s, exit 0)
+--- stdout
+{"ok":true,"sourceRef":"part_canopy_end_join_front.step.py","cadPath":"part_canopy_end_join_front","kind":"part","outcome":"built","packagePath":"__cadgen__/models/part_canopy_end_join_front.step.py"}
+
+--- stderr
+[scripts/gen] generated part GLB/topology artifact: __cadgen__/models/part_canopy_end_join_front.step.py

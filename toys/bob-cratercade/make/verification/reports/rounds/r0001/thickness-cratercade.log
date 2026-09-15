@@ -1,0 +1,6 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/cratercade.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-cratercade.md
+(0.2s, exit 1)
+--- stdout
+
+--- stderr
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/cratercade.step.py declares PRINTABLE = False

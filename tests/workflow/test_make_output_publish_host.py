@@ -181,6 +181,62 @@ class MakeOutputPublishHostTest(unittest.TestCase):
 
 
 class PendingSparkPublicationIntegrationTest(unittest.TestCase):
+    def test_large_sealed_manifest_publishes_without_native_release_packet_duplication(self):
+        self._exercise_large_manifest()
+
+    def test_compact_release_packet_still_refuses_changed_sealed_contract(self):
+        self._exercise_large_manifest(tamper=True)
+
+    def _exercise_large_manifest(self, *, tamper=False):
+        import tests.end_to_end.test_native_full_run as fixtures
+
+        class LargeProductAgent(fixtures._OneSessionProductAgent):
+            def _run_finalizer(self, run_root, *arguments):
+                if arguments[0] == "make":
+                    product = run_root / arguments[arguments.index("--product-root") + 1]
+                    extras = product / "reference-data"
+                    extras.mkdir(exist_ok=True)
+                    for index in range(2200):
+                        (extras / (f"part-{index:04d}-" + "x" * 160 + ".txt")).write_text("fixture\n")
+                return super()._run_finalizer(run_root, *arguments)
+
+        launcher = LargeProductAgent()
+        effects = fixtures._FactoryEffects()
+        prepare = native_run._prepare_stage_input
+
+        def prepare_with_tamper_check(run, checkpoint):
+            if tamper and checkpoint.stage == "release":
+                artifact = native_run._stage_primary(checkpoint, "make")
+                path = run.run_root / artifact.path
+                path.chmod(0o600)
+                path.write_bytes(path.read_bytes() + b" ")
+            return prepare(run, checkpoint)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "home"
+            wish = Wish.create("large-spark-manifest", "Build a pocket draughts set inspired by my orbit-loving dog.")
+            with mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(home)}, clear=True), mock.patch.object(native_run, "_source_checkout_root", return_value=None), mock.patch.object(native_run, "CodexNativeSessionLauncher", return_value=launcher), mock.patch.object(native_run, "verify_native_made_cad", side_effect=AssertionError("Spark host CAD must not run")), mock.patch.object(native_run, "FactoryReleaseWriter", side_effect=effects.writer), mock.patch.object(native_run, "FactoryAgentSession", side_effect=effects.session), mock.patch.object(native_run, "FactoryPublicTransition", side_effect=effects.transition), mock.patch.object(native_run, "_factory_credentials", side_effect=effects.credentials):
+                with mock.patch.object(native_run, "_prepare_stage_input", side_effect=prepare_with_tamper_check):
+                    if tamper:
+                        with self.assertRaisesRegex(StateConflict, "differs from its sealed artifact binding"):
+                            native_run.start_native_run(wish, effort="spark")
+                        self.assertFalse(any(stage["stage"] == "release" for stage in launcher.stage_packets))
+                        return
+                    completed = native_run.start_native_run(wish, effort="spark")
+                self.assertEqual(completed["status"], "complete")
+                self.assertEqual(completed["publication"]["status"], "public")
+                paths = native_run.native_run_paths(wish.product_id)
+                packet_bytes = (paths.workspace / "STAGE.json").read_bytes()
+                packet = json.loads(packet_bytes)
+                self.assertEqual(packet["stage"], "release")
+                self.assertNotIn("made", packet["inputs"])
+                self.assertLess(len(packet_bytes), native_run._MAX_STAGE_INPUT_BYTES)
+                binding = packet["inputs"]["made_artifact"]
+                made_bytes = (paths.workspace / binding["path"]).read_bytes()
+                self.assertGreater(len(made_bytes), native_run._MAX_STAGE_INPUT_BYTES)
+                self.assertEqual(hashlib.sha256(made_bytes).hexdigest(), binding["sha256"])
+                self.assertFalse(any(stage["stage"] == "release" for stage in launcher.stage_packets))
+
     def test_existing_pdf_publication_wait_resumes_after_make_output_upgrade(self):
         import tests.end_to_end.test_native_full_run as fixtures
         launcher = fixtures._OneSessionProductAgent()

@@ -1,0 +1,18 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_launcher_rod.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-launcher_rod.md
+(2.5s, exit 1)
+--- stdout
+part_launcher_rod.step.py: 49.6 cm2 of surface, grid 0.400 mm, 5015 unsupported samples over 7 region(s)
+  FAIL  no face under 45 deg needs support     15.9% of the surface faces down that steeply; 7 region(s) need support, 0 bridge, 0 below 1 mm2; worst 492.2 mm2 spanning 8.0 mm
+  PASS  bridges within 12 mm                   0 region(s), longest span 0.0 mm
+        every unsupported region, largest first:
+        1. [overhang]   492.2 mm2 at (11.1, 40.1, 7.0)  span   8.0 mm of 8x64, 8.0 mm of air below
+        2. [overhang]    55.7 mm2 at (16.7, 80.3, 32.7)  span   7.1 mm of 15x7, 20.0 mm of air below
+        3. [overhang]    54.7 mm2 at (16.1, 4.0, 1.4)  span   5.8 mm of 6x8, 4.4 mm of air below
+        4. [overhang]    53.9 mm2 at (5.9, 4.1, 1.5)  span   5.8 mm of 6x8, 4.4 mm of air below
+        5. [overhang]    47.8 mm2 at (10.9, 74.0, 2.1)  span   3.4 mm of 13x3, 3.6 mm of air below
+        6. [overhang]    29.9 mm2 at (11.0, 78.2, 11.0)  span   3.6 mm of 8x4, 12.0 mm of air below
+        7. [overhang]    16.0 mm2 at (9.1, 44.1, 2.0)  span   3.9 mm of 4x4, 3.2 mm of air below
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-launcher_rod.md
+
+--- stderr

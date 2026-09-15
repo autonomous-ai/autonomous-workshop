@@ -210,3 +210,10 @@ file rejection, metadata framing and the exact metadata byte boundary. An
 offline replay against retained product usage recovered the same aggregate
 counters after excluding an unrelated large body from discovery's size check.
 The failed attempt remains failed; accounting recovery is not Make completion.
+
+## Explicit one-billion-token cap retained (2026-09-14)
+
+The operator-authorized upper bound is 1,000,000,000 tokens, preserving saved
+Cratercade usage and its previously selected limit across the team sync. The
+default remains 30,000,000; raising the maximum does not reset any usage or
+change another run's saved limit. Values above the maximum remain refused.

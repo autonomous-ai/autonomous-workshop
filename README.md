@@ -110,6 +110,14 @@ uv run workshop wish "A small hand-cranked cam toy" --inventor soren-voss \
   --workflow spark --agent codex --model sol --effort high
 ```
 
+Motion verification is optional for new runs. `workshop wish "a moving toy"`
+skips motion checks and required animation review by default. Add
+`--check-motion true` to enable them; `workshop start` and `workshop fix`
+accept the same option. `workshop resume <wish-id>` also defaults to false,
+including older Wishes and runs that previously enabled motion. Pass
+`--check-motion true` on resume to enable it again. Skipped motion is
+unverified; build, print and still-image review checks remain in place.
+
 `start <inventor>` is the ongoing Inventor-led loop; `wish "..."` creates one
 product and stops. Omit `--inventor` on a Wish to let the Manager choose the
 best match. `start <inventor> --once` dreams and builds one Inventor-generated

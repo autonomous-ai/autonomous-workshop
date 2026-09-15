@@ -262,6 +262,11 @@
   new `render_review` through `workshop skills path` alongside the others, and
   keeps upstream's new appearance-review step ahead of the Workshop's own
   render-before-the-final-gate step, which is renumbered rather than replaced.
+  On 2026-09-14 the thickness and overhang Markdown writers again include
+  their exact stdout `RESULT:` verdict. The refreshed upstream reports had
+  omitted this summary while Workshop's frozen finalizer still required it.
+  Passing and failing measured fixtures exercise the writer-to-finalizer
+  contract; no measurements, thresholds or exit codes change.
   Geometry, measurement, inspection, validation, export, and `cadgen`
   algorithms are otherwise the reviewed upstream bytes.
 - Adapted locally on 2026-08-27 in the canonical `cadgen` STEP writer to apply
@@ -749,3 +754,13 @@ superseded that change: Make's current four-review policy and verifier are
 preserved unchanged, in accordance with the instruction to leave Make alone.
 Workshop token budgeting removes host execution caps, not Make's internal
 review allowance. The lock binds the integrated team skill bytes.
+
+## Optional motion verification (2026-09-14)
+
+Workshop adds `motion_policy.py` and opt-in motion handling to `verify_project`
+and `make_round`, plus corresponding CAD and image-to-CAD guidance. New runs
+freeze `MAKE-OPTIONS.json`; disabled checks and animation review remain
+explicitly unverified. The underlying motion checker is unchanged.
+
+Operator resume also defaults to false. Make-round's final verification uses
+the current host-selected motion option instead of a previous round's option.

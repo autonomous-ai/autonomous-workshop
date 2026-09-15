@@ -1,0 +1,15 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_access_receiver_load.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0008/thickness-access_receiver_load.md
+(6.3s, exit 1)
+--- stdout
+part_access_receiver_load.step.py: 71.26 cm3 solid, grid 0.430 mm (442x339x77), 166442 surface samples, thickness resolved to 0.215 mm
+  FAIL  wall >= 0.80 mm (+/-0.22)      0.0% of surface below (21 of 166442 samples); thinnest 0.43 mm at (0.0, 75.8, 4.8) in 2 region(s); 1 wall(s) (widest band 1.06 mm), 1 taper(s) at feature edges (0.00% of surface, budget 2%); 4 more within measurement error of the limit
+  PASS  thickness distribution         median 7.31 mm, p95 30.53 mm, max 159.53 mm
+  WARN  hollowable at 1.20 mm wall     32.60 of 71.26 cm3 (46%) in 1 pocket(s), 2 too small to shell
+  PASS  filament that would save       4.89 cm3, 6.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.43 mm at (0.0, 68.2, 5.8)     13 samples, 3.0 mm2, runs 2.8 mm, band 1.06 mm
+        2. [taper] 0.43 mm at (0.0, 75.8, 4.8)      8 samples, 1.7 mm2, runs 2.9 mm, band 0.59 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0008/thickness-access_receiver_load.md
+
+--- stderr

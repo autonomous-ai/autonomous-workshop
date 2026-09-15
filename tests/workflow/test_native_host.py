@@ -2143,6 +2143,23 @@ class NativeHostTest(unittest.TestCase):
             self.assertFalse((home / "runs" / product_id).exists())
             self.assertFalse((home / "state" / product_id).exists())
 
+    def test_start_freezes_motion_option_and_rejects_non_booleans(self):
+        for options, expected in (({}, False), ({"check_motion": False}, False),
+                                  ({"check_motion": True}, True)):
+            with self.subTest(options=options), tempfile.TemporaryDirectory() as temporary:
+                with mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(Path(temporary).resolve())}, clear=True), \
+                        mock.patch("workshop.workflow.native_run._source_checkout_root", return_value=None), \
+                        mock.patch("workshop.workflow.native_run.AgentRun.create",
+                                   side_effect=ContractError("fixture stop")) as create:
+                    with self.assertRaisesRegex(ContractError, "fixture stop"):
+                        start_native_run(Wish.create("motion-choice", "a moving toy"), **options)
+                    self.assertIs(create.call_args.kwargs["check_motion"], expected)
+        with mock.patch("workshop.workflow.native_run.native_run_paths") as paths:
+            for invalid in ("false", 0, None):
+                with self.subTest(invalid=invalid), self.assertRaisesRegex(ContractError, "motion check option"):
+                    start_native_run(Wish.create("motion-invalid", "a toy"), check_motion=invalid)
+            paths.assert_not_called()
+
     def test_start_hands_wish_reference_bytes_to_the_run(self):
         content = b"\x89PNG" + b"\0" * 16
         reference = {

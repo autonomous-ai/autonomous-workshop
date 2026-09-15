@@ -1,0 +1,17 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_collection_cup.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0009/thickness-collection_cup.md
+(4.5s, exit 0)
+--- stdout
+part_collection_cup.step.py: 32.14 cm3 solid, grid 0.264 mm (255x376x122), 311786 surface samples, thickness resolved to 0.132 mm
+  PASS  wall >= 0.80 mm (+/-0.13)      0.1% of surface below (168 of 311786 samples); thinnest 0.40 mm at (11.0, 28.4, 24.4) in 4 region(s); no region is a wall, 4 taper(s) at feature edges (0.06% of surface, budget 2%); 28 more within measurement error of the limit
+  PASS  thickness distribution         median 2.90 mm, p95 30.89 mm, max 96.36 mm
+  WARN  hollowable at 1.20 mm wall     3.99 of 32.14 cm3 (12%) in 3 pocket(s)
+  PASS  filament that would save       0.60 cm3, 0.7 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.53 mm at (13.9, 56.7, 30.7)    106 samples, 7.9 mm2, runs 27.2 mm, band 0.29 mm
+        2. [taper] 0.40 mm at (11.0, 28.4, 12.9)     38 samples, 2.9 mm2, runs 10.6 mm, band 0.27 mm
+        3. [taper] 0.40 mm at (11.0, 28.4, 24.4)     14 samples, 1.1 mm2, runs 7.8 mm, band 0.14 mm
+        4. [taper] 0.40 mm at (11.0, 28.3, 17.9)     10 samples, 0.8 mm2, runs 4.1 mm, band 0.18 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0009/thickness-collection_cup.md
+
+--- stderr

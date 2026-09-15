@@ -1,0 +1,10 @@
+{
+  "packet_sha256": "bdd1717134900bae03a63276dc9e540a92abc969520758297563d6bbb273b489",
+  "status": "fail",
+  "observation": "All three views inspected. The neutral inclined board establishes scale, but the ramp and bucket floor extend to the left of their side walls. Flippers, launcher and ball are pending early-proof integration; this is not a complete product.",
+  "findings": [
+    {"part":"landing_ramp and sample_bucket_flag","defect":"Prism extrusion is reversed on clockwise profiles, extending floor geometry west of its intended width.","evidence":"Top and front show cyan ramp slab and yellow bucket floor displaced left of the intended paired walls; exact local ramp bounds are X−48..16 instead of X−16..16.","repair":"Force the YZ feature extrusion direction to +X, regenerate and measure bounds."},
+    {"part":"sample_bucket_flag","defect":"The thin horizontal flag arm and unsupported panel wings have no demonstrated print pose.","evidence":"Iso shows a long suspended arm and rectangular flag wings; this assembled view cannot establish printable support.","repair":"After correcting the prism, evaluate a flat-backed rocker or positively joined print parts, then run individual print gates."},
+    {"part":"early mechanism assembly","defect":"Required bat and plunger mechanisms and free marble contact states are absent from this first blockout.","evidence":"All views show only the ramp, rocker and frame on the neutral board.","repair":"Integrate the two bounded mechanism tasks and add actual marble contact/motion evidence before accepting the early proof."}
+  ]
+}

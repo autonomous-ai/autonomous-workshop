@@ -1535,7 +1535,7 @@ def _build_model_handoff(
         (staging / "project.json").write_bytes(project_payload)
         if preserve_import_root:
             (staging / FACTORY_IMPORT_ROOT_PATH).write_bytes(FACTORY_IMPORT_ROOT_CONTENT)
-        result = dict(build_pack(staging, destination))
+        result = dict(build_pack(staging, destination, compression="auto"))
     content, pack_sha256, handoff_artifact_sha256 = load_artifact_payload(destination)
     if (
         result.get("pack_sha256") != pack_sha256

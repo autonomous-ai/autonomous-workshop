@@ -1,5 +1,11 @@
 # Make contract
 
+Motion requirements below apply only when immutable run-root
+`MAKE-OPTIONS.json` enables `check_motion`; false skips motion sweeps and
+required animation/review, with motion explicitly unverified. An older run
+without that file retains mandatory motion verification.
+
+
 Read `STAGE.json` once. It binds the sealed Wish, Invent result, selected
 Inventor, exact output root, round, transition, and any host rejection. Repair
 the cited bytes when a rejection exists; never resubmit unchanged work.

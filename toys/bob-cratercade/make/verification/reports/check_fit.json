@@ -1,0 +1,3488 @@
+{
+  "scope": "Shared nominal fits and deck-root connector stacks; threads, preload and physical tolerance remain untested",
+  "params_sha256": "65135dcb1c21f4833fe94e35846832fa6a88c6b826fa96ad51ac0b2a6912e479",
+  "checks": [
+    {
+      "name": "M4 nominal shaft clearance",
+      "pass": true,
+      "detail": {
+        "bore_mm": 4.5,
+        "nominal_shaft_mm": 4.0
+      }
+    },
+    {
+      "name": "Qualified countersunk head clearance",
+      "pass": true,
+      "detail": {
+        "recess_mm": 9.260000000000002,
+        "supplier_max_head_mm": 8.96
+      }
+    },
+    {
+      "name": "Thin-nut side clearance",
+      "pass": true,
+      "detail": {
+        "pocket_af_mm": 7.4,
+        "supplier_nut_af_mm": 7.0
+      }
+    },
+    {
+      "name": "Flipper sleeve sliding clearance",
+      "pass": true,
+      "detail": {
+        "radial_mm": 0.25
+      }
+    },
+    {
+      "name": "Launcher square guide clearance",
+      "pass": true,
+      "detail": {
+        "per_side_mm": 0.34999999999999964
+      }
+    },
+    {
+      "name": "Axle sleeve clearance",
+      "pass": true,
+      "detail": {
+        "frame_diametral_mm": 0.40000000000000036,
+        "rocker_diametral_mm": 0.5
+      }
+    },
+    {
+      "name": "Located deck seam allowance",
+      "pass": true,
+      "detail": {
+        "diametral_mm": 0.40000000000000036,
+        "depth_mm": 0.20000000000000018
+      }
+    },
+    {
+      "name": "Return minimum marble section",
+      "pass": true,
+      "detail": {
+        "width_mm": 22.0,
+        "height_mm": 20.0,
+        "marble_max_mm": 16.5
+      }
+    },
+    {
+      "name": "Drain minimum marble section",
+      "pass": true,
+      "detail": {
+        "width_mm": 30.0,
+        "length_mm": 21.5
+      }
+    },
+    {
+      "name": "Nominal nut engagement: flipper_left_pivot",
+      "pass": true,
+      "detail": {
+        "label": "flipper_left_pivot",
+        "kind": "socket",
+        "head_datum_mm": 15.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: flipper_right_pivot",
+      "pass": true,
+      "detail": {
+        "label": "flipper_right_pivot",
+        "kind": "socket",
+        "head_datum_mm": 15.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: flipper_guard_0",
+      "pass": true,
+      "detail": {
+        "label": "flipper_guard_0",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: flipper_guard_1",
+      "pass": true,
+      "detail": {
+        "label": "flipper_guard_1",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: flipper_guard_2",
+      "pass": true,
+      "detail": {
+        "label": "flipper_guard_2",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: flipper_guard_3",
+      "pass": true,
+      "detail": {
+        "label": "flipper_guard_3",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: flipper_guard_4",
+      "pass": true,
+      "detail": {
+        "label": "flipper_guard_4",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: launcher_root_0",
+      "pass": true,
+      "detail": {
+        "label": "launcher_root_0",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: launcher_root_1",
+      "pass": true,
+      "detail": {
+        "label": "launcher_root_1",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: launcher_root_2",
+      "pass": true,
+      "detail": {
+        "label": "launcher_root_2",
+        "kind": "countersunk",
+        "head_datum_mm": 7.0,
+        "tip_mm": -9.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 0.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: jackpot_frame_0",
+      "pass": true,
+      "detail": {
+        "label": "jackpot_frame_0",
+        "kind": "countersunk",
+        "head_datum_mm": 4.0,
+        "tip_mm": -12.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: jackpot_frame_1",
+      "pass": true,
+      "detail": {
+        "label": "jackpot_frame_1",
+        "kind": "countersunk",
+        "head_datum_mm": 4.0,
+        "tip_mm": -12.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: jackpot_frame_2",
+      "pass": true,
+      "detail": {
+        "label": "jackpot_frame_2",
+        "kind": "countersunk",
+        "head_datum_mm": 4.0,
+        "tip_mm": -12.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: jackpot_frame_3",
+      "pass": true,
+      "detail": {
+        "label": "jackpot_frame_3",
+        "kind": "countersunk",
+        "head_datum_mm": 4.0,
+        "tip_mm": -12.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: ramp_root_0",
+      "pass": true,
+      "detail": {
+        "label": "ramp_root_0",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: ramp_root_1",
+      "pass": true,
+      "detail": {
+        "label": "ramp_root_1",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_0_0",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_0_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_0_1",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_0_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_0_2",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_0_2",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_0_3",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_0_3",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_1_0",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_1_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_1_1",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_1_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_1_2",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_1_2",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_1_3",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_1_3",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_2_0",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_2_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_2_1",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_2_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_2_2",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_2_2",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_2_3",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_2_3",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_3_0",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_3_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_3_1",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_3_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_3_2",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_3_2",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_3_3",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_3_3",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_4_0",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_4_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_4_1",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_4_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_4_2",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_4_2",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_4_3",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_4_3",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_5_0",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_5_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_5_1",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_5_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_5_2",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_5_2",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_5_3",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_5_3",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_6_0",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_6_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_6_1",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_6_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_6_2",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_6_2",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_strap_6_3",
+      "pass": true,
+      "detail": {
+        "label": "deck_strap_6_3",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_foot_0_0",
+      "pass": true,
+      "detail": {
+        "label": "deck_foot_0_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_foot_0_1",
+      "pass": true,
+      "detail": {
+        "label": "deck_foot_0_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_foot_1_0",
+      "pass": true,
+      "detail": {
+        "label": "deck_foot_1_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_foot_1_1",
+      "pass": true,
+      "detail": {
+        "label": "deck_foot_1_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_foot_2_0",
+      "pass": true,
+      "detail": {
+        "label": "deck_foot_2_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_foot_2_1",
+      "pass": true,
+      "detail": {
+        "label": "deck_foot_2_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_foot_3_0",
+      "pass": true,
+      "detail": {
+        "label": "deck_foot_3_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: deck_foot_3_1",
+      "pass": true,
+      "detail": {
+        "label": "deck_foot_3_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0.0,
+        "tip_mm": -16.0,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: return_root_0_0",
+      "pass": true,
+      "detail": {
+        "label": "return_root_0_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0,
+        "tip_mm": -16,
+        "nut_bottom_mm": -12.2,
+        "nut_top_mm": -10.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: return_root_0_1",
+      "pass": true,
+      "detail": {
+        "label": "return_root_0_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0,
+        "tip_mm": -16,
+        "nut_bottom_mm": -12.2,
+        "nut_top_mm": -10.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: return_root_1_0",
+      "pass": true,
+      "detail": {
+        "label": "return_root_1_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0,
+        "tip_mm": -16,
+        "nut_bottom_mm": -12.2,
+        "nut_top_mm": -10.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: return_root_1_1",
+      "pass": true,
+      "detail": {
+        "label": "return_root_1_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0,
+        "tip_mm": -16,
+        "nut_bottom_mm": -12.2,
+        "nut_top_mm": -10.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: return_root_2_0",
+      "pass": true,
+      "detail": {
+        "label": "return_root_2_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0,
+        "tip_mm": -16,
+        "nut_bottom_mm": -12.2,
+        "nut_top_mm": -10.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: return_root_2_1",
+      "pass": true,
+      "detail": {
+        "label": "return_root_2_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0,
+        "tip_mm": -16,
+        "nut_bottom_mm": -12.2,
+        "nut_top_mm": -10.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: return_root_3_0",
+      "pass": true,
+      "detail": {
+        "label": "return_root_3_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0,
+        "tip_mm": -16,
+        "nut_bottom_mm": -12.2,
+        "nut_top_mm": -10.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: return_root_3_1",
+      "pass": true,
+      "detail": {
+        "label": "return_root_3_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0,
+        "tip_mm": -16,
+        "nut_bottom_mm": -12.2,
+        "nut_top_mm": -10.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 3.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: hopper_root_0",
+      "pass": true,
+      "detail": {
+        "label": "hopper_root_0",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: hopper_root_1",
+      "pass": true,
+      "detail": {
+        "label": "hopper_root_1",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: hopper_root_2",
+      "pass": true,
+      "detail": {
+        "label": "hopper_root_2",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: hopper_root_3",
+      "pass": true,
+      "detail": {
+        "label": "hopper_root_3",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: cup_root_0",
+      "pass": true,
+      "detail": {
+        "label": "cup_root_0",
+        "kind": "countersunk",
+        "head_datum_mm": 0,
+        "tip_mm": -16,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: cup_root_1",
+      "pass": true,
+      "detail": {
+        "label": "cup_root_1",
+        "kind": "countersunk",
+        "head_datum_mm": 0,
+        "tip_mm": -16,
+        "nut_bottom_mm": -14.2,
+        "nut_top_mm": -12.0,
+        "nominal_engagement_mm": 2.1999999999999993,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_left_1_0",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_left_1_0",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_left_1_1",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_left_1_1",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_left_2_2",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_left_2_2",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_left_2_3",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_left_2_3",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_left_3_4",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_left_3_4",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_left_3_5",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_left_3_5",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_right_1_6",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_right_1_6",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_right_1_7",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_right_1_7",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_right_2_8",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_right_2_8",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_right_2_9",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_right_2_9",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_right_3_10",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_right_3_10",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_right_3_11",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_right_3_11",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_rear_1_12",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_rear_1_12",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_rear_1_13",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_rear_1_13",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_rear_2_14",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_rear_2_14",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_perimeter_rear_2_15",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_perimeter_rear_2_15",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_launch_divider_1_16",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_launch_divider_1_16",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_launch_divider_1_17",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_launch_divider_1_17",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_launch_divider_2_18",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_launch_divider_2_18",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_launch_divider_2_19",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_launch_divider_2_19",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_orbit_inner_wall_20",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_orbit_inner_wall_20",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_orbit_inner_wall_21",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_orbit_inner_wall_21",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_orbit_outer_wall_22",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_orbit_outer_wall_22",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_orbit_outer_wall_23",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_orbit_outer_wall_23",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_return_guide_left_24",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_return_guide_left_24",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_return_guide_left_25",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_return_guide_left_25",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_return_guide_right_26",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_return_guide_right_26",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_return_guide_right_27",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_return_guide_right_27",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_mission_crater_1_28",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_mission_crater_1_28",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_mission_crater_1_29",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_mission_crater_1_29",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_mission_crater_2_30",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_mission_crater_2_30",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_mission_crater_2_31",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_mission_crater_2_31",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_mission_crater_3_32",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_mission_crater_3_32",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_mission_crater_3_33",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_mission_crater_3_33",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_mission_guide_1_34",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_mission_guide_1_34",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_mission_guide_1_35",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_mission_guide_1_35",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_mission_guide_2_36",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_mission_guide_2_36",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_A_mission_guide_2_37",
+      "pass": true,
+      "detail": {
+        "label": "mission_A_mission_guide_2_37",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_left_1_0",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_left_1_0",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_left_1_1",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_left_1_1",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_left_2_2",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_left_2_2",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_left_2_3",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_left_2_3",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_left_3_4",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_left_3_4",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_left_3_5",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_left_3_5",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_right_1_6",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_right_1_6",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_right_1_7",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_right_1_7",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_right_2_8",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_right_2_8",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_right_2_9",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_right_2_9",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_right_3_10",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_right_3_10",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_right_3_11",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_right_3_11",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_rear_1_12",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_rear_1_12",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_rear_1_13",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_rear_1_13",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_rear_2_14",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_rear_2_14",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_perimeter_rear_2_15",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_perimeter_rear_2_15",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_launch_divider_1_16",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_launch_divider_1_16",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_launch_divider_1_17",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_launch_divider_1_17",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_launch_divider_2_18",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_launch_divider_2_18",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_launch_divider_2_19",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_launch_divider_2_19",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_orbit_inner_wall_20",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_orbit_inner_wall_20",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_orbit_inner_wall_21",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_orbit_inner_wall_21",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_orbit_outer_wall_22",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_orbit_outer_wall_22",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_orbit_outer_wall_23",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_orbit_outer_wall_23",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_return_guide_left_24",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_return_guide_left_24",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_return_guide_left_25",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_return_guide_left_25",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_return_guide_right_26",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_return_guide_right_26",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_return_guide_right_27",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_return_guide_right_27",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_mission_crater_1_28",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_mission_crater_1_28",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_mission_crater_1_29",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_mission_crater_1_29",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_mission_crater_2_30",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_mission_crater_2_30",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_mission_crater_2_31",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_mission_crater_2_31",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_mission_crater_3_32",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_mission_crater_3_32",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_mission_crater_3_33",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_mission_crater_3_33",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_mission_guide_1_34",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_mission_guide_1_34",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_mission_guide_1_35",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_mission_guide_1_35",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_mission_guide_2_36",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_mission_guide_2_36",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    },
+    {
+      "name": "Nominal nut engagement: mission_B_mission_guide_2_37",
+      "pass": true,
+      "detail": {
+        "label": "mission_B_mission_guide_2_37",
+        "kind": "countersunk",
+        "head_datum_mm": 6.0,
+        "tip_mm": -10.0,
+        "nut_bottom_mm": -8.2,
+        "nut_top_mm": -5.999999999999999,
+        "nominal_engagement_mm": 2.2,
+        "tip_projection_mm": 1.8000000000000007
+      }
+    }
+  ],
+  "connector_ledger": [
+    {
+      "label": "flipper_left_pivot",
+      "kind": "socket",
+      "head_datum_mm": 15.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "flipper_right_pivot",
+      "kind": "socket",
+      "head_datum_mm": 15.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "flipper_guard_0",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "flipper_guard_1",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "flipper_guard_2",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "flipper_guard_3",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "flipper_guard_4",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "launcher_root_0",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "launcher_root_1",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "launcher_root_2",
+      "kind": "countersunk",
+      "head_datum_mm": 7.0,
+      "tip_mm": -9.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 0.8000000000000007
+    },
+    {
+      "label": "jackpot_frame_0",
+      "kind": "countersunk",
+      "head_datum_mm": 4.0,
+      "tip_mm": -12.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "jackpot_frame_1",
+      "kind": "countersunk",
+      "head_datum_mm": 4.0,
+      "tip_mm": -12.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "jackpot_frame_2",
+      "kind": "countersunk",
+      "head_datum_mm": 4.0,
+      "tip_mm": -12.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "jackpot_frame_3",
+      "kind": "countersunk",
+      "head_datum_mm": 4.0,
+      "tip_mm": -12.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "ramp_root_0",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "ramp_root_1",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_0_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_0_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_0_2",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_0_3",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_1_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_1_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_1_2",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_1_3",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_2_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_2_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_2_2",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_2_3",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_3_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_3_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_3_2",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_3_3",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_4_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_4_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_4_2",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_4_3",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_5_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_5_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_5_2",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_5_3",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_6_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_6_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_6_2",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_strap_6_3",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_foot_0_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_foot_0_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_foot_1_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_foot_1_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_foot_2_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_foot_2_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_foot_3_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "deck_foot_3_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0.0,
+      "tip_mm": -16.0,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "return_root_0_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0,
+      "tip_mm": -16,
+      "nut_bottom_mm": -12.2,
+      "nut_top_mm": -10.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "return_root_0_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0,
+      "tip_mm": -16,
+      "nut_bottom_mm": -12.2,
+      "nut_top_mm": -10.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "return_root_1_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0,
+      "tip_mm": -16,
+      "nut_bottom_mm": -12.2,
+      "nut_top_mm": -10.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "return_root_1_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0,
+      "tip_mm": -16,
+      "nut_bottom_mm": -12.2,
+      "nut_top_mm": -10.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "return_root_2_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0,
+      "tip_mm": -16,
+      "nut_bottom_mm": -12.2,
+      "nut_top_mm": -10.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "return_root_2_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0,
+      "tip_mm": -16,
+      "nut_bottom_mm": -12.2,
+      "nut_top_mm": -10.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "return_root_3_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0,
+      "tip_mm": -16,
+      "nut_bottom_mm": -12.2,
+      "nut_top_mm": -10.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "return_root_3_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0,
+      "tip_mm": -16,
+      "nut_bottom_mm": -12.2,
+      "nut_top_mm": -10.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 3.8000000000000007
+    },
+    {
+      "label": "hopper_root_0",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "hopper_root_1",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "hopper_root_2",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "hopper_root_3",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "cup_root_0",
+      "kind": "countersunk",
+      "head_datum_mm": 0,
+      "tip_mm": -16,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "cup_root_1",
+      "kind": "countersunk",
+      "head_datum_mm": 0,
+      "tip_mm": -16,
+      "nut_bottom_mm": -14.2,
+      "nut_top_mm": -12.0,
+      "nominal_engagement_mm": 2.1999999999999993,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_left_1_0",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_left_1_1",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_left_2_2",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_left_2_3",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_left_3_4",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_left_3_5",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_right_1_6",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_right_1_7",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_right_2_8",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_right_2_9",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_right_3_10",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_right_3_11",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_rear_1_12",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_rear_1_13",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_rear_2_14",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_perimeter_rear_2_15",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_launch_divider_1_16",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_launch_divider_1_17",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_launch_divider_2_18",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_launch_divider_2_19",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_orbit_inner_wall_20",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_orbit_inner_wall_21",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_orbit_outer_wall_22",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_orbit_outer_wall_23",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_return_guide_left_24",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_return_guide_left_25",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_return_guide_right_26",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_return_guide_right_27",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_mission_crater_1_28",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_mission_crater_1_29",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_mission_crater_2_30",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_mission_crater_2_31",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_mission_crater_3_32",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_mission_crater_3_33",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_mission_guide_1_34",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_mission_guide_1_35",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_mission_guide_2_36",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_A_mission_guide_2_37",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_left_1_0",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_left_1_1",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_left_2_2",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_left_2_3",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_left_3_4",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_left_3_5",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_right_1_6",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_right_1_7",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_right_2_8",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_right_2_9",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_right_3_10",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_right_3_11",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_rear_1_12",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_rear_1_13",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_rear_2_14",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_perimeter_rear_2_15",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_launch_divider_1_16",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_launch_divider_1_17",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_launch_divider_2_18",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_launch_divider_2_19",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_orbit_inner_wall_20",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_orbit_inner_wall_21",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_orbit_outer_wall_22",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_orbit_outer_wall_23",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_return_guide_left_24",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_return_guide_left_25",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_return_guide_right_26",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_return_guide_right_27",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_mission_crater_1_28",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_mission_crater_1_29",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_mission_crater_2_30",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_mission_crater_2_31",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_mission_crater_3_32",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_mission_crater_3_33",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_mission_guide_1_34",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_mission_guide_1_35",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_mission_guide_2_36",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    },
+    {
+      "label": "mission_B_mission_guide_2_37",
+      "kind": "countersunk",
+      "head_datum_mm": 6.0,
+      "tip_mm": -10.0,
+      "nut_bottom_mm": -8.2,
+      "nut_top_mm": -5.999999999999999,
+      "nominal_engagement_mm": 2.2,
+      "tip_projection_mm": 1.8000000000000007
+    }
+  ],
+  "pass": true
+}

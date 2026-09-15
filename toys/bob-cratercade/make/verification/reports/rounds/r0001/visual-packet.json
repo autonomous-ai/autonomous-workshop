@@ -1,0 +1,32 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/visual/front.png": "4ce17e4d5ed1e2abfdbb84db4de7dc7e7a25cb1c05b80e0b6dbe74b7e65542cf",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/visual/iso.png": "02c7d6d852952d52ca35e8ab99f05966e690179d4180f505bba18268b4728cc5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/visual/top.png": "831484ba5470a9ddb64f162c1b945054bae00aa73b7b912cecd0e9f1bc2f525e"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "assemblies/__init__.py": "0bd00ac82b5c9987842005e1ea33b37379ea84666eb31369f96d364b16a04af6",
+    "assemblies/flippers.py": "6b25aec5cb4ef0d76c99003be5839ef3556297c1e3a7ad2827f68ac3194ac42a",
+    "assemblies/jackpot.py": "ff1f0ea9b275e07ef0d8cb0d952d0d449ff903da34dc9a9fbcaad580e4ed7a1d",
+    "assemblies/product.py": "ac1156537d06d6686b51fdf8766200c810be362d6fa889b2f368d7659ae65c1b",
+    "cratercade.step": "62f2537b59ade15bbd895ea6f140e414024db2b49143f2beeba9ddddbdadf703",
+    "cratercade.step.py": "674b58eeb2d01d5cec5b9791f54c5f4550b62f6ce50fe521d3feb02003eb0214",
+    "features/__init__.py": "c034797f7fde85202b13f85505387fae72383c528a09f22a18e14dda513323a8",
+    "features/primitives.py": "77553eb5dbefb89886a7f5d58f7e122ce8c10e557f544156b187e8e01b9f6898",
+    "params.py": "77e38cb13ce95dd0b6b26fc8203562e87146e781789d1c955a06dd5ee938c874",
+    "parts/__init__.py": "cc9980583951ef800f77bc84f3884ab0f2fe13b68490bcb26fb5c563ddce987c",
+    "parts/flipper.py": "292c0a51966c06dd91674e512590098aba6492d4c550a19f26d6f0a8e9f7ace8",
+    "parts/flipper_guard.py": "ec5dd0a89111aa985a6b65f2b4af05b6003d7c7247fd6a7b05c7b53d88cb8e38",
+    "parts/flipper_guard_base.py": "b3147819585d95688055bf6bcad1ce9ce04d5d6c1d0d57c549ac9f1ca6e19746",
+    "parts/flipper_pedestal.py": "d56f14462016d1d5ba2148e4e1820e3207935cb5878a3b65073b2f4f89f41242",
+    "parts/flipper_sleeve.py": "8bb4d1ba04ef0e7d0359f3e68a314e47e6616fc3fa19137e57486d14cdd507d7",
+    "parts/jackpot_frame.py": "0a371bb64f82d830762c979ca60c961df6e4ca79af965408184102b46164830c",
+    "parts/jackpot_rocker.py": "001e1859e0b692e9625ff7c6f968cf44d37361c0b0a4aba884b8fa2b7dd8b9d5",
+    "parts/jackpot_trim.py": "295b2148815032855dae722e1e5038a1d6be9268aac3b315a2bbe8ed51b506f9",
+    "parts/landing_ramp.py": "15878191eee55e83f37c8e16c3eaa3fa83ec1f56391bc0dfe1c4296cdbc5aa53",
+    "parts/proof_board.py": "73874325af7a9ff54e59abc05f0bcf9a20efe5085146a505ec02999f30842a83",
+    "validation.py": "d9d4def3a6e71cf2ce161d46c7ac0871bdebdfd6f8c9e42d7b283f1e9c7a8d2c"
+  }
+}

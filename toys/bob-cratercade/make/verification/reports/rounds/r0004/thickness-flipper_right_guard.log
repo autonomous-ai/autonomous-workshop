@@ -1,0 +1,17 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_flipper_right_guard.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/thickness-flipper_right_guard.md
+(5.5s, exit 0)
+--- stdout
+part_flipper_right_guard.step.py: 9.81 cm3 solid, grid 0.197 mm (398x259x116), 210119 surface samples, thickness resolved to 0.098 mm
+  PASS  wall >= 0.80 mm (+/-0.10)      0.0% of surface below (67 of 210119 samples); thinnest 0.59 mm at (22.5, 14.2, 22.0) in 4 region(s); no region is a wall, 4 taper(s) at feature edges (0.03% of surface, budget 2%); 214 more within measurement error of the limit
+  PASS  thickness distribution         median 2.95 mm, p95 22.46 mm, max 75.45 mm
+  WARN  hollowable at 1.20 mm wall     1.24 of 9.81 cm3 (13%) in 2 pocket(s)
+  PASS  filament that would save       0.19 cm3, 0.2 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.59 mm at (22.5, 14.2, 22.0)     27 samples, 1.1 mm2, runs 5.9 mm, band 0.18 mm
+        2. [taper] 0.59 mm at (-40.6, 25.4, 22.0)     25 samples, 1.0 mm2, runs 6.9 mm, band 0.15 mm
+        3. [taper] 0.59 mm at (-41.0, 27.6, 22.0)      9 samples, 0.4 mm2, runs 2.4 mm, band 0.15 mm
+        4. [taper] 0.59 mm at (23.7, 12.7, 22.0)      6 samples, 0.2 mm2, runs 3.5 mm, band 0.07 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/thickness-flipper_right_guard.md
+
+--- stderr

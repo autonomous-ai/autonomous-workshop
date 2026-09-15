@@ -47,6 +47,26 @@ does not govern ordinary source-repository work.
 
 ## Runtime boundary
 
+### Optional motion verification
+
+New `wish`, `start`, and `fix` runs default `--check-motion` to false.
+`--check-motion true` enables the existing motion sweeps and required coupled
+animation/reconstruction/review. The host materializes the boolean in the
+read-only, hash-bound root `MAKE-OPTIONS.json`. Make rounds, final CAD
+verification (including isolated host replay), and proposal finalization read
+that same choice. Disabled motion is recorded as skipped/unverified, never a
+pass. Build, fit, print and still-image signature review are unchanged.
+
+Every operator `resume` reselects the motion option, defaulting to false even
+for previously enabled and older runs. `resume --check-motion true` enables it.
+For an older run without `MAKE-OPTIONS.json`, the host first refreshes its
+carried CAD/Make-round tools and Make finalizer from the installed version,
+rebinds the same native session, then creates the selected root option. The
+mutation lock, immutable input manifest and private correction ledger cover
+these changes. Lifecycle instructions, sealed artifacts and token usage stay
+intact. A plain `--refresh-tools` operation still preserves the root option. See
+[ADR 0066](adr/0066-optional-motion-verification.md).
+
 ### Current token-budget and Spark handoff policy
 
 New Spark v4 runs compact at 192k; frozen v3 runs retain 64k. This
@@ -1194,3 +1214,60 @@ that reason in its private checkpoint; both the immediate command receipt and
 later `workshop status` calls print it as `Need:`. Chat prose is never treated
 as a durable need, and agents are explicitly forbidden from using this path
 for ordinary unfinished or repairable work.
+
+Saved explicit reasoning choices remain supported through `workshop resume
+--effort medium`. The host validates its private `reasoning-effort.json`
+history and uses that selection for subsequent turns; omission retains it.
+The original MANAGER.json is provenance, not overwritten runtime policy.
+The resumed Manager receives the choice for subsequent native child work.
+This restores the existing operator override without changing the team's
+motion-policy defaults or native usage reconciliation.
+
+Historical per-response native usage remains supported alongside the newer
+notification replay handling. If a rollout contains a response ledger, its
+complete response/session identities, compaction references and notification
+coverage are validated; malformed or incomplete ledgers never fall back to
+notification totals. Ledger-free rollouts retain the team's replay rules.
+The bounded oversized-record parser preserves compaction usage metadata and
+continues accepting visual custom-tool output without retaining its body.
+Offline replay on 2026-09-14 reproduced Cratercade's saved 608,046,967 tokens
+across 29 threads exactly. This is accounting recovery, not Make completion.
+
+For response-ledger sessions, a completed native turn may report a restored
+notification baseline that differs from both lifetime totals and the current
+invocation's delta. The reader exposes the last notification only after exact
+response coverage is validated and no later response awaits notification.
+Terminal reconciliation accepts an exact input/output match to that snapshot
+only when lifetime root usage also advances; the complete ledger remains the
+charged total. Ledger-free sessions keep the existing delta/cumulative rules.
+
+Print-gate Markdown reports retain the same explicit `RESULT:` verdict emitted
+on stdout, including failing verdicts. The frozen Make finalizer consumes that
+report contract. Restoring the summary does not change measurements, thresholds,
+or exit status; refreshed runs regenerate reports through the actual tools.
+
+After an explicit tool refresh, an unaccepted Make outcome from the exact
+recorded predecessor checkpoint is preserved in private quarantine and removed
+from the pending slot. The same native session must finalize again against
+the new tool bindings. Recovery walks only consecutive host correction records;
+unrelated checkpoints and stages retain their normal refusal. This also repairs
+an interrupted refresh without accepting or rewriting the old proposal.
+
+Spark schema-4 Release packets reference the sealed Made contract through its
+exact path, file hash, contract hash and product manifest hash. They do not
+duplicate its potentially large file inventory into the bounded native packet.
+The host still reads and validates the complete typed contract before preparing
+publication; modified sealed bytes remain refused. No native Release turn is
+introduced, and legacy PDF, Forge and Quest packet contracts remain unchanged.
+
+Factory transport opts into compressed Packs only when an uncompressed Pack
+would exceed the existing 50 MiB upload cap. Level-9 ZIP DEFLATE preserves all
+files and the logical manifest identity; small/default Packs retain their
+historical ZIP_STORED bytes. Validation enforces one compression method,
+canonical headers/order, exact file hashes, the 95 MiB per-file and 512 MiB
+expanded-tree caps, and exact archive reconstruction. Compressed byte identity
+is tied to the compressor implementation, not promised across zlib versions;
+the actual uploaded archive hash remains part of effect reconciliation.
+The local Factory backend import contract accepts ZIP compression and bounds
+upload and expanded size separately. No package files or gates are omitted to
+meet the transport limit.

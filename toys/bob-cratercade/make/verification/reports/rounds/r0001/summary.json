@@ -1,0 +1,62 @@
+{
+ "build": {
+  "cratercade": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "cratercade"
+ ],
+ "checked": [
+  "cratercade"
+ ],
+ "checks_ok": false,
+ "entry": "cratercade.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "cratercade"
+ ],
+ "print": {
+  "cratercade": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-cratercade.log": "c1c897d61d43550d901cac29e51f71a00ea405d97e0c6722729bd54a837f4360",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-cratercade.log": "9e9e4a5b67a0ddaa40c9c0a28ea70fe54952a826d964e970e802377eb9b23ca4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no overhang result"
+    ],
+    "overhang_mm2": null,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "no passing wall result"
+    ],
+    "thinnest_mm": null,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/visual-packet.json",
+  "packet_sha256": "bdd1717134900bae03a63276dc9e540a92abc969520758297563d6bbb273b489",
+  "status": "pending"
+ }
+}

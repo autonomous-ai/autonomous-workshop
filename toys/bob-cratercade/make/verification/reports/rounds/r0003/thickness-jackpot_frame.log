@@ -1,0 +1,12 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_jackpot_frame.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/thickness-jackpot_frame.md
+(4.2s, exit 0)
+--- stdout
+part_jackpot_frame.step.py: 30.06 cm3 solid, grid 0.321 mm (323x242x136), 146815 surface samples, thickness resolved to 0.160 mm
+  PASS  wall >= 0.80 mm (+/-0.16)      0.0% of surface below (0 of 146815 samples)
+  PASS  thickness distribution         median 5.13 mm, p95 33.69 mm, max 102.04 mm
+  WARN  hollowable at 1.20 mm wall     12.47 of 30.06 cm3 (41%) in 1 pocket(s)
+  PASS  filament that would save       1.87 cm3, 2.3 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/thickness-jackpot_frame.md
+
+--- stderr

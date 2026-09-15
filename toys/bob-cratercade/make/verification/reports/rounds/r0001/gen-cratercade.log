@@ -1,0 +1,7 @@
+$ <HOME>/code/autonomous-workshop/.venv/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/cratercade.step.py --write --json
+(2.8s, exit 0)
+--- stdout
+{"ok":true,"sourceRef":"cratercade.step.py","cadPath":"cratercade","kind":"part","outcome":"built","packagePath":"__cadgen__/models/cratercade.step.py"}
+
+--- stderr
+[scripts/gen] generated assembly GLB/topology artifact: __cadgen__/models/cratercade.step.py
