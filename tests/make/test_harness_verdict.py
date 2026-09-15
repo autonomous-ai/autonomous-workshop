@@ -109,6 +109,37 @@ class HarnessVerdictTest(unittest.TestCase):
         self.assertEqual(verdict["findings"][0]["kind"], "preflight-refused")
         self.assertIn("expected one combined entry", verdict["findings"][0]["message"])
 
+    def test_phases_follow_the_gates_that_ran(self):
+        records = [
+            {"command": "python gen model.step.py", "status": "rc=0", "seconds": 1.0},
+            {"command": "python check_fit model.step", "status": "rc=0", "seconds": 1.0},
+            {"command": "python check_mesh model.step", "status": "rc=1", "seconds": 1.0},
+            {"command": "check_motion  # NOT RUN: motion not requested", "status": "skipped", "seconds": 0.0},
+        ]
+        with mock.patch.dict(os.environ, {"HARNESS_WORKSPACE": str(self.workspace)}):
+            self.write(self.project, records, mode="final", result=1)
+        phases = self.verdict()["phases"]
+        self.assertEqual(
+            [(p["name"], p["state"]) for p in phases],
+            [("Build", "done"), ("Fit", "done"), ("Print", "failed"), ("Review", "pending")],
+        )
+
+    def test_a_clean_preview_points_at_what_runs_next(self):
+        records = [{"command": "python gen model.step.py", "status": "rc=0", "seconds": 1.0}]
+        with mock.patch.dict(os.environ, {"HARNESS_WORKSPACE": str(self.workspace)}):
+            self.write(self.project, records, mode="quick", result=0)
+        phases = self.verdict()["phases"]
+        self.assertEqual([p["state"] for p in phases], ["done", "active", "pending", "pending"])
+        self.assertNotIn("Motion", [p["name"] for p in phases])
+
+    def test_motion_appears_once_it_has_run(self):
+        records = [
+            {"command": "python gen model.step.py", "status": "rc=0", "seconds": 1.0},
+            {"command": "python check_motion cad", "status": "rc=0", "seconds": 1.0},
+        ]
+        with mock.patch.dict(os.environ, {"HARNESS_WORKSPACE": str(self.workspace)}):
+            self.write(self.project, records, mode="final", result=0)
+        self.assertIn(("Motion", "done"), [(p["name"], p["state"]) for p in self.verdict()["phases"]])
 
 if __name__ == "__main__":
     unittest.main()
