@@ -11,7 +11,11 @@ counted, including cached input once and reasoning as part of output. No
 pricing table or dollar estimate participates in enforcement.
 
 On 2026-09-09 the explicitly selectable maximum was raised to 200,000,000
-tokens. The default remains 30,000,000 and existing saved caps do not change.
+tokens and later to 1,000,000,000. The default remains 30,000,000 and existing
+saved caps do not change. The cap is a guard rail against a runaway product, not
+a quota, and it should not be the reason a healthy product cannot continue. The
+bound and both of its refusal messages derive from `MAX_PRODUCT_TOKENS`, so
+raising it again is a one-line change that cannot leave a stale figure behind.
 
 The default was raised from 10M to 30M on 2026-09-07 after Crosscurrent's
 verified digital package used 17,724,704 tokens before publication. This gives
