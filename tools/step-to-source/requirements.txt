@@ -1,0 +1,7 @@
+# step_probe.py and step_verify.py need only the OpenCASCADE bindings.
+cadquery-ocp
+
+# Running the emitted source needs whichever dialect was chosen. Neither is
+# required to probe or verify, so install only the one in use.
+#   build123d
+#   cadquery<2.8
