@@ -863,3 +863,38 @@ completion recovery, changed motion choice on retry, idempotency, missing
 installed correction, input tampering, pending Make refinalization and
 read-only/terminal behavior. These are host contract tests, not a new native
 Wish or the affected operator's session. See ADR 0067 for the migration boundary.
+
+### Complete archived assembly replay
+
+The full exported Cratercade assembly was replayed with the real `inspect batch`
+CLI against baseline `78eb7203` and the corrected inspection code at `bfd07e96`.
+The unchanged 35,213,424-byte STEP has SHA-256
+`c7f89595204dcc2e1f8cbc52d61612ca189b456cebd9eeac3fbf7f42f017aa78`,
+matching its public archive manifest. It loads as 542 occurrences and 181
+geometry prototypes. The archived render was also checked against its manifest.
+
+Both corrected trials and the completed baseline returned identical JSON
+results: 542 occurrences with zero validity failures; 146,611 potential pairs,
+1,838 exact intersection tests, 144,773 bounding-box rejections, zero truncated
+pairs and zero clashes at the unchanged 1 mm³ tolerance. Self-intersection was
+enabled, with no pair limit.
+
+| Attempt | Baseline | Corrected | Conditions |
+|---|---:|---:|---|
+| 1 | Stopped at 600.03 s; no verdict | Passed in 408.78 s | Overlapped regression tests; corrected trial also overlapped the diagnostic below |
+| 2 | Passed in 742.44 s | Passed in 401.34 s | Sequential runs, no regression tests or other geometry jobs alongside them |
+
+The clean pair was about 46% faster on this assembly. The experiment's second
+pair allowed 1,200 seconds per batch; no production timeout was introduced.
+Environment: macOS arm64, Python 3.11.13, build123d 0.11.1 and cadquery-ocp
+7.9.3.1.1. A separate instrumented diagnostic was deliberately stopped at 90
+seconds after 223 occurrences completed; 43 nut checks consumed 72.73 of the
+84.32 seconds spent inside those checks. It is a partial profile, not a gate
+pass or a clean timing comparison. All attempted runs and raw outputs were
+retained in private local evidence.
+
+This establishes gate parity and reduced inspection time on an archived complex
+model. It is one completed clean comparison plus an earlier corrected replay,
+not broad reliability evidence. No new native Wish was launched, no geometry
+was changed, and print/motion gates were not rerun. The affected Wish, frozen
+tools and live process remain unavailable; the reported delay remains open.
