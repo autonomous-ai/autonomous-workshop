@@ -329,18 +329,35 @@ class ClaudeNativeSessionLauncher:
             raise ContractError("Claude native session checkpoint already exists")
         digest = hashlib.sha256(_canonical_json(identity)).hexdigest()
         _write_private_checkpoint(path, {**identity, "checkpoint_sha256": digest})
-        observed = self._stream(
+        bound = {"session_id": session_id, "digest": digest}
+
+        def _bind(observed_id: str) -> None:
+            """Record the real session the moment the CLI names it.
+
+            A turn that dies partway -- a timed out clock, a killed process --
+            still leaves hours of work in a session that only the CLI can
+            reopen.  Binding on the first event rather than on a clean return
+            keeps that work resumable.
+            """
+
+            if observed_id == bound["session_id"]:
+                return
+            identity["session_id"] = observed_id
+            fresh = hashlib.sha256(_canonical_json(identity)).hexdigest()
+            _write_private_checkpoint(path, {**identity, "checkpoint_sha256": fresh})
+            bound["session_id"] = observed_id
+            bound["digest"] = fresh
+
+        self._stream(
             command=self._command(Path(run_root), prompt, session_id=None),
             run_root=Path(run_root),
             activity_observer=activity_observer,
             finalization_marker=finalization_marker,
+            session_observer=_bind,
         )
-        if observed and observed != session_id:
-            identity["session_id"] = observed
-            digest = hashlib.sha256(_canonical_json(identity)).hexdigest()
-            _write_private_checkpoint(path, {**identity, "checkpoint_sha256": digest})
-            session_id = observed
-        return ClaudeNativeSessionOutcome(session_id, digest, self.cli_version)
+        return ClaudeNativeSessionOutcome(
+            bound["session_id"], bound["digest"], self.cli_version
+        )
 
     def resume(
         self,
@@ -468,6 +485,7 @@ class ClaudeNativeSessionLauncher:
         run_root: Path,
         activity_observer: Optional[Callable[[str], None]],
         finalization_marker: Optional[Path] = None,
+        session_observer: Optional[Callable[[str], None]] = None,
     ) -> Optional[str]:
         if activity_observer is not None:
             activity_observer("starting")
@@ -533,6 +551,8 @@ class ClaudeNativeSessionLauncher:
                         continue
                     session = event.get("session_id") or event.get("sessionId")
                     if isinstance(session, str) and _SESSION_ID.fullmatch(session):
+                        if session != observed and session_observer is not None:
+                            session_observer(session)
                         observed = session
                     if event.get("type") == "rate_limit_event":
                         info = event.get("rate_limit_info")

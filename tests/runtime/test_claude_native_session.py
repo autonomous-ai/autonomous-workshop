@@ -1,4 +1,5 @@
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -424,3 +425,62 @@ class ClaudeNativeSessionTest(unittest.TestCase):
                 host_state_root=self.host_state,
                 prompt="make",
             )
+
+    def test_a_turn_that_dies_midflight_still_binds_the_real_session(self):
+        """An hour of work must stay reopenable after a timed out clock."""
+
+        from workshop.runtime.claude import ClaudeRecoverableInvocationError
+
+        class _DyingProcess(_FakeProcess):
+            def wait(self, timeout=None):
+                del timeout
+                raise subprocess.TimeoutExpired("claude", 1)
+
+        turns = []
+        lines = [
+            json.dumps(
+                {
+                    "type": "system",
+                    "subtype": "init",
+                    "session_id": "claude-session-real",
+                }
+            )
+            + "\n",
+        ]
+
+        def popen(command, **kwargs):
+            del command, kwargs
+            turns.append(1)
+            if len(turns) == 1:
+                return _DyingProcess(lines)
+            return _FakeProcess(lines)
+
+        launcher = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.0.0",
+            popen_factory=popen,
+            uuid_factory=lambda: "host-invented-id",
+        )
+        with self.assertRaises(ClaudeRecoverableInvocationError):
+            launcher.start(
+                product_id="wish-one",
+                wish_sha256=DIGEST,
+                constitution_sha256=DIGEST,
+                run_root=self.run_root,
+                host_state_root=self.host_state,
+                prompt="make",
+            )
+        payload = json.loads(
+            (self.host_state / "claude-session.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(payload["session_id"], "claude-session-real")
+        self.assertNotEqual(payload["session_id"], "host-invented-id")
+        resumed = launcher.resume(
+            product_id="wish-one",
+            wish_sha256=DIGEST,
+            constitution_sha256=DIGEST,
+            run_root=self.run_root,
+            host_state_root=self.host_state,
+            prompt="make",
+        )
+        self.assertEqual(resumed.session_id, "claude-session-real")
