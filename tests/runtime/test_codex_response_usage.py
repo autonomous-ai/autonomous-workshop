@@ -192,6 +192,34 @@ def test_zero_usage_exception_requires_exact_post_compaction_evidence(tmp_path, 
         read(tmp_path, events)
 
 
+def first_request_compaction(change=None):
+    """A saturated thread compacts before the new task issues any request."""
+
+    compact = response("compact", 100, 200, turn=TURN_B, turn_total=100)
+    events = start() + [response("a", 100, 100), notification(100, 100)]
+    if change == "never-notified":
+        del events[-1]
+    events += [
+        boundary(TURN_B), compact,
+        {"type": "compacted", "payload": {"latest_token_usage_record": compact["payload"]}},
+        notification(200 if change == "changed-total" else 100,
+                     50 if change == "nonzero-last" else 0),
+    ]
+    return events
+
+
+def test_first_request_compaction_is_covered_by_the_carried_notification(tmp_path):
+    result = read(tmp_path, first_request_compaction())
+    assert result["tokens"] == counters(200)  # The compaction request is charged once.
+    assert result["terminal_notification"] == counters(100)
+
+
+@pytest.mark.parametrize("change", ["never-notified", "changed-total", "nonzero-last"])
+def test_carried_anchor_still_requires_exact_post_compaction_evidence(tmp_path, change):
+    with pytest.raises(UsageUnavailable, match="coverage"):
+        read(tmp_path, first_request_compaction(change))
+
+
 def test_zero_token_response_is_observed_and_pending_child_remains_pending(tmp_path):
     write(tmp_path, start() + [response("zero", 0, 0)])
     write(tmp_path, start(CHILD, ROOT), CHILD)

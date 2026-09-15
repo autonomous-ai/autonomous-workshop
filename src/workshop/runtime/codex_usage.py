@@ -262,6 +262,7 @@ class _ResponseLedgerUsage:
         self.last_at = None
         self.latest_response = None
         self.notification = None
+        self.notification_totals = None
         self.pending_responses = {}
         self.pending_compactions = set()
         self.uncovered_notification = False
@@ -287,6 +288,11 @@ class _ResponseLedgerUsage:
                 raise UsageUnavailable("ambiguous native usage task boundary")
             self.tasks.add(turn_id)
             self.task = turn_id
+            # The in-task signature is dropped so the next notification still
+            # has to prove continuation or a process reset. The counters it
+            # carries are process cumulative rather than task scoped, so the
+            # covered snapshot itself survives the boundary as the only anchor
+            # a first-in-task post-compaction notification can be read against.
             self.notification = None
             self.pending_responses = {}
             self.pending_compactions = set()
@@ -359,6 +365,7 @@ class _ResponseLedgerUsage:
 
     def _cover_notification(self, signature):
         self.notification = signature
+        self.notification_totals = signature[1]
         self.pending_responses = {}
         self.pending_compactions = set()
         self.compacted_task = None
@@ -383,12 +390,17 @@ class _ResponseLedgerUsage:
         }
         if (
             self.compacted_task == self.task and self.task is not None
-            and self.notification is not None
-            and not any(last.values()) and current == self.notification[1]
+            and self.notification_totals is not None
+            and not any(last.values()) and current == self.notification_totals
             and self.pending_responses and not any(ordinary.values())
         ):
             # A post-compaction context-size notification reports zero usage.
             # Its last.total_tokens is a context estimate, not input + output.
+            # A saturated thread compacts on the first request of a new task,
+            # so that task can carry no notification of its own. The anchor is
+            # then the last covered snapshot in this process. A restored
+            # baseline cannot match it, and the compaction still has to be the
+            # current task's only uncovered response.
             self._cover_notification(signature)
             return
         if (
