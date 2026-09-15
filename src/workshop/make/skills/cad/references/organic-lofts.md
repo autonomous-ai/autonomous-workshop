@@ -159,11 +159,14 @@ asm.add(fused - taken, "body", color=filament(COL_BODY))
 Measure the reference, then round to stock. A `--palette`/`--isolate` run in
 `$image-to-cad` reports hex values — and a glossy surface splits into a lit and
 a shaded cluster of the same paint, so merge those by eye first. Each merged hex
-then picks the nearest **Bambu Lab PLA Lite** name (the table under **Colour** in
-`references/build123d-modeling.md`), and that name is what the region constant
-holds. A region printed in a colour outside the palette is a region that cannot
-be printed as drawn, so record the substitution in the spec instead of passing
-the sampled hex through `Color()` or `srgb()`.
+then picks the nearest name from the part's own stock — **Bambu Lab PLA Lite**
+or **Bambu Lab PETG Basic**, the two tables under **Colour** in
+`references/build123d-modeling.md` — and that name is what the region constant
+holds. One part prints in one stock, so round every region of it against the
+same table and pass that stock to `filament(..., material=...)`. A region
+printed in a colour outside its palette is a region that cannot be printed as
+drawn, so record the substitution in the spec instead of passing the sampled hex
+through `Color()` or `srgb()`.
 
 ## Cost of the loop
 

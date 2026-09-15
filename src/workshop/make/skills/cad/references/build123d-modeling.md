@@ -158,18 +158,26 @@ way to the screen, so `Color(0.5, 0.5, 0.5)` displays as roughly `#BCBCBC`, not
 `#808080`. Picking channel values off a hex palette by eye gives a washed-out,
 desaturated model. Never author a channel triple by hand.
 
-**Every printable part takes its colour by name from the filament palette.** The
-palette is Bambu Lab PLA Lite, the only stock this repository prints, so a model
-coloured from it shows spools that can actually be loaded; a free hex invents a
-filament nobody can buy. `scripts/cadfilament.py` owns the table and does the
-sRGB conversion, and imports with no path setup wherever `cadfits` does:
+**Every printable part takes its colour by name from the filament palette.** Two
+stocks are loaded — Bambu Lab PLA Lite and Bambu Lab PETG Basic — so a model
+coloured from them shows spools that can actually be loaded; a free hex invents
+a filament nobody can buy. `scripts/cadfilament.py` owns both tables and does
+the sRGB conversion, and imports with no path setup wherever `cadfits` does:
 
 ```python
 from cadfilament import filament
 
-body.color = filament("sunflower yellow")
-lens.color = filament("cyan", 0.42)     # with alpha
+body.color = filament("sunflower yellow")                    # PLA Lite
+shell.color = filament("misty blue", material="PETG Basic")  # PETG Basic
+lens.color = filament("cyan", 0.42)                          # with alpha
 ```
+
+`material` defaults to PLA Lite. Reach for PETG when a part flexes, takes an
+impact, or sits somewhere warm; it is tougher and less brittle than PLA. A
+print-in-place joint in it also needs `cadfits.print_in_place_gap(...,
+material="PETG")`, because PETG strings and oozes more than PLA does.
+
+**PLA Lite** — `material` default, no keyword needed:
 
 | name | hex | name | hex |
 | --- | --- | --- | --- |
@@ -181,12 +189,29 @@ lens.color = filament("cyan", 0.42)     # with alpha
 | `dark gray` | `#6F6E6D` | `white` | `#FFFEF7` |
 | | | `yellow` | `#FFD834` |
 
-Names match case- and separator-insensitively (`"Dark Gray"` = `"dark_gray"`);
-an unknown name raises with the list above rather than guessing a near colour.
+**PETG Basic** — `filament("<name>", material="PETG")`:
+
+| name | hex | name | hex |
+| --- | --- | --- | --- |
+| `black` | `#000000` | `orange` | `#FF671F` |
+| `dark beige` | `#DBC8B6` | `pine green` | `#034638` |
+| `dark brown` | `#4F2C1D` | `red` | `#D6001C` |
+| `gray` | `#7F7E83` | `reflex blue` | `#001489` |
+| `green` | `#009639` | `white` | `#FFFFFF` |
+| `misty blue` | `#688197` | `yellow` | `#FCE300` |
+| `navy blue` | `#0086D6` | | |
+
+Names match case- and separator-insensitively (`"Dark Gray"` = `"dark_gray"`),
+and so do stock names (`"PETG Basic"` = `"petg_basic"` = `"PETG"`). Seven names
+are in both tables and five of them are a **different** hex in each, so the
+stock is what decides which spool `filament("red")` means, and it is PLA Lite
+unless you say otherwise. An unknown name raises with the list for the stock
+asked for rather than guessing a near colour; a PETG-only name asked for as PLA
+names the stock that carries it.
 Run `python "$CAD_SKILL_ROOT/scripts/cadfilament.py"` for its self-check, which
 round-trips every colour back to the published hex.
-Two parts that must be visually distinct need two names from this table — if the
-reference colour is not in it, pick the nearest filament and record the
+Two parts that must be visually distinct need two names from these tables — if
+the reference colour is not in them, pick the nearest filament and record the
 substitution in the spec, do not reach for the exact hex.
 
 `cadgen.srgb("#rrggbb")` stays available for geometry that is deliberately not

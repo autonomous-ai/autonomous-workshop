@@ -365,14 +365,22 @@ return asm.compound()
 Fusing separately printed parts loses clearances, fits, and per-part mesh export.
 Name the parts in the spec in the order they should be added.
 
-Colour is worth one line in the spec per part. Name each printed part's colour as
-a **Bambu Lab PLA Lite filament name** the implementer passes to `filament()` —
-`beige`, `black`, `blue`, `cocoa brown`, `cyan`, `dark gray`, `gray`, `green`,
-`orange`, `red`, `sunflower yellow`, `white`, `yellow` — never a hex of your own,
-which invents a filament that cannot be loaded. When the reference colour falls
-between two of them, choose the nearer and record the substitution as a spec row.
-Name a colour for every leaf, never for a group: colour on a group compound never
-reaches the render even though it does reach the STEP's XCAF label.
+Colour is worth one line in the spec per part, and so is the stock it prints in.
+Name each printed part's colour as a filament name the implementer passes to
+`filament()` — never a hex of your own, which invents a filament that cannot be
+loaded. **Bambu Lab PLA Lite** is the default stock: `beige`, `black`, `blue`,
+`cocoa brown`, `cyan`, `dark gray`, `gray`, `green`, `orange`, `red`,
+`sunflower yellow`, `white`, `yellow`. **Bambu Lab PETG Basic** is the tougher,
+less brittle stock for a part that flexes, takes an impact, or sits somewhere
+warm: `black`, `dark beige`, `dark brown`, `gray`, `green`, `misty blue`,
+`navy blue`, `orange`, `pine green`, `red`, `reflex blue`, `white`, `yellow`.
+Seven names are in both stocks and five of them are a different hex in each, so
+a PETG row says so — `filament("red", material="PETG")` — or it gets the PLA
+spool. When the
+reference colour falls between two names, choose the nearer and record the
+substitution as a spec row. Name a colour for every leaf, never for a group:
+colour on a group compound never reaches the render even though it does reach
+the STEP's XCAF label.
 
 `cad` owns the full write-up, with the worked example and the alpha form:
 **Colour** in `cad/references/build123d-modeling.md`. That skill is the one

@@ -1,5 +1,50 @@
 # Shared skill provenance
 
+## PETG Basic stock in the filament palette (2026-09-15)
+
+A Workshop-local addition to the vendored `cad` and `image-to-cad` trees, not an
+upstream resync: `cad/scripts/cadfilament.py` now holds two stocks instead of
+one. Bambu Lab PLA Lite keeps its 13 colours and stays the default; Bambu Lab
+PETG Basic adds 13 more -- `black` 30105, `white` 30106, `gray` 30107,
+`misty blue` 30108, `red` 30201, `orange` 30302, `yellow` 30402,
+`dark beige` 30403, `green` 30502, `pine green` 30503, `reflex blue` 30603,
+`navy blue` 30604, `dark brown` 30800 -- with the sRGB hex from Bambu Lab's own
+published "Filament Hex Code Table - PETG Basic", read 2026-09-15. `filament()`
+and `filament_hex()` gain a keyword-only `material`; `MATERIALS` and
+`DEFAULT_MATERIAL` join `FILAMENTS` in `__all__`, and `FILAMENTS` still names
+the PLA Lite table so existing generators import unchanged.
+
+Seven names sit in both tables and five of them are a different hex in each
+(`black` and `orange` are the same colour in both stocks), so a colour name
+alone no longer identifies a spool. `material` defaults to PLA Lite -- what
+every colour authored before PETG was stocked already meant -- and a PETG-only
+name asked for as PLA raises with the stock that carries it instead of resolving
+to the nearest PLA colour, keeping the module's rule that a near-miss which
+still builds is the failure worth preventing. An unstocked material raises the
+same way.
+
+Four reference files move with it: `cad/references/build123d-modeling.md`
+(**Colour** carries both tables and the stock rule),
+`cad/references/parameters.md`, `cad/references/organic-lofts.md` (a region
+rounds to its own part's stock) and
+`image-to-cad/references/build123d-operations.md` (a build spec names a stock
+per part, not only a colour). The product-run Make reference is untouched here:
+it still authors a leaf colour as sRGB channels on `Color(r, g, b)` rather than
+through the palette, so it has no stock keyword to gain until that guidance is
+reconciled with the `cad` skill's.
+
+No gate reads the palette; it is a table a generator imports. Geometry, the
+sealed STEP's linear RGB, `workshop.make.cad.step_color` and the print gates are
+untouched, and a PETG part's print-in-place joints still take their looser gap
+from `cadfits.print_in_place_gap(..., material="PETG")`, which already knew the
+filament. The palette self-check passes 33/33 here, round-tripping all 26
+colours to their published hex, and `tests/make/test_filament_palette.py` holds
+the same contract plus the PETG codes. **Materialized instruction bytes
+changed**: the `cad` and `image-to-cad` fingerprints in `LOCK.json` are new, so
+a frozen run keeps its materialized skills and a parked one picks PETG up
+through `workshop resume --refresh-tools`. Nothing here establishes that a PETG
+part was printed.
+
 ## `cad`, `design-reference`, `electromechanical-integration`, `image-to-cad`, and `step-parts`
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at

@@ -18,10 +18,12 @@ Thompson Labs LLC. The complete vendored `cadgen` 0.4.19 source inside the CAD
 skill, and the pinned `cadgen==0.4.19` distribution dependency, carry the same
 included MIT notice.
 
-The `cad` skill's `scripts/cadfilament.py` bundles a factual table of 13 Bambu
-Lab PLA Lite filament names and the sRGB hex values published for them at
-`3dfilamentprofiles.com`, read 2026-09-10. No other content from that site is
-included, and the names are used to identify the stock a part is printed in.
+The `cad` skill's `scripts/cadfilament.py` bundles factual tables of Bambu Lab
+filament names and the sRGB hex values published for them: 13 PLA Lite colours
+published at `3dfilamentprofiles.com`, read 2026-09-10, and 13 PETG Basic
+colours published by Bambu Lab itself in its "Filament Hex Code Table - PETG
+Basic", read 2026-09-15. No other content from either source is included, and
+the names are used to identify the stock a part is printed in.
 
 The pinned upstream `design-reference`, `electromechanical-integration`, and
 `image-to-cad` trees do not contain standalone license files. Their inclusion does not imply that the MIT license

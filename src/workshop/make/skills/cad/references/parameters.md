@@ -64,16 +64,21 @@ If a parameter changes a source-level CAD generator, regenerate STEP and validat
 
 ```python
 from cadfilament import filament
-body.color = filament("sunflower yellow")   # a spool, not a hex
+body.color = filament("sunflower yellow")                    # a spool, not a hex
+shell.color = filament("misty blue", material="PETG Basic")  # the other stock
 ```
 
-`scripts/cadfilament.py` holds the Bambu Lab PLA Lite palette — the 13 names
-this repository prints — and converts each to the linear channels the renderer
-wants. It imports with no setup wherever `cadfits` does, and an unknown name
-raises with the whole list instead of resolving to something close. A colour
-that is not printed filament (a purchased part, a reference surface) stays on
+`scripts/cadfilament.py` holds the two palettes this repository prints — Bambu
+Lab PLA Lite (13 names, the `material` default) and Bambu Lab PETG Basic (13
+names, for a part that flexes, takes an impact, or sits somewhere warm) — and
+converts each to the linear channels the renderer wants. It imports with no
+setup wherever `cadfits` does, and an unknown name raises with the whole list
+instead of resolving to something close. Seven names are in both stocks, five
+of them a different hex in each, so `material` is what says which spool. A
+colour that is not
+printed filament (a purchased part, a reference surface) stays on
 `cadgen.srgb()`. Run `python "$CAD_SKILL_ROOT/scripts/cadfilament.py"` for its
-self-check. The full rules, and the table, are **Colour** in
+self-check. The full rules, and both tables, are **Colour** in
 `references/build123d-modeling.md`.
 
 ## Derive The Second Half Of A Mate — `cadfits`
