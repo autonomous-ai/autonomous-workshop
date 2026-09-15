@@ -52,6 +52,10 @@ _UUID = re.compile(
 GROK_SUBPROCESS_ENVIRONMENT_ALLOWLIST = (
     "PATH",
     "HOME",
+    # macOS credential resolution needs the account name.  Without it a signed
+    # in CLI can still report itself as logged out.
+    "USER",
+    "LOGNAME",
     "XDG_CONFIG_HOME",
     "XDG_CACHE_HOME",
     "LANG",

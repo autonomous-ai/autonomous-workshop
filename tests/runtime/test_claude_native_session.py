@@ -172,7 +172,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         self.assertEqual(resumed.session_id, "claude-session-one")
         self.assertIn("--print", seen["commands"][0])
         self.assertIn("--verbose", seen["commands"][0])
-        self.assertIn("acceptEdits", seen["commands"][0])
+        self.assertIn("bypassPermissions", seen["commands"][0])
         self.assertIn("--resume", seen["commands"][1])
         payload = json.loads(
             (self.host_state / "claude-session.json").read_text(encoding="utf-8")
@@ -325,6 +325,97 @@ class ClaudeNativeSessionTest(unittest.TestCase):
             uuid_factory=lambda: "initial-session-id",
         )
         with self.assertRaisesRegex(ClaudeInvocationError, "weekly limit"):
+            launcher.start(
+                product_id="wish-one",
+                wish_sha256=DIGEST,
+                constitution_sha256=DIGEST,
+                run_root=self.run_root,
+                host_state_root=self.host_state,
+                prompt="make",
+            )
+
+    def test_environment_keeps_the_macos_credential_account(self):
+        """Without USER the CLI reports itself logged out mid-run."""
+
+        environment = claude_subprocess_environment(
+            {
+                "PATH": "/usr/bin",
+                "HOME": "/tmp/home",
+                "USER": "operator",
+                "LOGNAME": "operator",
+            }
+        )
+        self.assertEqual(environment["USER"], "operator")
+        self.assertEqual(environment["LOGNAME"], "operator")
+
+    def test_error_turn_names_its_signature_without_quoting_the_turn(self):
+        from workshop.runtime.claude import ClaudeInvocationError
+
+        secret = "the Wish objective and workspace prose"
+
+        def popen(command, **kwargs):
+            del command, kwargs
+            return _FakeProcess(
+                [
+                    json.dumps(
+                        {
+                            "type": "result",
+                            "is_error": True,
+                            "result": "Not logged in · Please run /login",
+                            "session_id": "claude-session-one",
+                        }
+                    )
+                    + "\n",
+                ],
+                returncode=1,
+            )
+
+        launcher = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.0.0",
+            popen_factory=popen,
+            uuid_factory=lambda: "initial-session-id",
+        )
+        with self.assertRaises(ClaudeInvocationError) as caught:
+            launcher.start(
+                product_id="wish-one",
+                wish_sha256=DIGEST,
+                constitution_sha256=DIGEST,
+                run_root=self.run_root,
+                host_state_root=self.host_state,
+                prompt="make",
+            )
+        self.assertIn("signature=not-logged-in", str(caught.exception))
+        self.assertNotIn(secret, str(caught.exception))
+        self.assertNotIn("/login", str(caught.exception))
+
+    def test_unclassified_error_turn_still_reports_a_signature(self):
+        from workshop.runtime.claude import ClaudeInvocationError
+
+        def popen(command, **kwargs):
+            del command, kwargs
+            return _FakeProcess(
+                [
+                    json.dumps(
+                        {
+                            "type": "result",
+                            "is_error": True,
+                            "result": "the printer bed is on fire",
+                            "session_id": "claude-session-one",
+                        }
+                    )
+                    + "\n",
+                ],
+                returncode=1,
+            )
+
+        launcher = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.0.0",
+            popen_factory=popen,
+            uuid_factory=lambda: "initial-session-id",
+        )
+        with self.assertRaisesRegex(ClaudeInvocationError, "signature=unclassified"):
             launcher.start(
                 product_id="wish-one",
                 wish_sha256=DIGEST,

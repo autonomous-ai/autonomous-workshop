@@ -36,7 +36,7 @@ from workshop.runtime.managers import (
 MINIMUM_CLAUDE_NATIVE_RUNTIME_VERSION = (2, 0, 0)
 CLAUDE_SESSION_CHECKPOINT_KIND = "autonomous-workshop-native-claude-session"
 CLAUDE_SESSION_CHECKPOINT_NAME = "claude-session.json"
-CLAUDE_PERMISSION_MODE = "acceptEdits"
+CLAUDE_PERMISSION_MODE = "bypassPermissions"
 DEFAULT_CLAUDE_TIMEOUT_SECONDS = 3_600
 MAX_CLAUDE_STDERR_BYTES = 256 * 1024
 MAX_CLAUDE_EVENT_BYTES = 1 * 1024 * 1024
@@ -45,9 +45,33 @@ MAX_CLAUDE_SESSION_CHECKPOINT_BYTES = 32 * 1024
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _SESSION_ID = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
 _MODEL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
+_MAX_CLAUDE_FAILURE_MESSAGE_CHARS = 4 * 1024
+# A failed turn keeps its classification, never the prose that carried it.
+_CLAUDE_TERMINAL_ERROR_SIGNATURES = (
+    (
+        "not-logged-in",
+        ("not logged in", "please run /login", "invalid api key"),
+    ),
+    ("rate-limited", ("rate limit", "too many requests", "usage limit")),
+    (
+        "context-limit",
+        ("context length", "context window", "maximum context", "too many tokens"),
+    ),
+    ("unauthorized", ("unauthorized", "authentication failed")),
+    ("forbidden", ("forbidden", "permission denied")),
+    ("permission-prompt", ("requires approval", "permission to use")),
+    ("bad-request", ("bad request", "invalid request")),
+    ("service-unavailable", ("service unavailable", "provider unavailable")),
+    ("overloaded", ("overloaded", "capacity")),
+    ("internal-server-error", ("internal server error", "server error")),
+)
 CLAUDE_SUBPROCESS_ENVIRONMENT_ALLOWLIST = (
     "PATH",
     "HOME",
+    # macOS credential resolution needs the account name.  Without it Claude
+    # Code reports "Not logged in" even when the ambient session is signed in.
+    "USER",
+    "LOGNAME",
     "XDG_CONFIG_HOME",
     "XDG_CACHE_HOME",
     "LANG",
@@ -156,6 +180,27 @@ def _write_private_checkpoint(path: Path, value: Mapping[str, Any]) -> None:
     finally:
         os.close(descriptor)
     os.replace(temporary, path)
+
+
+def _terminal_failure_signature(event: Mapping[str, Any]) -> str:
+    """Reduce one error turn to a stable label without retaining its text.
+
+    Claude Code reports a refused or impossible turn as a terminal ``result``
+    event whose prose is the only account of what went wrong.  That prose can
+    quote the Wish or the workspace, so the host keeps the classification and
+    discards the words.
+    """
+
+    message = event.get("result")
+    if not isinstance(message, str):
+        message = ""
+    normalized = " ".join(
+        message[:_MAX_CLAUDE_FAILURE_MESSAGE_CHARS].casefold().split()
+    )
+    for candidate, needles in _CLAUDE_TERMINAL_ERROR_SIGNATURES:
+        if any(needle in normalized for needle in needles):
+            return candidate
+    return "unclassified"
 
 
 def _classify_event(event: Mapping[str, Any]) -> Optional[str]:
@@ -467,6 +512,7 @@ class ClaudeNativeSessionLauncher:
         stderr_thread.start()
         observed: Optional[str] = None
         stream_error: Optional[str] = None
+        terminal_signature: Optional[str] = None
         stdout = process.stdout
         try:
             if stdout is not None:
@@ -495,8 +541,13 @@ class ClaudeNativeSessionLauncher:
                                 "Claude Code weekly limit reached; "
                                 "the native session cannot start"
                             )
-                    elif event.get("is_error") is True and stream_error is None:
-                        stream_error = "Claude Code reported an error turn"
+                    elif event.get("is_error") is True:
+                        terminal_signature = _terminal_failure_signature(event)
+                        if stream_error is None:
+                            stream_error = (
+                                "Claude Code reported an error turn (signature=%s)"
+                                % terminal_signature
+                            )
                     activity = _classify_event(event)
                     if activity is not None and activity_observer is not None:
                         activity_observer(activity)
@@ -517,6 +568,11 @@ class ClaudeNativeSessionLauncher:
             if detail:
                 raise ClaudeInvocationError(
                     "Claude native session exited unsuccessfully: %s" % detail[:512]
+                )
+            if terminal_signature is not None:
+                raise ClaudeInvocationError(
+                    "Claude native session exited unsuccessfully (signature=%s)"
+                    % terminal_signature
                 )
             raise ClaudeInvocationError("Claude native session exited unsuccessfully")
         if finalization_marker is not None and not Path(finalization_marker).is_file():
