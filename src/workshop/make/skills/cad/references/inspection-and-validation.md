@@ -51,6 +51,13 @@ Batch/worker consume stdin and intentionally bypass the daemon even when
 each response's `ok` and `exitCode` rather than relying only on the outer
 process exit code.
 
+Batch/worker announce each request's id and command on stderr before starting,
+then its exit code and elapsed seconds when it returns. `verify_project` relays
+this stderr while the batch runs. Its last unmatched `start` line identifies
+the active request; a quiet log does not establish a hang or a passing check.
+Set `WORKSHOP_PROGRESS=0` to suppress these lines. Progress is per request,
+not per occurrence or collision pair inside a request, and adds no timeout.
+
 Accepted target forms:
 
 ```text

@@ -809,3 +809,37 @@ explicitly unverified. The underlying motion checker is unchanged.
 
 Operator resume also defaults to false. Make-round's final verification uses
 the current host-selected motion option instead of a previous round's option.
+
+## Geometry inspection duplicate work and progress (2026-09-15)
+
+A prolonged geometry-inspection delay was reported, but the affected model,
+frozen tool tree and live process were unavailable. Source inspection found
+two independently reproducible defects in the current tools:
+
+- `validity._is_self_intersecting` constructed `BRepAlgoAPI_Check(shape, True,
+  True)` and then called `Perform()` again. The shape-taking constructor
+  already performs the complete check, as confirmed by
+  [OpenCascade 7.9.3 source](https://github.com/Open-Cascade-SAS/OCCT/blob/V7_9_3/src/BRepAlgoAPI/BRepAlgoAPI_Check.cxx).
+  The redundant second call is removed; the same flags and result decoding
+  remain. Topology, closure, signed-volume and self-intersection findings retain
+  their existing semantics.
+- `verify_project` captured inspection stderr until the entire batch exited.
+  It now inherits stderr, matching the other verifier commands. Each batch
+  request announces its id/command before work, then exit code and duration.
+  `WORKSHOP_PROGRESS=0` suppresses these lines; JSONL and report verdicts retain
+  their existing contract. This identifies the active request, not progress
+  inside a single kernel call. No deadline or skipped gate is introduced.
+
+Regression coverage includes live parent/child progress before completion,
+quiet/loud JSONL equality, malformed/missing/failed batch results, kernel
+exceptions, and real sound, overlapping, inverted and open geometry.
+Isolated paired measurements on two archived parts (Cratercade access frame
+and Tidal Crown white knight) confirm matching self-intersection verdicts with
+roughly half the time in this one subcheck across three paired trials per part.
+An exploratory timing set ran alongside regression tests; both parts were then
+measured again after those tests completed, retaining all attempted trials in
+private local evidence. These are subcheck measurements, not full-product runs
+or evidence that the reported delay is resolved. Repeated occurrence validation,
+pairwise interference cost and the affected machine remain unverified causes.
+Existing materialized runs retain their frozen tools until an authorized host
+tool refresh; this source patch does not modify or resume any live run.

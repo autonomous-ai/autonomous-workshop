@@ -4,8 +4,10 @@ import argparse
 import contextlib
 import io
 import json
+import os
 import shlex
 import sys
+import time
 from pathlib import Path
 from typing import Sequence
 
@@ -450,11 +452,21 @@ def run_worker(args: argparse.Namespace) -> int:
 
 def _worker_response(line: str) -> dict[str, object]:
     request_id: object = None
+    started: float | None = None
+    progress = os.environ.get("WORKSHOP_PROGRESS", "").strip().lower() not in (
+        "0", "off", "no", "false"
+    )
     try:
         request = json.loads(line)
         argv = _worker_request_argv(request)
         if isinstance(request, dict):
             request_id = request.get("id")
+        started = time.monotonic()
+        if progress:
+            print(
+                f"[inspect] start {json.dumps(request_id)}: {shlex.join(argv)}",
+                file=sys.stderr, flush=True,
+            )
         exit_code, result = inspect_command_result(argv)
     except Exception as exc:
         exit_code = 2
@@ -462,6 +474,12 @@ def _worker_response(line: str) -> dict[str, object]:
             "ok": False,
             "errors": [_exception_error_payload(exc)],
         }
+    if progress and started is not None:
+        print(
+            f"[inspect] done {json.dumps(request_id)}: rc={exit_code} "
+            f"in {time.monotonic() - started:.2f}s",
+            file=sys.stderr, flush=True,
+        )
     response: dict[str, object] = {
         "ok": exit_code == 0,
         "exitCode": exit_code,
