@@ -71,8 +71,10 @@ from workshop.make.assembly_package import (
     ASSEMBLY_PACKAGE_PATH,
     is_assembly_package,
     missing_production_parts,
+    occurrences_missing_colour_names,
     read_assembly_package,
 )
+from workshop.make.cad.filament_names import FILAMENT_COLOUR_NAMES
 from workshop.make.cad.step_color import read_step_part_colors
 from workshop.release.renders import (
     host_renders_stage_input,
@@ -403,6 +405,17 @@ _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
         "from the sRGB hex you want the shop to show, regenerate the STEP and "
         "the assembly-package, then rerun the Make finalizer."
     ),
+    "make-part-colour-names-invalid": (
+        "The sealed assembled.step.json lists two or more occurrences, so every "
+        "occurrence name must end in the filament colour that part prints in: "
+        "<part>_<colour>, as in arm_black, leg_dark_brown, canopy_misty_blue. "
+        "The colour has to be one the shop stocks (%s); the part half before it "
+        "must not be empty. Rename the assembly labels in the CAD source so the "
+        "regenerated assembled.step and assembly-package carry the new names, "
+        "rename each parts/<occurrence-name>.step to match, then rerun the Make "
+        "finalizer."
+    )
+    % ", ".join(FILAMENT_COLOUR_NAMES),
 }
 _PLAYTEST_PROPOSAL_REJECTION_FEEDBACK = {
     "playtest-artifact-invalid": (
@@ -6945,23 +6958,33 @@ def _evaluate_make_invent_revision_stage(
 
 _MAKE_PRODUCTION_PARTS_RULE = (
     "When assembled.step.json (the cadgen assembly-package) lists two or more "
-    "occurrences, write one production solid per occurrence as "
+    "occurrences, name every occurrence <part>_<colour> for the filament it "
+    "prints in (arm_black, leg_dark_brown, canopy_misty_blue), using a colour "
+    "the shop stocks: %s. Write one production solid per occurrence as "
     "parts/<occurrence-name>.step inside the product root, one solid each, and "
     "seal a surface colour on every leaf part (part.color = Color(r, g, b) with "
     "channels 0..1 taken directly from the sRGB hex the shop should show). The "
-    "host rejects a multi-part Make without both; the shop renders and colours "
-    "each part from these files and colours. STEP is the only geometry format "
+    "host rejects a multi-part Make without all three; the shop renders and "
+    "colours each part from these files and colours, and whoever loads the "
+    "printer reads the spool off the filename. STEP is the only geometry format "
     "the toolchain writes; a part is print-ready only behind a passing "
     "verify_project --print-gates run at the nozzle the print will use."
-)
+) % ", ".join(FILAMENT_COLOUR_NAMES)
 
 
 def _validate_made_production_parts(made: NativeMade, run_root: Path) -> int:
-    """Require one sealed production STEP per occurrence of a multi-part package.
+    """Require a named, coloured, sealed production STEP per multi-part occurrence.
+
+    Three rules bind a package of two or more occurrences: every occurrence is
+    named ``<part>_<colour>`` for a filament the shop stocks, has its solid at
+    ``parts/<name>.step``, and carries a sealed surface colour.  The name is
+    checked first because one rename moves the occurrence, its ``parts/`` file
+    and its colour together, so hearing about a missing file first would send
+    the agent to write a file it has to rename anyway.
 
     The cadgen assembly-package is agent-authored metadata; a document that is
     not one, or is malformed, is left to the Factory adapter's visible
-    single-mesh fallback.  Only a valid multi-part package binds the rule.
+    single-mesh fallback.  Only a valid multi-part package binds the rules.
     """
 
     entries = {entry.path for entry in made.product_manifest.entries}
@@ -6979,6 +7002,16 @@ def _validate_made_production_parts(made: NativeMade, run_root: Path) -> int:
         package = read_assembly_package(content)
     except ContractError:
         return 0
+    unnamed = occurrences_missing_colour_names(package)
+    if unnamed:
+        raise _MakeProposalRejected(
+            failure_code="make-part-colour-names-invalid",
+            feedback="%s Not named for a stocked colour: %s."
+            % (
+                _MAKE_PROPOSAL_REJECTION_FEEDBACK["make-part-colour-names-invalid"],
+                ", ".join(unnamed),
+            ),
+        )
     missing = missing_production_parts(package, entries)
     if missing:
         raise _MakeProposalRejected(

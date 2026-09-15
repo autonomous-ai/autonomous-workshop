@@ -93,21 +93,25 @@ class MakeProductionPartsRuleTest(unittest.TestCase):
 
     def test_a_multipart_package_with_every_part_counts_its_occurrences(self):
         made = self._made(
-            json.dumps(_package(["owl", "nest"])).encode(), parts=("owl", "nest")
+            json.dumps(_package(["owl_black", "nest_dark_brown"])).encode(),
+            parts=("owl_black", "nest_dark_brown"),
         )
 
         self.assertEqual(_validate_made_production_parts(made, self.run_root), 2)
 
     def test_a_missing_part_rejects_the_proposal_naming_the_path(self):
-        made = self._made(json.dumps(_package(["owl", "nest"])).encode(), parts=("owl",))
+        made = self._made(
+            json.dumps(_package(["owl_black", "nest_dark_brown"])).encode(),
+            parts=("owl_black",),
+        )
 
         with self.assertRaises(_MakeProposalRejected) as raised:
             _validate_made_production_parts(made, self.run_root)
 
         rejection = raised.exception
         self.assertEqual(rejection.failure_code, "make-production-parts-missing")
-        self.assertIn("parts/nest.step", rejection.feedback)
-        self.assertNotIn("parts/owl.step", rejection.feedback)
+        self.assertIn("parts/nest_dark_brown.step", rejection.feedback)
+        self.assertNotIn("parts/owl_black.step", rejection.feedback)
         self.assertTrue(
             rejection.feedback.startswith(
                 _MAKE_PROPOSAL_REJECTION_FEEDBACK["make-production-parts-missing"]
@@ -116,7 +120,8 @@ class MakeProductionPartsRuleTest(unittest.TestCase):
 
     def test_uncoloured_parts_reject_the_proposal_naming_them(self):
         made = self._made(
-            json.dumps(_package(["owl", "nest"], colour=None)).encode(), parts=("owl", "nest")
+            json.dumps(_package(["owl_black", "nest_dark_brown"], colour=None)).encode(),
+            parts=("owl_black", "nest_dark_brown"),
         )
 
         with self.assertRaises(_MakeProposalRejected) as raised:
@@ -124,8 +129,45 @@ class MakeProductionPartsRuleTest(unittest.TestCase):
 
         rejection = raised.exception
         self.assertEqual(rejection.failure_code, "make-part-colours-missing")
-        self.assertIn("owl, nest", rejection.feedback)
+        self.assertIn("owl_black, nest_dark_brown", rejection.feedback)
         self.assertIn("Color(r, g, b)", rejection.feedback)
+
+    def test_a_part_not_named_for_a_stocked_colour_rejects_the_proposal(self):
+        made = self._made(
+            json.dumps(_package(["owl_black", "nest", "perch_teal"])).encode(),
+            parts=("owl_black", "nest", "perch_teal"),
+        )
+
+        with self.assertRaises(_MakeProposalRejected) as raised:
+            _validate_made_production_parts(made, self.run_root)
+
+        rejection = raised.exception
+        self.assertEqual(rejection.failure_code, "make-part-colour-names-invalid")
+        self.assertIn("nest, perch_teal", rejection.feedback)
+        self.assertNotIn("owl_black", rejection.feedback)
+        self.assertIn("sunflower_yellow", rejection.feedback)
+        self.assertTrue(
+            rejection.feedback.startswith(
+                _MAKE_PROPOSAL_REJECTION_FEEDBACK["make-part-colour-names-invalid"]
+            )
+        )
+
+    def test_the_colour_name_is_named_back_before_the_parts_it_names(self):
+        # A rename moves the occurrence, its parts/ file and its colour at once,
+        # so the agent hears about the name before it is told a file is missing.
+        made = self._made(json.dumps(_package(["owl", "nest"], colour=None)).encode())
+
+        with self.assertRaises(_MakeProposalRejected) as raised:
+            _validate_made_production_parts(made, self.run_root)
+
+        self.assertEqual(
+            raised.exception.failure_code, "make-part-colour-names-invalid"
+        )
+
+    def test_a_single_occurrence_need_not_name_a_colour(self):
+        made = self._made(json.dumps(_package(["owl"])).encode())
+
+        self.assertEqual(_validate_made_production_parts(made, self.run_root), 0)
 
     def test_single_occurrence_and_foreign_descriptors_bind_no_rule(self):
         single = self._made(json.dumps(_package(["owl"])).encode())

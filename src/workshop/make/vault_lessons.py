@@ -55,6 +55,7 @@ PROTOCOL_CODES = frozenset(
         "make-product-metadata-invalid",
         "make-production-parts-missing",
         "make-part-colours-missing",
+        "make-part-colour-names-invalid",
         "declared-cad-output-changed",
         "sealed-product-changed",
         "verifier-timeout",
