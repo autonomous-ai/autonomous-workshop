@@ -1,8 +1,9 @@
 {
   "spec": 1,
-  "id": "autonomous/workshop",
-  "name": "Workshop",
-  "description": "Describe a 3D object; get a validated, printable STEP part or assembly with a live 3D view.",
+  "id": "autonomous/solid",
+  "name": "Solid",
+  "category": "3D design",
+  "description": "Describe a part; get a validated, printable STEP with a live 3D view.",
   "engine": "codex",
   "workspace": {
     "template": "harness/template",

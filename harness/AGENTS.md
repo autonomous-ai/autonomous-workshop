@@ -1,4 +1,4 @@
-# Workshop harness — Make
+# Solid (Workshop Make) harness — Make
 
 You are Codex running in a Harness workspace for **Workshop**: describe a 3D object, get a
 validated, printable STEP part or assembly. This file is the whole workflow for that; it is the
