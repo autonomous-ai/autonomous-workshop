@@ -306,6 +306,69 @@ class AgentRunTest(unittest.TestCase):
                 checkpoint.input_sha256s[relative], hashlib.sha256(content).hexdigest()
             )
 
+    def test_complete_installed_inventory_can_materialize_and_reopen(self):
+        import workshop.workflow.native_run as host
+        assets = host.product_run_agent_assets()
+        run = AgentRun.create(
+            self.run_root, host_state_root=self.host_state_root,
+            product_id=self.product_id, wish_bytes=self.wish_bytes,
+            product_run_constitution_source=assets.constitution,
+            skill_root=assets.skill_root,
+            domain_skill_roots=host.product_run_domain_skill_roots(),
+            inventor_source_root=host._product_run_inventor_source_root(assets),
+        )
+        self.assertTrue(run.snapshot().inventor_roster)
+        reopened = AgentRun.open(self.run_root, host_state_root=self.host_state_root)
+        self.assertEqual(reopened.snapshot(), run.snapshot())
+
+    def test_input_file_limit_still_bounds_creation_and_refresh(self):
+        cad = self.root / "cad"
+        cad.mkdir()
+        (cad / "SKILL.md").write_text("CAD tools")
+        run = self.create(domain_skill_roots={"cad": cad})
+        # Reach the actual boundary using many individually tiny files.
+        remaining = agent_run_module.MAX_AGENT_INPUT_FILES - len(run.snapshot().input_sha256s)
+        for index in range(remaining):
+            (cad / ("tool-%03d.txt" % index)).write_text("exact frozen tool")
+        self.run_root = self.root / "full-run"
+        self.host_state_root = self.root / "full-host-state"
+        run = self.create(domain_skill_roots={"cad": cad})
+        (cad / "SKILL.md").write_text("Corrected CAD tools")
+        run.refresh_domain_skill_tools({"cad": cad}, reason="correction at file limit")
+        before = run.snapshot()
+        reopened = AgentRun.open(self.run_root, host_state_root=self.host_state_root)
+        self.assertEqual(reopened.snapshot(), before)
+        (cad / "one-too-many.txt").write_text("over the count budget")
+        with self.assertRaisesRegex(ContractError, "input file limit"):
+            run.refresh_domain_skill_tools({"cad": cad}, reason="oversized inventory")
+        self.assertEqual(run.snapshot(), before)
+        self.assertFalse((run.run_root / ".agents/skills/cad/one-too-many.txt").exists())
+        self.run_root = self.root / "oversized-run"
+        self.host_state_root = self.root / "oversized-host-state"
+        with self.assertRaisesRegex(ArtifactError, "too many input files"):
+            self.create(domain_skill_roots={"cad": cad})
+        self.assertFalse(self.run_root.exists())
+
+    def test_oversized_refresh_record_is_refused_before_changing_inputs(self):
+        cad = self.root / "cad"
+        cad.mkdir()
+        (cad / "SKILL.md").write_text("Original CAD tools")
+        run = self.create(domain_skill_roots={"cad": cad})
+        before = run.snapshot()
+        checkpoint_bytes = (run.host_state_root / "agent-run.json").read_bytes()
+        # The individual files and resulting manifest fit their budgets; the
+        # detailed change record does not. This formerly failed after writes.
+        for index in range(agent_run_module.MAX_AGENT_INPUT_FILES - len(before.input_sha256s)):
+            (cad / ("tool-%03d.txt" % index)).write_text("small tool")
+        (cad / "SKILL.md").write_text("New CAD tools")
+        with self.assertRaisesRegex(ContractError, "correction record is too large"):
+            run.refresh_domain_skill_tools({"cad": cad}, reason="oversized correction")
+        self.assertEqual(run.snapshot(), before)
+        self.assertEqual((run.host_state_root / "agent-run.json").read_bytes(), checkpoint_bytes)
+        self.assertEqual((run.run_root / ".agents/skills/cad/SKILL.md").read_text(), "Original CAD tools")
+        self.assertFalse((run.host_state_root / "host-corrections.jsonl").exists())
+        self.assertFalse((run.run_root / ".agents/skills/cad/tool-000.txt").exists())
+
     def test_create_materializes_wish_references_read_only_with_their_own_budget(self):
         big = b"\x89PNG" + b"\0" * (5 * 1024 * 1024)
         small = b"\xff\xd8\xff" + b"\0" * 64

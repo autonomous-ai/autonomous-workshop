@@ -809,3 +809,92 @@ explicitly unverified. The underlying motion checker is unchanged.
 
 Operator resume also defaults to false. Make-round's final verification uses
 the current host-selected motion option instead of a previous round's option.
+
+## Geometry inspection duplicate work and progress (2026-09-15)
+
+A prolonged geometry-inspection delay was reported, but the affected model,
+frozen tool tree and live process were unavailable. Source inspection found
+two independently reproducible defects in the current tools:
+
+- `validity._is_self_intersecting` constructed `BRepAlgoAPI_Check(shape, True,
+  True)` and then called `Perform()` again. The shape-taking constructor
+  already performs the complete check, as confirmed by
+  [OpenCascade 7.9.3 source](https://github.com/Open-Cascade-SAS/OCCT/blob/V7_9_3/src/BRepAlgoAPI/BRepAlgoAPI_Check.cxx).
+  The redundant second call is removed; the same flags and result decoding
+  remain. Topology, closure, signed-volume and self-intersection findings retain
+  their existing semantics.
+- `verify_project` captured inspection stderr until the entire batch exited.
+  It now inherits stderr, matching the other verifier commands. Each batch
+  request announces its id/command before work, then exit code and duration.
+  `WORKSHOP_PROGRESS=0` suppresses these lines; JSONL and report verdicts retain
+  their existing contract. This identifies the active request, not progress
+  inside a single kernel call. No deadline or skipped gate is introduced.
+
+Regression coverage includes live parent/child progress before completion,
+quiet/loud JSONL equality, malformed/missing/failed batch results, kernel
+exceptions, and real sound, overlapping, inverted and open geometry.
+Isolated paired measurements on two archived parts (Cratercade access frame
+and Tidal Crown white knight) confirm matching self-intersection verdicts with
+roughly half the time in this one subcheck across three paired trials per part.
+An exploratory timing set ran alongside regression tests; both parts were then
+measured again after those tests completed, retaining all attempted trials in
+private local evidence. These are subcheck measurements, not full-product runs
+or evidence that the reported delay is resolved. Repeated occurrence validation,
+pairwise interference cost and the affected machine remain unverified causes.
+Existing materialized runs retain their frozen tools until a host tool refresh;
+this source patch does not modify or resume any live run.
+
+### Existing-run adoption
+
+An operator's plain `resume` now adopts this correction once for an unfinished
+run carrying CAD tools, including runs that already carry motion options.
+The host recognizes a versioned marker in the hash-bound inspection reference,
+refreshes the complete carried CAD skill from the installed source, and rebinds
+the original native session before recording completion. Later resumes retain
+that materialized tree. The native agent cannot modify its own tools. Other
+domain skills, lifecycle instructions, review allowances, budget usage and
+accepted product artifacts remain intact; ADR 0066's existing motion-option
+migration still applies independently.
+
+Regression tests use real immutable-input materialization and the actual saved
+session rebind with deterministic native launchers. They cover plain CLI
+resume, saved product/review/budget preservation, interrupted rebind and
+completion recovery, changed motion choice on retry, idempotency, missing
+installed correction, input tampering, pending Make refinalization and
+read-only/terminal behavior. These are host contract tests, not a new native
+Wish or the affected operator's session. See ADR 0067 for the migration boundary.
+
+### Complete archived assembly replay
+
+The full exported Cratercade assembly was replayed with the real `inspect batch`
+CLI against baseline `78eb7203` and the corrected inspection code at `bfd07e96`.
+The unchanged 35,213,424-byte STEP has SHA-256
+`c7f89595204dcc2e1f8cbc52d61612ca189b456cebd9eeac3fbf7f42f017aa78`,
+matching its public archive manifest. It loads as 542 occurrences and 181
+geometry prototypes. The archived render was also checked against its manifest.
+
+Both corrected trials and the completed baseline returned identical JSON
+results: 542 occurrences with zero validity failures; 146,611 potential pairs,
+1,838 exact intersection tests, 144,773 bounding-box rejections, zero truncated
+pairs and zero clashes at the unchanged 1 mm³ tolerance. Self-intersection was
+enabled, with no pair limit.
+
+| Attempt | Baseline | Corrected | Conditions |
+|---|---:|---:|---|
+| 1 | Stopped at 600.03 s; no verdict | Passed in 408.78 s | Overlapped regression tests; corrected trial also overlapped the diagnostic below |
+| 2 | Passed in 742.44 s | Passed in 401.34 s | Sequential runs, no regression tests or other geometry jobs alongside them |
+
+The clean pair was about 46% faster on this assembly. The experiment's second
+pair allowed 1,200 seconds per batch; no production timeout was introduced.
+Environment: macOS arm64, Python 3.11.13, build123d 0.11.1 and cadquery-ocp
+7.9.3.1.1. A separate instrumented diagnostic was deliberately stopped at 90
+seconds after 223 occurrences completed; 43 nut checks consumed 72.73 of the
+84.32 seconds spent inside those checks. It is a partial profile, not a gate
+pass or a clean timing comparison. All attempted runs and raw outputs were
+retained in private local evidence.
+
+This establishes gate parity and reduced inspection time on an archived complex
+model. It is one completed clean comparison plus an earlier corrected replay,
+not broad reliability evidence. No new native Wish was launched, no geometry
+was changed, and print/motion gates were not rerun. The affected Wish, frozen
+tools and live process remain unavailable; the reported delay remains open.

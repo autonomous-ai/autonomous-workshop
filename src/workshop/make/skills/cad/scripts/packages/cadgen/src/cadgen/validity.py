@@ -107,8 +107,9 @@ def _is_self_intersecting(wrapped: Any) -> bool | None:
         from OCP.BOPAlgo import BOPAlgo_CheckStatus
         from OCP.BRepAlgoAPI import BRepAlgoAPI_Check
 
+        # The shape-taking constructor already calls Perform(). Calling it
+        # again repeats the complete Boolean self-intersection analysis.
         checker = BRepAlgoAPI_Check(wrapped, True, True)
-        checker.Perform()
         if checker.IsValid():
             return False
         return any(
