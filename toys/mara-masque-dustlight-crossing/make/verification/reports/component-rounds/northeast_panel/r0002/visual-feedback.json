@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front shows a continuous flat-backed slab and top confirms rectangular footprint; iso resolves the grid, wide separated terrain strokes and clear landing pads. Tiny setup glyphs and narrow double ridges are removed. Closed den frame and border ownership mark appear on eastern panels. No displaced or floating geometry; orthographic top lighting alone hides recesses, resolved in iso.",
+  "packet_sha256": "6914f2069cbe89300d725a78824bd45bd36dddc8e76280fb3c421426430c449b",
+  "status": "pass"
+}

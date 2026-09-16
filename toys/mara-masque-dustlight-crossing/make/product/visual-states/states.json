@@ -1,0 +1,69 @@
+{
+  "kind": "static-rule-example-geometry",
+  "states": [
+    {
+      "path": "visual-states/example_1.step",
+      "sha256": "fc28ed786c10debb904dc7d10cc9797b72a565940e6cc061d4ca9edf44410d58",
+      "occurrences": 20,
+      "view": [
+        -65,
+        55
+      ],
+      "changed_positions": {
+        "0:6": [
+          0,
+          3
+        ],
+        "1:1": [
+          1,
+          3
+        ],
+        "0:7": [
+          6,
+          3
+        ],
+        "0:1": [
+          5,
+          3
+        ],
+        "1:8": [
+          3,
+          4
+        ]
+      }
+    },
+    {
+      "path": "visual-states/example_2.step",
+      "sha256": "46ab2ea954a3760b257b77270ba32fa1d376b276afeca4208dcfc1e46e7fbe52",
+      "occurrences": 19,
+      "view": [
+        -65,
+        55
+      ],
+      "changed_positions": {
+        "0:6": [
+          3,
+          8
+        ],
+        "1:1": [
+          2,
+          3
+        ],
+        "0:7": [
+          3,
+          3
+        ],
+        "0:1": [
+          3,
+          5
+        ],
+        "1:8": null
+      }
+    }
+  ],
+  "motion": "unverified",
+  "meaning": [
+    "Left: opposing Dust knot blocks Comet at a4, friendly Dust knot blocks Pulsar at g4.",
+    "Right: example den victory and removed Giant; this is an illustrative arrangement, not the next ply of the left state."
+  ]
+}

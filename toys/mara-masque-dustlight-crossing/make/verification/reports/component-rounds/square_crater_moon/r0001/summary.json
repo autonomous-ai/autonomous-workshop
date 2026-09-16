@@ -1,0 +1,62 @@
+{
+ "build": {
+  "square_crater_moon": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "square_crater_moon"
+ ],
+ "check_motion": false,
+ "checked": [
+  "square_crater_moon"
+ ],
+ "checks_ok": true,
+ "entry": "part_square_crater_moon.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_crater_moon/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "square_crater_moon"
+ ],
+ "print": {
+  "square_crater_moon": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_crater_moon/r0001/overhang-square_crater_moon.log": "f94bbaa3f17564ebddaec3c97d11cb80987e4147f8442a3560795045343e9bb9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_crater_moon/r0001/thickness-square_crater_moon.log": "b852b6f3f96ca4775671a8e9c02e5e8b52abc4d1e4db4ac60018896be5fe58f5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:square_crater_moon",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows the moon disk, broad pitched crater and narrow terminator; top confirms flattened oval body on a clipped-square foot; iso shows supported transitions and rank3 clear on both base aprons.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_crater_moon/r0001/visual-packet.json",
+  "packet_sha256": "f2745a497c62285afdf3d5440f58437fbcc9f352057e7c88220489fb93c9d11f",
+  "status": "pass"
+ }
+}

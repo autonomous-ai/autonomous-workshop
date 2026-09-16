@@ -1,0 +1,62 @@
+{
+ "build": {
+  "circle_pulsar": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "circle_pulsar"
+ ],
+ "check_motion": false,
+ "checked": [
+  "circle_pulsar"
+ ],
+ "checks_ok": true,
+ "entry": "part_circle_pulsar.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_pulsar/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "circle_pulsar"
+ ],
+ "print": {
+  "circle_pulsar": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_pulsar/r0001/overhang-circle_pulsar.log": "5d03ecb934a6639a6287f0bc2cb8546ef28addec56a21c636a7c1865871152fb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_pulsar/r0001/thickness-circle_pulsar.log": "4c3f4115010276b3d460d09fd5267dd6d01347e52741da55555cedc3b00a3108"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.73,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:circle_pulsar",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a central broad equatorial collar with opposed tapering beam profiles and a stout lower attachment; top shows an octagonal core; iso shows a clear rank7 and blunt beam tip inside the circular base.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_pulsar/r0001/visual-packet.json",
+  "packet_sha256": "af82fd45e83501bb605dea49ac8b73191677edcea6a287044d4cb6c248e94c89",
+  "status": "pass"
+ }
+}

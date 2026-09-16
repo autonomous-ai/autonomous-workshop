@@ -1,0 +1,62 @@
+{
+ "build": {
+  "circle_dust_knot": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "circle_dust_knot"
+ ],
+ "check_motion": false,
+ "checked": [
+  "circle_dust_knot"
+ ],
+ "checks_ok": true,
+ "entry": "part_circle_dust_knot.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_dust_knot/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "circle_dust_knot"
+ ],
+ "print": {
+  "circle_dust_knot": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_dust_knot/r0003/overhang-circle_dust_knot.log": "ee30d922ba19a8d57a6179fa57c839d9e11a72d799493f116d6967443a57261f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_dust_knot/r0003/thickness-circle_dust_knot.log": "9474e4355aa82308b5926f142282e17c2851f2d3c1d128e967a3b65aca6d6b3c"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:circle_dust_knot",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows three unequal rounded cloud lobes with continuous broad roots; top confirms the circular base and contained footprint; iso shows rank1 fully inset on an exposed apron and no floating solids.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_dust_knot/r0003/visual-packet.json",
+  "packet_sha256": "1981ec08d8998ba6717e93b9e9907d9e21f8a9fd479815c1e5049220824cdca3",
+  "status": "pass"
+ }
+}

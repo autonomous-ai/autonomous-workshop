@@ -1,0 +1,62 @@
+{
+ "build": {
+  "square_dust_knot": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "square_dust_knot"
+ ],
+ "check_motion": false,
+ "checked": [
+  "square_dust_knot"
+ ],
+ "checks_ok": true,
+ "entry": "part_square_dust_knot.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_dust_knot/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "square_dust_knot"
+ ],
+ "print": {
+  "square_dust_knot": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_dust_knot/r0001/overhang-square_dust_knot.log": "bf7c50b2fc798cc34870265c5b7807f9ee182f1fc5dc9c0ad6aa4215671196b1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_dust_knot/r0001/thickness-square_dust_knot.log": "f37d9c9b64e1aa212cb476f6efa6d40c57824287f316cb3694d521af98bef4bf"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:square_dust_knot",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows three unequal rounded lobes on a broad blue foot; top and iso clearly expose clipped-square corners distinct from the circle team; rank1 is inset and visible, all cloud roots continuous.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_dust_knot/r0001/visual-packet.json",
+  "packet_sha256": "f16af06b5fe1b5a13b1fc7d519340c4f003262d4861344c503fc92a38df0e910",
+  "status": "pass"
+ }
+}

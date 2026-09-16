@@ -1,0 +1,19 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_circle_crater_moon.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_crater_moon/r0001/thickness-circle_crater_moon.md
+(4.0s, exit 0)
+--- stdout
+part_circle_crater_moon.step.py: 2.73 cm3 solid, grid 0.133 mm (170x170x170), 90008 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.3% of surface below (181 of 90008 samples); thinnest 0.13 mm at (4.2, -3.5, 15.2) in 6 region(s); no region is a wall, 6 taper(s) at feature edges (0.33% of surface, budget 2%); 269 more within measurement error of the limit
+  PASS  thickness distribution         median 7.53 mm, p95 21.93 mm, max 22.07 mm
+  WARN  hollowable at 1.20 mm wall     1.03 of 2.73 cm3 (38%) in 1 pocket(s)
+  PASS  filament that would save       0.15 cm3, 0.2 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.13 mm at (4.2, -3.5, 15.2)     94 samples, 2.3 mm2, runs 6.7 mm, band 0.34 mm
+        2. [taper] 0.73 mm at (-0.0, -8.4, 3.4)     40 samples, 1.6 mm2, runs 2.8 mm, band 0.56 mm
+        3. [taper] 0.73 mm at (0.0, 7.6, 3.4)     42 samples, 1.6 mm2, runs 2.8 mm, band 0.56 mm
+        4. [taper] 0.47 mm at (-0.4, -4.4, 13.0)      3 samples, 0.1 mm2, runs 0.2 mm, band 0.25 mm
+        5. [taper] 0.60 mm at (-1.5, -10.8, 3.7)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.21 mm
+        6. [taper] 0.27 mm at (-0.5, -4.3, 14.2)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.17 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_crater_moon/r0001/thickness-circle_crater_moon.md
+
+--- stderr

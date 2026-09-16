@@ -1,0 +1,62 @@
+{
+ "build": {
+  "northeast_panel": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "northeast_panel"
+ ],
+ "check_motion": false,
+ "checked": [
+  "northeast_panel"
+ ],
+ "checks_ok": true,
+ "entry": "part_northeast_panel.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/northeast_panel/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "northeast_panel"
+ ],
+ "print": {
+  "northeast_panel": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/northeast_panel/r0002/overhang-northeast_panel.log": "1a79da2499ce1fc01641351a2ec9bf01bfa8707a30ada2dfaae43f98e3d378d8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/northeast_panel/r0002/thickness-northeast_panel.log": "44f047568d001275f3b781b8872cb2020916711613c90aaae9409eba8b97aec1"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:northeast_panel",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a continuous flat-backed slab and top confirms rectangular footprint; iso resolves the grid, wide separated terrain strokes and clear landing pads. Tiny setup glyphs and narrow double ridges are removed. Closed den frame and border ownership mark appear on eastern panels. No displaced or floating geometry; orthographic top lighting alone hides recesses, resolved in iso.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/northeast_panel/r0002/visual-packet.json",
+  "packet_sha256": "6914f2069cbe89300d725a78824bd45bd36dddc8e76280fb3c421426430c449b",
+  "status": "pass"
+ }
+}

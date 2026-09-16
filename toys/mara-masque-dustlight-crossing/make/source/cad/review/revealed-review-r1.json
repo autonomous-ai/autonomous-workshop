@@ -1,0 +1,84 @@
+{
+  "review_kind": "independent_two_phase_still_visual_review",
+  "blind_record": "design/blind-review-r1.md",
+  "blind_record_preserved": true,
+  "form_matches": true,
+  "subjects_match": true,
+  "action_matches": true,
+  "relationship_matches": true,
+  "anti_generic_experience_matches": true,
+  "desirability_supported_as_design_judgment": true,
+  "visual_review_pass": true,
+  "physical_performance_verified": false,
+  "motion_verified": false,
+  "rules_proved_by_images": false,
+  "critical_form_requirements": [
+    {
+      "requirement": "Create a complete, compact tabletop astronomy reskin of Jungle Chess (Dou Shou Qi) for families and casual adults.",
+      "blind_evidence": "A gridded tabletop board with matching opposing sculptural teams; close view resolves eight profiles per team. Astronomy was independently recognized from the ringed globe and cratered globe. Revealed envelope is 222 by 282 mm and inventory is four panels plus sixteen tokens.",
+      "matches": true
+    },
+    {
+      "requirement": "Represent pieces as celestial objects and phenomena with expressive sculptural forms.",
+      "blind_evidence": "Ringed planet, cratered globe, faceted rock, clustered lobes, unequal prongs, flared spire, pointed fluted body, and swelling ribbed bulb were recorded before reveal. Several exact identities were ambiguous; after reveal these silhouettes reasonably support the fictional celestial key. User did not mandate photorealism or recognition of all eight without a key.",
+      "matches": true
+    },
+    {
+      "requirement": "Choose the eight identities and the meaning of capture together; use one coherent astronomy-inspired fictional premise to explain hierarchy, rat-elephant exception, swimming, jumping, jump blocking, traps, and dens.",
+      "blind_evidence": "Image-only astronomy and opposing-team capture reading is consistent with revealed observing-mosaic premise. RULES.md uses image contrast, erasure, dust obscuration, tracing, cancellation, and reference apertures within one projection system. Coherence is assessed from the revealed prose, not proved by the sculptures.",
+      "matches": true
+    },
+    {
+      "requirement": "Each thematic rule explanation should fit in one short sentence; avoid separate unrelated stories for special rules.",
+      "blind_evidence": "No rule text was available in blind phase. Revealed rules provide one-sentence explanations in one table with a shared observatory-image premise; no unrelated special-rule narrative was found.",
+      "matches": true
+    },
+    {
+      "requirement": "Include the complete board, two distinguishable teams, and concise rules explaining the astronomical mapping.",
+      "blind_evidence": "Complete board and two matching teams observed; close view corrects the initial occluded count to sixteen pieces. Revealed rules include setup, ranked original roles, celestial names, terrain, movement, exceptions and endings in a compact document.",
+      "matches": true
+    },
+    {
+      "requirement": "Make ranks and roles readable without a lore glossary.",
+      "blind_evidence": "Numerals 1 through 8 become readable in the unobstructed close view. Eight distinct silhouettes map directly through the concise printed rank/original-role key. Whole-board numerals are faint; exact celestial names are not all independently inferable, but memorizing those names is unnecessary to play.",
+      "matches": true
+    },
+    {
+      "requirement": "Distinguish teams through shape as well as color.",
+      "blind_evidence": "Pale circular plinths versus blue clipped-square plinths were identified before reveal; opposing shape pairs otherwise match.",
+      "matches": true
+    },
+    {
+      "requirement": "Pieces should be stable and easy to grasp.",
+      "blind_evidence": "Broad flat plinths, raised graspable bodies, separated cells, and no visibly unsupported or colliding tokens support the design intent. Revealed bases are 22 mm and heights 18 to 32 mm. This is a favorable geometry judgment only; tipping resistance, finger comfort, and physical handling remain untested.",
+      "matches": true
+    },
+    {
+      "requirement": "Allow unconventional sculpture for special terrain tiles while keeping spaces, movement paths, and piece positions clear.",
+      "blind_evidence": "Flat gridded surface, visible token landing positions and unobstructed paths. Inset terrain strokes and den frames exist but are faint in whole-board images. Unconventional terrain sculpture is permission, not an immutable demand; flat engraved terrain is acceptable.",
+      "matches": true
+    },
+    {
+      "requirement": "Keep Dou Shou Qi as the source game; preserve the documented Leiden baseline setup, ranks, movement, captures, terrain, exceptions, and endings, including mutual rat-elephant capture without optional variants.",
+      "blind_evidence": "Images establish a two-team gridded strategy game but cannot verify exact rules. Revealed RULES.md explicitly names Dou Shou Qi and both directions of Rat-Elephant capture; audit-report.json reports 54,956 finite cases with candid shared-authorship and finite-coverage limitations. No visible contradictory game addition is present. This matches supplied documented intent and audit evidence, not an independent source-engine equivalence proof.",
+      "matches": true
+    }
+  ],
+  "styling_distinguished_from_user_requirements": [
+    "The eight specific identities, calibrated-contrast fiction, white/blue palette, dimensions, faceting and split panels are design choices, not immutable user wording.",
+    "The Wish permits unconventional terrain sculpture but does not require it.",
+    "A glossary-free rules experience does not require every celestial sculpture's exact name to be recognizable without the concise rank and role key."
+  ],
+  "blocking_visual_defects": [],
+  "largest_risk": "Terrain marks and rank numerals have low contrast at whole-board scale; physical readability and use of four unretained board panels may be less comfortable than the render suggests.",
+  "resolution": "The close view resolves rank legibility and shape differentiation, and the printed rules explicitly identify terrain marks and every original role. No visible unmet immutable form constraint remains. Retain physical readability, handling, panel stability and print quality as unverified; do not describe those as passed tests.",
+  "candid_qualifications": [
+    "My initial blind board-view count of seven per team was wrong and was corrected from the close view before reveal; the preserved record documents this.",
+    "Red dwarf, pulsar and red giant shapes initially read as ornamental fluted forms. The astronomy mapping is credible with the key, but less immediately recognizable than ringed planet and moon.",
+    "The signature panels are independent illustrative positions, not consecutive plies. My blind advance/capture inference was an interpretation, not trajectory or legal-move verification.",
+    "Build, wall, overhang and no-interference results were provided by the root; I did not independently execute those tools.",
+    "The finite audit supports exact-rule intent within its stated coverage and limitations; this review did not browse or independently compare the Leiden implementation.",
+    "Desirability is a reasoned visual judgment: compactness, paired miniature sky sculptures, readable role numerals and tactile team ownership create a plausible inviting family game. No family or adult user trial was conducted.",
+    "No physical printing, grasping, durability, tip stability, retained assembly, motion or human play is verified by this review."
+  ]
+}

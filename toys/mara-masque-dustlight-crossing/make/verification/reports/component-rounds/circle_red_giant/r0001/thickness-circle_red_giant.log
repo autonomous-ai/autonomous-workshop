@@ -1,0 +1,17 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_circle_red_giant.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_red_giant/r0001/thickness-circle_red_giant.md
+(5.6s, exit 0)
+--- stdout
+part_circle_red_giant.step.py: 4.93 cm3 solid, grid 0.133 mm (170x170x245), 116977 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.2% of surface below (133 of 116977 samples); thinnest 0.73 mm at (0.9, -10.4, 3.5) in 4 region(s); no region is a wall, 4 taper(s) at feature edges (0.25% of surface, budget 2%); 228 more within measurement error of the limit
+  PASS  thickness distribution         median 14.20 mm, p95 22.00 mm, max 32.00 mm
+  WARN  hollowable at 1.20 mm wall     2.56 of 4.93 cm3 (52%) in 1 pocket(s)
+  PASS  filament that would save       0.38 cm3, 0.5 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.73 mm at (1.1, -4.6, 3.4)     34 samples, 1.4 mm2, runs 2.5 mm, band 0.57 mm
+        2. [taper] 0.73 mm at (-1.1, 9.6, 3.5)     34 samples, 1.4 mm2, runs 2.4 mm, band 0.57 mm
+        3. [taper] 0.73 mm at (-0.9, 5.4, 3.3)     31 samples, 1.4 mm2, runs 2.2 mm, band 0.62 mm
+        4. [taper] 0.73 mm at (0.9, -10.4, 3.5)     34 samples, 1.4 mm2, runs 2.6 mm, band 0.51 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_red_giant/r0001/thickness-circle_red_giant.md
+
+--- stderr

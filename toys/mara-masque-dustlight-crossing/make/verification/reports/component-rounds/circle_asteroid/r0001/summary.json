@@ -1,0 +1,65 @@
+{
+ "build": {
+  "circle_asteroid": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "circle_asteroid"
+ ],
+ "check_motion": false,
+ "checked": [
+  "circle_asteroid"
+ ],
+ "checks_ok": false,
+ "entry": "part_circle_asteroid.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "circle_asteroid"
+ ],
+ "print": {
+  "circle_asteroid": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0001/overhang-circle_asteroid.log": "994e1a039b9e5b9679749e713b6838b7e76cf9f6e07eddb24f93342e57643655",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0001/thickness-circle_asteroid.log": "87b23c1c653d38745d9a997c1772ae2599de337ccae11be68e07a15cd08dba4c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 22.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 2.7,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.5% of surface below (374 of 87478 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:circle_asteroid",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0001/visual-packet.json",
+  "packet_sha256": "379e8e5155e9b5f1c2ee9b95ea11f96355ea13bcd5f0a0ac1af0554e6ec80198",
+  "status": "pending"
+ }
+}

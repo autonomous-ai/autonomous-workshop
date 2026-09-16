@@ -1,0 +1,62 @@
+{
+ "build": {
+  "square_red_giant": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "square_red_giant"
+ ],
+ "check_motion": false,
+ "checked": [
+  "square_red_giant"
+ ],
+ "checks_ok": true,
+ "entry": "part_square_red_giant.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_red_giant/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "square_red_giant"
+ ],
+ "print": {
+  "square_red_giant": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_red_giant/r0001/overhang-square_red_giant.log": "bf0af7cdee2519f3ea8643fa1ed4efb1c2b741d4d76718c2fdaa0f61c20ccd57",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_red_giant/r0001/thickness-square_red_giant.log": "b763d3db34a91c8330bdf896e5397fe6725480702998838086e1af46c397eb9a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.73,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:square_red_giant",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows the tallest broad swelling globe with longitudinal ridges; top confirms a rounded lobed stellar section within the square footprint; iso exposes rank8 and broad stable base corners, without extra or floating parts.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_red_giant/r0001/visual-packet.json",
+  "packet_sha256": "3a53805387b4641338d22c0bfc68b1ffdc38c826fd141c1c1c253a0366448940",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "square_pulsar": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "square_pulsar"
+ ],
+ "check_motion": false,
+ "checked": [
+  "square_pulsar"
+ ],
+ "checks_ok": true,
+ "entry": "part_square_pulsar.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_pulsar/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "square_pulsar"
+ ],
+ "print": {
+  "square_pulsar": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_pulsar/r0001/overhang-square_pulsar.log": "c4c1ffcb24419179f201b6dd2af804ff2abf906a085a2872f06128cb7c456605",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_pulsar/r0001/thickness-square_pulsar.log": "2f6f48ba52b5b43657ed84ac3fb619512c94cf39b69c4d05018ea8f2cc74eaa9"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.73,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:square_pulsar",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show a central octagonal collar and opposed tapered beam profiles with stout lower connection and blunt upper tip; top confirms upper body stays within clipped-square corners; rank7 is clear.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_pulsar/r0001/visual-packet.json",
+  "packet_sha256": "f6f964fac9638254fff4f3857dead1e1ad350ce89cbe84dc928a92215e7ae75b",
+  "status": "pass"
+ }
+}

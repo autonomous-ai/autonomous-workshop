@@ -1,0 +1,62 @@
+{
+ "build": {
+  "square_asteroid": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "square_asteroid"
+ ],
+ "check_motion": false,
+ "checked": [
+  "square_asteroid"
+ ],
+ "checks_ok": true,
+ "entry": "part_square_asteroid.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_asteroid/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "square_asteroid"
+ ],
+ "print": {
+  "square_asteroid": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_asteroid/r0001/overhang-square_asteroid.log": "fc322d08552be4333cdf7ba49540a87ab6684767e12720e8aa217e8b4c1540dc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_asteroid/r0001/thickness-square_asteroid.log": "7c50736ff2ea40ef7a9ef3c8de35f63aeac5b3102b32ef4beeaa7188f39452a7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:square_asteroid",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show the faceted asymmetric boulder with three diamond crater pockets; top shows a contained upper footprint and four clipped square corners; opposite rank2 marks remain exposed and no unsupported lip is visible.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_asteroid/r0001/visual-packet.json",
+  "packet_sha256": "0196b00e33fd08b227b156435c26afb30b4ab5e45ea4fb37a2067484e8bb781b",
+  "status": "pass"
+ }
+}

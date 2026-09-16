@@ -1,0 +1,62 @@
+{
+ "build": {
+  "northwest_panel": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "northwest_panel"
+ ],
+ "check_motion": false,
+ "checked": [
+  "northwest_panel"
+ ],
+ "checks_ok": true,
+ "entry": "part_northwest_panel.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/northwest_panel/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "northwest_panel"
+ ],
+ "print": {
+  "northwest_panel": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/northwest_panel/r0002/overhang-northwest_panel.log": "41b276e8355a44cba230e70a9e1acfe3cac589e290ca40de12ce9ba393ef61a1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/northwest_panel/r0002/thickness-northwest_panel.log": "74887f8bb63f7997655a1b16f3e37ed6984217dcf2b1fde4df35689537902dfe"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:northwest_panel",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a continuous flat-backed slab and top confirms rectangular footprint; iso resolves the grid, wide separated terrain strokes and clear landing pads. Tiny setup glyphs and narrow double ridges are removed. Closed den frame and border ownership mark appear on eastern panels. No displaced or floating geometry; orthographic top lighting alone hides recesses, resolved in iso.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/northwest_panel/r0002/visual-packet.json",
+  "packet_sha256": "106814813854ac34adc6e44a685e5991806e738d831834fb8fb4edd1328a4ab1",
+  "status": "pass"
+ }
+}

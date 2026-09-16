@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_circle_asteroid.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0001/thickness-circle_asteroid.md
+(4.2s, exit 1)
+--- stdout
+part_circle_asteroid.step.py: 2.97 cm3 solid, grid 0.133 mm (170x170x155), 87478 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      0.5% of surface below (374 of 87478 samples); thinnest 0.13 mm at (-0.9, -7.3, 9.8) in 8 region(s); 1 wall(s) (widest band 0.97 mm), 7 taper(s) at feature edges (0.18% of surface, budget 2%); 252 more within measurement error of the limit
+  PASS  thickness distribution         median 11.73 mm, p95 21.93 mm, max 22.07 mm
+  WARN  hollowable at 1.20 mm wall     1.26 of 2.97 cm3 (42%) in 1 pocket(s)
+  PASS  filament that would save       0.19 cm3, 0.2 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.13 mm at (-0.9, -7.3, 9.8)    280 samples, 5.4 mm2, runs 5.5 mm, band 0.97 mm
+        2. [taper] 0.73 mm at (1.1, -8.4, 3.4)     39 samples, 1.3 mm2, runs 2.5 mm, band 0.52 mm
+        3. [taper] 0.73 mm at (-0.9, 7.6, 3.4)     32 samples, 1.3 mm2, runs 2.5 mm, band 0.51 mm
+        4. [taper] 0.20 mm at (2.0, -5.1, 16.2)     12 samples, 0.2 mm2, runs 1.8 mm, band 0.13 mm
+        5. [taper] 0.13 mm at (3.0, -5.2, 8.1)      5 samples, 0.1 mm2, runs 0.5 mm, band 0.12 mm
+        6. [taper] 0.40 mm at (1.9, -5.1, 7.0)      4 samples, 0.0 mm2, runs 0.1 mm, band 0.37 mm
+        ... and 2 smaller region(s)
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0001/thickness-circle_asteroid.md
+
+--- stderr

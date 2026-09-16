@@ -1,0 +1,62 @@
+{
+ "build": {
+  "circle_ringed_planet": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "circle_ringed_planet"
+ ],
+ "check_motion": false,
+ "checked": [
+  "circle_ringed_planet"
+ ],
+ "checks_ok": true,
+ "entry": "part_circle_ringed_planet.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_ringed_planet/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "circle_ringed_planet"
+ ],
+ "print": {
+  "circle_ringed_planet": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_ringed_planet/r0001/overhang-circle_ringed_planet.log": "80e454dc57c6e4bcd4717a6d419bec989375c0f333299fe68887f948e2815f15",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_ringed_planet/r0001/thickness-circle_ringed_planet.log": "754fb78a04fe4ea92c2b7fed85856edd6f144ee7daa6326c0e869e608f2d872c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:circle_ringed_planet",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show an equatorial belt around the tapered planetary globe, with a continuous sloping underside; top shows the broad elliptical ring contained by the circular base; rank4 is exposed on the near apron.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_ringed_planet/r0001/visual-packet.json",
+  "packet_sha256": "0775b59c9977668d20c0dcbad7df31397ad45f57b2782f0f27c0447a8f2d3737",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,167 @@
+{
+  "status": "pass",
+  "method": "Uniform-density BRep mass center projects inside an inscribed 22 mm diameter support disk; square bases contain the same disk.",
+  "parts": [
+    {
+      "part": "part_circle_asteroid.step",
+      "center_of_mass_mm": [
+        -0.1313,
+        0.0121,
+        7.2208
+      ],
+      "conservative_base_margin_mm": 10.8682,
+      "step_sha256": "a2167107354dc2637dabe58b37673f19b582c142b0fded6660274da65d28dcc1"
+    },
+    {
+      "part": "part_circle_crater_moon.step",
+      "center_of_mass_mm": [
+        -0.0052,
+        0.0248,
+        7.4629
+      ],
+      "conservative_base_margin_mm": 10.9746,
+      "step_sha256": "5b50319362735fd9d703a232af8b2019d1f26f7bb0cdcbe752db424182c3d962"
+    },
+    {
+      "part": "part_circle_dust_knot.step",
+      "center_of_mass_mm": [
+        -0.1212,
+        0.1906,
+        5.6623
+      ],
+      "conservative_base_margin_mm": 10.7741,
+      "step_sha256": "e50dd6aa334d920220bda6dbf71e4a72d32be5982e94d010b9c1a3fd077895c3"
+    },
+    {
+      "part": "part_circle_pulsar.step",
+      "center_of_mass_mm": [
+        0.0,
+        0.0,
+        9.1005
+      ],
+      "conservative_base_margin_mm": 11.0,
+      "step_sha256": "0c243e7e31edccaf96be3982c7c2f239a6715e0e22d00ff7427325c986822516"
+    },
+    {
+      "part": "part_circle_red_dwarf.step",
+      "center_of_mass_mm": [
+        0.0,
+        0.0,
+        9.6375
+      ],
+      "conservative_base_margin_mm": 11.0,
+      "step_sha256": "ef15084db5bcaa1b3f745bc6cbea3e7555e30e6859520d75cdeb9425e9ee2497"
+    },
+    {
+      "part": "part_circle_red_giant.step",
+      "center_of_mass_mm": [
+        0.0,
+        -0.0,
+        14.8748
+      ],
+      "conservative_base_margin_mm": 11.0,
+      "step_sha256": "06b59de35f42420689ed62c18798179ae29133862a0a05522568507d076e9a51"
+    },
+    {
+      "part": "part_circle_ringed_planet.step",
+      "center_of_mass_mm": [
+        0.0,
+        -0.0,
+        8.6586
+      ],
+      "conservative_base_margin_mm": 11.0,
+      "step_sha256": "85be713f6bbc53cfbdd6356ec90b3fab9c0a76ad01e0621475d0dfbbbf0c4f89"
+    },
+    {
+      "part": "part_circle_twin_tail_comet.step",
+      "center_of_mass_mm": [
+        -0.4719,
+        -0.0,
+        6.6699
+      ],
+      "conservative_base_margin_mm": 10.5281,
+      "step_sha256": "94b17d178495f41e6cfbb40e9b8dcc2828617b9b3e277698f9e60f121a0b3ab2"
+    },
+    {
+      "part": "part_square_asteroid.step",
+      "center_of_mass_mm": [
+        -0.1202,
+        0.011,
+        6.7466
+      ],
+      "conservative_base_margin_mm": 10.8793,
+      "step_sha256": "6e9499e101db72b75cc548ffc39eda6cc563bb28b3bf94ccadd28ce3f5c97f9f"
+    },
+    {
+      "part": "part_square_crater_moon.step",
+      "center_of_mass_mm": [
+        -0.0047,
+        0.0226,
+        6.9281
+      ],
+      "conservative_base_margin_mm": 10.9769,
+      "step_sha256": "f2277c0c5e543e0d5a6a4ce6914ffbb20e5a60d322025c7bd89dbd54fdb66305"
+    },
+    {
+      "part": "part_square_dust_knot.step",
+      "center_of_mass_mm": [
+        -0.1095,
+        0.1723,
+        5.2712
+      ],
+      "conservative_base_margin_mm": 10.7959,
+      "step_sha256": "f5283a0ff66cdee15d6612ac731def1d201eb3dbe18a931c2b95221de818a638"
+    },
+    {
+      "part": "part_square_pulsar.step",
+      "center_of_mass_mm": [
+        -0.0,
+        0.0,
+        8.4323
+      ],
+      "conservative_base_margin_mm": 11.0,
+      "step_sha256": "34113894d5da6877b8f231beefafaf5eacb2af02637bd11872798c2665ef9baa"
+    },
+    {
+      "part": "part_square_red_dwarf.step",
+      "center_of_mass_mm": [
+        0.0,
+        -0.0,
+        8.9762
+      ],
+      "conservative_base_margin_mm": 11.0,
+      "step_sha256": "bbbada3e30f6c7ba2991e7e24f7a7ea389aed3deb5f953efebebc67771b37fd7"
+    },
+    {
+      "part": "part_square_red_giant.step",
+      "center_of_mass_mm": [
+        -0.0,
+        -0.0,
+        14.1738
+      ],
+      "conservative_base_margin_mm": 11.0,
+      "step_sha256": "e80bb8e8a991979021ebe68d5b59cc8447dedfb91db2045c7d1fee33a40227a2"
+    },
+    {
+      "part": "part_square_ringed_planet.step",
+      "center_of_mass_mm": [
+        0.0,
+        -0.0,
+        8.0653
+      ],
+      "conservative_base_margin_mm": 11.0,
+      "step_sha256": "fd6c7fe7b7403a41be5d9466eef476960e6da76dd012f505c51805aaea0e9104"
+    },
+    {
+      "part": "part_square_twin_tail_comet.step",
+      "center_of_mass_mm": [
+        -0.4225,
+        -0.0,
+        6.1392
+      ],
+      "conservative_base_margin_mm": 10.5775,
+      "step_sha256": "a876a43bed1102a63d203fbea75ca61ccadb279ae3bfbfb6a7c59d626934ef97"
+    }
+  ],
+  "limitations": "Ideal static geometry on a level plane only. No tipping experiment, motion sweep, material-density distribution, infill or handling test."
+}

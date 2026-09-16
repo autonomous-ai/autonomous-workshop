@@ -1,0 +1,15 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_northeast_panel.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/northeast_panel/r0002/thickness-northeast_panel.md
+(7.7s, exit 0)
+--- stdout
+part_northeast_panel.step.py: 97.09 cm3 solid, grid 0.217 mm (585x723x28), 370508 surface samples, thickness resolved to 0.109 mm
+  PASS  wall >= 0.80 mm (+/-0.11)      0.0% of surface below (9 of 370508 samples); thinnest 0.33 mm at (13.5, 150.4, 4.6) in 2 region(s); no region is a wall, 0 taper(s) at feature edges and 2 spot(s) too small to be a wall (0.01% of surface, budget 2%); 526 more within measurement error of the limit
+  PASS  thickness distribution         median 5.00 mm, p95 125.86 mm, max 155.94 mm
+  WARN  hollowable at 1.20 mm wall     43.16 of 97.09 cm3 (44%) in 1 pocket(s)
+  PASS  filament that would save       6.47 cm3, 8.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [spot ] 0.33 mm at (16.5, 150.4, 4.7)      5 samples, 1.9 mm2, runs 1.1 mm, band 1.82 mm
+        2. [spot ] 0.33 mm at (13.5, 150.4, 4.6)      4 samples, 1.9 mm2, runs 0.9 mm, band 2.06 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/northeast_panel/r0002/thickness-northeast_panel.md
+
+--- stderr

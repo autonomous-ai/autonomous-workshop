@@ -1,0 +1,49 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_red_giant/r0001",
+ "likeness": {},
+ "parts": {
+  "square_red_giant": "e80bb8e8a991979021ebe68d5b59cc8447dedfb91db2045c7d1fee33a40227a2"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "square_red_giant": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_red_giant/r0001/overhang-square_red_giant.log": "bf0af7cdee2519f3ea8643fa1ed4efb1c2b741d4d76718c2fdaa0f61c20ccd57",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_red_giant/r0001/thickness-square_red_giant.log": "b763d3db34a91c8330bdf896e5397fe6725480702998838086e1af46c397eb9a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.73,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.5.2",
+   "scipy": "1.18.1"
+  },
+  "platform": "darwin",
+  "python": "<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13",
+  "python_version": "3.13.5 (main, Jun 12 2025, 12:22:43) [Clang 20.1.4 ]",
+  "sources": {
+   "check_overhang": "63eeb364e716008c35cfa94797653cf761cf20cebacb369609f99800c7dfb692",
+   "check_thickness": "f06beddeebd63fe1c082b631203a05d27060e8edc6552b6c95c98f9472bf2543",
+   "make_round": "aa4bc2b37d50f10e3b8ba7067ee7ac31a408f6d4ea37efb521041e56d289b21e",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 1,
+ "scope": "component:square_red_giant"
+}

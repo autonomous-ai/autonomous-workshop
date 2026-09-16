@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_northwest_panel.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-northwest_panel.md
+(7.2s, exit 0)
+--- stdout
+part_northwest_panel.step.py: 73.04 cm3 solid, grid 0.197 mm (492x797x30), 373125 surface samples, thickness resolved to 0.098 mm
+  PASS  wall >= 0.80 mm (+/-0.10)      0.0% of surface below (0 of 373125 samples); 482 more within measurement error of the limit
+  PASS  thickness distribution         median 4.92 mm, p95 95.84 mm, max 156.02 mm
+  WARN  hollowable at 1.20 mm wall     35.18 of 73.04 cm3 (48%) in 1 pocket(s)
+  PASS  filament that would save       5.28 cm3, 6.5 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-northwest_panel.md
+
+--- stderr

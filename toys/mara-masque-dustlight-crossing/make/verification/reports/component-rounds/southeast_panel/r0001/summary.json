@@ -1,0 +1,71 @@
+{
+ "build": {
+  "southeast_panel": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "southeast_panel"
+ ],
+ "check_motion": false,
+ "checked": [
+  "southeast_panel"
+ ],
+ "checks_ok": false,
+ "entry": "part_southeast_panel.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/southeast_panel/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "southeast_panel"
+ ],
+ "print": {
+  "southeast_panel": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/southeast_panel/r0001/overhang-southeast_panel.log": "5f412fa8e95d1bc53995fef6c8cf625f3a7a8207a1453b20cdf83822dc6282b8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/southeast_panel/r0001/thickness-southeast_panel.log": "b63610421a179fa98eda0d86f88d6b4228f243be49f66a4f26a3940de8b4abc0"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.10) 1.6% of surface below (2778 of 370019 samples); thinne"
+    ],
+    "thinnest_mm": 0.21,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:southeast_panel",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Engraved terrain leaves fragile narrow ridges and tiny glyph islands.",
+    "evidence": "Iso: double parallel river and den lines crowd grid edges; tiny rank strokes are not readily legible.",
+    "part": "southeast_panel",
+    "repair": "Use single spaced terrain contours and remove microscopic board glyphs; retain full setup in rules."
+   }
+  ],
+  "observation": "Front shows a flat backed slab; iso shows continuous grid with closely spaced terrain strokes and microscopic setup glyphs. Top lighting hides shallow recesses.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/southeast_panel/r0001/visual-packet.json",
+  "packet_sha256": "d5fed74e36c81f2edd52bb61d48875ddc7888140dbf3a342f7a6f9a9c8bf124b",
+  "status": "fail"
+ }
+}

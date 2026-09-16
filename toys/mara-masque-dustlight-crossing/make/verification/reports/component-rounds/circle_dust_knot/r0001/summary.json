@@ -1,0 +1,69 @@
+{
+ "build": {
+  "circle_dust_knot": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "circle_dust_knot"
+ ],
+ "check_motion": false,
+ "checked": [
+  "circle_dust_knot"
+ ],
+ "checks_ok": true,
+ "entry": "part_circle_dust_knot.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_dust_knot/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "circle_dust_knot"
+ ],
+ "print": {
+  "circle_dust_knot": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_dust_knot/r0001/overhang-circle_dust_knot.log": "59c9a2cbb2d49b52872558d05db3b2f9eb78c122a27fb7103c547448a92004b4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_dust_knot/r0001/thickness-circle_dust_knot.log": "ae3f397b61c117e6ca4d858db82875d584550c1ef93becc131cbe74318d3f6d7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:circle_dust_knot",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Cloud lobes too angular",
+    "evidence": "Front and iso show long straight cone caps and abrupt shoulders.",
+    "part": "circle_dust_knot",
+    "repair": "Replace cap stations with rounded cloud profiles while keeping broad roots and blunt tips."
+   }
+  ],
+  "observation": "Three stable lobes are fused to the circular foot and the rank mark is exposed; the lobes read as conical crystals.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_dust_knot/r0001/visual-packet.json",
+  "packet_sha256": "40f964e2433d087a232deeb952007474861e8c0ed0231d1db85d677f7eb00c81",
+  "status": "fail"
+ }
+}

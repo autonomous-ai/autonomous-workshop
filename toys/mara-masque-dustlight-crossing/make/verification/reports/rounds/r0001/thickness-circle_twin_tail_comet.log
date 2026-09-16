@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_circle_twin_tail_comet.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-circle_twin_tail_comet.md
+(4.1s, exit 0)
+--- stdout
+part_circle_twin_tail_comet.step.py: 2.35 cm3 solid, grid 0.133 mm (170x170x215), 87989 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.4% of surface below (155 of 87989 samples); thinnest 0.47 mm at (6.6, 0.5, 28.0) in 9 region(s); no region is a wall, 9 taper(s) at feature edges (0.36% of surface, budget 2%); 230 more within measurement error of the limit
+  PASS  thickness distribution         median 4.20 mm, p95 21.93 mm, max 24.00 mm
+  WARN  hollowable at 1.20 mm wall     0.73 of 2.35 cm3 (31%) in 1 pocket(s), 6 too small to shell
+  PASS  filament that would save       0.11 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.73 mm at (-1.6, 5.4, 3.5)     38 samples, 1.6 mm2, runs 2.7 mm, band 0.58 mm
+        2. [taper] 0.73 mm at (0.5, -4.6, 3.4)     34 samples, 1.5 mm2, runs 3.0 mm, band 0.51 mm
+        3. [taper] 0.73 mm at (-0.9, 9.6, 3.4)     29 samples, 1.4 mm2, runs 2.4 mm, band 0.58 mm
+        4. [taper] 0.73 mm at (0.3, -10.4, 3.4)     39 samples, 1.1 mm2, runs 2.6 mm, band 0.43 mm
+        5. [taper] 0.60 mm at (1.0, 1.6, 24.0)      5 samples, 0.1 mm2, runs 0.9 mm, band 0.12 mm
+        6. [taper] 0.60 mm at (1.0, -1.5, 24.0)      4 samples, 0.1 mm2, runs 0.3 mm, band 0.27 mm
+        ... and 3 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-circle_twin_tail_comet.md
+
+--- stderr

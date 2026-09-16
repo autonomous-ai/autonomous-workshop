@@ -1,0 +1,62 @@
+{
+ "build": {
+  "square_red_dwarf": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "square_red_dwarf"
+ ],
+ "check_motion": false,
+ "checked": [
+  "square_red_dwarf"
+ ],
+ "checks_ok": true,
+ "entry": "part_square_red_dwarf.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_red_dwarf/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "square_red_dwarf"
+ ],
+ "print": {
+  "square_red_dwarf": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_red_dwarf/r0001/overhang-square_red_dwarf.log": "aeeb5a049e7f9d25ae2970bdae0d04bb8d72b1f05bc7cca0dc9835704ffe4ad6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_red_dwarf/r0001/thickness-square_red_dwarf.log": "27395a0379ff2bb63ae448b31d54d5e0b207d60f4e3c4fbe6192db9ccf62d379"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:square_red_dwarf",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show the eight-lobed stellar mass with stout root and blunt summit; top confirms the radial star contour inside clipped-square team corners; rank5 appears clearly on the near apron.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_red_dwarf/r0001/visual-packet.json",
+  "packet_sha256": "7bbfcf4eba5d65dda5468ce0d9eaea8fc1b0390eb65e499ca970f1bb6d43af09",
+  "status": "pass"
+ }
+}

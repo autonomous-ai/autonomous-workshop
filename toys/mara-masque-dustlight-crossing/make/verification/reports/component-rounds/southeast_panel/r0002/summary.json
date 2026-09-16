@@ -1,0 +1,62 @@
+{
+ "build": {
+  "southeast_panel": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "southeast_panel"
+ ],
+ "check_motion": false,
+ "checked": [
+  "southeast_panel"
+ ],
+ "checks_ok": true,
+ "entry": "part_southeast_panel.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/southeast_panel/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "southeast_panel"
+ ],
+ "print": {
+  "southeast_panel": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/southeast_panel/r0002/overhang-southeast_panel.log": "ccc44a7dc49547467585d739236795134347636459243040116572c6c746fabb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/southeast_panel/r0002/thickness-southeast_panel.log": "89a11d147c789ebb0596ec1c4c6a5399d8b989b9bbf5fa3bb3a6112f858f4579"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.31,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:southeast_panel",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a continuous flat-backed slab and top confirms rectangular footprint; iso resolves the grid, wide separated terrain strokes and clear landing pads. Tiny setup glyphs and narrow double ridges are removed. Closed den frame and border ownership mark appear on eastern panels. No displaced or floating geometry; orthographic top lighting alone hides recesses, resolved in iso.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/southeast_panel/r0002/visual-packet.json",
+  "packet_sha256": "424afc68e02b9f62e4f319a84f3299ed8cdc16f15c09c0f101e64e4477f706fe",
+  "status": "pass"
+ }
+}

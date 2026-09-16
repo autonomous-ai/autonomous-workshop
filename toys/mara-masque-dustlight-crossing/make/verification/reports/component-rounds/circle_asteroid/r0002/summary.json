@@ -1,0 +1,61 @@
+{
+ "build": {
+  "circle_asteroid": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "circle_asteroid"
+ ],
+ "check_motion": false,
+ "checked": [
+  "circle_asteroid"
+ ],
+ "checks_ok": true,
+ "entry": "part_circle_asteroid.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "circle_asteroid"
+ ],
+ "print": {
+  "circle_asteroid": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0002/overhang-circle_asteroid.log": "69321d4986d1cf7b1bb9f0ac93d287a1041f21259edacafe72165ccbfb5c4dff",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0002/thickness-circle_asteroid.log": "562587bb3c7d5aff7708b08535976fa41c9d2f9b998b7e9412496e16a76358b6"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:circle_asteroid",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0002/visual-packet.json",
+  "packet_sha256": "099e5e0f21296206860460db30f5c9e146825e898e87b0dc0848d4b328f2283e",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "square_ringed_planet": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "square_ringed_planet"
+ ],
+ "check_motion": false,
+ "checked": [
+  "square_ringed_planet"
+ ],
+ "checks_ok": true,
+ "entry": "part_square_ringed_planet.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_ringed_planet/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "square_ringed_planet"
+ ],
+ "print": {
+  "square_ringed_planet": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_ringed_planet/r0001/overhang-square_ringed_planet.log": "ddbbfe9665c86d9ec8cdcebbc811dbfb46f9829517a48831e634cde6bea937c1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_ringed_planet/r0001/thickness-square_ringed_planet.log": "5df80dab17b504e0d44b940a6381d92b86e148b64785f5a101d0874722d7e4c4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:square_ringed_planet",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show a distinct continuous equatorial belt with a sloped underside; top shows the elliptical planetary outline inside a clipped-square base; rank4 and the team corners remain exposed.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_ringed_planet/r0001/visual-packet.json",
+  "packet_sha256": "5021541de071f97036f08d2c55c7dbd799f6b1456ccea7d9f27dd1814eb9367a",
+  "status": "pass"
+ }
+}

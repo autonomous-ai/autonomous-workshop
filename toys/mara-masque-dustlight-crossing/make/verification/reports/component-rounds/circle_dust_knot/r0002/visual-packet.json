@@ -1,0 +1,35 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_dust_knot/r0002/visual/front.png": "89f139dea8d31557766f199c1a7543238593319b52eedb7f1dc1c3b3688eca24",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_dust_knot/r0002/visual/iso.png": "1d4a29d6c0775f9daca0fd0cfdb1270c688ac4cd3cbeaa1b09e455d5f9517996",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_dust_knot/r0002/visual/top.png": "5452a1fb6229ae18a55c429ae1b7bb8167e4b7482bfda90b0dcee54286be1347"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "README.md": "0e1c018e7f2dae68de1556bac2a5b1cf6450dc61fc8359a33e8d72ba6ec3e9e5",
+    "dustlight_lib.py": "633685e90c8b1209e92de0b8bc33b20449e0eb9472bc347a28260ada4ba45f47",
+    "dustlight_spec.md": "4e85e6d5989c5499ea5ffda630dd50d2e603fba4eedd9b00676d051a98a13b47",
+    "part_circle_asteroid.step.py": "9fc62bee60895c7e9ddc8588d5a8f2e5be3102d33737f3fe4a4e705446f48fc7",
+    "part_circle_crater_moon.step.py": "3f8e56981c251127c81faa3f0184ee69f97f770c4b2d12ed48d19231ffb83a5c",
+    "part_circle_dust_knot.step": "2c8de38d51970b279de89cd53b0a937cc8de38006897ed11f97f3ac29fc3bebc",
+    "part_circle_dust_knot.step.py": "de939ca9bbbdccc3d5e55d504c143d49f2198d861677575b1e5f1883a574afc7",
+    "part_circle_pulsar.step.py": "02fcef3e32b0be184dcc868ddcc101e1afb92f070ab3653494ff1deb76091c3a",
+    "part_circle_red_dwarf.step.py": "094b8acf101cb4495ad21d7b9ff68fb90fa0372d49e4f40cb5248f791e142ce2",
+    "part_circle_red_giant.step.py": "ba562b5d255350068c362041bccca6acd3598be41ab935baebc5107dbfa6506e",
+    "part_circle_ringed_planet.step.py": "3334081bd823f57d649809437bc4699482e0a5e7b2d66144388c85f43a029d7a",
+    "part_circle_twin_tail_comet.step.py": "4b00cb8842d822d354c3db364fe32c69ab2216518c87c9d6e9e2c4528c0b8f7a",
+    "part_northeast_panel.step.py": "6dac57fa446c46dce032c9c83292778932418d7ba07a002713c31db0f3c24565",
+    "part_northwest_panel.step.py": "f90c1919d43894379a1c8d66cc8e2ccddf102292bc0a6e7a542ee8b7b126e149",
+    "part_southeast_panel.step.py": "ff78e2860e391c53c2659444e4ed9c39c52ecdf3c43f71adf35e18f5ce47b84e",
+    "part_southwest_panel.step.py": "77711cf29a87c5ada7222a656e509218ad863e76560ccc33f5be986e08d27140",
+    "part_square_asteroid.step.py": "a99b90ca72d403bac015122b8229f73ea9b70684a0a006b60baeb2b0fb51ae3c",
+    "part_square_crater_moon.step.py": "d0ef7a301cae115f5b67d719fea7cb0bd689401ef3f3a22f66669fc21fb48aa1",
+    "part_square_dust_knot.step.py": "7da1b0381900687ca4c9b8287748f561bd9add5186b84dc0cc411c39bd2a1b82",
+    "part_square_pulsar.step.py": "9f2d696df7a689e500d29c9e1e635720108a3d920427c5843a764d26933f4b59",
+    "part_square_red_dwarf.step.py": "ab89692bf74e0010172160d6b4d5696abb5412296ac9b1adaa9474914312a6ea",
+    "part_square_red_giant.step.py": "68d3169d6a84c7549205b649cf0fea03bff4f4264bb56c3b9e0120f073e7c6e3",
+    "part_square_ringed_planet.step.py": "433c08539c059f0108a696c9d2795dbb13cca2a31e2e7d6ee0889de52da102a3",
+    "part_square_twin_tail_comet.step.py": "b4a86870df2f86c56893088661f2ef0c1d5fd75dbd872c37bb4fe3c95ae9b8b0"
+  }
+}

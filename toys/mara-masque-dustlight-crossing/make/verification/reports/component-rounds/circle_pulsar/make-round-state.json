@@ -1,0 +1,49 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_pulsar/r0001",
+ "likeness": {},
+ "parts": {
+  "circle_pulsar": "0c243e7e31edccaf96be3982c7c2f239a6715e0e22d00ff7427325c986822516"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "circle_pulsar": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_pulsar/r0001/overhang-circle_pulsar.log": "5d03ecb934a6639a6287f0bc2cb8546ef28addec56a21c636a7c1865871152fb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_pulsar/r0001/thickness-circle_pulsar.log": "4c3f4115010276b3d460d09fd5267dd6d01347e52741da55555cedc3b00a3108"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.73,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.5.2",
+   "scipy": "1.18.1"
+  },
+  "platform": "darwin",
+  "python": "<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13",
+  "python_version": "3.13.5 (main, Jun 12 2025, 12:22:43) [Clang 20.1.4 ]",
+  "sources": {
+   "check_overhang": "63eeb364e716008c35cfa94797653cf761cf20cebacb369609f99800c7dfb692",
+   "check_thickness": "f06beddeebd63fe1c082b631203a05d27060e8edc6552b6c95c98f9472bf2543",
+   "make_round": "aa4bc2b37d50f10e3b8ba7067ee7ac31a408f6d4ea37efb521041e56d289b21e",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 1,
+ "scope": "component:circle_pulsar"
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "circle_red_dwarf": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "circle_red_dwarf"
+ ],
+ "check_motion": false,
+ "checked": [
+  "circle_red_dwarf"
+ ],
+ "checks_ok": true,
+ "entry": "part_circle_red_dwarf.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_red_dwarf/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "circle_red_dwarf"
+ ],
+ "print": {
+  "circle_red_dwarf": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_red_dwarf/r0001/overhang-circle_red_dwarf.log": "86b2f5e05b514fb008763544ff005349949c28da89bdf6097a55102c48d4b4d6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_red_dwarf/r0001/thickness-circle_red_dwarf.log": "b33da1f3c6e14d3cae8da9683ce4520b4a3a7ece355fa3667ee60fe770d87084"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.73,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:circle_red_dwarf",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a broad star body rising from a stout foot; top reveals eight radial lobes and a blunt center; iso shows fully supported facets and a legible rank5 apron, with no loose spikes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_red_dwarf/r0001/visual-packet.json",
+  "packet_sha256": "00c2362ea87d2147b2063fd0f1d997a36eaf3584625a76986c010333b54c925e",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_southwest_panel.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/southwest_panel/r0001/thickness-southwest_panel.md
+(7.8s, exit 1)
+--- stdout
+part_southwest_panel.step.py: 58.35 cm3 solid, grid 0.188 mm (516x676x31), 373803 surface samples, thickness resolved to 0.094 mm
+  FAIL  wall >= 0.80 mm (+/-0.09)      1.0% of surface below (1787 of 373803 samples); thinnest 0.19 mm at (80.9, 68.2, 4.7) in 16 region(s); 11 wall(s) (widest band 2.36 mm), 1 taper(s) at feature edges and 4 spot(s) too small to be a wall (0.03% of surface, budget 2%); 748 more within measurement error of the limit
+  PASS  thickness distribution         median 4.88 mm, p95 95.87 mm, max 125.89 mm
+  WARN  hollowable at 1.20 mm wall     29.18 of 58.35 cm3 (50%) in 1 pocket(s)
+  PASS  filament that would save       4.38 cm3, 5.4 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.38 mm at (81.0, 96.9, 4.7)    350 samples, 53.2 mm2, runs 22.6 mm, band 2.36 mm
+        2. [wall ] 0.38 mm at (52.5, 96.4, 4.6)    346 samples, 51.8 mm2, runs 22.9 mm, band 2.26 mm
+        3. [wall ] 0.38 mm at (66.9, 109.3, 4.7)    329 samples, 50.2 mm2, runs 21.9 mm, band 2.29 mm
+        4. [wall ] 0.47 mm at (86.5, 123.9, 4.8)    174 samples, 27.1 mm2, runs 22.4 mm, band 1.21 mm
+        5. [wall ] 0.47 mm at (55.8, 123.9, 4.8)    178 samples, 27.0 mm2, runs 22.5 mm, band 1.20 mm
+        6. [wall ] 0.38 mm at (36.4, 104.6, 4.6)    160 samples, 25.0 mm2, runs 21.8 mm, band 1.15 mm
+        ... and 10 smaller region(s)
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/southwest_panel/r0001/thickness-southwest_panel.md
+
+--- stderr

@@ -1,0 +1,266 @@
+{
+  "status": "pass",
+  "method": "BRep intersection of each written STEP with a 24 x 24 x 0.1 mm slab immediately below Z5.",
+  "expected_volume_mm3": 57.6,
+  "cells": [
+    {
+      "cell": "a1",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "b1",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "c1",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "a2",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "b2",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "c2",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "a3",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "b3",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "c3",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "a4",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "b4",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "c4",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "d1",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "e1",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "f1",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "g1",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "d2",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "e2",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "f2",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "g2",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "d3",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "e3",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "f3",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "g3",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "d4",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "e4",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "f4",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "g4",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "a5",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "b5",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "c5",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "a6",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "b6",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "c6",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "a7",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "b7",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "c7",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "a8",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "b8",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "c8",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "a9",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "b9",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "c9",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "d5",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "e5",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "f5",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "g5",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "d6",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "e6",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "f6",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "g6",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "d7",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "e7",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "f7",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "g7",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "d8",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "e8",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "f8",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "g8",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "d9",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "e9",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "f9",
+      "top_slab_volume_mm3": 57.6
+    },
+    {
+      "cell": "g9",
+      "top_slab_volume_mm3": 57.6
+    }
+  ],
+  "source_sha256": {
+    "part_southwest_panel.step": "76cdb889e0c1caa261baa9c4a5b2dc94dccfe8f39e4d4590cacf43110dc6a385",
+    "part_southeast_panel.step": "109c95e57b07c3dcabe6720b6bfcec991c73e5b1b1190569bd7e923d910f165b",
+    "part_northwest_panel.step": "d604e2ae6e77f25c0307629688a1b21bbd961d41b70aed03e4be756d74a47dc5",
+    "part_northeast_panel.step": "a76bbfe0318a52f11c7e19e5b24df0ee13e0527fb843fb052cae5605fe96db7f"
+  },
+  "limitations": "Digital flatness and geometry only; printed warping and tactile stability untested."
+}

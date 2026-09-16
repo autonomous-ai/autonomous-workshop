@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Cloud lobes too angular",
+      "evidence": "Front and iso show long straight cone caps and abrupt shoulders.",
+      "part": "circle_dust_knot",
+      "repair": "Replace cap stations with rounded cloud profiles while keeping broad roots and blunt tips."
+    }
+  ],
+  "observation": "Three stable lobes are fused to the circular foot and the rank mark is exposed; the lobes read as conical crystals.",
+  "packet_sha256": "40f964e2433d087a232deeb952007474861e8c0ed0231d1db85d677f7eb00c81",
+  "status": "fail"
+}

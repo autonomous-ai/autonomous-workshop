@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_circle_crater_moon.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_crater_moon/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "circle_crater_moon"
+ ],
+ "print": {
+  "circle_crater_moon": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_crater_moon/r0002/overhang-circle_crater_moon.log": "227b463a68557174b1f4ed66942851f21014f867f488c636833623cd4e511cae",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_crater_moon/r0002/thickness-circle_crater_moon.log": "239fd3ab9023e91a598c5cb4763c55e8ef2dc70b0d7e80565223c53eb3b0a1c6"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "circle_crater_moon"
+ ],
+ "round": 3,
+ "scope": "component:circle_crater_moon",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows an upright flattened moon with one broad faceted crater and terminator recess; top confirms its thin oval body inside the circular foot; iso exposes both rank3 aprons and supported recess roofs.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_crater_moon/r0003/visual-packet.json",
+  "packet_sha256": "9324258329db623cfb9125a9715190d551552c674d6e53a448b5653abcbc557b",
+  "status": "pass"
+ }
+}

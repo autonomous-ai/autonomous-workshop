@@ -1,0 +1,62 @@
+{
+ "build": {
+  "square_twin_tail_comet": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "square_twin_tail_comet"
+ ],
+ "check_motion": false,
+ "checked": [
+  "square_twin_tail_comet"
+ ],
+ "checks_ok": true,
+ "entry": "part_square_twin_tail_comet.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_twin_tail_comet/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "square_twin_tail_comet"
+ ],
+ "print": {
+  "square_twin_tail_comet": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_twin_tail_comet/r0001/overhang-square_twin_tail_comet.log": "9f6276023e011bee6a0e845486132d0b0edbb2eac87d0fdd2862f9559682126e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_twin_tail_comet/r0001/thickness-square_twin_tail_comet.log": "32953833041fe6ad8ecdca873b0f317fc9d58e3fb2cb210f63058d605765b192"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.6,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:square_twin_tail_comet",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front separates the two unequal inclined tails from the offset head; top confirms their contained footprint; iso shows solid tail roots, blunt ends, rank6, and the square team base without extra bodies.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/square_twin_tail_comet/r0001/visual-packet.json",
+  "packet_sha256": "4a4237f07b9adcf9de39f190b59ade79c531c06c494621346b74f51f5deb93f6",
+  "status": "pass"
+ }
+}

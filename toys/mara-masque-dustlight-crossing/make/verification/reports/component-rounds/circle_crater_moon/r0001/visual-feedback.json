@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Unsupported recess roof and edge marking",
+      "evidence": "Front/iso show horizontal top of terminator and crater crown; overhang gate fails.",
+      "part": "circle_crater_moon",
+      "repair": "Cut a pitched-roof faceted crater and terminator; move numeral inward."
+    }
+  ],
+  "observation": "Vertical moon disk, broad crater and terminator are visible; roof of recess is circular and numeral3 reaches rim.",
+  "packet_sha256": "eafc9bbce0a3e7e8d147a9fc3d7aad1ea43f8ce39f3c6b5f69b1f45b19c3d589",
+  "status": "fail"
+}

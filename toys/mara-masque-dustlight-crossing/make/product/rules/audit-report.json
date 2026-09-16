@@ -1,0 +1,49 @@
+{
+  "status": "pass",
+  "kind": "finite-rules-equivalence-audit",
+  "playtest": false,
+  "cases": 54956,
+  "categories": {
+    "all_64_rank_captures_each_side": 128,
+    "den_entry_victory": 16,
+    "elimination_victory": 2,
+    "enemy_traps_all_rank_pairs": 384,
+    "every_jump_blocker_cell_both_teams": 384,
+    "every_jump_rank_landing": 640,
+    "every_jump_route_empty": 80,
+    "friendly_jump_landing": 80,
+    "full_initial_position": 1008,
+    "matched_legal_repetition_trace": 8,
+    "no_diagonal": 2,
+    "no_friendly_capture": 2,
+    "no_land_jump": 2,
+    "no_wrong_turn": 2,
+    "nonjumper_all_routes": 240,
+    "ongoing_initial": 1,
+    "opponent_den_all_roles": 16,
+    "own_den_forbidden": 16,
+    "own_trap_no_weakening": 6,
+    "rat_boundary_and_swim": 6,
+    "rat_elephant_origin_exceptions": 10,
+    "repetition_side_to_move": 1,
+    "restore_rank_when_exiting": 6,
+    "setup_and_inventory": 1,
+    "single_piece_all_destinations": 51912,
+    "stalemate_draw": 1,
+    "threefold_draw": 1,
+    "twofold_not_draw": 1
+  },
+  "source": "https://liacs.leidenuniv.nl/~visjk/doushouqi/about.html",
+  "setup_source": "https://liacs.leidenuniv.nl/~visjk/doushouqi/create.html",
+  "source_nuance": "position.h corroborates trap-exit and water-origin semantics; its code was not copied or executed.",
+  "method": "Two separately structured, locally authored models plus explicit expected fixtures; legal results compare next states and turns.",
+  "limitations": [
+    "Finite fixture agreement is not an exhaustive proof over every reachable game state.",
+    "Both models were authored by the same agent, so shared interpretation errors remain possible.",
+    "No human play, physical comfort, print, motion, or independent source-engine validation is claimed."
+  ],
+  "artifact_sha256": {
+    "rules/audit.py": "209e708c505ba88f55c9b3cb89939202f9fae8ba84b90a7f99e89952b687d5ad",
+    "RULES.md": "6595365800b0213050230ad9303bbab537b0de99d53fc8629cdf1e774c896d1d"
+  }
+}

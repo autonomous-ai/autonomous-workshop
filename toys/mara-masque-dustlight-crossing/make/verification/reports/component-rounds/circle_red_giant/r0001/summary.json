@@ -1,0 +1,62 @@
+{
+ "build": {
+  "circle_red_giant": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "circle_red_giant"
+ ],
+ "check_motion": false,
+ "checked": [
+  "circle_red_giant"
+ ],
+ "checks_ok": true,
+ "entry": "part_circle_red_giant.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_red_giant/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "circle_red_giant"
+ ],
+ "print": {
+  "circle_red_giant": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_red_giant/r0001/overhang-circle_red_giant.log": "a058e7aebe53f3d7ec4f1deb3dd6b9276002ef17c3c5fea4fce94770f7e14c01",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_red_giant/r0001/thickness-circle_red_giant.log": "93907ae0797f53125fe318e9d151da6824de5607e5911c3fc4fe2c0287aa8541"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.73,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:circle_red_giant",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show the tallest swelling stellar body with longitudinal convection ridges and a broad blunt top; top confirms its larger round lobed envelope; rank8 remains exposed on the circular-base aprons.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_red_giant/r0001/visual-packet.json",
+  "packet_sha256": "23f5aac14b611328b72c80b9c3cfab9557f6a2ab0ddcd80468acddd9751fa803",
+  "status": "pass"
+ }
+}

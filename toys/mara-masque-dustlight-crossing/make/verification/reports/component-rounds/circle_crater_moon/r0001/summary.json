@@ -1,0 +1,71 @@
+{
+ "build": {
+  "circle_crater_moon": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "circle_crater_moon"
+ ],
+ "check_motion": false,
+ "checked": [
+  "circle_crater_moon"
+ ],
+ "checks_ok": false,
+ "entry": "part_circle_crater_moon.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_crater_moon/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "circle_crater_moon"
+ ],
+ "print": {
+  "circle_crater_moon": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_crater_moon/r0001/overhang-circle_crater_moon.log": "7f33fd64d5b92003cc9d7290d5cf6b0f752a6236e6985c4fb964fea8b388f77b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_crater_moon/r0001/thickness-circle_crater_moon.log": "f801aeb0a2c9467ffc3113c6d505ac571c9e73d0f6711d0f47b0422e3c125b05"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 22.8% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 2.2,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:circle_crater_moon",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Unsupported recess roof and edge marking",
+    "evidence": "Front/iso show horizontal top of terminator and crater crown; overhang gate fails.",
+    "part": "circle_crater_moon",
+    "repair": "Cut a pitched-roof faceted crater and terminator; move numeral inward."
+   }
+  ],
+  "observation": "Vertical moon disk, broad crater and terminator are visible; roof of recess is circular and numeral3 reaches rim.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_crater_moon/r0001/visual-packet.json",
+  "packet_sha256": "eafc9bbce0a3e7e8d147a9fc3d7aad1ea43f8ce39f3c6b5f69b1f45b19c3d589",
+  "status": "fail"
+ }
+}

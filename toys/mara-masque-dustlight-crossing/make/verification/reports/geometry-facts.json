@@ -1,0 +1,485 @@
+[
+  {
+    "entry": "part_circle_asteroid.step",
+    "step_sha256": "a2167107354dc2637dabe58b37673f19b582c142b0fded6660274da65d28dcc1",
+    "size_mm": [
+      21.986326,
+      21.993162,
+      20.0
+    ],
+    "bounds": {
+      "min": [
+        -10.986326,
+        -10.996581,
+        0.0
+      ],
+      "max": [
+        11.0,
+        10.996581,
+        20.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_circle_crater_moon.step",
+    "step_sha256": "5b50319362735fd9d703a232af8b2019d1f26f7bb0cdcbe752db424182c3d962",
+    "size_mm": [
+      21.986326,
+      21.993162,
+      22.0
+    ],
+    "bounds": {
+      "min": [
+        -10.986326,
+        -10.996581,
+        0.0
+      ],
+      "max": [
+        11.0,
+        10.996581,
+        22.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_circle_dust_knot.step",
+    "step_sha256": "e50dd6aa334d920220bda6dbf71e4a72d32be5982e94d010b9c1a3fd077895c3",
+    "size_mm": [
+      21.986326,
+      21.993162,
+      18.0
+    ],
+    "bounds": {
+      "min": [
+        -10.986326,
+        -10.996581,
+        0.0
+      ],
+      "max": [
+        11.0,
+        10.996581,
+        18.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_circle_pulsar.step",
+    "step_sha256": "0c243e7e31edccaf96be3982c7c2f239a6715e0e22d00ff7427325c986822516",
+    "size_mm": [
+      21.986326,
+      21.993162,
+      30.0
+    ],
+    "bounds": {
+      "min": [
+        -10.986326,
+        -10.996581,
+        0.0
+      ],
+      "max": [
+        11.0,
+        10.996581,
+        30.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_circle_red_dwarf.step",
+    "step_sha256": "ef15084db5bcaa1b3f745bc6cbea3e7555e30e6859520d75cdeb9425e9ee2497",
+    "size_mm": [
+      21.986326,
+      21.993162,
+      26.0
+    ],
+    "bounds": {
+      "min": [
+        -10.986326,
+        -10.996581,
+        0.0
+      ],
+      "max": [
+        11.0,
+        10.996581,
+        26.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_circle_red_giant.step",
+    "step_sha256": "06b59de35f42420689ed62c18798179ae29133862a0a05522568507d076e9a51",
+    "size_mm": [
+      21.986326,
+      21.993162,
+      32.0
+    ],
+    "bounds": {
+      "min": [
+        -10.986326,
+        -10.996581,
+        0.0
+      ],
+      "max": [
+        11.0,
+        10.996581,
+        32.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_circle_ringed_planet.step",
+    "step_sha256": "85be713f6bbc53cfbdd6356ec90b3fab9c0a76ad01e0621475d0dfbbbf0c4f89",
+    "size_mm": [
+      21.986326,
+      21.993162,
+      24.0
+    ],
+    "bounds": {
+      "min": [
+        -10.986326,
+        -10.996581,
+        0.0
+      ],
+      "max": [
+        11.0,
+        10.996581,
+        24.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_circle_twin_tail_comet.step",
+    "step_sha256": "94b17d178495f41e6cfbb40e9b8dcc2828617b9b3e277698f9e60f121a0b3ab2",
+    "size_mm": [
+      21.986326,
+      21.993162,
+      28.0
+    ],
+    "bounds": {
+      "min": [
+        -10.986326,
+        -10.996581,
+        0.0
+      ],
+      "max": [
+        11.0,
+        10.996581,
+        28.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_northeast_panel.step",
+    "step_sha256": "a76bbfe0318a52f11c7e19e5b24df0ee13e0527fb843fb052cae5605fe96db7f",
+    "size_mm": [
+      126.0,
+      156.0,
+      5.0
+    ],
+    "bounds": {
+      "min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max": [
+        126.0,
+        156.0,
+        5.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_northwest_panel.step",
+    "step_sha256": "d604e2ae6e77f25c0307629688a1b21bbd961d41b70aed03e4be756d74a47dc5",
+    "size_mm": [
+      96.0,
+      156.0,
+      5.0
+    ],
+    "bounds": {
+      "min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max": [
+        96.0,
+        156.0,
+        5.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_southeast_panel.step",
+    "step_sha256": "109c95e57b07c3dcabe6720b6bfcec991c73e5b1b1190569bd7e923d910f165b",
+    "size_mm": [
+      126.0,
+      126.0,
+      5.0
+    ],
+    "bounds": {
+      "min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max": [
+        126.0,
+        126.0,
+        5.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_southwest_panel.step",
+    "step_sha256": "76cdb889e0c1caa261baa9c4a5b2dc94dccfe8f39e4d4590cacf43110dc6a385",
+    "size_mm": [
+      96.0,
+      126.0,
+      5.0
+    ],
+    "bounds": {
+      "min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max": [
+        96.0,
+        126.0,
+        5.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_square_asteroid.step",
+    "step_sha256": "6e9499e101db72b75cc548ffc39eda6cc563bb28b3bf94ccadd28ce3f5c97f9f",
+    "size_mm": [
+      22.0,
+      22.0,
+      20.0
+    ],
+    "bounds": {
+      "min": [
+        -11.0,
+        -11.0,
+        0.0
+      ],
+      "max": [
+        11.0,
+        11.0,
+        20.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_square_crater_moon.step",
+    "step_sha256": "f2277c0c5e543e0d5a6a4ce6914ffbb20e5a60d322025c7bd89dbd54fdb66305",
+    "size_mm": [
+      22.0,
+      22.0,
+      22.0
+    ],
+    "bounds": {
+      "min": [
+        -11.0,
+        -11.0,
+        0.0
+      ],
+      "max": [
+        11.0,
+        11.0,
+        22.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_square_dust_knot.step",
+    "step_sha256": "f5283a0ff66cdee15d6612ac731def1d201eb3dbe18a931c2b95221de818a638",
+    "size_mm": [
+      22.0,
+      22.0,
+      18.0
+    ],
+    "bounds": {
+      "min": [
+        -11.0,
+        -11.0,
+        0.0
+      ],
+      "max": [
+        11.0,
+        11.0,
+        18.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_square_pulsar.step",
+    "step_sha256": "34113894d5da6877b8f231beefafaf5eacb2af02637bd11872798c2665ef9baa",
+    "size_mm": [
+      22.0,
+      22.0,
+      30.0
+    ],
+    "bounds": {
+      "min": [
+        -11.0,
+        -11.0,
+        0.0
+      ],
+      "max": [
+        11.0,
+        11.0,
+        30.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_square_red_dwarf.step",
+    "step_sha256": "bbbada3e30f6c7ba2991e7e24f7a7ea389aed3deb5f953efebebc67771b37fd7",
+    "size_mm": [
+      22.0,
+      22.0,
+      26.0
+    ],
+    "bounds": {
+      "min": [
+        -11.0,
+        -11.0,
+        0.0
+      ],
+      "max": [
+        11.0,
+        11.0,
+        26.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_square_red_giant.step",
+    "step_sha256": "e80bb8e8a991979021ebe68d5b59cc8447dedfb91db2045c7d1fee33a40227a2",
+    "size_mm": [
+      22.0,
+      22.0,
+      32.0
+    ],
+    "bounds": {
+      "min": [
+        -11.0,
+        -11.0,
+        0.0
+      ],
+      "max": [
+        11.0,
+        11.0,
+        32.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_square_ringed_planet.step",
+    "step_sha256": "fd6c7fe7b7403a41be5d9466eef476960e6da76dd012f505c51805aaea0e9104",
+    "size_mm": [
+      22.0,
+      22.0,
+      24.0
+    ],
+    "bounds": {
+      "min": [
+        -11.0,
+        -11.0,
+        0.0
+      ],
+      "max": [
+        11.0,
+        11.0,
+        24.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "part_square_twin_tail_comet.step",
+    "step_sha256": "a876a43bed1102a63d203fbea75ca61ccadb279ae3bfbfb6a7c59d626934ef97",
+    "size_mm": [
+      22.0,
+      22.0,
+      28.0
+    ],
+    "bounds": {
+      "min": [
+        -11.0,
+        -11.0,
+        0.0
+      ],
+      "max": [
+        11.0,
+        11.0,
+        28.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  },
+  {
+    "entry": "dustlight.step",
+    "step_sha256": "0a2600a36459a29633433511bf80d76928661b22781f7170a68794d0cd31926e",
+    "size_mm": [
+      222.0,
+      282.0,
+      37.0
+    ],
+    "bounds": {
+      "min": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max": [
+        222.0,
+        282.0,
+        37.0
+      ]
+    },
+    "ok": true,
+    "exitCode": 0
+  }
+]

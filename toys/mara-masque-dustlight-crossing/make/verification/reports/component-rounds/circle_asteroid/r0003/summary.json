@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_circle_asteroid.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "circle_asteroid"
+ ],
+ "print": {
+  "circle_asteroid": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0002/overhang-circle_asteroid.log": "69321d4986d1cf7b1bb9f0ac93d287a1041f21259edacafe72165ccbfb5c4dff",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0002/thickness-circle_asteroid.log": "562587bb3c7d5aff7708b08535976fa41c9d2f9b998b7e9412496e16a76358b6"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "circle_asteroid"
+ ],
+ "round": 3,
+ "scope": "component:circle_asteroid",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show an asymmetric faceted boulder with three shallow pitched crater pockets; top confirms the broad circular foot; both rank2 marks are inset and visible in iso, with no thin projecting crater lip.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/circle_asteroid/r0003/visual-packet.json",
+  "packet_sha256": "ea5b6737653966c9eda2a7d622cd43949f7b4d89c8e8fde456ea4264d65df302",
+  "status": "pass"
+ }
+}
