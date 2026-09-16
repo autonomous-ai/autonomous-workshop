@@ -3,6 +3,9 @@
   "id": "autonomous/solid",
   "name": "Solid",
   "category": "3D design",
+  "formerly": [
+    "autonomous/workshop"
+  ],
   "description": "Describe a part; get a validated, printable STEP with a live 3D view.",
   "engine": "codex",
   "workspace": {
