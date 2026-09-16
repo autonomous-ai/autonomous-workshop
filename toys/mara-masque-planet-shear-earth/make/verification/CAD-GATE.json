@@ -1,0 +1,25 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-16T01:00:10+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 114.41 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=f1d2e3a9ab750e912e627185e24de1edaa5cd75f6a6d19ca72b2b1cc2bfd44ad` | note | 0.00 |
+| 2 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout' artifacts/make/r0001/product/cad` | rc=0 | 0.04 |
+| 3 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/gen' artifacts/make/r0001/product/cad/planet_shear_earth.step.py artifacts/make/r0001/product/cad/part_piece.step.py --write --json` | rc=0 | 12.88 |
+| 4 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit' artifacts/make/r0001/product/cad --bed 220.0 220.0 --entry artifacts/make/r0001/product/cad/part_piece.step.py --strict` | rc=0 | 8.49 |
+| 5 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python artifacts/make/r0001/product/cad/measure/check_spec.py` | rc=0 | 2.02 |
+| 6 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python artifacts/make/r0001/product/cad/measure/check_landmarks.py` | rc=0 | 6.47 |
+| 7 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_numbers' artifacts/make/r0001/product/cad` | rc=0 | 2.04 |
+| 8 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_format' artifacts/make/r0001/product/cad` | rc=0 | 0.03 |
+| 9 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 10 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 11 | `check_motion  # NOT RUN: disabled by Make motion policy; motion is unverified` | skipped | 0.00 |
+| 12 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect' batch (5 JSONL requests)` | rc=0 | 47.72 |
+| 13 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' artifacts/make/r0001/product/cad/part_piece.step.py --bed 220x220x220` | rc=0 | 9.84 |
+| 14 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' artifacts/make/r0001/product/cad/part_piece.step.py --angle 45.0 --report artifacts/make/r0001/product/cad/measure/overhang-piece.md` | rc=0 | 10.35 |
+| 15 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' artifacts/make/r0001/product/cad/part_piece.step.py --nozzle 0.4 --report artifacts/make/r0001/product/cad/measure/thickness-piece.md` | rc=0 | 14.53 |

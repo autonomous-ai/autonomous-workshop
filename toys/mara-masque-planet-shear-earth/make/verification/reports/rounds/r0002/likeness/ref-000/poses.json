@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/planet_shear_earth.step.py",
+  "size": 480,
+  "tolerance": 0.1,
+  "poses": {
+    "hero": {
+      "az": -67.5,
+      "el": 20.625,
+      "roll": 0.0,
+      "fov": 0.0
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+ "build": {
+  "piece": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "piece"
+ ],
+ "check_motion": false,
+ "checked": [
+  "piece"
+ ],
+ "checks_ok": true,
+ "entry": "planet_shear_earth.step.py",
+ "full": null,
+ "likeness": [
+  {
+   "az": -67.5,
+   "delta": 0.0,
+   "el": 20.625,
+   "fov": 0.0,
+   "iou": 0.9459,
+   "label": "hero",
+   "ok": true,
+   "poses_path": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/likeness/ref-000/poses.json",
+   "searched": false
+  }
+ ],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "piece"
+ ],
+ "print": {
+  "piece": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/overhang-piece.log": "f95cce45b0a2ebc82ea3a23371d791acee80e2da9d0e3a9a00208cd35d88fd54",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/thickness-piece.log": "f37af1953bfccbdd597a6bba9ac3cf4211cd3aad0b21cbb9c735198d31706cda"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [
+  [
+   "hero",
+   "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/ref/hero.png"
+  ]
+ ],
+ "reused": [],
+ "round": 4,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0004/visual-packet.json",
+  "packet_sha256": "fe96bd351c6067a3aa58a1b7bdb78c3e88134b14ea6c33891a18314241f61d30",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,79 @@
+{
+ "build": {
+  "piece": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "piece"
+ ],
+ "check_motion": false,
+ "checked": [
+  "piece"
+ ],
+ "checks_ok": true,
+ "entry": "planet_shear_earth.step.py",
+ "full": null,
+ "likeness": [
+  {
+   "az": -67.5,
+   "delta": 0.0,
+   "el": 20.625,
+   "fov": 0.0,
+   "iou": 0.9459,
+   "label": "hero",
+   "ok": true,
+   "poses_path": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/likeness/ref-000/poses.json",
+   "searched": false
+  }
+ ],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "piece"
+ ],
+ "print": {
+  "piece": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/overhang-piece.log": "d7a5fd7183d39a151b9a99d1915aa58ff3e79218bd196c22f4a995759a5b1bef",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/thickness-piece.log": "14bef8cb6bbe365014bb89f5eaf2eff505e5ba3bf27fda42eaab6e22e3a48834"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [
+  [
+   "hero",
+   "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/ref/hero.png"
+  ]
+ ],
+ "reused": [],
+ "round": 5,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "All three views read as a stylised Earth on a blue disc and match the sealed reference composition: Americas left, Africa with its tan dryland right, Europe and Asia upper right, white polar ice on top, the seven-segment 4 on the front of the disc wall. Every colour lands on its own occurrence. The foot is one continuous blue from ocean to seat to disc face, and the seat spreads outward so the silhouette is a ball seated on a plate rather than pinched above it. The polar ice ends on a stepped irregular rim over most longitudes instead of a single circle of latitude. Relief edges sit down on the sphere; none stands clear of it. Top confirms the globe is concentric with the disc with even clearance all round, and shows the numeral as the only break in the rim. Nothing is misplaced, missing, duplicated, floating or intersecting.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0005/visual-packet.json",
+  "packet_sha256": "2a05945a7399ad7710a0ae4535e997cc6446bab0c5f288974c2930c417b23a38",
+  "status": "pass"
+ }
+}

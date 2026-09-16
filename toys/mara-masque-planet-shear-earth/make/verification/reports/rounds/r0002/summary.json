@@ -1,0 +1,79 @@
+{
+ "build": {
+  "piece": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "piece"
+ ],
+ "check_motion": false,
+ "checked": [
+  "piece"
+ ],
+ "checks_ok": true,
+ "entry": "planet_shear_earth.step.py",
+ "full": null,
+ "likeness": [
+  {
+   "az": -67.5,
+   "delta": 0.0,
+   "el": 20.625,
+   "fov": 0.0,
+   "iou": 0.9459,
+   "label": "hero",
+   "ok": true,
+   "poses_path": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/likeness/ref-000/poses.json",
+   "searched": false
+  }
+ ],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "piece"
+ ],
+ "print": {
+  "piece": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-piece.log": "031c5289e16cfbf3971e2f4bcc80698496061c9801eb4eaff9c1895513ad6efc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-piece.log": "3a4b961c94179d4d11c199e022bb23239fdcb2c5ecd9f2acd3e94508b5b8b6b3"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [
+  [
+   "hero",
+   "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/ref/hero.png"
+  ]
+ ],
+ "reused": [],
+ "round": 2,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "All three views read as a stylised Earth on a blue disc and match the sealed reference composition: North and South America on the left, Africa with its tan dryland on the right, Europe and Asia upper right, white ice over the pole and a ragged white band of southern ice at the foot of the globe, and the seven-segment 4 on the front of the disc wall. Every colour lands on the occurrence that owns it. The southern ice now runs continuously from the disc face up into lobed tongues, so the foot reads as ice rather than as a turned collar, and the relief walls are tighter than in round 1 so the coastlines read as raised ground rather than as gaps. Top confirms the globe is concentric with the disc with even clearance all round. Nothing is misplaced, missing, duplicated, floating or intersecting.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/visual-packet.json",
+  "packet_sha256": "c8f074d1d46c76973a0ef3e90b1a1ff160d1231a7470001536b818f6db5d7b29",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "piece": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "piece"
+ ],
+ "check_motion": false,
+ "checked": [
+  "piece"
+ ],
+ "checks_ok": true,
+ "entry": "part_piece.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "piece"
+ ],
+ "print": {
+  "piece": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0004/overhang-piece.log": "84e547c900750e35c8e586b838d8f98a9fd9c5d88a365486146adf7fed6121ea",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0004/thickness-piece.log": "54cbb2e6b667b010ed1985d784381c9327caad7a0b73bf27c7d586321a428f54"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:piece",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso all show one coherent body: a 34 mm disc with a rounded top edge, a short conical seat, and a 21 mm globe carrying raised continental relief and a lobed polar ice field. The seven-segment numeral 4 stands off the front of the disc wall and reads as a 4 at the front view. Nothing is misplaced, missing, duplicated, floating or intersecting; the top view confirms the globe is concentric with the disc and clears its rim by about 6.5 mm on every side.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0004/visual-packet.json",
+  "packet_sha256": "df9111fae4ce16c8dc9cc184a4bbd7fb48d485a8291b7076c2694a06340df673",
+  "status": "pass"
+ }
+}

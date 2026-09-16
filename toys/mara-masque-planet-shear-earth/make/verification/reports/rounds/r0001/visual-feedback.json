@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "The assembled piece reads as a stylised Earth on a blue disc in all three views and matches the sealed reference composition: Americas on the left, Africa with its tan dryland on the right, white polar ice on top, and the seven-segment 4 on the front of the disc wall. Colours land on the right occurrences in every view - ocean blue sphere, olive land, tan dryland, white ice, blue disc, white ice seat. Front and iso show one continuous body with no gap, step or intersection where the globe meets the seat and the seat meets the disc face; top confirms the globe is concentric with the disc and clears its rim on every side. Land coverage is 27.5 percent of the globe surface, and the continents are chunkier than the reference by the deliberate fourteen-degree minimum-width rule recorded in the spec.",
+  "packet_sha256": "4599291236d5a06ba1209a5ecc248333198b5bf49a5d7cf3fa4fb8e928f10cd4",
+  "status": "pass"
+}

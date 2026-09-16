@@ -1,0 +1,17 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_piece.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-piece.md
+(9.1s, exit 0)
+--- stdout
+part_piece.step.py: 36.6 cm2 of surface, grid 0.400 mm, 18 unsupported samples over 6 region(s)
+  PASS  no face under 45 deg needs support     24.9% of the surface faces down that steeply; 0 region(s) need support, 0 bridge, 6 below 1 mm2
+  PASS  bridges within 12 mm                   0 region(s), longest span 0.0 mm
+        every unsupported region, largest first:
+        1. [trace   ]     0.7 mm2 at (8.9, 5.8, 16.9)  span   0.8 mm of 1x2, 11.6 mm of air below
+        2. [trace   ]     0.4 mm2 at (-10.2, -1.5, 17.5)  span   0.1 mm of 1x0, 12.8 mm of air below
+        3. [trace   ]     0.3 mm2 at (1.2, 8.3, 7.1)  span   0.1 mm of 0x0, 2.4 mm of air below
+        4. [trace   ]     0.3 mm2 at (2.4, -8.3, 19.9)  span   0.1 mm of 0x0, 0.8 mm of air below
+        5. [trace   ]     0.3 mm2 at (5.7, 6.8, 7.6)  span   0.2 mm of 0x0, 2.8 mm of air below
+        6. [trace   ]     0.0 mm2 at (-8.1, -7.9, 15.7)  span   0.2 mm of 0x0, 10.8 mm of air below
+RESULT: prints unsupported
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-piece.md
+
+--- stderr

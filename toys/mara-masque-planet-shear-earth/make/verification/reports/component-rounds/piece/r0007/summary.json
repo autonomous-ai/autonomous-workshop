@@ -1,0 +1,62 @@
+{
+ "build": {
+  "piece": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "piece"
+ ],
+ "check_motion": false,
+ "checked": [
+  "piece"
+ ],
+ "checks_ok": true,
+ "entry": "part_piece.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0007",
+ "overhang_angle": 45.0,
+ "parts": [
+  "piece"
+ ],
+ "print": {
+  "piece": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0007/overhang-piece.log": "b1bf8765d7b5e77a04e437eae0885e00a34a9610c693af19d803b4c42a2eaa1d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0007/thickness-piece.log": "a7205f5c700f4ef4e7397056c4c6cebc20da6428a35788015b06525b7b318bb1"
+   },
+   "measured_round": 7,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 7,
+ "scope": "component:piece",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One coherent printed body in all three views. Front shows the globe seated on the disc with the foot spreading outward into the disc face instead of tucking in, so the silhouette is a ball on a plate with no waist; the seven-segment 4 stands off the front wall and reads as a 4. Iso shows the relief edges sitting down on the sphere with no lip standing clear of it, and the polar field ending on an irregular rim rather than a parallel. Top confirms the globe is concentric with the disc with even clearance all round and shows the numeral as the only break in the rim, at the front. Nothing misplaced, missing, duplicated, floating or intersecting.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0007/visual-packet.json",
+  "packet_sha256": "5b5fc0f668925922c8abccdb803c21677c77ae92a3ee063f07b2017b0a17b350",
+  "status": "pass"
+ }
+}

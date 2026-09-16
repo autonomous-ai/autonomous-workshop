@@ -1,0 +1,62 @@
+{
+ "build": {
+  "piece": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "piece"
+ ],
+ "check_motion": false,
+ "checked": [
+  "piece"
+ ],
+ "checks_ok": true,
+ "entry": "part_piece.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0008",
+ "overhang_angle": 45.0,
+ "parts": [
+  "piece"
+ ],
+ "print": {
+  "piece": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0008/overhang-piece.log": "bc7045b9cca0277b1d160ac942978c9e270f3ae6b9d31039ab52480d904dbfe6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0008/thickness-piece.log": "34fb7960a9f1a7eaf7b240606fd35feb1ebbfec71f07a170f93376a7be9b147b"
+   },
+   "measured_round": 8,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 8,
+ "scope": "component:piece",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One coherent printed body in front, top and iso. The 34 mm disc has a rounded top edge and a flat bottom face; the globe sits on it with the foot spreading outward into the disc face, so the front silhouette is a ball on a plate with no waist above the join. Relief edges sit down on the sphere rather than standing clear of it, and the polar field ends on a stepped irregular rim, not a single parallel. The seven-segment 4 stands off the front wall and reads as a 4 in the front view; in the top view it is the only break in the disc rim and it is at the front, as intended. Nothing misplaced, missing, duplicated, floating or intersecting, and this round also passes check_mesh watertight and manifold.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0008/visual-packet.json",
+  "packet_sha256": "469f299b1319764e93a22ac207c8b9a3478315a5ef228589c0f630511aab3a09",
+  "status": "pass"
+ }
+}

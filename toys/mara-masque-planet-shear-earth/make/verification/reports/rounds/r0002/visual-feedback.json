@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "All three views read as a stylised Earth on a blue disc and match the sealed reference composition: North and South America on the left, Africa with its tan dryland on the right, Europe and Asia upper right, white ice over the pole and a ragged white band of southern ice at the foot of the globe, and the seven-segment 4 on the front of the disc wall. Every colour lands on the occurrence that owns it. The southern ice now runs continuously from the disc face up into lobed tongues, so the foot reads as ice rather than as a turned collar, and the relief walls are tighter than in round 1 so the coastlines read as raised ground rather than as gaps. Top confirms the globe is concentric with the disc with even clearance all round. Nothing is misplaced, missing, duplicated, floating or intersecting.",
+  "packet_sha256": "c8f074d1d46c76973a0ef3e90b1a1ff160d1231a7470001536b818f6db5d7b29",
+  "status": "pass"
+}

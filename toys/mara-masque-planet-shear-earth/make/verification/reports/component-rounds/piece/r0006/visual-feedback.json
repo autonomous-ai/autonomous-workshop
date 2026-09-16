@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso are byte-identical to the previous component round, which is expected: this round changed only which colour each region is finished in, not the printed geometry. Inspected again in this packet: one coherent body, 34 mm disc with a rounded top edge, a short conical seat landing on the disc face with a clean edge, and a globe carrying raised continental relief and a lobed polar field. The seven-segment 4 stands off the front of the disc wall and reads as a 4 in the front view and as a small bump at the near rim in the top view, which also confirms the globe is concentric with the disc. Nothing misplaced, missing, duplicated, floating or intersecting.",
+  "packet_sha256": "c42643085c3d3f5a62821a7bc71cb2600a463196ff7d2153f35b2dcb7c2c11e7",
+  "status": "pass"
+}

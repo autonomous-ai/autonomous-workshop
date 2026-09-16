@@ -1,0 +1,22 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0005/visual/front.png": "e01325165decb19844ff6623c9d3c7f451af4505ef155ab0c2d56ecea6ddac13",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0005/visual/iso.png": "70e38df1ba2f0bda873a7c9bbb3ba05a6f5e693a4b919e4005531d3fb6fdb9b5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0005/visual/top.png": "09a08e47edddc52b561938a73aa9f88be2f4de3ea907d93c47c63e3291977b08"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "README.md": "d11161942ecd34954e3bd07ee20b48e82925005432be3e65d2869970a89d2304",
+    "measure/check_landmarks.py": "69369ed588888201120cf0650186481db7b3e87611b4544ec77eb006c2645775",
+    "measure/check_spec.py": "3580f5801a48333e372dfff461af0e272bf01e7852c6d98ec0178258536a1830",
+    "part_piece.step": "2c2d5c69662cf8fd6abfd6236930ae7cbe3030c47c1b0ecdc166b33302f4cc65",
+    "part_piece.step.py": "fd53bbe16f48b69045756527a60bd3aaef96f86b9316aa80b38c0d6ae92b03ed",
+    "planet_shear_atlas.py": "e7be1c0237bdbeb44b6f7b6847d56b087c60f27518e4d21cd6e0176b600ec686",
+    "planet_shear_earth.step": "09826093386e848a1209d684ecb8d54de0746a57cccbc90fe85f5041d7f6a2b9",
+    "planet_shear_earth.step.py": "5576d79ea3d663e6a60fd842157c3234262a897abefd36dda8ad4828179d01a0",
+    "planet_shear_earth_spec.md": "3c88e7f72d0d770c70fde816c63eef3451c507dbfc82f83b5417d28d1b9cb550",
+    "planet_shear_geo.py": "f2a2800df6d0dee4a3f119e7b844c7eb204ea3e00ed88e8acf642c9341ba89ef",
+    "planet_shear_lib.py": "5ee546fca455a84123acccc468952e70cf2ec5bac429cf44e3930fa81e88c308"
+  }
+}

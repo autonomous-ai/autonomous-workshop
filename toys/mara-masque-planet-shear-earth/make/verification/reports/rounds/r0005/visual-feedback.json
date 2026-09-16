@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "All three views read as a stylised Earth on a blue disc and match the sealed reference composition: Americas left, Africa with its tan dryland right, Europe and Asia upper right, white polar ice on top, the seven-segment 4 on the front of the disc wall. Every colour lands on its own occurrence. The foot is one continuous blue from ocean to seat to disc face, and the seat spreads outward so the silhouette is a ball seated on a plate rather than pinched above it. The polar ice ends on a stepped irregular rim over most longitudes instead of a single circle of latitude. Relief edges sit down on the sphere; none stands clear of it. Top confirms the globe is concentric with the disc with even clearance all round, and shows the numeral as the only break in the rim. Nothing is misplaced, missing, duplicated, floating or intersecting.",
+  "packet_sha256": "2a05945a7399ad7710a0ae4535e997cc6446bab0c5f288974c2930c417b23a38",
+  "status": "pass"
+}

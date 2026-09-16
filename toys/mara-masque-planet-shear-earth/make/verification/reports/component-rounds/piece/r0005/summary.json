@@ -1,0 +1,62 @@
+{
+ "build": {
+  "piece": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "piece"
+ ],
+ "check_motion": false,
+ "checked": [
+  "piece"
+ ],
+ "checks_ok": true,
+ "entry": "part_piece.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "piece"
+ ],
+ "print": {
+  "piece": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0005/overhang-piece.log": "6a02c39c0aa78f43ae95a19e56715f011d5eda9ada56d4ac8bf8971865ca2cff",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0005/thickness-piece.log": "e63809799e958a6b803a6ea3a155548201783c1d2f2c242e13f114d7c81b8978"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:piece",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso show one coherent body with the relief walls now tighter than the previous round: the disc is 34 mm with a rounded top edge, the conical seat is short and lands on the disc face with a clean edge, and the globe carries raised continental relief plus a lobed polar field. The seven-segment 4 stands off the front of the disc wall and reads as a 4 in the front view; the top view shows it as a small bump at the near rim and confirms the globe is concentric with the disc. Nothing is misplaced, missing, duplicated, floating or intersecting.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0005/visual-packet.json",
+  "packet_sha256": "052fadab63af47f0d66f04c978f6445387308d0e38ddd66b1bcd93195e2ea236",
+  "status": "pass"
+ }
+}

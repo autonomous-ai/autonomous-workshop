@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "One coherent printed body in front, top and iso. The 34 mm disc has a rounded top edge and a flat bottom face; the globe sits on it with the foot spreading outward into the disc face, so the front silhouette is a ball on a plate with no waist above the join. Relief edges sit down on the sphere rather than standing clear of it, and the polar field ends on a stepped irregular rim, not a single parallel. The seven-segment 4 stands off the front wall and reads as a 4 in the front view; in the top view it is the only break in the disc rim and it is at the front, as intended. Nothing misplaced, missing, duplicated, floating or intersecting, and this round also passes check_mesh watertight and manifold.",
+  "packet_sha256": "469f299b1319764e93a22ac207c8b9a3478315a5ef228589c0f630511aab3a09",
+  "status": "pass"
+}

@@ -1,0 +1,79 @@
+{
+ "build": {
+  "piece": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "piece"
+ ],
+ "check_motion": false,
+ "checked": [
+  "piece"
+ ],
+ "checks_ok": true,
+ "entry": "planet_shear_earth.step.py",
+ "full": null,
+ "likeness": [
+  {
+   "az": -67.5,
+   "delta": null,
+   "el": 20.625,
+   "fov": 0.0,
+   "iou": 0.9459,
+   "label": "hero",
+   "ok": true,
+   "poses_path": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/likeness/ref-000/poses.json",
+   "searched": false
+  }
+ ],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "piece"
+ ],
+ "print": {
+  "piece": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-piece.log": "8e056be90e23d5e4855d7684596a261dcbba031ae829e8a6852535dec0959a1c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-piece.log": "b088b3eb2edba11f8bb9ff333c9dde6396efcdf7ee302122b882c7fe221382fc"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [
+  [
+   "hero",
+   "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/ref/hero.png"
+  ]
+ ],
+ "reused": [],
+ "round": 1,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The assembled piece reads as a stylised Earth on a blue disc in all three views and matches the sealed reference composition: Americas on the left, Africa with its tan dryland on the right, white polar ice on top, and the seven-segment 4 on the front of the disc wall. Colours land on the right occurrences in every view - ocean blue sphere, olive land, tan dryland, white ice, blue disc, white ice seat. Front and iso show one continuous body with no gap, step or intersection where the globe meets the seat and the seat meets the disc face; top confirms the globe is concentric with the disc and clears its rim on every side. Land coverage is 27.5 percent of the globe surface, and the continents are chunkier than the reference by the deliberate fourteen-degree minimum-width rule recorded in the spec.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/visual-packet.json",
+  "packet_sha256": "4599291236d5a06ba1209a5ecc248333198b5bf49a5d7cf3fa4fb8e928f10cd4",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,17 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0001/visual/front.png": "3f5d41dbf24f862c63bbd5ce4361c773b004a9a19c25be5e8ff0132ac4373806",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0001/visual/iso.png": "75444291740b7abece77e30933a3731b7f0eaa1cd3250b83e4f51200ce4faa16",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0001/visual/top.png": "b7d458244994968b28687f40752f504eab8001a8c6b08dcc6fa50512e23e7b9e"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "part_piece.step": "3eeac3f9d37b50c2cc41564b0d564440041a01157e67afa8dfb1bdf7b72af35d",
+    "part_piece.step.py": "fd53bbe16f48b69045756527a60bd3aaef96f86b9316aa80b38c0d6ae92b03ed",
+    "planet_shear_atlas.py": "22e1e27d012315b19f18d14f098edf6acfa33d3428a8c11f69895c16847025ae",
+    "planet_shear_earth.step.py": "38557798279ad22935058f4d0324a9d4ac5061c08e73dddbb651305629933d91",
+    "planet_shear_geo.py": "6980cdd9fee0457b003fe9fcf67b3312f03118f015725e600d666e65f3b46066",
+    "planet_shear_lib.py": "b524bcd9f09d8d9bbe2b9e3712b8921f88a808900df520bb2b32c7ff14746774"
+  }
+}

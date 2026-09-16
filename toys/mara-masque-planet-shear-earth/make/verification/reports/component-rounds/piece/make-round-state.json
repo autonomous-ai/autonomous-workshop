@@ -1,0 +1,49 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0008",
+ "likeness": {},
+ "parts": {
+  "piece": "f4f4493b1a5dbdcf425130a37d7742b5cc56330542c18a959459c281ddc01707"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "piece": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0008/overhang-piece.log": "bc7045b9cca0277b1d160ac942978c9e270f3ae6b9d31039ab52480d904dbfe6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0008/thickness-piece.log": "34fb7960a9f1a7eaf7b240606fd35feb1ebbfec71f07a170f93376a7be9b147b"
+   },
+   "measured_round": 8,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.5.2",
+   "scipy": "1.18.1"
+  },
+  "platform": "darwin",
+  "python": "<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13",
+  "python_version": "3.13.5 (main, Jun 12 2025, 12:22:43) [Clang 20.1.4 ]",
+  "sources": {
+   "check_overhang": "63eeb364e716008c35cfa94797653cf761cf20cebacb369609f99800c7dfb692",
+   "check_thickness": "f06beddeebd63fe1c082b631203a05d27060e8edc6552b6c95c98f9472bf2543",
+   "make_round": "aa4bc2b37d50f10e3b8ba7067ee7ac31a408f6d4ea37efb521041e56d289b21e",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 8,
+ "scope": "component:piece"
+}

@@ -1,0 +1,72 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "planet_shear_earth.step.py",
+ "full": null,
+ "likeness": [
+  {
+   "az": -67.5,
+   "delta": 0.0,
+   "el": 20.625,
+   "fov": 0.0,
+   "iou": 0.9459,
+   "label": "hero",
+   "ok": true,
+   "poses_path": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/likeness/ref-000/poses.json",
+   "searched": false
+  }
+ ],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "piece"
+ ],
+ "print": {
+  "piece": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-piece.log": "031c5289e16cfbf3971e2f4bcc80698496061c9801eb4eaff9c1895513ad6efc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-piece.log": "3a4b961c94179d4d11c199e022bb23239fdcb2c5ecd9f2acd3e94508b5b8b6b3"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [
+  [
+   "hero",
+   "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/ref/hero.png"
+  ]
+ ],
+ "reused": [
+  "piece"
+ ],
+ "round": 3,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "All three views read as a stylised Earth on a blue disc, matching the sealed reference composition: Americas left, Africa with its tan dryland right, Europe and Asia upper right, white polar ice on top, and the seven-segment 4 on the front of the disc wall. The foot of the globe is now one continuous blue from the ocean into the conical seat and on to the disc face, with no change of colour and no ring of bare material where the two meet, which is what an independent reviewer twice called the worst thing about the piece. Land, dryland, ice and disc colours each land on their own occurrence in every view. Top confirms the globe is concentric with the disc with even clearance all round, and shows the numeral as a small bump at the near rim. Nothing is misplaced, missing, duplicated, floating or intersecting.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/visual-packet.json",
+  "packet_sha256": "febfa0a3aace3176382c9523c445f5be7fe847aacca0e8ed5fdf4930a5968361",
+  "status": "pass"
+ }
+}

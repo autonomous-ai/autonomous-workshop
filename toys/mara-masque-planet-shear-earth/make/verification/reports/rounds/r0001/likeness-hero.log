@@ -1,0 +1,6 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/image-to-cad/scripts/render_views.py <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/planet_shear_earth.step.py --match <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/ref/hero.png --label hero --min 0.9 -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/likeness/ref-000 --shaded --json
+(16.1s, exit 0)
+--- stdout
+{"source":"<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/planet_shear_earth.step.py","out":"<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/likeness/ref-000","poses":{"hero":{"az":-67.5,"el":20.625,"roll":0.0,"fov":0.0}},"views":[{"label":"hero","kind":"match","reference":"<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/ref/hero.png","iou":0.9459,"aspect_delta":1.0131,"poses_tried":249,"ok":true,"az":-67.5,"el":20.625,"roll":0.0,"fov":0.0}],"step_drift":[],"mask_contradictions":[],"ok":true,"tolerance":0.1,"size":480}
+
+--- stderr

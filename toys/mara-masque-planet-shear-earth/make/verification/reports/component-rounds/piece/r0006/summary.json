@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_piece.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "piece"
+ ],
+ "print": {
+  "piece": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0005/overhang-piece.log": "6a02c39c0aa78f43ae95a19e56715f011d5eda9ada56d4ac8bf8971865ca2cff",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0005/thickness-piece.log": "e63809799e958a6b803a6ea3a155548201783c1d2f2c242e13f114d7c81b8978"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "piece"
+ ],
+ "round": 6,
+ "scope": "component:piece",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso are byte-identical to the previous component round, which is expected: this round changed only which colour each region is finished in, not the printed geometry. Inspected again in this packet: one coherent body, 34 mm disc with a rounded top edge, a short conical seat landing on the disc face with a clean edge, and a globe carrying raised continental relief and a lobed polar field. The seven-segment 4 stands off the front of the disc wall and reads as a 4 in the front view and as a small bump at the near rim in the top view, which also confirms the globe is concentric with the disc. Nothing misplaced, missing, duplicated, floating or intersecting.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/piece/r0006/visual-packet.json",
+  "packet_sha256": "c42643085c3d3f5a62821a7bc71cb2600a463196ff7d2153f35b2dcb7c2c11e7",
+  "status": "pass"
+ }
+}
