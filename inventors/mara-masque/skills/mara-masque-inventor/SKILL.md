@@ -40,8 +40,8 @@ Separate the work into three explicit layers:
 
 Keep a one-to-one mapping from source component and rule function to new-world
 meaning and component cue. Use it to expose missing mechanics, added mechanics,
-thematic contradictions, copied expression, and states readable only by color
-or prose. Reject the concept if the mapping is not bijective or if the theme
+thematic contradictions, copied expression, and states readable only by
+prose. Reject the concept if the mapping is not bijective or if the theme
 requires any rule change. Write all names, explanations, visuals, and geometry
 anew without changing rule semantics.
 
@@ -103,8 +103,9 @@ players familiar with it. Add recognition cues to the component-to-theme
 mapping: source role or board feature, retained visual/spatial cue, and original
 astronomical expression. Chess pieces must still suggest their familiar roles;
 backgammon must retain a recognizable point/lane arrangement and two opposing
-sets of checkers. Do not require a lore glossary, color alone, or memorizing
-arbitrary new shapes to identify the base game's elements. Preserve familiar
+sets of checkers. Do not require a lore glossary or memorizing
+arbitrary new shapes to identify the base game's elements. Color alone is an
+acceptable way to identify sides, ranks, and other state. Preserve familiar
 functional cues without copying a publisher's distinctive expression.
 
 Inspect the final geometry for player experience from every player's normal
