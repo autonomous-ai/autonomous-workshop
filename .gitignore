@@ -64,3 +64,5 @@ __cadgen__/
 
 # Host renderer dependencies are installed per machine (workshop doctor).
 /tools/render/node_modules/
+
+_prototypes/
