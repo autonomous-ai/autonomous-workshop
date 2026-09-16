@@ -150,3 +150,14 @@ class Progress:
     def finish(self, note: str = "") -> None:
         elapsed = duration(time.monotonic() - self.started)
         write(f"{self.label}: {self.count} done in {elapsed}{' ' + note if note else ''}")
+
+
+def record_geometry_failure() -> None:
+    """Keep a measured failure visible if a later native operation is killed.
+
+    The bounded parent supplies an already-open private descriptor; tool code
+    cannot redirect this write to an arbitrary path. A single byte is enough.
+    """
+    descriptor = os.environ.get("WORKSHOP_GEOMETRY_FAILURE_FD")
+    if descriptor is not None:
+        os.write(int(descriptor), b"1")

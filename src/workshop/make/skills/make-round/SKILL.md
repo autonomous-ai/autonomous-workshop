@@ -195,3 +195,16 @@ image inspection. It cannot independently verify the truth of those findings.
 The thresholds are the tools' defaults unless you pass them, and the
 final Make proposal still requires the integrated `verify_project` run the
 cad skill describes.
+
+## Interrupted geometry analysis
+
+A cancelled or timed-out print/motion measurement is `UNVERIFIED`, never PASS.
+The round can continue to visual review with that explicit limitation;
+`geometry_status: unverified` and `print_ready_claim: false` retain it in the
+summary. Repair measured failures. Do not repeat a round solely to retry the
+same timed-out geometry operation. Final `verify_project` seals incomplete
+checks into the final geometry disclosure. An incomplete print check supplies
+no passing report: use the existing empty `print_gate_sha256s` no-claim case in
+signature review rather than inventing passing thickness/overhang evidence.
+If a build itself fails, repair it: an inspection waiver cannot create missing
+STEP assets. All child commands run in an owned, cancellable process group.

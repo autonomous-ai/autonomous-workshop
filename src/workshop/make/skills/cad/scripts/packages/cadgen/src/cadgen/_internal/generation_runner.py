@@ -339,6 +339,11 @@ def run_script_generator(
         raise RuntimeError(f"Unsupported generator: {generator_name}")
     if spec.script_path is None or spec.generator_metadata is None:
         raise ValueError(f"{spec.source_ref} is not a generated Python CAD source")
+    from cadgen.inspection_runtime import cached_scene, emit, remember_scene
+    reused = cached_scene(spec.script_path, generator_name)
+    if reused is not None:
+        return reused
+    emit("operation-start", kind="build", label=spec.script_path.name)
     # A WRITER arrives with the BuildRun that already owns this model's status record and
     # its progress line. An EXPORT arrives with neither: it takes the generator lock instead
     # of the write lock, and until that lock carried a reporter, `cad export` ran the same
@@ -353,7 +358,7 @@ def run_script_generator(
             # The phase opens INSIDE the lock: before this it opened first, so a run queued
             # behind a peer reported "building geometry" for the whole time it was waiting.
             resolve_progress(active).phase(PHASE_GENERATE)
-            return _run_script_generator_inner(
+            scene = _run_script_generator_inner(
                 spec,
                 generator_name,
                 logger=logger,
@@ -361,6 +366,9 @@ def run_script_generator(
                 reset_runtime_closure=reset_runtime_closure,
                 progress=active,
             )
+            remember_scene(spec.script_path, generator_name, scene)
+            emit("operation-done", kind="build", label=spec.script_path.name)
+            return scene
 
 
 @contextlib.contextmanager

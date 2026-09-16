@@ -6625,8 +6625,19 @@ def _launcher_call(
             "described in .agents/skills/cad/references/inspection-and-validation.md. "
             "Preserve the existing product sources and review evidence; finish the "
             "remaining geometry checks. An interrupted inspection has no verdict. "
-            "Batch stderr identifies the active request and reports its duration "
-            "on completion."
+            "The tools resume completed exact measurements. An exhausted or cancelled "
+            "inspection produces an UNVERIFIED final report; finalize that disclosed "
+            "prototype with GEOMETRY-NOTES.md instead of retrying the same stalled "
+            "check. Measured failures still require repair. Do not claim print readiness."
+        )
+    if checkpoint.stage in ("playtest", "release") and _has_inspection_correction(paths, checkpoint):
+        prompt += (
+            "\n\nGeometry disclosure policy: a Made product marked geometry-unverified "
+            "is an accepted prototype, with no geometry or print-ready claim. Preserve "
+            "its exact GEOMETRY-NOTES.md and limitations in the final package and "
+            "explain them in the final document. Do not restart its timed-out checks "
+            "solely to turn this accepted limitation into a PASS. Other Playtest, "
+            "review and publication requirements still apply."
         )
     if reasoning_override is not None:
         prompt += (
@@ -8574,9 +8585,9 @@ def _verify_release_print_ready_cad(
         **({"timeout_seconds": None} if _checkpoint_uses_token_budget(checkpoint) else {}),
     )
     if (
-        not evidence.passed
-        or not evidence.thickness_gate_required
-        or not evidence.print_ready_eligible
+        not getattr(evidence, "unverified_handoff", False)
+        and (not evidence.passed or not evidence.thickness_gate_required
+             or not evidence.print_ready_eligible)
     ):
         raise StateConflict(
             "Release requires passing full-tier, print-gated CAD evidence"
@@ -10366,8 +10377,8 @@ def resume_native_run(
 
 
 _INSPECTION_CAPABILITY_PATH = ".agents/skills/cad/references/inspection-and-validation.md"
-_INSPECTION_CAPABILITY_MARKER = b"<!-- workshop-geometry-inspection-v1 -->"
-_INSPECTION_REFRESH_REASON = "workshop resume geometry-inspection-v1"
+_INSPECTION_CAPABILITY_MARKER = b"<!-- workshop-geometry-inspection-v2 -->"
+_INSPECTION_REFRESH_REASON = "workshop resume geometry-inspection-v2"
 
 
 def _has_inspection_correction(paths, checkpoint):
@@ -10417,7 +10428,9 @@ def _adopt_resume_inspection_tools(paths, run, checkpoint):
         raise ContractError("installed CAD skill lacks the geometry inspection correction")
     _refresh_native_run_tools_locked(
         checkpoint.product_id, paths, run, reason=_INSPECTION_REFRESH_REASON,
-        domain_skill_roots={"cad": source}, refresh_review=False,
+        domain_skill_roots={name: root for name, root in product_run_domain_skill_roots().items()
+                            if name in ("cad", "make-round")}, refresh_review=False,
+        finalizer_skill_root=product_run_agent_assets().skill_root,
     )
     checkpoint = run.snapshot()
     # Write completion only after the exact native session has been rebound.
@@ -10581,7 +10594,7 @@ def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, An
 
 def _refresh_native_run_tools_locked(
     product_id, paths, run, *, reason, domain_skill_roots,
-    refresh_review=True, motion_skill_root=None,
+    refresh_review=True, motion_skill_root=None, finalizer_skill_root=None,
 ):
     """Refresh and rebind the same session while the caller holds its run lock."""
     before = run.snapshot()
@@ -10591,6 +10604,7 @@ def _refresh_native_run_tools_locked(
     changes = run.refresh_domain_skill_tools(
         domain_skill_roots, reason=reason,
         motion_skill_root=motion_skill_root,
+        finalizer_skill_root=finalizer_skill_root,
         token_budget_skill_root=(
             product_run_agent_assets().skill_root
             if refresh_review and TOKEN_BUDGET_CAPABILITY_PATH in before.input_sha256s else None

@@ -101,7 +101,16 @@ def _solid_volume(shape: Any) -> float:
 def _intersection(a: Any, b: Any) -> Any | None:
     from OCP.BRepAlgoAPI import BRepAlgoAPI_Common
 
-    algo = BRepAlgoAPI_Common(a, b)
+    from OCP.TopTools import TopTools_ListOfShape
+
+    arguments, tools = TopTools_ListOfShape(), TopTools_ListOfShape()
+    arguments.Append(a)
+    tools.Append(b)
+    algo = BRepAlgoAPI_Common()
+    algo.SetArguments(arguments)
+    algo.SetTools(tools)
+    algo.SetNonDestructive(True)
+    algo.Build()
     if not algo.IsDone():
         return None
     return algo.Shape()
@@ -225,6 +234,7 @@ def find_clashes(
     *,
     tolerance: float = DEFAULT_TOLERANCE_MM3,
     max_pairs: int | None = None,
+    measurements: Any = None,
 ) -> tuple[list[Clash], dict[str, int]]:
     """Pairwise interference over already-placed occurrences.
 
@@ -234,44 +244,80 @@ def find_clashes(
     clashes: list[Clash] = []
     stats = {
         "occurrences": len(occurrences),
-        "pairs_total": 0,
+        "pairs_total": len(occurrences) * (len(occurrences) - 1) // 2,
         "pairs_tested": 0,
         "pairs_skipped_bbox": 0,
         "pairs_truncated": 0,
     }
-    count = len(occurrences)
-    for i in range(count):
-        first = occurrences[i]
-        for j in range(i + 1, count):
-            second = occurrences[j]
-            stats["pairs_total"] += 1
-            if not _boxes_overlap(first.bbox, second.bbox):
-                stats["pairs_skipped_bbox"] += 1
-                continue
-            if max_pairs is not None and stats["pairs_tested"] >= max_pairs:
-                stats["pairs_truncated"] += 1
-                continue
-            stats["pairs_tested"] += 1
+    candidates = 0
+    identities = {}
+
+    def identity(occurrence):
+        from cadgen.inspection_runtime import shape_identity
+        if occurrence.ref not in identities:
+            identities[occurrence.ref] = shape_identity(occurrence.shape)
+        return identities[occurrence.ref]
+
+    for first, second in _candidate_pairs(occurrences):
+        candidates += 1
+        if max_pairs is not None and stats["pairs_tested"] >= max_pairs:
+            stats["pairs_truncated"] += 1
+            continue
+        stats["pairs_tested"] += 1
+        def measure():
             common = _intersection(first.shape, second.shape)
             if common is None:
-                continue
+                return {"unverified": ["intersection kernel did not return a verdict"]}
+            volume = None
             try:
                 volume = abs(_solid_volume(common))
-            except Exception:  # noqa: BLE001 - a degenerate common shape is not a clash
-                continue
-            if volume > tolerance:
-                clashes.append(
-                    Clash(
-                        a_ref=first.ref,
-                        a_name=first.name,
-                        b_ref=second.ref,
-                        b_name=second.name,
-                        volume=volume,
-                        bbox=_shape_bbox(common),
-                    )
+                if volume > tolerance and measurements is not None:
+                    from cadgen.inspection_runtime import emit
+                    emit("measurement-failed", reason="measured interference")
+                return {"volume": volume, "bbox": list(_shape_bbox(common)) if volume > tolerance else None}
+            except Exception:
+                return {"unverified": ["intersection volume or bounds could not be measured"],
+                        "failed": volume is not None and volume > tolerance}
+
+        if measurements is None:
+            result = measure()
+        else:
+            result = measurements.run(
+                "interfere", f"{first.ref}/{second.ref}",
+                lambda: [identity(first), identity(second), tolerance],
+                measure, failed=lambda value: bool(value.get("failed")) or value.get("volume", 0) > tolerance,
+            )
+        if result.get("unverified"):
+            stats["pairs_unverified"] = stats.get("pairs_unverified", 0) + 1
+            if result.get("failed"):
+                stats["pairs_failed"] = stats.get("pairs_failed", 0) + 1
+            continue
+        volume = result["volume"]
+        if volume > tolerance:
+            clashes.append(
+                Clash(
+                    a_ref=first.ref,
+                    a_name=first.name,
+                    b_ref=second.ref,
+                    b_name=second.name,
+                    volume=volume,
+                    bbox=tuple(result["bbox"]),
                 )
-    clashes.sort(key=lambda clash: clash.volume, reverse=True)
+            )
+    stats["pairs_skipped_bbox"] = stats["pairs_total"] - candidates
+    clashes.sort(key=lambda clash: (-clash.volume, clash.a_ref, clash.b_ref))
     return clashes, stats
+
+
+def _candidate_pairs(occurrences: list[Occurrence]):
+    """Sweep along X, then reject Y/Z; never materialize an O(n²) pair list."""
+    active: list[tuple[int, Occurrence]] = []
+    for index, current in sorted(enumerate(occurrences), key=lambda item: (item[1].bbox[0], item[0])):
+        active = [(i, item) for i, item in active if item.bbox[3] + _BBOX_EPSILON >= current.bbox[0]]
+        for previous_index, previous in active:
+            if _boxes_overlap(previous.bbox, current.bbox):
+                yield (previous, current) if previous_index < index else (current, previous)
+        active.append((index, current))
 
 
 def inspect_interference(
@@ -285,6 +331,7 @@ def inspect_interference(
     from cadgen.cli_logging import CliLogger
     from cadgen.step_export_target import _resolve_spec_and_scene
     from cadgen.step_targets import resolve_step_target
+    from cadgen.inspection_runtime import Measurements
 
     target = resolve_step_target(entry)
     logger = CliLogger("cad")
@@ -302,9 +349,11 @@ def inspect_interference(
     occurrences = _selected(
         occurrences_from_scene(scene), refs, label_rows=scene_label_rows(scene), entry_target=str(entry)
     )
-    clashes, stats = find_clashes(occurrences, tolerance=tolerance, max_pairs=max_pairs)
-    return {
-        "ok": not clashes,
+    clashes, stats = find_clashes(occurrences, tolerance=tolerance, max_pairs=max_pairs,
+                                measurements=Measurements(target.step_path))
+    incomplete = bool(stats.get("pairs_unverified") or stats["pairs_truncated"])
+    response = {
+        "ok": not clashes and not incomplete,
         "entry": target.cad_path,
         "tolerance": tolerance,
         "stats": stats,
@@ -312,3 +361,7 @@ def inspect_interference(
         "clashes": [clash.as_dict() for clash in clashes],
         "errors": [],
     }
+    if incomplete:
+        response.update(status="failed" if clashes or stats.get("pairs_failed") else "unverified",
+                        unverified=["some candidate pairs have no completed interference verdict"])
+    return response

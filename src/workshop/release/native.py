@@ -34,6 +34,9 @@ from workshop.make.contracts import Made
 from workshop.make.native import NativeMade
 from workshop.playtest.contracts import Playtested
 from workshop.playtest.native import NativePlaytested
+from workshop.make.skills.cad.scripts.geometry_disclosure import (
+    STATUS as GEOMETRY_UNVERIFIED, LIMITATION as GEOMETRY_LIMITATION, NOTES_NAME as GEOMETRY_NOTES,
+)
 
 
 NATIVE_RELEASE_KIND = "autonomous-workshop.release"
@@ -1205,6 +1208,13 @@ class NativeRelease:
             expected_claims = _expected_claims(canonical_playtested)
         if observed_product["claims"] != expected_claims:
             raise ContractError("native Release claims differ from exact Playtest evidence")
+        if canonical_made.product.get("status") == GEOMETRY_UNVERIFIED:
+            if GEOMETRY_LIMITATION not in observed_product.get("limitations", []):
+                raise ContractError("Release must retain the unverified geometry limitation")
+            source = next((entry for entry in made.product_manifest.entries if entry.path == GEOMETRY_NOTES), None)
+            target = next((entry for entry in self.package_manifest.entries if entry.path == GEOMETRY_NOTES), None)
+            if source is None or target is None or (source.sha256, source.bytes) != (target.sha256, target.bytes):
+                raise ContractError("Release must include the exact final GEOMETRY-NOTES.md")
         expected_title = canonical_made.product.get("title")
         if self.schema_version == 4:
             expected_title = expected_title[:300].rstrip()
@@ -1278,6 +1288,11 @@ def prepare_make_output_release(run_root: Path, made: NativeMade) -> NativeRelea
         NATIVE_RELEASE_PRODUCT_PATH: _canonical_json(product),
         NATIVE_RELEASE_PLAYTEST_OMISSION_PATH: _canonical_json(playtest_omission_record()),
     }
+    if facts.get("status") == GEOMETRY_UNVERIFIED:
+        notes = next((entry for entry in entries if entry.path == GEOMETRY_NOTES), None)
+        if notes is None:
+            raise ContractError("unverified Make output lacks geometry notes")
+        contents[GEOMETRY_NOTES] = _read_regular(root / made.product_root / notes.path, "Made geometry notes", notes.bytes)
     if source is not None:
         contents[MAKE_OUTPUT_RELEASE_DOCUMENT_PATH] = _read_regular(
             root / made.product_root / source.path, "Made publication document", source.bytes

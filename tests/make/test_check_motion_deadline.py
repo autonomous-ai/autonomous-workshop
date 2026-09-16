@@ -1,8 +1,8 @@
 """A motion sweep that cannot finish must stop and say so, never run forever.
 
-The budget fails closed: a cut-off sweep measured nothing past its stopping
-point, so it is inconclusive *and* fatal -- ``--allow-inconclusive`` covers the
-genuinely unmeasurable, not a gate that ran out of clock.
+A cut-off sweep measured nothing past its stopping point. It returns the
+explicit unverified exit (3), never PASS, even with --allow-inconclusive. The
+Workshop verifier can continue only with the corresponding final disclosure.
 """
 import json
 import os
@@ -77,10 +77,10 @@ def test_projected_cost_counts_pairs_obstacles_and_nested_steps():
     assert estimate([{"check": "coupled_motion_collision", "inputs": {"steps": "many"}}]) == 0
 
 
-def test_a_budget_stop_is_inconclusive_and_fatal(tmp_path):
+def test_a_budget_stop_is_inconclusive_with_an_unverified_exit(tmp_path):
     run = _run(_project(tmp_path), "--deadline", "0.01", "--json")
     payload = json.loads(run.stdout)
-    assert run.returncode == 1
+    assert run.returncode == 3
     assert payload["ok"] is False
     assert payload["deadlineSeconds"] == 0.01
     result = payload["results"][0]
@@ -92,7 +92,7 @@ def test_a_budget_stop_is_inconclusive_and_fatal(tmp_path):
 
 def test_allow_inconclusive_does_not_absolve_a_budget_stop(tmp_path):
     run = _run(_project(tmp_path), "--deadline", "0.01", "--allow-inconclusive")
-    assert run.returncode == 1
+    assert run.returncode == 3
     assert "never finished" in run.stderr
 
 

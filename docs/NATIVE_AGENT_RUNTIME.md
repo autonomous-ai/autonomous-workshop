@@ -69,21 +69,21 @@ intact. A plain `--refresh-tools` operation still preserves the root option. See
 
 ### Geometry tools on operator resume
 
-An explicit `resume` of an unfinished run carrying CAD tools adopts the
-geometry-inspection-v1 correction once, including runs that already have
-`MAKE-OPTIONS.json`. The host refreshes the carried CAD skill from the installed
-version and rebinds the same native session under the mutation lock. A private
-completion record makes interruption before or after session rebinding
-retryable. New runs already carry the marker; subsequent resumes keep their
-materialized tool tree.
+An explicit `resume` of an unfinished CAD run adopts the geometry-inspection-v2
+correction once, including runs already migrated to v1. CAD, Make-round and the
+finalizer refresh through the recorded input-correction boundary, followed by
+rebinding the same native session. Interrupted migrations retry safely; later
+resumes retain the installed snapshot. Token usage, lifecycle and review
+allowances, product work and sealed artifacts are preserved.
 
-This correction removes duplicate self-intersection work and relays batch
-progress. It does not skip geometry checks, reset budgets or review allowances,
-replace product sources, or rebuild accepted artifacts. An unaccepted Make
-proposal is preserved privately and must be finalized again against the new
-checkpoint. Read-only status and terminal resumes do not migrate tools. The
-existing motion-option behavior above still applies independently. See
-[ADR 0067](adr/0067-resume-geometry-inspection-correction.md).
+Geometry workers now have cancellable process boundaries, exact-input
+measurement reuse and per-operation progress. An incomplete check permits an
+explicitly unverified prototype, with missing checks sealed in the final notes,
+README and public limitations. Measured failures still require repair. The
+unverified tier cannot provide a passing geometry or print-ready receipt.
+Read-only status and terminal resumes do not migrate tools. See
+[ADR 0068](adr/0068-cancellable-geometry-and-unverified-handoff.md) for the
+three outcomes, deadlines, resume behavior and final-document contract.
 
 ### Current token-budget and Spark handoff policy
 

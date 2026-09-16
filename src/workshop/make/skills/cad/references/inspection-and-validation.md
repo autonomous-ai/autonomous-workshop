@@ -267,7 +267,7 @@ Do not claim:
 - manufacturability beyond geometric plausibility
 unless the relevant analysis or manufacturing data was explicitly performed.
 
-<!-- workshop-geometry-inspection-v1 -->
+<!-- workshop-geometry-inspection-v2 -->
 
 ## Geometry inspection correction v1
 
@@ -285,3 +285,28 @@ or this marker.
 After an interruption, preserve the existing product and review evidence and
 finish the missing checks with these tools. An interrupted check has no verdict;
 neither elapsed time nor progress output establishes that geometry passed.
+
+## Interrupted inspection and resume
+
+Geometry analysis has a finite 600-second shared allowance per verification and
+60 seconds per native validity/intersection operation. `WORKSHOP_GEOMETRY_TIMEOUT`
+and `WORKSHOP_GEOMETRY_OPERATION_TIMEOUT` accept positive finite seconds up to
+86400. These are tool-operation boundaries, not a Wish or native Goal budget.
+
+An interrupted check is **unverified**, never passed. `inspect` returns exit 3
+for that outcome. `verify_project` continues, writes an UNVERIFIED final record
+and a hash-bound `geometry-inspection.json`. Make's finalizer seals the missing
+checks into `GEOMETRY-NOTES.md`, the README and product limitations, with
+`status: geometry-unverified` and `print_ready_claim: false`. Keep this limitation
+in the Release document and product metadata. Deliver the disclosed prototype;
+do not repeatedly rerun the same timed-out inspection just to obtain a PASS.
+A measured defect still fails and must be repaired. Missing generated assets,
+malformed requests, and broken artifact identities are also failures.
+
+Completed measurements are saved under `__cadgen__/inspection-v2` and reused on
+resume only for identical B-rep bytes, options and tool identity. Rigid copies
+share validity measurements. Interference retains each exact placement.
+Changed source inputs invalidate the one-build-per-entry batch scene. A plain
+`workshop resume` installs this correction once and resumes the same session,
+with completed work and frozen effort/budget intact. Host reruns disable disk
+measurement reuse. Final sealing prunes working caches as before.

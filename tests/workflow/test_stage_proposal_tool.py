@@ -1620,6 +1620,49 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("not bound to the final signature.png", stale.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
+    def test_interrupted_image_geometry_seals_unverified_product_and_release_notes(self):
+        from workshop.release.native import prepare_make_output_release
+        product_root, _, _, _ = self.create_product()
+        report = product_root / "cad/project/validation/cad-build.json"
+        report.write_text("# Verification pipeline record\n\n- Mode: `image-derived final`\n- Result: **UNVERIFIED** (exit 0)\n")
+        sidecar = report.parent / "geometry-inspection.json"
+        value = {"schema_version": 1, "status": "unverified", "print_ready_claim": False,
+                 "verification_sha256": sha256(report.read_bytes()), "checks": [
+                     {"id": "validate:assembly", "status": "unverified", "completed": 17,
+                      "reasons": ["native geometry operation exceeded its time allowance"]}]}
+        sidecar.write_text(json.dumps(value))
+        self.write_stage("make", {"assignment": self.assignment.to_dict(),
+            "invented": self.invented.to_dict(), "feedback": []}, round_index=1)
+        self.run_tool("make", "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project", "--cad-verification-path", "cad/project/validation/cad-build.json")
+        made = NativeMade.from_mapping(json.loads((self.run_root / "artifacts/make/r0001/made.json").read_bytes()))
+        self.assertEqual(made.product["status"], "geometry-unverified")
+        self.assertIs(made.product["print_ready_claim"], False)
+        notes = (product_root / "GEOMETRY-NOTES.md").read_bytes()
+        self.assertIn(b"completed measurements: 17", notes)
+        self.assertIn(notes, (product_root / "README.md").read_bytes())
+        release = prepare_make_output_release(self.run_root, made)
+        release.validate_package_tree(self.run_root, made, None)
+        package = self.run_root / release.package_root
+        self.assertEqual((package / "GEOMETRY-NOTES.md").read_bytes(), notes)
+        self.assertEqual(release.product["limitations"], made.product["limitations"])
+
+    def test_incomplete_geometry_cannot_hide_a_measured_failure(self):
+        product_root, _, _, _ = self.create_product()
+        report = product_root / "cad/project/validation/cad-build.json"
+        report.write_text("# Verification pipeline record\n\n- Mode: `final`\n- Result: **UNVERIFIED** (exit 0)\n")
+        (report.parent / "geometry-inspection.json").write_text(json.dumps({
+            "schema_version": 1, "status": "unverified", "print_ready_claim": False,
+            "verification_sha256": sha256(report.read_bytes()), "checks": [
+                {"id": "validate:part", "status": "failed"},
+                {"id": "interfere:assembly", "status": "unverified", "reasons": ["cancelled"]}]}))
+        self.write_stage("make", {"assignment": self.assignment.to_dict(),
+            "invented": self.invented.to_dict(), "feedback": []}, round_index=1)
+        result = self.run_tool("make", "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project", "--cad-verification-path", "cad/project/validation/cad-build.json", expected=2)
+        self.assertIn("lacks its final geometry disclosure", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
     def test_make_requires_the_current_passing_final_report(self):
         product_root, _, _, _ = self.create_product()
         report = product_root / "cad/project/validation/cad-build.json"
@@ -1652,7 +1695,7 @@ class StageProposalToolTest(unittest.TestCase):
             "cad/project/validation/cad-build.json",
             expected=2,
         )
-        self.assertIn("current passing final report", omitted.stderr)
+        self.assertIn("passing final report", omitted.stderr)
 
         report.write_text(
             "# Verification pipeline record\n\n"
@@ -1678,7 +1721,7 @@ class StageProposalToolTest(unittest.TestCase):
             "cad/project/validation/cad-build.json",
             expected=2,
         )
-        self.assertIn("current passing final report", failed_current.stderr)
+        self.assertIn("passing final report", failed_current.stderr)
 
     def test_make_verification_must_belong_to_declared_cad_project(self):
         product_root, _, _, verification = self.create_product()

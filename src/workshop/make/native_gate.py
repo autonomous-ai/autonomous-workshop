@@ -30,6 +30,9 @@ from workshop.errors import ArtifactError, ContractError
 from workshop.make.native import NativeMade
 from workshop.runtime.execution import minimal_tool_environment
 from workshop.make.step_canonical import StepCanonicalError, canonical_step_equal
+from workshop.make.skills.cad.scripts.geometry_disclosure import (
+    STATUS as NATIVE_CAD_UNVERIFIED_TIER, validate_disclosure,
+)
 
 
 NATIVE_CAD_GATE_KIND = "autonomous-workshop.native-cad-gate-evidence"
@@ -338,6 +341,9 @@ _NON_PRINT_READY_CAD_GATE_POLICY = _CadGatePolicy(
     tier=NATIVE_CAD_NON_PRINT_READY_TIER,
     verifier_mode=NATIVE_CAD_VERIFIER_MODE,
 )
+_UNVERIFIED_CAD_GATE_POLICY = _CadGatePolicy(
+    tier=NATIVE_CAD_UNVERIFIED_TIER, verifier_mode="disclosure-only-no-geometry-verdict",
+)
 _MISSING_CAD_CLAIM = object()
 
 
@@ -384,6 +390,13 @@ def _cad_gate_policy(made: NativeMade, product_root: Path) -> _CadGatePolicy:
         raise ArtifactError(
             "native Made CAD verification differs from its manifest"
         )
+
+    if made.product.get("status") == NATIVE_CAD_UNVERIFIED_TIER:
+        try:
+            validate_disclosure(product_root, product_root / made.cad_verification_path, made.product)
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            raise ContractError("unverified CAD lacks its exact final geometry disclosure") from exc
+        return _UNVERIFIED_CAD_GATE_POLICY
 
     claim: Any = _MISSING_CAD_CLAIM
     try:
@@ -466,7 +479,7 @@ def _is_verifier_authored_volatile_report(path: str) -> bool:
     compares them exactly apart from their directory-location metadata.
     """
 
-    return path == "measure/verification-pipeline.md"
+    return path in {"measure/verification-pipeline.md", "measure/geometry-inspection.json"}
 
 
 def _is_step_exchange_file(path: str) -> bool:
@@ -901,6 +914,7 @@ class NativeCadGateEvidence:
         policy = {
             NATIVE_CAD_FULL_TIER: _FULL_CAD_GATE_POLICY,
             NATIVE_CAD_NON_PRINT_READY_TIER: _NON_PRINT_READY_CAD_GATE_POLICY,
+            NATIVE_CAD_UNVERIFIED_TIER: _UNVERIFIED_CAD_GATE_POLICY,
         }.get(self.verification_tier)
         if policy is None or self.verifier_mode != policy.verifier_mode:
             raise ContractError("native CAD gate verification tier is invalid")
@@ -916,6 +930,10 @@ class NativeCadGateEvidence:
             "--strict-fit",
             *policy.extra_arguments,
         )
+        if self.verification_tier == NATIVE_CAD_UNVERIFIED_TIER:
+            expected_command = ("<host>", "validate-geometry-disclosure")
+            if self.passed or self.failure_code != "geometry-unverified" or self.returncode != 3 or not self.source_tree_unchanged or self.timed_out:
+                raise ContractError("unverified CAD receipt cannot report a passing geometry verdict")
         if self.command != expected_command:
             raise ContractError("native CAD gate command differs from its tier")
         if (
@@ -982,9 +1000,15 @@ class NativeCadGateEvidence:
         """
 
         return (
-            self.thickness_gate_required
+            self.passed and self.thickness_gate_required
             and not self.legacy_full_tier_compatibility
         )
+
+    @property
+    def unverified_handoff(self) -> bool:
+        return (self.verification_tier == NATIVE_CAD_UNVERIFIED_TIER
+                and self.failure_code == "geometry-unverified" and not self.passed
+                and self.source_tree_unchanged)
 
 
 class NativeCadGateError(ArtifactError):
@@ -1056,6 +1080,20 @@ def _atomic_private_write(path: Path, content: bytes) -> None:
             temporary.unlink()
         except FileNotFoundError:
             pass
+
+
+def _isolated_geometry_unverified(project: Path) -> bool:
+    path = project / "measure/geometry-inspection.json"
+    if not path.exists():
+        return False  # frozen verifier predates the structured sidecar
+    content, _ = _read_regular(path, "isolated geometry inspection report", 1_000_000)
+    try:
+        value = json.loads(content, object_pairs_hook=_strict_object)
+    except (ValueError, TypeError) as exc:
+        raise ArtifactError("invalid geometry inspection report") from exc
+    if not isinstance(value, dict) or value.get("status") not in ("passed", "failed", "unverified"):
+        raise ArtifactError("invalid geometry inspection status")
+    return value["status"] != "passed"
 
 
 def verify_native_made_cad(
@@ -1153,6 +1191,23 @@ def verify_native_made_cad(
     if not verifier_identity.st_mode & stat.S_IXUSR:
         raise ArtifactError("native CAD verifier is not executable")
 
+    if gate_policy.tier == NATIVE_CAD_UNVERIFIED_TIER:
+        # This is acceptance of a disclosed prototype, not CAD verification.
+        # Do not retry the same interrupted kernel as a host Release gate.
+        _validate_exact_product_tree(made, root)
+        empty = CapturedVerifierStream.from_bytes(b"", max_output_bytes)
+        evidence = NativeCadGateEvidence(
+            passed=False, failure_code="geometry-unverified", made_sha256=made.made_sha256,
+            product_artifact_sha256=made.product_manifest.artifact_sha256,
+            cad_project_path=made.cad_project_path, cad_project_sha256=project_sha256,
+            verifier_sha256=verifier_sha256, command=("<host>", "validate-geometry-disclosure"),
+            returncode=3, duration_ms=0, timed_out=False, stdout=empty, stderr=empty,
+            source_tree_unchanged=True, verification_tier=gate_policy.tier,
+            verifier_mode=gate_policy.verifier_mode, evidence_stage=evidence_stage,
+        )
+        _atomic_private_write(evidence_path, _canonical_json(evidence.to_dict()) + b"\n")
+        return evidence
+
     normalized_command = (
         "<python>",
         NATIVE_CAD_VERIFIER_PATH,
@@ -1181,12 +1236,13 @@ def verify_native_made_cad(
         )
         environment = dict(minimal_tool_environment())
         environment["TMPDIR"] = str(temporary_root)
+        environment["WORKSHOP_GEOMETRY_CACHE"] = "0"
         try:
             candidate = selected_runner(
                 command,
                 cwd=temporary_root,
                 environment=environment,
-                timeout_seconds=None if timeout_seconds is None else float(timeout_seconds),
+                timeout_seconds=DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS if timeout_seconds is None else float(timeout_seconds),
                 max_output_bytes=max_output_bytes,
             )
             if not isinstance(candidate, VerifierProcessResult):
@@ -1221,6 +1277,8 @@ def verify_native_made_cad(
                 failure_code = "verifier-output-limit"
             elif result.returncode != 0:
                 failure_code = "verifier-nonzero"
+            elif _isolated_geometry_unverified(isolated_project):
+                failure_code = "geometry-unverified-requires-disclosure"
             elif require_print_ready and gate_policy.tier != NATIVE_CAD_FULL_TIER:
                 # The lower tier may pass every digital check it declared, but
                 # it never opened the print gates, so it cannot advance a
