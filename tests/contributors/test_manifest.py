@@ -69,6 +69,7 @@ class RegistryTest(unittest.TestCase):
             [item.inventor_id for item in manifests],
             [
                 "abo",
+                "ad-astra",
                 "alice",
                 "arden-span",
                 "axel-rake",

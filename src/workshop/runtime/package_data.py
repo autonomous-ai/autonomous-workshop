@@ -24,7 +24,9 @@ from workshop.errors import ManifestError, WorkshopError
 
 BUNDLED_INVENTOR_IDS = (
     "abo",
+    "ad-astra",
     "alice",
+    "arden-span",
     "axel-rake",
     "bob",
     "eve",

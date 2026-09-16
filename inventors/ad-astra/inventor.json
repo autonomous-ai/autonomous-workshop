@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "f8c43fd6bd3ed1c5b723e7b27dd01ec72fd53132ba1ad704daba503d4bc0ec90",
+      "kind": "codex-skill",
+      "name": "ad-astra-inventor",
+      "path": "skills/ad-astra-inventor"
+    }
+  ],
+  "id": "ad-astra",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

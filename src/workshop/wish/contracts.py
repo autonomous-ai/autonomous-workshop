@@ -19,7 +19,8 @@ MAX_OBJECTIVE_CHARS = 50_000
 
 # Reference images ride the Wish as immutable run inputs under this directory.
 WISH_REFERENCES_DIRECTORY = "wish-references"
-MAX_WISH_REFERENCES = 8
+# The ref-NN- filename pattern below is the hard ceiling: two digits, 01-99.
+MAX_WISH_REFERENCES = 99
 MAX_WISH_REFERENCE_BYTES = 12 * 1024 * 1024
 MAX_WISH_REFERENCE_TOTAL_BYTES = 48 * 1024 * 1024
 MIN_WISH_REFERENCE_SIDE_PX = 16
