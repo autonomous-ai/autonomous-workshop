@@ -88,8 +88,9 @@ table, and why the ending matters.
   brainstorming. Do not use a trademarked modern variant, branded edition,
   publisher-specific rulebook, artwork, component design, or terminology when
   a public-domain underlying game exists. Never imply endorsement.
-- Meaningful state must remain legible without color or lore text. Silhouette,
-  footprint, height, relief, position, and tactile cues carry play information.
+- Meaningful state must remain legible without lore text. Color, silhouette,
+  footprint, height, relief, position, and tactile cues all carry play
+  information, and color alone is an acceptable carrier.
 - The final design must keep the base game's defining elements recognizable
   to a player who knows it, without requiring a theme glossary. Preserve
   recognizable piece roles, board topology, spatial groupings, and opposing
