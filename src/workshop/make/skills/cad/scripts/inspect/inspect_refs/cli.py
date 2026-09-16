@@ -441,12 +441,25 @@ def run_align(args: argparse.Namespace) -> int:
 
 def run_worker(args: argparse.Namespace) -> int:
     _ = args
-    for raw_line in sys.stdin:
-        line = raw_line.strip()
-        if not line:
-            continue
-        response = _worker_response(line)
-        print(json.dumps(response, separators=(",", ":")), flush=True)
+    from cadgen.inspection_runtime import reuse_scenes
+    from inspect_refs.supervisor import GeometryWorker
+
+    child = os.environ.get("WORKSHOP_INSPECTION_CHILD") == "1"
+    with reuse_scenes(), (contextlib.nullcontext() if child else GeometryWorker()) as worker:
+        for raw_line in sys.stdin:
+            line = raw_line.strip()
+            if not line:
+                continue
+            if child:
+                response = _worker_response(line)
+            else:
+                try:
+                    request = json.loads(line)
+                    argv = _worker_request_argv(request)
+                    response = worker.request({"id": request.get("id") if isinstance(request, dict) else None, "argv": argv})
+                except (ValueError, TypeError) as exc:
+                    response = {"ok": False, "exitCode": 2, "result": {"ok": False, "errors": [{"message": str(exc)}]}}
+            print(json.dumps(response, separators=(",", ":")), flush=True)
     return 0
 
 
@@ -461,6 +474,7 @@ def _worker_response(line: str) -> dict[str, object]:
         argv = _worker_request_argv(request)
         if isinstance(request, dict):
             request_id = request.get("id")
+        os.environ["WORKSHOP_GEOMETRY_REQUEST_ID"] = json.dumps(request_id)
         started = time.monotonic()
         if progress:
             print(
@@ -591,7 +605,7 @@ def inspect_command_result(argv: Sequence[str]) -> tuple[int, dict[str, object]]
         result = {"ok": False, "errors": [_inspect_api().cad_ref_error_payload(exc)]}
     except Exception as exc:
         result = {"ok": False, "errors": [_exception_error_payload(exc)]}
-    return (0 if bool(result.get("ok")) else 2), result
+    return (3 if result.get("status") == "unverified" else 0 if bool(result.get("ok")) else 2), result
 
 
 def _system_exit_result(exc: SystemExit, *, stderr: str = "") -> tuple[int, dict[str, object]]:
@@ -616,6 +630,9 @@ def _exception_error_payload(exc: Exception) -> dict[str, object]:
 
 def _emit_result(args: argparse.Namespace, result: dict[str, object], text_formatter) -> None:
     if getattr(args, "format", "json") == "text":
+        if result.get("status") == "unverified":
+            print("UNVERIFIED: " + json.dumps(result.get("unverified", [])))
+            return
         text = text_formatter(
             result,
             quiet=bool(getattr(args, "quiet", False)),
@@ -858,6 +875,17 @@ def main(argv: list[str] | None = None) -> int:
     logger = CliLogger("scripts/inspect", verbose=bool(getattr(args, "verbose", False)))
     try:
         with logger.timed(command_label):
+            if args.command not in {"worker", "batch"} and os.environ.get("WORKSHOP_INSPECTION_CHILD") != "1":
+                from inspect_refs.supervisor import GeometryWorker
+                with GeometryWorker() as worker:
+                    response = worker.request({"id": "single", "argv": list(sys.argv[1:] if argv is None else argv)})
+                formatter = {
+                    "refs": _format_refs_text, "diff": _format_diff_text, "frame": _format_frame_text,
+                    "measure": _format_measure_text, "align": _format_align_text,
+                    "validate": _format_validate_text, "interfere": _format_interfere_text,
+                }[args.command]
+                _emit_result(args, response["result"], formatter)
+                return response["exitCode"]
             return int(args.handler(args))
     except _inspect_api().CadRefError as exc:
         _emit_result(args, {"ok": False, "errors": [_inspect_api().cad_ref_error_payload(exc)]}, _format_errors)

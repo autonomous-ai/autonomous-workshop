@@ -64,10 +64,12 @@ import re
 import runpy
 import shlex
 import shutil
+import signal
 import stat
 import subprocess
 import sys
 import time
+import tempfile
 from pathlib import Path
 from typing import Sequence
 
@@ -111,7 +113,7 @@ MATING_ACTION = re.compile(
 SIGNATURE_REVIEW_KIND = "autonomous-workshop.signature-experience-review"
 
 
-def _remove_generation_cache(cache: Path) -> None:
+def _remove_generation_cache(cache: Path, *, preserve_measurements: bool = False) -> None:
     """Delete generated cache bytes while tolerating protected empty dirs.
 
     The product-run sandbox permits generated-file cleanup but can refuse
@@ -119,6 +121,18 @@ def _remove_generation_cache(cache: Path) -> None:
     state, not the absence of empty directory entries. Fall back only for that
     narrow case; an undeletable file, symlink, or special entry still fails.
     """
+
+    if preserve_measurements:
+        if cache.is_symlink():
+            raise ValueError("generation cache must not be a symlink")
+        for child in cache.iterdir():
+            if child.name == "inspection-v2" and child.is_dir() and not child.is_symlink():
+                continue
+            if child.is_dir() and not child.is_symlink():
+                _remove_generation_cache(child)
+            else:
+                child.unlink()
+        return
 
     try:
         shutil.rmtree(cache)
@@ -757,6 +771,8 @@ class Runner:
         self.dry_run = dry_run
         self.verbose = verbose
         self.records: list[dict[str, object]] = []
+        self.inspection_checks: list[dict[str, object]] = []
+        self.geometry_deadline = None
 
     def command(
         self,
@@ -777,15 +793,48 @@ class Runner:
         if env_extra:
             env.update(env_extra)
         started = time.perf_counter()
-        completed = subprocess.run(
-            args,
-            cwd=self.cwd,
-            env=env,
-            check=False,
-            stdout=subprocess.PIPE,
-            text=True,
-        )
-        return_code = completed.returncode
+        # A native kernel can hold the GIL indefinitely. The deadline belongs
+        # to this parent, which can reap the entire disposable command group.
+        budget = float(env.get("WORKSHOP_GEOMETRY_TIMEOUT", "600"))
+        if not 0 < budget <= 86400:
+            raise ValueError("WORKSHOP_GEOMETRY_TIMEOUT must be in (0, 86400]")
+        analysis = _command_label(args) in {"check_mesh", "check_overhang", "check_thickness", "check_motion"}
+        if analysis:
+            if self.geometry_deadline is None:
+                self.geometry_deadline = time.monotonic() + budget
+            budget = max(0.0, self.geometry_deadline - time.monotonic())
+        # The verifier owns these children. A separate shared daemon would be
+        # outside their process group and could survive cancellation.
+        env["CADGEN_WARM"] = "0"
+        with tempfile.TemporaryFile() as failures:
+            env["WORKSHOP_GEOMETRY_FAILURE_FD"] = str(failures.fileno())
+            if budget == 0:
+                stdout, return_code = "", 124
+            else:
+                process = subprocess.Popen(args, cwd=self.cwd, env=env, stdout=subprocess.PIPE,
+                                           text=True, start_new_session=True, pass_fds=(failures.fileno(),))
+                try:
+                    stdout, _ = process.communicate(timeout=budget)
+                    return_code = process.returncode
+                except (subprocess.TimeoutExpired, KeyboardInterrupt) as interrupted:
+                    if isinstance(interrupted, KeyboardInterrupt) and analysis:
+                        self.geometry_deadline = time.monotonic()
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    stdout, _ = process.communicate(timeout=5)
+                    return_code = 124
+            failures.seek(0)
+            known_failure = bool(failures.read(1))
+        if analysis and return_code in (3, 124) and not known_failure:
+            check = {"id": _command_label(args) + ":" + Path(args[2]).name,
+                     "status": "unverified", "reasons": ["geometry analysis cancelled or its time allowance exhausted"], "completed": 0}
+            self.inspection_checks.append(check)
+            self.records.append({"command": shlex.join(args), "status": "unverified", "seconds": time.perf_counter() - started})
+            print(f"[verify_project] {check['id']}: UNVERIFIED; recorded for final documentation", flush=True)
+            return 0
+        completed = subprocess.CompletedProcess(args, return_code, stdout)
         elapsed = time.perf_counter() - started
         self.records.append(
             {"command": shlex.join(args), "status": f"rc={return_code}", "seconds": elapsed}
@@ -833,11 +882,23 @@ class Runner:
                  "status": "planned", "seconds": 0.0}
             )
             return 0
+        budget = float(os.environ.get("WORKSHOP_GEOMETRY_TIMEOUT", "600"))
+        if not 0 < budget <= 86400:
+            raise ValueError("WORKSHOP_GEOMETRY_TIMEOUT must be in (0, 86400]")
+        if self.geometry_deadline is None:
+            self.geometry_deadline = time.monotonic() + budget
+        remaining = self.geometry_deadline - time.monotonic()
+        if remaining <= 0:
+            self.inspection_checks.extend({"id": request["id"], "status": "unverified",
+                "reasons": ["geometry inspection time allowance exhausted"], "completed": 0} for request in requests)
+            self.records.append({"command": "inspect batch", "status": "unverified", "seconds": 0.0})
+            return 0
         payload = "".join(json.dumps(request, separators=(",", ":")) + "\n" for request in requests)
         env = dict(os.environ)
         # Batch owns stdin and is itself the long-lived inspect process.  Do not
         # ask the no-stdin daemon protocol to carry it.
         env.pop("CADGEN_WARM", None)
+        env["WORKSHOP_GEOMETRY_TIMEOUT"] = str(remaining)
         started = time.perf_counter()
         completed = subprocess.run(
             argv,
@@ -852,6 +913,7 @@ class Runner:
         )
         failed = completed.returncode != 0
         response_count = 0
+        seen = set()
         for line in completed.stdout.splitlines():
             if not line.strip():
                 continue
@@ -862,12 +924,33 @@ class Runner:
                 print(line)
                 failed = True
                 continue
-            response_ok = isinstance(response, dict) and bool(response.get("ok"))
+            if not isinstance(response, dict) or not isinstance(response.get("id"), (str, int, float, type(None))):
+                failed = True
+                continue
+            response_ok = (response.get("ok") is True and response.get("exitCode", 0) == 0
+                           and ("result" not in response or isinstance(response["result"], dict)
+                                and response["result"].get("ok") is True))
+            detail = response.get("result", {}) if isinstance(response, dict) else {}
+            identifier = response.get("id") if isinstance(response, dict) else None
+            unfinished = (isinstance(detail, dict) and response.get("ok") is False
+                          and response.get("exitCode") == 3 and detail.get("status") == "unverified"
+                          and not detail.get("failureCount") and not detail.get("clashCount")
+                          and not detail.get("errors") and isinstance(detail.get("unverified"), list)
+                          and 0 < len(detail["unverified"]) <= 16
+                          and all(isinstance(x, str) and 0 < len(x) <= 512 and not any(c in x for c in "\n\r\x00") for x in detail["unverified"])
+                          and type(detail.get("completedChecks", 0)) is int and detail.get("completedChecks", 0) >= 0
+                          and identifier in {r.get("id") for r in requests} and identifier not in seen)
+            if identifier in seen:
+                failed = True
+            seen.add(identifier)
+            self.inspection_checks.append({"id": str(identifier or response_count),
+                "status": "passed" if response_ok else "unverified" if unfinished else "failed",
+                **({"reasons": detail["unverified"], "completed": detail.get("completedChecks", 0)} if unfinished else {})})
             if self.verbose or not response_ok:
                 print(line)
             else:
                 print(f"[verify_project] inspect {response.get('id', response_count)}: ok")
-            if not response_ok:
+            if not response_ok and not unfinished:
                 failed = True
         if response_count != len(requests):
             print(
@@ -879,7 +962,7 @@ class Runner:
         elapsed = time.perf_counter() - started
         self.records.append(
             {"command": f"{shlex.join(argv)} ({len(requests)} JSONL requests)",
-             "status": f"rc={1 if failed else 0}", "seconds": elapsed}
+             "status": "rc=1" if failed else "unverified" if any(c["status"] == "unverified" for c in self.inspection_checks) else "rc=0", "seconds": elapsed}
         )
         print(
             f"[verify_project] inspect batch: rc={1 if failed else 0} "
@@ -911,12 +994,8 @@ def _inspect_geometry(runner: Runner, entry_args: list[str]) -> int:
                 {"id": f"validate:{label}", "argv": ["validate", entry]},
             ]
         )
-    requests.append(
-        {
-            "id": "interfere:assembly",
-            "argv": ["interfere", entry_args[0]],
-        }
-    )
+        if index == 0:
+            requests.append({"id": "interfere:assembly", "argv": ["interfere", entry]})
     return runner.inspect_batch(requests)
 
 
@@ -1113,8 +1192,9 @@ def _write_report(
     accepted_failures = sum(
         1 for record in runner.records if record.get("status") == "accepted-fail"
     )
-    result_text = "PASS" if result == 0 else "FAIL"
-    if result == 0 and accepted_failures:
+    unfinished = any(check["status"] == "unverified" for check in runner.inspection_checks)
+    result_text = ("UNVERIFIED" if unfinished else "PASS") if result == 0 else "FAIL"
+    if result == 0 and accepted_failures and not unfinished:
         noun = "gate" if accepted_failures == 1 else "gates"
         result_text += f" ({accepted_failures} accepted failing {noun})"
     lines = [
@@ -1147,6 +1227,221 @@ def _write_report(
         ])
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines), encoding="utf-8")
+    disclosure = {"schema_version": 1, "status": "failed" if result else "unverified" if unfinished else "passed",
+                  "print_ready_claim": False, "checks": runner.inspection_checks,
+                  "verification_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+    (path.parent / "geometry-inspection.json").write_text(json.dumps(disclosure, indent=2) + "\n", encoding="utf-8")
+
+
+# ── Harness verdict ───────────────────────────────────────────────────────────
+#
+# Autonomous Harness runs this skill as the "Workshop" domain harness: Codex in
+# a terminal pane, a 3D pane beside it, and one JSON file the pane header reads
+# (spec 1 of the harness contract, `.harness/verdict.json`). Harness sets
+# `HARNESS_WORKSPACE` on the engine it launches; outside Harness the variable
+# is unset and nothing below runs, so Workshop's own product runs keep their
+# exact artifact inventory. The pipeline record above stays the record; this is
+# a projection of it that never fails a run.
+
+HARNESS_WORKSPACE_ENV = "HARNESS_WORKSPACE"
+HARNESS_VERDICT_RELATIVE = Path(".harness/verdict.json")
+
+
+def _harness_workspace() -> Path | None:
+    raw = os.environ.get(HARNESS_WORKSPACE_ENV, "").strip()
+    if not raw or not Path(raw).is_absolute():
+        return None
+    try:
+        workspace = Path(raw).resolve(strict=True)
+    except OSError:
+        return None
+    return workspace if workspace.is_dir() else None
+
+
+def _harness_tool_label(command: str) -> str:
+    """The gate a record names: the first token that is not an interpreter."""
+    for token in command.split("#", 1)[0].split():
+        name = Path(token).name
+        if name.startswith("python") or name in ("uv", "env"):
+            continue
+        return name
+    return command.strip()[:80]
+
+
+def _harness_findings(records: Sequence[dict]) -> list[dict]:
+    findings: list[dict] = []
+    for record in records:
+        command = str(record.get("command", ""))
+        status = str(record.get("status", ""))
+        label = _harness_tool_label(command)
+        detail = command.split("#", 1)[1].strip() if "#" in command else ""
+        if status.startswith("rc="):
+            code = status[3:]
+            if code == "0":
+                continue
+            findings.append({
+                "severity": "error",
+                "kind": "gate-failed",
+                "message": f"{label} exited {code}",
+                "ref": command[:300],
+            })
+        elif status == "refused":
+            findings.append({
+                "severity": "error",
+                "kind": "preflight-refused",
+                "message": detail.removeprefix("ERROR:").strip() or label,
+                "ref": label,
+            })
+        elif status == "skipped":
+            findings.append({
+                "severity": "info",
+                "kind": "gate-skipped",
+                "message": f"{label}: {detail.removeprefix('NOT RUN:').strip()}",
+                "ref": label,
+            })
+        elif status == "unverified":
+            findings.append({"severity": "warning", "kind": "geometry-unverified",
+                             "message": "Geometry inspection did not finish; see GEOMETRY-NOTES.md. Not print-ready.", "ref": label})
+        elif status == "note":
+            findings.append({
+                "severity": "info",
+                "kind": "note",
+                "message": f"{label}: {detail.removeprefix('NOTE:').strip()}",
+                "ref": label,
+            })
+        elif status == "accepted-fail":
+            findings.append({
+                "severity": "warning",
+                "kind": "gate-accepted-failure",
+                "message": f"{label} failed and the failure was accepted",
+                "ref": command[:300],
+            })
+    return findings
+
+
+#: The phases Harness's pane header shows for a Make run, in order, and the gates each one is made
+#: of. A gate not in any group belongs to none and moves no phase.
+HARNESS_PHASES: tuple[tuple[str, str, frozenset[str]], ...] = (
+    ("build", "Build", frozenset({"gen", "cadgen_daemon", "artifact"})),
+    ("fit", "Fit", frozenset({
+        "check_fit", "check_layout", "check_mount", "check_thickness",
+        "check_spec_format", "check_spec_numbers",
+    })),
+    ("print", "Print", frozenset({"check_mesh", "check_overhang", "repair_mesh"})),
+    ("motion", "Motion", frozenset({"check_motion"})),
+    ("review", "Review", frozenset({"inspect", "render_review", "render_product"})),
+)
+
+
+def _harness_phases(records: Sequence[dict], *, mode: str, result: int) -> list[dict]:
+    """Where the run is, gate by gate: failed if any gate of the phase failed or was refused,
+    done if one ran clean (or failed and was accepted), pending when none has run. After a
+    clean quick preview the first phase still to run is the one under way — what a final
+    verify_project would do next. Motion is opt-in and only appears once it has actually run,
+    so a strip never waits forever on a gate nobody asked for."""
+    seen: dict[str, str] = {}
+    for record in records:
+        label = _harness_tool_label(str(record.get("command", "")))
+        status = str(record.get("status", ""))
+        for phase_id, _, gates in HARNESS_PHASES:
+            if label not in gates:
+                continue
+            current = seen.get(phase_id, "pending")
+            if status.startswith("rc=") and status != "rc=0" or status == "refused":
+                seen[phase_id] = "failed"
+            elif status in ("rc=0", "accepted-fail") and current != "failed":
+                seen[phase_id] = "done"
+            elif status in ("skipped", "note", "planned") and current == "pending":
+                seen[phase_id] = "pending"
+    phases = [
+        {"id": phase_id, "name": name, "state": seen.get(phase_id, "pending")}
+        for phase_id, name, _ in HARNESS_PHASES
+        if phase_id != "motion" or seen.get("motion", "pending") != "pending"
+    ]
+    if result == 0 and mode == "quick":
+        for phase in phases:
+            if phase["state"] == "pending":
+                phase["state"] = "active"
+                break
+    return phases
+
+
+def _write_harness_verdict(
+    project: Path,
+    records: Sequence[dict],
+    *,
+    mode: str,
+    result: int,
+    artifact: Path | None = None,
+    report: Path | None = None,
+) -> Path | None:
+    """Project the pipeline record onto Harness's verdict file. Never raises."""
+    workspace = _harness_workspace()
+    if workspace is None:
+        return None
+    findings = _harness_findings(records)
+    quick = mode == "quick"
+    if quick:
+        findings.append({
+            "severity": "info",
+            "kind": "quick-preview",
+            "message": "quick preview only; a final verify_project run decides readiness",
+            "ref": "verify_project --quick",
+        })
+    errors = [item["message"] for item in findings if item["severity"] == "error"]
+    accepted = sum(1 for item in findings if item["kind"] == "gate-accepted-failure")
+    if quick:
+        summary = "preview built; not yet verified" if result == 0 else f"preview failed: {errors[0]}" if errors else f"preview failed (exit {result})"
+    elif result == 0:
+        summary = "geometry unverified; not print-ready" if any(r.get("status") == "unverified" for r in records) else "final verification passed"
+        if accepted:
+            summary += f" ({accepted} accepted failing gate{'s' if accepted != 1 else ''})"
+    else:
+        summary = f"final verification failed: {errors[0]}" if errors else f"final verification failed (exit {result})"
+
+    def relative(path: Path | None) -> str | None:
+        if path is None:
+            return None
+        try:
+            resolved = path.resolve()
+        except OSError:
+            return None
+        if not resolved.is_file():
+            return None
+        for root in (workspace, project):
+            try:
+                return resolved.relative_to(root).as_posix()
+            except ValueError:
+                continue
+        return None
+
+    verdict = {
+        "spec": 1,
+        "ready": result == 0 and not quick and not any(r.get("status") == "unverified" for r in records),
+        "summary": summary[:200],
+        "findings": findings,
+        "phases": _harness_phases(records, mode=mode, result=result),
+        "updatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "mode": mode,
+        "exit": int(result),
+    }
+    artifact_path = relative(artifact)
+    if artifact_path:
+        verdict["artifact"] = artifact_path
+    report_path = relative(report)
+    if report_path:
+        verdict["report"] = report_path
+    target = workspace / HARNESS_VERDICT_RELATIVE
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        staged = target.with_name(f".{target.name}.{os.getpid()}.tmp")
+        staged.write_text(json.dumps(verdict, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        os.replace(staged, target)
+    except OSError as exc:
+        print(f"verify_project: warning: could not write {target}: {exc}", file=sys.stderr)
+        return None
+    print(f"[verify_project] wrote harness verdict {target}", flush=True)
+    return target
 
 
 def _quick(
@@ -1282,8 +1577,9 @@ def _final(
         # rather than by the model: steps x pairs of Boolean operations, which a
         # generous manifest can stretch into hours. Bound it by default, so a
         # too-expensive sweep reports "never finished" in minutes instead of
-        # leaving the whole verification with no verdict. It fails closed --
-        # an unfinished sweep is never read as clear.
+        # leaving the whole verification with no verdict. The parent also
+        # bounds individual native calls by killing the owned process group.
+        # An unfinished sweep is disclosed as unverified, never read as clear.
         motion_deadline = _motion_deadline_seconds()
         if not _run_or_stop(
             runner,
@@ -2127,6 +2423,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                     )
                 else:
                     print(f"[verify_project] wrote preflight failure {final_report}", flush=True)
+        _write_harness_verdict(
+            project,
+            [{"command": f"preflight  # ERROR: {message}", "status": "refused", "seconds": 0.0}],
+            mode="quick" if args.quick else ("image-derived final" if args.image_derived else "final"),
+            result=2,
+        )
         parser.error(message)
 
     if args.preview_tolerance <= 0:
@@ -2361,7 +2663,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         else:
             cache_started = time.perf_counter()
-            _remove_generation_cache(cache)
+            _remove_generation_cache(cache, preserve_measurements=True)
             runner.records.append(
                 {
                     "command": f"delete cache {cache}",
@@ -2405,10 +2707,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         mode = "image-derived final" if args.image_derived else "final"
     elapsed = time.perf_counter() - workflow_started
+    final_report = None
     if not args.quick and not args.no_report and not args.dry_run:
         final_report = report_path or (project / "measure" / "verification-pipeline.md")
         _write_report(final_report, runner, mode=mode, result=result, elapsed=elapsed, bed=bed)
         print(f"[verify_project] wrote report {final_report}", flush=True)
+    if not args.dry_run:
+        _write_harness_verdict(
+            project,
+            runner.records,
+            mode=mode,
+            result=result,
+            artifact=_step_for_entry(assembly),
+            report=final_report,
+        )
     print(
         f"[verify_project] {mode} workflow: rc={result} "
         f"in {elapsed:.2f}s",

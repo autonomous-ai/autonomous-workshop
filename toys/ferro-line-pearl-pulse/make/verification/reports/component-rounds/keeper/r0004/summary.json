@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_keeper.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "keeper"
+ ],
+ "print": {
+  "keeper": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper/r0003/overhang-keeper.log": "a563fb31fb647e25ddb0d706e57c5c53866a7e0d5b8122b4b742bf81e49a8dd9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper/r0003/thickness-keeper.log": "f0257b9141edf26c6d70735e8bffab3d08a1b0fe9f565b2a6a48b4751c2a2e33"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "keeper"
+ ],
+ "round": 4,
+ "scope": "component:keeper",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front confirms a thin flat ring. Top and iso show eight peripheral horn exits, two wider return passages, three intact circular bearing lands and separate bell-post notches. The ring remains connected without floating fragments.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper/r0004/visual-packet.json",
+  "packet_sha256": "f62d795b9f055900d303f1786d15d8f1e649fe960a3e1af1fee21e325dd66d5a",
+  "status": "pass"
+ }
+}

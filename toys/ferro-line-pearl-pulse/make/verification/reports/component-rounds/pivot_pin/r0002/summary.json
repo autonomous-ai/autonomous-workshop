@@ -1,0 +1,63 @@
+{
+ "build": {
+  "pivot_pin": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "pivot_pin"
+ ],
+ "check_motion": false,
+ "checked": [
+  "pivot_pin"
+ ],
+ "checks_ok": false,
+ "entry": "part_pivot_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_pin/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pivot_pin"
+ ],
+ "print": {
+  "pivot_pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_pin/r0002/overhang-pivot_pin.log": "a903e130ebe9664e8bc5e6cc53dd44c58289090cbe4b56b9be56d5d96b8a2c2d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_pin/r0002/thickness-pivot_pin.log": "02ea877448cd73ea98dfe22f800e6dcb7035058d7c1dcc3487fcacf1062d91a4"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 3.0% of surface below (223 of 7014 samples); thinnest "
+    ],
+    "thinnest_mm": 0.4,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:pivot_pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_pin/r0002/visual-packet.json",
+  "packet_sha256": "8a7ad89ff375875dae48f9b4f3a2cd746d63faaf216a0c4ec090ad4c1a33d089",
+  "status": "pending"
+ }
+}

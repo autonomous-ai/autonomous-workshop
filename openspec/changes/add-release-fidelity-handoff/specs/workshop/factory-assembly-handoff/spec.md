@@ -45,6 +45,18 @@ The system SHALL reject a Made proposal whose assembly-package has two or more o
 - **WHEN** the native session finalizes a two-occurrence Make with one uncoloured part
 - **THEN** the host rejects the proposal with `make-part-colours-missing` naming that part
 
+### Requirement: Make names every part for the filament it prints in
+The system SHALL reject a Made proposal whose assembly-package has two or more occurrences unless every occurrence name ends in `_<colour>` for a colour the CAD skill's filament palette stocks, with a non-empty part half before it, treating a hyphen as the same separator as an underscore. The rejection SHALL name the offending occurrences and list the stocked colours, and SHALL be raised before the missing-production-part rejection, since a rename moves the occurrence, its `parts/` file and its colour together. A single-occurrence package SHALL bind no naming rule. The rule SHALL check the name only and SHALL NOT compare it with the colour channels sealed on the part.
+
+#### Scenario: A part not named for a stocked colour is repaired in-session
+- **WHEN** the native session finalizes a three-occurrence Make whose occurrences are `owl_black`, `nest`, and `perch_teal`
+- **THEN** the host rejects the proposal with `make-part-colour-names-invalid` naming `nest` and `perch_teal`
+- **AND** the feedback lists the stocked colours the rename may choose from
+
+#### Scenario: A rename is reported before the file it renames
+- **WHEN** a two-occurrence Make seals occurrences named `owl` and `nest` with no `parts/` files and no colours
+- **THEN** the host rejects with `make-part-colour-names-invalid` rather than `make-production-parts-missing` or `make-part-colours-missing`
+
 ### Requirement: One colour convention across sealed formats
 The system SHALL report the raw colour channels sealed in a STEP or assembly-package as the sRGB hex a viewer shows, so the hex read from STEP, the GLB material as the shop displays it, host renders, and the Factory `part_colors` agree for the same occurrence.
 

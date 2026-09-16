@@ -1,0 +1,195 @@
+{
+  "round": 4,
+  "review_type": "independent informed still-image rereview",
+  "phase": "comparison completed after persisted fresh observations",
+  "result": "pass",
+  "disclosure": "Reviewer already knows the Wish and concept. All four current image files were freshly opened once in round4. These observations are informed, not blind. Prior round2 blind and round3 reports remain historical and unmodified.",
+  "fresh_images": [
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/iso.png",
+      "sha256": "e5bce2217430654ad9ada6797c325ea295c6cb8bf6f7d69e906829b5b96779aa",
+      "inspections": 1,
+      "read": "A pale umbrella-bell object stands on a narrow central column over a round foot. Several long pearl-colored segmented strands surround blue and pink inner ribbons. The broad crown is flat, the skirt flares smoothly and its rim has shallow scallops. Sparse dark pinpricks appear on the shell, but no large triangular patches or transparent surface failures are visible."
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/signature.png",
+      "sha256": "c63ae8208faa13ceecc33322e18b0676da4d4245cf227c78ec9ae7a7b60fc7ce",
+      "inspections": 1,
+      "read": "The left object has nearly vertical upper suspension arms and closely gathered hanging strands. In the right panel the bell sits lower relative to the unchanged foot, the pale-blue annular mechanism also appears lower, suspension arms angle outward, and strand endpoints rise while the outer envelope widens. Inner ribbons remain central. The two states visibly differ without any shown movement between them."
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/snap/bell-detail.png",
+      "sha256": "b6cd62211f02090d951bfe0d98961f6113f5f947869253541bdd9b100f8f98a4",
+      "inspections": 1,
+      "read": "The close view shows an opaque cream-white shell, continuous soft shading along a scalloped sloping skirt, a distinct flat crown transition, and one pink and one pale-blue narrow accent region on the front. The shell edge is visually thin. Surface pinpricks remain tiny and sparse. No gross cracks, missing regions, protruding shards or triangular patchwork are visible."
+    },
+    {
+      "path": "artifacts/make/r0001/product/cad/measure/still-count-evidence/underside-counts.png",
+      "sha256": "47a56b663a86eb82b8a2feeba161e61cea3c34b73622412e1e6cda4a72c4d275",
+      "inspections": 1,
+      "read": "Opposite low views expose hollow canopy edge, annular underbell linkage and central stand. Eight peripheral strands can be tracked as four projected front/back pairs using their separate bead sequences and terminal beads. Four wavy inner ribbons are distinguishable: two pink and two blue. The footer states exact pressed CAD height 113.6 mm and width 102.1 mm. The right view is darker but its outlines remain readable; upper hidden internal clearance is not measurable from these views."
+    }
+  ],
+  "provenance_note": "All four current image hashes equal their previously reviewed image hashes. Root reports regeneration against updated STEP geometry containing a hidden journal relief; identical image bytes alone neither prove nor disprove that hidden export change. This visual review is bound to the exact image hashes; STEP/export binding requires independent provenance.",
+  "pass": true,
+  "review_scope": "Visual held-form and depicted static-state relationship only. These findings do not certify physical motion, manufacturing or hidden interference.",
+  "historical_reports": {
+    "blind_read": "design/blind-review-r2.json",
+    "round2_comparison": "design/signature-comparison-r2.json",
+    "round3_comparison": "design/signature-comparison-r3.json",
+    "note": "Preserved unchanged; round4 conclusion is based on fresh inspection of all four current image files, not a copied prior pass."
+  },
+  "reveal_sources": {
+    "wish": {
+      "path": "WISH.json",
+      "sha256": "039473d49a84d90040ed9cfd518b90396d5011a5a94e26c2032fb65f602bb3e4"
+    },
+    "concept": {
+      "path": "design/spark-source.json",
+      "sha256": "bd62849e70c0081bc083cb4a67ba1ec11a621b5b6d5f1c3772414661f10c3594"
+    },
+    "comparison_method": "After persisting image observations, reread the Wish and current concept interaction, signature, quantities, materials, dimensions, assumptions and risks. Source claims do not substitute for observed geometry."
+  },
+  "boolean_evidence": {
+    "held_object_unmistakable": "The current isometric view reads as a jellyfish-like mechanical desk companion: a bell above a tentacle corona, inner ribbons and a supporting pedestal.",
+    "form_matches_wish": "Fresh views show a smooth-looking thin pale shell, shallow scallops, pastel accents, narrow stand, long segmented peripheral strands and central ribbons.",
+    "subjects_match_wish": "Fresh opposite underside views resolve eight beaded strand sequences and four inner ribbons, within a single jellyfish object.",
+    "action_matches_wish": "Static association only: the lower-bell panel has lower annular linkage, outward upper arms and a wider, slightly lifted tentacle skirt.",
+    "relationship_matches_wish": "Peripheral strands visibly attach to arms under the bell; the inner ribbon group occupies the center around the stand and common ring.",
+    "anti_generic_signature_visible": "The two authored states show a specific press-associated jellyfish transformation with linked repeated beads and distinct wavy inner ribbons; the signature is visible beyond surface decoration.",
+    "signature_experience_unmistakable": "The intended gathered-to-flared transformation is unambiguous in the paired stills. This boolean refers to the depicted experience only; actual press feel, release, wind-up and swimming motion are unverified.",
+    "finished_product_desirable": "As an independent image-based aesthetic judgment, the restrained pearl/pastel palette, scalloped skirt and repeated strands form an appealing desk automaton with a clear broad press surface. No physical-product finish or human-response test is implied."
+  },
+  "held_object_unmistakable": true,
+  "form_matches_wish": true,
+  "subjects_match_wish": true,
+  "action_matches_wish": true,
+  "relationship_matches_wish": true,
+  "anti_generic_signature_visible": true,
+  "signature_experience_unmistakable": true,
+  "finished_product_desirable": true,
+  "critical_form_requirements": [
+    {
+      "requirement": "Recognizable pearl jellyfish desk companion",
+      "blind_evidence": "Current overall view shows bell, peripheral tentacles, inner oral-arm-like ribbons and desktop pedestal; jellyfish identity remains legible.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "Smooth, thin pearl-white bell",
+      "blind_evidence": "Current close image has continuous soft skirt shading instead of triangular patchwork. Fresh underside image shows hollow canopy and thin exposed rim. Cream-white rendering supports a pearl-toned appearance; actual filament pearlescence is unmeasured.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "Soft blush pink and pale-blue accents",
+      "blind_evidence": "Pink and blue narrow regions are visible on the pale bell; matching pastel inner ribbons reinforce the palette without overwhelming the pearl body.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "Gently scalloped rim",
+      "blind_evidence": "Shallow repeated outward lobes are visible around the lower bell edge, with no sharp cutouts or missing rim sections.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "Slim stand",
+      "blind_evidence": "Central column is narrow relative to bell width and object height and rises from a low circular foot.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "Eight slender bead-chain tentacles",
+      "blind_evidence": "The fresh underside sheet shows four projected front/back pairs with separate bead sequences and terminal beads. Long narrow overall strand proportions match slender tentacles; joint manufacture is outside image proof.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "Four ribbon-like inner oral arms",
+      "blind_evidence": "Two pink and two pale-blue wavy ribbons can be distinguished inside the strand corona in the fresh underside views.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "Bell dips while inner ring lowers and tentacles lift and flare",
+      "blind_evidence": "The shared-framing signature sheet visibly shows lower bell and pale-blue annulus in the wider state, angled upper arms and slightly raised strand ends. Exact travel and causal operation are not measured by this image review.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "Hand press associated with outward flare",
+      "blind_evidence": "Broad accessible bell crown and paired lowered-bell/outward-strand state make the intended press association clear, without establishing actual hand operation or soft return.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "Calm, graceful visual character",
+      "blind_evidence": "Soft colors, shallow scallops, long hanging forms and balanced radial arrangement read as calm. Visible mechanical joints remain orderly; the Wish does not require concealed mechanisms or a particular biological species.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "Fits in a hand",
+      "blind_evidence": "Fresh evidence-sheet caption gives pressed CAD height 113.6 mm and width 102.1 mm, compatible with a small hand-sized desk object. No physical grip or ergonomic test is inferred.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "Four-color visual palette without painted ornament",
+      "blind_evidence": "Pearl, pink, pale blue and muted lavender are visible as discrete material-colored regions. There is no visible painted illustration; FDM process and actual absence of paint require separate manufacturing evidence.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    },
+    {
+      "requirement": "No electronics in the visible product",
+      "blind_evidence": "Fresh views show mechanical links and pivots, without visible wires, boards, display, battery housing or powered controls. Hidden electronics absence is outside a still-image proof.",
+      "matches": true,
+      "evidence_phase": "fresh informed round4 observation; field name retained for compatibility, not a claim of blindness"
+    }
+  ],
+  "nonvisual_requirements": [
+    {
+      "requirement": "Wind small underbell key; clockwork or rubber-band motor",
+      "status": "unverified by this review",
+      "reason": "Underbell mechanical components are visible, but the exact small key and hidden drive cannot be functionally identified or qualified from these stills."
+    },
+    {
+      "requirement": "Slow rhythmic pulse for about 30 seconds; bell returns and strands drift back; swims in place and looks alive across the room",
+      "status": "unverified",
+      "reason": "The images establish two authored states only. No motion review is authorized."
+    },
+    {
+      "requirement": "Silent operation",
+      "status": "unverified",
+      "reason": "Still images contain no sound or measured operation."
+    },
+    {
+      "requirement": "Print-in-place bead-chain tentacles and support-free four-color FDM, no paint",
+      "status": "not established by images",
+      "reason": "Visible separate joints and material regions do not establish print process, support need, captive manufacture or physical release."
+    },
+    {
+      "requirement": "Shared wind-up and manual linkage; positive retention; repair/service routes; sixteen-turn winding limit and 4 mm press stop",
+      "status": "outside this visual signature review",
+      "reason": "Concept engineering details require exact geometry and physical evidence; no such evidence is inferred from the visual pass."
+    },
+    {
+      "requirement": "Make someone want to press it",
+      "status": "image-based desirability judgment only",
+      "reason": "Broad crown and visibly responsive paired state communicate the intended interaction; actual human response remains untested."
+    }
+  ],
+  "blocking_visual_defects": [],
+  "minor_presentation_observations": [
+    "Sparse tiny dark specks remain in the smooth-shaded bell views; they do not obscure shell form or reintroduce the prior large-facet defect.",
+    "Opposite underside views use unequal lighting and show some facet shading; they are used for counts and underside relationships, while smooth-shell appearance is assessed in the current close and overall images.",
+    "Some rear strands overlap the front strands in projection; distinct bead sequences and endpoints in the fresh opposite views permit the count."
+  ],
+  "nonblocking_style_observations": [
+    "Flat crown and exposed joints make the object read as an engineered automaton. A continuously domed cap, concealed mechanism and exact species imitation are not required by the Wish."
+  ],
+  "motion_policy": "check_motion=false; no sweep, animation or independent motion review performed. Motion, timing, silence and physical performance remain unverified.",
+  "largest_risk": "The hidden journal relief that triggered regeneration cannot be verified by these exterior stills; exact STEP provenance and deterministic geometry evidence must bind that change independently. The visual pass also does not establish actual function.",
+  "resolution": "Fresh informed inspection of all four current image files finds no visible held-form departure. Required counts, color/form hierarchy and lowered-bell/outward-flare association are visible. Pass applies only to the image-bound visual signature; root retains responsibility for exact exported-geometry provenance and separate gates."
+}

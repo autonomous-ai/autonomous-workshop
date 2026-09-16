@@ -1,0 +1,15 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_support.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/support/r0001/thickness-support.md
+(7.9s, exit 1)
+--- stdout
+part_support.step.py: 13.53 cm3 solid, grid 0.321 mm (185x185x307), 106407 surface samples, thickness resolved to 0.160 mm
+  FAIL  wall >= 0.80 mm (+/-0.16)      0.2% of surface below (170 of 106407 samples); thinnest 0.32 mm at (-5.5, -4.4, 74.0) in 2 region(s); 1 wall(s) (widest band 1.16 mm), 1 taper(s) at feature edges (0.00% of surface, budget 2%); 158 more within measurement error of the limit
+  PASS  thickness distribution         median 3.85 mm, p95 22.46 mm, max 93.38 mm
+  WARN  hollowable at 1.20 mm wall     2.86 of 13.53 cm3 (21%) in 1 pocket(s)
+  PASS  filament that would save       0.43 cm3, 0.5 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.32 mm at (-5.5, -4.4, 74.0)    169 samples, 23.5 mm2, runs 20.3 mm, band 1.16 mm
+        2. [taper] 0.32 mm at (5.2, -1.1, 4.0)      1 samples, 0.1 mm2, runs 0.0 mm, band 0.33 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/support/r0001/thickness-support.md
+
+--- stderr

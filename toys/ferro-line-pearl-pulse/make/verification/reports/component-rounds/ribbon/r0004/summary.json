@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_ribbon.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/ribbon/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "ribbon"
+ ],
+ "print": {
+  "ribbon": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/ribbon/r0003/overhang-ribbon.log": "4e7464bdb921f7a84eb871b842e679f57a9d15006491a5205637fa85a611dab4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/ribbon/r0003/thickness-ribbon.log": "bbefdfba4dc46d99a981e0f3cd7054b4259ce18fef204e2792e3ca954edc75d9"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "ribbon"
+ ],
+ "round": 4,
+ "scope": "component:ribbon",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top and iso show a slender continuous ribbon with roughly three smooth waves, a short straight root neck and a wider seating flange; front confirms uniform thin extrusion. No broken neck, extra body or abrupt narrow section is visible.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/ribbon/r0004/visual-packet.json",
+  "packet_sha256": "d3bb404f361c9e396f5eebce556bb5f2a7ec6bb2487677eff46f3d02b1e69bfb",
+  "status": "pass"
+ }
+}

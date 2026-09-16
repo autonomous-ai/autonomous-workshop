@@ -126,6 +126,7 @@ def check_occurrence_shape(
     allow_open: bool = False,
     min_volume: float = DEFAULT_MIN_VOLUME_MM3,
     check_self_intersection: bool = True,
+    on_failure=None,
 ) -> dict[str, object]:
     """Check one placed shape. Pure: no file IO, no scene loading.
 
@@ -133,19 +134,31 @@ def check_occurrence_shape(
     the shape is sound.
     """
     from OCP.BRepCheck import BRepCheck_Analyzer
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_Copy
 
+    # OCC analysis may set internal flags/tolerances. Keep the shared scene's
+    # exact B-rep unchanged so later checks and resumed cache keys agree.
+    wrapped = BRepBuilderAPI_Copy(wrapped, True, False).Shape()
     reasons: list[str] = []
 
+    def record_reason(reason):
+        reasons.append(reason)
+        if on_failure is not None:
+            on_failure(reason)
+
     if not BRepCheck_Analyzer(wrapped, True).IsValid():
-        reasons.append(REASON_INVALID_TOPOLOGY)
+        record_reason(REASON_INVALID_TOPOLOGY)
 
     solids = _solids(wrapped)
-    volumes = [_signed_volume(solid) for solid in solids]
-
-    if solids and any(volume <= min_volume for volume in volumes):
-        # Measured per solid, never aggregated: an inverted member inside a
-        # compound would otherwise cancel against a good one and vanish.
-        reasons.append(REASON_NON_POSITIVE_VOLUME)
+    volumes = []
+    for solid in solids:
+        volume = _signed_volume(solid)
+        volumes.append(volume)
+        # Record each kind of defect immediately, before another solid's
+        # measurement can block. Never aggregate signed volumes: an inverted
+        # member could otherwise cancel against a good one and vanish.
+        if volume <= min_volume and REASON_NON_POSITIVE_VOLUME not in reasons:
+            record_reason(REASON_NON_POSITIVE_VOLUME)
 
     if not allow_open:
         # `allow_open` means "surface geometry is intended here", so it
@@ -153,18 +166,22 @@ def check_occurrence_shape(
         # noSolid while honouring allow_open would make the flag useless.
         shells = _shells(wrapped)
         if shells and any(_has_free_edges(shell) for shell in shells):
-            reasons.append(REASON_OPEN_SHELL)
+            record_reason(REASON_OPEN_SHELL)
         if not solids:
-            reasons.append(REASON_NO_SOLID)
+            record_reason(REASON_NO_SOLID)
 
-    if check_self_intersection and _is_self_intersecting(wrapped) is True:
-        reasons.append(REASON_SELF_INTERSECTING)
+    self_intersection = _is_self_intersecting(wrapped) if check_self_intersection else False
+    if self_intersection is True:
+        record_reason(REASON_SELF_INTERSECTING)
 
-    return {
+    result = {
         "solidCount": len(solids),
         "volumes": volumes,
         "reasons": reasons,
     }
+    if self_intersection is None:
+        result["unverified"] = ["self-intersection checker did not return a verdict"]
+    return result
 
 
 def inspect_validity(
@@ -180,6 +197,7 @@ def inspect_validity(
     from cadgen.interference import _selected, occurrences_from_scene, scene_label_rows
     from cadgen.step_export_target import _resolve_spec_and_scene
     from cadgen.step_targets import resolve_step_target
+    from cadgen.inspection_runtime import Measurements, shape_identity, emit
 
     target = resolve_step_target(entry, prefer_explicit_step=True)
     logger = CliLogger("cad")
@@ -200,13 +218,22 @@ def inspect_validity(
 
     parts: list[dict[str, object]] = []
     failures = 0
+    unverified: list[dict[str, object]] = []
+    checks = Measurements(target.step_path)
     for occurrence in occurrences:
-        result = check_occurrence_shape(
-            occurrence.shape,
-            allow_open=allow_open,
-            min_volume=min_volume,
-            check_self_intersection=check_self_intersection,
+        result = checks.run(
+            "validate", occurrence.ref,
+            lambda: [shape_identity(occurrence.shape, rigid_placement_invariant=True),
+                     allow_open, min_volume, check_self_intersection],
+            lambda: check_occurrence_shape(
+                occurrence.shape, allow_open=allow_open, min_volume=min_volume,
+                check_self_intersection=check_self_intersection,
+                on_failure=lambda reason: emit("measurement-failed", reason=reason),
+            ),
+            failed=lambda value: bool(value["reasons"]),
         )
+        if result.get("unverified"):
+            unverified.append({"ref": occurrence.ref, "reasons": result["unverified"]})
         reasons = result["reasons"]
         if reasons:
             failures += 1
@@ -220,11 +247,16 @@ def inspect_validity(
                 }
             )
 
-    return {
-        "ok": failures == 0,
+    response = {
+        "ok": failures == 0 and not unverified,
         "entry": target.cad_path,
         "occurrenceCount": len(occurrences),
         "failureCount": failures,
         "parts": parts,
         "errors": [],
     }
+    if unverified:
+        response.update(status="failed" if failures else "unverified",
+                        unverified=["some solids have no completed self-intersection verdict"],
+                        unverifiedParts=unverified, completedChecks=checks.completed)
+    return response

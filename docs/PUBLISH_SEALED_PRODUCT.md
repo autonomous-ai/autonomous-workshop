@@ -93,9 +93,16 @@ signature and the posed occurrence geometry of the sealed STEP, and writes one
 group (order, slide or `#slot` key, owner, sealed colour) through the
 part-colours effect, verified on readback. A Make whose package lists two or
 more occurrences without those STLs, or without a sealed colour on every
-part, is rejected with feedback naming them. The release receipt records
-`handoff_transport`, `occurrence_count`, `viewer_groups`, and the reason a
-toy crossed as a single mesh.
+part, is rejected with feedback naming them. Every occurrence of such a package
+also has to be named `<part>_<colour>` for the filament it prints in
+(`arm_black`, `leg_dark_brown`), using one of the 19 colours the CAD skill's
+filament palette stocks across Bambu Lab PLA Lite and PETG Basic; the name
+travels into `parts/<name>.step`, the sidecar and the shop's part list, so
+whoever loads the printer reads the spool off the file. That rule checks the
+name, not the sealed channels, and is reported before the missing-part rule so
+one rename repairs the occurrence, its file and its colour together. The
+release receipt records `handoff_transport`, `occurrence_count`,
+`viewer_groups`, and the reason a toy crossed as a single mesh.
 
 The handoff's `project.json` carries, beside the product id and title, the
 sealed Release page's own `summary`, `what_arrives`, and `limitations`, and

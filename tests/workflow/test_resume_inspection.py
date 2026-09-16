@@ -1,5 +1,6 @@
 """A stopped Make adopts corrected CAD tools once and resumes its exact session."""
 import hashlib
+import dataclasses
 import json
 import os
 from pathlib import Path
@@ -71,19 +72,30 @@ class ResumeInspectionTest(unittest.TestCase):
         self.product_id = "resume-inspection-fixture"
         self.current_roots = host.product_run_domain_skill_roots()
 
-    def start_old(self):
+    def start_old(self, *, version_one=False):
         # A real materialized run with current motion options but the old
         # duplicated kernel call, so motion migration cannot hide this case.
         old_cad = self.root / "old-cad"
         shutil.copytree(self.current_roots["cad"], old_cad,
                         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
         reference = old_cad / "references/inspection-and-validation.md"
-        reference.write_bytes(reference.read_bytes().replace(host._INSPECTION_CAPABILITY_MARKER, b""))
+        reference.write_bytes(reference.read_bytes().replace(host._INSPECTION_CAPABILITY_MARKER,
+            b"<!-- workshop-geometry-inspection-v1 -->" if version_one else b""))
         validity = old_cad / "scripts/packages/cadgen/src/cadgen/validity.py"
         validity.write_text(validity.read_text().replace(
             "checker = BRepAlgoAPI_Check(wrapped, True, True)\n",
             "checker = BRepAlgoAPI_Check(wrapped, True, True)\n        checker.Perform()\n"))
-        with mock.patch.object(host, "product_run_domain_skill_roots", return_value={**self.current_roots, "cad": old_cad}):
+        assets = host.product_run_agent_assets()
+        old_skill = self.root / "old-workshop"
+        shutil.copytree(assets.skill_root, old_skill, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        finalizer = old_skill / "scripts/stage_proposal.py"
+        finalizer.write_bytes(finalizer.read_bytes() + b"\n# Older frozen finalizer fixture.\n")
+        old_round = self.root / "old-round"
+        shutil.copytree(self.current_roots["make-round"], old_round, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        round_tool = old_round / "scripts/make_round"
+        round_tool.write_bytes(round_tool.read_bytes() + b"\n# Older frozen round fixture.\n")
+        with mock.patch.object(host, "product_run_agent_assets", return_value=dataclasses.replace(assets, skill_root=old_skill)), \
+             mock.patch.object(host, "product_run_domain_skill_roots", return_value={**self.current_roots, "cad": old_cad, "make-round": old_round}):
             host.start_native_run(
                 Wish.create(self.product_id, "a complex lunar arcade", context={"inventor_id": "soren-voss"}),
                 effort="spark", max_tokens=100_000_000,
@@ -124,7 +136,7 @@ class ResumeInspectionTest(unittest.TestCase):
         self.assert_corrected(run)
         after = run.snapshot()
         for name, digest in before.input_sha256s.items():
-            if not name.startswith(".agents/skills/cad/"):
+            if not name.startswith((".agents/skills/cad/", ".agents/skills/make-round/")) and name != ".agents/skills/autonomous-workshop/scripts/stage_proposal.py":
                 self.assertEqual(after.input_sha256s[name], digest, name)
         for name in ("stage", "round_index", "max_rounds", "stage_artifacts", "wish_sha256"):
             self.assertEqual(getattr(after, name), getattr(before, name), name)
@@ -137,6 +149,22 @@ class ResumeInspectionTest(unittest.TestCase):
         self.assertEqual(len(self.launcher.resumes), 1)
         self.assertIn("Host geometry inspection correction", self.launcher.resumes[0]["prompt"])
         self.assertIn("interrupted inspection has no verdict", self.launcher.resumes[0]["prompt"])
+
+    def test_v1_resume_adopts_cancellable_tools_finalizer_and_preserves_measurements(self):
+        self.start_old(version_one=True)
+        cache = self.paths.workspace / "product/cad/__cadgen__/inspection-v2"
+        cache.mkdir(parents=True)
+        (cache / "completed.json").write_text('{"completed":"exact measurement"}')
+        host.resume_native_run(self.product_id)
+        run = host._open_budgeted_agent_run(self.paths)
+        self.assert_corrected(run)
+        self.assertEqual((cache / "completed.json").read_text(), '{"completed":"exact measurement"}')
+        installed = host.product_run_agent_assets().skill_root / "scripts/stage_proposal.py"
+        self.assertEqual((run.run_root / ".agents/skills/autonomous-workshop/scripts/stage_proposal.py").read_bytes(), installed.read_bytes())
+        self.assertEqual((run.run_root / ".agents/skills/make-round/scripts/make_round").read_bytes(),
+                         (self.current_roots["make-round"] / "scripts/make_round").read_bytes())
+        self.assertEqual(len(self.launcher.starts), 1)
+        self.assertEqual(len(self.launcher.resumes), 1)
 
     def test_migration_is_once_and_later_installed_changes_are_not_adopted(self):
         self.start_old()

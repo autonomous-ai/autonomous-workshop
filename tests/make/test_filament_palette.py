@@ -130,6 +130,39 @@ class FilamentPaletteTests(unittest.TestCase):
             tuple(self.palette.filament("navy blue", 0.42, material="PETG"))[3], 0.42
         )
 
+    def test_the_host_occurrence_vocabulary_is_exactly_what_the_palette_stocks(self):
+        # The gate that names a sealed part `<part>_<colour>` cannot import a
+        # vendored, per-run-materialized skill script, so it repeats the names.
+        # This is the seam that keeps the repetition honest: stock or retire a
+        # colour in cadfilament and the host list has to move with it.
+        from workshop.make.cad.filament_names import (
+            FILAMENT_COLOUR_NAMES,
+            normalise_colour_name,
+            occurrence_colour_name,
+        )
+
+        stocked = {
+            stock: {normalise_colour_name(name) for name in table}
+            for stock, table in self.palette.MATERIALS.items()
+        }
+        self.assertEqual(
+            set(FILAMENT_COLOUR_NAMES), set().union(*stocked.values())
+        )
+        self.assertEqual(list(FILAMENT_COLOUR_NAMES), sorted(FILAMENT_COLOUR_NAMES))
+        for name in FILAMENT_COLOUR_NAMES:
+            with self.subTest(colour=name):
+                self.assertEqual(occurrence_colour_name("arm_%s" % name), name)
+                # Whatever the host reads off a name is a colour the palette
+                # can hand back a spool for, in at least one stock.
+                carriers = [
+                    stock for stock, names in stocked.items() if name in names
+                ]
+                self.assertTrue(carriers)
+                for stock in carriers:
+                    self.assertTrue(
+                        self.palette.filament_hex(name, material=stock).startswith("#")
+                    )
+
     def test_palette_self_check_passes(self):
         result = subprocess.run(
             [sys.executable, str(PALETTE)],

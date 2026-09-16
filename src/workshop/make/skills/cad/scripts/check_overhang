@@ -38,6 +38,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from meshlib import summarize, voxel_pitch, voxelize, weld  # noqa: E402
+import progresslib
 from printlib import entry_mesh, entry_role, resolve_single_entry  # noqa: E402
 
 MAX_SAMPLES = 300_000
@@ -236,6 +237,8 @@ def main() -> int:
             region["kind"] = "overhang"
 
     needs_support = [r for r in regions if r["kind"] == "overhang"]
+    if needs_support:
+        progresslib.record_geometry_failure()
     bridges = [r for r in regions if r["kind"] == "bridge"]
     traces = [r for r in regions if r["kind"] == "trace"]
 

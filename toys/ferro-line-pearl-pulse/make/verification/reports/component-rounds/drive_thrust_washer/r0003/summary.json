@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_drive_thrust_washer.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_thrust_washer/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "drive_thrust_washer"
+ ],
+ "print": {
+  "drive_thrust_washer": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_thrust_washer/r0002/overhang-drive_thrust_washer.log": "97a22f8dea3b84d5e640882af55863a887701f7d3037f55d8e9e0f3d116d90c7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_thrust_washer/r0002/thickness-drive_thrust_washer.log": "70f7351076745a169fb51ac78a4afe94885d3b8bfba8e6a08103d4ad8f18cb8e"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "drive_thrust_washer"
+ ],
+ "round": 3,
+ "scope": "component:drive_thrust_washer",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "All views show one concentric annulus with uniform wall and flat parallel faces. The bore is open and the rim is continuous.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_thrust_washer/r0003/visual-packet.json",
+  "packet_sha256": "bbdb5880edb6eaf8dd65792bdb9f492904f3f1d9e6fc71e7ae037d87c63e654f",
+  "status": "pass"
+ }
+}

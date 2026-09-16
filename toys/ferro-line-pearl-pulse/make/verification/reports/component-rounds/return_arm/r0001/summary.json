@@ -1,0 +1,65 @@
+{
+ "build": {
+  "return_arm": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "return_arm"
+ ],
+ "check_motion": false,
+ "checked": [
+  "return_arm"
+ ],
+ "checks_ok": false,
+ "entry": "part_return_arm.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "return_arm"
+ ],
+ "print": {
+  "return_arm": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0001/overhang-return_arm.log": "c835f497a7e721290bc5662f1c9327bf01f56ef57cddbf70d72f3b05dd1da59b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0001/thickness-return_arm.log": "6ac6a6990f40c815ea35fc6f04df1fc312f379ce2a3c644b0a8658cf28b372fa"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 21.2% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 46.2,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 2.8% of surface below (359 of 13457 samples); thinnest"
+    ],
+    "thinnest_mm": 0.33,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:return_arm",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0001/visual-packet.json",
+  "packet_sha256": "1840d7e37dc68b44ab7ba06f90a770f24f2c3c4b5037e1f0a22c338810a263b3",
+  "status": "pending"
+ }
+}

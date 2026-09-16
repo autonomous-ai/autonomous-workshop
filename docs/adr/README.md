@@ -25,3 +25,5 @@ Use the next four-digit number and this structure:
 Statuses are `Proposed`, `Accepted`, `Superseded by ADR NNNN`, or `Rejected`.
 Do not rewrite an accepted decision to reverse its meaning; add a superseding
 ADR. Small factual corrections that do not change the decision are allowed.
+
+- [0068: Cancellable geometry and disclosed unverified handoff](0068-cancellable-geometry-and-unverified-handoff.md)

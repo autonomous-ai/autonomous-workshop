@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_frame.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0007",
+ "overhang_angle": 45.0,
+ "parts": [
+  "frame"
+ ],
+ "print": {
+  "frame": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0006/overhang-frame.log": "939cbd4e4a12d38228290194a8bc29a6879ea844670fb885814e3440c8e7b215",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0006/thickness-frame.log": "baa9ef487feaa2646dc1eaa4bdec7baa3c72a38d2ea98f807c59c7ee08353f9e"
+   },
+   "measured_round": 6,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.68,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "frame"
+ ],
+ "round": 7,
+ "scope": "component:frame",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The fresh front and iso views retain all three long supports and eight paired forks, including the two intentional open U-journal cheeks. The central bore and shortened annular journal boss remain intact inside the stator cavities. Top shows open post and return slots with continuous spoke/bridge connections. No unintended fragment or placement error is visible.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0007/visual-packet.json",
+  "packet_sha256": "c74af6e352fbed9662779d9868c7aede99ac3c21ccb051a312fab71494ed90ff",
+  "status": "pass"
+ }
+}

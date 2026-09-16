@@ -1,0 +1,23 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_ribbon.step.py --view front --view top --view iso -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/ribbon/r0001/visual
+(4.9s, exit 1)
+--- stdout
+
+--- stderr
+Traceback (most recent call last):
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 359, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 346, in main
+    source, shape = build_shape(args.source)
+                    ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 109, in build_shape
+    shape = builder()
+  File "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_ribbon.step.py", line 7, in gen_step
+    return bed(ribbon(), invert=False)
+               ~~~~~~^^
+  File "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/parts/moving.py", line 61, in ribbon
+    return finish(s,'sinuous_oral_ribbon',BLUSH)
+  File "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/features/common.py", line 25, in finish
+    assert len(shape.solids())==1, (label,len(shape.solids()))
+           ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('sinuous_oral_ribbon', 2)

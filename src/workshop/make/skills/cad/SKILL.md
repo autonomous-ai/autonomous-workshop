@@ -21,6 +21,17 @@ Provenance: maintained in [earthtojake/text-to-cad](https://github.com/earthtoja
 Use the installed local skill files as the runtime source of truth; the
 repository link is only for provenance and release review.
 
+## Geometry deadlines and final disclosure
+
+Inspection has three outcomes: passed, failed, and unverified. A cancelled or
+timed-out check is unverified and may continue to the final handoff with an
+explicit limitation. Do not repeatedly retry the same stalled calculation.
+Use `verify_project` to record the incomplete checks, then the Make finalizer
+to seal `GEOMETRY-NOTES.md`, README notes and `print_ready_claim: false`.
+Measured defects still require repair. Exit zero from the continuation is not
+proof that geometry passed: read the final report's PASS/FAIL/UNVERIFIED status.
+See [inspection and validation](references/inspection-and-validation.md).
+
 ## Purpose
 
 Create or modify parametric CAD models from natural-language requirements, generate validated STEP/STP artifacts, inspect geometry references, and return checked outputs. STEP is the only format this skill writes. There is no mesh export of any kind — no STL, no 3MF, no GLB deliverable. Printability is gated separately by `verify_project --print-gates`, which tessellates each printable entry in the gate and writes nothing; call an output print-ready only when that run passed. For assemblies, prefer `cadgen.assembly.AssemblyHelper` with source-level build123d joints, named mating datums, and native labels when the parts have functional assembly relationships.

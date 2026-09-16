@@ -1,0 +1,63 @@
+{
+ "build": {
+  "bell_pearl": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bell_pearl"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bell_pearl"
+ ],
+ "checks_ok": false,
+ "entry": "part_bell_pearl.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_pearl/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bell_pearl"
+ ],
+ "print": {
+  "bell_pearl": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_pearl/r0001/overhang-bell_pearl.log": "e4fa62b07bbdfd44ee9e76c012f7ccabd65911326bf1a6722b104e15fe1e972b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_pearl/r0001/thickness-bell_pearl.log": "e8ad69ac424c3115e31130a7d146fdce1893b5a0be99875025e5b81faae45630"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.11) 1.4% of surface below (3149 of 253895 samples); thinne"
+    ],
+    "thinnest_mm": 0.23,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:bell_pearl",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_pearl/r0001/visual-packet.json",
+  "packet_sha256": "9b592b30dc7f5c402b156e6c4159859ab091ea436e0a8e541ff6d98ec90457aa",
+  "status": "pending"
+ }
+}

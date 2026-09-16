@@ -53,6 +53,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from meshlib import (  # noqa: E402
     sliver_metrics, summarize, voxel_pitch, voxelize, weld,
 )
+import progresslib
 from printlib import entry_mesh, entry_role, resolve_single_entry  # noqa: E402
 
 PLA_DENSITY = 1.24      # g/cm3
@@ -546,6 +547,8 @@ def main():
     checks = []
     def check(status, name, detail):
         checks.append((status, name, detail))
+        if status == "FAIL":
+            progresslib.record_geometry_failure()
 
     # A reading is quantised to one march step, and on a wall that does not line
     # up with the grid it lands one step low -- measured on a 1.20 mm shell:

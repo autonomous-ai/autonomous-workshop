@@ -1,0 +1,16 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_carrier.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0001/thickness-carrier.md
+(6.9s, exit 1)
+--- stdout
+part_carrier.step.py: 0.97 cm3 solid, grid 0.133 mm (365x413x35), 76928 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      1.4% of surface below (943 of 76928 samples); thinnest 0.73 mm at (-14.7, -24.4, 0.8) in 3 region(s); 3 wall(s) (widest band 2.07 mm); 1168 more within measurement error of the limit
+  PASS  thickness distribution         median 2.00 mm, p95 4.00 mm, max 25.80 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 0.97 cm3 (0%) in 0 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.73 mm at (-14.7, -24.4, 0.8)    319 samples, 6.8 mm2, runs 3.3 mm, band 2.06 mm
+        2. [wall ] 0.73 mm at (-14.0, 24.6, 0.8)    316 samples, 6.8 mm2, runs 3.3 mm, band 2.07 mm
+        3. [wall ] 0.73 mm at (26.7, 0.2, 0.8)    308 samples, 6.8 mm2, runs 3.3 mm, band 2.07 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/carrier/r0001/thickness-carrier.md
+
+--- stderr

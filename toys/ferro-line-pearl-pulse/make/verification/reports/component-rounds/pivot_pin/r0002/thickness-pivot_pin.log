@@ -1,0 +1,14 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_pivot_pin.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_pin/r0002/thickness-pivot_pin.md
+(5.4s, exit 1)
+--- stdout
+part_pivot_pin.step.py: 0.06 cm3 solid, grid 0.133 mm (41x41x88), 7014 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      3.0% of surface below (223 of 7014 samples); thinnest 0.40 mm at (0.1, -1.4, 11.1) in 1 region(s); 1 wall(s) (widest band 1.00 mm); 82 more within measurement error of the limit
+  PASS  thickness distribution         median 2.33 mm, p95 8.67 mm, max 11.07 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 0.06 cm3 (0%) in 0 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.40 mm at (0.1, -1.4, 11.1)    223 samples, 3.8 mm2, runs 3.8 mm, band 1.00 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_pin/r0002/thickness-pivot_pin.md
+
+--- stderr

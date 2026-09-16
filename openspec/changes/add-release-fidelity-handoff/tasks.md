@@ -30,6 +30,7 @@
 - [x] 4b.2 Pose the sealed occurrences from `assembled.step` in a bounded kernel subprocess (`posed_occurrences`) and own every viewer group by production-mesh shape signature first, posed containment and proximity second; verified complete on the 35-group Ouray assembly.
 - [x] 4b.3 Replace the one-shell-per-part transport rule with the keying: sidecar parts carry `index`, the part-colours effect writes one keyed entry per coloured viewer group, receipts record `viewer_groups`; adapter tests run a perfect fake kernel.
 - [x] 4b.4 Require a sealed colour per part of a multi-part Make (`make-part-colours-missing`) with tests.
+- [x] 4b.5 Require every occurrence of a multi-part Make to be named `<part>_<colour>` for a stocked filament colour (`make-part-colour-names-invalid`), with the host vocabulary in `workshop.make.cad.filament_names` held to `cadfilament.py` by test.
 
 ## 5. Acceptance
 

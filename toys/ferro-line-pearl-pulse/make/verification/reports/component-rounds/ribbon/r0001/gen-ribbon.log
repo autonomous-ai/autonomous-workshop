@@ -1,0 +1,13 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_ribbon.step.py --write --json
+(5.5s, exit 1)
+--- stdout
+
+--- stderr
+[scripts/gen] FAILED: AssertionError: ('sinuous_oral_ribbon', 2)
+[scripts/gen]   part_ribbon.step.py:7 in gen_step
+[scripts/gen]       return bed(ribbon(), invert=False)
+[scripts/gen]   parts/moving.py:61 in ribbon
+[scripts/gen]       return finish(s,'sinuous_oral_ribbon',BLUSH)
+[scripts/gen]   features/common.py:25 in finish
+[scripts/gen]       assert len(shape.solids())==1, (label,len(shape.solids()))
+[scripts/gen] re-run with --verbose for the full traceback

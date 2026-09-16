@@ -1,0 +1,61 @@
+{
+ "build": {
+  "drive_thrust_washer": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "drive_thrust_washer"
+ ],
+ "check_motion": false,
+ "checked": [
+  "drive_thrust_washer"
+ ],
+ "checks_ok": true,
+ "entry": "part_drive_thrust_washer.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_thrust_washer/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "drive_thrust_washer"
+ ],
+ "print": {
+  "drive_thrust_washer": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_thrust_washer/r0001/overhang-drive_thrust_washer.log": "d0d0f01f6e969338eea4b87a17879e2d1e7c8275b75c6c2d0983e05b16a5fd3a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_thrust_washer/r0001/thickness-drive_thrust_washer.log": "6a3ca993f020e3753969b56ba495b03830f88c5ed8988aeee9083f1f0daf6978"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:drive_thrust_washer",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_thrust_washer/r0001/visual-packet.json",
+  "packet_sha256": "5237dd6cb6e3d8fcd6c0103e24d7a13e3478d83cc75c3b3742999f42b30eb11a",
+  "status": "pending"
+ }
+}

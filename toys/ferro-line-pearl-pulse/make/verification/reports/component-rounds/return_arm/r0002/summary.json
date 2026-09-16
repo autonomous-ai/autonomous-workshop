@@ -1,0 +1,61 @@
+{
+ "build": {
+  "return_arm": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "return_arm"
+ ],
+ "check_motion": false,
+ "checked": [
+  "return_arm"
+ ],
+ "checks_ok": true,
+ "entry": "part_return_arm.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "return_arm"
+ ],
+ "print": {
+  "return_arm": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0002/overhang-return_arm.log": "57e0528141597aa5bbb7f102d03a5ae061616f0fd3f9d0e1d5f5c9348f32c5c1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0002/thickness-return_arm.log": "4794b19193e9c015adb3e17c310b3697ff1d2b5b72d2dbed5edb68607d10d8d2"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:return_arm",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0002/visual-packet.json",
+  "packet_sha256": "e3ab340bf69d125aa86c773265f60994df7a00924027046c244e59364f7ee6af",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_keeper_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper_pin/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "keeper_pin"
+ ],
+ "print": {
+  "keeper_pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper_pin/r0003/overhang-keeper_pin.log": "4f8bf3789bc66ab4839f660915fffb15899e08ea9cf5e9d73c61645a316aa318",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper_pin/r0003/thickness-keeper_pin.log": "a6b48dc46ef3daf7c096647f6a9fc7ffa0dc8fe18265bc18797f0c85ed8ab048"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "keeper_pin"
+ ],
+ "round": 4,
+ "scope": "component:keeper_pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show one coaxial pin with a broad seating head, long shaft, recessed clip neck and conical transition to a substantial terminal cap. Top is circular with no visible eccentricity.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper_pin/r0004/visual-packet.json",
+  "packet_sha256": "57f9018b3734336e7a3ed769a808b39bc5f2e5e31accf8084efdeb82962b3b4f",
+  "status": "pass"
+ }
+}

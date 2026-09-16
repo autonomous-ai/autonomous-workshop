@@ -1,0 +1,61 @@
+{
+ "build": {
+  "slider": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "slider"
+ ],
+ "check_motion": false,
+ "checked": [
+  "slider"
+ ],
+ "checks_ok": true,
+ "entry": "part_slider.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/slider/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "slider"
+ ],
+ "print": {
+  "slider": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/slider/r0003/overhang-slider.log": "036b9f36647af919e1ff515031e235ca010d5d89231cfafce982300200a9f304",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/slider/r0003/thickness-slider.log": "37b3c59d7d85f72338b534c576ff8be5b7ffa9e46fefd8665c36efb3f29e6e3f"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:slider",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/slider/r0003/visual-packet.json",
+  "packet_sha256": "d88e770add9bfd286b640aaa080eb7d4e3fb26e75537ce2af20cb7fe660e72ae",
+  "status": "pending"
+ }
+}

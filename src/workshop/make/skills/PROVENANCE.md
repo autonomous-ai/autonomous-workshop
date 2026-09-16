@@ -443,6 +443,21 @@ schemas, frozen early-proof routing, or motion-review requirements. Concept
 image reconstruction and the source branch's verifier simplification are not
 part of this adaptation.
 
+## Harness verdict projection (2026-09-14)
+
+Workshop is also installed as a domain-specific harness of Autonomous Harness
+(`harness.json` at the repository root; `harness/` holds the agent-facing
+`AGENTS.md`, the workspace template, the toolchain scripts and the vendored 3D
+viewer). Harness reads one file for its pane header, `.harness/verdict.json`,
+so `cad/scripts/verify_project` gained `_write_harness_verdict`: at the end of
+a quick or final run, and on a refused preflight, it projects the pipeline
+record onto that file — `ready` only for a passing final run, one finding per
+failing, skipped, noted or accepted-failing row, the combined entry's STEP as
+the artifact. It runs only when `HARNESS_WORKSPACE` is set, which Harness sets
+on the engine it launches and nothing else does, so Workshop's own product runs
+write no extra file; it never raises. Upstream does not carry it; re-apply on
+the next resync. `tests/make/test_harness_verdict.py` covers it.
+
 ## `make-round`
 
 Local extension (2026-09-09, ADR 0060): each round renders native inspection
@@ -898,3 +913,34 @@ model. It is one completed clean comparison plus an earlier corrected replay,
 not broad reliability evidence. No new native Wish was launched, no geometry
 was changed, and print/motion gates were not rerun. The affected Wish, frozen
 tools and live process remain unavailable; the reported delay remains open.
+
+## Local correction: cancellable geometry and unverified disclosure (2026-09-16)
+
+CAD inspection now runs in a disposable worker with parent-enforced deadlines,
+per-measurement progress, failure retention, atomic exact-input checkpoints,
+one source build per adjacent request group and a bounding-box sweep for
+collision candidates. Validity reuses rigid copies; intersection keys retain
+world placement. Native operations preserve input geometry. Warm daemon
+heartbeats no longer renew a request deadline, and an independent watchdog
+bounds native code that holds the GIL. Make-round and final verification reap
+owned child process groups and label timed-out analysis UNVERIFIED.
+
+The explicit continuation policy is documented in ADR 0068. It changes the
+handoff grade, not the truth of measurements: incomplete checks are sealed into
+final geometry notes, README and public limitations, with no print-ready claim.
+Measured failures and artifact/identity failures still block. Plain resume
+adopts CAD, Make-round and the finalizer once under a recorded v2 correction;
+existing session identity and consumed effort are preserved. This changes the
+`cad` and `make-round` fingerprints. Raw model replay artifacts remain private.
+
+Validation on the same archived 542-occurrence, 181-prototype assembly retained
+byte-for-byte JSON verdict parity with the prior passing replay: validity had
+zero failures, and interference tested all 1,838 bounding-box candidates out of
+146,611 possible pairs, with zero clashes. The initial corrected run took
+115.66 seconds; a fresh worker reusing completed measurements took 9.76 seconds.
+A separate forced 12-second interruption retained 96 completed validity
+measurements and returned UNVERIFIED. Resuming completed both checks with the
+same verdicts; the subsequent repeat took 9.70 seconds. This is one complex
+model replay, not a new native Wish or validation of the reported machine.
+An earlier development run exposed native shape mutation causing cache misses;
+copying validity inputs and non-destructive Boolean operations corrected it.

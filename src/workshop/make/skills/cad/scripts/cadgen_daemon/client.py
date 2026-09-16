@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import socket
 import subprocess
@@ -35,7 +36,7 @@ _PORTABLE_UNIX_SOCKET_PATH_BYTES = 103
 # waits. Without a deadline that wait is unbounded, which is how a warm call ends
 # up hanging for minutes on a model that builds cold in seconds. Bound it: a
 # legitimate large build can be silent for a long time, so the default is
-# generous, but it is finite, so the documented cold fallback actually happens.
+# generous but finite. Expiry cancels the request; it never retries it cold.
 DEFAULT_REQUEST_TIMEOUT_SECONDS = 600.0
 # Every Python file owned by this materialized skill contributes to the
 # daemon's version token, including both its CLIs and bundled cadgen package. A
@@ -68,11 +69,10 @@ def log_path(sock_path: Path) -> Path:
 
 
 def request_timeout() -> float:
-    """Seconds to wait for the daemon before giving up and running cold.
+    """Total seconds allowed for one daemon request.
 
-    ``CADGEN_DAEMON_TIMEOUT`` overrides; 0 or a negative value disables the
-    deadline entirely (the old, unbounded behaviour) for anyone who genuinely
-    wants to wait out a very long queued build.
+    ``CADGEN_DAEMON_TIMEOUT`` overrides within (0, 86400]; invalid values
+    retain the finite default. Heartbeats do not renew this allowance.
     """
     raw = os.environ.get("CADGEN_DAEMON_TIMEOUT", "").strip()
     if not raw:
@@ -81,7 +81,7 @@ def request_timeout() -> float:
         value = float(raw)
     except ValueError:
         return DEFAULT_REQUEST_TIMEOUT_SECONDS
-    return value if value > 0 else 0.0
+    return value if math.isfinite(value) and 0 < value <= 86400 else DEFAULT_REQUEST_TIMEOUT_SECONDS
 
 
 def compute_version_token(root: Path | None = None) -> int:
@@ -109,6 +109,10 @@ def run_via_daemon(tool: str, argv: list[str], cwd: str | None = None) -> int | 
     """Run one CLI invocation on the warm daemon; ``None`` means run inline instead."""
     if os.environ.get("CADGEN_WARM") != "1" or os.environ.get("CADGEN_DAEMON_CHILD"):
         return None
+    if tool == "inspect":
+        # Inspection now owns a cancellable worker; nesting that worker inside
+        # a daemon could orphan it if the outer deadline killed its supervisor.
+        return None
     argv = [str(arg) for arg in argv]
     stdin_command = tool == "inspect" and bool(argv) and argv[0] in {"worker", "batch"}
     if "-" in argv or stdin_command:
@@ -122,6 +126,7 @@ def run_via_daemon(tool: str, argv: list[str], cwd: str | None = None) -> int | 
         "argv": argv,
         "cwd": str(cwd) if cwd else os.getcwd(),
         "token": compute_version_token(),
+        "timeoutSeconds": request_timeout(),
     }
     sock_path = socket_path()
     if not socket_path_is_usable(sock_path):
@@ -211,14 +216,16 @@ def _run_request(conn: socket.socket, payload: dict) -> int | object | None:
     except OSError:
         return None
     timeout = request_timeout()
-    if timeout:
-        # Applies per read, not to the whole request: a daemon that is streaming
-        # output keeps resetting it, so only genuine silence trips the deadline.
-        conn.settimeout(timeout)
+    deadline = time.monotonic() + timeout
+    conn.settimeout(timeout)
     streams = {"stdout": sys.stdout, "stderr": sys.stderr}
     try:
         with conn.makefile("r", encoding="utf-8") as reader:
             for line in reader:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError
+                conn.settimeout(remaining)
                 line = line.strip()
                 if not line:
                     continue
@@ -239,18 +246,11 @@ def _run_request(conn: socket.socket, payload: dict) -> int | object | None:
                 target.write(data)
                 target.flush()
     except TimeoutError:
-        # Silent past the deadline: either the daemon is wedged, or it is still
-        # grinding through a queued build we cannot see. Either way, fall back to
-        # a cold in-process run so THIS invocation still completes. Say so on
-        # stderr — a silent 10-minute stall that then "just works" is the exact
-        # confusion this deadline exists to prevent.
-        print(
-            f"cadgen-daemon: no response for {timeout:.0f}s; running cold "
-            "(set CADGEN_DAEMON_TIMEOUT to change or 0 to wait indefinitely)",
-            file=sys.stderr,
-            flush=True,
-        )
-        return None
+        # Do not restart the same wedged operation cold after spending its
+        # allowance. Closing this connection cancels the daemon's owned job.
+        print(f"cadgen-daemon: request exceeded {timeout:g}s; cancelled (exit 124)",
+              file=sys.stderr, flush=True)
+        return 124
     except (OSError, ValueError):
         return None
     return None  # EOF without an exit frame

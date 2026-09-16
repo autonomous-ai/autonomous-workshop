@@ -1,0 +1,14 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_keeper.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper/r0001/thickness-keeper.md
+(6.1s, exit 0)
+--- stdout
+part_keeper.step.py: 0.82 cm3 solid, grid 0.133 mm (383x382x14), 89909 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (1 of 89909 samples); thinnest 0.40 mm at (-5.2, -24.6, 1.0) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.00% of surface, budget 2%)
+  PASS  thickness distribution         median 1.20 mm, p95 5.00 mm, max 27.80 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 0.82 cm3 (0%) in 0 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.40 mm at (-5.2, -24.6, 1.0)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.15 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper/r0001/thickness-keeper.md
+
+--- stderr

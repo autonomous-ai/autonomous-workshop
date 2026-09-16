@@ -225,6 +225,21 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
   as the package names the occurrence (`STAGE.json.production_parts_rule`).
   The host rejects a multi-part Make without them. The shop receives these
   files as its addressable parts and renders each in the colour sealed on it;
+- an occurrence name ending in the filament colour that part prints in, for
+  every occurrence of a multi-part model: `<part>_<colour>`, as in `arm_black`,
+  `leg_dark_brown`, `canopy_misty_blue`. Name the assembly labels that way in
+  the CAD source (`asm.add(..., label=...)`) so the regenerated
+  `assembled.step`, its package, and each `parts/<occurrence-name>.step` all
+  carry the name. The part half before the colour must not be empty — `black`
+  alone names no part. The colour has to be one the shop stocks: `beige`,
+  `black`, `blue`, `cocoa_brown`, `cyan`, `dark_beige`, `dark_brown`,
+  `dark_gray`, `gray`, `green`, `misty_blue`, `navy_blue`, `orange`,
+  `pine_green`, `red`, `reflex_blue`, `sunflower_yellow`, `white`, `yellow`.
+  That list is the filament palette the CAD skill stocks
+  (`cad/scripts/cadfilament.py`, Bambu Lab PLA Lite and PETG Basic); a colour
+  outside it is a spool nobody can load, and the host rejects it. The name is
+  what whoever loads the printer reads the spool off, so it travels with the
+  file — pick the colour first, then name the part;
 - a surface colour on every leaf part of a multi-part model, authored as
   `Color(r, g, b)` with channels 0..1 taken directly from the sRGB hex you want
   the shop to show (`Color(0.82, 0.51, 0.18)` shows as `#d1822e`). Do not

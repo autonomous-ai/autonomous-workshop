@@ -2129,6 +2129,110 @@ def _validate_signature_review(
             raise ProposalError("Make motion presentation is invalid: %s" % exc) from exc
 
 
+# Frozen data-only geometry disclosure contract (mirrors CAD geometry_disclosure.py).
+_geometry_STATUS = "geometry-unverified"
+_geometry_LIMITATION = "Geometry inspection is incomplete. This prototype is unverified and is not print-ready; see GEOMETRY-NOTES.md."
+_geometry_REPORT_NAME = "geometry-inspection.json"
+_geometry_NOTES_NAME = "GEOMETRY-NOTES.md"
+
+
+def _geometry_validate_report(value):
+    if (not isinstance(value, dict) or type(value.get("schema_version")) is not int
+            or value.get("schema_version") != 1 or set(value) != {
+                "schema_version", "status", "print_ready_claim", "checks", "verification_sha256"}):
+        raise ValueError("invalid geometry inspection report")
+    if value.get("status") != "unverified" or value.get("print_ready_claim") is not False:
+        raise ValueError("incomplete geometry cannot claim a passing or print-ready result")
+    checks = value.get("checks")
+    if not isinstance(checks, list) or not 1 <= len(checks) <= 4096:
+        raise ValueError("geometry inspection report needs bounded check records")
+    unknown = []
+    for check in checks:
+        if not isinstance(check, dict) or check.get("status") not in ("passed", "unverified"):
+            raise ValueError("a measured geometry failure cannot be waived")
+        if type(check.get("id")) is not str or not 1 <= len(check["id"]) <= 512 or any(c in check["id"] for c in "\n\r\x00"):
+            raise ValueError("invalid geometry check identifier")
+        if set(check) != ({"id", "status", "reasons", "completed"} if check["status"] == "unverified" else {"id", "status"}):
+            raise ValueError("unexpected geometry check fields")
+        if check["status"] == "unverified":
+            reasons = check.get("reasons")
+            if not isinstance(reasons, list) or not 1 <= len(reasons) <= 16 or any(
+                type(reason) is not str or not 1 <= len(reason) <= 512 or any(c in reason for c in "\n\r\x00")
+                for reason in reasons
+            ):
+                raise ValueError("unverified geometry needs bounded reasons")
+            if type(check.get("completed", 0)) is not int or check.get("completed", 0) < 0:
+                raise ValueError("invalid completed geometry check count")
+            unknown.append(check)
+    if not unknown:
+        raise ValueError("unverified geometry report has no unfinished checks")
+    return unknown
+
+
+def _geometry_notes_text(value):
+    unknown = _geometry_validate_report(value)
+    lines = ["# Geometry inspection limitations", "", _geometry_LIMITATION, "",
+             "The following checks did not finish. No passing verdict is inferred from their interruption.", ""]
+    for check in unknown:
+        lines.append(f"- {check['id']}: {'; '.join(check['reasons'])} (completed measurements: {check.get('completed', 0)}).")
+    return "\n".join(lines) + "\n"
+
+
+def _geometry_read_report(verification: Path):
+    if verification.is_symlink() or not verification.is_file() or verification.stat().st_size > 1_000_000:
+        raise ValueError("verification record is unavailable")
+    content = verification.read_bytes()
+    current = content.decode("utf-8").split("\n---\n\n## Previous pipeline record", 1)[0]
+    final_mode = any(f"- Mode: `{mode}`\n" in current for mode in ("final", "image-derived final"))
+    if not current.startswith("# Verification pipeline record\n") or not final_mode or "- Result: **UNVERIFIED** (exit 0)\n" not in current:
+        raise ValueError("unverified handoff needs a current final UNVERIFIED report")
+    path = verification.parent / _geometry_REPORT_NAME
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 1_000_000:
+        raise ValueError("geometry inspection report is unavailable")
+    def unique_object(pairs):
+        result = {}
+        for key, item in pairs:
+            if key in result:
+                raise ValueError("duplicate geometry report field")
+            result[key] = item
+        return result
+    value = json.loads(path.read_bytes(), object_pairs_hook=unique_object)
+    _geometry_validate_report(value)
+    if value.get("verification_sha256") != hashlib.sha256(content).hexdigest():
+        raise ValueError("geometry inspection report does not bind this verification record")
+    return value
+
+
+def _geometry_seal_disclosure(product_root: Path, verification: Path, product: dict):
+    value = _geometry_read_report(verification)
+    notes = _geometry_notes_text(value)
+    for path in (product_root / _geometry_NOTES_NAME, product_root / "README.md", product_root / "product.json"):
+        if path.is_symlink():
+            raise ValueError("geometry disclosure must not overwrite symlinks")
+    limitations = product.get("limitations", [])
+    if not isinstance(limitations, list) or not all(isinstance(item, str) for item in limitations):
+        raise ValueError("product limitations must be a text list")
+    product.update(status=_geometry_STATUS, print_ready_claim=False,
+                   limitations=[*([item for item in limitations if item != _geometry_LIMITATION]), _geometry_LIMITATION])
+    (product_root / _geometry_NOTES_NAME).write_text(notes, encoding="utf-8")
+    readme = product_root / "README.md"
+    text = readme.read_text(encoding="utf-8") if readme.exists() else "# Product notes\n"
+    marker = "\n<!-- workshop-geometry-disclosure -->\n"
+    readme.write_text(text.split(marker, 1)[0].rstrip() + "\n" + marker + notes, encoding="utf-8")
+    (product_root / "product.json").write_text(json.dumps(product, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _geometry_validate_disclosure(product_root: Path, verification: Path, product):
+    value = _geometry_read_report(verification)
+    if product.get("status") != _geometry_STATUS or product.get("print_ready_claim") is not False or _geometry_LIMITATION not in product.get("limitations", []):
+        raise ValueError("unverified handoff lacks its product limitations")
+    notes = product_root / _geometry_NOTES_NAME
+    readme = product_root / "README.md"
+    if notes.is_symlink() or readme.is_symlink() or notes.read_text(encoding="utf-8") != _geometry_notes_text(value) or _geometry_notes_text(value) not in readme.read_text(encoding="utf-8"):
+        raise ValueError("unverified handoff lacks its exact final documentation")
+    return value
+
+
 def _make_contract(
     run_root: Path,
     stage: Mapping[str, Any],
@@ -2227,13 +2331,24 @@ def _make_contract(
     current_record = verification_text.split(
         "\n---\n\n## Previous pipeline record", 1
     )[0]
-    if (
+    if "- Result: **UNVERIFIED** (exit 0)\n" in current_record:
+        # A timeout permits only an explicitly unverified prototype. The
+        # structured report rejects any measured failure and binds exact bytes.
+        try:
+            _tree_manifest(run_root, product_root_value, "Make product tree")
+            _geometry_seal_disclosure(product_root, product_root / verification_relative, product)
+            product_document, product_bytes, _ = _read_json(
+                run_root, "%s/product.json" % product_root_value, "Make product.json")
+            product = _mapping(product_document, "Make product.json", nonempty=True)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise ProposalError("unverified CAD handoff lacks its final geometry disclosure") from exc
+    elif (
         not current_record.startswith("# Verification pipeline record\n")
         or "- Mode: `final`\n" not in current_record
         or "- Result: **PASS** (exit 0)\n" not in current_record
     ):
         raise ProposalError(
-            "CAD verification must be the current passing final report"
+            "CAD verification must be a passing final report or a disclosed unverified handoff"
         )
     _prune_empty_directories(product_root, "Make product tree")
     manifest = _tree_manifest(run_root, product_root_value, "Make product tree")
@@ -3415,6 +3530,29 @@ def _playtest_contract(
     return {**identity, "playtested_sha256": json_sha256(identity)}
 
 
+def _geometry_release_notes(run_root, made, package_root_value):
+    if made["product"].get("status") != _geometry_STATUS:
+        return
+    entry = next((item for item in made["product_manifest"]["entries"]
+                  if item["path"] == _geometry_NOTES_NAME), None)
+    if entry is None:
+        raise ProposalError("unverified product lacks its sealed geometry notes")
+    content, _ = _read_regular(run_root, made["product_root"] + "/" + _geometry_NOTES_NAME,
+                              "Make geometry notes", maximum=1_000_000)
+    if hashlib.sha256(content).hexdigest() != entry["sha256"]:
+        raise ProposalError("Make geometry notes changed after sealing")
+    _tree_manifest(run_root, package_root_value, "Release package tree")
+    destination = run_root / package_root_value
+    (destination / _geometry_NOTES_NAME).write_bytes(content)
+    product, _, _ = _read_json(run_root, package_root_value + "/product.json", "Release product.json")
+    limitations = product.get("limitations")
+    if not isinstance(limitations, list):
+        raise ProposalError("Release limitations must be a list")
+    if _geometry_LIMITATION not in limitations:
+        product["limitations"] = [*limitations, _geometry_LIMITATION]
+        (destination / "product.json").write_bytes(canonical_json(product))
+
+
 def _playtested_release_contract(
     run_root: Path,
     stage: Mapping[str, Any],
@@ -3436,6 +3574,7 @@ def _playtested_release_contract(
     expected_root = "artifacts/release/package"
     if package_root_value != expected_root:
         raise ProposalError("Release package root must be %s" % expected_root)
+    _geometry_release_notes(run_root, made, package_root_value)
     manifest = _tree_manifest(run_root, package_root_value, "Release package tree")
     inventory = {entry["path"]: entry for entry in manifest["entries"]}
     required_files = ["MANUAL.pdf", "product.json"]
@@ -3554,6 +3693,7 @@ def _direct_release_contract(
     expected_root = "artifacts/release/package"
     if package_root_value != expected_root:
         raise ProposalError("Release package root must be %s" % expected_root)
+    _geometry_release_notes(run_root, made, package_root_value)
     manifest = _tree_manifest(run_root, package_root_value, "Release package tree")
     inventory = {entry["path"]: entry for entry in manifest["entries"]}
     required_files = ["MANUAL.pdf", "product.json", PLAYTEST_OMISSION_PATH]

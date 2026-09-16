@@ -43,6 +43,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from meshlib import SLIVER_HEIGHT, summarize, weld  # noqa: E402
+import progresslib
 from printlib import entry_mesh, entry_role, resolve_single_entry  # noqa: E402
 
 
@@ -69,6 +70,8 @@ def main():
     checks = []          # (status, label, detail); status in {PASS, WARN, FAIL}
     def check(status, label, detail):
         checks.append((status, label, detail))
+        if status == "FAIL":
+            progresslib.record_geometry_failure()
 
     # --- slivers ---------------------------------------------------------------
     # Tessellation routinely emits a few; they carry no geometry, so drop them

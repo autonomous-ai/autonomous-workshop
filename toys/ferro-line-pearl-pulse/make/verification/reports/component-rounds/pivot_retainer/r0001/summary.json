@@ -1,0 +1,61 @@
+{
+ "build": {
+  "pivot_retainer": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "pivot_retainer"
+ ],
+ "check_motion": false,
+ "checked": [
+  "pivot_retainer"
+ ],
+ "checks_ok": true,
+ "entry": "part_pivot_retainer.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_retainer/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pivot_retainer"
+ ],
+ "print": {
+  "pivot_retainer": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_retainer/r0001/overhang-pivot_retainer.log": "9c21e301bd7afb862c570bdfe2c90c47b0f6c0bab5ca019c00cc8f4878e39b54",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_retainer/r0001/thickness-pivot_retainer.log": "40476fdc33701c540ca3689d40541cf3ca539c829e04f9b21e5683ff2e702447"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:pivot_retainer",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_retainer/r0001/visual-packet.json",
+  "packet_sha256": "d4f1bff1daa0f151f21427aa10af5903ca759d10b4e026382558372f88a8191e",
+  "status": "pending"
+ }
+}

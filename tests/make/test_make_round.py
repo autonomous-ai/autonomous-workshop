@@ -96,6 +96,7 @@ class MakeRoundTest(unittest.TestCase):
         build_fails=False,
         wall_fails=False,
         overhang_fails=False,
+        overhang_unverified=False,
         argv=None,
         calls=None,
     ):
@@ -119,6 +120,8 @@ class MakeRoundTest(unittest.TestCase):
                     tool,
                     fails=wall_fails if tool == "check_thickness" else overhang_fails,
                 )
+                if tool == "check_overhang" and overhang_unverified:
+                    stdout, code = "", 3
                 log = kwargs.get("log")
                 if log is not None:
                     Path(log).parent.mkdir(parents=True, exist_ok=True)
@@ -141,6 +144,23 @@ class MakeRoundTest(unittest.TestCase):
         path = project / "measure/feedback.json"
         path.write_text(json.dumps(value))
         return path
+
+    def test_unknown_geometry_can_finish_visual_review_without_becoming_a_print_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, summary = self._round(project, overhang_unverified=True)
+            self.assertTrue(summary["checks_ok"])
+            self.assertEqual(summary["print"]["wheel"]["verdict"], "UNVERIFIED")
+            self.assertFalse(module.reusable_print(summary["print"]["wheel"]))
+            result = module.record_visual(project, self._feedback(project, summary))
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["geometry_status"], "unverified")
+            self.assertIs(result["print_ready_claim"], False)
+            self.assertTrue(module.render_summary(result).splitlines()[-1].startswith("  UNVERIFIED"))
+        with tempfile.TemporaryDirectory() as tmp:
+            _, summary = self._round(Path(tmp), wall_fails=True, overhang_unverified=True)
+            self.assertFalse(summary["checks_ok"])
+            self.assertEqual(summary["print"]["wheel"]["verdict"], "FAIL")
 
     def test_no_reference_round_requires_visual_inspection_and_reports_errors(self):
         with tempfile.TemporaryDirectory() as tmp:

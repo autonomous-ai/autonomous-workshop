@@ -1,0 +1,61 @@
+{
+ "build": {
+  "keeper_pin": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "keeper_pin"
+ ],
+ "check_motion": false,
+ "checked": [
+  "keeper_pin"
+ ],
+ "checks_ok": true,
+ "entry": "part_keeper_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper_pin/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "keeper_pin"
+ ],
+ "print": {
+  "keeper_pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper_pin/r0003/overhang-keeper_pin.log": "4f8bf3789bc66ab4839f660915fffb15899e08ea9cf5e9d73c61645a316aa318",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper_pin/r0003/thickness-keeper_pin.log": "a6b48dc46ef3daf7c096647f6a9fc7ffa0dc8fe18265bc18797f0c85ed8ab048"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:keeper_pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper_pin/r0003/visual-packet.json",
+  "packet_sha256": "03cdab512069018fff9b885ba62b7b8d504a55b7bc7365a179d0f4edf81fea4d",
+  "status": "pending"
+ }
+}

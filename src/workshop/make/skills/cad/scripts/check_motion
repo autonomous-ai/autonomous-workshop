@@ -1661,7 +1661,7 @@ def main() -> int:
                         help="stop sweeping after this much wall clock and report the "
                              "unfinished conditions as inconclusive instead of running "
                              f"on unbounded (default: ${DEADLINE_ENV}, else no bound). "
-                             "A budget stop always fails, even with --allow-inconclusive")
+                             "A budget stop returns unverified (exit 3), even with --allow-inconclusive")
     parser.add_argument("--json", action="store_true", help="emit results as JSON")
     parser.add_argument("--self-check", action="store_true",
                         help="run the coupled-motion and retention fixtures, and exit")
@@ -1720,18 +1720,22 @@ def main() -> int:
     sweeps = progresslib.Progress("check_motion condition", len(conditions))
     results = []
     # One clock for the whole run: the conditions and the retention closure
-    # share the budget, so an exhausted budget fails the closure immediately
+    # share the budget, so an exhausted budget marks the closure inconclusive
     # instead of sweeping for hours after the conditions already gave up.
     with deadline_scope(budget):
         for index, condition in enumerate(conditions):
             named = condition if isinstance(condition, dict) else {}
             sweeps.item(f"{named.get('id', f'condition_{index}')} [{named.get('check')}]")
             results.append(run_condition(condition, parts, index))
+            if results[-1]["status"] == "fail":
+                progresslib.record_geometry_failure()
         sweeps.finish()
         with progresslib.phase("check_motion: retention closure"):
             retention_result = check_retention_closure(manifest, parts, results)
     if retention_result is not None:
         results.append(retention_result)
+        if retention_result["status"] == "fail":
+            progresslib.record_geometry_failure()
     failed = [r for r in results if r["status"] == "fail"]
     unclear = [r for r in results if r["status"] == "inconclusive"]
     stopped = [r for r in results if r.get("deadlineStopped")]
@@ -1745,7 +1749,7 @@ def main() -> int:
             "deadlineSeconds": budget,
             "results": results,
         }, indent=2))
-        return 0 if ok else 1
+        return 0 if ok else 3 if stopped and not failed else 1
 
     labelled = len(part_names(parts))
     print(f"{entry.name}: {labelled} labelled parts, {len(results)} condition(s)\n")
@@ -1768,7 +1772,7 @@ def main() -> int:
               f"{budget:g}s budget and never finished "
               f"({len(results) - len(stopped) - len(failed)} complete)",
               file=sys.stderr)
-        return 1
+        return 3
     if unclear:
         # An inconclusive condition is a manifest that did not run, not a path
         # that was found clear. Exiting 0 on it is the quiet pass this gate

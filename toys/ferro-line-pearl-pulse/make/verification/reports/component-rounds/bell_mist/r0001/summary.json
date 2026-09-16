@@ -1,0 +1,63 @@
+{
+ "build": {
+  "bell_mist": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bell_mist"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bell_mist"
+ ],
+ "checks_ok": false,
+ "entry": "part_bell_mist.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_mist/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bell_mist"
+ ],
+ "print": {
+  "bell_mist": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_mist/r0001/overhang-bell_mist.log": "f737247cd0b7b1ca9a017136ccada585da96230f65c40c6b3f398e2d97649b6c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_mist/r0001/thickness-bell_mist.log": "c2a1d37c37e3a3e8c3d327483f7d0a11c4132cae4216a7c02d69414514683082"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 1.9% of surface below (553 of 29683 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:bell_mist",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_mist/r0001/visual-packet.json",
+  "packet_sha256": "972b82611983188518df9958d23408243d54e06da84f6101cfd3dd4c1a41216c",
+  "status": "pending"
+ }
+}

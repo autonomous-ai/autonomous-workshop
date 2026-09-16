@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_cam.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cam/r0002/thickness-cam.md
+(8.7s, exit 1)
+--- stdout
+part_cam.step.py: 3.97 cm3 solid, grid 0.133 mm (350x275x54), 150798 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      0.3% of surface below (279 of 150798 samples); thinnest 0.13 mm at (19.9, -1.9, 3.4) in 21 region(s); 2 wall(s) (widest band 1.09 mm), 17 taper(s) at feature edges and 2 spot(s) too small to be a wall (0.09% of surface, budget 2%); 166 more within measurement error of the limit
+  PASS  thickness distribution         median 4.33 mm, p95 15.73 mm, max 46.00 mm
+  WARN  hollowable at 1.20 mm wall     1.18 of 3.97 cm3 (30%) in 2 pocket(s)
+  PASS  filament that would save       0.18 cm3, 0.2 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.20 mm at (19.0, -0.4, 3.5)     93 samples, 2.9 mm2, runs 2.7 mm, band 1.09 mm
+        2. [wall ] 0.13 mm at (-21.1, 0.6, 3.6)     93 samples, 2.8 mm2, runs 2.8 mm, band 1.01 mm
+        3. [spot ] 0.20 mm at (21.0, -0.4, 3.3)     28 samples, 0.9 mm2, runs 0.8 mm, band 1.07 mm
+        4. [spot ] 0.13 mm at (-18.9, 0.5, 3.1)     19 samples, 0.7 mm2, runs 0.8 mm, band 0.88 mm
+        5. [taper] 0.13 mm at (19.9, -1.9, 3.4)      7 samples, 0.2 mm2, runs 0.5 mm, band 0.41 mm
+        6. [taper] 0.47 mm at (-19.9, 1.8, 3.2)      8 samples, 0.2 mm2, runs 0.5 mm, band 0.40 mm
+        ... and 15 smaller region(s)
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cam/r0002/thickness-cam.md
+
+--- stderr

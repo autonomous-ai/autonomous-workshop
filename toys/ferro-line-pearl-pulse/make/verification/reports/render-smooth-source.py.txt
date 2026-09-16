@@ -1,0 +1,296 @@
+"""Exact STEP stills with normals smoothed strictly inside each BRep face.
+
+All source triangles participate in an orthographic pixel z-buffer. No geometry
+is altered, faces are never merged, and normals never cross a BRep boundary.
+Outputs stay in .tmp/smooth-render; the Manager must inspect before adoption.
+Appearance evidence only: this is not geometry, motion, or print validation.
+"""
+from __future__ import annotations
+
+import argparse
+from dataclasses import dataclass
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+from pathlib import Path
+import time
+
+import numpy as np
+from PIL import Image
+
+ROOT = Path(__file__).resolve().parents[1]
+CAD = ROOT/'artifacts/make/r0001/product/cad'
+TOOL = ROOT/'.agents/skills/cad/scripts/render_review'
+OUTPUT = ROOT/'.tmp/smooth-render'
+BACKGROUND = (237, 240, 244)
+
+
+@dataclass
+class FaceMesh:
+    points: np.ndarray
+    triangles: np.ndarray
+    normals: np.ndarray
+    rgb: np.ndarray
+    leaf_name: str
+    face_index: int
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def load_helper():
+    loader = importlib.machinery.SourceFileLoader('smooth_still_step_reader', str(TOOL))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    helper = importlib.util.module_from_spec(spec)
+    loader.exec_module(helper)
+    helper._runtime_paths()
+    return helper
+
+
+def face_vertex_normals(points, triangles, diagnostics=None):
+    """Angle-weighted normals; duplicate nodes weld ONLY inside this BRep face.
+
+    Degenerate pole facets stay in the triangle array and renderer submission.
+    They contribute no normal weight. A node lacking a supported normal uses
+    the oriented normal of the nearest nondegenerate same-face triangle,
+    measured by centroid distance. Coordinates and connectivity never change.
+    """
+    if not np.isfinite(points).all():
+        raise ValueError('non-finite STEP tessellation vertex')
+    tri_points = points[triangles]
+    crosses = np.cross(tri_points[:, 1]-tri_points[:, 0], tri_points[:, 2]-tri_points[:, 0])
+    lengths = np.linalg.norm(crosses, axis=1)
+    valid = lengths >= 1e-15
+    if not valid.any():
+        raise ValueError(f'entire BRep face has no nondegenerate area ({len(triangles)} triangles)')
+    # Selection is only for averaging contributions, never geometry/raster input.
+    active_points = tri_points[valid]
+    active_ids = triangles[valid]
+    unit_tri = crosses[valid]/lengths[valid, None]
+    _, representatives, groups = np.unique(np.round(points, 8), axis=0,
+                                            return_index=True, return_inverse=True)
+    sums = np.zeros((len(representatives), 3), dtype=np.float64)
+    for corner in range(3):
+        u = active_points[:, (corner+1) % 3]-active_points[:, corner]
+        v = active_points[:, (corner+2) % 3]-active_points[:, corner]
+        angles = np.arctan2(np.linalg.norm(np.cross(u, v), axis=1), np.einsum('ij,ij->i', u, v))
+        np.add.at(sums, groups[active_ids[:, corner]], unit_tri*angles[:, None])
+    norms = np.linalg.norm(sums, axis=1)
+    unsupported = norms < 1e-12
+    supported = ~unsupported
+    sums[supported] /= norms[supported, None]
+    centroids = active_points.mean(axis=1)
+    for group_index in np.flatnonzero(unsupported):
+        delta = centroids-points[representatives[group_index]]
+        nearest = int(np.argmin(np.einsum('ij,ij->i', delta, delta)))
+        sums[group_index] = unit_tri[nearest]
+    if diagnostics is not None:
+        diagnostics.update({'source_triangles':int(len(triangles)),
+            'nondegenerate_triangles':int(valid.sum()),
+            'degenerate_triangles_retained':int((~valid).sum()),
+            'fallback_normal_groups':int(unsupported.sum()),
+            'fallback_normal_vertices':int(unsupported[groups].sum()),
+            'degenerate_cross_magnitude_threshold_mm2':1e-15,
+            'fallback_method':'nearest nondegenerate same-face triangle centroid; oriented triangle normal'})
+    return sums[groups]
+
+
+def read_state(path, helper, tolerance, angular_tolerance):
+    if path.suffix.lower() not in ('.step', '.stp'):
+        raise ValueError('renderer accepts exported STEP only, never a generator')
+    _, shape = helper.build_shape(path)
+    packets = []
+    leaf_records = []
+    for leaf_index, (leaf, colour) in enumerate(helper._leaves(shape), 1):
+        if colour is None:
+            raise ValueError(f'leaf {leaf_index} has no delivered material colour')
+        channels = np.asarray(tuple(colour)[:3], dtype=float)
+        if channels.shape != (3,) or not np.isfinite(channels).all() or np.any((channels < 0) | (channels > 1)):
+            raise ValueError('invalid direct sRGB material channels')
+        # Product colours are sealed as direct sRGB; no linear-to-sRGB remap.
+        rgb = np.rint(255*channels)
+        name = str(getattr(leaf, 'label', '') or f'leaf_{leaf_index}')
+        face_count = triangle_count = 0
+        normal_diagnostics = []
+        for face_index, face in enumerate(leaf.faces(), 1):
+            vertices, triangles = face.tessellate(tolerance, angular_tolerance)
+            points = np.asarray([[v.X, v.Y, v.Z] for v in vertices], dtype=np.float64)
+            triangles = np.asarray(triangles, dtype=np.int64)
+            if not len(points) or not len(triangles):
+                raise ValueError(f'{name} face {face_index} produced no mesh')
+            diagnostic = {'source':path.name, 'leaf':name, 'face_index':face_index}
+            try:
+                normals = face_vertex_normals(points, triangles, diagnostic)
+            except ValueError as exc:
+                raise ValueError(f'{path.name}: leaf {name}, face {face_index}: {exc}') from exc
+            if diagnostic['degenerate_triangles_retained'] or diagnostic['fallback_normal_groups']:
+                normal_diagnostics.append(diagnostic)
+                print('face-normal diagnostic '+json.dumps(diagnostic), flush=True)
+            packets.append(FaceMesh(points, triangles, normals, rgb, name, face_index))
+            face_count += 1
+            triangle_count += len(triangles)
+        if not face_count:
+            raise ValueError(f'{name} has no BRep faces')
+        leaf_records.append({'name':name, 'faces':face_count, 'triangles':triangle_count,
+                             'material_srgb_8bit':[int(x) for x in rgb],
+                             'normal_diagnostics':normal_diagnostics})
+        if leaf_index % 20 == 0:
+            print(f'{path.name}: tessellated {leaf_index} leaves, {len(packets)} BRep faces', flush=True)
+    if not packets:
+        raise ValueError(f'{path}: empty STEP assembly')
+    return packets, leaf_records
+
+
+def render(packets, helper, azimuth, elevation, size=1000, pad=0.07, framing=None):
+    toward, right, up = helper.camera_basis(azimuth, elevation)
+    light = np.asarray([0.35, -0.45, 0.82], dtype=float)
+    light /= np.linalg.norm(light)
+    points = np.concatenate([p.points for p in packets]) if framing is None else np.asarray(framing)
+    if points.ndim != 2 or points.shape[1] != 3 or not np.isfinite(points).all():
+        raise ValueError('invalid common framing points')
+    sx, sy = points @ right, points @ up
+    width, height = float(np.ptp(sx)), float(np.ptp(sy))
+    span = max(width, height)
+    if span <= 0:
+        raise ValueError('degenerate camera framing')
+    scale = (1-2*pad)*size/span
+    ox = (size-width*scale)/2-float(sx.min())*scale
+    oy = (size-height*scale)/2+float(sy.max())*scale
+    pixels = np.full((size, size, 3), BACKGROUND, dtype=np.uint8)
+    depths = np.full((size, size), -np.inf)
+    submitted = projected_edge_on = outside_image = interpolation_fallback_pixels = 0
+    for packet_index, packet in enumerate(packets, 1):
+        px, py = packet.points @ right*scale+ox, oy-packet.points @ up*scale
+        depth = packet.points @ toward
+        for ids in packet.triangles:
+            submitted += 1
+            a, b, c = ids
+            xs, ys = px[ids], py[ids]
+            denominator = ((ys[1]-ys[2])*(xs[0]-xs[2])+(xs[2]-xs[1])*(ys[0]-ys[2]))
+            if abs(denominator) < 1e-12:
+                projected_edge_on += 1
+                continue
+            left, last_x = max(0, int(np.floor(xs.min()))), min(size-1, int(np.ceil(xs.max())))
+            top, bottom = max(0, int(np.floor(ys.min()))), min(size-1, int(np.ceil(ys.max())))
+            if last_x < left or bottom < top:
+                outside_image += 1
+                continue
+            for first_row in range(top, bottom+1, 32):
+                last_row = min(bottom+1, first_row+32)
+                yy, xx = np.ogrid[first_row:last_row, left:last_x+1]
+                xx, yy = xx+0.5, yy+0.5
+                w0 = ((ys[1]-ys[2])*(xx-xs[2])+(xs[2]-xs[1])*(yy-ys[2]))/denominator
+                w1 = ((ys[2]-ys[0])*(xx-xs[2])+(xs[0]-xs[2])*(yy-ys[2]))/denominator
+                w2 = 1-w0-w1
+                inside = (w0 >= -1e-9) & (w1 >= -1e-9) & (w2 >= -1e-9)
+                z = w0*depth[a]+w1*depth[b]+w2*depth[c]
+                region_depth = depths[first_row:last_row, left:last_x+1]
+                visible = inside & (z > region_depth+1e-9)
+                if not visible.any():
+                    continue
+                # Phong interpolation within this one source BRep face only.
+                normals = (w0[visible, None]*packet.normals[a]
+                           + w1[visible, None]*packet.normals[b]
+                           + w2[visible, None]*packet.normals[c])
+                lengths = np.linalg.norm(normals, axis=1)
+                undefined = lengths < 1e-12
+                if undefined.any():
+                    # Rare antipodal interpolation: retain this triangle's own
+                    # orientation, never borrow across the BRep face boundary.
+                    fallback = np.cross(packet.points[b]-packet.points[a], packet.points[c]-packet.points[a])
+                    norm = float(np.linalg.norm(fallback))
+                    fallback = fallback/norm if norm >= 1e-15 else packet.normals[a]
+                    normals[undefined] = fallback
+                    lengths[undefined] = 1.0
+                    interpolation_fallback_pixels += int(undefined.sum())
+                normals /= lengths[:, None]
+                diffuse = np.maximum(0, normals @ light)
+                rim = np.maximum(0, normals @ toward)
+                brightness = np.minimum(1.18, 0.34+0.66*diffuse+0.12*rim)
+                colours = np.clip(np.rint(packet.rgb[None, :]*brightness[:, None]), 0, 255).astype(np.uint8)
+                region_depth[visible] = z[visible]
+                pixels[first_row:last_row, left:last_x+1][visible] = colours
+        if packet_index % 500 == 0:
+            print(f'render az{azimuth:g}/el{elevation:g}: {packet_index}/{len(packets)} faces', flush=True)
+    assert submitted == sum(len(p.triangles) for p in packets)
+    return Image.fromarray(pixels), {'azimuth':azimuth, 'elevation':elevation,
+        'size':[size,size], 'pad':pad, 'scale_pixels_per_mm':scale,
+        'submitted_triangles':submitted, 'projected_edge_on_triangles':projected_edge_on,
+        'outside_image_triangles':outside_image,
+        'interpolation_fallback_pixels':interpolation_fallback_pixels}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--tolerance', type=float, default=0.03)
+    parser.add_argument('--angular-tolerance', type=float, default=0.05)
+    args = parser.parse_args()
+    if args.tolerance <= 0 or args.angular_tolerance <= 0:
+        parser.error('tessellation tolerances must be positive')
+    helper = load_helper()
+    sources = [CAD/'pearl.step', CAD/'states/pressed.step']
+    before = {str(p):sha(p) for p in sources}
+    states, records = [], []
+    started = time.monotonic()
+    for source in sources:
+        packets, leaves = read_state(source, helper, args.tolerance, args.angular_tolerance)
+        states.append(packets)
+        records.append(leaves)
+    framing = np.concatenate([p.points for state in states for p in state])
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    iso, iso_camera = render(states[0], helper, -45, 35.264)
+    iso.save(OUTPUT/'iso.png')
+    frames, cameras = [], []
+    for state in states:
+        im, camera = render(state, helper, -90, 0, framing=framing)
+        frames.append(im)
+        cameras.append(camera)
+    a, b = (np.asarray(im).astype(np.int16) for im in frames)
+    difference = float(np.mean(np.max(np.abs(a-b), axis=2) > 8))
+    if difference <= 0.005:
+        raise ValueError(f'static states are not visibly distinct: {difference}')
+    sheet = Image.new('RGB', (2000,1000), BACKGROUND)
+    for i, im in enumerate(frames):
+        sheet.paste(im, (1000*i,0))
+    sheet.save(OUTPUT/'signature.png')
+    bell_points = [p.points for p in states[0] if 'bell_' in p.leaf_name.lower()]
+    if not bell_points:
+        raise ValueError('no named bell leaves found for exact detail framing')
+    # All assembly faces remain rendered: close framing never hides occluders.
+    detail, detail_camera = render(states[0], helper, -45, 35.264, pad=0.10,
+                                   framing=np.concatenate(bell_points))
+    detail.save(OUTPUT/'bell-detail.png')
+    after = {str(p):sha(p) for p in sources}
+    if before != after:
+        raise RuntimeError('source STEP changed during rendering; discard these outputs')
+    images = ['iso.png', 'signature.png', 'bell-detail.png']
+    manifest = {'kind':'exact-step-face-local-smooth-static-stills', 'motion_verified':False,
+        'geometry_modified':False, 'source_files_unchanged':True,
+        'wrapper_sha256':sha(Path(__file__)), 'helper':str(TOOL.relative_to(ROOT)),
+        'helper_sha256':sha(TOOL), 'normal_method':'corner-angle-weighted normals separately per BRep face, interpolated and normalized per visible pixel',
+        'face_boundary_policy':'never average across BRep faces or material leaves',
+        'same_face_seam_policy':'coordinate-group duplicate nodes at 1e-8 mm without moving vertices',
+        'degenerate_triangle_policy':'retain every triangle in submission; zero-area triangles contribute no normal weight; unsupported nodes use nearest nondegenerate same-face triangle normal',
+        'triangle_policy':'all triangles submitted; no sampling, decimation, or backface culling',
+        'colour_policy':'sealed direct sRGB base channels; deterministic diffuse/rim lighting',
+        'linear_tolerance_mm':args.tolerance, 'angular_tolerance':args.angular_tolerance,
+        'states':[{'path':str(p.relative_to(CAD)), 'sha256':before[str(p)],
+                   'leaf_count':len(leaves), 'brep_face_count':len(state),
+                   'triangles':sum(len(m.triangles) for m in state), 'leaves':leaves}
+                  for p,state,leaves in zip(sources,states,records)],
+        'iso_camera':iso_camera, 'signature_cameras':cameras,
+        'signature_common_framing':True, 'state_difference_fraction':difference,
+        'bell_detail_camera':detail_camera, 'images':{name:sha(OUTPUT/name) for name in images},
+        'elapsed_seconds':time.monotonic()-started,
+        'limitations':['Normals approximate each surface from its exact face tessellation.',
+                       'No across-face smoothing: real BRep creases remain visible.',
+                       'These are static appearance images, not operating-motion evidence.']}
+    (OUTPUT/'render-provenance.json').write_text(json.dumps(manifest, indent=2)+'\n')
+    print(json.dumps({'outputs':str(OUTPUT), 'images':images,
+                      'state_difference_fraction':difference, 'elapsed_seconds':manifest['elapsed_seconds']}), flush=True)
+
+
+if __name__ == '__main__':
+    main()

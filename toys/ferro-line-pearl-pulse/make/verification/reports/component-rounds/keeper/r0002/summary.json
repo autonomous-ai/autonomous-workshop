@@ -1,0 +1,63 @@
+{
+ "build": {
+  "keeper": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "keeper"
+ ],
+ "check_motion": false,
+ "checked": [
+  "keeper"
+ ],
+ "checks_ok": false,
+ "entry": "part_keeper.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "keeper"
+ ],
+ "print": {
+  "keeper": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper/r0002/overhang-keeper.log": "1de0fcdf43b0875a2badfab58c885916f3d71bf0e563bdfd03f78115fd4d7c14",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper/r0002/thickness-keeper.log": "db7254919bd17e93c71f9df9b629c0c8942c8fab45138015e0ca6ac872586e6b"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.9% of surface below (649 of 81591 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:keeper",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/keeper/r0002/visual-packet.json",
+  "packet_sha256": "3c1a2782e0905ab98d2d384ec2f5985083fd73be2bb8347ee5a1670d0b8feddc",
+  "status": "pending"
+ }
+}

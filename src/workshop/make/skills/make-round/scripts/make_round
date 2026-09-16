@@ -25,6 +25,7 @@ from importlib.metadata import PackageNotFoundError, version as package_version
 import json
 import os
 import re
+import signal
 import runpy
 import subprocess
 import sys
@@ -38,6 +39,7 @@ COMPONENT_ROUNDS_DIR = "component-rounds"
 TOOL_TIMEOUT_SECONDS = 900
 FULL_TIMEOUT_SECONDS = 1800
 MAX_TAIL_CHARS = 600
+_GEOMETRY_DEADLINES = {}
 
 
 def file_hash(path):
@@ -182,6 +184,11 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
         done = run(command, cwd=project, log=out / "verify.log", timeout=FULL_TIMEOUT_SECONDS)
         summary["full"] = {"ok": done.returncode == 0, "returncode": done.returncode, "tail": tail(done.stdout or done.stderr)}
         summary["ok"] = done.returncode == 0
+        report = project / "measure/geometry-inspection.json"
+        if report.is_file() and json.loads(report.read_bytes()).get("status") == "unverified":
+            summary["geometry_status"] = "unverified"
+            summary["print_ready_claim"] = False
+            summary["full"]["status"] = "unverified"
     (out / "visual-feedback.json").write_text(json.dumps(feedback, sort_keys=True, indent=2) + "\n")
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
     return summary
@@ -413,7 +420,7 @@ def render_summary(summary: dict) -> str:
             lines.append("    %s: %s | evidence: %s | repair: %s" % (item["part"], item["defect"], item["evidence"], item["repair"]))
         if visual["status"] == "pending":
             lines.append("    inspect %s then use --record-visual <feedback.json>" % visual["packet"])
-    verdict = "PASS" if summary["ok"] else "FAIL"
+    verdict = ("UNVERIFIED" if summary.get("geometry_status") == "unverified" else "PASS") if summary["ok"] else "FAIL"
     if summary.get("visual", {}).get("status") == "pending" and summary.get("checks_ok"):
         verdict = "PENDING"
     lines.append("  %s  reports under %s" % (verdict, summary["out"]))
@@ -426,11 +433,38 @@ def render_summary(summary: dict) -> str:
 
 def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS) -> subprocess.CompletedProcess:
     started = time.monotonic()
-    try:
-        done = subprocess.run(command, cwd=str(cwd), capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired as exc:
-        log.write_text("TIMEOUT after %ds\n%s\n%s" % (timeout, exc.stdout or "", exc.stderr or ""), encoding="utf-8")
-        return subprocess.CompletedProcess(command, 124, exc.stdout or "", exc.stderr or "")
+    name = Path(command[1]).name if len(command) > 1 else ""
+    analysis = name in {"check_thickness", "check_overhang", "check_motion", "check_mesh"}
+    environment = {**os.environ, "CADGEN_WARM": "0"}
+    if analysis:
+        budget = float(environment.get("WORKSHOP_GEOMETRY_TIMEOUT", "600"))
+        if not 0 < budget <= 86400:
+            raise ValueError("WORKSHOP_GEOMETRY_TIMEOUT must be in (0, 86400]")
+        deadline = _GEOMETRY_DEADLINES.setdefault(str(cwd), time.monotonic() + budget)
+        timeout = min(timeout, max(0, deadline - time.monotonic()))
+    with tempfile.TemporaryFile() as failures:
+        environment["WORKSHOP_GEOMETRY_FAILURE_FD"] = str(failures.fileno())
+        if timeout == 0:
+            stdout, stderr, code = "", "geometry time allowance exhausted", 3
+        else:
+            process = subprocess.Popen(command, cwd=str(cwd), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, start_new_session=True, env=environment, pass_fds=(failures.fileno(),))
+            try:
+                stdout, stderr = process.communicate(timeout=timeout)
+                code = process.returncode
+            except (subprocess.TimeoutExpired, KeyboardInterrupt) as interrupted:
+                if isinstance(interrupted, KeyboardInterrupt) and analysis:
+                    _GEOMETRY_DEADLINES[str(cwd)] = time.monotonic()
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                stdout, stderr = process.communicate(timeout=5)
+                code = 3 if analysis else 124
+        failures.seek(0)
+        if code == 3 and failures.read(1):
+            code = 124  # an earlier measured failure remains a failure
+    done = subprocess.CompletedProcess(command, code, stdout, stderr)
     log.write_text(
         "$ %s\n(%.1fs, exit %d)\n--- stdout\n%s\n--- stderr\n%s"
         % (" ".join(str(c) for c in command), time.monotonic() - started, done.returncode, done.stdout, done.stderr),
@@ -446,7 +480,7 @@ def parse_motion(stdout: str | bytes, returncode: int, stderr: str | bytes = "")
     if isinstance(stderr, bytes):
         stderr = stderr.decode("utf-8", errors="replace")
     result = {
-        "verdict": "fail" if returncode else "inconclusive",
+        "verdict": "unverified" if returncode == 3 else "fail" if returncode else "inconclusive",
         "detail": "missing or invalid motion condition evidence",
         "returncode": returncode,
         "conditions": [],
@@ -496,7 +530,9 @@ def parse_motion(stdout: str | bytes, returncode: int, stderr: str | bytes = "")
         verdict, detail = "fail", "check_motion reports ok=false despite passing conditions"
     # Exit 1 is check_motion's documented result for failed or inconclusive checks.
     # Other nonzero exits, or exit 1 with all-pass evidence, are process failures.
-    if returncode and (returncode != 1 or all(status == "pass" for status in statuses)):
+    if returncode == 3 and "fail" not in statuses:
+        verdict, detail = "unverified", "motion analysis cancelled or time allowance exhausted"
+    elif returncode and (returncode != 1 or all(status == "pass" for status in statuses)):
         verdict, detail = "fail", "check_motion exit %d; %s" % (returncode, detail)
     result.update(verdict=verdict, detail=detail)
     return result
@@ -753,7 +789,10 @@ def make_round(args) -> int:
                 log=log,
             )
             parsed = (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout)
-            if done.returncode not in (0, 1):
+            if done.returncode == 3:
+                parsed["verdict"] = "UNVERIFIED"
+                parsed["failures"] = ["geometry analysis cancelled or its time allowance exhausted"]
+            elif done.returncode not in (0, 1):
                 # 0 pass, 1 measured-and-failed; anything else is the tool
                 # failing to measure, which is never a printability verdict.
                 parsed["verdict"] = "FAIL"
@@ -765,7 +804,7 @@ def make_round(args) -> int:
             if log.is_file():
                 logs[str(log.resolve())] = hashlib.sha256(log.read_bytes()).hexdigest()
         printing[role] = {
-            "verdict": "PASS" if all(g["verdict"] == "PASS" for g in gates.values()) else "FAIL",
+            "verdict": "FAIL" if any(g["verdict"] == "FAIL" for g in gates.values()) else "UNVERIFIED" if any(g["verdict"] == "UNVERIFIED" for g in gates.values()) else "PASS",
             "thickness": gates["thickness"],
             "overhang": gates["overhang"],
             "measured_round": round_index,
@@ -856,9 +895,9 @@ def make_round(args) -> int:
 
     ok = (
         all(item["verdict"] == "PASS" for item in build.values())
-        and all(item["verdict"] == "PASS" for item in printing.values())
+        and all(item["verdict"] in ("PASS", "UNVERIFIED") for item in printing.values())
         and all(item.get("ok") for item in likeness)
-        and (motion is None or motion["verdict"] == "pass")
+        and (motion is None or motion["verdict"] in ("pass", "unverified"))
         and (full is None or full["ok"])
     )
     summary = {
@@ -886,6 +925,9 @@ def make_round(args) -> int:
         "ok": False,
         "out": str(out),
     }
+    if any(item["verdict"] == "UNVERIFIED" for item in printing.values()) or (motion and motion["verdict"] == "unverified"):
+        summary["geometry_status"] = "unverified"
+        summary["print_ready_claim"] = False
     (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     state = {
         "round": round_index,

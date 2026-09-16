@@ -1,0 +1,62 @@
+{
+ "build": {
+  "return_arm": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "return_arm"
+ ],
+ "check_motion": false,
+ "checked": [
+  "return_arm"
+ ],
+ "checks_ok": true,
+ "entry": "part_return_arm.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "return_arm"
+ ],
+ "print": {
+  "return_arm": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0003/overhang-return_arm.log": "54aac860f086209cde367fb4f58ccadc4293284fcdcb28870855f0a184581186",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0003/thickness-return_arm.log": "034c73fa218f8c0586154daf6b9d8bcaf4e639834dd7e096cc6402b4cf11baa7"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:return_arm",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front view shows a single flat bed face; top and isometric views show a straight narrow stem, wide top seating tab and a slightly narrower lower eye land. The eye has a continuous rounded lip and visible material on every side. No missing or floating geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0003/visual-packet.json",
+  "packet_sha256": "7b5b403ccb8257000439f306044dd3aaddc898d77dd93304a6f9a82bb09e6c61",
+  "status": "pass"
+ }
+}

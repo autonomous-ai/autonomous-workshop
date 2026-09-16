@@ -1,0 +1,61 @@
+{
+ "build": {
+  "cam": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "cam"
+ ],
+ "check_motion": false,
+ "checked": [
+  "cam"
+ ],
+ "checks_ok": true,
+ "entry": "part_cam.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cam/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "cam"
+ ],
+ "print": {
+  "cam": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cam/r0003/overhang-cam.log": "3c37863a8749b32dd8709df1d24ae7f54ceaa6d7e12dc6c18deaa8a7e07160cc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cam/r0003/thickness-cam.log": "ff30a0e483c37366f520c1ceda23815874029217e7b88f9e84c3c2264dee8d81"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:cam",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cam/r0003/visual-packet.json",
+  "packet_sha256": "d8c1bc09f9f28cb564c52c95bcbd3a45c5f926afda7d7b180c0132e057508b60",
+  "status": "pending"
+ }
+}

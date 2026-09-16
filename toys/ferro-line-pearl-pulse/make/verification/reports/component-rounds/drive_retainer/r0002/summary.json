@@ -1,0 +1,61 @@
+{
+ "build": {
+  "drive_retainer": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "drive_retainer"
+ ],
+ "check_motion": false,
+ "checked": [
+  "drive_retainer"
+ ],
+ "checks_ok": true,
+ "entry": "part_drive_retainer.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_retainer/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "drive_retainer"
+ ],
+ "print": {
+  "drive_retainer": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_retainer/r0002/overhang-drive_retainer.log": "9c13aca4409186daf05e5eca6e87e4c9ab0cf801f4a6bd661027c4a2fa59f517",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_retainer/r0002/thickness-drive_retainer.log": "3a25bf29b07649557c1e3cb644d159370fc34b5e0c9dd37b3549cb8edf2318c2"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:drive_retainer",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_retainer/r0002/visual-packet.json",
+  "packet_sha256": "eff126307cf3c91d889299df987bdaa025bc0437984818bbbf6e4926c9bd80be",
+  "status": "pending"
+ }
+}

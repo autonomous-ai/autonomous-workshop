@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_slider.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/slider/r0001/thickness-slider.md
+(12.5s, exit 0)
+--- stdout
+part_slider.step.py: 2.34 cm3 solid, grid 0.188 mm (273x280x151), 106597 surface samples, thickness resolved to 0.094 mm
+  PASS  wall >= 0.80 mm (+/-0.09)      0.0% of surface below (0 of 106597 samples)
+  PASS  thickness distribution         median 1.22 mm, p95 5.44 mm, max 27.39 mm
+  WARN  hollowable at 1.20 mm wall     0.05 of 2.34 cm3 (2%) in 1 pocket(s), 3 too small to shell
+  PASS  filament that would save       0.01 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/slider/r0001/thickness-slider.md
+
+--- stderr

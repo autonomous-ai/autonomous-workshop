@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_pivot_retainer.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_retainer/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pivot_retainer"
+ ],
+ "print": {
+  "pivot_retainer": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_retainer/r0001/overhang-pivot_retainer.log": "9c21e301bd7afb862c570bdfe2c90c47b0f6c0bab5ca019c00cc8f4878e39b54",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_retainer/r0001/thickness-pivot_retainer.log": "40476fdc33701c540ca3689d40541cf3ca539c829e04f9b21e5683ff2e702447"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "pivot_retainer"
+ ],
+ "round": 2,
+ "scope": "component:pivot_retainer",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows uniform plate thickness; top and iso show the centred keyhole-shaped opening, narrower entry throat and two equal prongs connected by a substantial base. The opening is clear.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_retainer/r0002/visual-packet.json",
+  "packet_sha256": "c7cad36fdccbe94f63fb70d1a8cdaffa056c158fb18eb7c8befd3e48ae98dc87",
+  "status": "pass"
+ }
+}

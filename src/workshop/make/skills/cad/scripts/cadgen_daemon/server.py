@@ -33,6 +33,8 @@ import contextlib
 import importlib
 import io
 import json
+import math
+import subprocess
 import os
 import signal
 import socket
@@ -276,6 +278,8 @@ def _handle_request(
     started = time.perf_counter()
     watchdog_done = threading.Event()
     watchdog: threading.Thread | None = None
+    kernel_watchdog = None
+    stop_write = None
     try:
         if tool not in _TOOL_IMPORTS or not isinstance(argv, list):
             err.write(f"cadgen-daemon: invalid request for tool {tool!r}\n")
@@ -290,6 +294,18 @@ def _handle_request(
                 daemon=True,
             )
             watchdog.start()
+            allowance = request.get("timeoutSeconds", 600)
+            if type(allowance) not in (int, float) or not math.isfinite(allowance) or not 0 < allowance <= 86400:
+                allowance = 600
+            stop_read, stop_write = os.pipe()
+            try:
+                kernel_watchdog = subprocess.Popen(
+                    [sys.executable, str(Path(__file__).with_name("watchdog.py")), str(stop_read), str(allowance)],
+                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    pass_fds=(stop_read,),
+                )
+            finally:
+                os.close(stop_read)
             try:
                 result = _tool_main(tool)(argv)
                 exit_code = 0 if result is None else int(result)
@@ -300,6 +316,10 @@ def _handle_request(
             except BaseException:  # noqa: BLE001 — a failed build must not kill the daemon
                 err.write(traceback.format_exc())
     finally:
+        if stop_write is not None:
+            os.close(stop_write)
+        if kernel_watchdog is not None:
+            kernel_watchdog.wait(timeout=5)
         watchdog_done.set()
         if watchdog is not None:
             watchdog.join(timeout=CLIENT_LIVENESS_INTERVAL_SECONDS + 1.0)

@@ -194,6 +194,45 @@ class NativeCadGateTest(unittest.TestCase):
         arguments.update(overrides)
         return verify_native_made_cad(self.made, **arguments)
 
+    def test_host_replay_cannot_turn_unverified_analysis_into_a_geometry_pass(self):
+        def runner(command, **arguments):
+            self.assertEqual(arguments["environment"]["WORKSHOP_GEOMETRY_CACHE"], "0")
+            self.assertIsNotNone(arguments["timeout_seconds"])
+            project = Path(command[2])
+            (project / "measure/geometry-inspection.json").write_text('{"status":"unverified"}')
+            return VerifierProcessResult.from_bytes(0)
+        with self.assertRaises(NativeCadGateError) as caught:
+            self._verify(runner, timeout_seconds=None)
+        self.assertEqual(caught.exception.failure_code, "geometry-unverified-requires-disclosure")
+        self.assertFalse(caught.exception.evidence.passed)
+
+    def test_disclosed_unverified_handoff_has_no_positive_geometry_receipt(self):
+        from workshop.make.skills.cad.scripts.geometry_disclosure import seal_disclosure
+        report = self.product_root / self.made.cad_verification_path
+        report.write_text("# Verification pipeline record\n\n- Mode: `final`\n- Result: **UNVERIFIED** (exit 0)\n")
+        (report.parent / "geometry-inspection.json").write_text(json.dumps({
+            "schema_version": 1, "status": "unverified", "print_ready_claim": False,
+            "verification_sha256": _sha(report.read_bytes()), "checks": [
+                {"id": "validate:assembly", "status": "unverified", "completed": 7,
+                 "reasons": ["native geometry operation exceeded its time allowance"]}]}))
+        product = json.loads((self.product_root / "product.json").read_bytes())
+        seal_disclosure(self.product_root, report, product)
+        old = self.made
+        self.made = dataclasses.replace(old, product=product,
+            product_manifest=build_artifact_manifest(self.product_root, created_at="content-addressed"),
+            product_json_sha256=_sha((self.product_root / "product.json").read_bytes()),
+            cad_verification_sha256=_sha(report.read_bytes()))
+        evidence = self._verify(lambda *a, **k: self.fail("a disclosed timeout must not rerun the same kernel"), require_print_ready=True, evidence_stage="release")
+        self.assertFalse(evidence.passed)
+        self.assertFalse(evidence.print_ready_eligible)
+        self.assertTrue(evidence.unverified_handoff)
+        self.assertEqual(evidence.failure_code, "geometry-unverified")
+        with self.assertRaises(ContractError):
+            dataclasses.replace(evidence, passed=True, failure_code=None)
+        (self.product_root / "GEOMETRY-NOTES.md").write_text("erased")
+        with self.assertRaises(NativeMadeTreeGateError):
+            self._verify(lambda *a, **k: self.fail("tampered notes"))
+
     def test_missing_required_root_delivery_file_fails_before_verifier(self):
         invoked = False
 

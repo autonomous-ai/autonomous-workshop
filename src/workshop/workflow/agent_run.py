@@ -1706,6 +1706,7 @@ class AgentRun:
         reason: str,
         token_budget_skill_root: Optional[Path] = None,
         motion_skill_root: Optional[Path] = None,
+        finalizer_skill_root: Optional[Path] = None,
         check_motion: Optional[bool] = None,
     ) -> tuple[dict[str, Any], ...]:
         """Bring the run's host-owned domain skills up to the installed source.
@@ -1739,6 +1740,10 @@ class AgentRun:
         changes: list[dict[str, Any]] = []
         writes: list[tuple[PurePosixPath, bytes, int]] = []
         removals: list[PurePosixPath] = []
+        if finalizer_skill_root is not None:
+            if motion_skill_root is not None:
+                raise ContractError("choose one finalizer refresh source")
+            motion_skill_root = finalizer_skill_root
         roots = dict(domain_skill_roots)
         review_paths = {
             "scripts/stage_proposal.py", "references/make.md",

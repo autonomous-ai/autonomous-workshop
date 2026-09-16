@@ -1,0 +1,62 @@
+{
+ "build": {
+  "frame": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "frame"
+ ],
+ "check_motion": false,
+ "checked": [
+  "frame"
+ ],
+ "checks_ok": true,
+ "entry": "part_frame.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "frame"
+ ],
+ "print": {
+  "frame": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0005/overhang-frame.log": "dc4ca2b0cb09d4a213db81a59a6db331c13d26f1e07cc58475cf6358bc8c3424",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0005/thickness-frame.log": "30f0ae72d7a1539b0058e4b889471c7177dd55eefc43df43d52019b0413e92b8"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.23,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:frame",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and isometric views show eight paired pivot supports, three taller carrier columns and continuous radial connections to the central stator. Two taller cheeks have deliberate open journals with inclined lower reliefs; their opposite cheeks retain closed diamond bores. Top view confirms three clear post holes and two rounded elastic slots. The concentric stator lands are continuous, with no floating or missing pieces.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0005/visual-packet.json",
+  "packet_sha256": "568d18b67cda07ff83e51079416ddd12d688fbe0a79a03e2ed8abba17ea794df",
+  "status": "pass"
+ }
+}
