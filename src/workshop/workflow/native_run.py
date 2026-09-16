@@ -6606,6 +6606,15 @@ def _launcher_call(
             "those checks manually or repeat a motion blocker. When true, apply the "
             "motion and animation requirements. Other checks still apply."
         )
+    if checkpoint.stage == "make" and _has_inspection_correction(paths, checkpoint):
+        prompt += (
+            "\n\nHost geometry inspection correction: use the materialized CAD tools "
+            "described in .agents/skills/cad/references/inspection-and-validation.md. "
+            "Preserve the existing product sources and review evidence; finish the "
+            "remaining geometry checks. An interrupted inspection has no verdict. "
+            "Batch stderr identifies the active request and reports its duration "
+            "on completion."
+        )
     if reasoning_override is not None:
         prompt += (
             "\n\nHost reasoning authority: the operator explicitly selected %s "
@@ -10298,6 +10307,7 @@ def resume_native_run(
 
         if checkpoint.status in ("active", "waiting"):
             checkpoint = _adopt_resume_motion_policy(paths, run, checkpoint, check_motion)
+            checkpoint = _adopt_resume_inspection_tools(paths, run, checkpoint)
         if adopt_turn_budget:
             _adopt_turn_budget(paths, checkpoint)
         if max_tokens is not None:
@@ -10320,6 +10330,74 @@ def resume_native_run(
             activity_observer=activity_observer,
             timing_observer=timing_observer,
         )
+
+
+_INSPECTION_CAPABILITY_PATH = ".agents/skills/cad/references/inspection-and-validation.md"
+_INSPECTION_CAPABILITY_MARKER = b"<!-- workshop-geometry-inspection-v1 -->"
+_INSPECTION_REFRESH_REASON = "workshop resume geometry-inspection-v1"
+
+
+def _has_inspection_correction(paths, checkpoint):
+    expected = checkpoint.input_sha256s.get(_INSPECTION_CAPABILITY_PATH)
+    if expected is None:
+        return False
+    path = paths.workspace / _INSPECTION_CAPABILITY_PATH
+    content = path.read_bytes()
+    if path.is_symlink() or _sha256(content) != expected:
+        raise StateConflict("geometry inspection capability differs from its frozen input")
+    return _INSPECTION_CAPABILITY_MARKER in content
+
+
+def _adopt_resume_inspection_tools(paths, run, checkpoint):
+    """Install the geometry correction once, completing interrupted rebinds first.
+
+    This is an operator-resume migration of the carried CAD skill, not a
+    standing policy to upgrade frozen tools on every continuation.
+    """
+    if ".agents/skills/cad/SKILL.md" not in checkpoint.input_sha256s:
+        return checkpoint
+    pending_refresh = False
+    ledger = run.host_state_root / "host-corrections.jsonl"
+    if ledger.exists():
+        content = _read_stable_private_bytes(
+            ledger, label="host corrections", maximum_bytes=1024 * 1024)
+        for line in content.splitlines():
+            record = json.loads(line)
+            if (record.get("kind") != "autonomous-workshop.host-correction"
+                    or record.get("schema_version") != 1
+                    or record.get("reason") != _INSPECTION_REFRESH_REASON):
+                continue
+            if record.get("correction") == "domain-skill-refresh":
+                pending_refresh = True
+            elif record.get("correction") == "geometry-inspection-refresh-complete":
+                # The mutation lock serializes this migration. A retry may
+                # also change the motion option, moving the checkpoint before
+                # completing the same session rebind.
+                pending_refresh = False
+    if _has_inspection_correction(paths, checkpoint) and not pending_refresh:
+        return checkpoint
+
+    source = product_run_domain_skill_roots()["cad"]
+    marker = source / "references/inspection-and-validation.md"
+    if (marker.is_symlink() or not marker.is_file()
+            or _INSPECTION_CAPABILITY_MARKER not in marker.read_bytes()):
+        raise ContractError("installed CAD skill lacks the geometry inspection correction")
+    _refresh_native_run_tools_locked(
+        checkpoint.product_id, paths, run, reason=_INSPECTION_REFRESH_REASON,
+        domain_skill_roots={"cad": source}, refresh_review=False,
+    )
+    checkpoint = run.snapshot()
+    # Write completion only after the exact native session has been rebound.
+    # The domain-skill-refresh ledger survives a crash before this point, even
+    # though its new marker is already in the immutable input manifest.
+    run.record_host_correction({
+        "kind": "autonomous-workshop.host-correction", "schema_version": 1,
+        "correction": "geometry-inspection-refresh-complete",
+        "reason": _INSPECTION_REFRESH_REASON,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+    })
+    _reconcile_motion_resume_outputs(run, checkpoint)
+    return checkpoint
 
 
 def _adopt_resume_motion_policy(paths, run, checkpoint, check_motion):
@@ -10364,6 +10442,7 @@ def _reconcile_motion_resume_outputs(run, checkpoint):
                 and record.get("schema_version") == 1
                 and record.get("correction") == "domain-skill-refresh"
                 and (str(record.get("reason", "")).startswith("workshop resume --check-motion ")
+                     or record.get("reason") == _INSPECTION_REFRESH_REASON
                      or (checkpoint.stage == "make"
                          and record.get("reason") == "workshop resume --refresh-tools"))):
             predecessors[record["checkpoint_sha256"]] = record["previous_checkpoint_sha256"]

@@ -51,6 +51,13 @@ Batch/worker consume stdin and intentionally bypass the daemon even when
 each response's `ok` and `exitCode` rather than relying only on the outer
 process exit code.
 
+Batch/worker announce each request's id and command on stderr before starting,
+then its exit code and elapsed seconds when it returns. `verify_project` relays
+this stderr while the batch runs. Its last unmatched `start` line identifies
+the active request; a quiet log does not establish a hang or a passing check.
+Set `WORKSHOP_PROGRESS=0` to suppress these lines. Progress is per request,
+not per occurrence or collision pair inside a request, and adds no timeout.
+
 Accepted target forms:
 
 ```text
@@ -259,3 +266,22 @@ Do not claim:
 - tolerance compliance
 - manufacturability beyond geometric plausibility
 unless the relevant analysis or manufacturing data was explicitly performed.
+
+<!-- workshop-geometry-inspection-v1 -->
+
+## Geometry inspection correction v1
+
+This CAD tool tree performs each self-intersection analysis once. Inspection
+batch requests announce their command, result and elapsed time on stderr, and
+the final verifier relays that progress while the batch runs. Geometry gates,
+thresholds and JSON results retain their existing meaning.
+
+This section also carries a host migration marker. On an explicit resume, an older
+unfinished Workshop run carrying CAD tools adopts this corrected CAD tree once
+through the host's recorded tool refresh and native-session rebind. Later
+resumes retain the materialized tree. Native agents must not edit these tools
+or this marker.
+
+After an interruption, preserve the existing product and review evidence and
+finish the missing checks with these tools. An interrupted check has no verdict;
+neither elapsed time nor progress output establishes that geometry passed.

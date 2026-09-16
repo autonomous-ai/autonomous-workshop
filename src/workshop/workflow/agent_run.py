@@ -101,7 +101,9 @@ AGENT_OUTCOME_STATUSES = ("ready", "waiting", "failed")
 MAX_AGENT_OUTCOME_BYTES = 64 * 1024
 MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
 MAX_AGENT_INPUT_BYTES = 4 * 1024 * 1024
-MAX_AGENT_INPUT_FILES = 256
+# The complete installed tool tree and Inventor roster already need 257
+# inputs. Allow growth and old-run tool refresh within the same byte budget.
+MAX_AGENT_INPUT_FILES = 512
 MAX_AGENT_ARTIFACT_BYTES = MAX_FILE_BYTES
 # A four-round physical-product run may retain several immutable CAD, mesh,
 # slicer, and Playtest revisions. Keep a cumulative host budget while allowing
@@ -224,6 +226,21 @@ def _canonical_json(value: Any) -> bytes:
 
 def _sha256(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
+
+
+def _host_correction_line(record: Mapping[str, Any]) -> bytes:
+    if (
+        not isinstance(record, Mapping)
+        or record.get("kind") != "autonomous-workshop.host-correction"
+        or not isinstance(record.get("correction"), str)
+    ):
+        raise ContractError("host correction record is invalid")
+    line = (
+        json.dumps(dict(record), sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode("utf-8")
+    if len(line) > 64 * 1024:
+        raise ContractError("host correction record is too large")
+    return line
 
 
 def _identifier(value: Any, label: str) -> str:
@@ -1827,6 +1844,20 @@ class AgentRun:
         if total > MAX_AGENT_INPUT_BYTES:
             raise ContractError("domain skill refresh exceeds the agent input byte budget")
 
+        record = {
+            "kind": "autonomous-workshop.host-correction",
+            "schema_version": 1,
+            "correction": "domain-skill-refresh",
+            "reason": reason.strip(),
+            "previous_checkpoint_sha256": payload["checkpoint_sha256"],
+            # The successor hash is not known until checkpoint writing, but
+            # every hash has the same encoded length. Refuse an oversized
+            # correction before modifying the immutable tools or checkpoint.
+            "checkpoint_sha256": payload["checkpoint_sha256"],
+            "changes": changes,
+        }
+        _host_correction_line(record)
+
         opened: list[Path] = []
 
         def writable(directory: Path) -> None:
@@ -1872,38 +1903,21 @@ class AgentRun:
 
         updated = dict(payload)
         updated["inputs"] = inputs
-        previous_checkpoint = payload["checkpoint_sha256"]
         self._write_next(payload, updated)
-        record = {
-            "kind": "autonomous-workshop.host-correction",
-            "schema_version": 1,
-            "correction": "domain-skill-refresh",
-            "reason": reason.strip(),
-            "previous_checkpoint_sha256": previous_checkpoint,
-            "checkpoint_sha256": self._expected_checkpoint_sha256,
-            "changes": changes,
-        }
+        record["checkpoint_sha256"] = self._expected_checkpoint_sha256
         self.record_host_correction(record)
         return tuple(changes)
 
     def record_host_correction(self, record: Mapping[str, Any]) -> None:
         """Append one owner-only ledger line describing a host correction."""
 
-        if (
-            not isinstance(record, Mapping)
-            or record.get("kind") != "autonomous-workshop.host-correction"
-            or not isinstance(record.get("correction"), str)
-        ):
-            raise ContractError("host correction record is invalid")
         ledger = self.host_state_root / HOST_CORRECTIONS_FILE
-        line = json.dumps(dict(record), sort_keys=True, separators=(",", ":")) + "\n"
-        if len(line) > 64 * 1024:
-            raise ContractError("host correction record is too large")
+        line = _host_correction_line(record)
         descriptor = os.open(
             str(ledger), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600
         )
         try:
-            os.write(descriptor, line.encode("utf-8"))
+            os.write(descriptor, line)
             os.fsync(descriptor)
         finally:
             os.close(descriptor)

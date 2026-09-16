@@ -845,11 +845,11 @@ class Runner:
             env=env,
             input=payload,
             text=True,
-            capture_output=True,
+            # Keep JSONL responses private until parsed, but let request
+            # progress reach the operator while the batch is still running.
+            stdout=subprocess.PIPE,
             check=False,
         )
-        if completed.stderr:
-            print(completed.stderr, file=sys.stderr, end="")
         failed = completed.returncode != 0
         response_count = 0
         for line in completed.stdout.splitlines():
