@@ -1,0 +1,63 @@
+{
+ "build": {
+  "cam": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "cam"
+ ],
+ "check_motion": false,
+ "checked": [
+  "cam"
+ ],
+ "checks_ok": false,
+ "entry": "part_cam.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cam/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "cam"
+ ],
+ "print": {
+  "cam": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cam/r0002/overhang-cam.log": "d91233c31705a5d5c90007a05d6d715e3db1a629dd8148ef9f81594751498bee",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cam/r0002/thickness-cam.log": "2d880483271a5637387bf60c621382e288cf047aeac8d039d157a364278d0a1c"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.3% of surface below (279 of 150798 samples); thinnes"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:cam",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cam/r0002/visual-packet.json",
+  "packet_sha256": "ef06e857692a188ab34473158d32c37f59a2f4c60030ede72b6d44e258b4e1bc",
+  "status": "pending"
+ }
+}

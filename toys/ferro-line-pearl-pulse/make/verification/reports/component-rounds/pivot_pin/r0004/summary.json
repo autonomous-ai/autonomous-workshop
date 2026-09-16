@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_pivot_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_pin/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pivot_pin"
+ ],
+ "print": {
+  "pivot_pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_pin/r0003/overhang-pivot_pin.log": "6e5bd541c718e7cff05564c188f2611ffa8d0ed6644caec3780823f4c66da542",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_pin/r0003/thickness-pivot_pin.log": "be93a8b68528d3ce82d3bc9b5d18ae9df09a73f05bbdf12b2751371819d9bd00"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "pivot_pin"
+ ],
+ "round": 4,
+ "scope": "component:pivot_pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show the long straight bearing shaft, wider lower head and recessed retaining neck beneath a conical capped tip. All features are coaxial; no thin detached cap or displaced feature is visible.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/pivot_pin/r0004/visual-packet.json",
+  "packet_sha256": "62c9c3917c87e69f9f00fc58b35061b041764a36cb3ccc3b650c6ad1e60a276c",
+  "status": "pass"
+ }
+}

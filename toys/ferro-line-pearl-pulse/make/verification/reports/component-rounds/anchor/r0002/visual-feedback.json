@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front and isometric views show a continuous rounded open hook above the plug, two opposed locking lugs and a broad flat cap. Top view confirms the hook lies within the cap footprint; no floating or missing geometry.",
+  "packet_sha256": "452e5f7f9c53bdaa0553035e86f3df3a9f93004097cd80c5e6f52f134fbfaaec",
+  "status": "pass"
+}

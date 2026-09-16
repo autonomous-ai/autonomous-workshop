@@ -1,0 +1,2642 @@
+{
+  "kind": "exact-step-face-local-smooth-static-stills",
+  "motion_verified": false,
+  "geometry_modified": false,
+  "source_files_unchanged": true,
+  "wrapper_sha256": "ca4ce7b501b6de3a876fc79c1793f197fb2ebf6f3a7dc0295d7e26dda8ddd553",
+  "helper": ".agents/skills/cad/scripts/render_review",
+  "helper_sha256": "6d30cc239b00292727ccc4a6df58f52a54eeb88c9a2656854e02c91d691164ae",
+  "normal_method": "corner-angle-weighted normals separately per BRep face, interpolated and normalized per visible pixel",
+  "face_boundary_policy": "never average across BRep faces or material leaves",
+  "same_face_seam_policy": "coordinate-group duplicate nodes at 1e-8 mm without moving vertices",
+  "degenerate_triangle_policy": "retain every triangle in submission; zero-area triangles contribute no normal weight; unsupported nodes use nearest nondegenerate same-face triangle normal",
+  "triangle_policy": "all triangles submitted; no sampling, decimation, or backface culling",
+  "colour_policy": "sealed direct sRGB base channels; deterministic diffuse/rim lighting",
+  "linear_tolerance_mm": 0.05,
+  "angular_tolerance": 0.1,
+  "states": [
+    {
+      "path": "pearl.step",
+      "sha256": "93fe69c3441016ef930e53a3e350104de03eeebfab35f72a1caf7f0a075952d6",
+      "leaf_count": 114,
+      "brep_face_count": 3069,
+      "triangles": 439865,
+      "leaves": [
+        {
+          "name": "support",
+          "faces": 30,
+          "triangles": 3578,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "anchor",
+          "faces": 20,
+          "triangles": 1758,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "carrier",
+          "faces": 53,
+          "triangles": 2860,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "frame",
+          "faces": 266,
+          "triangles": 41340,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "cam",
+          "faces": 36,
+          "triangles": 1150,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "cup",
+          "faces": 13,
+          "triangles": 2032,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "shaft",
+          "faces": 38,
+          "triangles": 144,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "drive_retainer",
+          "faces": 26,
+          "triangles": 92,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "drive_thrust_washer",
+          "faces": 4,
+          "triangles": 1008,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "slider",
+          "faces": 116,
+          "triangles": 11075,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": [
+            {
+              "source": "pearl.step",
+              "leaf": "slider",
+              "face_index": 91,
+              "source_triangles": 4128,
+              "nondegenerate_triangles": 4127,
+              "degenerate_triangles_retained": 1,
+              "fallback_normal_groups": 0,
+              "fallback_normal_vertices": 0,
+              "degenerate_cross_magnitude_threshold_mm2": 1e-15,
+              "fallback_method": "nearest nondegenerate same-face triangle centroid; oriented triangle normal"
+            }
+          ]
+        },
+        {
+          "name": "keeper",
+          "faces": 56,
+          "triangles": 3736,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_pin_01",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_clip_01",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_pin_02",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_clip_02",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_pin_03",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_clip_03",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "return_arm_01",
+          "faces": 17,
+          "triangles": 16680,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "return_arm_02",
+          "faces": 17,
+          "triangles": 16680,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "ribbon_01",
+          "faces": 148,
+          "triangles": 580,
+          "material_srgb_8bit": [
+            230,
+            191,
+            203
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "ribbon_02",
+          "faces": 148,
+          "triangles": 580,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "ribbon_03",
+          "faces": 148,
+          "triangles": 580,
+          "material_srgb_8bit": [
+            230,
+            191,
+            203
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "ribbon_04",
+          "faces": 148,
+          "triangles": 580,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_01",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_01",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_02",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_02",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_03",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_03",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_04",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_04",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_05",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_05",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_06",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_06",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_07",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_07",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_08",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_08",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "bell_pearl",
+          "faces": 92,
+          "triangles": 14711,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "bell_blush",
+          "faces": 26,
+          "triangles": 747,
+          "material_srgb_8bit": [
+            230,
+            191,
+            203
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "bell_mist",
+          "faces": 26,
+          "triangles": 756,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        }
+      ]
+    },
+    {
+      "path": "states/pressed.step",
+      "sha256": "b9cb8af6ef867d27769731ef6c53c9b332ef22f52dc60eefe04d0558f345de91",
+      "leaf_count": 114,
+      "brep_face_count": 3069,
+      "triangles": 439865,
+      "leaves": [
+        {
+          "name": "support",
+          "faces": 30,
+          "triangles": 3578,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "anchor",
+          "faces": 20,
+          "triangles": 1758,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "carrier",
+          "faces": 53,
+          "triangles": 2860,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "frame",
+          "faces": 266,
+          "triangles": 41340,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "cam",
+          "faces": 36,
+          "triangles": 1150,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "cup",
+          "faces": 13,
+          "triangles": 2032,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "shaft",
+          "faces": 38,
+          "triangles": 144,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "drive_retainer",
+          "faces": 26,
+          "triangles": 92,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "drive_thrust_washer",
+          "faces": 4,
+          "triangles": 1008,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "slider",
+          "faces": 116,
+          "triangles": 11075,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": [
+            {
+              "source": "pressed.step",
+              "leaf": "slider",
+              "face_index": 91,
+              "source_triangles": 4128,
+              "nondegenerate_triangles": 4127,
+              "degenerate_triangles_retained": 1,
+              "fallback_normal_groups": 0,
+              "fallback_normal_vertices": 0,
+              "degenerate_cross_magnitude_threshold_mm2": 1e-15,
+              "fallback_method": "nearest nondegenerate same-face triangle centroid; oriented triangle normal"
+            }
+          ]
+        },
+        {
+          "name": "keeper",
+          "faces": 56,
+          "triangles": 3736,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_pin_01",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_clip_01",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_pin_02",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_clip_02",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_pin_03",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "keeper_clip_03",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "return_arm_01",
+          "faces": 17,
+          "triangles": 16680,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "return_arm_02",
+          "faces": 17,
+          "triangles": 16680,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "ribbon_01",
+          "faces": 148,
+          "triangles": 580,
+          "material_srgb_8bit": [
+            230,
+            191,
+            203
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "ribbon_02",
+          "faces": 148,
+          "triangles": 580,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "ribbon_03",
+          "faces": 148,
+          "triangles": 580,
+          "material_srgb_8bit": [
+            230,
+            191,
+            203
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "ribbon_04",
+          "faces": 148,
+          "triangles": 580,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_01",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_01",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_01_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_02",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_02",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_02_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_03",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_03",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_03_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_04",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_04",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_04_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_05",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_05",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_05_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_06",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_06",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_06_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_07",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_07",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_07_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_pin_08",
+          "faces": 9,
+          "triangles": 2390,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "pivot_clip_08",
+          "faces": 10,
+          "triangles": 372,
+          "material_srgb_8bit": [
+            196,
+            189,
+            216
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_root",
+          "faces": 25,
+          "triangles": 3722,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_07",
+          "faces": 20,
+          "triangles": 4088,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "chain_08_bead_08",
+          "faces": 14,
+          "triangles": 3764,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "bell_pearl",
+          "faces": 92,
+          "triangles": 14711,
+          "material_srgb_8bit": [
+            244,
+            241,
+            232
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "bell_blush",
+          "faces": 26,
+          "triangles": 747,
+          "material_srgb_8bit": [
+            230,
+            191,
+            203
+          ],
+          "normal_diagnostics": []
+        },
+        {
+          "name": "bell_mist",
+          "faces": 26,
+          "triangles": 756,
+          "material_srgb_8bit": [
+            188,
+            213,
+            229
+          ],
+          "normal_diagnostics": []
+        }
+      ]
+    }
+  ],
+  "iso_camera": {
+    "azimuth": -45,
+    "elevation": 35.264,
+    "size": [
+      1000,
+      1000
+    ],
+    "pad": 0.07,
+    "scale_pixels_per_mm": 6.700473938798685,
+    "submitted_triangles": 439865,
+    "projected_edge_on_triangles": 15669,
+    "outside_image_triangles": 0,
+    "interpolation_fallback_pixels": 0
+  },
+  "signature_cameras": [
+    {
+      "azimuth": -90,
+      "elevation": 0,
+      "size": [
+        1000,
+        1000
+      ],
+      "pad": 0.07,
+      "scale_pixels_per_mm": 7.312925170068028,
+      "submitted_triangles": 439865,
+      "projected_edge_on_triangles": 43216,
+      "outside_image_triangles": 0,
+      "interpolation_fallback_pixels": 0
+    },
+    {
+      "azimuth": -90,
+      "elevation": 0,
+      "size": [
+        1000,
+        1000
+      ],
+      "pad": 0.07,
+      "scale_pixels_per_mm": 7.312925170068028,
+      "submitted_triangles": 439865,
+      "projected_edge_on_triangles": 42729,
+      "outside_image_triangles": 0,
+      "interpolation_fallback_pixels": 0
+    }
+  ],
+  "signature_common_framing": true,
+  "state_difference_fraction": 0.286561,
+  "bell_detail_camera": {
+    "azimuth": -45,
+    "elevation": 35.264,
+    "size": [
+      1000,
+      1000
+    ],
+    "pad": 0.1,
+    "scale_pixels_per_mm": 9.808194690386046,
+    "submitted_triangles": 439865,
+    "projected_edge_on_triangles": 15386,
+    "outside_image_triangles": 113118,
+    "interpolation_fallback_pixels": 0
+  },
+  "images": {
+    "iso.png": "e5bce2217430654ad9ada6797c325ea295c6cb8bf6f7d69e906829b5b96779aa",
+    "signature.png": "c63ae8208faa13ceecc33322e18b0676da4d4245cf227c78ec9ae7a7b60fc7ce",
+    "bell-detail.png": "b6cd62211f02090d951bfe0d98961f6113f5f947869253541bdd9b100f8f98a4"
+  },
+  "elapsed_seconds": 187.5423009544611,
+  "limitations": [
+    "Normals approximate each surface from its exact face tessellation.",
+    "No across-face smoothing: real BRep creases remain visible.",
+    "These are static appearance images, not operating-motion evidence."
+  ]
+}

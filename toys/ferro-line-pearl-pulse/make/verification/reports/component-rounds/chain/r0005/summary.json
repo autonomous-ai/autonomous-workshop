@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_chain.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/chain/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "chain"
+ ],
+ "print": {
+  "chain": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/chain/r0004/overhang-chain.log": "fb6a66eb63c49b1662321ece012067e113c2410b557915bca58f8a60cc805c18",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/chain/r0004/thickness-chain.log": "04efb60713d9bf1f16c9288686cc250408e0e98e829807b7e961c2363805e84c"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "chain"
+ ],
+ "round": 5,
+ "scope": "component:chain",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The fresh top shows one root and eight evenly pitched bead bodies; front shows a clear axial gap beneath the captive heads, and iso exposes the thin inter-bead necks and separate bearing bodies. The flattened export preserves the intended complete PIP geometry with no visible extra or missing member.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/chain/r0005/visual-packet.json",
+  "packet_sha256": "2e9f90113fc885d5ad96658ddc9bd7b0277a7d69492094a9d866b60fa002c257",
+  "status": "pass"
+ }
+}

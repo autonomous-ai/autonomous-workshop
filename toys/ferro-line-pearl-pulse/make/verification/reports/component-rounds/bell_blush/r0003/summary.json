@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_bell_blush.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_blush/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bell_blush"
+ ],
+ "print": {
+  "bell_blush": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_blush/r0003/overhang-bell_blush.log": "11054db6c873bf41b3f23025970769aa0d6616271c0c2a3417371f7537708e9c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_blush/r0003/thickness-bell_blush.log": "9ca777d4ec16de0dcd9333223cb7af20ebcbccfdc23f41c56923faecb8c6e71c"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:bell_blush",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and isometric views show one continuous registered shell sector, broad crown landing and reinforced rounded rim. Top view shows the shallow scallop and no isolated socket sliver; colour region remains narrow relative to the full bell.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_blush/r0003/visual-packet.json",
+  "packet_sha256": "b147064a2a2929b82bd7435d10b6492b81aef2e30b808c220d29d536c608f6e7",
+  "status": "pass"
+ }
+}

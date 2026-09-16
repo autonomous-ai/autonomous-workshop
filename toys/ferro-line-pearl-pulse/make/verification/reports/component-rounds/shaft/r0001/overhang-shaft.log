@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_shaft.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shaft/r0001/overhang-shaft.md
+(5.0s, exit 1)
+--- stdout
+part_shaft.step.py: 3.0 cm2 of surface, grid 0.400 mm, 388 unsupported samples over 1 region(s)
+  FAIL  no face under 45 deg needs support     21.5% of the surface faces down that steeply; 1 region(s) need support, 0 bridge, 0 below 1 mm2; worst 59.4 mm2 spanning 3.2 mm
+  PASS  bridges within 12 mm                   0 region(s), longest span 0.0 mm
+        every unsupported region, largest first:
+        1. [overhang]    59.4 mm2 at (95.6, -0.0, 1.3)  span   3.2 mm of 22x3, 4.0 mm of air below
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shaft/r0001/overhang-shaft.md
+
+--- stderr

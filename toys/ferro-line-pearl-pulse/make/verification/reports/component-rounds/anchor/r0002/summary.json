@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_anchor.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/anchor/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "anchor"
+ ],
+ "print": {
+  "anchor": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/anchor/r0001/overhang-anchor.log": "c1ff8ae4ccf54b3f41b792b09388957bacee82332ebef80314c0f56d9550e0f8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/anchor/r0001/thickness-anchor.log": "e6f2d72ee78365b71ccc19489c94e91ffc39225e014c39651fc203055a14a21f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "anchor"
+ ],
+ "round": 2,
+ "scope": "component:anchor",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and isometric views show a continuous rounded open hook above the plug, two opposed locking lugs and a broad flat cap. Top view confirms the hook lies within the cap footprint; no floating or missing geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/anchor/r0002/visual-packet.json",
+  "packet_sha256": "452e5f7f9c53bdaa0553035e86f3df3a9f93004097cd80c5e6f52f134fbfaaec",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,7 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_pivot_retainer.step.py --write --json
+(5.1s, exit 0)
+--- stdout
+{"ok":true,"sourceRef":"part_pivot_retainer.step.py","cadPath":"part_pivot_retainer","kind":"part","outcome":"built","packagePath":"__cadgen__/models/part_pivot_retainer.step.py"}
+
+--- stderr
+[scripts/gen] generated part GLB/topology artifact: __cadgen__/models/part_pivot_retainer.step.py

@@ -1,0 +1,192 @@
+"""Conservative, read-only STEP export equivalence; no CAD imports or generation.
+
+Geometry/placement records retain exact entity IDs and numeric representations.
+Only whitespace outside quoted strings and numeric NAUO occurrence serials are
+normalized there. A presentation-only suffix may reorder/renumber its entities;
+its complete directed graph is compared using recursively hashed expressions,
+anchored to unchanged prefix entity IDs, with node multiplicities preserved.
+Unknown suffix entity types, cycles, dangling references, or real differences
+fail closed. Header metadata is reported by whole-file hashes but not compared.
+"""
+from __future__ import annotations
+
+import argparse
+from collections import Counter
+from functools import lru_cache
+import hashlib
+import json
+from pathlib import Path
+import re
+
+
+TAIL_TYPES = {
+    'MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION',
+    'STYLED_ITEM', 'OVER_RIDING_STYLED_ITEM', 'PRESENTATION_STYLE_ASSIGNMENT',
+    'PRESENTATION_STYLE_BY_CONTEXT', 'SURFACE_STYLE_USAGE', 'SURFACE_SIDE_STYLE',
+    'SURFACE_STYLE_FILL_AREA', 'FILL_AREA_STYLE', 'FILL_AREA_STYLE_COLOUR',
+    'COLOUR_RGB', 'DESCRIPTIVE_REPRESENTATION_ITEM', 'REPRESENTATION',
+    'PROPERTY_DEFINITION', 'PROPERTY_DEFINITION_REPRESENTATION',
+}
+START_TYPE = 'MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION'
+
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def statements(text):
+    """Split semicolons/strip formatting only outside STEP quoted strings."""
+    quoted = False
+    buf = []
+    i = 0
+    while i < len(text):
+        char = text[i]
+        if char == "'":
+            buf.append(char)
+            if quoted and i + 1 < len(text) and text[i + 1] == "'":
+                buf.append("'")
+                i += 2
+                continue
+            quoted = not quoted
+        elif char == ';' and not quoted:
+            yield ''.join(buf)
+            buf = []
+        elif quoted or not char.isspace():
+            buf.append(char)
+        i += 1
+    if quoted or buf:
+        raise ValueError('unterminated STEP statement/string')
+
+
+def parse(raw):
+    text = raw.decode('utf-8')
+    if text.count('\nDATA;') != 1:
+        raise ValueError('requires exactly one standard STEP DATA section')
+    data = text.split('\nDATA;', 1)[1]
+    data = data[:data.rindex('ENDSEC;')]
+    rows = {}
+    for statement in statements(data):
+        match = re.fullmatch(r'#(\d+)=(.+)', statement)
+        if not match:
+            raise ValueError('unrecognized DATA statement')
+        index = int(match[1])
+        if index in rows:
+            raise ValueError(f'duplicate entity #{index}')
+        rows[index] = re.sub(
+            r"^(NEXT_ASSEMBLY_USAGE_OCCURRENCE\(')\d+(')",
+            r'\1<SERIAL>\2', match[2])
+    return rows
+
+
+def entity_type(expression):
+    return expression.split('(', 1)[0]
+
+
+def expression_tokens(expression):
+    """Tag references separately; never reinterpret a # inside a string."""
+    pattern = r"'(?:[^']|'')*'|#\d+|[^'#]+"
+    tokens = re.findall(pattern, expression)
+    if ''.join(tokens) != expression:
+        raise ValueError('unsupported entity expression')
+    return tokens
+
+
+def graph_multiset(rows, cutoff):
+    visiting = set()
+
+    @lru_cache(None)
+    def digest(index):
+        if index not in rows:
+            raise ValueError(f'dangling reference #{index}')
+        if index < cutoff:
+            return ['prefix_entity', index]
+        if index in visiting:
+            raise ValueError(f'cycle in presentation suffix at #{index}')
+        visiting.add(index)
+        value = []
+        for token in expression_tokens(rows[index]):
+            value.append(['reference', digest(int(token[1:]))]
+                         if token.startswith('#') else ['literal', token])
+        visiting.remove(index)
+        return ['tail_expression_sha256', sha(json.dumps(
+            value, separators=(',', ':')).encode())]
+
+    result = Counter()
+    for index in rows:
+        if index >= cutoff:
+            result[json.dumps(digest(index), separators=(',', ':'))] += 1
+    return result
+
+
+def check(left, right):
+    raw = [p.read_bytes() for p in (left, right)]
+    result = {'schema_version': 1,
+              'method': 'exact anchored geometry prefix; complete presentation suffix expression graph multiset',
+              'normalization': ['whitespace outside quoted strings',
+                                'numeric first string argument of NEXT_ASSEMBLY_USAGE_OCCURRENCE'],
+              'inputs': [{'path': str(p.resolve()), 'sha256': sha(b), 'bytes': len(b)}
+                         for p, b in zip((left, right), raw)],
+              'equivalent': False}
+    try:
+        a, b = [parse(data) for data in raw]
+        result['entity_counts'] = [len(a), len(b)]
+        result['data_equal_after_only_serial_whitespace_normalization'] = a == b
+        cutoffs = [min(i for i, v in rows.items() if entity_type(v) == START_TYPE)
+                   for rows in (a, b)]
+        result['presentation_suffix_start_entities'] = cutoffs
+        if cutoffs[0] != cutoffs[1]:
+            raise ValueError('presentation suffix starts at different entity IDs')
+        cutoff = cutoffs[0]
+        prefixes = [{i: v for i, v in rows.items() if i < cutoff} for rows in (a, b)]
+        result['exact_normalized_prefix_equal'] = prefixes[0] == prefixes[1]
+        result['prefix_entity_counts'] = [len(x) for x in prefixes]
+        result['prefix_sha256'] = [sha(json.dumps(sorted(x.items()), separators=(',', ':')).encode())
+                                   for x in prefixes]
+        if prefixes[0] != prefixes[1]:
+            result['first_changed_prefix_entities'] = [i for i in sorted(set(prefixes[0]) | set(prefixes[1]))
+                                                       if prefixes[0].get(i) != prefixes[1].get(i)][:20]
+            raise ValueError('geometry/placement prefix differs')
+        type_counts = [Counter(entity_type(v) for i, v in rows.items() if i >= cutoff)
+                       for rows in (a, b)]
+        result['suffix_entity_type_counts'] = [dict(x) for x in type_counts]
+        for counts in type_counts:
+            if set(counts) - TAIL_TYPES:
+                raise ValueError(f'unsupported suffix entity types: {sorted(set(counts) - TAIL_TYPES)}')
+        graphs = [graph_multiset(rows, cutoff) for rows in (a, b)]
+        result['suffix_graph_multiset_equal'] = graphs[0] == graphs[1]
+        result['suffix_graph_multiset_sha256'] = [sha(json.dumps(sorted(x.items()), separators=(',', ':')).encode())
+                                                for x in graphs]
+        result['suffix_entity_counts'] = [sum(x.values()) for x in graphs]
+        if graphs[0] != graphs[1]:
+            raise ValueError('resolved presentation/material/property graph differs')
+        result['source_hashes_unchanged_during_check'] = [sha(p.read_bytes()) for p in (left, right)] == [sha(x) for x in raw]
+        if not result['source_hashes_unchanged_during_check']:
+            raise ValueError('input bytes changed during check')
+        result['equivalent'] = True
+        result['conclusion'] = 'Identical geometry/placement records and resolved presentation bindings; serialization differences only.'
+    except (ValueError, KeyError, RecursionError) as exc:
+        result['failure'] = str(exc)
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('left', type=Path)
+    parser.add_argument('right', type=Path)
+    parser.add_argument('--report', required=True, type=Path)
+    args = parser.parse_args()
+    if args.report.resolve() in {args.left.resolve(), args.right.resolve()}:
+        parser.error('report must not overwrite either STEP input')
+    result = check(args.left, args.right)
+    result['checker_sha256'] = sha(Path(__file__).read_bytes())
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.report.write_text(json.dumps(result, indent=2) + '\n')
+    print(json.dumps({'equivalent': result['equivalent'], 'report': str(args.report),
+                      'report_sha256': sha(args.report.read_bytes()),
+                      'input_sha256': [x['sha256'] for x in result['inputs']],
+                      'failure': result.get('failure')}))
+    return 0 if result['equivalent'] else 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

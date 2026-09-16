@@ -1,0 +1,16 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_bell_mist.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_mist/r0001/thickness-bell_mist.md
+(10.5s, exit 1)
+--- stdout
+part_bell_mist.step.py: 0.28 cm3 solid, grid 0.133 mm (170x173x140), 29683 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      1.9% of surface below (553 of 29683 samples); thinnest 0.13 mm at (18.6, 26.5, 9.6) in 3 region(s); 1 wall(s) (widest band 0.97 mm), 2 taper(s) at feature edges (0.03% of surface, budget 2%); 29 more within measurement error of the limit
+  PASS  thickness distribution         median 1.13 mm, p95 6.33 mm, max 12.80 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 0.28 cm3 (0%) in 0 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.13 mm at (21.7, 31.0, 17.8)    544 samples, 10.9 mm2, runs 11.3 mm, band 0.97 mm
+        2. [taper] 0.27 mm at (20.9, 18.2, 1.0)      7 samples, 0.1 mm2, runs 1.6 mm, band 0.09 mm
+        3. [taper] 0.13 mm at (18.6, 26.5, 9.6)      2 samples, 0.0 mm2, runs 1.2 mm, band 0.03 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_mist/r0001/thickness-bell_mist.md
+
+--- stderr

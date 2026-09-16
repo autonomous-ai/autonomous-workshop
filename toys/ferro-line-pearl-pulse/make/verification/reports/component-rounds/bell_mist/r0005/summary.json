@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_bell_mist.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_mist/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bell_mist"
+ ],
+ "print": {
+  "bell_mist": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_mist/r0003/overhang-bell_mist.log": "7b27bc5a88f75d4748a9e5e7fa579b0932f786d9ec70ae9f38fb42724e301e8e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_mist/r0003/thickness-bell_mist.log": "06c36207e09e065c98e916e06fd1d60396e469f31dbfb67eda0fc449394e27d8"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "bell_mist"
+ ],
+ "round": 5,
+ "scope": "component:bell_mist",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show a thin continuous curved shell sector rising from the flat crown region to the subtly rounded rim. Top shows clean radial colour boundaries. This is the registered blue co-print region, with no extraneous disconnected material.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_mist/r0005/visual-packet.json",
+  "packet_sha256": "1986f5426e8572abeb6ee0414a08ac89729e735e00496d3ab86ba73476ba5553",
+  "status": "pass"
+ }
+}

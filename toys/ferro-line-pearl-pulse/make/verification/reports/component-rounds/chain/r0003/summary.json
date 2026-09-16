@@ -1,0 +1,62 @@
+{
+ "build": {
+  "chain": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "chain"
+ ],
+ "check_motion": false,
+ "checked": [
+  "chain"
+ ],
+ "checks_ok": true,
+ "entry": "part_chain.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/chain/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "chain"
+ ],
+ "print": {
+  "chain": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/chain/r0003/overhang-chain.log": "468ba1e422697bc518da1f38906be2b40fb12b586ab9bfe5dd9ea25e70a796c1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/chain/r0003/thickness-chain.log": "a5256b68e483a782a4a75490b82a88347c5f88e713658617d7c780d977b98647"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:chain",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows separated bearing roof and captive pin head; top shows eight evenly pitched bead bodies and a distinct root lever; iso confirms a connected print-in-place strand with open gaps, slim necks and a rounded terminal. No misplaced or extra geometry visible.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/chain/r0003/visual-packet.json",
+  "packet_sha256": "bb1da34cc1cd984948b16a68e49e8a9f49502d7e8e7ce8736f597dcb16468d96",
+  "status": "pass"
+ }
+}

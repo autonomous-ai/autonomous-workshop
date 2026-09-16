@@ -1,0 +1,59 @@
+{
+ "build": {
+  "chain": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "chain"
+ ],
+ "check_motion": false,
+ "checked": [
+  "chain"
+ ],
+ "checks_ok": true,
+ "entry": "part_chain.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/chain/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "chain"
+ ],
+ "print": {
+  "chain": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/chain/r0004/overhang-chain.log": "fb6a66eb63c49b1662321ece012067e113c2410b557915bca58f8a60cc805c18",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/chain/r0004/thickness-chain.log": "04efb60713d9bf1f16c9288686cc250408e0e98e829807b7e961c2363805e84c"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:chain",
+ "visual": {
+  "detail": "Visual render failed or source changed; inspect visual-render.log",
+  "findings": [],
+  "status": "error"
+ }
+}

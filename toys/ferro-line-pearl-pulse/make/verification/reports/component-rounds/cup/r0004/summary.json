@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_cup.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "cup"
+ ],
+ "print": {
+  "cup": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup/r0003/overhang-cup.log": "cd2f725cb3964b2889a92c5304e242486443f1afc87a1229657cb46d136be8d5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup/r0003/thickness-cup.log": "9a8e12cf13826aa81ed7af13f5c17c4d900c88b70ea5ada992cf569ddbeee578"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "cup"
+ ],
+ "round": 4,
+ "scope": "component:cup",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a shallow level cup; top centres the square drive aperture; iso exposes continuous concentric inner and outer walls on a joined floor with no stray bodies or visible cuts through either wall.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup/r0004/visual-packet.json",
+  "packet_sha256": "7c3206b748e1072cfa759b372861004b236b8ec9099e32ff3b3294e563edca1d",
+  "status": "pass"
+ }
+}

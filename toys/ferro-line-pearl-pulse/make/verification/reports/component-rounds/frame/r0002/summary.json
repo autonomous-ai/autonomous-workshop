@@ -1,0 +1,63 @@
+{
+ "build": {
+  "frame": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "frame"
+ ],
+ "check_motion": false,
+ "checked": [
+  "frame"
+ ],
+ "checks_ok": false,
+ "entry": "part_frame.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "frame"
+ ],
+ "print": {
+  "frame": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0002/overhang-frame.log": "d4cac48dd1bd00decb8f3a08027411dcde24bf4ca11bf9f53bfe828d88bd4707",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0002/thickness-frame.log": "d8c43418a7caa580d1ff605fb9fb488ec67ada799f7fecd02ea8a9b4645ffa30"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 19.7% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 3.0,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.23,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:frame",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0002/visual-packet.json",
+  "packet_sha256": "b08c98b6207f49c22fe8361a2d3fd1d64cff523ed49457d7a199c5526f257081",
+  "status": "pending"
+ }
+}

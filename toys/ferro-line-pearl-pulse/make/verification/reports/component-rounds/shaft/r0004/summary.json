@@ -1,0 +1,61 @@
+{
+ "build": {
+  "shaft": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "shaft"
+ ],
+ "check_motion": false,
+ "checked": [
+  "shaft"
+ ],
+ "checks_ok": true,
+ "entry": "part_shaft.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shaft/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "shaft"
+ ],
+ "print": {
+  "shaft": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shaft/r0004/overhang-shaft.log": "c54488b3a941d6566db4c2a0d57eb86099ed4a202b48fd839546a6f2c2201a32",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shaft/r0004/thickness-shaft.log": "f59ff2e4421c5b36e49081754b212d1b5b219d7929dd0b46528148b929eb40ee"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:shaft",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shaft/r0004/visual-packet.json",
+  "packet_sha256": "b863af8e88df2a78e78c983651fc71a2371011996e0dadd938c066fc25f0981a",
+  "status": "pending"
+ }
+}

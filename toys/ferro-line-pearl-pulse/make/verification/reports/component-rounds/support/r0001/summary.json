@@ -1,0 +1,66 @@
+{
+ "build": {
+  "support": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "support"
+ ],
+ "check_motion": false,
+ "checked": [
+  "support"
+ ],
+ "checks_ok": false,
+ "entry": "part_support.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/support/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "support"
+ ],
+ "print": {
+  "support": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/support/r0001/overhang-support.log": "aea8417165793083d0bd09edb46057328ac99e7973e698e411d99ddc553e6dcd",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/support/r0001/thickness-support.log": "070932bee6453e18368b0501172fb5404b46ebc4a98361fc92e92b52ec0fa1cc"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 22.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 85.8,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.16) 0.2% of surface below (170 of 106407 samples); thinnes"
+    ],
+    "thinnest_mm": 0.32,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:support",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show a straight hollow slim stem centred on a broad low circular foot; upper collar is concentric. Top view confirms centred open bore. No misplaced or disconnected visible geometry; numeric reports independently require collar-edge and underside-cavity repair.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/support/r0001/visual-packet.json",
+  "packet_sha256": "3fa429801162256619dd9aebc530e5596af70bbfc1ab61efa10ba80c2a58c227",
+  "status": "pass"
+ }
+}

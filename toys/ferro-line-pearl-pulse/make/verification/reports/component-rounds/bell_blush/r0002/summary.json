@@ -1,0 +1,61 @@
+{
+ "build": {
+  "bell_blush": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bell_blush"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bell_blush"
+ ],
+ "checks_ok": true,
+ "entry": "part_bell_blush.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_blush/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bell_blush"
+ ],
+ "print": {
+  "bell_blush": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_blush/r0002/overhang-bell_blush.log": "ee2e59f474ec041a81b41ee1bfc5f20839a0a3c958fe5efc2bfc7d67dd663ef1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_blush/r0002/thickness-bell_blush.log": "4110d1e227f167fce36cafeef0e2af1a86de4e5bf6a49bca01d277c8851e4a68"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:bell_blush",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bell_blush/r0002/visual-packet.json",
+  "packet_sha256": "725ad047d612aea98313e1a6a10ee11334fe5432496bfba3cf0c84934e317c3e",
+  "status": "pending"
+ }
+}

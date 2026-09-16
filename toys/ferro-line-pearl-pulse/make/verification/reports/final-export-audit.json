@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-09-16T02:06:56.349597+00:00",
+  "scope": "Read-only exported STEP comparison, imported BRep facts and delivery inventory. No CAD generation, geometry edits, full clash sweep, motion check or new visual judgment.",
+  "prior_frame_repair_audit": {
+    "only_frame_changed": true,
+    "qualification": "Initial old-vs-repaired imported comparison was keyed by 66 unique STEP labels (114 assembly occurrences); only frame had changed facts. All 23 isolated production family STEP DATA payloads matched prior delivery after NAUO serial/whitespace normalization. This flag describes that bounded comparison, not a separately rerun full old-vs-new 114-occurrence comparison.",
+    "old_assembled_sha256_prefix": "5857",
+    "repaired_assembled_sha256": "93fe69c3441016ef930e53a3e350104de03eeebfab35f72a1caf7f0a075952d6",
+    "frame": {
+      "solid_count": 1,
+      "face_count": 266,
+      "edge_count": 785,
+      "old_volume_mm3": 7429.9214821353335,
+      "new_volume_mm3": 7410.644669612902,
+      "removed_volume_mm3": 19.276812522431,
+      "expected_removed_volume_expression": "pi * (3.6^2 - 2.3^2) * 0.8",
+      "expected_removed_volume_mm3": 19.276812522426976,
+      "bounds_mm": [
+        -32.8,
+        -32.8,
+        76.4,
+        32.8,
+        32.8,
+        104.6
+      ],
+      "boss_bottom_z_mm": 101.6,
+      "boss_bottom_annular_face_radii_mm": [
+        2.3,
+        3.6
+      ],
+      "boss_bottom_face_area_mm2": 24.096015653033724,
+      "cup_floor_top_z_mm": 101.2,
+      "nominal_axial_gap_mm": 0.4,
+      "remaining_gap_at_0_2_endfloat_mm": 0.2,
+      "isolated_to_world_transform": "Pos(0,0,104.6) * Rot(180,0,0)",
+      "combined_vs_isolated_all_266_face_signatures_equal": true,
+      "signature_rounding_decimal_places": 6
+    }
+  },
+  "delivery_match_after_prior_refresh": {
+    "observation_note": "Observed before the subsequent verifier re-export covered below. Later re-export changed cad/pearl.step bytes but not the packaged reviewed assembled.step.",
+    "all_114_delivered_leaf_files_byte_match_current_family_sources": true,
+    "assembly_occurrence_names_poses_colours_component_ids_match": true,
+    "assembled_and_cad_step_sha256_at_that_observation": "93fe69c3441016ef930e53a3e350104de03eeebfab35f72a1caf7f0a075952d6",
+    "assembled_json_and_cad_package_sha256": "ba951287fa8de42d88a746898e491fe74b69402430031e828fe8844e98cbe033",
+    "delivered_frame_and_isolated_frame_sha256": "e8f700c9223e6c6af196df316836041b6157dd008242680573ce5a55f6150c80",
+    "other_material_mismatch_or_stale_family_found": false
+  },
+  "subsequent_verifier_reexport_equivalence": {
+    "paths": [
+      "artifacts/make/r0001/product/assembled.step",
+      "artifacts/make/r0001/product/cad/pearl.step"
+    ],
+    "sha256": [
+      "93fe69c3441016ef930e53a3e350104de03eeebfab35f72a1caf7f0a075952d6",
+      "483982f30d09003408f0ff9436d74d3182a04602f5040e6cb6df76359ea784c8"
+    ],
+    "entity_counts": [
+      180474,
+      180474
+    ],
+    "data_equal_after_only_nauo_serial_and_whitespace_normalization": false,
+    "identical_entity_prefix_inclusive": 178788,
+    "changed_entity_count": 1450,
+    "tail_entity_types": {
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 66,
+      "STYLED_ITEM": 66,
+      "PRESENTATION_STYLE_ASSIGNMENT": 66,
+      "SURFACE_STYLE_USAGE": 228,
+      "SURFACE_SIDE_STYLE": 228,
+      "SURFACE_STYLE_FILL_AREA": 228,
+      "FILL_AREA_STYLE": 228,
+      "FILL_AREA_STYLE_COLOUR": 228,
+      "COLOUR_RGB": 8,
+      "OVER_RIDING_STYLED_ITEM": 162,
+      "PRESENTATION_STYLE_BY_CONTEXT": 162,
+      "DESCRIPTIVE_REPRESENTATION_ITEM": 4,
+      "REPRESENTATION": 4,
+      "PROPERTY_DEFINITION": 4,
+      "PROPERTY_DEFINITION_REPRESENTATION": 4
+    },
+    "style_binding_graph_multiset_equal": true,
+    "style_binding_counts": [
+      228,
+      228
+    ],
+    "imported_occurrence_comparison": {
+      "leaf_counts": [
+        114,
+        114
+      ],
+      "all_occurrence_facts_equal": true,
+      "fields": [
+        "label",
+        "solid_count",
+        "face_count",
+        "edge_count",
+        "volume_mm3",
+        "area_mm2",
+        "world_bounds_mm",
+        "direct_srgb",
+        "all_per_face_geometry_type_area_bounds"
+      ],
+      "geometric_rounding_decimal_places": 6,
+      "colour_rounding_decimal_places": 9,
+      "occurrence_fact_multiset_sha256": [
+        "e929c81daa29e1d4aa974d3c800ed9f7c18ca4dbb20e771f4aadfd6cfb03a0e5",
+        "e929c81daa29e1d4aa974d3c800ed9f7c18ca4dbb20e771f4aadfd6cfb03a0e5"
+      ],
+      "source_hashes_unchanged_during_probe": true
+    },
+    "all_tail_entity_expanded_graph_multisets_equal": true,
+    "expanded_tail_entity_counts": [
+      1686,
+      1686
+    ],
+    "semantic_graph_method": "Keep unchanged prefix entities #1..#178788 as stable anchors; recursively replace each tail reference with its entity expression, then compare multisets including multiplicities. This proves the reordered tail has identical resolved content and geometry/context bindings.",
+    "conclusion": "Equivalent exported geometry, placement and materials. Byte differences include presentation entity order/reference renumbering as well as export serial churn; NOT a NAUO-serial-only match."
+  }
+}

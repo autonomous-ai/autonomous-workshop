@@ -1,0 +1,19 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_drive_retainer.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_retainer/r0001/thickness-drive_retainer.md
+(4.6s, exit 1)
+--- stdout
+part_drive_retainer.step.py: 0.02 cm3 solid, grid 0.133 mm (29x83x12), 3305 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      13.5% of surface below (456 of 3305 samples); thinnest 0.73 mm at (108.6, -3.7, 0.6) in 6 region(s); 3 wall(s) (widest band 1.09 mm), 1 taper(s) at feature edges and 2 spot(s) too small to be a wall (3.74% of surface, budget 2%) -- OVER BUDGET; 476 more within measurement error of the limit
+  PASS  thickness distribution         median 0.93 mm, p95 2.33 mm, max 10.40 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 0.02 cm3 (0%) in 0 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.73 mm at (108.6, 0.1, 0.8)    137 samples, 3.6 mm2, runs 3.3 mm, band 1.09 mm
+        2. [wall ] 0.73 mm at (107.0, 1.2, 0.8)    133 samples, 3.4 mm2, runs 3.6 mm, band 0.94 mm
+        3. [spot ] 0.73 mm at (108.6, 4.4, 0.8)     67 samples, 1.7 mm2, runs 1.5 mm, band 1.10 mm
+        4. [wall ] 0.73 mm at (107.0, 4.3, 0.3)     61 samples, 1.5 mm2, runs 1.7 mm, band 0.87 mm
+        5. [taper] 0.73 mm at (107.0, -3.6, 0.6)     30 samples, 0.8 mm2, runs 1.0 mm, band 0.77 mm
+        6. [spot ] 0.73 mm at (108.6, -3.7, 0.6)     28 samples, 0.8 mm2, runs 0.9 mm, band 0.86 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drive_retainer/r0001/thickness-drive_retainer.md
+
+--- stderr

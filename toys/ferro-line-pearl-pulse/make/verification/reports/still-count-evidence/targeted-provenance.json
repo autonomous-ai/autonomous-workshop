@@ -1,0 +1,11 @@
+{
+  "source": "states/pressed.step",
+  "source_sha256": "b9cb8af6ef867d27769731ef6c53c9b332ef22f52dc60eefe04d0558f345de91",
+  "renderer_sha256": "6d30cc239b00292727ccc4a6df58f52a54eeb88c9a2656854e02c91d691164ae",
+  "wrapper_sha256": "a1fb36fc565c9f257b8bbcf81f5c310bc3145c00db97bca50c190b17f199301b",
+  "motion_verified": false,
+  "images": {
+    "underside-counts.png": "47a56b663a86eb82b8a2feeba161e61cea3c34b73622412e1e6cda4a72c4d275",
+    "bell-detail.png": "37439fd5ccf1c09b1ac18202e0c4af70d4f0b4828e0c81555e6ce0a9f1ba5da2"
+  }
+}

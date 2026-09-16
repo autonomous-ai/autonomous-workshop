@@ -1,0 +1,63 @@
+{
+ "build": {
+  "frame": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "frame"
+ ],
+ "check_motion": false,
+ "checked": [
+  "frame"
+ ],
+ "checks_ok": false,
+ "entry": "part_frame.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "frame"
+ ],
+ "print": {
+  "frame": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0004/overhang-frame.log": "c15ec812d6efefb8a996b3037bcbd3bd7146ffed51c216e0bb8a919f06ea0808",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0004/thickness-frame.log": "e409064d62c2f70ac3ccbbe66135fdf97e3d39a0481a75e332fff42bde36f2d4"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.11) 0.2% of surface below (258 of 191304 samples); thinnes"
+    ],
+    "thinnest_mm": 0.23,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:frame",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/frame/r0004/visual-packet.json",
+  "packet_sha256": "d123b02aa1d0184dd6ce7f98ed26244441ccf367b88cdb48aa29044ddfffe6d6",
+  "status": "pending"
+ }
+}

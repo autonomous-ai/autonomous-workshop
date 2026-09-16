@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "method": "exact anchored geometry prefix; complete presentation suffix expression graph multiset",
+  "normalization": [
+    "whitespace outside quoted strings",
+    "numeric first string argument of NEXT_ASSEMBLY_USAGE_OCCURRENCE"
+  ],
+  "inputs": [
+    {
+      "path": "<WORKSHOP_RUN>/artifacts/make/r0001/product/assembled.step",
+      "sha256": "93fe69c3441016ef930e53a3e350104de03eeebfab35f72a1caf7f0a075952d6",
+      "bytes": 10674188
+    },
+    {
+      "path": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/pearl.step",
+      "sha256": "6299c327c4228810042b3dc6ce287b0a48ec6480c738b4332c5e26b7adf0ed34",
+      "bytes": 10674188
+    }
+  ],
+  "equivalent": true,
+  "entity_counts": [
+    180474,
+    180474
+  ],
+  "data_equal_after_only_serial_whitespace_normalization": false,
+  "presentation_suffix_start_entities": [
+    178789,
+    178789
+  ],
+  "exact_normalized_prefix_equal": true,
+  "prefix_entity_counts": [
+    178788,
+    178788
+  ],
+  "prefix_sha256": [
+    "7c4309644f3004bdbbdb3db96c4e0f8da0c63b6f686a4edb528f7ccca6f32762",
+    "7c4309644f3004bdbbdb3db96c4e0f8da0c63b6f686a4edb528f7ccca6f32762"
+  ],
+  "suffix_entity_type_counts": [
+    {
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 66,
+      "STYLED_ITEM": 66,
+      "PRESENTATION_STYLE_ASSIGNMENT": 66,
+      "SURFACE_STYLE_USAGE": 228,
+      "SURFACE_SIDE_STYLE": 228,
+      "SURFACE_STYLE_FILL_AREA": 228,
+      "FILL_AREA_STYLE": 228,
+      "FILL_AREA_STYLE_COLOUR": 228,
+      "COLOUR_RGB": 8,
+      "OVER_RIDING_STYLED_ITEM": 162,
+      "PRESENTATION_STYLE_BY_CONTEXT": 162,
+      "DESCRIPTIVE_REPRESENTATION_ITEM": 4,
+      "REPRESENTATION": 4,
+      "PROPERTY_DEFINITION": 4,
+      "PROPERTY_DEFINITION_REPRESENTATION": 4
+    },
+    {
+      "MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION": 66,
+      "STYLED_ITEM": 66,
+      "PRESENTATION_STYLE_ASSIGNMENT": 66,
+      "SURFACE_STYLE_USAGE": 228,
+      "SURFACE_SIDE_STYLE": 228,
+      "SURFACE_STYLE_FILL_AREA": 228,
+      "FILL_AREA_STYLE": 228,
+      "FILL_AREA_STYLE_COLOUR": 228,
+      "COLOUR_RGB": 8,
+      "OVER_RIDING_STYLED_ITEM": 162,
+      "PRESENTATION_STYLE_BY_CONTEXT": 162,
+      "DESCRIPTIVE_REPRESENTATION_ITEM": 4,
+      "REPRESENTATION": 4,
+      "PROPERTY_DEFINITION": 4,
+      "PROPERTY_DEFINITION_REPRESENTATION": 4
+    }
+  ],
+  "suffix_graph_multiset_equal": true,
+  "suffix_graph_multiset_sha256": [
+    "6075c027165affdd3ecc08bef264dfec8b439dfe10c27b643c5d806d4199ea96",
+    "6075c027165affdd3ecc08bef264dfec8b439dfe10c27b643c5d806d4199ea96"
+  ],
+  "suffix_entity_counts": [
+    1686,
+    1686
+  ],
+  "source_hashes_unchanged_during_check": true,
+  "conclusion": "Identical geometry/placement records and resolved presentation bindings; serialization differences only.",
+  "checker_sha256": "3cbb7e1d9959a9d7c26218b31b712dbca5fb1b9844aff068d5e04cdd28671391"
+}

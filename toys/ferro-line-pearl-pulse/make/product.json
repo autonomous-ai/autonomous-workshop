@@ -1,0 +1,11 @@
+{
+  "title": "Pearl Pulse",
+  "summary": "A palm-sized pearl jellyfish with soft pink and blue accents, eight beaded tentacles and four flowing ribbons. Its wind-up mechanism and pressable bell are designed to create a gentle swimming pulse.",
+  "materials": ["pearl PETG", "blush PETG", "mist PETG", "lavender PETG", "natural-rubber loops", "damping grease"],
+  "verification": {
+    "motion": "unverified",
+    "physical_testing": "not-run",
+    "runtime_target_seconds": 30,
+    "runtime_measured": false
+  }
+}

@@ -1,0 +1,692 @@
+{
+  "schema_version": 1,
+  "occurrences": [
+    {
+      "name": "support",
+      "family": "support",
+      "path": "parts/support.step",
+      "sha256": "10594c9e2a23509542bb80820112aff4245455fd362344ccfadec0585c283d27"
+    },
+    {
+      "name": "anchor",
+      "family": "anchor",
+      "path": "parts/anchor.step",
+      "sha256": "e9719ec0d04eff8479fa9828ae33e2b5660f11d34f220c0c0342e92467bad9b3"
+    },
+    {
+      "name": "carrier",
+      "family": "carrier",
+      "path": "parts/carrier.step",
+      "sha256": "aef36141325e160dcd52a91b39bbb84f357cdabfff85b14ab5a6d44a102fca17"
+    },
+    {
+      "name": "frame",
+      "family": "frame",
+      "path": "parts/frame.step",
+      "sha256": "e8f700c9223e6c6af196df316836041b6157dd008242680573ce5a55f6150c80"
+    },
+    {
+      "name": "cam",
+      "family": "cam",
+      "path": "parts/cam.step",
+      "sha256": "9d8bac0619d371ea2b8702820f6f5cd3020032e7a38e925c27583f1281cfa778"
+    },
+    {
+      "name": "cup",
+      "family": "cup",
+      "path": "parts/cup.step",
+      "sha256": "72bcc27b01f9b417ab5cefdc06c68b3e6a61ca46b631c26a9663f8124faaa037"
+    },
+    {
+      "name": "shaft",
+      "family": "shaft",
+      "path": "parts/shaft.step",
+      "sha256": "a4a3aa96481fd941d33b2d4d54cd8194cfa6843712824f2a604d48b5a1481920"
+    },
+    {
+      "name": "drive_retainer",
+      "family": "drive_retainer",
+      "path": "parts/drive_retainer.step",
+      "sha256": "fe1f94a2a389b59312d14d7e5059b99f02093cd2ac53c047ffea2fb06540b43d"
+    },
+    {
+      "name": "drive_thrust_washer",
+      "family": "drive_thrust_washer",
+      "path": "parts/drive_thrust_washer.step",
+      "sha256": "5fa58d655eea382cb5acbe800baba3f1777c2ea757db90588f451a239ba9282b"
+    },
+    {
+      "name": "slider",
+      "family": "slider",
+      "path": "parts/slider.step",
+      "sha256": "754423ab9f8f4ac6a84a9c3f2bbf32df20c961950a0accbe88a597f31867a793"
+    },
+    {
+      "name": "keeper",
+      "family": "keeper",
+      "path": "parts/keeper.step",
+      "sha256": "74db6b1fb03aa2af337da886793f2f8c61f85e3b97994aef76b3041020674e11"
+    },
+    {
+      "name": "keeper_pin_01",
+      "family": "keeper_pin",
+      "path": "parts/keeper_pin_01.step",
+      "sha256": "037e26a346b2162edefa773c5637f0dc624ca0031bf068fa5ee3d9fffb301fac"
+    },
+    {
+      "name": "keeper_clip_01",
+      "family": "pivot_retainer",
+      "path": "parts/keeper_clip_01.step",
+      "sha256": "112198a4e63ca1dfe43cdc8c7720a72584791be86dc1f60607f49997347d11ed"
+    },
+    {
+      "name": "keeper_pin_02",
+      "family": "keeper_pin",
+      "path": "parts/keeper_pin_02.step",
+      "sha256": "037e26a346b2162edefa773c5637f0dc624ca0031bf068fa5ee3d9fffb301fac"
+    },
+    {
+      "name": "keeper_clip_02",
+      "family": "pivot_retainer",
+      "path": "parts/keeper_clip_02.step",
+      "sha256": "112198a4e63ca1dfe43cdc8c7720a72584791be86dc1f60607f49997347d11ed"
+    },
+    {
+      "name": "keeper_pin_03",
+      "family": "keeper_pin",
+      "path": "parts/keeper_pin_03.step",
+      "sha256": "037e26a346b2162edefa773c5637f0dc624ca0031bf068fa5ee3d9fffb301fac"
+    },
+    {
+      "name": "keeper_clip_03",
+      "family": "pivot_retainer",
+      "path": "parts/keeper_clip_03.step",
+      "sha256": "112198a4e63ca1dfe43cdc8c7720a72584791be86dc1f60607f49997347d11ed"
+    },
+    {
+      "name": "return_arm_01",
+      "family": "return_arm",
+      "path": "parts/return_arm_01.step",
+      "sha256": "306f1934dbb279ef4a02b1430e7f40912a4ea6037d46dba67b8912ae11c404cb"
+    },
+    {
+      "name": "return_arm_02",
+      "family": "return_arm",
+      "path": "parts/return_arm_02.step",
+      "sha256": "306f1934dbb279ef4a02b1430e7f40912a4ea6037d46dba67b8912ae11c404cb"
+    },
+    {
+      "name": "ribbon_01",
+      "family": "ribbon",
+      "path": "parts/ribbon_01.step",
+      "sha256": "fa0fb49711ffb44e231ee84b20c65405321f456da34dc5d42a67ec20e134d0ab"
+    },
+    {
+      "name": "ribbon_02",
+      "family": "ribbon_mist",
+      "path": "parts/ribbon_02.step",
+      "sha256": "cc3961192edbe9853ab20d3f0a88af5a290df9fc1a269d30f19d4ce5a7d1105c"
+    },
+    {
+      "name": "ribbon_03",
+      "family": "ribbon",
+      "path": "parts/ribbon_03.step",
+      "sha256": "fa0fb49711ffb44e231ee84b20c65405321f456da34dc5d42a67ec20e134d0ab"
+    },
+    {
+      "name": "ribbon_04",
+      "family": "ribbon_mist",
+      "path": "parts/ribbon_04.step",
+      "sha256": "cc3961192edbe9853ab20d3f0a88af5a290df9fc1a269d30f19d4ce5a7d1105c"
+    },
+    {
+      "name": "pivot_pin_01",
+      "family": "pivot_pin",
+      "path": "parts/pivot_pin_01.step",
+      "sha256": "bf7d2bc2860ae48ef4ab80b30fc8e8d50a7cab73897ad0dcb3a2eafe5ed47a97"
+    },
+    {
+      "name": "pivot_clip_01",
+      "family": "pivot_retainer",
+      "path": "parts/pivot_clip_01.step",
+      "sha256": "112198a4e63ca1dfe43cdc8c7720a72584791be86dc1f60607f49997347d11ed"
+    },
+    {
+      "name": "chain_01_root",
+      "family": "chain_root",
+      "path": "parts/chain_01_root.step",
+      "sha256": "5c908602c7dfe2c3d0f9c065fc1caa67e995795aaf2efe45130d321ceec5b7c9"
+    },
+    {
+      "name": "chain_01_bead_01",
+      "family": "chain_bead",
+      "path": "parts/chain_01_bead_01.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_01_bead_02",
+      "family": "chain_bead",
+      "path": "parts/chain_01_bead_02.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_01_bead_03",
+      "family": "chain_bead",
+      "path": "parts/chain_01_bead_03.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_01_bead_04",
+      "family": "chain_bead",
+      "path": "parts/chain_01_bead_04.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_01_bead_05",
+      "family": "chain_bead",
+      "path": "parts/chain_01_bead_05.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_01_bead_06",
+      "family": "chain_bead",
+      "path": "parts/chain_01_bead_06.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_01_bead_07",
+      "family": "chain_bead",
+      "path": "parts/chain_01_bead_07.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_01_bead_08",
+      "family": "chain_terminal",
+      "path": "parts/chain_01_bead_08.step",
+      "sha256": "460ae940057dcb3664018b22dda142e8c0df4b82a58684130d2314d3913679e2"
+    },
+    {
+      "name": "pivot_pin_02",
+      "family": "pivot_pin",
+      "path": "parts/pivot_pin_02.step",
+      "sha256": "bf7d2bc2860ae48ef4ab80b30fc8e8d50a7cab73897ad0dcb3a2eafe5ed47a97"
+    },
+    {
+      "name": "pivot_clip_02",
+      "family": "pivot_retainer",
+      "path": "parts/pivot_clip_02.step",
+      "sha256": "112198a4e63ca1dfe43cdc8c7720a72584791be86dc1f60607f49997347d11ed"
+    },
+    {
+      "name": "chain_02_root",
+      "family": "chain_root",
+      "path": "parts/chain_02_root.step",
+      "sha256": "5c908602c7dfe2c3d0f9c065fc1caa67e995795aaf2efe45130d321ceec5b7c9"
+    },
+    {
+      "name": "chain_02_bead_01",
+      "family": "chain_bead",
+      "path": "parts/chain_02_bead_01.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_02_bead_02",
+      "family": "chain_bead",
+      "path": "parts/chain_02_bead_02.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_02_bead_03",
+      "family": "chain_bead",
+      "path": "parts/chain_02_bead_03.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_02_bead_04",
+      "family": "chain_bead",
+      "path": "parts/chain_02_bead_04.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_02_bead_05",
+      "family": "chain_bead",
+      "path": "parts/chain_02_bead_05.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_02_bead_06",
+      "family": "chain_bead",
+      "path": "parts/chain_02_bead_06.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_02_bead_07",
+      "family": "chain_bead",
+      "path": "parts/chain_02_bead_07.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_02_bead_08",
+      "family": "chain_terminal",
+      "path": "parts/chain_02_bead_08.step",
+      "sha256": "460ae940057dcb3664018b22dda142e8c0df4b82a58684130d2314d3913679e2"
+    },
+    {
+      "name": "pivot_pin_03",
+      "family": "pivot_pin",
+      "path": "parts/pivot_pin_03.step",
+      "sha256": "bf7d2bc2860ae48ef4ab80b30fc8e8d50a7cab73897ad0dcb3a2eafe5ed47a97"
+    },
+    {
+      "name": "pivot_clip_03",
+      "family": "pivot_retainer",
+      "path": "parts/pivot_clip_03.step",
+      "sha256": "112198a4e63ca1dfe43cdc8c7720a72584791be86dc1f60607f49997347d11ed"
+    },
+    {
+      "name": "chain_03_root",
+      "family": "chain_root",
+      "path": "parts/chain_03_root.step",
+      "sha256": "5c908602c7dfe2c3d0f9c065fc1caa67e995795aaf2efe45130d321ceec5b7c9"
+    },
+    {
+      "name": "chain_03_bead_01",
+      "family": "chain_bead",
+      "path": "parts/chain_03_bead_01.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_03_bead_02",
+      "family": "chain_bead",
+      "path": "parts/chain_03_bead_02.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_03_bead_03",
+      "family": "chain_bead",
+      "path": "parts/chain_03_bead_03.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_03_bead_04",
+      "family": "chain_bead",
+      "path": "parts/chain_03_bead_04.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_03_bead_05",
+      "family": "chain_bead",
+      "path": "parts/chain_03_bead_05.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_03_bead_06",
+      "family": "chain_bead",
+      "path": "parts/chain_03_bead_06.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_03_bead_07",
+      "family": "chain_bead",
+      "path": "parts/chain_03_bead_07.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_03_bead_08",
+      "family": "chain_terminal",
+      "path": "parts/chain_03_bead_08.step",
+      "sha256": "460ae940057dcb3664018b22dda142e8c0df4b82a58684130d2314d3913679e2"
+    },
+    {
+      "name": "pivot_pin_04",
+      "family": "pivot_pin",
+      "path": "parts/pivot_pin_04.step",
+      "sha256": "bf7d2bc2860ae48ef4ab80b30fc8e8d50a7cab73897ad0dcb3a2eafe5ed47a97"
+    },
+    {
+      "name": "pivot_clip_04",
+      "family": "pivot_retainer",
+      "path": "parts/pivot_clip_04.step",
+      "sha256": "112198a4e63ca1dfe43cdc8c7720a72584791be86dc1f60607f49997347d11ed"
+    },
+    {
+      "name": "chain_04_root",
+      "family": "chain_root",
+      "path": "parts/chain_04_root.step",
+      "sha256": "5c908602c7dfe2c3d0f9c065fc1caa67e995795aaf2efe45130d321ceec5b7c9"
+    },
+    {
+      "name": "chain_04_bead_01",
+      "family": "chain_bead",
+      "path": "parts/chain_04_bead_01.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_04_bead_02",
+      "family": "chain_bead",
+      "path": "parts/chain_04_bead_02.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_04_bead_03",
+      "family": "chain_bead",
+      "path": "parts/chain_04_bead_03.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_04_bead_04",
+      "family": "chain_bead",
+      "path": "parts/chain_04_bead_04.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_04_bead_05",
+      "family": "chain_bead",
+      "path": "parts/chain_04_bead_05.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_04_bead_06",
+      "family": "chain_bead",
+      "path": "parts/chain_04_bead_06.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_04_bead_07",
+      "family": "chain_bead",
+      "path": "parts/chain_04_bead_07.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_04_bead_08",
+      "family": "chain_terminal",
+      "path": "parts/chain_04_bead_08.step",
+      "sha256": "460ae940057dcb3664018b22dda142e8c0df4b82a58684130d2314d3913679e2"
+    },
+    {
+      "name": "pivot_pin_05",
+      "family": "pivot_pin",
+      "path": "parts/pivot_pin_05.step",
+      "sha256": "bf7d2bc2860ae48ef4ab80b30fc8e8d50a7cab73897ad0dcb3a2eafe5ed47a97"
+    },
+    {
+      "name": "pivot_clip_05",
+      "family": "pivot_retainer",
+      "path": "parts/pivot_clip_05.step",
+      "sha256": "112198a4e63ca1dfe43cdc8c7720a72584791be86dc1f60607f49997347d11ed"
+    },
+    {
+      "name": "chain_05_root",
+      "family": "chain_root",
+      "path": "parts/chain_05_root.step",
+      "sha256": "5c908602c7dfe2c3d0f9c065fc1caa67e995795aaf2efe45130d321ceec5b7c9"
+    },
+    {
+      "name": "chain_05_bead_01",
+      "family": "chain_bead",
+      "path": "parts/chain_05_bead_01.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_05_bead_02",
+      "family": "chain_bead",
+      "path": "parts/chain_05_bead_02.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_05_bead_03",
+      "family": "chain_bead",
+      "path": "parts/chain_05_bead_03.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_05_bead_04",
+      "family": "chain_bead",
+      "path": "parts/chain_05_bead_04.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_05_bead_05",
+      "family": "chain_bead",
+      "path": "parts/chain_05_bead_05.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_05_bead_06",
+      "family": "chain_bead",
+      "path": "parts/chain_05_bead_06.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_05_bead_07",
+      "family": "chain_bead",
+      "path": "parts/chain_05_bead_07.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_05_bead_08",
+      "family": "chain_terminal",
+      "path": "parts/chain_05_bead_08.step",
+      "sha256": "460ae940057dcb3664018b22dda142e8c0df4b82a58684130d2314d3913679e2"
+    },
+    {
+      "name": "pivot_pin_06",
+      "family": "pivot_pin",
+      "path": "parts/pivot_pin_06.step",
+      "sha256": "bf7d2bc2860ae48ef4ab80b30fc8e8d50a7cab73897ad0dcb3a2eafe5ed47a97"
+    },
+    {
+      "name": "pivot_clip_06",
+      "family": "pivot_retainer",
+      "path": "parts/pivot_clip_06.step",
+      "sha256": "112198a4e63ca1dfe43cdc8c7720a72584791be86dc1f60607f49997347d11ed"
+    },
+    {
+      "name": "chain_06_root",
+      "family": "chain_root",
+      "path": "parts/chain_06_root.step",
+      "sha256": "5c908602c7dfe2c3d0f9c065fc1caa67e995795aaf2efe45130d321ceec5b7c9"
+    },
+    {
+      "name": "chain_06_bead_01",
+      "family": "chain_bead",
+      "path": "parts/chain_06_bead_01.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_06_bead_02",
+      "family": "chain_bead",
+      "path": "parts/chain_06_bead_02.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_06_bead_03",
+      "family": "chain_bead",
+      "path": "parts/chain_06_bead_03.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_06_bead_04",
+      "family": "chain_bead",
+      "path": "parts/chain_06_bead_04.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_06_bead_05",
+      "family": "chain_bead",
+      "path": "parts/chain_06_bead_05.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_06_bead_06",
+      "family": "chain_bead",
+      "path": "parts/chain_06_bead_06.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_06_bead_07",
+      "family": "chain_bead",
+      "path": "parts/chain_06_bead_07.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_06_bead_08",
+      "family": "chain_terminal",
+      "path": "parts/chain_06_bead_08.step",
+      "sha256": "460ae940057dcb3664018b22dda142e8c0df4b82a58684130d2314d3913679e2"
+    },
+    {
+      "name": "pivot_pin_07",
+      "family": "pivot_pin",
+      "path": "parts/pivot_pin_07.step",
+      "sha256": "bf7d2bc2860ae48ef4ab80b30fc8e8d50a7cab73897ad0dcb3a2eafe5ed47a97"
+    },
+    {
+      "name": "pivot_clip_07",
+      "family": "pivot_retainer",
+      "path": "parts/pivot_clip_07.step",
+      "sha256": "112198a4e63ca1dfe43cdc8c7720a72584791be86dc1f60607f49997347d11ed"
+    },
+    {
+      "name": "chain_07_root",
+      "family": "chain_root",
+      "path": "parts/chain_07_root.step",
+      "sha256": "5c908602c7dfe2c3d0f9c065fc1caa67e995795aaf2efe45130d321ceec5b7c9"
+    },
+    {
+      "name": "chain_07_bead_01",
+      "family": "chain_bead",
+      "path": "parts/chain_07_bead_01.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_07_bead_02",
+      "family": "chain_bead",
+      "path": "parts/chain_07_bead_02.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_07_bead_03",
+      "family": "chain_bead",
+      "path": "parts/chain_07_bead_03.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_07_bead_04",
+      "family": "chain_bead",
+      "path": "parts/chain_07_bead_04.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_07_bead_05",
+      "family": "chain_bead",
+      "path": "parts/chain_07_bead_05.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_07_bead_06",
+      "family": "chain_bead",
+      "path": "parts/chain_07_bead_06.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_07_bead_07",
+      "family": "chain_bead",
+      "path": "parts/chain_07_bead_07.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_07_bead_08",
+      "family": "chain_terminal",
+      "path": "parts/chain_07_bead_08.step",
+      "sha256": "460ae940057dcb3664018b22dda142e8c0df4b82a58684130d2314d3913679e2"
+    },
+    {
+      "name": "pivot_pin_08",
+      "family": "pivot_pin",
+      "path": "parts/pivot_pin_08.step",
+      "sha256": "bf7d2bc2860ae48ef4ab80b30fc8e8d50a7cab73897ad0dcb3a2eafe5ed47a97"
+    },
+    {
+      "name": "pivot_clip_08",
+      "family": "pivot_retainer",
+      "path": "parts/pivot_clip_08.step",
+      "sha256": "112198a4e63ca1dfe43cdc8c7720a72584791be86dc1f60607f49997347d11ed"
+    },
+    {
+      "name": "chain_08_root",
+      "family": "chain_root",
+      "path": "parts/chain_08_root.step",
+      "sha256": "5c908602c7dfe2c3d0f9c065fc1caa67e995795aaf2efe45130d321ceec5b7c9"
+    },
+    {
+      "name": "chain_08_bead_01",
+      "family": "chain_bead",
+      "path": "parts/chain_08_bead_01.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_08_bead_02",
+      "family": "chain_bead",
+      "path": "parts/chain_08_bead_02.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_08_bead_03",
+      "family": "chain_bead",
+      "path": "parts/chain_08_bead_03.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_08_bead_04",
+      "family": "chain_bead",
+      "path": "parts/chain_08_bead_04.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_08_bead_05",
+      "family": "chain_bead",
+      "path": "parts/chain_08_bead_05.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_08_bead_06",
+      "family": "chain_bead",
+      "path": "parts/chain_08_bead_06.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_08_bead_07",
+      "family": "chain_bead",
+      "path": "parts/chain_08_bead_07.step",
+      "sha256": "e69fa8c17375442ca7b4684641b78bf56464712c59b3949c319b448001847f3e"
+    },
+    {
+      "name": "chain_08_bead_08",
+      "family": "chain_terminal",
+      "path": "parts/chain_08_bead_08.step",
+      "sha256": "460ae940057dcb3664018b22dda142e8c0df4b82a58684130d2314d3913679e2"
+    },
+    {
+      "name": "bell_pearl",
+      "family": "bell_pearl",
+      "path": "parts/bell_pearl.step",
+      "sha256": "6aef7c75518d57a84413003fe2beac6347f9a3cf909060a97710503137046ef8"
+    },
+    {
+      "name": "bell_blush",
+      "family": "bell_blush",
+      "path": "parts/bell_blush.step",
+      "sha256": "2e62b8a02ebead368ce10aa09b42e6829d1a0a52101be4e1726b7916f1a7609f"
+    },
+    {
+      "name": "bell_mist",
+      "family": "bell_mist",
+      "path": "parts/bell_mist.step",
+      "sha256": "09d27f41e63b7c6485a747305fcadbe12f873c4dcf289fec87a1d932d04acae6"
+    }
+  ],
+  "assembled_sha256": "93fe69c3441016ef930e53a3e350104de03eeebfab35f72a1caf7f0a075952d6",
+  "assembly_package_sha256": "0658f7557898ba3d222bc08e0866bb7cefc4514238202222d77f5f263e4ee5a3",
+  "manufacturing_note": "Use complete registered PIP strands and co-printed bell regions as instructed in README.md; individual leaves are addressable inventory, not a replacement print layout."
+}

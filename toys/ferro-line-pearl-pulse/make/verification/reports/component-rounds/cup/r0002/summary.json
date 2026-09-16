@@ -1,0 +1,61 @@
+{
+ "build": {
+  "cup": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "cup"
+ ],
+ "check_motion": false,
+ "checked": [
+  "cup"
+ ],
+ "checks_ok": true,
+ "entry": "part_cup.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "cup"
+ ],
+ "print": {
+  "cup": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup/r0002/overhang-cup.log": "7f9c42800e374a7f7664bae0517858f0db20e6506e3acd99ab65fe5eaa0fb5ba",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup/r0002/thickness-cup.log": "d760a1fd857c8344529ee22313f15fee2021a32e1cb2aeeca33c49283bb89542"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:cup",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/cup/r0002/visual-packet.json",
+  "packet_sha256": "c95c2f789a552bfb90bfe75e0ce3cc6d84a1c18bb88e33a38c7d835173803318",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,14 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_return_arm.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0001/thickness-return_arm.md
+(4.8s, exit 1)
+--- stdout
+part_return_arm.step.py: 0.16 cm3 solid, grid 0.133 mm (41x151x32), 13457 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      2.8% of surface below (359 of 13457 samples); thinnest 0.33 mm at (-0.4, -72.8, 1.9) in 1 region(s); 1 wall(s) (widest band 2.93 mm)
+  PASS  thickness distribution         median 2.40 mm, p95 4.80 mm, max 19.47 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 0.16 cm3 (0%) in 0 pocket(s), 1 too small to shell
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.33 mm at (-0.4, -72.8, 1.9)    359 samples, 7.8 mm2, runs 2.7 mm, band 2.93 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/return_arm/r0001/thickness-return_arm.md
+
+--- stderr

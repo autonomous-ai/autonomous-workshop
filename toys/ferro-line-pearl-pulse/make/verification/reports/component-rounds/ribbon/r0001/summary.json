@@ -1,0 +1,65 @@
+{
+ "build": {
+  "ribbon": {
+   "failures": [
+    "[scripts/gen]       return finish(s,'sinuous_oral_ribbon',BLUSH)",
+    "[scripts/gen]   features/common.py:25 in finish",
+    "[scripts/gen]       assert len(shape.solids())==1, (label,len(shape.solids()))",
+    "[scripts/gen] re-run with --verbose for the full traceback"
+   ],
+   "verdict": "FAIL"
+  }
+ },
+ "changed": [
+  "ribbon"
+ ],
+ "check_motion": false,
+ "checked": [
+  "ribbon"
+ ],
+ "checks_ok": false,
+ "entry": "part_ribbon.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/ribbon/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "ribbon"
+ ],
+ "print": {
+  "ribbon": {
+   "logs": {},
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "build failed"
+    ],
+    "overhang_mm2": null,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "build failed"
+    ],
+    "thinnest_mm": null,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:ribbon",
+ "visual": {
+  "detail": "Visual render failed or source changed; inspect visual-render.log",
+  "findings": [],
+  "status": "error"
+ }
+}
