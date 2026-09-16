@@ -1149,6 +1149,214 @@ def _write_report(
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+# ── Harness verdict ───────────────────────────────────────────────────────────
+#
+# Autonomous Harness runs this skill as the "Workshop" domain harness: Codex in
+# a terminal pane, a 3D pane beside it, and one JSON file the pane header reads
+# (spec 1 of the harness contract, `.harness/verdict.json`). Harness sets
+# `HARNESS_WORKSPACE` on the engine it launches; outside Harness the variable
+# is unset and nothing below runs, so Workshop's own product runs keep their
+# exact artifact inventory. The pipeline record above stays the record; this is
+# a projection of it that never fails a run.
+
+HARNESS_WORKSPACE_ENV = "HARNESS_WORKSPACE"
+HARNESS_VERDICT_RELATIVE = Path(".harness/verdict.json")
+
+
+def _harness_workspace() -> Path | None:
+    raw = os.environ.get(HARNESS_WORKSPACE_ENV, "").strip()
+    if not raw or not Path(raw).is_absolute():
+        return None
+    try:
+        workspace = Path(raw).resolve(strict=True)
+    except OSError:
+        return None
+    return workspace if workspace.is_dir() else None
+
+
+def _harness_tool_label(command: str) -> str:
+    """The gate a record names: the first token that is not an interpreter."""
+    for token in command.split("#", 1)[0].split():
+        name = Path(token).name
+        if name.startswith("python") or name in ("uv", "env"):
+            continue
+        return name
+    return command.strip()[:80]
+
+
+def _harness_findings(records: Sequence[dict]) -> list[dict]:
+    findings: list[dict] = []
+    for record in records:
+        command = str(record.get("command", ""))
+        status = str(record.get("status", ""))
+        label = _harness_tool_label(command)
+        detail = command.split("#", 1)[1].strip() if "#" in command else ""
+        if status.startswith("rc="):
+            code = status[3:]
+            if code == "0":
+                continue
+            findings.append({
+                "severity": "error",
+                "kind": "gate-failed",
+                "message": f"{label} exited {code}",
+                "ref": command[:300],
+            })
+        elif status == "refused":
+            findings.append({
+                "severity": "error",
+                "kind": "preflight-refused",
+                "message": detail.removeprefix("ERROR:").strip() or label,
+                "ref": label,
+            })
+        elif status == "skipped":
+            findings.append({
+                "severity": "info",
+                "kind": "gate-skipped",
+                "message": f"{label}: {detail.removeprefix('NOT RUN:').strip()}",
+                "ref": label,
+            })
+        elif status == "note":
+            findings.append({
+                "severity": "info",
+                "kind": "note",
+                "message": f"{label}: {detail.removeprefix('NOTE:').strip()}",
+                "ref": label,
+            })
+        elif status == "accepted-fail":
+            findings.append({
+                "severity": "warning",
+                "kind": "gate-accepted-failure",
+                "message": f"{label} failed and the failure was accepted",
+                "ref": command[:300],
+            })
+    return findings
+
+
+#: The phases Harness's pane header shows for a Make run, in order, and the gates each one is made
+#: of. A gate not in any group belongs to none and moves no phase.
+HARNESS_PHASES: tuple[tuple[str, str, frozenset[str]], ...] = (
+    ("build", "Build", frozenset({"gen", "cadgen_daemon", "artifact"})),
+    ("fit", "Fit", frozenset({
+        "check_fit", "check_layout", "check_mount", "check_thickness",
+        "check_spec_format", "check_spec_numbers",
+    })),
+    ("print", "Print", frozenset({"check_mesh", "check_overhang", "repair_mesh"})),
+    ("motion", "Motion", frozenset({"check_motion"})),
+    ("review", "Review", frozenset({"inspect", "render_review", "render_product"})),
+)
+
+
+def _harness_phases(records: Sequence[dict], *, mode: str, result: int) -> list[dict]:
+    """Where the run is, gate by gate: failed if any gate of the phase failed or was refused,
+    done if one ran clean (or failed and was accepted), pending when none has run. After a
+    clean quick preview the first phase still to run is the one under way — what a final
+    verify_project would do next. Motion is opt-in and only appears once it has actually run,
+    so a strip never waits forever on a gate nobody asked for."""
+    seen: dict[str, str] = {}
+    for record in records:
+        label = _harness_tool_label(str(record.get("command", "")))
+        status = str(record.get("status", ""))
+        for phase_id, _, gates in HARNESS_PHASES:
+            if label not in gates:
+                continue
+            current = seen.get(phase_id, "pending")
+            if status.startswith("rc=") and status != "rc=0" or status == "refused":
+                seen[phase_id] = "failed"
+            elif status in ("rc=0", "accepted-fail") and current != "failed":
+                seen[phase_id] = "done"
+            elif status in ("skipped", "note", "planned") and current == "pending":
+                seen[phase_id] = "pending"
+    phases = [
+        {"id": phase_id, "name": name, "state": seen.get(phase_id, "pending")}
+        for phase_id, name, _ in HARNESS_PHASES
+        if phase_id != "motion" or seen.get("motion", "pending") != "pending"
+    ]
+    if result == 0 and mode == "quick":
+        for phase in phases:
+            if phase["state"] == "pending":
+                phase["state"] = "active"
+                break
+    return phases
+
+
+def _write_harness_verdict(
+    project: Path,
+    records: Sequence[dict],
+    *,
+    mode: str,
+    result: int,
+    artifact: Path | None = None,
+    report: Path | None = None,
+) -> Path | None:
+    """Project the pipeline record onto Harness's verdict file. Never raises."""
+    workspace = _harness_workspace()
+    if workspace is None:
+        return None
+    findings = _harness_findings(records)
+    quick = mode == "quick"
+    if quick:
+        findings.append({
+            "severity": "info",
+            "kind": "quick-preview",
+            "message": "quick preview only; a final verify_project run decides readiness",
+            "ref": "verify_project --quick",
+        })
+    errors = [item["message"] for item in findings if item["severity"] == "error"]
+    accepted = sum(1 for item in findings if item["kind"] == "gate-accepted-failure")
+    if quick:
+        summary = "preview built; not yet verified" if result == 0 else f"preview failed: {errors[0]}" if errors else f"preview failed (exit {result})"
+    elif result == 0:
+        summary = "final verification passed"
+        if accepted:
+            summary += f" ({accepted} accepted failing gate{'s' if accepted != 1 else ''})"
+    else:
+        summary = f"final verification failed: {errors[0]}" if errors else f"final verification failed (exit {result})"
+
+    def relative(path: Path | None) -> str | None:
+        if path is None:
+            return None
+        try:
+            resolved = path.resolve()
+        except OSError:
+            return None
+        if not resolved.is_file():
+            return None
+        for root in (workspace, project):
+            try:
+                return resolved.relative_to(root).as_posix()
+            except ValueError:
+                continue
+        return None
+
+    verdict = {
+        "spec": 1,
+        "ready": result == 0 and not quick,
+        "summary": summary[:200],
+        "findings": findings,
+        "phases": _harness_phases(records, mode=mode, result=result),
+        "updatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "mode": mode,
+        "exit": int(result),
+    }
+    artifact_path = relative(artifact)
+    if artifact_path:
+        verdict["artifact"] = artifact_path
+    report_path = relative(report)
+    if report_path:
+        verdict["report"] = report_path
+    target = workspace / HARNESS_VERDICT_RELATIVE
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        staged = target.with_name(f".{target.name}.{os.getpid()}.tmp")
+        staged.write_text(json.dumps(verdict, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        os.replace(staged, target)
+    except OSError as exc:
+        print(f"verify_project: warning: could not write {target}: {exc}", file=sys.stderr)
+        return None
+    print(f"[verify_project] wrote harness verdict {target}", flush=True)
+    return target
+
+
 def _quick(
     runner: Runner,
     assembly: Path,
@@ -2127,6 +2335,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                     )
                 else:
                     print(f"[verify_project] wrote preflight failure {final_report}", flush=True)
+        _write_harness_verdict(
+            project,
+            [{"command": f"preflight  # ERROR: {message}", "status": "refused", "seconds": 0.0}],
+            mode="quick" if args.quick else ("image-derived final" if args.image_derived else "final"),
+            result=2,
+        )
         parser.error(message)
 
     if args.preview_tolerance <= 0:
@@ -2405,10 +2619,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         mode = "image-derived final" if args.image_derived else "final"
     elapsed = time.perf_counter() - workflow_started
+    final_report = None
     if not args.quick and not args.no_report and not args.dry_run:
         final_report = report_path or (project / "measure" / "verification-pipeline.md")
         _write_report(final_report, runner, mode=mode, result=result, elapsed=elapsed, bed=bed)
         print(f"[verify_project] wrote report {final_report}", flush=True)
+    if not args.dry_run:
+        _write_harness_verdict(
+            project,
+            runner.records,
+            mode=mode,
+            result=result,
+            artifact=_step_for_entry(assembly),
+            report=final_report,
+        )
     print(
         f"[verify_project] {mode} workflow: rc={result} "
         f"in {elapsed:.2f}s",
