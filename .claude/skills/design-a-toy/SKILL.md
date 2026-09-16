@@ -72,6 +72,24 @@ If the human changes anything, update the spec and show it again.
 Generate **one image per unique geometry** from the approved list. A chess set
 has six piece shapes, not thirty-four.
 
+**Always use AI image generation or AI image editing to make these images.
+Never build them by hand.** No hand-written ray caster, no procedural renderer,
+no parametric CAD script, no matplotlib, no SVG assembled from coordinates. If
+you catch yourself writing intersection maths or typing polygon vertices, stop:
+you are doing the wrong job.
+
+The reason is not convenience, it is division of labour. A reference image is
+**concept art that Make builds from**. The moment you hand-build exact geometry,
+you have already done Make's work, badly and outside every gate the run applies
+to it - and then the run is reduced to copying your render instead of
+engineering the object. The hand-built version also lies in a specific
+direction: it draws whatever the spec's numbers say and nothing the spec forgot,
+so it can never show you that the spec is wrong, which is the one thing a
+reference image is for at this stage.
+
+A generated image is allowed to be looser than the spec. That is a feature. The
+spec carries the millimetres, the image carries the silhouette and the read.
+
 Each image must be:
 
 - **800x800 or smaller.** The likeness gate extracts a silhouette, normalizes
