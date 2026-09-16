@@ -10,8 +10,10 @@ from workshop.make.assembly_package import (
     AssemblyPackage,
     is_assembly_package,
     missing_production_parts,
+    occurrences_missing_colour_names,
     read_assembly_package,
     srgb_channels_hex,
+    validate_occurrence_colour_names,
     validate_production_parts,
 )
 
@@ -159,6 +161,59 @@ class ReadAssemblyPackageTest(unittest.TestCase):
             read_assembly_package(duplicated)
         with self.assertRaises(ContractError):
             read_assembly_package(b"")
+
+    def test_an_occurrence_names_the_spool_it_prints_in(self):
+        document = quarterhoot_package()
+        document["occurrences"][0]["name"] = "owl_follower_dark_brown"
+        document["occurrences"][1]["name"] = "reversible_nest_misty_blue"
+
+        package = read_assembly_package(encode(document))
+
+        self.assertEqual(
+            [item.colour_name for item in package.occurrences],
+            ["dark_brown", "misty_blue"],
+        )
+        self.assertEqual(occurrences_missing_colour_names(package), ())
+        self.assertEqual(
+            validate_occurrence_colour_names(package),
+            ("owl_follower_dark_brown", "reversible_nest_misty_blue"),
+        )
+
+    def test_an_occurrence_outside_the_palette_is_named_back(self):
+        document = quarterhoot_package()
+        document["occurrences"][0]["name"] = "owl_follower_teal"
+        document["occurrences"][1]["name"] = "reversible_nest_white"
+
+        package = read_assembly_package(encode(document))
+
+        self.assertIsNone(package.occurrences[0].colour_name)
+        self.assertEqual(
+            occurrences_missing_colour_names(package), ("owl_follower_teal",)
+        )
+        with self.assertRaisesRegex(ContractError, "owl_follower_teal"):
+            validate_occurrence_colour_names(package)
+
+    def test_a_bare_colour_names_no_part_and_a_hyphen_is_a_separator(self):
+        document = quarterhoot_package()
+        document["occurrences"][0]["name"] = "black"
+        document["occurrences"][1]["name"] = "nest-sunflower-yellow"
+
+        package = read_assembly_package(encode(document))
+
+        self.assertIsNone(package.occurrences[0].colour_name)
+        self.assertEqual(package.occurrences[1].colour_name, "sunflower_yellow")
+        self.assertEqual(occurrences_missing_colour_names(package), ("black",))
+
+    def test_a_single_occurrence_package_names_no_colour(self):
+        document = quarterhoot_package()
+        document["occurrences"] = document["occurrences"][:1]
+        document["occurrences"][0]["name"] = "owl_follower"
+        document["stats"] = {"occurrenceCount": 1}
+
+        package = read_assembly_package(encode(document))
+
+        self.assertEqual(occurrences_missing_colour_names(package), ())
+        self.assertEqual(validate_occurrence_colour_names(package), ())
 
     def test_missing_production_parts_are_named(self):
         package = read_assembly_package(encode(quarterhoot_package()))

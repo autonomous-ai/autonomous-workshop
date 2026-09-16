@@ -9,7 +9,9 @@ per occurrence.  The trusted host reads it here for two purposes only:
   so a multi-part toy reaches the shop as addressable, colourable solids; and
 * the Make gate requires every occurrence of a multi-part package to have its
   sealed production STEP under ``parts/<name>.step``, the same path the
-  build-group contract already uses.
+  build-group contract already uses, and requires that name to end in a colour
+  the filament palette stocks (``arm_black``, ``leg_dark_brown``), so the file
+  that reaches the shop says which spool prints it.
 
 STEP is the only geometry format the CAD toolchain writes, so the shop receives
 exchange solids rather than sliced meshes and printability is not asserted
@@ -30,6 +32,10 @@ from pathlib import Path
 from typing import Any, Collection, Mapping, Optional, Sequence, Tuple
 
 from workshop.errors import ContractError
+from workshop.make.cad.filament_names import (
+    FILAMENT_COLOUR_NAMES,
+    occurrence_colour_name,
+)
 
 
 ASSEMBLY_PACKAGE_KIND = "assembly-package"
@@ -122,6 +128,12 @@ class AssemblyOccurrence:
     @property
     def color_hex(self) -> Optional[str]:
         return None if self.color is None else srgb_channels_hex(self.color)
+
+    @property
+    def colour_name(self) -> Optional[str]:
+        """The stocked filament colour this occurrence is named for, if any."""
+
+        return occurrence_colour_name(self.name)
 
 
 @dataclass(frozen=True)
@@ -270,6 +282,33 @@ def missing_production_parts(
     )
 
 
+def occurrences_missing_colour_names(package: AssemblyPackage) -> Tuple[str, ...]:
+    """Return the multi-part occurrences not named for a stocked colour.
+
+    A single-occurrence package binds nothing: there is one solid, one spool,
+    and no name to tell them apart by.
+    """
+
+    if not package.is_multipart:
+        return ()
+    return tuple(
+        item.name for item in package.occurrences if item.colour_name is None
+    )
+
+
+def validate_occurrence_colour_names(package: AssemblyPackage) -> Tuple[str, ...]:
+    """Require every occurrence of a multi-part package to name its colour."""
+
+    unnamed = occurrences_missing_colour_names(package)
+    if unnamed:
+        raise ContractError(
+            "Made assembly-package occurrences must end in a stocked filament "
+            "colour (%s); these do not: %s"
+            % (", ".join(FILAMENT_COLOUR_NAMES), ", ".join(unnamed))
+        )
+    return tuple(item.name for item in package.occurrences) if package.is_multipart else ()
+
+
 def validate_production_parts(
     package: AssemblyPackage, sealed_paths: Collection[str]
 ) -> Tuple[str, ...]:
@@ -295,8 +334,10 @@ __all__ = [
     "PRODUCTION_PARTS_DIRECTORY",
     "is_assembly_package",
     "missing_production_parts",
+    "occurrences_missing_colour_names",
     "read_assembly_package",
     "read_assembly_package_file",
     "srgb_channels_hex",
+    "validate_occurrence_colour_names",
     "validate_production_parts",
 ]
