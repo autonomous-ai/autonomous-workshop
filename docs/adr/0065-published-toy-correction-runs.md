@@ -1,7 +1,8 @@
 # ADR 0065: Published toy corrections start independent runs
 
-- Status: Implemented; deterministic tests only, no live corrected publication yet
+- Status: Implemented; live-validated by corrected publications
 - Date: 2026-09-11
+- Updated: 2026-09-16
 
 `workshop fix TOY_DIRECTORY --prompt TEXT` (or `--prompt-file FILE`) verifies
 and clones a schema-v4 public toy archive into a new Spark run. The source must
@@ -43,5 +44,14 @@ Tests cover exact prompt preservation, deterministic snapshots, distinct ids,
 editable-copy isolation, archive drift and link rejection, draft rejection,
 unsafe ZIP paths, immutable baseline revalidation, CLI controls and a fake
 native launch with a fresh Spark checkpoint. Rainward Sun's checked-in archive
-also passes read-only intake. These checks do not establish repair quality or
-live publication of a corrected Rainward Sun.
+also passes read-only intake.
+
+The path is live-validated end to end. Correction runs from the Rainward Sun
+archive published two corrected toys, each with its own Wish identity and its
+own publication record: Rainward Flow (`wish-20260911-161806-46d9d5ed`) and
+Rainward Lowflow (`wish-20260912-042535-b2afa8bf`). The original Rainward Sun
+run, listing and archive are unchanged, as the contract requires.
+
+The deterministic tests still do not measure repair quality. Whether a given
+correction brief achieves its intent remains a per-run judgement, and a
+correction may itself be corrected.

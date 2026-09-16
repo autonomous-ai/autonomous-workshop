@@ -65,8 +65,9 @@ URLs and private run directories are not accepted. `--model`, `--effort`,
 `--max-tokens` and `--turn-minutes` select the new run's settings. Resume a stopped
 revision with `workshop resume <new-wish-id>`.
 
-The Rainward Sun prompt above is a prepared example; a corrected version has
-not yet been live-validated. See [the correction-run contract](docs/adr/0065-published-toy-correction-runs.md).
+The Rainward Sun prompt above is a prepared example. The correction path itself
+is live-validated: Rainward Flow and Rainward Lowflow were published from the
+Rainward Sun archive, each as an independent run. See [the correction-run contract](docs/adr/0065-published-toy-correction-runs.md).
 
 ## Quickstart
 
