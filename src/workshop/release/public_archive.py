@@ -63,7 +63,7 @@ def _reject_json_constant(value: str) -> None:
     raise ValueError("non-finite JSON constant %s" % value)
 
 
-def _strict_json(content: bytes, label: str) -> dict[str, Any]:
+def strict_json(content: bytes, label: str) -> dict[str, Any]:
     try:
         value = json.loads(
             content.decode("utf-8"),
@@ -77,7 +77,7 @@ def _strict_json(content: bytes, label: str) -> dict[str, Any]:
     return value
 
 
-def _stable_file(path: Path, label: str, *, allow_empty: bool = False) -> bytes:
+def stable_file(path: Path, label: str, *, allow_empty: bool = False) -> bytes:
     try:
         before = path.lstat()
         content = path.read_bytes()
@@ -119,7 +119,7 @@ def build_public_archive_manifest(root: Path) -> ArtifactManifest:
             raise StateConflict("public archive contains a special file")
         if relative in _ROOT_MANIFEST_EXCLUDES:
             continue
-        content = _stable_file(
+        content = stable_file(
             path,
             "public archive file %s" % relative,
             allow_empty=True,
@@ -181,7 +181,7 @@ def _artifact_file(run_root: Path, relative: str, label: str) -> bytes:
     pure = PurePosixPath(relative)
     if pure.is_absolute() or ".." in pure.parts or pure.as_posix() != relative:
         raise ContractError("%s path is invalid" % label)
-    return _stable_file(run_root.joinpath(*pure.parts), label)
+    return stable_file(run_root.joinpath(*pure.parts), label)
 
 
 def _redact_public_local_paths(
@@ -221,7 +221,7 @@ def _assert_bound_entries(
     """Verify every sealed historical byte while ignoring later unbound caches."""
 
     for entry in entries:
-        content = _stable_file(
+        content = stable_file(
             root.joinpath(*PurePosixPath(entry.path).parts),
             "%s file %s" % (label, entry.path),
             allow_empty=True,
@@ -242,7 +242,7 @@ def _write_contract(
     label: str,
 ) -> bytes:
     content = _artifact_file(run_root, source, label)
-    if _strict_json(content, label) != dict(expected):
+    if strict_json(content, label) != dict(expected):
         raise StateConflict("%s differs from the accepted contract" % label)
     writer(destination, content)
     return content
@@ -350,7 +350,7 @@ def _copy_made_tree(
     cad_prefix = PurePosixPath(made.cad_project_path)
     for relative, entry in sorted(entries.items()):
         source = product_root.joinpath(*PurePosixPath(relative).parts)
-        content = _stable_file(
+        content = stable_file(
             source,
             "sealed Made file %s" % relative,
             allow_empty=True,
@@ -439,7 +439,7 @@ def _invent_attempts(
             "Invent round %d assignment" % round_number,
         )
         assignment = NativeMatchAssignment.from_mapping(
-            _strict_json(
+            strict_json(
                 assignment_content,
                 "Invent round %d assignment" % round_number,
             )
@@ -450,7 +450,7 @@ def _invent_attempts(
             "Invent round %d contract" % round_number,
         )
         invented = NativeInvented.from_mapping(
-            _strict_json(
+            strict_json(
                 invented_content,
                 "Invent round %d contract" % round_number,
             )
@@ -466,7 +466,7 @@ def _invent_attempts(
                 source_path,
                 "Invent round %d authored source" % round_number,
             )
-            source = _strict_json(
+            source = strict_json(
                 source_content,
                 "Invent round %d authored source" % round_number,
             )
@@ -562,7 +562,7 @@ def _made_attempts(
                 "Make round %d Invent-revision request" % round_number,
             )
             revision = NativeMakeInventRevision.from_mapping(
-                _strict_json(
+                strict_json(
                     content,
                     "Make round %d Invent-revision request" % round_number,
                 )
@@ -579,7 +579,7 @@ def _made_attempts(
                 *PurePosixPath(revision.evidence_root).parts
             )
             for entry in revision.evidence_manifest.entries:
-                evidence = _stable_file(
+                evidence = stable_file(
                     evidence_root.joinpath(*PurePosixPath(entry.path).parts),
                     "Make Invent-revision evidence %s" % entry.path,
                     allow_empty=True,
@@ -604,7 +604,7 @@ def _made_attempts(
                     "Make round %d Invent-revision authored source"
                     % round_number,
                 )
-                if _strict_json(authored, "Make Invent-revision authored source") != {
+                if strict_json(authored, "Make Invent-revision authored source") != {
                     "feedback": [item.to_dict() for item in revision.feedback]
                 }:
                     raise StateConflict(
@@ -631,7 +631,7 @@ def _made_attempts(
             "accepted Make round %d contract" % round_number,
         )
         proposal = NativeMade.from_mapping(
-            _strict_json(content, "Make round %d contract" % round_number)
+            strict_json(content, "Make round %d contract" % round_number)
         )
         proposal.assert_context(
             assignment,
@@ -698,7 +698,7 @@ def _copy_playtest(
             "Playtested round %d contract" % round_number,
         )
         candidate = NativePlaytested.from_mapping(
-            _strict_json(
+            strict_json(
                 candidate_content,
                 "Playtested round %d contract" % round_number,
             )
@@ -735,7 +735,7 @@ def _copy_playtest(
                 *PurePosixPath(candidate.evidence_root).parts
             )
             for entry in candidate.evidence_manifest.entries:
-                evidence = _stable_file(
+                evidence = stable_file(
                     evidence_root.joinpath(*PurePosixPath(entry.path).parts),
                     "historical Playtest evidence %s" % entry.path,
                     allow_empty=True,
@@ -780,7 +780,7 @@ def _copy_playtest(
     writer("playtest/playtested.json", content)
     evidence_root = run_root.joinpath(*PurePosixPath(playtested.evidence_root).parts)
     for entry in playtested.evidence_manifest.entries:
-        evidence = _stable_file(
+        evidence = stable_file(
             evidence_root.joinpath(*PurePosixPath(entry.path).parts),
             "sealed Playtest evidence %s" % entry.path,
             allow_empty=True,
@@ -832,7 +832,7 @@ def write_public_workflow_archive(
     )
     if hashlib.sha256(wish_content).hexdigest() != made.wish_sha256:
         raise StateConflict("Wish bytes differ from the Made binding")
-    wish_document = _strict_json(wish_content, "Wish")
+    wish_document = strict_json(wish_content, "Wish")
     wish = Wish(**wish_document)
     reference_bytes: dict[str, bytes] = {}
     for reference in wish.references:
@@ -884,7 +884,7 @@ def write_public_workflow_archive(
             "accepted Match assignment",
         )
         assignment = NativeMatchAssignment.from_mapping(
-            _strict_json(assignment_content, "Match assignment")
+            strict_json(assignment_content, "Match assignment")
         )
         invented_content = _artifact_file(
             run_root,
@@ -892,7 +892,7 @@ def write_public_workflow_archive(
             "accepted Invented contract",
         )
         invented = NativeInvented.from_mapping(
-            _strict_json(invented_content, "Invented contract")
+            strict_json(invented_content, "Invented contract")
         )
         invented.assert_context(assignment)
         made.assert_context(assignment, invented, expected_round=made.round)
@@ -937,7 +937,7 @@ def write_public_workflow_archive(
     )
     package_root = run_root.joinpath(*PurePosixPath(release.package_root).parts)
     for entry in release.package_manifest.entries:
-        content = _stable_file(
+        content = stable_file(
             package_root.joinpath(*PurePosixPath(entry.path).parts),
             "sealed Release file %s" % entry.path,
             allow_empty=True,
@@ -989,5 +989,7 @@ def write_public_workflow_archive(
 __all__ = [
     "PUBLIC_ARCHIVE_SCHEMA_VERSION",
     "build_public_archive_manifest",
+    "stable_file",
+    "strict_json",
     "write_public_workflow_archive",
 ]

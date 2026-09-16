@@ -12,9 +12,9 @@ from workshop.artifacts.core import artifact_manifest_from_mapping
 from workshop.errors import ContractError, StateConflict
 from workshop.release.public_archive import (
     PUBLIC_ARCHIVE_SCHEMA_VERSION,
-    _stable_file,
-    _strict_json,
     build_public_archive_manifest,
+    stable_file,
+    strict_json,
 )
 from workshop.wish import Wish, generate_wish_id
 
@@ -65,8 +65,8 @@ def prepare_revision(source: Path, prompt: str) -> tuple[Wish, bytes]:
     source = Path(source)
     if source.is_symlink() or not source.is_dir():
         raise ContractError("fix source must be a real published toy archive directory")
-    manifest_bytes = _stable_file(source / "MANIFEST.json", "public archive manifest")
-    document = _strict_json(manifest_bytes, "public archive manifest")
+    manifest_bytes = stable_file(source / "MANIFEST.json", "public archive manifest")
+    document = strict_json(manifest_bytes, "public archive manifest")
     if (document.get("kind") != "autonomous-workshop.public-toy-archive"
             or document.get("schema_version") != PUBLIC_ARCHIVE_SCHEMA_VERSION):
         raise ContractError("fix requires a current published toy archive")
@@ -81,11 +81,11 @@ def prepare_revision(source: Path, prompt: str) -> tuple[Wish, bytes]:
         parts = PurePosixPath(entry.path).parts
         if any(part.startswith(".") or part == "AGENTS.md" for part in parts):
             raise ContractError("revision archive contains agent controls or hidden files")
-        content = _stable_file(source / entry.path, "revision source file", allow_empty=True)
+        content = stable_file(source / entry.path, "revision source file", allow_empty=True)
         if len(content) != entry.bytes or hashlib.sha256(content).hexdigest() != entry.sha256:
             raise StateConflict("revision source changed while cloning")
         files[entry.path] = content
-    publication = _strict_json(files.get("publication/PUBLICATION.json", b""), "publication")
+    publication = strict_json(files.get("publication/PUBLICATION.json", b""), "publication")
     publication_state = publication.get("publication")
     inventor_state = publication.get("inventor")
     if not isinstance(publication_state, dict) or not isinstance(inventor_state, dict):
