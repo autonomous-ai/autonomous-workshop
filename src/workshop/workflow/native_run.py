@@ -163,7 +163,11 @@ from workshop.runtime import (
     manager_runtime_selection,
     manager_spec,
 )
-from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS, NativeSessionLauncher
+from workshop.runtime.managers import (
+    MAX_NATIVE_TURN_SECONDS,
+    NATIVE_TOKEN_USAGE_FIELDS,
+    NativeSessionLauncher,
+)
 from workshop.runtime.agent_assets import (
     parse_inventor_custom_agent_bytes,
     product_run_agent_assets,
@@ -7417,6 +7421,12 @@ def _native_token_aggregate(
     return stages
 
 
+def _native_session_token_usage(session: Any) -> dict[str, Any]:
+    """Read the Manager-neutral per-turn usage fields off one launcher outcome."""
+
+    return {name: getattr(session, name, None) for name in NATIVE_TOKEN_USAGE_FIELDS}
+
+
 def _record_native_token_usage(
     paths: NativeRunPaths,
     checkpoint: AgentRunCheckpoint,
@@ -9344,23 +9354,7 @@ def _run_native_session(
                 paths,
                 checkpoint,
                 (
-                    {
-                        "input_tokens": getattr(
-                            last_session, "input_tokens", None
-                        ),
-                        "cached_input_tokens": getattr(
-                            last_session, "cached_input_tokens", None
-                        ),
-                        "cache_write_input_tokens": getattr(
-                            last_session, "cache_write_input_tokens", None
-                        ),
-                        "output_tokens": getattr(
-                            last_session, "output_tokens", None
-                        ),
-                        "reasoning_output_tokens": getattr(
-                            last_session, "reasoning_output_tokens", None
-                        ),
-                    }
+                    _native_session_token_usage(last_session)
                     if launcher_failure is None
                     else None
                 ),

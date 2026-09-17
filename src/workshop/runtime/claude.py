@@ -2,8 +2,10 @@
 
 Claude Code is a peer Workshop Manager, not a Python agent framework. This
 adapter translates the shared host start/resume contract into Claude's print
-mode, session resume, and permission protocol. Live private-Wish acceptance
-remains experimental until a Forge run completes on this adapter.
+mode, session resume, and permission protocol, and reports each invocation's
+native token usage through the Manager-neutral per-turn contract. Live
+private-Wish acceptance remains experimental until a Forge run completes on
+this adapter.
 """
 
 from __future__ import annotations
@@ -26,10 +28,14 @@ from typing import Any, Callable, Mapping, Optional
 
 from workshop.errors import ContractError
 from workshop.runtime.managers import (
+    MAX_NATIVE_TOKEN_COUNT,
     MAX_NATIVE_TURN_SECONDS,
     NativeManagerInvocationError,
     NativeManagerRecoverableError,
+    NativeTokenUsage,
     SUPPORTED_REASONING_EFFORTS,
+    native_token_usage_fields,
+    validate_native_token_usage,
 )
 
 
@@ -217,19 +223,134 @@ def _classify_event(event: Mapping[str, Any]) -> Optional[str]:
     return None
 
 
+_MODEL_USAGE_BASE_COUNTERS = (
+    "inputTokens",
+    "cacheReadInputTokens",
+    "cacheCreationInputTokens",
+    "outputTokens",
+)
+
+
+def _bounded_token_count(value: Any) -> Optional[int]:
+    if type(value) is not int or not 0 <= value <= MAX_NATIVE_TOKEN_COUNT:
+        return None
+    return value
+
+
+def _native_token_usage(event: Mapping[str, Any]) -> Optional[NativeTokenUsage]:
+    """Reduce one terminal ``result`` event to exact base counters plus detail.
+
+    Claude Code repeats a non-final ``usage`` on every ``assistant`` event of
+    a multi-block message and forwards subagent requests only behind an
+    opt-in flag this adapter does not pass, so per-message usage is never
+    summed here.  The result's ``modelUsage`` is the CLI's own
+    per-invocation total for every model call (main loop, subagents,
+    compaction).  One ``--print`` invocation is one host turn and a resumed
+    session starts that total fresh, so the latest result is the whole
+    account of the turn and nothing is counted twice.
+
+    Claude's ``inputTokens`` excludes cache reads and cache writes, so gross
+    input is the sum of the three input counters; ``thinkingTokens`` is the
+    reasoning-output subset.  The result's ``usage`` and ``total_cost_usd``
+    are not read: the CLI documents the first as either a running total or
+    the main loop's turn-end value, and the second is an estimate the host
+    never carries.  Totals without a thinking-token subset keep the gross
+    counters and drop the detail, exactly like a base-only Codex turn.
+    """
+
+    model_usage = event.get("modelUsage")
+    if not isinstance(model_usage, Mapping) or not model_usage:
+        return None
+    gross_input = 0
+    cached_input = 0
+    cache_write_input = 0
+    output = 0
+    reasoning = 0
+    reasoning_measured = True
+    for model, entry in model_usage.items():
+        if not isinstance(model, str) or not model or not isinstance(entry, Mapping):
+            return None
+        counts = [
+            _bounded_token_count(entry.get(name))
+            for name in _MODEL_USAGE_BASE_COUNTERS
+        ]
+        if any(count is None for count in counts):
+            return None
+        uncached, cache_read, cache_write, model_output = counts
+        gross_input += uncached + cache_read + cache_write
+        cached_input += cache_read
+        cache_write_input += cache_write
+        output += model_output
+        thinking = _bounded_token_count(entry.get("thinkingTokens"))
+        if thinking is None or thinking > model_output:
+            reasoning_measured = False
+        else:
+            reasoning += thinking
+    if gross_input > MAX_NATIVE_TOKEN_COUNT or output > MAX_NATIVE_TOKEN_COUNT:
+        return None
+    if not reasoning_measured:
+        return (gross_input, None, None, output, None)
+    return (gross_input, cached_input, cache_write_input, output, reasoning)
+
+
 @dataclass(frozen=True)
 class ClaudeNativeSessionOutcome:
+    """Compact public outcome; prose, events, and cost estimates stay out."""
+
     session_id: str
     checkpoint_sha256: str
     cli_version: str
+    input_tokens: Optional[int] = None
+    cached_input_tokens: Optional[int] = None
+    cache_write_input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    reasoning_output_tokens: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        validate_native_token_usage(
+            input_tokens=self.input_tokens,
+            cached_input_tokens=self.cached_input_tokens,
+            cache_write_input_tokens=self.cache_write_input_tokens,
+            output_tokens=self.output_tokens,
+            reasoning_output_tokens=self.reasoning_output_tokens,
+            label="Claude native session",
+        )
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        value = {
             "manager": "claude",
             "session_id": self.session_id,
             "checkpoint_sha256": self.checkpoint_sha256,
             "cli_version": self.cli_version,
         }
+        value.update(
+            native_token_usage_fields(
+                input_tokens=self.input_tokens,
+                cached_input_tokens=self.cached_input_tokens,
+                cache_write_input_tokens=self.cache_write_input_tokens,
+                output_tokens=self.output_tokens,
+                reasoning_output_tokens=self.reasoning_output_tokens,
+            )
+        )
+        return value
+
+
+def _session_outcome(
+    session_id: str,
+    checkpoint_sha256: str,
+    cli_version: str,
+    usage: Optional[NativeTokenUsage],
+) -> ClaudeNativeSessionOutcome:
+    return ClaudeNativeSessionOutcome(
+        session_id=session_id,
+        checkpoint_sha256=checkpoint_sha256,
+        cli_version=cli_version,
+        input_tokens=None if usage is None else usage[0],
+        cached_input_tokens=None if usage is None else usage[1],
+        cache_write_input_tokens=None if usage is None else usage[2],
+        output_tokens=None if usage is None else usage[3],
+        reasoning_output_tokens=None if usage is None else usage[4],
+    )
 
 
 class ClaudeNativeSessionLauncher:
@@ -348,15 +469,15 @@ class ClaudeNativeSessionLauncher:
             bound["session_id"] = observed_id
             bound["digest"] = fresh
 
-        self._stream(
+        unused_session, token_usage = self._stream(
             command=self._command(Path(run_root), prompt, session_id=None),
             run_root=Path(run_root),
             activity_observer=activity_observer,
             finalization_marker=finalization_marker,
             session_observer=_bind,
         )
-        return ClaudeNativeSessionOutcome(
-            bound["session_id"], bound["digest"], self.cli_version
+        return _session_outcome(
+            bound["session_id"], bound["digest"], self.cli_version, token_usage
         )
 
     def resume(
@@ -394,19 +515,20 @@ class ClaudeNativeSessionLauncher:
         else:
             raise ContractError("Claude native session checkpoint schema is invalid")
         session_id = _canonical_session_id(payload.get("session_id"))
-        self._stream(
+        unused_session, token_usage = self._stream(
             command=self._command(Path(run_root), prompt, session_id=session_id),
             run_root=Path(run_root),
             activity_observer=activity_observer,
             finalization_marker=finalization_marker,
         )
-        return ClaudeNativeSessionOutcome(
+        return _session_outcome(
             session_id,
             _require_sha256(
                 payload.get("checkpoint_sha256"),
                 "Claude session checkpoint sha256",
             ),
             self.cli_version,
+            token_usage,
         )
 
     def _checkpoint_identity(
@@ -486,7 +608,7 @@ class ClaudeNativeSessionLauncher:
         activity_observer: Optional[Callable[[str], None]],
         finalization_marker: Optional[Path] = None,
         session_observer: Optional[Callable[[str], None]] = None,
-    ) -> Optional[str]:
+    ) -> tuple[Optional[str], Optional[NativeTokenUsage]]:
         if activity_observer is not None:
             activity_observer("starting")
         deadline = (
@@ -531,6 +653,7 @@ class ClaudeNativeSessionLauncher:
         observed: Optional[str] = None
         stream_error: Optional[str] = None
         terminal_signature: Optional[str] = None
+        token_usage: Optional[NativeTokenUsage] = None
         stdout = process.stdout
         try:
             if stdout is not None:
@@ -568,6 +691,10 @@ class ClaudeNativeSessionLauncher:
                                 "Claude Code reported an error turn (signature=%s)"
                                 % terminal_signature
                             )
+                    if event.get("type") == "result":
+                        # The latest result carries the invocation's running
+                        # total; it replaces, never adds to, an earlier one.
+                        token_usage = _native_token_usage(event)
                     activity = _classify_event(event)
                     if activity is not None and activity_observer is not None:
                         activity_observer(activity)
@@ -601,7 +728,7 @@ class ClaudeNativeSessionLauncher:
             )
         if activity_observer is not None:
             activity_observer("completed")
-        return observed
+        return observed, token_usage
 
 
 __all__ = [

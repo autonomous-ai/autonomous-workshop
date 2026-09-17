@@ -54,6 +54,7 @@ from workshop.workflow.native_run import (
     _queue_make_budget_lesson,
     _repair_base,
     _score_trend,
+    _native_session_token_usage,
     _native_token_summary,
     _native_launcher,
     _wish_reference_bindings,
@@ -217,6 +218,224 @@ class NativeTokenTelemetryCompatibilityTest(unittest.TestCase):
             self.assertEqual(detailed["economics"]["output_tokens"], 20)
             self.assertEqual(detailed["economics"]["reasoning_output_tokens"], 12)
             self.assertEqual(detailed["economics"]["non_reasoning_output_tokens"], 8)
+
+    def test_claude_manager_turns_reach_the_same_measured_summary(self):
+        """A Claude-managed turn feeds the host the same schema-v3 summary as Codex.
+
+        The real adapter parses a deterministic fake ``claude --print``
+        stream; the host records what the outcome carries through the same
+        field read it uses for Codex, and the public projection is the one
+        that writes ``TOKENS.json``.
+        """
+
+        from workshop.release.public_example import _public_token_summary
+        from workshop.runtime.claude import ClaudeNativeSessionLauncher
+
+        def totals(uncached, cache_read, cache_write, output, thinking=None):
+            entry = {
+                "inputTokens": uncached,
+                "cacheReadInputTokens": cache_read,
+                "cacheCreationInputTokens": cache_write,
+                "outputTokens": output,
+                "webSearchRequests": 0,
+                "costUSD": 3.25,
+                "contextWindow": 200_000,
+                "maxOutputTokens": 32_000,
+            }
+            if thinking is not None:
+                entry["thinkingTokens"] = thinking
+            return {"claude-opus-5": entry}
+
+        def stream(model_usage=None):
+            events = [
+                {"type": "system", "subtype": "init", "session_id": "claude-session-one"},
+                {
+                    "type": "assistant",
+                    "session_id": "claude-session-one",
+                    "message": {
+                        "id": "msg_01",
+                        "role": "assistant",
+                        "usage": {
+                            "input_tokens": 1,
+                            "cache_read_input_tokens": 1,
+                            "cache_creation_input_tokens": 1,
+                            "output_tokens": 1,
+                        },
+                    },
+                },
+            ]
+            if model_usage is not None:
+                events.append(
+                    {
+                        "type": "result",
+                        "subtype": "success",
+                        "is_error": False,
+                        "session_id": "claude-session-one",
+                        "total_cost_usd": 3.25,
+                        "usage": {
+                            "input_tokens": 1,
+                            "cache_read_input_tokens": 1,
+                            "cache_creation_input_tokens": 1,
+                            "output_tokens": 1,
+                        },
+                        "modelUsage": model_usage,
+                    }
+                )
+            return [json.dumps(event) + "\n" for event in events]
+
+        class _Stdout:
+            def __init__(self, lines):
+                self._lines = list(lines)
+
+            def __iter__(self):
+                return iter(self._lines)
+
+        class _Process:
+            def __init__(self, lines):
+                self.stdout = _Stdout(lines)
+                self.stderr = _Stdout([])
+                self.returncode = 0
+
+            def wait(self, timeout=None):
+                del timeout
+                return self.returncode
+
+            def kill(self):
+                self.returncode = -9
+
+        def assert_no_cost_figures(value):
+            if isinstance(value, dict):
+                for key, nested in value.items():
+                    self.assertFalse(
+                        "cost" in key or "usd" in key or key == "total_tokens", key
+                    )
+                    assert_no_cost_figures(nested)
+
+        streams = [
+            stream(totals(100, 700, 200, 50, thinking=20)),
+            stream(totals(10, 70, 20, 5)),
+            stream(),
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            run_root = root / "run"
+            workspace = root / "workspace"
+            host_state = root / "host"
+            other_host_state = root / "other-host"
+            for directory in (run_root, workspace, host_state, other_host_state):
+                directory.mkdir(mode=0o700)
+            checkpoint = AgentRunCheckpoint(
+                product_id="claude-token-run",
+                stage="make",
+                status="active",
+                revision=0,
+                round_index=1,
+                max_rounds=4,
+                wish_sha256="a" * 64,
+                run_root_sha256="b" * 64,
+                host_state_root_sha256="c" * 64,
+                checkpoint_sha256="d" * 64,
+                input_sha256s={},
+                inventor_roster=(),
+                stage_artifacts={},
+                invalidated_stages=(),
+                effort="spark",
+                manager_id="claude",
+                manager_model="claude-opus-5",
+                manager_reasoning_effort="medium",
+            )
+            paths = NativeRunPaths(workspace=workspace, host_state=host_state)
+            launcher = ClaudeNativeSessionLauncher(
+                binary="/bin/claude",
+                cli_version="2.1.274",
+                model="claude-opus-5",
+                reasoning_effort="medium",
+                popen_factory=lambda command, **kwargs: _Process(streams.pop(0)),
+                uuid_factory=lambda: "host-invented-id",
+            )
+            turn = dict(
+                product_id=checkpoint.product_id,
+                wish_sha256=checkpoint.wish_sha256,
+                constitution_sha256="e" * 64,
+                run_root=run_root,
+                host_state_root=host_state,
+                prompt="make",
+            )
+
+            measured = launcher.start(**turn)
+            _record_native_token_usage(
+                paths, checkpoint, _native_session_token_usage(measured)
+            )
+            summary = _native_token_summary(paths, checkpoint)
+            self.assertEqual(summary["schema_version"], 3)
+            self.assertEqual(summary["status"], "measured")
+            self.assertEqual(summary["turns"], {"total": 1, "measured": 1, "unmeasured": 0})
+            self.assertEqual(summary["input_tokens"], 1_000)
+            self.assertEqual(summary["output_tokens"], 50)
+            economics = summary["economics"]
+            self.assertEqual(economics["status"], "measured")
+            self.assertEqual(economics["turns"], {"total": 1, "measured": 1, "unmeasured": 0})
+            self.assertEqual(economics["input_tokens"], 1_000)
+            self.assertEqual(economics["cached_input_tokens"], 700)
+            self.assertEqual(economics["uncached_input_tokens"], 300)
+            self.assertEqual(economics["cache_write_input_tokens"], 200)
+            self.assertEqual(economics["output_tokens"], 50)
+            self.assertEqual(economics["reasoning_output_tokens"], 20)
+            self.assertEqual(economics["non_reasoning_output_tokens"], 30)
+            self.assertEqual(summary["stages"]["make"]["status"], "measured")
+            self.assertEqual(summary["stages"]["make"]["economics"]["status"], "measured")
+            self.assertEqual(summary["stages"]["invent"]["status"], "skipped")
+            self.assertEqual(summary["stages"]["playtest"]["status"], "not-run")
+            assert_no_cost_figures(summary)
+            public = _public_token_summary(summary)
+            self.assertEqual(public["status"], "measured")
+            self.assertEqual(public["economics"]["cached_input_tokens"], 700)
+            self.assertEqual(public["stages"]["make"]["economics"]["reasoning_output_tokens"], 20)
+            assert_no_cost_figures(public)
+
+            base_only = launcher.resume(**turn)
+            _record_native_token_usage(
+                paths, checkpoint, _native_session_token_usage(base_only)
+            )
+            unmeasured = launcher.resume(**turn)
+            _record_native_token_usage(
+                paths, checkpoint, _native_session_token_usage(unmeasured)
+            )
+            summary = _native_token_summary(paths, checkpoint)
+            self.assertEqual(summary["status"], "partial")
+            self.assertEqual(summary["turns"], {"total": 3, "measured": 2, "unmeasured": 1})
+            self.assertEqual(summary["input_tokens"], 1_100)
+            self.assertEqual(summary["output_tokens"], 55)
+            economics = summary["economics"]
+            self.assertEqual(economics["status"], "partial")
+            self.assertEqual(economics["turns"], {"total": 3, "measured": 1, "unmeasured": 2})
+            self.assertEqual(economics["input_tokens"], 1_000)
+            self.assertEqual(economics["cached_input_tokens"], 700)
+            self.assertEqual(economics["reasoning_output_tokens"], 20)
+            make = summary["stages"]["make"]
+            self.assertEqual(make["status"], "partial")
+            self.assertEqual(make["turns"], 3)
+            self.assertEqual(make["measured_turns"], 2)
+            self.assertEqual(make["unmeasured_turns"], 1)
+            self.assertEqual(make["economics"]["status"], "partial")
+            self.assertEqual(_public_token_summary(summary)["status"], "partial")
+
+            # A run whose only turn carried no totals stays truthfully unavailable.
+            other_paths = NativeRunPaths(workspace=workspace, host_state=other_host_state)
+            _record_native_token_usage(
+                other_paths, checkpoint, _native_session_token_usage(unmeasured)
+            )
+            unavailable = _native_token_summary(other_paths, checkpoint)
+            self.assertEqual(unavailable["status"], "unavailable")
+            self.assertEqual(unavailable["turns"], {"total": 1, "measured": 0, "unmeasured": 1})
+            self.assertEqual(
+                _public_token_summary(unavailable),
+                {
+                    "schema_version": 3,
+                    "kind": "autonomous-workshop.native-token-summary",
+                    "status": "unavailable",
+                },
+            )
 
 
 class _FakeOutcome:

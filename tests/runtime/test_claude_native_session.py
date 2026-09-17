@@ -5,16 +5,103 @@ import unittest
 from pathlib import Path
 
 from workshop.errors import ContractError
-from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
+from workshop.runtime.managers import (
+    MAX_NATIVE_TURN_SECONDS,
+    NATIVE_TOKEN_USAGE_FIELDS,
+)
 from workshop.runtime.claude import (
     DEFAULT_CLAUDE_TIMEOUT_SECONDS,
     ClaudeNativeSessionLauncher,
+    ClaudeNativeSessionOutcome,
     claude_subprocess_environment,
     claude_supports_native_workshop,
 )
 
 
 DIGEST = "b" * 64
+SESSION = "claude-session-one"
+# Shapes copied from what Claude Code 2.1.274 writes: per-request ``usage``
+# counts uncached input separately from cache reads and writes, and the
+# terminal result's ``modelUsage`` carries per-model running totals with an
+# optional ``thinkingTokens`` subset of ``outputTokens``.
+PER_BLOCK_USAGE = {
+    "input_tokens": 2,
+    "cache_creation_input_tokens": 13_227,
+    "cache_read_input_tokens": 10_010,
+    "output_tokens": 168,
+    "output_tokens_details": {"thinking_tokens": 0},
+    "service_tier": "standard",
+}
+OPUS_TOTALS = {
+    "inputTokens": 158,
+    "outputTokens": 245_325,
+    "thinkingTokens": 181_276,
+    "cacheReadInputTokens": 16_463_646,
+    "cacheCreationInputTokens": 371_296,
+    "webSearchRequests": 0,
+    "costUSD": 41.5,
+    "contextWindow": 200_000,
+    "maxOutputTokens": 32_000,
+}
+HAIKU_TOTALS = {
+    "inputTokens": 40,
+    "outputTokens": 100,
+    "thinkingTokens": 0,
+    "cacheReadInputTokens": 1_000,
+    "cacheCreationInputTokens": 60,
+    "webSearchRequests": 0,
+    "costUSD": 0.01,
+    "contextWindow": 200_000,
+    "maxOutputTokens": 8_192,
+}
+OPUS_GROSS_INPUT = 158 + 16_463_646 + 371_296
+HAIKU_GROSS_INPUT = 40 + 1_000 + 60
+_ABSENT = object()
+
+
+def _init_line(session_id=SESSION):
+    return json.dumps(
+        {"type": "system", "subtype": "init", "session_id": session_id}
+    ) + "\n"
+
+
+def _assistant_line(message_id, usage, session_id=SESSION):
+    return json.dumps(
+        {
+            "type": "assistant",
+            "session_id": session_id,
+            "parent_tool_use_id": None,
+            "message": {
+                "id": message_id,
+                "role": "assistant",
+                "model": "claude-opus-5",
+                "stop_reason": None,
+                "usage": usage,
+            },
+        }
+    ) + "\n"
+
+
+def _result_line(model_usage=_ABSENT, session_id=SESSION, **extra):
+    event = {
+        "type": "result",
+        "subtype": "success",
+        "is_error": False,
+        "num_turns": 3,
+        "session_id": session_id,
+        "total_cost_usd": 41.51,
+        "usage": {
+            "input_tokens": 198,
+            "cache_creation_input_tokens": 371_356,
+            "cache_read_input_tokens": 16_464_646,
+            "output_tokens": 245_425,
+            "output_tokens_details": {"thinking_tokens": 181_276},
+        },
+    }
+    if model_usage is not _ABSENT:
+        event["modelUsage"] = model_usage
+    event.update(extra)
+    return json.dumps(event) + "\n"
 
 
 class _FakeStdout:
@@ -484,3 +571,292 @@ class ClaudeNativeSessionTest(unittest.TestCase):
             prompt="make",
         )
         self.assertEqual(resumed.session_id, "claude-session-real")
+
+    def _launcher_with_streams(self, streams, returncodes=None):
+        remaining = [list(lines) for lines in streams]
+        codes = list(returncodes or [0] * len(remaining))
+
+        def popen(command, **kwargs):
+            del command, kwargs
+            return _FakeProcess(remaining.pop(0), returncode=codes.pop(0))
+
+        return ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.1.274",
+            popen_factory=popen,
+            uuid_factory=lambda: "initial-session-id",
+        )
+
+    def _turn(self, launcher, method):
+        return getattr(launcher, method)(
+            product_id="wish-one",
+            wish_sha256=DIGEST,
+            constitution_sha256=DIGEST,
+            run_root=self.run_root,
+            host_state_root=self.host_state,
+            prompt="make",
+        )
+
+    def _assert_unmeasured(self, outcome):
+        for name in NATIVE_TOKEN_USAGE_FIELDS:
+            self.assertIsNone(getattr(outcome, name))
+        self.assertFalse(set(outcome.to_dict()) & set(NATIVE_TOKEN_USAGE_FIELDS))
+
+    def test_terminal_model_usage_is_reduced_to_exact_bounded_token_counters(self):
+        """The result's per-model totals are the turn's whole account.
+
+        Claude Code repeats a non-final usage on every content-block event
+        of one API message and never forwards subagent requests, so those
+        events are not summed on top of the terminal totals, and the CLI's
+        dollar estimate never reaches the outcome.
+        """
+
+        launcher = self._launcher_with_streams(
+            [
+                [
+                    _init_line(),
+                    _assistant_line("msg_01A", PER_BLOCK_USAGE),
+                    _assistant_line("msg_01A", PER_BLOCK_USAGE),
+                    json.dumps({"type": "user", "session_id": SESSION}) + "\n",
+                    _assistant_line("msg_01B", PER_BLOCK_USAGE),
+                    _result_line(
+                        {
+                            "claude-opus-5": OPUS_TOTALS,
+                            "claude-haiku-4-5-20251001": HAIKU_TOTALS,
+                        }
+                    ),
+                ]
+            ]
+        )
+        started = self._turn(launcher, "start")
+        self.assertEqual(started.input_tokens, OPUS_GROSS_INPUT + HAIKU_GROSS_INPUT)
+        self.assertEqual(started.cached_input_tokens, 16_463_646 + 1_000)
+        self.assertEqual(started.cache_write_input_tokens, 371_296 + 60)
+        self.assertEqual(started.output_tokens, 245_325 + 100)
+        self.assertEqual(started.reasoning_output_tokens, 181_276)
+        payload = started.to_dict()
+        self.assertEqual(payload["manager"], "claude")
+        self.assertEqual(payload["input_tokens"], 16_836_200)
+        self.assertEqual(payload["cached_input_tokens"], 16_464_646)
+        self.assertEqual(payload["cache_write_input_tokens"], 371_356)
+        self.assertEqual(payload["output_tokens"], 245_425)
+        self.assertEqual(payload["reasoning_output_tokens"], 181_276)
+        self.assertLessEqual(
+            payload["cached_input_tokens"] + payload["cache_write_input_tokens"],
+            payload["input_tokens"],
+        )
+        self.assertLessEqual(
+            payload["reasoning_output_tokens"], payload["output_tokens"]
+        )
+        self.assertFalse(
+            [key for key in payload if "cost" in key or "usd" in key or "total" in key]
+        )
+
+    def test_a_stream_without_terminal_totals_is_truthfully_unmeasured(self):
+        """No per-model totals means an unmeasured turn, never a guessed one.
+
+        Per-block usage alone is not summed, and the result's ``usage``
+        block is not a substitute because Claude Code documents it as either
+        a running total or the main loop's turn-end value.
+        """
+
+        launcher = self._launcher_with_streams(
+            [
+                [
+                    _init_line(),
+                    _assistant_line("msg_01A", PER_BLOCK_USAGE),
+                    _assistant_line("msg_01B", PER_BLOCK_USAGE),
+                ],
+                [_init_line(), _result_line()],
+                [_init_line(), _result_line({})],
+                [_init_line(), _result_line("not-a-mapping")],
+            ]
+        )
+        self._assert_unmeasured(self._turn(launcher, "start"))
+        for _ in range(3):
+            self._assert_unmeasured(self._turn(launcher, "resume"))
+
+    def test_partial_terminal_totals_keep_gross_counters_only(self):
+        """A missing or inconsistent thinking subset drops the detail, not the base.
+
+        Claude Code documents ``thinkingTokens`` as absent when no turn ran
+        on a CLI version that records it, so the gross counters stay
+        measured and the economics breakdown becomes unavailable, exactly
+        like a base-only Codex turn.
+        """
+
+        without_thinking = {
+            name: value
+            for name, value in OPUS_TOTALS.items()
+            if name != "thinkingTokens"
+        }
+        haiku_without_thinking = {
+            name: value
+            for name, value in HAIKU_TOTALS.items()
+            if name != "thinkingTokens"
+        }
+        launcher = self._launcher_with_streams(
+            [
+                [_init_line(), _result_line({"claude-opus-5": without_thinking})],
+                [
+                    _init_line(),
+                    _result_line(
+                        {
+                            "claude-opus-5": OPUS_TOTALS,
+                            "claude-haiku-4-5-20251001": haiku_without_thinking,
+                        }
+                    ),
+                ],
+                [
+                    _init_line(),
+                    _result_line(
+                        {
+                            "claude-opus-5": {
+                                **OPUS_TOTALS,
+                                "thinkingTokens": OPUS_TOTALS["outputTokens"] + 1,
+                            }
+                        }
+                    ),
+                ],
+                [
+                    _init_line(),
+                    _result_line(
+                        {"claude-opus-5": {**OPUS_TOTALS, "outputTokens": -1}}
+                    ),
+                ],
+                [
+                    _init_line(),
+                    _result_line(
+                        {
+                            "claude-opus-5": OPUS_TOTALS,
+                            "claude-haiku-4-5-20251001": {
+                                **HAIKU_TOTALS,
+                                "cacheReadInputTokens": "1000",
+                            },
+                        }
+                    ),
+                ],
+            ]
+        )
+        base_only = self._turn(launcher, "start")
+        mixed = self._turn(launcher, "resume")
+        inconsistent = self._turn(launcher, "resume")
+        malformed = self._turn(launcher, "resume")
+        malformed_detail = self._turn(launcher, "resume")
+        for outcome in (base_only, inconsistent):
+            self.assertEqual(outcome.input_tokens, OPUS_GROSS_INPUT)
+            self.assertEqual(outcome.output_tokens, 245_325)
+            self.assertIsNone(outcome.cached_input_tokens)
+            self.assertIsNone(outcome.cache_write_input_tokens)
+            self.assertIsNone(outcome.reasoning_output_tokens)
+            self.assertEqual(
+                set(outcome.to_dict()) & set(NATIVE_TOKEN_USAGE_FIELDS),
+                {"input_tokens", "output_tokens"},
+            )
+        self.assertEqual(mixed.input_tokens, OPUS_GROSS_INPUT + HAIKU_GROSS_INPUT)
+        self.assertEqual(mixed.output_tokens, 245_425)
+        self.assertIsNone(mixed.reasoning_output_tokens)
+        self.assertIsNone(mixed.cached_input_tokens)
+        self._assert_unmeasured(malformed)
+        self._assert_unmeasured(malformed_detail)
+
+    def test_the_latest_result_replaces_an_earlier_running_total(self):
+        """Claude Code says to read the latest result, never to sum results."""
+
+        earlier = {
+            "claude-opus-5": {
+                **OPUS_TOTALS,
+                "inputTokens": 10,
+                "outputTokens": 20,
+                "thinkingTokens": 5,
+                "cacheReadInputTokens": 30,
+                "cacheCreationInputTokens": 40,
+            }
+        }
+        launcher = self._launcher_with_streams(
+            [
+                [
+                    _init_line(),
+                    _result_line(earlier, result_index=0),
+                    _result_line({"claude-opus-5": OPUS_TOTALS}, result_index=1),
+                ]
+            ]
+        )
+        started = self._turn(launcher, "start")
+        self.assertEqual(started.input_tokens, OPUS_GROSS_INPUT)
+        self.assertEqual(started.cached_input_tokens, 16_463_646)
+        self.assertEqual(started.cache_write_input_tokens, 371_296)
+        self.assertEqual(started.output_tokens, 245_325)
+        self.assertEqual(started.reasoning_output_tokens, 181_276)
+
+    def test_an_error_result_with_zeroed_totals_is_a_failed_turn_not_zero_usage(self):
+        """Claude Code zeroes usage on crash results; that is not a measurement."""
+
+        from workshop.runtime.claude import ClaudeInvocationError
+
+        zeroed = {
+            "claude-opus-5": {
+                **OPUS_TOTALS,
+                "inputTokens": 0,
+                "outputTokens": 0,
+                "thinkingTokens": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0,
+            }
+        }
+        launcher = self._launcher_with_streams(
+            [
+                [
+                    _init_line(),
+                    _result_line(
+                        zeroed,
+                        subtype="error_during_execution",
+                        is_error=True,
+                        result="the provider stream closed",
+                    ),
+                ]
+            ],
+            returncodes=[1],
+        )
+        with self.assertRaisesRegex(ClaudeInvocationError, "error turn"):
+            self._turn(launcher, "start")
+
+    def test_outcome_contract_rejects_incomplete_or_inconsistent_usage(self):
+        """The Claude outcome enforces the same usage contract as Codex."""
+
+        def outcome(**usage):
+            return ClaudeNativeSessionOutcome(SESSION, DIGEST, "2.1.274", **usage)
+
+        with self.assertRaisesRegex(ContractError, "token usage is incomplete"):
+            outcome(input_tokens=1)
+        with self.assertRaisesRegex(ContractError, "token detail is incomplete"):
+            outcome(input_tokens=1, output_tokens=1, cached_input_tokens=1)
+        with self.assertRaisesRegex(ContractError, "token detail lacks usage"):
+            outcome(
+                cached_input_tokens=0,
+                cache_write_input_tokens=0,
+                reasoning_output_tokens=0,
+            )
+        with self.assertRaisesRegex(ContractError, "token usage is invalid"):
+            outcome(input_tokens=-1, output_tokens=1)
+        with self.assertRaisesRegex(ContractError, "token usage is invalid"):
+            outcome(input_tokens=1.0, output_tokens=1)
+        with self.assertRaisesRegex(ContractError, "token detail is invalid"):
+            outcome(
+                input_tokens=1,
+                output_tokens=1,
+                cached_input_tokens=2,
+                cache_write_input_tokens=0,
+                reasoning_output_tokens=0,
+            )
+        with self.assertRaisesRegex(ContractError, "token detail is invalid"):
+            outcome(
+                input_tokens=1,
+                output_tokens=1,
+                cached_input_tokens=0,
+                cache_write_input_tokens=0,
+                reasoning_output_tokens=2,
+            )
+        self.assertEqual(
+            outcome(input_tokens=42, output_tokens=7).to_dict()["input_tokens"], 42
+        )

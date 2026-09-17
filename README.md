@@ -189,7 +189,7 @@ not ask. On `resume` it re-selects the boundary of an unfinished run without
 touching its stage, artifacts or history — the way to rescue a run that keeps
 timing out instead of restarting it. An untimed run still needs the Manager's
 own bound, which today means a Codex token budget: Codex refuses to run untimed
-without one, while Claude Code and Grok Build have no token accounting and an
+without one, while Claude Code and Grok Build have no token budget and an
 untimed turn there is bounded by nothing Workshop owns. See ADR 0064.
 
 Omitting `--max-tokens` on resume preserves the saved allowance. Providing it

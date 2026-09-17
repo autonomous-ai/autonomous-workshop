@@ -38,6 +38,77 @@ class NativeManagerRecoverableError(NativeManagerInvocationError):
     """A typed timeout or provider disconnect that may resume the same session."""
 
 
+# One native turn's Manager-reported token usage, shared by every adapter.
+# The base counters are gross input and gross output. The detail counters are
+# disjoint subsets of those (cached and cache-write input, reasoning output)
+# and travel together or not at all, so the host can label a turn measured,
+# base-only, or unmeasured without guessing a missing subset.
+MAX_NATIVE_TOKEN_COUNT = 1_000_000_000_000
+NATIVE_TOKEN_USAGE_FIELDS = (
+    "input_tokens",
+    "cached_input_tokens",
+    "cache_write_input_tokens",
+    "output_tokens",
+    "reasoning_output_tokens",
+)
+NativeTokenUsage = tuple[int, Optional[int], Optional[int], int, Optional[int]]
+
+
+def validate_native_token_usage(
+    *,
+    input_tokens: Any,
+    cached_input_tokens: Any,
+    cache_write_input_tokens: Any,
+    output_tokens: Any,
+    reasoning_output_tokens: Any,
+    label: str,
+) -> None:
+    """Reject usage that is incomplete, out of range, or self-contradicting."""
+
+    if (input_tokens is None) != (output_tokens is None):
+        raise ContractError("%s token usage is incomplete" % label)
+    details = (cached_input_tokens, cache_write_input_tokens, reasoning_output_tokens)
+    if any(count is None for count in details) and not all(
+        count is None for count in details
+    ):
+        raise ContractError("%s token detail is incomplete" % label)
+    if details[0] is not None and input_tokens is None:
+        raise ContractError("%s token detail lacks usage" % label)
+    if any(
+        count is not None
+        and (type(count) is not int or not 0 <= count <= MAX_NATIVE_TOKEN_COUNT)
+        for count in (input_tokens, output_tokens, *details)
+    ):
+        raise ContractError("%s token usage is invalid" % label)
+    if cached_input_tokens is not None and (
+        cached_input_tokens > input_tokens
+        or cache_write_input_tokens > input_tokens
+        or reasoning_output_tokens > output_tokens
+    ):
+        raise ContractError("%s token detail is invalid" % label)
+
+
+def native_token_usage_fields(
+    *,
+    input_tokens: Optional[int],
+    cached_input_tokens: Optional[int],
+    cache_write_input_tokens: Optional[int],
+    output_tokens: Optional[int],
+    reasoning_output_tokens: Optional[int],
+) -> dict[str, int]:
+    """Project validated usage into the redacted outcome dictionary."""
+
+    value: dict[str, int] = {}
+    if input_tokens is not None:
+        value["input_tokens"] = input_tokens
+        value["output_tokens"] = output_tokens
+    if cached_input_tokens is not None:
+        value["cached_input_tokens"] = cached_input_tokens
+        value["cache_write_input_tokens"] = cache_write_input_tokens
+        value["reasoning_output_tokens"] = reasoning_output_tokens
+    return value
+
+
 @runtime_checkable
 class NativeSessionOutcome(Protocol):
     """Redacted result shared by every concrete Manager launcher."""
@@ -376,9 +447,11 @@ def manager_launcher(manager_id: str, **kwargs: Any) -> NativeSessionLauncher:
 
 __all__ = [
     "DEFAULT_MANAGER_ID",
+    "MAX_NATIVE_TOKEN_COUNT",
     "MAX_NATIVE_TURN_SECONDS",
     "MANAGER_PROJECT_KIND",
     "MANAGER_PROJECT_PATH",
+    "NATIVE_TOKEN_USAGE_FIELDS",
     "SUPPORTED_MANAGER_IDS",
     "SUPPORTED_REASONING_EFFORTS",
     "ManagerRuntimeSpec",
@@ -387,9 +460,12 @@ __all__ = [
     "NativeManagerRecoverableError",
     "NativeSessionLauncher",
     "NativeSessionOutcome",
+    "NativeTokenUsage",
     "manager_launcher",
+    "native_token_usage_fields",
     "parse_manager_project_bytes",
     "manager_project_bytes",
     "manager_runtime_selection",
     "manager_spec",
+    "validate_native_token_usage",
 ]

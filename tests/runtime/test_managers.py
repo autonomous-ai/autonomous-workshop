@@ -9,13 +9,107 @@ from workshop.runtime.grok import GrokNativeSessionLauncher
 from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
     MANAGER_PROJECT_KIND,
+    MAX_NATIVE_TOKEN_COUNT,
+    NATIVE_TOKEN_USAGE_FIELDS,
     SUPPORTED_REASONING_EFFORTS,
     manager_launcher,
     manager_project_bytes,
     manager_runtime_selection,
     manager_spec,
+    native_token_usage_fields,
     parse_manager_project_bytes,
+    validate_native_token_usage,
 )
+
+
+_NO_USAGE = {name: None for name in NATIVE_TOKEN_USAGE_FIELDS}
+
+
+class NativeTokenUsageContractTest(unittest.TestCase):
+    """One per-turn usage contract shared by every Manager adapter."""
+
+    def test_projection_reports_only_what_was_measured(self):
+        self.assertEqual(
+            NATIVE_TOKEN_USAGE_FIELDS,
+            (
+                "input_tokens",
+                "cached_input_tokens",
+                "cache_write_input_tokens",
+                "output_tokens",
+                "reasoning_output_tokens",
+            ),
+        )
+        self.assertEqual(native_token_usage_fields(**_NO_USAGE), {})
+        self.assertEqual(
+            native_token_usage_fields(
+                **{**_NO_USAGE, "input_tokens": 42, "output_tokens": 7}
+            ),
+            {"input_tokens": 42, "output_tokens": 7},
+        )
+        self.assertEqual(
+            native_token_usage_fields(
+                input_tokens=80,
+                cached_input_tokens=60,
+                cache_write_input_tokens=5,
+                output_tokens=20,
+                reasoning_output_tokens=12,
+            ),
+            {
+                "input_tokens": 80,
+                "cached_input_tokens": 60,
+                "cache_write_input_tokens": 5,
+                "output_tokens": 20,
+                "reasoning_output_tokens": 12,
+            },
+        )
+
+    def test_validation_fails_closed_on_every_inconsistent_shape(self):
+        full = {
+            "input_tokens": 80,
+            "cached_input_tokens": 60,
+            "cache_write_input_tokens": 5,
+            "output_tokens": 20,
+            "reasoning_output_tokens": 12,
+        }
+        for label in ("Codex native session", "Claude native session"):
+            validate_native_token_usage(**_NO_USAGE, label=label)
+            validate_native_token_usage(
+                **{**_NO_USAGE, "input_tokens": 0, "output_tokens": 0}, label=label
+            )
+            validate_native_token_usage(**full, label=label)
+        cases = (
+            ({"input_tokens": 1}, "token usage is incomplete"),
+            ({"output_tokens": 1}, "token usage is incomplete"),
+            ({**full, "reasoning_output_tokens": None}, "token detail is incomplete"),
+            (
+                {
+                    "cached_input_tokens": 0,
+                    "cache_write_input_tokens": 0,
+                    "reasoning_output_tokens": 0,
+                },
+                "token detail lacks usage",
+            ),
+            ({"input_tokens": -1, "output_tokens": 0}, "token usage is invalid"),
+            ({"input_tokens": True, "output_tokens": 0}, "token usage is invalid"),
+            ({"input_tokens": 1.5, "output_tokens": 0}, "token usage is invalid"),
+            (
+                {"input_tokens": MAX_NATIVE_TOKEN_COUNT + 1, "output_tokens": 0},
+                "token usage is invalid",
+            ),
+            ({**full, "cached_input_tokens": 81}, "token detail is invalid"),
+            ({**full, "cache_write_input_tokens": 81}, "token detail is invalid"),
+            ({**full, "reasoning_output_tokens": 21}, "token detail is invalid"),
+        )
+        observed = 0
+        for overrides, message in cases:
+            observed += 1
+            with self.subTest(overrides=overrides), self.assertRaisesRegex(
+                ContractError, "^Grok native session " + message + "$"
+            ):
+                validate_native_token_usage(
+                    **{**_NO_USAGE, **overrides}, label="Grok native session"
+                )
+        self.assertEqual(observed, len(cases))
 
 
 class ManagerRegistryTest(unittest.TestCase):
