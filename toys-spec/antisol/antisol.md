@@ -245,11 +245,9 @@ the d2 trap pocket and the d1 den pocket, and between any two adjacent belt
 cells. One number for the whole board, 0.40 mm clear of the 0.80 mm wall floor.
 
 **Why the grid is cut and not moulded.** An earlier draft gave all 63 cells a
-Ø34.40 x 0.40 mm landing recess. The reference image of that board came back
-reading as a muffin tray — sixty-three circles and no grid at all. A board is
-read as a lattice of lines, and a 0.40 mm well does nothing a piece's own weight
-is not already doing. The recesses are gone; the lines are cut. This is the one
-change the reference-image stage found in the spec rather than in the image.
+Ø34.40 x 0.40 mm landing recess; the reference image of that board read as a
+muffin tray — sixty-three circles and no grid. A board is read as a lattice of
+lines, and a 0.40 mm well does nothing a piece's weight is not already doing.
 
 **Panel split.** 268 x 340 mm exceeds a 200 mm bed. Cut after file c and after
 rank 4:
@@ -262,9 +260,7 @@ rank 4:
 | `panel_northeast` | 152 x 188 | files d–g, ranks 5–9; den d9; traps d8, e9; belt cells e5, e6, f5, f6 |
 
 Twelve belt cells, two dens, six traps, forty-three plain land cells; 63 total.
-The c1 and c9 traps sit on the **west** panels, not the east ones — file c is cut
-away with files a–b. An earlier draft of this table put them on the east panels,
-which was simply wrong.
+The c1 and c9 traps sit on the **west** panels — file c is cut away with a–b.
 
 Largest panel 152 x 188 mm, inside a 200 mm bed. Sums verified: 116+152 = 268,
 152+188 = 340.
@@ -423,14 +419,11 @@ set.
 - **The two flares rise 18.00 mm at the board edge.** From the seat *opposite*
   that den, they stand between the eye and the den cell's far edge. That is the
   seat attacking the den, and it is the sightline the hero is paid for.
-- **No other component in the set is permitted any of this.** The corona tongues
-  are held to **4.00 mm**, which is 13.78 mm below the crown of the shortest
-  globe in the set, so a corona cell can never occlude a piece anywhere on the
-  board. The corona is a large idea kept deliberately low; the star is the only
-  thing allowed to stand up.
-- **The tongues at d2 and d8 sit in open field**, at corners shared with live
-  land cells. At 4.00 mm they occlude nothing, but a hand reaching across them
-  will feel them. Both players, both ends, equally.
+- **No other component is permitted any of this.** Corona tongues are held to
+  **4.00 mm**, 13.78 mm below the crown of the shortest globe, so a corona cell
+  can never occlude a piece. The star is the only thing allowed to stand up.
+- **The tongues at d2 and d8 sit in open field.** At 4.00 mm they occlude
+  nothing, but a hand reaching across will feel them — both players, equally.
 
 ## 8. The worlds
 
@@ -486,25 +479,123 @@ One geometry per planet serves both armies.
 
 ### 8.4 The surface
 
-Relief stands **1.00 mm proud** of the globe with 45° chamfered edges. Minimum
-outline width is **14° of arc** anywhere on the set: a south-facing relief edge
-needs about 7° of arc to ramp without support, and below 14° the outline comes
-off the bed as a smear. On the smallest globe (Mercury, R = 6.89) 14° of arc is
-1.68 mm; on the largest (Jupiter, R = 13.49) it is 3.30 mm.
+Relief stands **1.00 mm proud** of the globe with 45° chamfered edges. Every
+relief body exists twice — `sol_*` rotated so the planet's north pole leans
+toward +X, `anti_*` mirrored across YZ so it leans toward −X.
 
-Every relief body exists twice — `sol_*` rotated so the planet's north pole
-leans toward +X, `anti_*` mirrored across YZ so it leans toward −X.
+**Minimum outline width is 14° of arc** anywhere on the set: a south-facing
+relief edge needs about 7° of arc to ramp without support, and below 14° the
+outline comes off the bed as a smear. On Mercury (R = 6.89) that is 1.68 mm; on
+Jupiter (R = 13.49), 3.30 mm.
+
+**The floor is measured perpendicular to the outline, at every point along it.**
+It is a property of the finished region, never of a primitive the region was
+assembled from, and it is a floor to **coarsen a drawn outline down to** — not a
+licence to build the marking out of shapes that satisfy it by construction. Draw
+the outline the feature has, then widen its narrow parts until every point
+clears the floor: that is how Central America becomes one broad land bridge
+rather than a thread, and the Indonesian arc is left to the sea. A previous build
+read *"one minimum width holds from Mercury to Jupiter"* as permission to build
+every marking from circular caps of given angular radius. That satisfies the
+arithmetic and destroys the subject — Africa as four overlapping discs is 14°
+wide everywhere and is not Africa — and is not an acceptable reading here.
+
+**If a gate forces the markings flush** (a raised patch on the lower half of a
+sphere can present a rim shallower than 45°), the governing constraint becomes
+filament track width, not the overhang ramp, and the floor **relaxes to 10° of
+arc**: the narrowest printable colour region is 1.20 mm, three extrusion widths
+at a 0.4 mm nozzle — 9.98° on Mercury, 8.23° on Earth (R = 8.35), 5.10° on
+Jupiter. Record the deviation, use the relaxed floor, change nothing else here.
+
+**Two vocabularies, and the choice is not free.** *Outline markings* are closed
+lon/lat polygons of at least eight vertices. **Earth's landmasses, its drylands
+and its polar ice are outline markings, and nothing else in this set is**; their
+coordinates are in 8.4.1, and those coordinates are the specification, not an
+illustration of it. *Field markings* are latitude bands, polar caps and round
+patches given by (lat, lon, angular radius) — every other marking here, because
+that is what each of those features physically is. Earth is the only planet
+whose surface is defined by coastlines rather than by patches, and **it must not
+be built with the field vocabulary.**
 
 | Planet | Relief bodies | Colours | What it depicts |
 |---|---|---|---|
 | Mercury | `mercury_plains` | `dark_gray` | Two-tone albedo map: smooth plains and the Caloris basin as raised patches on a `gray` globe. Not craters — at this scale a crater reads as a print defect, while the albedo map is what Mercury actually looks like from a distance. Pole vertical: tilt is 0.03°. |
 | Mars | `mars_albedo`, `mars_caps` | `cocoa_brown`, `white` | Syrtis Major and Mare Acidalia as dark patches; both polar caps. Pole leans 25.19°. |
 | Venus | `venus_ypattern` | `orange` | The Mariner-10 ultraviolet cloud Y, laid out about a pole 2.64° from vertical **pointing downward**. Venus is upside down — 177.36° — and its pattern is the only inverted one in the set. |
-| Earth | `earth_land`, `earth_dryland`, `earth_ice` | `green`, `beige`, `white` | Continents, dryland (Sahara and Arabia, the Kalahari, inner Asia, the American southwest, the Australian outback), and the northern ice cap with lobes reaching onto the coasts. Pole leans 23.44°. |
+| Earth | `earth_land`, `earth_dryland`, `earth_ice` | `green`, `beige`, `white` | **Outline markings — coordinates in 8.4.1, which governs.** Four named landmass solids from seven rings, five drylands cut out of them, and an ice cap above 72° N broken by Greenland and seven lobes. Pole leans 23.44°. |
 | Neptune | `neptune_spot`, `neptune_streaks` | `dark_gray`, `white` | The Great Dark Spot and the white companion cloud streaks. Pole leans 28.32°. |
 | Uranus | `uranus_band` | `white` | One faint band, running **pole to pole, vertically on the visible face**, because the pole lies 7.77° past horizontal. No rings: Uranus's rings are effectively invisible in a real image, and adding them would be invention. |
 | Saturn | `saturn_bands`, `saturn_ring`, `saturn_ring_web` | `cocoa_brown`, `white`, `white` | Four belts over ±60° latitude at 12° width (2.72 mm). The ring is described in 8.5. Pole leans 26.73°. |
 | Jupiter | `jupiter_bands`, `jupiter_spot` | `cocoa_brown`, `red` | Six belts over ±60° latitude at 12° width (2.82 mm), and the Great Red Spot at 22° south. Pole leans 3.13°. |
+
+### 8.4.1 The Earth atlas
+
+Pairs are **(longitude, latitude) in degrees**, longitude true and positive east.
+Each list is a closed ring; the last vertex joins the first. No outline crosses
+the ±180° seam. These carry over unchanged from the rank-4 Earth of the earlier
+single-piece build — stylised silhouettes already coarsened to the 14° floor, not
+a map. Widen further if a measured width falls short; never replace an outline
+with patches.
+
+`land_americas` — three rings, one solid:
+```
+NA  (-168,65) (-160,71) (-140,70) (-122,70) (-100,68) (-82,73) (-62,58)
+    (-58,48) (-68,44) (-76,36) (-82,26) (-89,20) (-97,15) (-107,20)
+    (-116,29) (-124,40) (-126,50) (-136,58) (-152,60)
+CA  (-103,19) (-92,11) (-80,6) (-70,8) (-70,20) (-84,25) (-97,28)
+SA  (-80,8) (-74,11) (-66,11) (-58,8) (-50,2) (-44,-2) (-35,-6) (-38,-14)
+    (-46,-24) (-54,-34) (-62,-44) (-72,-44) (-73,-32) (-70,-22) (-76,-14)
+    (-81,-5) (-79,2)
+```
+`land_africa` — one ring:
+```
+AF  (-17,14) (-9,22) (0,32) (11,37) (20,32) (32,31) (36,22) (43,12) (51,12)
+    (48,2) (41,-5) (40,-16) (33,-25) (24,-34) (16,-32) (11,-16) (9,-1)
+    (1,5) (-8,5)
+```
+`land_eurasia` — two rings, one solid:
+```
+EU  (-10,36) (-9,44) (-2,48) (-5,58) (8,63) (18,69) (30,71) (44,68) (58,62)
+    (60,52) (50,45) (40,42) (28,42) (20,40) (12,45) (4,43) (-2,39)
+AS  (38,45) (44,60) (58,70) (75,76) (100,77) (120,74) (140,72) (162,69)
+    (170,63) (158,58) (140,52) (136,44) (126,40) (122,30) (112,22) (104,12)
+    (100,14) (94,21) (88,22) (80,15) (77,8) (72,16) (66,24) (58,28) (48,30)
+    (40,36)
+```
+`land_australia` — one ring:
+```
+AU  (113,-22) (114,-34) (129,-32) (140,-38) (150,-37) (153,-27) (146,-17)
+    (137,-12) (130,-12) (124,-16) (117,-20)
+```
+`earth_dryland` — five rings, five solids, each **cut out of** the land it sits
+in rather than laid beside it. Subtract while both are still plain solids, never
+after either has been sliced into a shell.
+```
+SAHARA     (-8,18) (0,25) (12,27) (25,26) (33,27) (40,20) (48,14) (44,8)
+           (34,12) (22,14) (10,13) (0,12) (-6,13)
+KALAHARI   (14,-19) (14,-28) (23,-26) (25,-19)
+INNER_ASIA (60,38) (62,46) (80,48) (100,46) (105,40) (95,36) (75,35)
+AM_SW      (-118,30) (-114,38) (-106,38) (-100,32) (-104,26) (-112,25)
+OUTBACK    (119,-20) (118,-30) (128,-29) (140,-30) (145,-24) (140,-19) (128,-18)
+```
+`earth_ice` — a cap with boundary latitude **72.0° N**, fused with Greenland and
+seven lobes. The lobes are not decoration: left as a bare cap the rim is an exact
+circle of latitude, which in front elevation is a straight line across the top of
+the globe and reads as a lid laid on it. The lobes carry the ice onto the
+northern coasts so the rim reaches a different latitude at nearly every
+longitude. Build them as unions with the cap — leaning the cap instead leaves
+slivers where it grazes a lobe, and the printed body comes out with open edges.
+Each line below is one closed ring.
+```
+GREENLAND  (-72,78) (-55,82) (-30,83) (-20,76) (-28,68) (-42,60) (-53,62) (-62,68)
+LOBE 1     (-125,66) (-95,70) (-62,71) (-72,80) (-115,78)
+LOBE 2     (58,68) (100,70) (142,67) (152,77) (92,80)
+LOBE 3     (-5,73) (38,71) (52,80) (8,83)
+LOBE 4     (150,66) (176,64) (172,76) (146,78)
+LOBE 5     (-178,66) (-152,63) (-140,72) (-176,77)
+LOBE 6     (20,70) (56,69) (60,78) (24,80)
+LOBE 7     (-62,68) (-30,67) (-26,76) (-58,78)
+```
 
 ### 8.5 Saturn's ring
 
@@ -579,10 +670,9 @@ Neptune does not, and they carry different numerals. PLA Lite has no second
 blue, and reaching into the PETG names to get one would split the set across two
 materials that cannot be printed together.
 
-Saturn was moved off `beige` to `yellow` for a second reason: with a `white` disc
-below it and a `white` ring through it, a `beige` globe left the rank-7 piece as
-three near-white tones stacked on each other. `yellow` is also closer to real
-Saturn, which is more golden than Venus.
+Saturn moved off `beige` to `yellow` for a second reason: with a `white` disc
+below and a `white` ring through it, a `beige` globe left rank 7 as three
+near-white tones stacked. `yellow` is also closer to real Saturn.
 
 ---
 
@@ -638,52 +728,97 @@ plug clearance 0.25 mm/side into the terrain pockets. All mating pairs derived a
 `slot = tab + 2c`, never sized independently. **There is no press fit anywhere
 in the set**, because there is nothing to assemble.
 
+### 12.1 Verification this run must run
+
+Final CAD verification runs as
+
+```
+verify_project <cad-project> --strict-fit --print-gates \
+    --image-derived --unpowered --likeness-ref <label>=<reference>
+```
+
+and **not** as a plain final workflow. A previous build ran the generic gates
+only, passed every one, and shipped a set whose planets do not match their own
+reference images. Passing the generic gates is not evidence about a surface.
+
+**Silhouette likeness, IoU ≥ 0.90.** Bind it and record the score, but know its
+worth: the renderer draws a **binary silhouette**, so colour, interior edges and
+every flush marking are invisible to it, and a correct outline in one flat colour
+scores what the real thing scores. A passing IoU is never evidence that a surface
+is right. If the references' globe-to-disc proportions are superseded by the 3.2
+ladder, say so in writing and pick a label and reference that keeps the gate
+honest — one world alone rather than the whole board. **Do not drop
+`--image-derived` to escape a proportion mismatch.** The flag is not there for
+the IoU.
+
+**`measure/check_landmarks.py` becomes mandatory, and that is the point.** A
+project-written ledger: every defining feature gets a row measuring the geometry
+actually returned — vertex positions, solid counts, areas, volumes — not the
+arithmetic that produced it, so sabotaging a builder makes a row report the
+sabotaged number. At minimum it must prove:
+
+| Claim | Measured how |
+|---|---|
+| Earth's land is four separate landmasses | four solids under `earth_land`, one body each |
+| Earth's drylands are five and lie inside the land | five solids under `earth_dryland`; each meets `earth_land`, none stands outside it |
+| Earth's land covers a plausible fraction | 0.20 ≤ land area / globe area ≤ 0.38 |
+| Earth's ice is not a disc laid on the pole | ice vertices sit at **≥ 6 distinct latitudes** |
+| Every Earth outline clears the floor | narrowest perpendicular width of each land, dryland and ice region ≥ the floor in force per 8.4 |
+| No Earth region is a union of circular caps | its boundary is not a set of circular arcs, and its vertex count exceeds what a cap union of equal area would give |
+| Every marking sits on its own planet's sphere | the marking's outer face lies on the globe sphere; none reaches the seat cone |
+| Each globe carries its declared marking count | the "Relief bodies" count in the 3.2 table, per planet, per side |
+| The colour split covers the globe | globe volume + marking volumes = unmarked globe volume, within 0.2% |
+| The obliquity is carried | each marking set rotated by its 3.2 tilt, toward +X on `sol_*` and −X on `anti_*` |
+
+A row that cannot be measured is not a row. `measure/check_spec.py` is required
+by the same flag and reconciles this document's named numbers against the solids
+actually built.
+
+**Component rounds.** An isolated component render is single-colour and shows no
+flush marking at all. Do not close a world's round on *"the markings carry no
+silhouette in this render and were checked by measurement instead"* unless
+`check_landmarks.py` carries the rows above. That sentence with no ledger behind
+it is how the previous build passed.
+
 ---
 
 ## 13. The fixed frame — 35° azimuth, 22° elevation, `#f5f0e6`
 
-**Focal point:** the near star. It is the only tall, warm, saturated mass in the
-frame — a `sunflower_yellow` plinth standing 1.00 mm proud of a `dark_gray`
-field, with two `orange` flares at 18.00 mm rising off the near border.
-`sunflower_yellow` appears on no other part of the set, so the hero owns a
-colour nothing else can dilute.
+**Focal point:** the near star — the only tall, warm, saturated mass in frame: a
+`sunflower_yellow` plinth 1.00 mm proud of a `dark_gray` field, two `orange`
+flares at 18.00 mm rising off the near border. `sunflower_yellow` appears nowhere
+else in the set.
 
-**Third read, and the one the composition gained:** the near star does not sit
-alone on a grey field any more. Three `orange` corona wells ring it, each
-recessed 3.00 mm with two 4.00 mm tongues at its outer corners, so the warm mass
-spreads across four cells instead of one and the two tall flares read as the
-peak of a shape rather than as two sticks. At 35°/22° the wells catch shadow and
-the tongues catch light, which separates the ring from the plinth without any
-second colour.
+**Third read:** three `orange` corona wells ring the star, each recessed 3.00 mm
+with two 4.00 mm tongues at its outer corners, so the warm mass spreads across
+four cells and the flares read as the peak of a shape rather than two sticks. At
+35°/22° the wells catch shadow and the tongues light, separating ring from plinth
+without a second colour.
 
 **Second read:** the size ladder along the near back rank — Mercury at 13.78 mm
 on a3 against Jupiter at 26.97 mm on g3, both on identical 34.00 mm discs, so
 the disc is a ruler the eye reads the globes against.
 
 **Ownership at thumbnail size:** eight `white` discs read as bright coins on the
-dark field; eight `black` discs read as holes in it. This is the widest
-lightness separation the palette can produce, and it survives any amount of
-downscaling. Every disc sits inside a cell surrounded by `dark_gray` board, so
-no disc is ever read against the page — the only white-on-cream edge in the
-frame is the top 2 mm of a front-row disc rim seen over the 8.00 mm border, and
-the globe above it carries the silhouette in any case.
+dark field, eight `black` discs as holes in it — the widest lightness separation
+the palette allows, and it survives any downscaling. Every disc sits inside a
+cell surrounded by `dark_gray` board, so none is ever read against the page.
 
 **The field.** At 35°/22° the cut grid catches light along one wall of every
-groove, so the lattice reads as a set of bright hairlines ruled across a
-`dark_gray` slab. The only depth in the field is terrain: twelve `cocoa_brown`
-belt tiles, six corona wells, two plugs. A flat board with a drawn grid is also
-what puts the pieces, not the board, in front of the eye.
+groove, so the lattice reads as bright hairlines ruled across a `dark_gray` slab.
+The only depth in the field is terrain: twelve `cocoa_brown` belt tiles, six
+corona wells, two plugs — which puts the pieces, not the board, in front of the
+eye.
 
 **Contrast against the background.** The `dark_gray` board against `#f5f0e6`
 gives the strongest edge in the frame and does the work of separating the set
 from the page.
 
 **The one weak edge, recorded:** Venus's `beige` globe at 16.53 mm sits close to
-the cream background in lightness, so where it silhouettes against the page its
-outline softens. It is the third-smallest piece, it sits low in the frame against
-the board, and its `orange` cloud Y breaks the outline. Jupiter was moved off
-`beige` to `orange` and Saturn to `yellow` specifically to avoid this on the two
-largest globes, where losing the outline would cost the composition its mass.
+the cream background in lightness, so its outline softens against the page. It is
+the third-smallest piece, sits low against the board, and its `orange` cloud Y
+breaks the outline. Jupiter was moved to `orange` and Saturn to `yellow`
+specifically to avoid this on the two largest globes.
 
 ---
 
@@ -691,11 +826,10 @@ largest globes, where losing the outline would cost the composition its mass.
 
 **Crowded mid-game.** The tightest neighbour pair is two Saturns on adjacent
 cells: rings 32.00 + 32.00 across a 72.00 mm span leaves **4.00 mm**, at heights
-8.80–23.20 mm. Disc-to-disc gap is 2.00 mm everywhere, which is too tight for
-fingers — and that is why the grasp point in this set is the globe crown, not
-the disc rim. Every globe is at least 9.03 mm narrower than the pitch (Jupiter,
-the worst case), and every globe narrows above its equator. The grasp happens
-where the gap is opening.
+8.80–23.20 mm. Disc-to-disc gap is 2.00 mm everywhere, too tight for fingers —
+which is why the grasp point is the globe crown, not the disc rim. Every globe is
+at least 9.03 mm narrower than the pitch (Jupiter, worst case) and narrows above
+its equator, so the grasp happens where the gap is opening.
 
 **Late game, pieces captured and off the board, position asymmetric.** Rank
 reads from three independent channels, none of which requires picking a piece
@@ -706,9 +840,9 @@ up or comparing it against a neighbour:
 3. surface markings — continents, bands, a ring, a dark spot.
 
 Ownership reads from three more: lean direction, disc taper, disc colour. A
-trapped piece sits 3.00 mm below the plane, inside a ring of `orange` or `cyan`
-that names whose corona has it. A piece in a den sits 1.00 mm above the plane,
-on the star itself. Nothing about the position needs a glossary.
+trapped piece sits 3.00 mm below the plane inside a ring of `orange` or `cyan`
+naming whose corona has it; a piece in a den sits 1.00 mm above it, on the star.
+Nothing about the position needs a glossary.
 
 ---
 
@@ -740,13 +874,11 @@ not something this search located.
 
 ## 16. Assumptions, risks and open items
 
-- **Saturn's ring reads as a collar, not as a ring system.** Measured on the
-  reference images: at Ø32.00 outer against a 26.00 mm globe the projection is
-  3.00 mm per side, a ratio of 1.23 against the real 2.35, and at thumbnail size
-  it reads as a sash wrapped round the ball. Widening it to Ø34.00 or Ø36.00 was
-  considered and **rejected**, because the set's own rule — no piece overhangs
-  its own disc — is worth more than the extra millimetre. Saturn is identified
-  by globe diameter, by its `cocoa_brown` belts, and by the numeral 7.
+- **Saturn's ring reads as a collar, not as a ring system.** At Ø32.00 against a
+  26.00 mm globe the projection is 3.00 mm per side, a ratio of 1.23 against the
+  real 2.35, so at thumbnail size it reads as a sash. Widening to Ø34.00 or
+  Ø36.00 was **rejected**: no piece overhangs its own disc. Saturn is identified
+  by globe diameter, its `cocoa_brown` belts and the numeral 7.
 - **Saturn's ring web is the one feature at real risk of failing the overhang
   gate.** Section 8.5. If the web cannot be blended without the ring reading as
   a funnel, reduce the ring's outer diameter to 30.00 mm and the projection to
@@ -757,44 +889,34 @@ not something this search located.
   setup. The water placement is forced by the constraints; the setup is the
   standard layout and is user-correctable.
 - **Earth's globe is 16.70 mm, not the 21.08 mm of the earlier single-piece
-  build.** The disc, the 0.60 mm top round, the −42° seat cone at 12°, the
-  1.00 mm relief and the seven-segment numeral all carry over unchanged; only
-  the globe diameter moved, because Saturn's ring now sets the ceiling.
-- **Mercury's relief is an albedo map, not craters.** At R = 6.89 a readable
-  crater needs about 33° of arc, so the visible hemisphere would hold five of
-  them and they would read as print defects. The albedo map is both printable
-  and closer to a real image of Mercury at this distance.
+  build.** Everything else carries over unchanged, including the 8.4.1 atlas,
+  whose coordinates are angular and so are unaffected. Only the diameter moved,
+  because Saturn's ring now sets the ceiling.
 - **Venus's 177.36° obliquity is nearly invisible** — the axis is only 2.64°
   from vertical. It is expressed by inverting the cloud pattern, which is
   correct but subtle, and a player will not read it without being told.
 - **Earth and Neptune share `blue`.** Section 10. PLA Lite has no second blue.
 - **Uranus has no rings** in this set, by choice. Section 8.4.
-- **The board ships with no reference image, deliberately.** The one that was
-  generated drew the recessed draft and read as a muffin tray, so it was
-  deleted rather than corrected: a reference that shows the wrong board is worse
-  than none, because the likeness gate would then hold the build to it. The
-  board is carried by section 5 and by the named precedent,
-  `toys/mara-masque-dustlight-crossing`, which is in this repository and whose
-  panels can be read directly. Consequence, stated: the four panels are **not**
-  covered by the IoU ≥ 0.90 silhouette gate. They are the only parts in the set
-  that are not.
-- **The two den flares read as bull horns in every reference attempt.** Three
-  generations, three pairs of inward-curving horns; the best of them splays into
-  a V but still hooks at the tips. §7.2 is unambiguous — the base sits at
-  23.40 mm on the diagonal, outside the cell, and the body leans 12° **outward**,
-  so the tip is further from the plug centre than the base is. If the built part
-  reads as horns at the first visual round, **increase the outward lean, do not
-  shorten the flare**; the 18.00 mm height is what the hero is paid for.
-- **The corona cell's flames are engraved 0.40 mm, not raised.** The reference
-  image draws them proud. Raised relief under a seated Ø34.00 disc would make a
-  trapped piece rock, which is the one thing a corona well must not do. The
-  number in §7.3 governs.
+- **The board ships with no reference image, deliberately.** The one generated
+  drew the recessed draft and read as a muffin tray; a reference showing the
+  wrong board is worse than none. The board is carried by section 5 and by the
+  named precedent `toys/mara-masque-dustlight-crossing` in this repository.
+  Consequence: the four panels are the only parts not covered by the silhouette
+  gate.
+- **The two den flares read as bull horns in every reference attempt** — three
+  generations, all hooking inward at the tips. §7.2 governs: base at 23.40 mm on
+  the diagonal, outside the cell, body leaning 12° **outward**, so the tip is
+  further from the plug centre than the base. If the built part reads as horns,
+  **increase the outward lean, do not shorten the flare**; the 18.00 mm height
+  is what the hero is paid for.
+- **The corona cell's flames are engraved 0.40 mm, not raised**, though the
+  reference draws them proud: raised relief under a seated Ø34.00 disc would make
+  a trapped piece rock. §7.3 governs.
 - **The belt tile's landing pad is Ø26.00, not the full Ø34.40.** A seated disc
-  therefore rests on the pad centrally and on rubble crests at its rim, and it
-  will rock if those crests are not machined to the same datum as the pad. The
-  requirement is flat: **every crest the disc can touch is coplanar with the
-  pad, to within one layer.** If that cannot be held, raise the pad to Ø34.40
-  and shrink the rubble to a border rather than accepting a piece that wobbles.
+  rests on the pad centrally and on rubble crests at its rim, so: **every crest
+  the disc can touch is coplanar with the pad, to within one layer.** If that
+  cannot be held, raise the pad to Ø34.40 and shrink the rubble to a border
+  rather than ship a piece that wobbles.
 
 ---
 
