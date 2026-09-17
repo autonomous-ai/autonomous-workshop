@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_den_plug.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0007",
+ "overhang_angle": 45.0,
+ "parts": [
+  "den_plug"
+ ],
+ "print": {
+  "den_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0005/overhang-den_plug.log": "f07a47e201d620e6fdeb26a4683f6b0b606d991a125146334ad4d9a1b5546fe3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0005/thickness-den_plug.log": "389387d184979ff708f28228f553b9e00a6196e3ef38cb8450dfc023306f4ec8"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.59,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "den_plug"
+ ],
+ "round": 7,
+ "scope": "component:den_plug",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Inspected the front, top and isometric views of this round; they are byte-identical to the renders inspected before the last source change, which touched only Saturn's ring. Spigot, drafted skirt and flat 36.00 flange all present and in proportion; the top face is flat and clear for a piece to seat on. Both prominences stand at the two border-facing corners, full at the foot and drawn out into a long tongue that leans outward, and their bases are cut back where they leave the flange. Hexagonal granulation is visible in all four corners. Total height 24.00. No missing, extra or intersecting geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0007/visual-packet.json",
+  "packet_sha256": "b889d3074a56d6f638edf4e54cdcab030c1564ce261df132553b0778a867c5d3",
+  "status": "pass"
+ }
+}

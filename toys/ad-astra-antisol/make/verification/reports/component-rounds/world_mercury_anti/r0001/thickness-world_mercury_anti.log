@@ -1,0 +1,18 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_mercury_anti.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001/thickness-world_mercury_anti.md
+(3.8s, exit 1)
+--- stdout
+
+--- stderr
+Traceback (most recent call last):
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness", line 669, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness", line 507, in main
+    verts, faces = weld(entry_mesh(entry, entry_role(entry)))
+                        ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/printlib.py", line 238, in entry_mesh
+    return tessellate(build_entry(path, namespace), deviation=deviation,
+                      angular=angular)
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/printlib.py", line 227, in tessellate
+    raise ValueError("tessellation produced no triangles")
+ValueError: tessellation produced no triangles

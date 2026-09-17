@@ -1,0 +1,19 @@
+{
+  "findings": [
+    {
+      "defect": "Rocks are tall narrow pinnacles with flat machined tops",
+      "evidence": "Iso view: the field around the pad is a crown of sharp spikes; front view: the top edge is a fine sawtooth, not a boulder field",
+      "part": "belt_cell rubble",
+      "repair": "Widen and flatten the rocks in features/rubble.py: larger base radius, stronger taper, most rocks ending below the datum so only a few are trimmed flat"
+    },
+    {
+      "defect": "Rubble coverage is sparse; bare floor shows between rocks over much of the border",
+      "evidence": "Top view: continuous dark floor visible between rocks on all four sides",
+      "part": "belt_cell rubble",
+      "repair": "Raise the rock count per quadrant and allow closer packing so the border reads as continuous rubble"
+    }
+  ],
+  "observation": "Tile size, the flat rim and the smooth central landing pad are right, and the front view confirms every crest is trimmed dead level with the pad. The rubble itself reads wrong: thin pinnacles rather than a field of boulders.",
+  "packet_sha256": "ecf6fe3d17455a458151731969f506cb18b43894aeab44763872a6bab80c292f",
+  "status": "fail"
+}

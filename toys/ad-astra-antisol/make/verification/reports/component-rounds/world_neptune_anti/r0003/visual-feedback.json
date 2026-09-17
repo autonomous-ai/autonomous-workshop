@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Inspected the front, top and isometric views of this round; they are byte-identical to the renders inspected before the last source change, which touched only Saturn's ring. Anti-Sol Neptune: one \u00d833.87 disc whose wall tapers inward as it rises, one \u00d821.89 globe standing on its own seat collar, total height 24.89 mm. Proportions match the rank-5 row of the ladder. The surface markings and the rank numeral are flush colour inlays, so they carry no silhouette in a single-colour render and were checked by measurement instead; the assembly render shows them in their own filaments. No missing, extra, misplaced or intersecting geometry, no floating body, correct orientation.",
+  "packet_sha256": "0ae33c8558afa9982671471efa4298ba8443f0625e03928aa7a6aead4c4702fd",
+  "status": "pass"
+}

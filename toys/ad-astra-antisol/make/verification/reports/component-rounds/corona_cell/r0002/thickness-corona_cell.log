@@ -1,0 +1,16 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_corona_cell.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0002/thickness-corona_cell.md
+(4.9s, exit 1)
+--- stdout
+part_corona_cell.step.py: 3.36 cm3 solid, grid 0.133 mm (262x262x80), 194148 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      17.5% of surface below (30977 of 194148 samples); thinnest 0.13 mm at (4.2, 0.6, 2.3) in 3 region(s); 1 wall(s) (widest band 14.63 mm), 2 taper(s) at feature edges (0.00% of surface, budget 2%); 233 more within measurement error of the limit
+  PASS  thickness distribution         median 2.93 mm, p95 34.20 mm, max 46.00 mm
+  WARN  hollowable at 1.20 mm wall     0.26 of 3.36 cm3 (8%) in 5 pocket(s), 1 too small to shell
+  PASS  filament that would save       0.04 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.13 mm at (4.2, 0.6, 2.3)  30972 samples, 652.3 mm2, runs 44.6 mm, band 14.63 mm
+        2. [taper] 0.47 mm at (15.8, 15.5, 10.0)      4 samples, 0.1 mm2, runs 0.6 mm, band 0.11 mm
+        3. [taper] 0.60 mm at (-15.7, 15.7, 10.0)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.13 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0002/thickness-corona_cell.md
+
+--- stderr

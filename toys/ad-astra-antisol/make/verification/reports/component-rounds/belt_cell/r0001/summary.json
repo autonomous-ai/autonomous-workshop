@@ -1,0 +1,75 @@
+{
+ "build": {
+  "belt_cell": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belt_cell"
+ ],
+ "check_motion": false,
+ "checked": [
+  "belt_cell"
+ ],
+ "checks_ok": true,
+ "entry": "part_belt_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belt_cell"
+ ],
+ "print": {
+  "belt_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/overhang-belt_cell.log": "4756a9502c2977314109e0488325bb749cf85496abb29d34bb1dd726b10b9e8f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/thickness-belt_cell.log": "5766c6ab495079ac6add77a0d0920ab9ad0aa1ffa2d7b13638a0630506fb3fb6"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.4,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:belt_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Rocks are tall narrow pinnacles with flat machined tops",
+    "evidence": "Iso view: the field around the pad is a crown of sharp spikes; front view: the top edge is a fine sawtooth, not a boulder field",
+    "part": "belt_cell rubble",
+    "repair": "Widen and flatten the rocks in features/rubble.py: larger base radius, stronger taper, most rocks ending below the datum so only a few are trimmed flat"
+   },
+   {
+    "defect": "Rubble coverage is sparse; bare floor shows between rocks over much of the border",
+    "evidence": "Top view: continuous dark floor visible between rocks on all four sides",
+    "part": "belt_cell rubble",
+    "repair": "Raise the rock count per quadrant and allow closer packing so the border reads as continuous rubble"
+   }
+  ],
+  "observation": "Tile size, the flat rim and the smooth central landing pad are right, and the front view confirms every crest is trimmed dead level with the pad. The rubble itself reads wrong: thin pinnacles rather than a field of boulders.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/visual-packet.json",
+  "packet_sha256": "ecf6fe3d17455a458151731969f506cb18b43894aeab44763872a6bab80c292f",
+  "status": "fail"
+ }
+}

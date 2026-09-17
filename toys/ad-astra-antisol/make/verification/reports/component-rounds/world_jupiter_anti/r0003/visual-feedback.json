@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Inspected the front, top and isometric views of this round; they are byte-identical to the renders inspected before the last source change, which touched only Saturn's ring. Anti-Sol Jupiter: one \u00d833.87 disc whose wall tapers inward as it rises, one \u00d826.97 globe standing on its own seat collar, total height 29.97 mm. Proportions match the rank-8 row of the ladder. The surface markings and the rank numeral are flush colour inlays, so they carry no silhouette in a single-colour render and were checked by measurement instead; the assembly render shows them in their own filaments. No missing, extra, misplaced or intersecting geometry, no floating body, correct orientation.",
+  "packet_sha256": "da8c2d5d289c7bbbf59db5cda3c5bdc622fb2ec55ec64fad60135e0215410a3a",
+  "status": "pass"
+}

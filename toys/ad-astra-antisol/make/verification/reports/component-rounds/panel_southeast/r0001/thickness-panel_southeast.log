@@ -1,0 +1,17 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_panel_southeast.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/thickness-panel_southeast.md
+(7.1s, exit 1)
+--- stdout
+part_panel_southeast.step.py: 169.14 cm3 solid, grid 0.277 mm (553x553x37), 380189 surface samples, thickness resolved to 0.139 mm
+  FAIL  wall >= 0.80 mm (+/-0.14)      2.9% of surface below (10600 of 380189 samples); thinnest 0.42 mm at (-75.4, -30.4, 8.2) in 4 region(s); 4 wall(s) (widest band 12.11 mm); 40 more within measurement error of the limit
+  PASS  thickness distribution         median 8.87 mm, p95 151.76 mm, max 157.72 mm
+  WARN  hollowable at 1.20 mm wall     110.47 of 169.14 cm3 (65%) in 1 pocket(s)
+  PASS  filament that would save       16.57 cm3, 20.5 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.42 mm at (-75.4, -30.4, 8.2)   2652 samples, 418.5 mm2, runs 34.6 mm, band 12.11 mm
+        2. [wall ] 0.55 mm at (-23.7, 76.0, 8.7)   2675 samples, 407.5 mm2, runs 34.1 mm, band 11.96 mm
+        3. [wall ] 0.55 mm at (-2.9, 75.3, 4.2)   2613 samples, 407.5 mm2, runs 34.2 mm, band 11.91 mm
+        4. [wall ] 0.42 mm at (-75.4, -66.4, 7.0)   2660 samples, 396.9 mm2, runs 34.5 mm, band 11.49 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/thickness-panel_southeast.md
+
+--- stderr

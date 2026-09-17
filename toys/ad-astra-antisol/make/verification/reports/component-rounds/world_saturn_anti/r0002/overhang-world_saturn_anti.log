@@ -1,0 +1,16 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_saturn_anti.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0002/overhang-world_saturn_anti.md
+(4.1s, exit 1)
+--- stdout
+part_world_saturn_anti.step.py: 44.1 cm2 of surface, grid 0.400 mm, 59 unsupported samples over 5 region(s)
+  FAIL  no face under 45 deg needs support     20.7% of the surface faces down that steeply; 2 region(s) need support, 1 bridge, 2 below 1 mm2; worst 3.1 mm2 spanning 1.3 mm
+  PASS  bridges within 12 mm                   1 region(s), longest span 9.3 mm
+        every unsupported region, largest first:
+        1. [overhang]     3.1 mm2 at (-13.3, 0.0, 7.6)  span   1.3 mm of 1x4, 3.2 mm of air below
+        2. [overhang]     1.8 mm2 at (-8.1, -12.1, 10.9)  span   9.5 mm of 11x9, 9.2 mm of air below
+        3. [bridge  ]     1.7 mm2 at (-8.6, 11.7, 10.6)  span   9.3 mm of 9x10, 8.0 mm of air below
+        4. [trace   ]     0.1 mm2 at (-1.1, 15.9, 14.1)  span   0.0 mm of 0x0, 9.2 mm of air below
+        5. [trace   ]     0.0 mm2 at (1.8, -15.9, 16.0)  span   0.0 mm of 0x0, 11.2 mm of air below
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0002/overhang-world_saturn_anti.md
+
+--- stderr

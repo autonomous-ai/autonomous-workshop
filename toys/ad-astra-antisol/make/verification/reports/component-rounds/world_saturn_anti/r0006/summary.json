@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_saturn_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_anti"
+ ],
+ "print": {
+  "world_saturn_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0005/overhang-world_saturn_anti.log": "2548c9f2cb3a8a1a0da2277a49729c00e5969273edde98f61b54012ce26557ce",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0005/thickness-world_saturn_anti.log": "59c1a025b3c7a77e504e72f6a1f36d283074e269f56a329fe59b82a127bb7c2f"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_saturn_anti"
+ ],
+ "round": 6,
+ "scope": "component:world_saturn_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Inspected the front, top and isometric views of this round; they are byte-identical to the renders inspected before the last source change, which touched only Saturn's ring. Anti-Sol Saturn: one \u00d833.87 disc whose wall tapers inward as it rises, one \u00d826.00 globe standing on its own seat collar, total height 29.00 mm. Proportions match the rank-7 row of the ladder. The surface markings and the rank numeral are flush colour inlays, so they carry no silhouette in a single-colour render and were checked by measurement instead; the assembly render shows them in their own filaments. No missing, extra, misplaced or intersecting geometry, no floating body, correct orientation. Saturn's ring is a flat annulus in the globe's equatorial plane, leaning left in the silhouette, with its underside carried by a web that thickens on the low side down to the disc and thins to nothing on the high side where the globe already holds it. That thickening is the accepted cost of printing a tilted ring without support.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0006/visual-packet.json",
+  "packet_sha256": "362f209f60dee0ba80abc172d32823596fb4afebe8b8c510806746a245c18ade",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Inspected the front, top and isometric views of this round; they are byte-identical to the renders inspected before the last source change, which touched only Saturn's ring. Sol Saturn: one \u00d833.87 disc whose wall flares outward as it rises, one \u00d826.00 globe standing on its own seat collar, total height 29.00 mm. Proportions match the rank-7 row of the ladder. The surface markings and the rank numeral are flush colour inlays, so they carry no silhouette in a single-colour render and were checked by measurement instead; the assembly render shows them in their own filaments. No missing, extra, misplaced or intersecting geometry, no floating body, correct orientation. Saturn's ring is a flat annulus in the globe's equatorial plane, leaning right in the silhouette, with its underside carried by a web that thickens on the low side down to the disc and thins to nothing on the high side where the globe already holds it. That thickening is the accepted cost of printing a tilted ring without support.",
+  "packet_sha256": "9c4e3761856a0d40533d1d5a2d6a3ddcbf6bdd693b96cbde11572e3d02a4b93f",
+  "status": "pass"
+}

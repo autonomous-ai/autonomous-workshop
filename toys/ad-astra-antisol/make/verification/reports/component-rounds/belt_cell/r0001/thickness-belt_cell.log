@@ -1,0 +1,20 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_belt_cell.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/thickness-belt_cell.md
+(9.5s, exit 0)
+--- stdout
+part_belt_cell.step.py: 6.25 cm3 solid, grid 0.133 mm (262x262x50), 174901 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.3% of surface below (272 of 174901 samples); thinnest 0.27 mm at (-15.2, 5.5, 5.8) in 42 region(s); no region is a wall, 40 taper(s) at feature edges and 2 spot(s) too small to be a wall (0.28% of surface, budget 2%); 139 more within measurement error of the limit
+  PASS  thickness distribution         median 5.93 mm, p95 34.27 mm, max 46.00 mm
+  WARN  hollowable at 1.20 mm wall     2.65 of 6.25 cm3 (42%) in 1 pocket(s)
+  PASS  filament that would save       0.40 cm3, 0.5 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.40 mm at (-1.8, -14.0, 5.8)     21 samples, 1.1 mm2, runs 2.3 mm, band 0.49 mm
+        2. [taper] 0.60 mm at (1.4, 14.0, 5.6)     16 samples, 0.8 mm2, runs 2.0 mm, band 0.38 mm
+        3. [spot ] 0.53 mm at (14.0, -14.4, 5.8)     16 samples, 0.7 mm2, runs 0.9 mm, band 0.80 mm
+        4. [spot ] 0.53 mm at (-13.7, 14.3, 5.8)     14 samples, 0.7 mm2, runs 0.8 mm, band 0.82 mm
+        5. [taper] 0.53 mm at (14.4, 13.7, 5.8)     14 samples, 0.6 mm2, runs 0.9 mm, band 0.69 mm
+        6. [taper] 0.53 mm at (-14.2, 1.5, 5.8)     15 samples, 0.6 mm2, runs 2.1 mm, band 0.30 mm
+        ... and 36 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/thickness-belt_cell.md
+
+--- stderr
