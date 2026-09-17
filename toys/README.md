@@ -1,5 +1,22 @@
 # Public toy examples
 
+## Generated design archives
+
+The following owner-requested archives preserve existing generated CAD designs
+and local revisions. Their READMEs distinguish sealed Make output, local
+revisions, and incomplete drafts; these entries do not assert verified Factory
+publication. Each includes a file manifest and source-to-archive provenance.
+
+| Design | Archived state |
+|---|---|
+| [Rivetback H-6](ferro-line-rivetback-h6/) | Original Make output and existing final verification report |
+| [Rivetback H-6 V2](ferro-line-rivetback-h6-v2/) | Local refinement and existing V2 final verification report |
+| [Rivetback H-6 V3](ferro-line-rivetback-h6-v3/) | Local refinement and existing V3 final verification report |
+| [Rivetback H-6 V4](ferro-line-rivetback-h6-v4/) | Unarmed Make output, existing final verification, and earlier desktop V4 revision |
+| [Emerald Hover](soren-voss-emerald-hover/) | Incomplete hummingbird draft; component STEP exports and editable source |
+
+## Workflow snapshots
+
 This source-checkout directory contains sanitized examples only. A new
 `workshop wish` creates its private Codex project at
 `$WORKSHOP_HOME/runs/<wish-id>/workspace`; trusted checkpoints, credentials,

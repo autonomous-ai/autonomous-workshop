@@ -1,0 +1,397 @@
+{
+  "entries": [
+    {
+      "archive_sha256": "49d9554bda003d7192c99c4b04c1eb52e91736712dc338f8db6400d90a0c3506",
+      "path": "cad/bird_params.py",
+      "sanitized": false,
+      "source_sha256": "49d9554bda003d7192c99c4b04c1eb52e91736712dc338f8db6400d90a0c3506"
+    },
+    {
+      "archive_sha256": "e63a3124b27b8bc52eb59eba57e6be1e82d98af4692732ea42a97e38cfefbe72",
+      "path": "cad/hummingbird.step.py",
+      "sanitized": false,
+      "source_sha256": "e63a3124b27b8bc52eb59eba57e6be1e82d98af4692732ea42a97e38cfefbe72"
+    },
+    {
+      "archive_sha256": "626fa72e31e93338b33addd4b457f27c24770a56bfcc1d3c676d3a780f237d5f",
+      "path": "cad/params.py",
+      "sanitized": false,
+      "source_sha256": "626fa72e31e93338b33addd4b457f27c24770a56bfcc1d3c676d3a780f237d5f"
+    },
+    {
+      "archive_sha256": "71ca84585dd21203c91d8d09558f5749caed627d2121f836f3c2c7d731b1f512",
+      "path": "cad/part_bird_left.step",
+      "sanitized": false,
+      "source_sha256": "71ca84585dd21203c91d8d09558f5749caed627d2121f836f3c2c7d731b1f512"
+    },
+    {
+      "archive_sha256": "8ddd818e3458d1b1cc37f9d28394d218df2954cd86e346a6e1102930ea632499",
+      "path": "cad/part_bird_left.step.py",
+      "sanitized": false,
+      "source_sha256": "8ddd818e3458d1b1cc37f9d28394d218df2954cd86e346a6e1102930ea632499"
+    },
+    {
+      "archive_sha256": "eb0d3c6d4662e63dccc36dd8a30e09c92a4dc5638cbe133a446b4b30f38d6e5e",
+      "path": "cad/part_bird_right.step",
+      "sanitized": false,
+      "source_sha256": "eb0d3c6d4662e63dccc36dd8a30e09c92a4dc5638cbe133a446b4b30f38d6e5e"
+    },
+    {
+      "archive_sha256": "c8cb71d0e0e0caf8942ea8e8ab57b18774f16c3387ad0fb9e64b57377e0f39f7",
+      "path": "cad/part_bird_right.step.py",
+      "sanitized": false,
+      "source_sha256": "c8cb71d0e0e0caf8942ea8e8ab57b18774f16c3387ad0fb9e64b57377e0f39f7"
+    },
+    {
+      "archive_sha256": "984d0e30969dcc027bd76be6d6c3481d5b69ca17cbce350ef00330bba157b0c1",
+      "path": "cad/part_cam.step",
+      "sanitized": false,
+      "source_sha256": "984d0e30969dcc027bd76be6d6c3481d5b69ca17cbce350ef00330bba157b0c1"
+    },
+    {
+      "archive_sha256": "1c0bc07aaef134a48a5a2116ef9518e9c3fe3c36d3da4be5e9fd431924bdc8a0",
+      "path": "cad/part_cam.step.py",
+      "sanitized": false,
+      "source_sha256": "1c0bc07aaef134a48a5a2116ef9518e9c3fe3c36d3da4be5e9fd431924bdc8a0"
+    },
+    {
+      "archive_sha256": "003fbe28782484bf5549ebcfc271feeee00241c080a985a765428d3610c726f5",
+      "path": "cad/part_crank.step",
+      "sanitized": false,
+      "source_sha256": "003fbe28782484bf5549ebcfc271feeee00241c080a985a765428d3610c726f5"
+    },
+    {
+      "archive_sha256": "477111a9223f13c32c8cd76fa04abfc98bc62f571fb107b5fe91db0860e04953",
+      "path": "cad/part_crank.step.py",
+      "sanitized": false,
+      "source_sha256": "477111a9223f13c32c8cd76fa04abfc98bc62f571fb107b5fe91db0860e04953"
+    },
+    {
+      "archive_sha256": "ac6099e9e991815ecd4c73f0db6ffb9e3959dbd2a7417fcf4f1ca195b3a92753",
+      "path": "cad/part_crosshead.step",
+      "sanitized": false,
+      "source_sha256": "ac6099e9e991815ecd4c73f0db6ffb9e3959dbd2a7417fcf4f1ca195b3a92753"
+    },
+    {
+      "archive_sha256": "c9550451a3679ae1fc18914a5ab15a10b4c905140a426cbf08ce8e54adf2ab01",
+      "path": "cad/part_crosshead.step.py",
+      "sanitized": false,
+      "source_sha256": "c9550451a3679ae1fc18914a5ab15a10b4c905140a426cbf08ce8e54adf2ab01"
+    },
+    {
+      "archive_sha256": "ea8bb2fe9a72803162d560ecd80f5bc8c6e0b9a2dc30e64a005eeeb4c78891fc",
+      "path": "cad/part_drive_cap.step",
+      "sanitized": false,
+      "source_sha256": "ea8bb2fe9a72803162d560ecd80f5bc8c6e0b9a2dc30e64a005eeeb4c78891fc"
+    },
+    {
+      "archive_sha256": "d71d9fd029ff7c232a42dbd14c9eba57e8a6e4c06c6c366525eb84caf40f2971",
+      "path": "cad/part_drive_cap.step.py",
+      "sanitized": false,
+      "source_sha256": "d71d9fd029ff7c232a42dbd14c9eba57e8a6e4c06c6c366525eb84caf40f2971"
+    },
+    {
+      "archive_sha256": "f62fdcdf63be3f4c45282a1ee8563a4022df1243198a37e9d36b01e9ca2814a7",
+      "path": "cad/part_drive_pin.step",
+      "sanitized": false,
+      "source_sha256": "f62fdcdf63be3f4c45282a1ee8563a4022df1243198a37e9d36b01e9ca2814a7"
+    },
+    {
+      "archive_sha256": "bc1902bd22f170db0991570ed179728eb8eaee295f41a4e4f4f915d4db67a733",
+      "path": "cad/part_drive_pin.step.py",
+      "sanitized": false,
+      "source_sha256": "bc1902bd22f170db0991570ed179728eb8eaee295f41a4e4f4f915d4db67a733"
+    },
+    {
+      "archive_sha256": "9869c6d76faca03684fa28697213b7ba0cca55ad12d5af79d2eafbe60043ea61",
+      "path": "cad/part_frame.step",
+      "sanitized": false,
+      "source_sha256": "9869c6d76faca03684fa28697213b7ba0cca55ad12d5af79d2eafbe60043ea61"
+    },
+    {
+      "archive_sha256": "0c3ef1f007a359ecb7a1917e3eed2bac044f9370694cb3801cc378af81e96543",
+      "path": "cad/part_frame.step.py",
+      "sanitized": false,
+      "source_sha256": "0c3ef1f007a359ecb7a1917e3eed2bac044f9370694cb3801cc378af81e96543"
+    },
+    {
+      "archive_sha256": "7986de28f51381a175b6419a88b259e1464522bdcd2d08e47d9318162bc0fbfb",
+      "path": "cad/part_rod.step",
+      "sanitized": false,
+      "source_sha256": "7986de28f51381a175b6419a88b259e1464522bdcd2d08e47d9318162bc0fbfb"
+    },
+    {
+      "archive_sha256": "27e8e13309ab2dc174eadd7a21c3ea16ed6f2e2e30be57bff5e40d817def5e07",
+      "path": "cad/part_rod.step.py",
+      "sanitized": false,
+      "source_sha256": "27e8e13309ab2dc174eadd7a21c3ea16ed6f2e2e30be57bff5e40d817def5e07"
+    },
+    {
+      "archive_sha256": "2d3c13e319035f438ad724e153a0cd3db9ccf614bc86d4fe3afc5e130186bccd",
+      "path": "cad/part_shaft.step",
+      "sanitized": false,
+      "source_sha256": "2d3c13e319035f438ad724e153a0cd3db9ccf614bc86d4fe3afc5e130186bccd"
+    },
+    {
+      "archive_sha256": "d390ea860f1b75ea786ca5055bf2d91b51c2144b5a4fa2d5e9ccf8b041c90374",
+      "path": "cad/part_shaft.step.py",
+      "sanitized": false,
+      "source_sha256": "d390ea860f1b75ea786ca5055bf2d91b51c2144b5a4fa2d5e9ccf8b041c90374"
+    },
+    {
+      "archive_sha256": "f32c91740a357357773bc7fe111f27a3f3970ae4c8b500110153fcedcb5de0e4",
+      "path": "cad/part_shoulder_cap.step",
+      "sanitized": false,
+      "source_sha256": "f32c91740a357357773bc7fe111f27a3f3970ae4c8b500110153fcedcb5de0e4"
+    },
+    {
+      "archive_sha256": "e5cb2e5959e43d81840d63e0ef189e00e51618704fb9df45c9e5bbbad24c6d11",
+      "path": "cad/part_shoulder_cap.step.py",
+      "sanitized": false,
+      "source_sha256": "e5cb2e5959e43d81840d63e0ef189e00e51618704fb9df45c9e5bbbad24c6d11"
+    },
+    {
+      "archive_sha256": "587de0980555eb8230cb5ea32c698f8dd9ffde987f4950d83aeff26ca47622a3",
+      "path": "cad/part_shoulder_pin.step",
+      "sanitized": false,
+      "source_sha256": "587de0980555eb8230cb5ea32c698f8dd9ffde987f4950d83aeff26ca47622a3"
+    },
+    {
+      "archive_sha256": "71f404b0e572578b882380ce6b3885807af92de76e6c5c12e2d0d51ed8afb95b",
+      "path": "cad/part_shoulder_pin.step.py",
+      "sanitized": false,
+      "source_sha256": "71f404b0e572578b882380ce6b3885807af92de76e6c5c12e2d0d51ed8afb95b"
+    },
+    {
+      "archive_sha256": "e507a8dfc7637bc931baa9854ead91afb1989d0642b7b6496f395bf878e2d492",
+      "path": "cad/part_wing_left.step",
+      "sanitized": false,
+      "source_sha256": "e507a8dfc7637bc931baa9854ead91afb1989d0642b7b6496f395bf878e2d492"
+    },
+    {
+      "archive_sha256": "3101545163b4e63c1c8936e1ed488bdcf2a4bcd84f003f46673c2b3580c6b7c7",
+      "path": "cad/part_wing_left.step.py",
+      "sanitized": false,
+      "source_sha256": "3101545163b4e63c1c8936e1ed488bdcf2a4bcd84f003f46673c2b3580c6b7c7"
+    },
+    {
+      "archive_sha256": "b562143d2f7b9532f25e5259616b4a55cdb5051c0f728f7aac605e15b2b01384",
+      "path": "cad/part_wing_right.step",
+      "sanitized": false,
+      "source_sha256": "b562143d2f7b9532f25e5259616b4a55cdb5051c0f728f7aac605e15b2b01384"
+    },
+    {
+      "archive_sha256": "8bd66414ccc0d3e71c70fca94d88ae43eff5875a99e8ee23eec68865b22a0d20",
+      "path": "cad/part_wing_right.step.py",
+      "sanitized": false,
+      "source_sha256": "8bd66414ccc0d3e71c70fca94d88ae43eff5875a99e8ee23eec68865b22a0d20"
+    },
+    {
+      "archive_sha256": "cbba8039fe94bd6739399f559890cbddeb63b8f16f8d3c2aad03dcf293b9056c",
+      "path": "cad/part_yoke.step",
+      "sanitized": false,
+      "source_sha256": "cbba8039fe94bd6739399f559890cbddeb63b8f16f8d3c2aad03dcf293b9056c"
+    },
+    {
+      "archive_sha256": "6314f71f3d5eac13efb29ece01f51d532c7f1302d0278b270f0d120a41d043f1",
+      "path": "cad/part_yoke.step.py",
+      "sanitized": false,
+      "source_sha256": "6314f71f3d5eac13efb29ece01f51d532c7f1302d0278b270f0d120a41d043f1"
+    },
+    {
+      "archive_sha256": "de702251d902bee8f1588deb868c14ac0d13652771cfaf6b52dd18ff992c8f64",
+      "path": "cad/validation.py",
+      "sanitized": false,
+      "source_sha256": "de702251d902bee8f1588deb868c14ac0d13652771cfaf6b52dd18ff992c8f64"
+    },
+    {
+      "archive_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path": "cad/parts/__init__.py",
+      "sanitized": false,
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "archive_sha256": "d90b395ffa25c5d12e0b92b5b27d3c96b9a71f2e1f4f8e554e8cc70e0f564693",
+      "path": "cad/parts/bird.py",
+      "sanitized": false,
+      "source_sha256": "d90b395ffa25c5d12e0b92b5b27d3c96b9a71f2e1f4f8e554e8cc70e0f564693"
+    },
+    {
+      "archive_sha256": "237aa255999d79eee5836015045a060126b55578adacfd9119fbe2469e1ad857",
+      "path": "cad/parts/bird_left.py",
+      "sanitized": false,
+      "source_sha256": "237aa255999d79eee5836015045a060126b55578adacfd9119fbe2469e1ad857"
+    },
+    {
+      "archive_sha256": "2378c9325aa94c6a98f460acb3b942cc9b525266b86310f5d8f052b897176e54",
+      "path": "cad/parts/bird_right.py",
+      "sanitized": false,
+      "source_sha256": "2378c9325aa94c6a98f460acb3b942cc9b525266b86310f5d8f052b897176e54"
+    },
+    {
+      "archive_sha256": "95d1766ff2e39625d02cccb7bb3d6ea9c71c4f90823a6daef632f1799b9c6913",
+      "path": "cad/parts/cam.py",
+      "sanitized": false,
+      "source_sha256": "95d1766ff2e39625d02cccb7bb3d6ea9c71c4f90823a6daef632f1799b9c6913"
+    },
+    {
+      "archive_sha256": "df5b488b32623c0bc3f54636a39cb14be2f3b70efae1b14bd2a0991d65abd31e",
+      "path": "cad/parts/crank.py",
+      "sanitized": false,
+      "source_sha256": "df5b488b32623c0bc3f54636a39cb14be2f3b70efae1b14bd2a0991d65abd31e"
+    },
+    {
+      "archive_sha256": "0a9d6dc3e3122fb8ffbd44e99e49823e4a2033f08e03bce123e4b6223ec8cba4",
+      "path": "cad/parts/crosshead.py",
+      "sanitized": false,
+      "source_sha256": "0a9d6dc3e3122fb8ffbd44e99e49823e4a2033f08e03bce123e4b6223ec8cba4"
+    },
+    {
+      "archive_sha256": "00d7fc337ef55efd564e447f733d364b1c8f25e28a7ab26d086e00ee8500da55",
+      "path": "cad/parts/drive.py",
+      "sanitized": false,
+      "source_sha256": "00d7fc337ef55efd564e447f733d364b1c8f25e28a7ab26d086e00ee8500da55"
+    },
+    {
+      "archive_sha256": "1480eb931e8d1d295a4f36d986a7d897b6e19b2a8aff3c4efd02769dd484b031",
+      "path": "cad/parts/drive_cap.py",
+      "sanitized": false,
+      "source_sha256": "1480eb931e8d1d295a4f36d986a7d897b6e19b2a8aff3c4efd02769dd484b031"
+    },
+    {
+      "archive_sha256": "aa1e1f4dda0728d2eae975576eb0655bd1f9c87a6ba2859de539bd75a354025c",
+      "path": "cad/parts/drive_pin.py",
+      "sanitized": false,
+      "source_sha256": "aa1e1f4dda0728d2eae975576eb0655bd1f9c87a6ba2859de539bd75a354025c"
+    },
+    {
+      "archive_sha256": "b2eb778ca84d91db7b12285fffe542948175eccb7cc83e887f231f97d8252a17",
+      "path": "cad/parts/follower.py",
+      "sanitized": false,
+      "source_sha256": "b2eb778ca84d91db7b12285fffe542948175eccb7cc83e887f231f97d8252a17"
+    },
+    {
+      "archive_sha256": "de8049b0ab74b56325699606e2d409baa7b8f899be12a18632427edfcc48c8b8",
+      "path": "cad/parts/frame.py",
+      "sanitized": false,
+      "source_sha256": "de8049b0ab74b56325699606e2d409baa7b8f899be12a18632427edfcc48c8b8"
+    },
+    {
+      "archive_sha256": "cc104bcb5e1caefca42d38ea1d6cd3c5e913435df9c7d00c023cc3696cd4a51d",
+      "path": "cad/parts/pins.py",
+      "sanitized": false,
+      "source_sha256": "cc104bcb5e1caefca42d38ea1d6cd3c5e913435df9c7d00c023cc3696cd4a51d"
+    },
+    {
+      "archive_sha256": "534b3923152239e1efde1a3f48a0415a21efd36bf84ae9c57ef17a72372454a8",
+      "path": "cad/parts/rod.py",
+      "sanitized": false,
+      "source_sha256": "534b3923152239e1efde1a3f48a0415a21efd36bf84ae9c57ef17a72372454a8"
+    },
+    {
+      "archive_sha256": "ac9cadefd77590a8599b57716c2c426d65bfe63da8c2bc3ec945770d92ea491a",
+      "path": "cad/parts/shaft.py",
+      "sanitized": false,
+      "source_sha256": "ac9cadefd77590a8599b57716c2c426d65bfe63da8c2bc3ec945770d92ea491a"
+    },
+    {
+      "archive_sha256": "da33d2dab46becded7f69831e800db5ed553d7afe0b7feb04ed677927dbcc381",
+      "path": "cad/parts/shoulder_cap.py",
+      "sanitized": false,
+      "source_sha256": "da33d2dab46becded7f69831e800db5ed553d7afe0b7feb04ed677927dbcc381"
+    },
+    {
+      "archive_sha256": "088e33afed5b68df364185d50cf1d904216556c3b4e8fe51744de6b0e8e4ba9c",
+      "path": "cad/parts/shoulder_pin.py",
+      "sanitized": false,
+      "source_sha256": "088e33afed5b68df364185d50cf1d904216556c3b4e8fe51744de6b0e8e4ba9c"
+    },
+    {
+      "archive_sha256": "543b739b4b1a6d7a506bb5f103950c1ed102316744cb18057813133ebd4655e7",
+      "path": "cad/parts/wing_left.py",
+      "sanitized": false,
+      "source_sha256": "543b739b4b1a6d7a506bb5f103950c1ed102316744cb18057813133ebd4655e7"
+    },
+    {
+      "archive_sha256": "2cb4bcb4e98464447fc341993a3a32bf3c5436914f5016da257ef91a4a78bc21",
+      "path": "cad/parts/wing_right.py",
+      "sanitized": false,
+      "source_sha256": "2cb4bcb4e98464447fc341993a3a32bf3c5436914f5016da257ef91a4a78bc21"
+    },
+    {
+      "archive_sha256": "2cd47922d01da5e866dfed6499f8a3147546c56c68f0bd232dd4dee9edac7ed3",
+      "path": "cad/parts/wings.py",
+      "sanitized": false,
+      "source_sha256": "2cd47922d01da5e866dfed6499f8a3147546c56c68f0bd232dd4dee9edac7ed3"
+    },
+    {
+      "archive_sha256": "83a6032cf5e50d0de05fa5fb2fa4d6b07e7048130c2279812042cd0c128e63ff",
+      "path": "cad/parts/yoke.py",
+      "sanitized": false,
+      "source_sha256": "83a6032cf5e50d0de05fa5fb2fa4d6b07e7048130c2279812042cd0c128e63ff"
+    },
+    {
+      "archive_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path": "cad/assemblies/__init__.py",
+      "sanitized": false,
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "archive_sha256": "ba888b4830efe638f1c385f00b83728a968d95aaebacd4ab5391cfa5ba5668c0",
+      "path": "cad/assemblies/hummingbird.py",
+      "sanitized": false,
+      "source_sha256": "ba888b4830efe638f1c385f00b83728a968d95aaebacd4ab5391cfa5ba5668c0"
+    },
+    {
+      "archive_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "path": "cad/features/__init__.py",
+      "sanitized": false,
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "archive_sha256": "8926c3d7d4b21ef432486c37d1e3abb2a91d6e24efcf59e9267a30b2a61a11de",
+      "path": "cad/features/bird.py",
+      "sanitized": false,
+      "source_sha256": "8926c3d7d4b21ef432486c37d1e3abb2a91d6e24efcf59e9267a30b2a61a11de"
+    },
+    {
+      "archive_sha256": "2866fc39e51a3cf58d7ff213f921df4b0c9354e9bfcf1474f3f6349060d91f37",
+      "path": "cad/features/primitives.py",
+      "sanitized": false,
+      "source_sha256": "2866fc39e51a3cf58d7ff213f921df4b0c9354e9bfcf1474f3f6349060d91f37"
+    },
+    {
+      "archive_sha256": "137f90fabb5dd6ef37bb38524371675f3ef750a14067194ed72042d6dbdb82c2",
+      "path": "cad/features/prisms.py",
+      "sanitized": false,
+      "source_sha256": "137f90fabb5dd6ef37bb38524371675f3ef750a14067194ed72042d6dbdb82c2"
+    },
+    {
+      "archive_sha256": "c6d3e96e8029696dc9e5f1ee7059dc56d95b1a2fcca7ddceea05e44b3d419095",
+      "path": "cad/features/wings.py",
+      "sanitized": false,
+      "source_sha256": "c6d3e96e8029696dc9e5f1ee7059dc56d95b1a2fcca7ddceea05e44b3d419095"
+    },
+    {
+      "archive_sha256": "044cb548c69430357add1d1f896eda08e76e4723150cf30cfd15bd9281326701",
+      "path": "drafts/build_motion.py",
+      "sanitized": false,
+      "source_sha256": "044cb548c69430357add1d1f896eda08e76e4723150cf30cfd15bd9281326701"
+    },
+    {
+      "archive_sha256": "db1eaf5d94c8e32194d198c43cc682eb3bf3968c9dcf012e04cf99b12c3105b2",
+      "path": "drafts/frame.py",
+      "sanitized": false,
+      "source_sha256": "db1eaf5d94c8e32194d198c43cc682eb3bf3968c9dcf012e04cf99b12c3105b2"
+    },
+    {
+      "archive_sha256": "4788107135b163e612e9c2db1bc29a9c9a5093ebff7a2a87e2ca15fdad09fc71",
+      "path": "drafts/wings.py",
+      "sanitized": false,
+      "source_sha256": "4788107135b163e612e9c2db1bc29a9c9a5093ebff7a2a87e2ca15fdad09fc71"
+    }
+  ],
+  "kind": "generated-design-archive-provenance",
+  "schema_version": 1,
+  "status": "Incomplete Make draft: 15 component STEP exports; no assembled STEP, final verification, or verified Factory publication."
+}
