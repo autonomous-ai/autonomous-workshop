@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Angular faceted slab, freshly inspected after the cavity repair. Iso view: the cavity band is now a ring of large triangles at clearly different tilts and widths, the rim's inner edge zigzags in height instead of running level, and the eight outer pocket circles cut into the band's base line so the facet edges break at those rims. Top view: the band reads as a varied tonal ring around the flat field, with the field boundary scalloped by the pocket circles. Front view: a low slab whose ends taper through flat facets at visibly different angles; bottom is one flat plane on z zero. No curve, fillet or round-over anywhere; the only round things are the nine bores. The orthographic top view shades the 2 mm recesses the same tone as the field, so pocket depth is read from the front and iso views and from measure/geometry-audit.json, which measures all nine seat floors at z 6.00 with exact 15 mm radius.",
+  "packet_sha256": "b94cb6f85c9731b0cf4ab6bbc4990342ce11b0fea4e90f5d32ab8294c03f00b0",
+  "status": "pass"
+}

@@ -1,0 +1,128 @@
+{
+  "reason": "Frozen proposal tool expects legacy RESULT lines; current CAD reporters emit PASS tables.",
+  "verification_sha256": "e29e2a5414a8c73bcc86d984074dfc80e55584c10ab68ef706a699f03ccccb42",
+  "raw_reports_preserved": true,
+  "tools_or_thresholds_changed": false,
+  "reports": [
+    {
+      "report": "thickness-bubble_1.md",
+      "raw_sha256": "b938851827446285e23bd53ea2548d9940a7c8bf6d681248a363c51b6d7a252d",
+      "canonical_sha256": "d6b9e3195cb80af36546deb74f2a26398f1019acd6e5ee315b6ba190646e3212",
+      "summary": "RESULT: printable at this wall"
+    },
+    {
+      "report": "thickness-bubble_2.md",
+      "raw_sha256": "ea620b1565b5e40cfd7e499381d631ccbd25195d86dd8221679a6d43ef51a284",
+      "canonical_sha256": "d104f7eacf0f1ccf6eb026e16f7d1b5c1f69068b92721cacfd356a1adf845d79",
+      "summary": "RESULT: printable at this wall"
+    },
+    {
+      "report": "thickness-bubble_3.md",
+      "raw_sha256": "caec8ca71382231cffd989e41661451a4e995d1c98b3f146a85c003893256699",
+      "canonical_sha256": "3f6591a865e116c02114fc79944564e090390db872e43de79b3cfc17e4661efe",
+      "summary": "RESULT: printable at this wall"
+    },
+    {
+      "report": "thickness-bubble_4.md",
+      "raw_sha256": "a4550106ca21ea709b8b94800287fab89f9adaaf72af2bf3c853ba1c6c85b84e",
+      "canonical_sha256": "af68c4b43d711b1a437557a93a1a31608aa995d7f98578e7f558867fc0170398",
+      "summary": "RESULT: printable at this wall"
+    },
+    {
+      "report": "thickness-rind.md",
+      "raw_sha256": "d8476c37d67e6df57c77c2f57d400dff56111d92c2b435b5fe754ae5b8c5b643",
+      "canonical_sha256": "4acf25eef051b254193de7f8632edbf629b43179288d6a65c55a2cdb8dcfbe47",
+      "summary": "RESULT: printable at this wall"
+    },
+    {
+      "report": "thickness-tooth_1.md",
+      "raw_sha256": "4aaa9645a8a95cb32c3c5a3c338062164c59e046e2cd398d7578f14927ca7964",
+      "canonical_sha256": "320dfe937407dfc234a278f7dfca72e7aabdde51aa17f159cdc27ff00d811373",
+      "summary": "RESULT: printable at this wall"
+    },
+    {
+      "report": "thickness-tooth_2.md",
+      "raw_sha256": "ec4f31dc304273bd71295726e036d2bc61084680a828f23a1b27173495beade3",
+      "canonical_sha256": "efb23dfa73d16b24425e27f2313a2071154875ac8879f1803f9430190a2e32da",
+      "summary": "RESULT: printable at this wall"
+    },
+    {
+      "report": "thickness-tooth_3.md",
+      "raw_sha256": "74c8862547e36b4c677a7ed222fcffe328a15ad8f4492f0459fc3e6d5be13d7c",
+      "canonical_sha256": "d65b5fe7ad9a1565418694a614bbb33e1a5e2c52a6bc42988c7fba7ed2d18f7f",
+      "summary": "RESULT: printable at this wall"
+    },
+    {
+      "report": "thickness-tooth_4.md",
+      "raw_sha256": "375ad876fad7ef8ea5fce3a50a92663d8aad04c8b4240763863df3f397c13f00",
+      "canonical_sha256": "a55b5118fff354f8171f91eb7bb8b3418bae999c773c3dbe3416a2900cd2c10c",
+      "summary": "RESULT: printable at this wall"
+    },
+    {
+      "report": "thickness-tooth_5.md",
+      "raw_sha256": "9ad211b8e90136517d846e9728dd4accc3dee1fe7f841568068cfcc60d2fd18e",
+      "canonical_sha256": "d3089959374234ea3763da87374568a28263d2f74b664cc20c05ce90e4eacdb9",
+      "summary": "RESULT: printable at this wall"
+    },
+    {
+      "report": "overhang-bubble_1.md",
+      "raw_sha256": "e62d0aafdb515943692f9416607f4cb05ec5f1e4d78f670ae9f4214b169e208f",
+      "canonical_sha256": "a967256bf36fb1cca4eb683dbf40cd180f1b8e64ab9c5c8cc9896cdb00d3b8c4",
+      "summary": "RESULT: prints unsupported"
+    },
+    {
+      "report": "overhang-bubble_2.md",
+      "raw_sha256": "49beb5a226b5e138fad224b796db821750bfdbaf2fb1ccbf078766a5336df9d6",
+      "canonical_sha256": "8c71e30104b8f5eda35f19ac08645e3c9a60e7523237c5989394d6035e9a0e8b",
+      "summary": "RESULT: prints unsupported"
+    },
+    {
+      "report": "overhang-bubble_3.md",
+      "raw_sha256": "598231c2742427b1102243d422ea4e7f61a8af453959944c778f793f82455206",
+      "canonical_sha256": "563035fb707c5d10fbb2cad5fa1fc64d323725d4f0ebb29c3b4a2c17e122e616",
+      "summary": "RESULT: prints unsupported"
+    },
+    {
+      "report": "overhang-bubble_4.md",
+      "raw_sha256": "ec5d4886ee86fd4b76c212579d8b2a56452cca153a8aac72a07a00c7ff4a7f22",
+      "canonical_sha256": "8d057e3328d1a0ef0be61f177bc5a594a2cc3ffb4be034c1cd8cd96b98a979a5",
+      "summary": "RESULT: prints unsupported"
+    },
+    {
+      "report": "overhang-rind.md",
+      "raw_sha256": "a9e3923180a08e24a3411c29f3a781669bea95ccdcf2c47c3b8c3632c952660f",
+      "canonical_sha256": "3666e4af4119456f5b41edcfa73f724c27a34888b054c625a00291d6e937ce3e",
+      "summary": "RESULT: prints unsupported"
+    },
+    {
+      "report": "overhang-tooth_1.md",
+      "raw_sha256": "276e3f4786dc76c57ff649fba2d884acfcc319a9e1511077787a5f1c33a027c3",
+      "canonical_sha256": "6725678c6c9012137a2c38ddfe177ccee897a4fac2ad90c2276a371f054cdef4",
+      "summary": "RESULT: prints unsupported"
+    },
+    {
+      "report": "overhang-tooth_2.md",
+      "raw_sha256": "5718dcdd3d3f11c071137e7f2ed7b97b0aa93d79956cbca44c01d28725e825b9",
+      "canonical_sha256": "f73c03e3372610c9852c55196d51efc750821cc7e3770c1d9086b9ba40d532e1",
+      "summary": "RESULT: prints unsupported"
+    },
+    {
+      "report": "overhang-tooth_3.md",
+      "raw_sha256": "215cecc004bcfae96d5abb5a0070440ba17958cdf37deee8f3375dc694772844",
+      "canonical_sha256": "5d7a6be5dc699bbe9b0bab1cb2279df7e4ca3f0d6961dabe9d14bfb79ae9e4a7",
+      "summary": "RESULT: prints unsupported"
+    },
+    {
+      "report": "overhang-tooth_4.md",
+      "raw_sha256": "c492ecb86330ddc454a8d2ceb99174d0ffe7d691313df7b2258af938a7dc032a",
+      "canonical_sha256": "8c1fabdb5c44da4e94fd4a1fea3c129d00c7cf85789303774988d5904b711c9d",
+      "summary": "RESULT: prints unsupported"
+    },
+    {
+      "report": "overhang-tooth_5.md",
+      "raw_sha256": "76035022003944d6e549243e736f3d6c022a09f1cc2226d1aea5d47ce2cc6741",
+      "canonical_sha256": "549daf5e356ef276f3943845b62d93bc998be6de11f6bd36550c9fe7c789383a",
+      "summary": "RESULT: prints unsupported"
+    }
+  ]
+}

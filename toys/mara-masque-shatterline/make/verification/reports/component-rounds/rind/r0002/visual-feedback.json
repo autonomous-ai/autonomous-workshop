@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Angular faceted slab. Sixteen flat outer wall facets at visibly different tilts meet at sharp edges; four corners read as chipped wedges; the faceted cavity band runs all the way around between the flat rim and the flat field. Nine circular pockets sit in the field, the cavity facet edges breaking at the outer pocket rims. No curve, fillet or round-over anywhere. Bottom is one flat plane on z zero. The orthographic top view shades the 2 mm recesses the same tone as the field, so pocket depth is read from the front and iso views and from measure/geometry-audit.json, which measures all nine seat floors at z 6.00 with exact 15 mm radius.",
+  "packet_sha256": "5d762fe7661329ab8fe756b573b17a8d64300c68f260af647889a0721efcc5aa",
+  "status": "pass"
+}

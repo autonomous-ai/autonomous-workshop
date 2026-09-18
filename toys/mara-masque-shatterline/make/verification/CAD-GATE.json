@@ -1,0 +1,51 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-17T18:27:29+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 133.05 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=4e5fc16f1ab6a694b18e3794a24279e19d7c500be2794934e13c572d7af023eb` | note | 0.00 |
+| 2 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout' cad/veinwake` | rc=0 | 0.06 |
+| 3 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/gen' cad/veinwake/veinwake.step.py cad/veinwake/part_bubble_1.step.py cad/veinwake/part_bubble_2.step.py cad/veinwake/part_bubble_3.step.py cad/veinwake/part_bubble_4.step.py cad/veinwake/part_rind.step.py cad/veinwake/part_tooth_1.step.py cad/veinwake/part_tooth_2.step.py cad/veinwake/part_tooth_3.step.py cad/veinwake/part_tooth_4.step.py cad/veinwake/part_tooth_5.step.py --write --json` | rc=0 | 4.13 |
+| 4 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit' cad/veinwake --bed 220.0 220.0 --entry cad/veinwake/part_bubble_1.step.py --entry cad/veinwake/part_bubble_2.step.py --entry cad/veinwake/part_bubble_3.step.py --entry cad/veinwake/part_bubble_4.step.py --entry cad/veinwake/part_rind.step.py --entry cad/veinwake/part_tooth_1.step.py --entry cad/veinwake/part_tooth_2.step.py --entry cad/veinwake/part_tooth_3.step.py --entry cad/veinwake/part_tooth_4.step.py --entry cad/veinwake/part_tooth_5.step.py --strict` | rc=0 | 2.85 |
+| 5 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 cad/veinwake/measure/check_fit.py` | rc=0 | 2.23 |
+| 6 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_numbers' cad/veinwake` | rc=0 | 2.31 |
+| 7 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_format' cad/veinwake` | rc=0 | 0.03 |
+| 8 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 9 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 10 | `check_motion  # NOT RUN: disabled by Make motion policy; motion is unverified` | skipped | 0.00 |
+| 11 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect' batch (23 JSONL requests)` | rc=0 | 7.66 |
+| 12 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' cad/veinwake/part_bubble_1.step.py --bed 220x220x220` | rc=0 | 2.66 |
+| 13 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' cad/veinwake/part_bubble_1.step.py --angle 45.0 --report cad/veinwake/measure/overhang-bubble_1.md` | rc=0 | 2.98 |
+| 14 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' cad/veinwake/part_bubble_1.step.py --nozzle 0.4 --report cad/veinwake/measure/thickness-bubble_1.md` | rc=0 | 6.55 |
+| 15 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' cad/veinwake/part_bubble_2.step.py --bed 220x220x220` | rc=0 | 2.59 |
+| 16 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' cad/veinwake/part_bubble_2.step.py --angle 45.0 --report cad/veinwake/measure/overhang-bubble_2.md` | rc=0 | 2.57 |
+| 17 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' cad/veinwake/part_bubble_2.step.py --nozzle 0.4 --report cad/veinwake/measure/thickness-bubble_2.md` | rc=0 | 6.09 |
+| 18 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' cad/veinwake/part_bubble_3.step.py --bed 220x220x220` | rc=0 | 2.46 |
+| 19 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' cad/veinwake/part_bubble_3.step.py --angle 45.0 --report cad/veinwake/measure/overhang-bubble_3.md` | rc=0 | 2.65 |
+| 20 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' cad/veinwake/part_bubble_3.step.py --nozzle 0.4 --report cad/veinwake/measure/thickness-bubble_3.md` | rc=0 | 6.24 |
+| 21 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' cad/veinwake/part_bubble_4.step.py --bed 220x220x220` | rc=0 | 2.80 |
+| 22 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' cad/veinwake/part_bubble_4.step.py --angle 45.0 --report cad/veinwake/measure/overhang-bubble_4.md` | rc=0 | 2.70 |
+| 23 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' cad/veinwake/part_bubble_4.step.py --nozzle 0.4 --report cad/veinwake/measure/thickness-bubble_4.md` | rc=0 | 6.88 |
+| 24 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' cad/veinwake/part_rind.step.py --bed 220x220x220` | rc=0 | 3.17 |
+| 25 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' cad/veinwake/part_rind.step.py --angle 45.0 --report cad/veinwake/measure/overhang-rind.md` | rc=0 | 3.08 |
+| 26 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' cad/veinwake/part_rind.step.py --nozzle 0.4 --report cad/veinwake/measure/thickness-rind.md` | rc=0 | 7.41 |
+| 27 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' cad/veinwake/part_tooth_1.step.py --bed 220x220x220` | rc=0 | 2.47 |
+| 28 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' cad/veinwake/part_tooth_1.step.py --angle 45.0 --report cad/veinwake/measure/overhang-tooth_1.md` | rc=0 | 2.34 |
+| 29 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' cad/veinwake/part_tooth_1.step.py --nozzle 0.4 --report cad/veinwake/measure/thickness-tooth_1.md` | rc=0 | 5.69 |
+| 30 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' cad/veinwake/part_tooth_2.step.py --bed 220x220x220` | rc=0 | 2.45 |
+| 31 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' cad/veinwake/part_tooth_2.step.py --angle 45.0 --report cad/veinwake/measure/overhang-tooth_2.md` | rc=0 | 2.54 |
+| 32 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' cad/veinwake/part_tooth_2.step.py --nozzle 0.4 --report cad/veinwake/measure/thickness-tooth_2.md` | rc=0 | 5.89 |
+| 33 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' cad/veinwake/part_tooth_3.step.py --bed 220x220x220` | rc=0 | 2.43 |
+| 34 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' cad/veinwake/part_tooth_3.step.py --angle 45.0 --report cad/veinwake/measure/overhang-tooth_3.md` | rc=0 | 2.42 |
+| 35 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' cad/veinwake/part_tooth_3.step.py --nozzle 0.4 --report cad/veinwake/measure/thickness-tooth_3.md` | rc=0 | 5.84 |
+| 36 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' cad/veinwake/part_tooth_4.step.py --bed 220x220x220` | rc=0 | 2.43 |
+| 37 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' cad/veinwake/part_tooth_4.step.py --angle 45.0 --report cad/veinwake/measure/overhang-tooth_4.md` | rc=0 | 2.36 |
+| 38 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' cad/veinwake/part_tooth_4.step.py --nozzle 0.4 --report cad/veinwake/measure/thickness-tooth_4.md` | rc=0 | 5.72 |
+| 39 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_mesh' cad/veinwake/part_tooth_5.step.py --bed 220x220x220` | rc=0 | 2.48 |
+| 40 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang' cad/veinwake/part_tooth_5.step.py --angle 45.0 --report cad/veinwake/measure/overhang-tooth_5.md` | rc=0 | 2.31 |
+| 41 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness' cad/veinwake/part_tooth_5.step.py --nozzle 0.4 --report cad/veinwake/measure/thickness-tooth_5.md` | rc=0 | 5.56 |

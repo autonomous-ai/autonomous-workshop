@@ -1,0 +1,62 @@
+{
+ "build": {
+  "bubble_1": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bubble_1"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bubble_1"
+ ],
+ "checks_ok": true,
+ "entry": "part_bubble_1.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_1/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bubble_1"
+ ],
+ "print": {
+  "bubble_1": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_1/r0002/overhang-bubble_1.log": "9cd83fb9f7377515cf4a081b591338f3baebc9e2c7734285c6b95ab3ff6eca77",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_1/r0002/thickness-bubble_1.log": "6a72c128f321088c955aaa0ff9e10b7e45f1954d4f1e3dbc2f5a4b8697302664"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:bubble_1",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Five interpenetrating cubes of clearly different edge length, each on its own two-axis orientation, fused into one squat mound on the unchanged 28 mm circular foot. Wider than it is tall; every face is a flat square or a clean intersection triangle; no lobe, dome, sphere or round surface survives. No cube floats or detaches, no sliver facet remains (smallest face 5.77 mm2), and the mound stays inside the foot outline. All four bubble packets render byte-identical images to this one.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_1/r0002/visual-packet.json",
+  "packet_sha256": "8013afeb697e87ff758600866ce0a8d28960d5b3416c070fb79cfac81bcade8d",
+  "status": "pass"
+ }
+}
