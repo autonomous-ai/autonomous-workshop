@@ -79,34 +79,19 @@ and the Factory import ships the hero as `assembled_review/_assembled.png`
 so the shop's cover ranking selects it. A missing or failing renderer records
 `unavailable` and every step behaves as it did without host renders.
 
-The Factory handoff addresses one production solid per occurrence from the
-sealed cadgen assembly-package (`assembled.step.json`) and the build-group
-STEPs under `parts/`, and transports them as `assembled_parts/<name>.step` with
-an indexed sidecar. The shop's viewer colours the assembled mesh by groups it
-computes itself (manifold-edge shells, loose facets owned by the shell they
-face, numbered in triangle order) and keys group `i` by the `i`-th slide file,
-so the host tessellates the sealed `assembled.step` into throwaway keying bytes
-to reproduce that grouping — scaffolding, never a deliverable or a
-printability claim — owns every group with the production solid's shape
-signature and the posed occurrence geometry of the sealed STEP, and writes one
-`assembly_parts` entry per viewer
-group (order, slide or `#slot` key, owner, sealed colour) through the
-part-colours effect, verified on readback. A Make whose package lists two or
-more occurrences without those STLs, or without a sealed colour on every
-part, is rejected with feedback naming them. Every occurrence of such a package
-also has to be named `<part>_<colour>` for the filament it prints in
-(`arm_black`, `leg_dark_brown`), using one of the 19 colours the CAD skill's
-filament palette stocks across Bambu Lab PLA Lite and PETG Basic; the name
-travels into `parts/<name>.step`, the sidecar and the shop's part list, so
-whoever loads the printer reads the spool off the file. That rule checks the
-name, not the sealed channels, and is reported before the missing-part rule so
-one rename repairs the occurrence, its file and its colour together. The
-release receipt records `handoff_transport`, `occurrence_count`,
-`viewer_groups`, and the reason a toy crossed as a single mesh.
+The Factory handoff carries exactly one STEP: the sealed primary assembly
+(`assembled.step`, or `<product_id>.step` when that is the root), which already
+holds every part. Per-part and duplicate STEP/STP files, including build-group
+STEPs under `parts/` and `part_*.step` sources, stay in the sealed Made tree and
+never cross, so the toy always crosses as one mesh. Every other Made file
+(generators, sidecars, evidence) still crosses under its exact path/size/hash
+inventory. The part-colours effect then colours the meshes the shop reports
+for that STEP by `mesh_name` or part-file stem, verified on readback. Make still
+builds and gates the per-part STEPs; only the upload drops them. The release
+receipt records `handoff_transport` (`single-mesh`) and `occurrence_count` (1).
 
 The handoff's `project.json` carries, beside the product id and title, the
-sealed Release page's own `summary`, `what_arrives`, and `limitations`, and
-the validated production `parts` names. Factory's product-page drafter and
+sealed Release page's own `summary`, `what_arrives`, and `limitations`. Factory's product-page drafter and
 its claims auditor read that file in full as design notes; with only an id
 and a name an imported toy had no source text behind any use claim, so every
 draft failed the shop's copy gate. The adapter authors none of those words

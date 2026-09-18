@@ -1,10 +1,10 @@
 """The colour vocabulary a sealed occurrence name is allowed to end in.
 
-A multi-part toy reaches the shop as one production STEP per occurrence, and
+A multi-part toy is sealed as one production STEP per occurrence, and
 whoever loads the printer has to know which spool each of those files wants.
 The occurrence name is the only field that travels with the part everywhere --
-into ``parts/<name>.step``, into the Factory sidecar, into the viewer's part
-list -- so this is where the spool is said out loud: ``arm_black``,
+into ``parts/<name>.step`` and the assembly-package -- so this is where the
+spool is said out loud: ``arm_black``,
 ``leg_dark_brown``, ``canopy_misty_blue``.
 
 The names here are exactly the ones the CAD skill's filament palette stocks
