@@ -1,0 +1,12 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/faces-sun.step",
+  "source_sha256": "20ace7f4f814a8a2b8af8443c4d40f4716e9591dd3ce08e33b4ea67bf7c0d72c",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 14.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/counters/sun-faces-oblique_az-90_el14.png",
+  "output_sha256": "3b78c3808a2bfad6926134cb41cbdba099dad7a2791093e980f72b4bad40ce7d"
+}

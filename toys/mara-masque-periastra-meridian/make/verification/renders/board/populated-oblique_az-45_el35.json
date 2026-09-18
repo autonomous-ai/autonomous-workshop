@@ -1,0 +1,12 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/board-populated.step",
+  "source_sha256": "2280be302377505d79425e2d34eef9e499055a878e7d98bc880a698bacef8a5f",
+  "camera": {
+    "azimuth_deg": -45.0,
+    "elevation_deg": 35.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/board/populated-oblique_az-45_el35.png",
+  "output_sha256": "4bf102f641564a574e3c376f18ae3b330a261a90d4d534c9b48366ed7de9c25f"
+}

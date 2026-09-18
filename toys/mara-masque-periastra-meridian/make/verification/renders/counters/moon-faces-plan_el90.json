@@ -1,0 +1,12 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/faces-moon.step",
+  "source_sha256": "826055de7715bf7d54d8b3f17ba2e411377b7b88b4d179e7e4957514eb7f7f42",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 90.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/counters/moon-faces-plan_el90.png",
+  "output_sha256": "9cb89fb913e803f74dd65a7c5488873ce8e2ccfa68f1d24abe15e410a1e44dca"
+}

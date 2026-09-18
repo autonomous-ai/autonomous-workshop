@@ -1,0 +1,12 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_moon_counter.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001/thickness-moon_counter.md
+(3.1s, exit 0)
+--- stdout
+part_moon_counter.step.py: 1.80 cm3 solid, grid 0.133 mm (155x155x57), 60923 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 60923 samples)
+  PASS  thickness distribution         median 6.93 mm, p95 20.00 mm, max 20.07 mm
+  WARN  hollowable at 1.20 mm wall     0.53 of 1.80 cm3 (29%) in 1 pocket(s)
+  PASS  filament that would save       0.08 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001/thickness-moon_counter.md
+
+--- stderr

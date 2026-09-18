@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "print_ready_claim": false,
+  "checks": [
+    {
+      "id": "refs:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "validate:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "interfere:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_base",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_base",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_inlay",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_inlay",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_moon_counter",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_moon_counter",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_roof",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_roof",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_sun_counter",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_sun_counter",
+      "status": "passed"
+    }
+  ],
+  "verification_sha256": "c4b6ef65c2c2ab42951a94ea68eb4199744b58ca47474135d1fe9ba1100c5fcc"
+}

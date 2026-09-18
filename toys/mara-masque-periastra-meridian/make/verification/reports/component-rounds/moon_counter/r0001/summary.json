@@ -1,0 +1,64 @@
+{
+ "build": {
+  "moon_counter": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "moon_counter"
+ ],
+ "check_motion": false,
+ "checked": [
+  "moon_counter"
+ ],
+ "checks_ok": false,
+ "entry": "part_moon_counter.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "moon_counter"
+ ],
+ "print": {
+  "moon_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001/overhang-moon_counter.log": "636df471843720d9090ef2891e2234d5d253fcfcbc53c5bbc652dd32a8265626",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001/thickness-moon_counter.log": "cfe5538d8a9f81f0ed110389275bac3185aff04ae4a61a358d62834f4bf28776"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 19.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 99.8,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:moon_counter",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Visual inspection only; the numeric overhang verdict is separate and reported unchanged. Iso shows the same three step heights as the Sun counter, with one slim crescent standing proud of the sunk field, horns curling past the middle towards each other and both tips rounded rather than cut square. Top view matches ref-03. Front shows a circular disc 20.0 across by 7.0 thick with a chamfer on both face edges and no projection. This geometry is frozen by the correction and its STEP hashes byte-identical to the archive; nothing about it was touched. No misplaced, missing or extra geometry, no intersections, no proportion error.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001/visual-packet.json",
+  "packet_sha256": "2573de5a885afab5c149b63240085239dcf7dfb6f137d64e7d7fcb05fedca842",
+  "status": "pass"
+ }
+}
