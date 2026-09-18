@@ -71,6 +71,13 @@ FACTORY_IMPORT_STRING_LIMITS = {
     "title": 300,
     "description": 2_000,
 }
+FACTORY_USAGE_FIELD = "usage"
+FACTORY_USAGE_MAX_BYTES = 1024 * 1024
+# POST /designs/{slug}/import rejects these import field names with HTTP 400,
+# so the usage sidecar must never be renamed onto one of them.
+FACTORY_USAGE_RESERVED_FIELDS = frozenset(
+    {"title", "description", "category", "tags", "status", "license"}
+)
 FACTORY_RELEASE_PAGE_PATH = "workshop-release-page.json"
 FACTORY_IMPORT_ROOT_MAPPING = "workshop-import-root-v1"
 FACTORY_IMPORT_ROOT_PATH = "000_workshop_import_root.py"
@@ -1300,6 +1307,76 @@ def _multipart(
     return buffer.getvalue(), "multipart/form-data; boundary=%s" % boundary
 
 
+def _usage_field(value: Any) -> Optional[Tuple[str, str]]:
+    """Carry the product token budget beside the sealed ZIP, never inside it.
+
+    The document rides the import multipart only. It is deliberately absent
+    from the effect request that mints an intent identity: lifetime usage
+    grows between resumes, so hashing it would mint a fresh intent for every
+    retry and defeat the ledger that keeps one publication from happening
+    twice. The handoff bytes, their allowlist and product_facts_sha256 are
+    untouched, so _assert_factory_handoff still sees the exact sealed tree.
+    """
+
+    if value is None:
+        return None
+    if not isinstance(value, Mapping) or value.get("unit") != "tokens":
+        raise ContractError("Factory usage document must be a token budget")
+    if value.get("usage_status") not in ("observed", "unavailable"):
+        raise ContractError("Factory usage status is unsupported")
+    # "unavailable" still ships with its status intact; usage that cannot be
+    # attributed is never reported as zero.
+    used = value.get("used_tokens")
+    if type(used) is not int or not 0 <= used <= 10**18:
+        raise ContractError("Factory usage total is malformed")
+    encoded = _canonical_json(_plain_usage(value))
+    if len(encoded) > FACTORY_USAGE_MAX_BYTES:
+        raise ContractError("Factory usage document is too large")
+    return (FACTORY_USAGE_FIELD, encoded.decode("utf-8"))
+
+
+def _plain_usage(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {str(key): _plain_usage(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_plain_usage(item) for item in value]
+    return value
+
+
+def _reportable_usage(value: Any) -> Any:
+    """Degrade a usage document Factory cannot take, never fail the release.
+
+    A direct FactoryClient caller still gets the contract error, because a
+    malformed document there is a programming fault.  A publication is
+    different: this is statistics riding an import that has already been
+    sealed and ledgered, so an oversized or unusable document is reported as
+    its totals alone, and dropped entirely when even those will not go.
+    """
+
+    for candidate in (value, _usage_totals(value)):
+        try:
+            if _usage_field(candidate) is not None:
+                return candidate
+        except ContractError:
+            continue
+    return None
+
+
+def _usage_totals(value: Any) -> Any:
+    """The budget without the per-thread observation it carries for detail."""
+
+    if not isinstance(value, Mapping):
+        return None
+    totals = {
+        str(key): item
+        for key, item in value.items()
+        if key not in ("observation", "previous_budget")
+    }
+    totals["observation"] = None
+    totals["previous_budget"] = None
+    return totals
+
+
 def _normalize_import(metadata: Mapping[str, Any]) -> Mapping[str, Any]:
     if not isinstance(metadata, Mapping):
         raise ContractError("Factory import metadata must be an object")
@@ -1401,6 +1478,7 @@ class FactoryClient:
         content: bytes,
         metadata: Mapping[str, Any],
         idempotency_key: str,
+        usage: Any = None,
     ) -> HttpResponse:
         filename = _safe_filename(filename)
         if not isinstance(content, bytes) or not content:
@@ -1413,6 +1491,9 @@ class FactoryClient:
                 fields.append((name, normalized[name]))
         for tag in normalized["tags"] or ("",):
             fields.append(("tags", tag))
+        usage_field = _usage_field(usage)
+        if usage_field is not None:
+            fields.append(usage_field)
         content_type = mimetypes.guess_type(filename)[0] or "application/zip"
         body, multipart_type = _multipart(
             fields, (("file", filename, content_type, content),)
@@ -1433,15 +1514,17 @@ class FactoryClient:
         )
 
     def import_model_version(
-        self, slug: str, *, content: bytes, idempotency_key: str
+        self, slug: str, *, content: bytes, idempotency_key: str, usage: Any = None
     ) -> HttpResponse:
         """Append content to an existing owner draft, never create a design."""
 
         if not isinstance(slug, str) or not slug:
             raise ContractError("Factory design slug is required")
         _assert_factory_handoff(content)
+        usage_field = _usage_field(usage)
         body, content_type = _multipart(
-            (), (("file", "model-handoff.zip", "application/zip", content),)
+            () if usage_field is None else (usage_field,),
+            (("file", "model-handoff.zip", "application/zip", content),),
         )
         return self._request(
             "POST", "/designs/%s/import" % urllib.parse.quote(slug, safe=""),
@@ -2446,7 +2529,12 @@ class FactoryReleaseWriter:
         assert sending.effect_token is not None
         imported_design = None
         try:
-            response = client.import_model_version(old.slug, content=handoff["content"], idempotency_key=sending.idempotency_key)
+            response = client.import_model_version(
+                old.slug,
+                content=handoff["content"],
+                idempotency_key=sending.idempotency_key,
+                usage=_reportable_usage(context.token_usage),
+            )
             if response.status != 200:
                 if response.status in PROVEN_NO_EFFECT_STATUSES:
                     self.ledger.mark_rejected(sending.intent_id, sending.effect_token, "Factory root repair returned HTTP %s" % response.status)
@@ -3304,6 +3392,7 @@ class FactoryReleaseWriter:
                 content=handoff["content"],
                 metadata=metadata,
                 idempotency_key=sending.idempotency_key,
+                usage=_reportable_usage(context.token_usage),
             )
         except Exception as exc:
             self.ledger.mark_unknown(

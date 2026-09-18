@@ -8296,7 +8296,31 @@ def _publication_release_context(
             load_host_renders(run.host_state_root, verified.made),
             "hero",
         ),
+        token_usage=_publication_token_usage(run),
     )
+
+
+def _publication_token_usage(run: AgentRun) -> Optional[Mapping[str, Any]]:
+    """Report the product's lifetime token budget to Factory, never enforce it.
+
+    The cumulative total is sent exactly as the budget holds it, so Factory
+    can snapshot it per release and derive its own increase. A budget that
+    cannot be read is simply not reported: this is statistics riding the
+    import, and it must never be able to fail a publication.
+    """
+
+    try:
+        budget = _load_lifetime_budget(
+            NativeRunPaths(run.run_root, run.host_state_root), run.snapshot()
+        )
+    except Exception:
+        return None
+    if not isinstance(budget, ProductTokenBudget):
+        return None
+    try:
+        return budget.to_dict()
+    except Exception:
+        return None
 
 
 def _existing_release_for_promotion(

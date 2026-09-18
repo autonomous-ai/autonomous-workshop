@@ -21,6 +21,9 @@ from tests.make.step_documents import step_solid_document
 from workshop.integrations.factory import (
     FACTORY_COVER_RENDER_PATH,
     DEFAULT_FACTORY_API,
+    FACTORY_USAGE_FIELD,
+    FACTORY_USAGE_MAX_BYTES,
+    FACTORY_USAGE_RESERVED_FIELDS,
     FACTORY_PART_COLORS_MAPPING,
     FACTORY_TOY_CATEGORY_SLUG,
     FACTORY_USER_AGENT,
@@ -34,6 +37,7 @@ from workshop.integrations.factory import (
     factory_credentials_from_environment,
 )
 from workshop.make.contracts import Made
+from workshop.runtime.codex_usage import COUNTERS as USAGE_COUNTERS
 from workshop.release.native import direct_release_claims, playtest_omission_sha256
 from workshop.runtime import EffectLedger, Receipt
 from workshop.wish import Wish
@@ -202,10 +206,11 @@ class FactorySessionTest(unittest.TestCase):
 
 
 class ReleaseContext:
-    def __init__(self, made, product_id="verified-toy"):
+    def __init__(self, made, product_id="verified-toy", token_usage=None):
         self.made = made
         self.wish = Wish.create(product_id, "A toy with a verified Factory page")
         self.taste = type("TasteName", (), {"name": "Alice"})()
+        self.token_usage = token_usage
 
     def assert_current(self):
         self.made.assert_current()
@@ -1393,6 +1398,231 @@ class FactoryReleaseTest(unittest.TestCase):
                 metadata={},
                 idempotency_key="test-key",
             )
+
+    def test_import_carries_the_product_token_budget_beside_the_sealed_zip(self):
+        budget = {
+            "schema_version": 3,
+            "unit": "tokens",
+            "limit_tokens": 30_000_000,
+            "used_tokens": 4_821_334,
+            "usage_status": "observed",
+            "observation": {
+                "schema_version": 1,
+                "source": "codex-native-rollout-v1",
+                "status": "observed",
+                "root_thread_id": "0199a4c1-7b2e-7000-8f3a-1c2d3e4f5a6b",
+                "threads": [
+                    {
+                        "thread_id": "0199a4c1-7b2e-7000-8f3a-1c2d3e4f5a6b",
+                        "status": "observed",
+                        "models": ["gpt-5-codex"],
+                        "tokens": {
+                            "input_tokens": 4_800_000,
+                            "cached_input_tokens": 3_000_000,
+                            "cache_write_input_tokens": 500_000,
+                            "output_tokens": 21_334,
+                            "reasoning_output_tokens": 11_000,
+                        },
+                    }
+                ],
+                "tokens": {
+                    "input_tokens": 4_800_000,
+                    "cached_input_tokens": 3_000_000,
+                    "cache_write_input_tokens": 500_000,
+                    "output_tokens": 21_334,
+                    "reasoning_output_tokens": 11_000,
+                },
+                "total_tokens": 4_821_334,
+            },
+            "previous_budget": None,
+        }
+        self.context = ReleaseContext(self.made, token_usage=budget)
+
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        self.assertEqual(len(parts["usage"]), 1)
+        self.assertEqual(json.loads(parts["usage"][0].decode("utf-8")), budget)
+        # The five counter names stay exactly as Workshop reports them.
+        observed = json.loads(parts["usage"][0].decode("utf-8"))["observation"]
+        self.assertEqual(
+            sorted(observed["tokens"]),
+            [
+                "cache_write_input_tokens",
+                "cached_input_tokens",
+                "input_tokens",
+                "output_tokens",
+                "reasoning_output_tokens",
+            ],
+        )
+        # The sealed handoff is untouched: the budget never enters the ZIP.
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            payload = b"".join(
+                archive.read(name) for name in sorted(archive.namelist())
+            )
+        self.assertNotIn(b"used_tokens", payload)
+        self.assertNotIn(b"usage_status", payload)
+
+    def test_unavailable_token_usage_ships_its_status_and_is_never_zeroed(self):
+        self.context = ReleaseContext(
+            self.made,
+            token_usage={
+                "schema_version": 3,
+                "unit": "tokens",
+                "limit_tokens": 30_000_000,
+                "used_tokens": 0,
+                "usage_status": "unavailable",
+                "observation": None,
+                "previous_budget": None,
+            },
+        )
+
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        usage = json.loads(parts["usage"][0].decode("utf-8"))
+        self.assertEqual(usage["usage_status"], "unavailable")
+        self.assertIsNone(usage["observation"])
+
+    def test_import_without_token_usage_sends_no_usage_field(self):
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        self.assertNotIn("usage", parts)
+
+    def test_token_usage_never_enters_the_effect_identity(self):
+        """Lifetime usage grows between resumes; hashing it would mint a new
+        intent on every retry and let one publication happen twice."""
+
+        plain = FactoryTransport()
+        self.writer(plain)(self.context, self.release, self.manifest)
+        without = self.ledger.latest("verified-toy", "factory-import")
+
+        self.setUp()
+        self.context = ReleaseContext(
+            self.made,
+            token_usage={
+                "schema_version": 3,
+                "unit": "tokens",
+                "limit_tokens": 30_000_000,
+                "used_tokens": 9_999_999,
+                "usage_status": "unavailable",
+                "observation": None,
+                "previous_budget": None,
+            },
+        )
+        metered = FactoryTransport()
+        self.writer(metered)(self.context, self.release, self.manifest)
+        with_usage = self.ledger.latest("verified-toy", "factory-import")
+
+        self.assertEqual(without.intent_id, with_usage.intent_id)
+        self.assertEqual(without.idempotency_key, with_usage.idempotency_key)
+        self.assertEqual(without.request_sha256, with_usage.request_sha256)
+        self.assertNotIn("usage", without.request)
+        self.assertNotIn("usage", with_usage.request)
+
+    def test_malformed_token_usage_never_reaches_the_transport(self):
+        sealed = FactoryTransport()
+        self.writer(sealed)(self.context, self.release, self.manifest)
+        import_call = next(
+            call for call in sealed.calls if call[1].endswith("/designs/import")
+        )
+        handoff = multipart_parts(import_call[2], import_call[3])["file"][0]
+
+        client = FactoryClient(
+            lambda *_args, **_kwargs: self.fail("malformed usage reached transport")
+        )
+        for usage, expected in (
+            ({"unit": "credits"}, "must be a token budget"),
+            (
+                {"unit": "tokens", "usage_status": "guessed", "used_tokens": 1},
+                "usage status is unsupported",
+            ),
+            (
+                {"unit": "tokens", "usage_status": "observed", "used_tokens": "1"},
+                "usage total is malformed",
+            ),
+        ):
+            with self.subTest(usage=usage):
+                with self.assertRaisesRegex(ContractError, expected):
+                    client.import_model_version(
+                        "verified-toy",
+                        content=handoff,
+                        idempotency_key="test-usage-rejected",
+                        usage=usage,
+                    )
+
+    def test_the_usage_field_name_is_not_one_factory_rejects(self):
+        self.assertNotIn(FACTORY_USAGE_FIELD, FACTORY_USAGE_RESERVED_FIELDS)
+
+    def test_an_oversized_budget_publishes_as_its_totals_alone(self):
+        """Statistics never fail a publication: detail is dropped, not the import."""
+
+        threads = [
+            {
+                "thread_id": "0199a4c1-7b2e-7000-8f3a-%012x" % index,
+                "status": "observed",
+                "models": ["gpt-5-codex"],
+                "tokens": {name: 1 for name in USAGE_COUNTERS},
+            }
+            for index in range(20_000)
+        ]
+        budget = {
+            "schema_version": 3,
+            "unit": "tokens",
+            "limit_tokens": 30_000_000,
+            "used_tokens": 40_000,
+            "usage_status": "observed",
+            "observation": {
+                "schema_version": 1,
+                "source": "codex-native-rollout-v1",
+                "status": "observed",
+                "root_thread_id": threads[0]["thread_id"],
+                "threads": threads,
+            },
+            "previous_budget": None,
+        }
+        self.assertGreater(len(json.dumps(budget).encode()), FACTORY_USAGE_MAX_BYTES)
+        self.context = ReleaseContext(self.made, token_usage=budget)
+
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        usage = json.loads(parts["usage"][0].decode("utf-8"))
+        self.assertEqual(usage["used_tokens"], 40_000)
+        self.assertEqual(usage["usage_status"], "observed")
+        self.assertIsNone(usage["observation"])
+
+    def test_an_unusable_budget_is_dropped_and_the_import_still_lands(self):
+        self.context = ReleaseContext(self.made, token_usage={"unit": "tokens"})
+
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        self.assertNotIn("usage", parts)
 
     def _seal_two_coloured_parts(self):
         """Seal an occurrence family whose STEP carries one colour per part."""
