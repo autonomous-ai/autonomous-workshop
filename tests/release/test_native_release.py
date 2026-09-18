@@ -1363,6 +1363,70 @@ class NativeReleaseTest(unittest.TestCase):
         with self.assertRaisesRegex(ArtifactError, "differs from its manifest"):
             release.validate_package_tree(self.run_root, self.made, self.playtested)
 
+    def test_unreleased_example_records_no_publication_and_repeats_identically(self):
+        """receipt=None projects the same archive with an honest publication.
+
+        Reprojecting the same run must be idempotent rather than a collision,
+        which is why the timestamp comes from the sealed Release rather than
+        from the clock.
+        """
+        release = self._release(schema_version=1)
+        self._write_contract(release)
+        repository = self.run_root / "repository"
+        (repository / "toys").mkdir(parents=True)
+
+        target = materialize_public_example(
+            repository,
+            self.run_root,
+            release=release,
+            made=self.made,
+            inventor_id="eve",
+            token_summary=_token_summary(),
+            wish_id="wish-20260825-235959-deadbeef",
+        )
+        self.assertEqual(
+            target,
+            repository / "toys" / (
+                "eve-" + release.product["title"].casefold().replace(" ", "-")
+            ),
+        )
+        publication = json.loads(
+            (target / "publication/PUBLICATION.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(publication["publication"]["status"], "unreleased")
+        self.assertEqual(publication["publication"]["adapter"], "none")
+        for absent in ("page_url", "cover_url", "listing"):
+            self.assertNotIn(absent, publication["publication"])
+        for absent in ("factory_content_sha256", "publication_anchor_sha256"):
+            self.assertNotIn(absent, publication["identities"])
+        self.assertEqual(
+            publication["identities"]["native_release_sha256"],
+            release.release_sha256,
+        )
+        # The primary model must come out of sealed Made bytes, not a receipt.
+        self.assertEqual(
+            publication["primary_model"]["path"], "make/models/assembled.step"
+        )
+        self.assertTrue((target / "make/models/assembled.step").is_file())
+        readme = (target / "README.md").read_text(encoding="utf-8")
+        self.assertIn("**Not published.**", readme)
+        self.assertNotIn("View the verified public product page", readme)
+        self.assertTrue((target / "MANIFEST.json").is_file())
+
+        # Same bytes again: an idempotent reprojection, not a hard collision.
+        self.assertEqual(
+            materialize_public_example(
+                repository,
+                self.run_root,
+                release=release,
+                made=self.made,
+                inventor_id="eve",
+                token_summary=_token_summary(),
+                wish_id="wish-20260825-235959-deadbeef",
+            ),
+            target,
+        )
+
     def test_public_example_uses_sealed_inventory_and_never_overwrites(self):
         release = self._release(schema_version=1)
         self._write_contract(release)

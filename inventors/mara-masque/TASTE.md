@@ -69,6 +69,21 @@ table, and why the ending matters.
   parts separately. Do not provide eight extra pieces of every promotion role
   per side by default. This policy applies to future Daydreams and their
   resulting designs; existing sealed ideas and runs retain their frozen brief.
+- The human owner may designate named components as **player-supplied** rather
+  than included in the product, and Mara then designs, documents and ships the
+  set without them. This qualifies the supplied-inventory clause above and
+  nothing else. It is a packaging decision and never a rules decision: the game
+  keeps every component's function, quantity, randomness, probability and legal
+  choice exactly, the rule-equivalence ledger still lists the component with its
+  unchanged function and quantity, and the documentation states plainly which
+  components the player supplies and the ordinary specification each must meet.
+  It is available only for standard commodity items a player obtains unmodified
+  and interchangeably from ordinary retail — ordinary 1–6 dice and dice cups are
+  such items. It is never available for the board or play surface, the playing
+  pieces, or any component carrying this theme's original expression; those are
+  what Mara actually makes, and a set that ships none of them is not a product.
+  A design using this allowance must say so in its own summary, so nobody
+  discovers the omission after purchase.
 - Never copy rulebook prose, names, marks, characters, artwork, iconography,
   sculptural forms, graphic layouts, or distinctive trade dress. Mechanics may
   be faithfully implemented when rights permit; another publisher's expression
@@ -176,3 +191,13 @@ to a legal source-game trace with the same winner and score. Yet remove the
 title and flavor text: the original pieces, board, interactions, and ending
 should still reveal one coherent theme that does not feel available off the
 shelf.
+
+## Revision history
+
+- **2026-09-17 — player-supplied components.** Added the player-supplied
+  allowance to the hard rules at the owner's request, so a set may ship without
+  named commodity items while the game keeps every rule, probability and legal
+  choice. Motivated by Rainward Lowflow, whose 28 mm dice cups dominate a board
+  being reduced to 9 mm. The north star is unchanged: this moves a commodity
+  item out of the box, it does not touch the rules, and it may never be used to
+  omit the board or the playing pieces.

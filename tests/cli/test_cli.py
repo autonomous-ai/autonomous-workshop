@@ -79,6 +79,7 @@ class NativeCommandTest(unittest.TestCase):
                 "fix",
                 "status",
                 "resume",
+                "publish",
                 "doctor",
                 "inventors",
                 "create",
@@ -480,6 +481,32 @@ class NativeCommandTest(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertFalse(parser().parse_args(command).check_motion)
                 self.assertTrue(parser().parse_args((*command, "--check-motion", "true")).check_motion)
+
+    def test_every_new_run_command_can_withhold_publication(self):
+        """--no-publish is opt-in and is only forwarded when it is asked for."""
+        for command in (("wish", "a toy"), ("fix", "/tmp/toy", "--prompt", "repair the pin")):
+            with self.subTest(command=command):
+                self.assertFalse(parser().parse_args(command).no_publish)
+                self.assertTrue(parser().parse_args((*command, "--no-publish")).no_publish)
+        for arguments, expected in (([], None), (["--no-publish"], True)):
+            with self.subTest(arguments=arguments), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                self.assertEqual(main(("wish", "a moon", *arguments, "--json")), 0)
+                self.assertIs(
+                    start.call_args.kwargs.get("local_release_only"), expected
+                )
+        # An unreleased run has nothing to push, and saying so before any
+        # workspace exists beats announcing a run that cannot start.
+        for command in (
+            ("wish", "a moon", "--no-publish", "--github"),
+            ("fix", "/tmp/toy", "--prompt", "repair", "--no-publish", "--github"),
+        ):
+            with self.subTest(command=command), mock.patch(
+                "cli.main.start_native_run"
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                self.assertEqual(main(command), 2)
+                start.assert_not_called()
 
     def test_wish_motion_is_opt_in_and_strictly_boolean(self):
         for arguments, expected in (([], False), (["--check-motion", "false"], False),

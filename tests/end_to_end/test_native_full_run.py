@@ -66,6 +66,7 @@ from workshop.wish import Wish
 from workshop.workflow import AgentRun
 from workshop.workflow.agent_run import AgentArtifact, AgentOutcome
 from workshop.workflow.proposals import AgentOutcomeProposal
+from workshop.workflow.revision import prepare_revision
 
 
 _OBSERVED_AT = "2026-08-26T00:00:00+00:00"
@@ -3227,6 +3228,317 @@ class NativeFullRunTest(unittest.TestCase):
         )
         self.assertEqual(len(effects.publish_calls), 1)
         self.assertEqual(cad_calls[-1][1]["evidence_stage"], "release")
+
+    def test_no_publish_seals_an_unreleased_toy_and_contacts_no_factory(self):
+        """--no-publish completes Release locally and creates no external effect.
+
+        The whole point is a chain of single-change corrections that only the
+        last run publishes, so the archive this produces must also be a valid
+        `workshop fix` source.
+        """
+
+        launcher = _OneSessionProductAgent()
+        cad_calls = []
+
+        def verify_cad(made, **arguments):
+            cad_calls.append(made)
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(
+                    (made.made_sha256 + str(len(cad_calls))).encode("ascii")
+                ),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        def forbidden(*arguments, **keywords):
+            raise AssertionError("a --no-publish run must not contact Factory")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            repository = root / "repository"
+            (repository / "toys").mkdir(parents=True)
+            wish = Wish.create(
+                "orbit-dog-unreleased",
+                "Build a pocket draughts set inspired by my orbit-loving dog.",
+                constraints={"audience": "14+", "manufacture": "not-authorized"},
+                context={"source": "native-no-publish-test"},
+            )
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=repository,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                side_effect=forbidden,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter",
+                side_effect=forbidden,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition",
+                side_effect=forbidden,
+            ):
+                receipt = start_native_run(
+                    wish, effort="spark", local_release_only=True
+                )
+                paths = native_run_paths(wish.product_id)
+                checkpoint = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                ).snapshot()
+
+            self.assertEqual((receipt["status"], receipt["stage"]), ("complete", "release"))
+            self.assertEqual(receipt["publication"]["status"], "unreleased")
+            self.assertFalse(receipt["publication"]["verified"])
+            self.assertFalse(receipt["publication"]["required"])
+            self.assertEqual((checkpoint.stage, checkpoint.status), ("release", "complete"))
+            self.assertFalse((paths.host_state / "release-effect.json").exists())
+            self.assertFalse(
+                (paths.host_state / "factory-effects.sqlite3").exists()
+            )
+
+            # The Factory choke point refuses this run even if something
+            # later tried to promote it, so the restriction is not only a
+            # gate-time branch.
+            from workshop.workflow.native_run import (
+                _attempt_release_publication,
+                _existing_release_for_promotion,
+            )
+
+            run = AgentRun.open(
+                paths.workspace, host_state_root=paths.host_state
+            )
+            with self.assertRaisesRegex(StateConflict, "cannot publish"):
+                _attempt_release_publication(
+                    run, _existing_release_for_promotion(run, checkpoint)
+                )
+
+            toys = sorted((repository / "toys").iterdir())
+            self.assertEqual(len(toys), 1)
+            archive = toys[0]
+            # The receipt names the archive, because it is what the next
+            # correction in the chain is pointed at.
+            self.assertEqual(
+                receipt["publication"]["public_example"]["path"],
+                archive.relative_to(repository).as_posix(),
+            )
+            publication = json.loads(
+                (archive / "publication/PUBLICATION.json").read_text()
+            )
+            self.assertEqual(publication["publication"]["status"], "unreleased")
+            self.assertEqual(publication["publication"]["adapter"], "none")
+            self.assertNotIn("page_url", publication["publication"])
+            self.assertIn("**Not published.**", (archive / "README.md").read_text())
+
+            corrected, snapshot = prepare_revision(archive, "Fix one pair.")
+            self.assertEqual(
+                corrected.context["revision"]["source_status"], "unreleased"
+            )
+            self.assertTrue(snapshot)
+
+            # The private run workspace is the other accepted source. It is
+            # projected through the same archive contract, so it yields the
+            # same bytes as the toys/ directory written from the same run.
+            from_run, run_snapshot = prepare_revision(
+                paths.workspace, "Fix one pair."
+            )
+            self.assertEqual(
+                from_run.context["revision"]["source_status"], "unreleased"
+            )
+            self.assertEqual(
+                from_run.context["inventor_id"],
+                corrected.context["inventor_id"],
+            )
+            self.assertNotEqual(from_run.product_id, corrected.product_id)
+            self.assertTrue(run_snapshot)
+
+    def test_publish_lists_a_kept_local_release_without_running_a_model(self):
+        """`workshop publish` is the operator changing their mind, and only that.
+
+        It lists the exact bytes the --no-publish run already sealed, so no
+        agent session may start and no geometry may change. A publication that
+        does not reach verified public readback must leave the run exactly as
+        it was, still restricted, rather than half-open.
+        """
+
+        from workshop.errors import ContractError
+        from workshop.integrations.factory import FactoryAuthenticationError
+        from workshop.workflow.native_run import (
+            _local_release_only_at,
+            publish_native_run,
+        )
+
+        launcher = _OneSessionProductAgent()
+        effects = _FactoryEffects()
+        cad_calls = []
+
+        def verify_cad(made, **arguments):
+            cad_calls.append(made)
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(
+                    (made.made_sha256 + str(len(cad_calls))).encode("ascii")
+                ),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        def no_session(*arguments, **keywords):
+            raise AssertionError("publish must not start a native session")
+
+        def no_credentials(inventor_id):
+            raise ContractError("fixture withholds Factory credentials")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            repository = root / "repository"
+            (repository / "toys").mkdir(parents=True)
+            wish = Wish.create(
+                "orbit-dog-publish-later",
+                "Build a pocket draughts set inspired by my orbit-loving dog.",
+                constraints={"audience": "14+", "manufacture": "not-authorized"},
+                context={"source": "native-publish-later-test"},
+            )
+
+            def host():
+                return mock.patch.dict(
+                    os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+                )
+
+            def checkout():
+                return mock.patch(
+                    "workshop.workflow.native_run._source_checkout_root",
+                    return_value=repository,
+                )
+
+            with host(), checkout(), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ):
+                sealed = start_native_run(
+                    wish, effort="spark", local_release_only=True
+                )
+                paths = native_run_paths(wish.product_id)
+                sealed_checkpoint = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                ).snapshot()
+            self.assertEqual(sealed["publication"]["status"], "unreleased")
+            archive = sorted((repository / "toys").iterdir())[0]
+            sealed_model = (archive / "make/models/assembled.step").read_bytes()
+
+            # Factory never answers: the run must end up exactly as it began.
+            with host(), checkout(), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                side_effect=no_session,
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                side_effect=no_credentials,
+            ):
+                refused = publish_native_run(wish.product_id)
+            self.assertEqual(refused["action"], "publication-not-created")
+            self.assertTrue(_local_release_only_at(paths, wish.product_id))
+            self.assertEqual(refused["publication"]["status"], "unreleased")
+            self.assertFalse(
+                (paths.host_state / "release-effect.json").exists()
+            )
+
+            # Factory accepts the upload but never confirms the public
+            # transition. The restriction returns, yet the draft receipt is
+            # kept on purpose so the next publish finishes that same design
+            # instead of uploading it twice.
+            def refuse_transition(ledger, session):
+                class Stalled:
+                    def publish(self, draft):
+                        raise FactoryAuthenticationError("fixture stalls readback")
+
+                return Stalled()
+
+            with host(), checkout(), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                side_effect=no_session,
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                side_effect=effects.credentials,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter",
+                side_effect=effects.writer,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession",
+                side_effect=effects.session,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition",
+                side_effect=refuse_transition,
+            ):
+                stalled = publish_native_run(wish.product_id)
+            self.assertEqual(stalled["action"], "publication-unverified")
+            self.assertTrue(_local_release_only_at(paths, wish.product_id))
+            self.assertTrue((paths.host_state / "release-effect.json").exists())
+            uploads_after_stall = len(effects.writer_calls)
+
+            # The operator changes their mind and Factory confirms.
+            with host(), checkout(), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                side_effect=no_session,
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                side_effect=effects.credentials,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter",
+                side_effect=effects.writer,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession",
+                side_effect=effects.session,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition",
+                side_effect=effects.transition,
+            ):
+                published = publish_native_run(wish.product_id)
+
+            self.assertEqual(published["action"], "published-existing-release")
+            self.assertEqual(published["publication"]["status"], "public")
+            self.assertTrue(published["publication"]["verified"])
+            self.assertEqual(published["publication"]["page_url"], _PAGE_URL)
+            self.assertFalse(_local_release_only_at(paths, wish.product_id))
+
+            # Publication changed the listing, never the toy: the checkpoint is
+            # untouched and what reached Factory is byte-for-byte the model the
+            # unreleased archive already carried.
+            published_checkpoint = AgentRun.open(
+                paths.workspace, host_state_root=paths.host_state
+            ).snapshot()
+            self.assertEqual(
+                published_checkpoint.checkpoint_sha256,
+                sealed_checkpoint.checkpoint_sha256,
+            )
+            self.assertEqual(effects.handoff_files["assembled.step"], sealed_model)
+            # The stalled attempt's draft was reconciled, not re-uploaded.
+            self.assertEqual(len(effects.writer_calls), uploads_after_stall)
+
+            # Publishing twice is reported, never resent.
+            with host(), checkout(), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                side_effect=no_session,
+            ):
+                again = publish_native_run(wish.product_id)
+            self.assertEqual(again["action"], "publication-already-public")
+            self.assertEqual(len(effects.publish_calls), 1)
 
     def test_one_native_session_runs_every_stage_and_host_seals_the_release(self):
         launcher = _OneSessionProductAgent()

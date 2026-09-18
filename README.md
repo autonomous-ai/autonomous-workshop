@@ -48,9 +48,9 @@ Our initial Inventors seed the shop and exercise the system. The long-term platf
 
 Internally, the sealed brief that begins one product run is still called a Wish. Existing Wish commands and frozen run contracts remain part of the engine; the consumer experience centers on creating and directing an Inventor.
 
-## Correct a published toy
+## Correct a toy
 
-Clone a published toy archive into a separate Spark run using a correction brief:
+Clone a toy archive into a separate Spark run using a correction brief:
 
 ```bash
 uv run workshop fix toys/mara-masque-rainward-sun \
@@ -60,10 +60,40 @@ uv run workshop fix toys/mara-masque-rainward-sun \
 Use `--prompt "Describe the correction"` for a short brief. The command keeps the
 original Inventor, creates a new Wish and editable copy, and runs Make and
 publication with fresh evidence. The original run and listing stay unchanged.
-The source must be a local Workshop public archive with its `MANIFEST.json`;
-URLs and private run directories are not accepted. `--model`, `--effort`,
-`--max-tokens` and `--turn-minutes` select the new run's settings. Resume a stopped
-revision with `workshop resume <new-wish-id>`.
+The source must be a local Workshop archive with its `MANIFEST.json`, or the
+private workspace of a run that has sealed its Release; URLs are not accepted.
+`--model`, `--effort`, `--max-tokens` and `--turn-minutes` select the new run's
+settings. Resume a stopped revision with `workshop resume <new-wish-id>`.
+
+### Correct one thing at a time, publish once
+
+Add `--no-publish` to seal a corrected toy locally instead of listing it. Make
+and Release run exactly as usual, but no Factory effect is created at all and
+the toy directory records `unreleased` publication status. `workshop fix`
+accepts that directory, so a chain of single-change corrections stays private
+until the run you deliberately leave the flag off:
+
+```bash
+uv run workshop fix toys/ad-astra-antisol --prompt "…" --no-publish
+uv run workshop fix toys/ad-astra-antisol --prompt "…" --no-publish   # next pair
+uv run workshop fix toys/ad-astra-antisol --prompt "…"                # publish
+```
+
+The restriction is frozen when the run is created, so a later `workshop resume`
+can neither add nor drop it. Each run still gets its own Wish id, workspace,
+budget and effect ledger, and every unreleased directory is a full archive with
+its own `MANIFEST.json`.
+
+If you decide afterwards that a kept-local run should be listed after all,
+publish that exact run instead of correcting it again:
+
+```bash
+uv run workshop publish <wish-id>
+```
+
+It lists the bytes that run already sealed — no model runs, no tokens are spent
+and no geometry changes — so what appears on Factory is what you reviewed
+locally. A publication that does not complete leaves the run unreleased.
 
 The Rainward Sun prompt above is a prepared example. The correction path itself
 is live-validated: Rainward Flow and Rainward Lowflow were published from the

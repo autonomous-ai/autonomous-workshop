@@ -36,7 +36,12 @@ from workshop.release.native import (
     NATIVE_RELEASE_MANUAL_PATH,
     NativeRelease,
 )
-from workshop.release.public_archive import write_public_workflow_archive
+from workshop.release.public_archive import (
+    UNRELEASED_PUBLICATION_STATUS,
+    unreleased_public_slug,
+    unreleased_publication_details,
+    write_public_workflow_archive,
+)
 from workshop.runtime import Receipt
 from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
@@ -159,6 +164,36 @@ def _write_public_file(root: Path, relative: str, content: bytes) -> None:
     finally:
         os.close(descriptor)
     os.chmod(target, 0o644)
+
+
+def _supersedes_own_unreleased(existing: Path, release: NativeRelease) -> bool:
+    """Is ``existing`` this exact Release's own unreleased projection?
+
+    ``workshop publish`` lists a toy the same run already projected locally as
+    unreleased, so the public projection always lands on a directory that is
+    occupied by its own earlier, deliberately different bytes.  Replacing that
+    one directory is the transition the operator asked for, not a collision.
+    The predicate is deliberately narrow: only an `unreleased` record naming
+    the identical sealed Release qualifies, so a different toy, a partial tree,
+    a symlink or an already-public archive still fails closed.
+    """
+
+    record = existing / "publication" / "PUBLICATION.json"
+    if existing.is_symlink() or not existing.is_dir() or not record.is_file():
+        return False
+    try:
+        document = json.loads(record.read_bytes().decode("utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return False
+    publication = document.get("publication")
+    identities = document.get("identities")
+    if not isinstance(publication, dict) or not isinstance(identities, dict):
+        return False
+    return (
+        document.get("kind") == "autonomous-workshop.public-toy-snapshot"
+        and publication.get("status") == UNRELEASED_PUBLICATION_STATUS
+        and identities.get("native_release_sha256") == release.release_sha256
+    )
 
 
 def _install_staging_exclusively(
@@ -667,7 +702,29 @@ def _creation_story_markdown(staging: Path) -> str:
         if isinstance(nested_publication, Mapping)
         else None
     )
-    public_page = _https_public_url(page_url, "public Factory page URL")
+    unreleased = (
+        isinstance(nested_publication, Mapping)
+        and nested_publication.get("status") == UNRELEASED_PUBLICATION_STATUS
+    )
+    if unreleased:
+        publication_section = (
+            "### 6. Publication — not performed\n\n"
+            "**Input:** the exact sealed Release package. **Output:** none. "
+            "This run was sealed locally with `--no-publish`, so no Factory "
+            "effect was created, no listing exists, and "
+            "[the publication record](publication/PUBLICATION.json) says "
+            "`unreleased`.\n"
+        )
+    else:
+        publication_section = (
+            "### 6. Publication — perform and verify the external effect\n\n"
+            "**Input:** the exact sealed Release package plus host-held Factory "
+            "authorization; credentials never enter the native session. "
+            "**Output:** [the public Factory product](%s) and a sanitized, "
+            "hash-verified "
+            "[publication readback](publication/PUBLICATION.json).\n"
+            % _https_public_url(page_url, "public Factory page URL")
+        )
 
     return (
         "## How this toy was created\n\n"
@@ -694,11 +751,7 @@ def _creation_story_markdown(staging: Path) -> str:
         "**Input:** the sealed product and the passed Playtest evidence or "
         "truthful not-run record. "
         "**Output:** %s; see [the Release contract](release/release.json).\n\n"
-        "### 6. Publication — perform and verify the external effect\n\n"
-        "**Input:** the exact sealed Release package plus host-held Factory "
-        "authorization; credentials never enter the native session. "
-        "**Output:** [the public Factory product](%s) and a sanitized, hash-verified "
-        "[publication readback](publication/PUBLICATION.json).\n"
+        "%s"
         % (
             wish_text,
             wish_note,
@@ -714,7 +767,7 @@ def _creation_story_markdown(staging: Path) -> str:
             render_text,
             playtest_output,
             release_output,
-            public_page,
+            publication_section,
         )
     )
 
@@ -1171,6 +1224,60 @@ def _copy_model(
     }
 
 
+#: Factory selects a product tree's primary model from its root, preferring
+#: ``assembled.step`` and falling back to ``<product_id>.step``.  An unreleased
+#: toy has no Factory, so the same choice is made here from sealed Made bytes.
+_PRIMARY_MODEL_NAME = "assembled.step"
+
+
+def _unreleased_receipt_details(made: NativeMade) -> dict[str, Any]:
+    """Stand in for Factory receipt details using only sealed Made facts.
+
+    A published toy learns its primary model from the authenticated readback,
+    which is then cross-checked against the sealed Made bytes.  An unreleased
+    toy has no readback, so the sealed bytes are the sole source: the declared
+    ``cad.assembled_stl`` when a product carries one, and otherwise the root
+    ``assembled.step`` entry of the sealed product manifest, which is what
+    Factory itself would have selected.
+    """
+
+    cad = made.product.get("cad")
+    assembled = cad.get("assembled_stl") if isinstance(cad, Mapping) else None
+    if isinstance(assembled, Mapping):
+        return {
+            "primary_model_path": assembled.get("path"),
+            "primary_model_sha256": assembled.get("sha256"),
+        }
+    for entry in made.product_manifest.entries:
+        if entry.path == _PRIMARY_MODEL_NAME:
+            return {
+                "primary_model_path": entry.path,
+                "primary_model_sha256": entry.sha256,
+            }
+    return {}
+
+
+def _sealed_release_observed_at(run_root: Path, release: NativeRelease) -> str:
+    """Timestamp an unreleased toy by when its Release contract was sealed.
+
+    ``datetime.now`` would make every reprojection of the same run differ,
+    which would turn an idempotent re-materialization into a hard collision.
+    The sealed contract's own modification time does not move once written.
+    """
+
+    path = run_root / "artifacts" / "release" / "release.json"
+    try:
+        sealed = path.stat().st_mtime
+    except OSError as exc:
+        raise StateConflict("sealed Release contract is unavailable") from exc
+    del release
+    return (
+        datetime.fromtimestamp(sealed, timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+    )
+
+
 def materialize_public_example(
     repository_root: Path,
     run_root: Path,
@@ -1178,7 +1285,7 @@ def materialize_public_example(
     release: NativeRelease,
     made: NativeMade,
     inventor_id: str,
-    receipt: Receipt,
+    receipt: Optional[Receipt] = None,
     disclose_exact_wish: bool = False,
     manager_id: str = DEFAULT_MANAGER_ID,
     effort: Optional[str] = None,
@@ -1192,7 +1299,18 @@ def materialize_public_example(
 
     Repeating the operation with identical bytes is idempotent.  An existing
     symlink, partial directory, or different snapshot is a hard collision; no
-    public example is overwritten or merged.
+    public example is overwritten or merged.  The single exception is the
+    publication of a toy this same Release already projected as *unreleased*:
+    that directory is moved aside, the public tree is installed exclusively as
+    always, and the old tree is dropped only once the new one exists.
+
+    ``receipt`` is the authenticated Factory readback of a published toy.
+    ``None`` projects an *unreleased* toy instead: a run that sealed Release
+    locally with ``--no-publish`` and performed no Factory effect at all.  The
+    archive is then byte-identical in shape, but its publication record says
+    ``unreleased`` and carries no page URL, cover URL, listing or receipt
+    identity, because none exists.  Every fact still comes from the sealed
+    Made and Release bytes, so the projection stays deterministic.
     """
 
     # Imported at effect-composition time so the Release component does not
@@ -1219,7 +1337,10 @@ def materialize_public_example(
         selected_effort = None
     if type(github_requested) is not bool:
         raise ContractError("public example GitHub request must be boolean")
-    if not isinstance(receipt, Receipt) or not receipt.is_verified_public:
+    unreleased = receipt is None
+    if not unreleased and (
+        not isinstance(receipt, Receipt) or not receipt.is_verified_public
+    ):
         raise StateConflict("public example requires verified public Factory readback")
     if (
         not isinstance(inventor_id, str)
@@ -1227,18 +1348,24 @@ def materialize_public_example(
         or _PUBLIC_INVENTOR.fullmatch(inventor_id) is None
     ):
         raise ContractError("public example Inventor id is not a canonical slug")
-    slug = receipt.slug
+    make_output = release.schema_version == 4
+    pdf_first = release.manual_path == NATIVE_RELEASE_MANUAL_PATH
+    anchor_url = None
+    if unreleased:
+        slug = unreleased_public_slug(release.product["title"])
+        details = _unreleased_receipt_details(made)
+    else:
+        slug = receipt.slug
+        details = receipt.details
     if (
         not isinstance(slug, str)
         or len(slug) > _MAX_PUBLIC_NAME
         or _PUBLIC_SLUG.fullmatch(slug) is None
     ):
         raise StateConflict("public Factory slug is not safe for a repository path")
-    receipt.assert_artifact(release.product_artifact_sha256)
-    details = receipt.details
-    make_output = release.schema_version == 4
-    pdf_first = release.manual_path == NATIVE_RELEASE_MANUAL_PATH
-    for field in (
+    if not unreleased:
+        receipt.assert_artifact(release.product_artifact_sha256)
+    for field in () if unreleased else (
         "publication_anchor_sha256" if make_output else "manual_sha256",
         "primary_model_sha256",
         "product_page_sha256",
@@ -1249,7 +1376,16 @@ def materialize_public_example(
             or re.fullmatch(r"[0-9a-f]{64}", details[field]) is None
         ):
             raise StateConflict("public Factory receipt lacks exact byte identities")
-    if make_output:
+    if unreleased:
+        # An unreleased toy has no Factory state to cross-check, so the sealed
+        # Release-to-Made binding is the whole of the identity check here.
+        if (
+            release.made_sha256 != made.made_sha256
+            or release.product_artifact_sha256
+            != made.product_manifest.artifact_sha256
+        ):
+            raise StateConflict("sealed Release belongs to different Made bytes")
+    elif make_output:
         # Reuse Factory's exact pinned-CDN URL contract; this is a read-only
         # receipt projection and never invokes the authenticated adapter.
         from workshop.integrations.factory import (
@@ -1287,7 +1423,7 @@ def materialize_public_example(
         is None
     ):
         raise StateConflict("public Factory receipt lacks exact byte identities")
-    if (
+    if not unreleased and (
         release.made_sha256 != made.made_sha256
         or release.product_artifact_sha256
         != made.product_manifest.artifact_sha256
@@ -1332,7 +1468,11 @@ def materialize_public_example(
         label="public product.json",
     )
     manual_entry = package_entries.get(release.manual_path)
-    if not make_output and details.get("manual_sha256") != manual_entry.sha256:
+    if (
+        not unreleased
+        and not make_output
+        and details.get("manual_sha256") != manual_entry.sha256
+    ):
         raise StateConflict("public Factory receipt belongs to different manual bytes")
     if make_output and release.product["source_document"] is not None:
         document = release.product["source_document"]
@@ -1433,10 +1573,14 @@ def materialize_public_example(
             copied["quantity"] = quantity
             print_files.append(copied)
 
-        page_url = _https_public_url(details.get("page_url"), "public page URL")
+        page_url = (
+            None
+            if unreleased
+            else _https_public_url(details.get("page_url"), "public page URL")
+        )
         cover_url = (
             None
-            if pdf_first or make_output
+            if unreleased or pdf_first or make_output
             else _https_public_url(details.get("cover_url"), "public cover URL")
         )
         title = str(release.product["title"])
@@ -1452,35 +1596,44 @@ def materialize_public_example(
             "primary_model_sha256": primary_sha256,
         }
         if make_output:
-            identities.update(
-                publication_anchor_path=details["publication_anchor_path"],
-                publication_anchor_sha256=details["publication_anchor_sha256"],
-                publication_anchor_readback_sha256=details[
-                    "publication_anchor_readback_sha256"
-                ],
-            )
+            if not unreleased:
+                identities.update(
+                    publication_anchor_path=details["publication_anchor_path"],
+                    publication_anchor_sha256=details["publication_anchor_sha256"],
+                    publication_anchor_readback_sha256=details[
+                        "publication_anchor_readback_sha256"
+                    ],
+                )
         else:
             identities["manual_sha256"] = manual_entry.sha256
         if pdf_first:
             identities["manual_path"] = release.manual_path
-        elif not make_output:
+        elif not make_output and not unreleased:
             identities["factory_content_sha256"] = details.get(
                 "factory_content_sha256"
             )
-        publication_details = {
-            "adapter": "factory",
-            "status": "public",
-            "slug": slug,
-            "page_url": page_url,
-            "observed_at": receipt.observed_at,
-            "listing": {
-                "price_cents": receipt.listing_price_cents,
-                "currency": receipt.listing_currency,
-            },
-        }
+        observed_at = (
+            _sealed_release_observed_at(run, release)
+            if unreleased
+            else receipt.observed_at
+        )
+        if unreleased:
+            publication_details = unreleased_publication_details(slug, observed_at)
+        else:
+            publication_details = {
+                "adapter": "factory",
+                "status": "public",
+                "slug": slug,
+                "page_url": page_url,
+                "observed_at": observed_at,
+                "listing": {
+                    "price_cents": receipt.listing_price_cents,
+                    "currency": receipt.listing_currency,
+                },
+            }
         if cover_url is not None:
             publication_details["cover_url"] = cover_url
-        if make_output:
+        if make_output and not unreleased:
             publication_details["publication_mode"] = details["publication_mode"]
             publication_details["publication_anchor_url"] = anchor_url
         publication = {
@@ -1494,7 +1647,7 @@ def materialize_public_example(
             "print_files": print_files,
         }
         public_token_summary = _public_token_summary(token_summary)
-        public_timing_summary = _public_timing_summary(wish_id, receipt.observed_at)
+        public_timing_summary = _public_timing_summary(wish_id, observed_at)
         _write_public_file(
             staging,
             "TOKENS.json",
@@ -1568,11 +1721,39 @@ def materialize_public_example(
                     runtime.reasoning_effort.title(),
                     runtime.reasoning_effort,
                 )
+        if unreleased:
+            page_line = (
+                "**Not published.** This run was sealed locally with "
+                "`--no-publish`: no Factory listing, no public product page, "
+                "and no external effect of any kind was created.\n\n"
+            )
+            factory_cell = "not published (`--no-publish`)"
+            publication_line = (
+                "- `publication/PUBLICATION.json` — local `unreleased` record; "
+                "no readback identities, because nothing was published.\n"
+            )
+            timing_line = (
+                "- `TIMING.json` — Wish intake to locally sealed Release "
+                "elapsed time.\n"
+            )
+        else:
+            page_line = (
+                "[View the verified public product page](%s)\n\n" % page_url
+            )
+            factory_cell = page_url
+            publication_line = (
+                "- `publication/PUBLICATION.json` — sanitized public readback "
+                "identities.\n"
+            )
+            timing_line = (
+                "- `TIMING.json` — Wish intake to authenticated public-readback "
+                "elapsed time.\n"
+            )
         readme = (
             "# %s\n\n"
             "%s"
             "%s\n\n"
-            "[View the verified public product page](%s)\n\n"
+            "%s"
             "| Frozen on this run | Value |\n"
             "|---|---|\n"
             "%s"
@@ -1589,9 +1770,9 @@ def materialize_public_example(
             "- `make/` — %s, exact CAD source, models, product renders, verification, and sealed prior attempts.\n"
             "%s"
             "- `release/` — accepted Release contract and exact package bytes.\n"
-            "- `publication/PUBLICATION.json` — sanitized public readback identities.\n"
+            "%s"
         "- `TOKENS.json` — separate Manager-reported gross/cached/uncached input and output/reasoning tokens by stage; no combined total or dollar estimate.\n"
-            "- `TIMING.json` — Wish intake to authenticated public-readback elapsed time.\n"
+            "%s"
             "- `MANIFEST.json` — hashes every workflow file except itself and this README.\n"
             "%s"
             "%s\n"
@@ -1606,11 +1787,11 @@ def materialize_public_example(
                 else ""
             ),
             summary,
-            page_url,
+            page_line,
             runtime_rows,
             _display_inventor_id(inventor_id) or inventor_id,
             inventor_id,
-            page_url,
+            factory_cell,
             _workflow_overview_markdown(staging),
             _creation_story_markdown(staging),
             _run_cost_markdown(public_token_summary, public_timing_summary),
@@ -1632,6 +1813,8 @@ def materialize_public_example(
             ),
             product_description,
             document_contents,
+            publication_line,
+            timing_line,
             (
                 "- `SANITIZATION.json` — source/public hashes for host-local path prefixes replaced by stable placeholders.\n"
                 if (staging / "SANITIZATION.json").is_file()
@@ -1658,13 +1841,25 @@ def materialize_public_example(
         directory_descriptor = os.open(str(toys), flags)
         try:
             fcntl.flock(directory_descriptor, fcntl.LOCK_EX)
+            superseded: Optional[Path] = None
             if target.exists() or target.is_symlink():
                 existing = _real_directory(target, "existing public example")
                 if _trees_are_identical(existing, staging):
                     return existing
-                raise StateConflict(
-                    "public example already exists with different or partial bytes"
-                )
+                if not (receipt is not None
+                        and _supersedes_own_unreleased(existing, release)):
+                    raise StateConflict(
+                        "public example already exists with different or partial bytes"
+                    )
+                # Move this run's own unreleased projection aside rather than
+                # writing over it, so the exclusive install below still creates
+                # every byte itself and a failure can put the old tree back.
+                superseded = target.parent / (target.name + ".superseded")
+                if superseded.exists() or superseded.is_symlink():
+                    raise StateConflict(
+                        "a superseded public example is already awaiting review"
+                    )
+                os.rename(target, superseded)
             try:
                 _install_staging_exclusively(
                     staging,
@@ -1673,9 +1868,17 @@ def materialize_public_example(
                     target=target,
                 )
             except OSError as exc:
+                if superseded is not None and not target.exists():
+                    os.rename(superseded, target)
                 raise StateConflict(
                     "public example could not be installed without overwrite"
                 ) from exc
+            except BaseException:
+                if superseded is not None and not target.exists():
+                    os.rename(superseded, target)
+                raise
+            if superseded is not None:
+                shutil.rmtree(superseded)
         finally:
             try:
                 fcntl.flock(directory_descriptor, fcntl.LOCK_UN)
@@ -1699,7 +1902,7 @@ def materialize_public_example_if_source_checkout(
     release: NativeRelease,
     made: NativeMade,
     inventor_id: str,
-    receipt: Receipt,
+    receipt: Optional[Receipt] = None,
     disclose_exact_wish: bool = False,
     manager_id: str = DEFAULT_MANAGER_ID,
     effort: Optional[str] = None,

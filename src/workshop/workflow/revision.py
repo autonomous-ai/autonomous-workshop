@@ -1,21 +1,39 @@
-"""Import a published archive as data for an independent correction run."""
+"""Import a toy archive as data for an independent correction run.
+
+The source may be a published archive or an *unreleased* one: a run sealed
+locally with ``--no-publish``, which has a complete Make and Release but no
+Factory listing.  Both are the same archive contract and differ only in their
+publication record.  A private run workspace is also accepted and is projected
+into that same archive shape first, so exactly one import path exists.
+"""
 
 from __future__ import annotations
 
 import hashlib
 import io
 import json
+import tempfile
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
+from typing import Any, Mapping, Optional, Sequence
 
 from workshop.artifacts.core import artifact_manifest_from_mapping
 from workshop.errors import ContractError, StateConflict
+from workshop.make.native import NativeMade
+from workshop.release.native import NativeRelease
 from workshop.release.public_archive import (
     PUBLIC_ARCHIVE_SCHEMA_VERSION,
+    SUPPORTED_PUBLICATION_STATUSES,
+    UNRELEASED_PUBLICATION_STATUS,
     build_public_archive_manifest,
     stable_file,
     strict_json,
+    unreleased_public_slug,
+    unreleased_publication_snapshot,
+    write_public_workflow_archive,
 )
+from workshop.runtime.project_boundary import PRODUCT_RUN_ROOT_MARKER
 from workshop.wish import Wish, generate_wish_id
 
 REVISION_INPUT = "revision-source.zip"
@@ -24,7 +42,7 @@ MAX_REVISION_BYTES = 128 * 1024 * 1024
 
 REVISION_GUIDANCE = (
     "This Wish has context.revision; "
-    "this is a correction of a published toy: inspect revision-work/ and "
+    "this is a correction of an existing toy: inspect revision-work/ and "
     "the immutable revision-source.zip baseline before designing. Reuse "
     "the cloned CAD and preserve every original rule, dimension and feature "
     "not changed by the correction Wish. Work only on the local clone; "
@@ -60,11 +78,149 @@ def revision_input(
     return [(PurePosixPath(REVISION_INPUT), content, 0o400)]
 
 
-def prepare_revision(source: Path, prompt: str) -> tuple[Wish, bytes]:
-    """Verify a local public snapshot; never import private run authority."""
+def _run_workspace_contracts(
+    run_root: Path,
+) -> tuple[NativeRelease, NativeMade, str]:
+    """Recover the accepted Release, Made and Inventor of a private run.
+
+    Only contracts the run itself sealed are read. Host state, gates, the
+    effect ledger, credentials and the native session are never touched, so a
+    workspace import grants no authority the archive import would not.
+    """
+
+    release_bytes = stable_file(
+        run_root / "artifacts" / "release" / "release.json",
+        "sealed Release contract",
+    )
+    release = NativeRelease.from_mapping(
+        strict_json(release_bytes, "sealed Release contract")
+    )
+    make_root = run_root / "artifacts" / "make"
+    made: Optional[NativeMade] = None
+    if make_root.is_dir() and not make_root.is_symlink():
+        for round_root in sorted(make_root.iterdir()):
+            candidate = round_root / "made.json"
+            if round_root.is_symlink() or not candidate.is_file():
+                continue
+            parsed = NativeMade.from_mapping(
+                strict_json(
+                    stable_file(candidate, "sealed Made contract"),
+                    "sealed Made contract",
+                )
+            )
+            if parsed.made_sha256 == release.made_sha256:
+                made = parsed
+                break
+    if made is None:
+        raise StateConflict("run workspace has no Made contract for its Release")
+    assignment_paths = (
+        run_root / "artifacts" / "invent" / "assignment.json",
+        run_root / "artifacts" / "make" / ("r%04d" % made.round) / "assignment.json",
+    )
+    for path in assignment_paths:
+        if path.is_file() and not path.is_symlink():
+            assignment = strict_json(
+                stable_file(path, "accepted Match assignment"),
+                "accepted Match assignment",
+            )
+            inventor = assignment.get("selected_inventor_id")
+            if isinstance(inventor, str) and inventor:
+                return release, made, inventor
+    raise StateConflict("run workspace has no accepted Inventor selection")
+
+
+def _project_run_workspace_archive(run_root: Path, staging: Path) -> None:
+    """Write the ordinary unreleased archive for an unpublished run workspace.
+
+    This is the same projection ``--no-publish`` performs into ``toys/``,
+    minus the repository-facing README and cost summaries that a correction
+    source does not need. Everything written is transitively bound to the
+    sealed Made and Release contracts.
+    """
+
+    release, made, inventor_id = _run_workspace_contracts(run_root)
+    publication = unreleased_publication_snapshot(
+        release=release,
+        inventor_id=inventor_id,
+        slug=unreleased_public_slug(release.product["title"]),
+        observed_at=_sealed_at(run_root),
+    )
+    write_public_workflow_archive(
+        staging,
+        run_root,
+        made=made,
+        release=release,
+        title=str(release.product["title"]),
+        summary=str(release.product["summary"]),
+        publication=publication,
+        writer=lambda relative, content: _write_staged_file(
+            staging,
+            relative,
+            content.encode("utf-8") if isinstance(content, str) else content,
+        ),
+    )
+
+
+def _sealed_at(run_root: Path) -> str:
+    """When the run sealed its Release, used as the archive's observed_at.
+
+    It does not move once written, so reprojecting the same run produces the
+    same archive bytes.
+    """
+
+    try:
+        sealed = (run_root / "artifacts" / "release" / "release.json").stat().st_mtime
+    except OSError as exc:
+        raise StateConflict("sealed Release contract is unavailable") from exc
+    return (
+        datetime.fromtimestamp(sealed, timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+    )
+
+
+def _write_staged_file(root: Path, relative: str, content: bytes) -> None:
+    pure = PurePosixPath(relative)
+    if pure.is_absolute() or ".." in pure.parts or pure.as_posix() != relative:
+        raise ContractError("revision archive output path is invalid")
+    target = root.joinpath(*pure.parts)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("xb") as stream:
+        stream.write(content)
+
+
+def prepare_revision(
+    source: Path,
+    prompt: str,
+    references: Optional[Sequence[Any]] = None,
+    reference_sources: Optional[Mapping[str, str]] = None,
+) -> tuple[Wish, bytes]:
+    """Verify a local toy snapshot; never import private run authority."""
     source = Path(source)
     if source.is_symlink() or not source.is_dir():
-        raise ContractError("fix source must be a real published toy archive directory")
+        raise ContractError(
+            "fix source must be a real toy archive directory or run workspace"
+        )
+    marker = source / PRODUCT_RUN_ROOT_MARKER
+    if marker.is_file() and not marker.is_symlink():
+        with tempfile.TemporaryDirectory(prefix="workshop-revision-") as scratch:
+            staging = Path(scratch) / "archive"
+            staging.mkdir()
+            _project_run_workspace_archive(source, staging)
+            return _prepare_revision_from_archive(
+                staging, prompt, references, reference_sources
+            )
+    return _prepare_revision_from_archive(
+        source, prompt, references, reference_sources
+    )
+
+
+def _prepare_revision_from_archive(
+    source: Path,
+    prompt: str,
+    references: Optional[Sequence[Any]] = None,
+    reference_sources: Optional[Mapping[str, str]] = None,
+) -> tuple[Wish, bytes]:
     manifest_bytes = stable_file(source / "MANIFEST.json", "public archive manifest")
     document = strict_json(manifest_bytes, "public archive manifest")
     if (document.get("kind") != "autonomous-workshop.public-toy-archive"
@@ -91,8 +247,11 @@ def prepare_revision(source: Path, prompt: str) -> tuple[Wish, bytes]:
     if not isinstance(publication_state, dict) or not isinstance(inventor_state, dict):
         raise ContractError("published toy metadata is malformed")
     if (publication.get("kind") != "autonomous-workshop.public-toy-snapshot"
-            or publication_state.get("status") != "public"):
-        raise ContractError("fix source must record a public publication")
+            or publication_state.get("status")
+            not in SUPPORTED_PUBLICATION_STATUSES):
+        raise ContractError(
+            "fix source must record a public or unreleased publication"
+        )
     inventor = inventor_state.get("id")
     if not isinstance(inventor, str) or not inventor:
         raise ContractError("published toy has no inventor identity")
@@ -105,18 +264,24 @@ def prepare_revision(source: Path, prompt: str) -> tuple[Wish, bytes]:
             info.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(info, content)
     snapshot = buffer.getvalue()
-    wish = Wish.create(generate_wish_id(), prompt, context={
+    context: dict = {
         "source": "workshop-fix", "inventor_id": inventor,
         "revision": {
             "schema_version": 1,
             "source_title": publication.get("title"),
+            "source_status": publication_state["status"],
             "source_page_url": publication["publication"].get("page_url"),
             "source_artifact_sha256": manifest.artifact_sha256,
             "snapshot_path": REVISION_INPUT,
             "snapshot_sha256": hashlib.sha256(snapshot).hexdigest(),
             "work_path": REVISION_WORK,
         },
-    })
+    }
+    if reference_sources:
+        context["reference_sources"] = dict(reference_sources)
+    wish = Wish.create(
+        generate_wish_id(), prompt, context=context, references=references,
+    )
     revision_input(json.dumps(wish.to_dict()).encode(), snapshot)
     return wish, snapshot
 

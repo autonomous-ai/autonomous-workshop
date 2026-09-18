@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import stat
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping, Sequence
@@ -26,12 +27,99 @@ from workshop.wish.contracts import Wish
 
 
 PUBLIC_ARCHIVE_SCHEMA_VERSION = 4
+PUBLIC_PUBLICATION_STATUS = "public"
+UNRELEASED_PUBLICATION_STATUS = "unreleased"
+UNRELEASED_PUBLICATION_ADAPTER = "none"
+SUPPORTED_PUBLICATION_STATUSES = (
+    PUBLIC_PUBLICATION_STATUS,
+    UNRELEASED_PUBLICATION_STATUS,
+)
+_MAX_PUBLIC_NAME = 100
+_PUBLIC_SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _MAX_BOUND_FILE_BYTES = 128 * 1024 * 1024
 _GENERATED_DIRECTORIES = frozenset(("__cadgen__", "__pycache__"))
 _MODEL_SUFFIXES = frozenset((".step",))
 
 PublicWriter = Callable[[str, bytes], None]
 _ROOT_MANIFEST_EXCLUDES = frozenset(("MANIFEST.json", "README.md"))
+
+
+def unreleased_public_slug(title: Any) -> str:
+    """Derive the stable local directory slug for an unpublished toy.
+
+    Factory owns the slug of a published toy.  An unreleased toy has no
+    Factory state at all, so its local directory name is derived from the
+    exact sealed Release title instead.  The derivation is pure, so repeating
+    a projection for the same run produces the same bytes.
+    """
+
+    if not isinstance(title, str):
+        raise ContractError("unreleased toy title must be text")
+    slug = re.sub(r"[^a-z0-9]+", "-", title.casefold()).strip("-")
+    if (
+        not slug
+        or len(slug) > _MAX_PUBLIC_NAME
+        or _PUBLIC_SLUG.fullmatch(slug) is None
+    ):
+        raise ContractError("unreleased toy title has no safe directory slug")
+    return slug
+
+
+def unreleased_publication_details(slug: str, observed_at: str) -> dict[str, Any]:
+    """Return the publication block of a locally sealed, unpublished toy.
+
+    It deliberately carries no page URL, cover URL, listing or receipt
+    identity, because none exists.  ``status`` says exactly that.
+    """
+
+    if (
+        not isinstance(slug, str)
+        or _PUBLIC_SLUG.fullmatch(slug) is None
+        or not isinstance(observed_at, str)
+        or not observed_at
+    ):
+        raise ContractError("unreleased publication details are invalid")
+    return {
+        "adapter": UNRELEASED_PUBLICATION_ADAPTER,
+        "status": UNRELEASED_PUBLICATION_STATUS,
+        "slug": slug,
+        "observed_at": observed_at,
+    }
+
+
+def unreleased_publication_snapshot(
+    *,
+    release: NativeRelease,
+    inventor_id: str,
+    slug: str,
+    observed_at: str,
+    primary_model: Any = None,
+    print_files: Sequence[Any] = (),
+) -> dict[str, Any]:
+    """Build the whole ``publication/PUBLICATION.json`` of an unreleased toy."""
+
+    if not isinstance(release, NativeRelease):
+        raise ContractError("unreleased publication requires a typed Release")
+    if not isinstance(inventor_id, str) or not inventor_id:
+        raise ContractError("unreleased publication requires an Inventor id")
+    return {
+        "schema_version": 2,
+        "kind": "autonomous-workshop.public-toy-snapshot",
+        "title": str(release.product["title"]),
+        "inventor": {"id": inventor_id},
+        "publication": unreleased_publication_details(slug, observed_at),
+        "identities": {
+            "native_release_sha256": release.release_sha256,
+            "package_artifact_sha256": release.package_manifest.artifact_sha256,
+            "product_artifact_sha256": release.product_artifact_sha256,
+            "playtest_evidence_sha256": (
+                release.playtest_evidence_artifact_sha256
+            ),
+            "product_page_sha256": release.product_json_sha256,
+        },
+        "primary_model": primary_model,
+        "print_files": list(print_files),
+    }
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -988,8 +1076,15 @@ def write_public_workflow_archive(
 
 __all__ = [
     "PUBLIC_ARCHIVE_SCHEMA_VERSION",
+    "PUBLIC_PUBLICATION_STATUS",
+    "SUPPORTED_PUBLICATION_STATUSES",
+    "UNRELEASED_PUBLICATION_ADAPTER",
+    "UNRELEASED_PUBLICATION_STATUS",
     "build_public_archive_manifest",
     "stable_file",
     "strict_json",
+    "unreleased_public_slug",
+    "unreleased_publication_details",
+    "unreleased_publication_snapshot",
     "write_public_workflow_archive",
 ]
