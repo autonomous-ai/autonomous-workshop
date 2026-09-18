@@ -11,7 +11,8 @@ Make stage of Autonomous Workshop on its own, with no Inventor, Wish packet, hos
   `CAD_SKILL_ROOT="$(workshop skills path)/cad"`, skip that line — the variable is already correct.
 - Skills are materialized under `.agents/skills/`: `cad` (modeling, generation, gates),
   `make-round` (one repair round, batched), `step-parts` (purchasable parts), `image-to-cad`
-  (reference images), `design-reference`, `electromechanical-integration`. Read
+  (reference images), `design-reference`, `electromechanical-integration`, `mechanisms`
+  (joints and moving mechanisms, reference only). Read
   `.agents/skills/cad/SKILL.md` before the first build; load its references by their triggers.
 - **A 3D pane is open beside this terminal.** It shows `model.step` and redraws by itself a few
   seconds after every `gen --write`. Never start a viewer, never print a URL, never ask the user
@@ -76,6 +77,9 @@ Rules that hold every round:
   object has a joint, a lid, an insertion or a snap, with `measure/motion.json` written per
   `references/motion-manifests.md`. Without it, motion is unverified — say so, never "assembles".
 - Powered or lit products go through `$electromechanical-integration` before the layout is fixed.
+- A part that turns, slides, swings, indexes or latches: read `$mechanisms` for the archetype, the
+  fit class and the feasibility `assert` before drawing it, and its `failure-catalog.md` before
+  calling the mechanism finished.
 - After editing a shared `model_lib.py`, delete `__cadgen__/` before the next build.
 - Keep the session small: read round summaries, not logs; learn flags from `--help`, not by
   reading scripts; start a long command with a generous yield and continue it with stdin rather

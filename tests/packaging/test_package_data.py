@@ -69,6 +69,7 @@ class PackageDataTest(unittest.TestCase):
                 "image-to-cad",
                 "make-round",
                 "manual-design",
+                "mechanisms",
                 "step-parts",
             },
         )
@@ -80,6 +81,7 @@ class PackageDataTest(unittest.TestCase):
             "image-to-cad": "make",
             "make-round": "make",
             "manual-design": "release",
+            "mechanisms": "make",
             "step-parts": "make",
         }
         for name, root in roots.items():

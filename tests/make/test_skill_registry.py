@@ -52,6 +52,7 @@ class SkillFingerprintTest(unittest.TestCase):
                 "image-to-cad",
                 "make-round",
                 "make-round",
+                "mechanisms",
                 "step-parts",
             },
         )

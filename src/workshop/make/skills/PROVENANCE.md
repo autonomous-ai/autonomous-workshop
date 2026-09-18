@@ -458,6 +458,43 @@ on the engine it launches and nothing else does, so Workshop's own product runs
 write no extra file; it never raises. Upstream does not carry it; re-apply on
 the next resync. `tests/make/test_harness_verdict.py` covers it.
 
+## `mechanisms` (2026-09-18)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `cf81f5113ffdb261e39f71166fe4aeae56509413` (2026-09-18), the commit that
+  added the tree. It is pinned on its own and does not move the other five
+  upstream trees off `facbc58`; the 36 upstream commits between the two
+  revisions are not taken here.
+- Reference only: `SKILL.md` plus eight `references/` pages on joints, gears,
+  linkages, cams and intermittent drives, energy sources, automaton layouts,
+  mechanism verification and a failure catalogue. It has no script, no gate
+  and no dependency, and upstream changed no other skill in the same commit.
+  Every tool and field it names — `cadfits.slot_for`/`peg_for`/
+  `mating_clearance`/`print_in_place_gap`, `cadmount`, `check_motion`, and
+  the manifest's `driven`, `obstacle_parts`, `retention`, `maxStepMm`,
+  `maxOverlapMm3` and `assembly_sequence` — is present in the reviewed `cad`
+  tree at `facbc58`.
+- Local path adaptations, prose only. Upstream's bare
+  `skills/cad/references/motion-manifests.md` (three places) and
+  `skills/cad/scripts/cadfits.py` do not resolve in the materialized
+  `.agents/skills` layout, so they read "the CAD skill's `references/...`" /
+  "the CAD skill's `scripts/...`", the wording the product-run references
+  already use. The failure catalogue's "this repository" names the upstream
+  repository, and `SKILL.md` gains one paragraph saying `output/trotter`,
+  `output/manta_ray` and `trotter-src` are upstream machines that are not
+  materialized in a run, so an agent does not go looking for those paths.
+  Lines were reflowed where a rewrite lengthened them; no rule, number or
+  formula changed. Only `SKILL.md`, `joints.md`, `verification.md` and
+  `failure-catalog.md` differ from upstream; `gears.md`, `linkages.md`,
+  `cams-intermittent.md`, `energy-drive.md` and `automata-patterns.md` are
+  byte-identical.
+- No standalone license file in the pinned tree, like `design-reference`,
+  `electromechanical-integration` and `image-to-cad`; this ledger does not
+  infer an MIT grant for it.
+- Motion checks remain opt-in (`MAKE-OPTIONS.json` `check_motion`, 2026-09-14).
+  The design pages apply to any moving product; `verification.md` describes
+  evidence only a `check_motion: true` run produces.
+
 ## `make-round`
 
 Local extension (2026-09-09, ADR 0060): each round renders native inspection
