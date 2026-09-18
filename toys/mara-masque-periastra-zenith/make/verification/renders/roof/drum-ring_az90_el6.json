@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/roof.step",
+  "source_sha256": "b8c35fbd2c3c6521338db00cb3cd98da749ed056f6f2e446622c76887e61238b",
+  "camera": {
+    "azimuth_deg": 90.0,
+    "elevation_deg": 6.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null,
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/roof/drum-ring_az90_el6.png",
+  "output_sha256": "69efee1a7f6fc1c0bcaa65916104bfe7086861cb8130cc94ce55a7fdc432fb59"
+}

@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/roof.step",
+  "source_sha256": "b8c35fbd2c3c6521338db00cb3cd98da749ed056f6f2e446622c76887e61238b",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 14.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": "0.48,0.58,0.26",
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/roof/foot-in-slit_az-90_el14.png",
+  "output_sha256": "41d02b5ae81fa3ae30c8bb452ee0b0c722cb707c5e6be35760762b4ec1f853d4"
+}

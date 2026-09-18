@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/flip-moon.step",
+  "source_sha256": "0c53ac73e7da7df3e9285205382a7aa68dc5bc5c95089d68437a86c932aa1b7b",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 18.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": "0.5,0.5,0.62",
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/counters/moon-flip_az-90_el18.png",
+  "output_sha256": "e6afec14ca7b1423c2926f61f7383b31a1d7fe580d38e5d265deca8e724d4ddc"
+}

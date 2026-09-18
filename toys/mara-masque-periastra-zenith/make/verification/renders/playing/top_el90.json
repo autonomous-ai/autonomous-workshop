@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/playing.step",
+  "source_sha256": "8df92d0e62adbef0442d3613208c73af5ffbc26e5a9ccd4a35213eb1457aaa1a",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 90.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null,
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/playing/top_el90.png",
+  "output_sha256": "ecfca7af731d062d89a3f5001258dbd5f29c5abecfe395357f2cfa15c3fcaa41"
+}

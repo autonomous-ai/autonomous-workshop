@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Iso: one open tray, four raised corner ledges at the inside corners, side walls dropped to a sill along each span, and an 8x8 field of blind square pockets in the chequer pattern with the plan corner chamfers visible at every diagonal junction. Two half-disc orientation marks sit on the board margin, one per side, tangent to the edge rank. Top: the flat-shaded plan gives no tone difference between the board floor and the pocket floors, which is the renderer's known limitation and not a geometry defect; the pocket outlines and the two marks are visible. Front: the wall drops to the sightline sill with the corner piers standing proud, and the bottom sits flat on the bed. Nothing misplaced, missing, extra or intersecting; byte-identical to the frozen archive design.",
+  "packet_sha256": "9e402adc11df8365b5f2ca08e814abaf966a2203dfc399aa9316a3ef9a7a6771",
+  "status": "pass"
+}

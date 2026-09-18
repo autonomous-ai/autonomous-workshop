@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Iso and top: one square tile in the contrasting indigo, all four plan corners chamfered equally, faces flat and parallel. Front: a plain flat slab, bottom on the bed, no taper or lip. Proportions read as a thin tile against a wide square, which is the 21.5 x 21.5 x 2.0 design. Nothing misplaced, missing, extra or intersecting; byte-identical to the frozen archive design.",
+  "packet_sha256": "8da45151d6834c9569efb910a73b541cbedf470a63e9c2e0a70e82f1e8ae642e",
+  "status": "pass"
+}

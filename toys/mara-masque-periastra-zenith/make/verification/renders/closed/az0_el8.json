@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/periastra.step",
+  "source_sha256": "2904b9242be4541508cbe3f0a10b6a6352786c360b21e7b20ffb9dd01f44476e",
+  "camera": {
+    "azimuth_deg": 0.0,
+    "elevation_deg": 8.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null,
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/closed/az0_el8.png",
+  "output_sha256": "534952e5375ab58b0ee600a2378f76ccde3640584da3b7730954af08216d7c7e"
+}

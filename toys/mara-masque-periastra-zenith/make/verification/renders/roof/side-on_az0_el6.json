@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/roof.step",
+  "source_sha256": "b8c35fbd2c3c6521338db00cb3cd98da749ed056f6f2e446622c76887e61238b",
+  "camera": {
+    "azimuth_deg": 0.0,
+    "elevation_deg": 6.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null,
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/roof/side-on_az0_el6.png",
+  "output_sha256": "e4f8ec0e515797f9c5e489e54ad265d97547f13bc09b8f3c8d1e05047b4a2fdb"
+}

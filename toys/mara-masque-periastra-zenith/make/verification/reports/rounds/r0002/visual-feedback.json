@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Closed assembled object, second round, after the telescope's footing moved from y +15.0 to +13.0 and the tube shortened from 87.0 to 85.3 mm. Iso: the roof still seats square on the four integral ledges with an even bare plate margin; drum and its rotation seam unbroken all the way round below the slit; the slit runs from its far edge over the apex and down the near flank to the drum top; the mouth clearing the shell is visibly shorter than in round 1. The stored counters read correctly through the 4.0 mm reveal as alternating orange and cream discs on indigo inlays in their starting rows. Front: reveal, counters, plate on ledges, tube centred in the slit with its cove spreading into the floor, drum wall whole with no channel through it. Top: roof centred on the base with an even margin, slit parallel-walled on the mid-line, tube on x = 0 with clear air either side, bore open, cove flare now further from the far wall. No misplaced, missing, extra or floating parts, no visible intersection, nothing outboard of the drum or dome but the muzzle.",
+  "packet_sha256": "20b437ddbf22d8a1f43d022ddddb46e6ead7336cb391df8d7b53efac74062493",
+  "status": "pass"
+}

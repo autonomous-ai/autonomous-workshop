@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/kings.step",
+  "source_sha256": "f0b2172584470927e2515eef95d81cda34f89d72558131d24c3e7320b2b8c951",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 45.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": "0.5,0.52,0.6",
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/kings/board_az-90_el45.png",
+  "output_sha256": "c2d9530258dfe2914912cfa39225b580f0e91f2f304d27a0cf4c75a6620bc5a3"
+}

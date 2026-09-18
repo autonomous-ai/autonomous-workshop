@@ -1,0 +1,51 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001",
+ "likeness": {},
+ "parts": {
+  "moon_counter": "588d285baf2e312d81ca39c92ddad82ff83725aa721f5a5789ffb1a0ec50301e"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "moon_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001/overhang-moon_counter.log": "fefacf9ee62b1c5430d21d2a790f8c6c7fc49203784331faec9a454f03aab80a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001/thickness-moon_counter.log": "7f65cd113f34613f8deff481ef4a885daa2a6322436e54969dc225cc5736cd37"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 19.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 99.8,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.5.2",
+   "scipy": "1.18.1"
+  },
+  "platform": "darwin",
+  "python": "<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13",
+  "python_version": "3.13.5 (main, Jun 12 2025, 12:22:43) [Clang 20.1.4 ]",
+  "sources": {
+   "check_overhang": "a3bcb271c46a52c21fbf507f56537bdfda27070c31ece232b070382b5e886c97",
+   "check_thickness": "6e1a743b3b228b68bc7ead1c23ca9ba320a813797a869bf6ada16b53c28f0b7d",
+   "make_round": "60b135a36039fe3a8416f73cc89eb456f8a348f21b4a3951377557a11afbbec5",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 1,
+ "scope": "component:moon_counter"
+}

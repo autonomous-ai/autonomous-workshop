@@ -1,0 +1,37 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/visual/front.png": "5b5f3e2f4c1f88160d0153cbcd1636b6f95e3e0d4aaff8455fa3c9a98608ecdd",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/visual/iso.png": "0e1fe7bf3b63ddf37938d3e3bf2903835f9f167f946259fe5d223748042546f9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/visual/top.png": "f9c840a3b7950ac2659ced3fae8de72a9336982fa447ffdfd32dc3cfcbc6b87a"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "GEOMETRY-NOTES.md": "08deff1b34ca8a72108eb8749bf15025ef6b5ffa5802a2e3dd08677b28a4f0c2",
+    "README.md": "e5337834855514cd064d9d2978a634b24fd9413e270b80dfea4b502a5e149289",
+    "assembly.py": "e72a779f95d8c12a7dc2bdef495c6257bc7e9d6c0cb4982aa48df616007ae61e",
+    "export_delivery.py": "96debcbf73a9b99077d6ee513f0f64930d569abf6e9a5a9c2ddf919487eabe66",
+    "measure/bridge_audit.py": "02cf202728e94883264931060181e5f42507e0b1b39d3b37e18d75d971e83492",
+    "measure/check_fit.py": "5e8a4e032549524f71ccbf40d1e5aceeb4951b5b1958568987ad191337236ff0",
+    "measure/revision_diff.py": "fbe9e247cc59da9820e9d8cf10b265cb081666cdd9d04810b937cd30290887a0",
+    "measure/symbol_metrics.py": "5bad995416a3a993c241b1ea18a5741c800a2cc7cd377bd27941139e989db1aa",
+    "part_base.step": "1db4b15610146fc0c993268802e0279d7859f56b42df22f7ba5d3915ad55e1b8",
+    "part_base.step.py": "d0f221cec878d0862ec283a0c1cd764bc9add7ac5b5c612278464f232969614c",
+    "part_inlay.step": "81085d55483e4841813ccbd069c89d4c8d4d285de977e334da709fcdf38e9b90",
+    "part_inlay.step.py": "2d93ad07770cc0f1a0376c8c48eff9cccfa0453e014c4d65949d028ab7458603",
+    "part_moon_counter.step": "588d285baf2e312d81ca39c92ddad82ff83725aa721f5a5789ffb1a0ec50301e",
+    "part_moon_counter.step.py": "9d0809d61b552d7f2f14fcd40c0e564a373fcd5b17702082874b97acd80e0d95",
+    "part_roof.step": "da320a57109473fc5031044b55a100f2ddd97314863cfb2ccab60d0e2e82a52d",
+    "part_roof.step.py": "6df733b532bd9da90e51b13c7e24fb0a7d415764607b1ef15f88e824c29bab99",
+    "part_sun_counter.step": "262ccc86f6e4c40394e8611fd0f98ee7a7aaf2ec5b3e42fab36d66902afe5f3b",
+    "part_sun_counter.step.py": "11919bf1480752454d5d80529fc24c7160a98a34af334ada5297ed2aace75146",
+    "periastra.step": "2904b9242be4541508cbe3f0a10b6a6352786c360b21e7b20ffb9dd01f44476e",
+    "periastra.step.py": "05488ac7310df1ea5fc4a9cc9e3876c46f3cb25d7a289943110ded8cccd84d1e",
+    "periastra_lib.py": "f18e2163ab8a87ca07ff6b41514ad75683a35a7bbde3cd960e3a6ea38d6ac201",
+    "ref/README.md": "85dfb10a66bf3d16d5d3f039bf1e2e4e865fc1fe8766928d9a6cac69bece6477",
+    "render_evidence.py": "ffcef34594a6ed9cf1a4ad354295a5653b7cc067dd62ed5283c476a2fe5d1f43",
+    "render_family.py": "76e0a9b6ede6adf730345e42d19f87f82c157fa85345db742e9c981599c48c28",
+    "render_frames.py": "37a3abd685c07bb6425e730a1843a6ac2367977026f116eb418f2679659fa0a6",
+    "write_states.py": "878ea41e776f6a245d433c0a716db1e61d1c4d9a2d1c76513837f35ce85aea48"
+  }
+}

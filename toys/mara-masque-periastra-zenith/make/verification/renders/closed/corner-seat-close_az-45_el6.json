@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/periastra.step",
+  "source_sha256": "2904b9242be4541508cbe3f0a10b6a6352786c360b21e7b20ffb9dd01f44476e",
+  "camera": {
+    "azimuth_deg": -45.0,
+    "elevation_deg": 6.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": "0.50,0.56,0.34",
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/closed/corner-seat-close_az-45_el6.png",
+  "output_sha256": "d840079b94451a6d7d17ae092d86981aaf25d3cae258376e99a47abe98bd3af4"
+}

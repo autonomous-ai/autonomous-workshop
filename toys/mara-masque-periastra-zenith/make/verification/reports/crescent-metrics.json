@@ -1,0 +1,31 @@
+{
+  "kind": "periastra.crescent-metrics",
+  "schema_version": 1,
+  "outer_circle_mm": 12.5,
+  "bite_circle_mm": 11.2,
+  "bite_offset_mm": 2.85,
+  "tip_fillet_mm": 0.45,
+  "belly_thickness_mm": 3.5,
+  "waist_at_150_deg_mm": 3.303,
+  "waist_at_120_deg_mm": 2.648,
+  "waist_at_100_deg_mm": 1.899,
+  "cusp_angle_deg": 27.13,
+  "horn_nose_width_mm": 0.875,
+  "built_horn_tip_at_mm": [
+    1.355,
+    5.729
+  ],
+  "built_wrap_deg": 206.6,
+  "built_surviving_area_pct": 36.95,
+  "horn_gap_mm": 11.199,
+  "circles_cross_at_x_mm": 2.776,
+  "symbol_height_mm": 12.5,
+  "symbol_width_mm": 7.605,
+  "outline_surviving_area_pct": 37.85,
+  "outline_wrap_deg": 232.7,
+  "relief_height_mm": 1.5,
+  "extrusion_widths_at_0p4_nozzle": 2.2,
+  "brief_fillet_mm": 0.9,
+  "brief_fillet_built_wrap_deg": 178.6,
+  "brief_fillet_tip_x_mm": -0.07
+}

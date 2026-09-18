@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/playing.step",
+  "source_sha256": "8df92d0e62adbef0442d3613208c73af5ffbc26e5a9ccd4a35213eb1457aaa1a",
+  "camera": {
+    "azimuth_deg": -45.0,
+    "elevation_deg": 20.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null,
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/playing/iso.png",
+  "output_sha256": "9368c110150337218f9e69398cf7f30476e712495731cb350de9a7b588503385"
+}

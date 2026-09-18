@@ -1,0 +1,62 @@
+{
+ "build": {
+  "inlay": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "inlay"
+ ],
+ "check_motion": false,
+ "checked": [
+  "inlay"
+ ],
+ "checks_ok": true,
+ "entry": "part_inlay.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/inlay/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "inlay"
+ ],
+ "print": {
+  "inlay": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/inlay/r0001/overhang-inlay.log": "8899e29b9e922d7c6d424e3598bdbda0ee52d71e5b24dd4a96983e3fc43938ad",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/inlay/r0001/thickness-inlay.log": "07937f70b5f24391696c7a03ac6e8601fcb6f460867a035ecf9caf937ebc5284"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:inlay",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso and top: one square tile in the contrasting indigo, all four plan corners chamfered equally, faces flat and parallel. Front: a plain flat slab, bottom on the bed, no taper or lip. Proportions read as a thin tile against a wide square, which is the 21.5 x 21.5 x 2.0 design. Nothing misplaced, missing, extra or intersecting; byte-identical to the frozen archive design.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/inlay/r0001/visual-packet.json",
+  "packet_sha256": "8da45151d6834c9569efb910a73b541cbedf470a63e9c2e0a70e82f1e8ae642e",
+  "status": "pass"
+ }
+}
