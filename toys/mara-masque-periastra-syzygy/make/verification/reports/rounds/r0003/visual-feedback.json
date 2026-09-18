@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso re-inspected on the closed stored state after the shutter-slit repair. The roof still sits square on the four corner ledges with an even gap all round and its plate covers the 184 mm opening; the 24 counters remain stored on the board beneath, visible through the four lowered sill spans. The far half of the dome is now unbroken, so the closed object reads as one dome with an aperture rather than two lobes. No misplaced, missing or extra parts, no visible intersections, no floating geometry.",
+  "packet_sha256": "0296326b9cb1f00122c0d83b74d9b11cc4f8e1177e131db87e8aebae1e3c3aa8",
+  "status": "pass"
+}

@@ -1,0 +1,12 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_sun_counter.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001/thickness-sun_counter.md
+(3.3s, exit 0)
+--- stdout
+part_sun_counter.step.py: 1.17 cm3 solid, grid 0.133 mm (125x125x57), 41729 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 41729 samples)
+  PASS  thickness distribution         median 6.93 mm, p95 16.00 mm, max 16.07 mm
+  WARN  hollowable at 1.20 mm wall     0.36 of 1.17 cm3 (31%) in 1 pocket(s)
+  PASS  filament that would save       0.05 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001/thickness-sun_counter.md
+
+--- stderr

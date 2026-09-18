@@ -1,0 +1,62 @@
+{
+ "build": {
+  "roof": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "roof"
+ ],
+ "check_motion": false,
+ "checked": [
+  "roof"
+ ],
+ "checks_ok": true,
+ "entry": "part_roof.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "roof"
+ ],
+ "print": {
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0003/overhang-roof.log": "d9e8fb32f454f3e8db01fd572eec366f48feaf5591dfe0d75fdf0ba13850d09a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0003/thickness-roof.log": "c0f8b5f2b5c567952a3a86cd9fecb31b3f75976171f297f00180a2f9f7b2dedf"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:roof",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso re-inspected after extending the two fork arms into prongs that rise clear above the telescope tube. The fork now reads as a mount: two parallel prongs standing either side of the tube inside the shutter slit, rising from the solid pier on the plate, all still fused to the slit walls. The slit is unchanged: straight, parallel-sided, centred, open from the bottom of the drum over the apex and stopping short of the far rim. No floating, detached or intersecting geometry; the prongs stay below the dome apex and inside the plan envelope.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0003/visual-packet.json",
+  "packet_sha256": "489f57f878b52cff9e8143d232cc5ab0a1f965bfdc99541d85798e81ab0d5e7a",
+  "status": "pass"
+ }
+}

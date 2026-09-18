@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso inspected. Unchanged published base: square tray, 8x8 board of 32 recessed dark cells in correct alternating pattern, four corner ledges standing above the floor, four lowered sill spans on the four walls, two raised stellar half-discs on the mid-line of the two opposing board edges. No missing, extra, misplaced or intersecting geometry; proportions match the 190 x 190 x 24 mm envelope.",
+  "packet_sha256": "de4054ae463b5395e215fb0c3d7a508f599840e1c695363e8c17a1012bd5bb79",
+  "status": "pass"
+}

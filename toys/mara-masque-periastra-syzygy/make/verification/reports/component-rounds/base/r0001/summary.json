@@ -1,0 +1,62 @@
+{
+ "build": {
+  "base": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "base"
+ ],
+ "check_motion": false,
+ "checked": [
+  "base"
+ ],
+ "checks_ok": true,
+ "entry": "part_base.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "base"
+ ],
+ "print": {
+  "base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0001/overhang-base.log": "39dc2039f1aadcb20352f4fac5071acf314cc9b29ebbb1ecd558d1948d06db94",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0001/thickness-base.log": "8be7af989b281332f8e848a8f1a881ba1037eead3bc548416a01459b7bea0bc4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:base",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Unchanged published base: square tray, 8x8 board of 32 recessed dark cells in correct alternating pattern, four corner ledges standing above the floor, four lowered sill spans on the four walls, two raised stellar half-discs on the mid-line of the two opposing board edges. No missing, extra, misplaced or intersecting geometry; proportions match the 190 x 190 x 24 mm envelope.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0001/visual-packet.json",
+  "packet_sha256": "de4054ae463b5395e215fb0c3d7a508f599840e1c695363e8c17a1012bd5bb79",
+  "status": "pass"
+ }
+}

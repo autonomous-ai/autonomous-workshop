@@ -1,0 +1,366 @@
+[
+ {
+  "ok": true,
+  "exitCode": 0,
+  "result": {
+   "ok": true,
+   "cadPath": "artifacts/make/r0001/product/cad/periastra",
+   "stepPath": "artifacts/make/r0001/product/cad/periastra.step",
+   "selectorType": "occurrence",
+   "normalizedSelector": "o1.2",
+   "displaySelector": "o1.2",
+   "copyText": "#o1.2",
+   "frame": {
+    "selectorType": "occurrence",
+    "selector": "o1.2",
+    "bbox": {
+     "min": [
+      -91.2,
+      -91.2,
+      21.0
+     ],
+     "max": [
+      91.2,
+      91.2,
+      77.067217
+     ]
+    },
+    "bboxFacts": {
+     "size": [
+      182.4,
+      182.4,
+      56.067217
+     ],
+     "extentAxis": "x",
+     "center": [
+      0.0,
+      0.0,
+      49.0336085
+     ],
+     "diag": 263.97547769087396
+    },
+    "center": [
+     0.0,
+     0.0,
+     49.0336085
+    ],
+    "kind": "frame",
+    "name": "roof",
+    "translation": [
+     0.0,
+     0.0,
+     21.0
+    ],
+    "localAxes": {
+     "x": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "y": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "z": [
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    "transform": [
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     21.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   }
+  },
+  "id": "roof-closed-frame"
+ },
+ {
+  "ok": true,
+  "exitCode": 0,
+  "result": {
+   "ok": true,
+   "cadPath": "artifacts/make/r0001/product/evidence-states/opened",
+   "stepPath": "artifacts/make/r0001/product/evidence-states/opened.step",
+   "selectorType": "occurrence",
+   "normalizedSelector": "o1.2",
+   "displaySelector": "o1.2",
+   "copyText": "#o1.2",
+   "frame": {
+    "selectorType": "occurrence",
+    "selector": "o1.2",
+    "bbox": {
+     "min": [
+      -91.2,
+      -91.2,
+      121.0
+     ],
+     "max": [
+      91.2,
+      91.2,
+      177.067217
+     ]
+    },
+    "bboxFacts": {
+     "size": [
+      182.4,
+      182.4,
+      56.067217
+     ],
+     "extentAxis": "x",
+     "center": [
+      0.0,
+      0.0,
+      149.0336085
+     ],
+     "diag": 263.97547769087396
+    },
+    "center": [
+     0.0,
+     0.0,
+     149.0336085
+    ],
+    "kind": "frame",
+    "name": "roof",
+    "translation": [
+     0.0,
+     0.0,
+     121.0
+    ],
+    "localAxes": {
+     "x": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "y": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "z": [
+      0.0,
+      0.0,
+      1.0
+     ]
+    },
+    "transform": [
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     121.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   }
+  },
+  "id": "roof-open-frame"
+ },
+ {
+  "ok": true,
+  "exitCode": 0,
+  "result": {
+   "ok": true,
+   "cadPath": "artifacts/make/r0001/product/cad/periastra",
+   "stepPath": "artifacts/make/r0001/product/cad/periastra.step",
+   "selectorType": "occurrence",
+   "normalizedSelector": "o1.3",
+   "displaySelector": "o1.3",
+   "copyText": "#o1.3",
+   "frame": {
+    "selectorType": "occurrence",
+    "selector": "o1.3",
+    "bbox": {
+     "min": [
+      -85.0,
+      -84.941671,
+      10.2
+     ],
+     "max": [
+      -69.0,
+      -69.058329,
+      17.2
+     ]
+    },
+    "bboxFacts": {
+     "size": [
+      16.0,
+      15.883341999999999,
+      7.0
+     ],
+     "extentAxis": "x",
+     "center": [
+      -77.0,
+      -77.0,
+      13.7
+     ],
+     "diag": 23.606790402106
+    },
+    "center": [
+     -77.0,
+     -77.0,
+     13.7
+    ],
+    "kind": "frame",
+    "name": "single_01",
+    "translation": [
+     -77.0,
+     -77.0,
+     17.2
+    ],
+    "localAxes": {
+     "x": [
+      -1.0,
+      0.0,
+      -0.0
+     ],
+     "y": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "z": [
+      0.0,
+      0.0,
+      -1.0
+     ]
+    },
+    "transform": [
+     -1.0,
+     0.0,
+     0.0,
+     -77.0,
+     0.0,
+     1.0,
+     0.0,
+     -77.0,
+     -0.0,
+     0.0,
+     -1.0,
+     17.2,
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   }
+  },
+  "id": "first-sun-counter-frame"
+ },
+ {
+  "ok": true,
+  "exitCode": 0,
+  "result": {
+   "ok": true,
+   "cadPath": "artifacts/make/r0001/product/cad/periastra",
+   "stepPath": "artifacts/make/r0001/product/cad/periastra.step",
+   "selectorType": "occurrence",
+   "normalizedSelector": "o1.15",
+   "displaySelector": "o1.15",
+   "copyText": "#o1.15",
+   "frame": {
+    "selectorType": "occurrence",
+    "selector": "o1.15",
+    "bbox": {
+     "min": [
+      -63.0,
+      25.058329,
+      10.2
+     ],
+     "max": [
+      -47.0,
+      40.941671,
+      17.2
+     ]
+    },
+    "bboxFacts": {
+     "size": [
+      16.0,
+      15.883341999999999,
+      7.0
+     ],
+     "extentAxis": "x",
+     "center": [
+      -55.0,
+      33.0,
+      13.7
+     ],
+     "diag": 23.606790402106
+    },
+    "center": [
+     -55.0,
+     33.0,
+     13.7
+    ],
+    "kind": "frame",
+    "name": "forked_01",
+    "translation": [
+     -55.0,
+     33.0,
+     17.2
+    ],
+    "localAxes": {
+     "x": [
+      1.0,
+      -0.0,
+      -0.0
+     ],
+     "y": [
+      -0.0,
+      -1.0,
+      -0.0
+     ],
+     "z": [
+      -0.0,
+      0.0,
+      -1.0
+     ]
+    },
+    "transform": [
+     1.0,
+     -0.0,
+     -0.0,
+     -55.0,
+     -0.0,
+     -1.0,
+     0.0,
+     33.0,
+     -0.0,
+     -0.0,
+     -1.0,
+     17.2,
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   }
+  },
+  "id": "first-moon-counter-frame"
+ }
+]

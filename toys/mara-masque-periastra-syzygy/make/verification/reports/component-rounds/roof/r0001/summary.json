@@ -1,0 +1,62 @@
+{
+ "build": {
+  "roof": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "roof"
+ ],
+ "check_motion": false,
+ "checked": [
+  "roof"
+ ],
+ "checks_ok": true,
+ "entry": "part_roof.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "roof"
+ ],
+ "print": {
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001/overhang-roof.log": "c460e4e28f324ff70cc882b3943df5a23223e172abbab2974fde10e93a629d1c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001/thickness-roof.log": "f03a3cc73df3d55f0c941ca082623f645de941204aa8a5541bb1a12c5f4935b9"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:roof",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Square backing plate with a 180 mm drum, one continuous seam groove round the drum, and a smooth spherical-cap dome above it. A single straight 30 mm shutter slit runs on one meridian from the near rim of the drum, over the apex, and stops short of the far rim; top view confirms it is straight, parallel-sided and centred. The telescope tube sits in the slit at 45 degrees on a pier and two fork arms, all fused to the slit walls; front view shows the tube standing clear of the pier with no floating or detached geometry. No cone, hood or buttress remains. No missing, extra, misplaced or intersecting parts.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001/visual-packet.json",
+  "packet_sha256": "bda982df735135127712bf4bd057a9d40b4a9b170aed02dab498a6437b6711f8",
+  "status": "pass"
+ }
+}

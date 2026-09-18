@@ -1,0 +1,62 @@
+{
+ "build": {
+  "moon_counter": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "moon_counter"
+ ],
+ "check_motion": false,
+ "checked": [
+  "moon_counter"
+ ],
+ "checks_ok": true,
+ "entry": "part_moon_counter.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "moon_counter"
+ ],
+ "print": {
+  "moon_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001/overhang-moon_counter.log": "f15057874aedcd0856cf6667e0197c6558dc7faec0a090444258f8be9e6c8d74",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001/thickness-moon_counter.log": "a6b70c0e844e548f56064a28771ba689536553f3ad1b2f98e53c86f696258733"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:moon_counter",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Plain round disc, perfectly circular outline with no tail, tab, notch or projection. Iso shows one bold crescent pocket on the raised plateau, both horns ending in flat square tips rather than points, with an unbroken flat band between the crescent and the plateau edge. Front view shows the same disc profile as the sun counter: man-face chamfer, square rebate step, raised plateau. No forked comet outline and no orbit-crown ring remain.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0001/visual-packet.json",
+  "packet_sha256": "418c1b59d3945150ce22e859789319811f617b3d1372a8d35ce11820a2f975a4",
+  "status": "pass"
+ }
+}
