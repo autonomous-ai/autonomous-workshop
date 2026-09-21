@@ -750,6 +750,21 @@ Each bar is one recorded tool invocation. The duration is the tool's own log
 line, `(685.9s, exit 0)`; the end is the mtime of the file it wrote, so the
 start is the end minus the duration. 716 spans across the two runs.
 
+Two things the shape of the chart answers directly. **Nothing in a correction
+runs in parallel**: across both runs, no two tool spans overlap by as much as a
+second, because the Make session issues one command at a time. And the blank
+stretches are not idle. The only genuinely idle time in either run is the 47
+minutes in v13 between a session teardown killing it and `workshop resume`
+restarting it; everywhere else the workspace is being written, by frame renders
+and by the agent's own analysis files, while the model thinks between calls.
+
+The blind review is the one mark that spans others, and it is drawn as a
+bracket rather than a bar for that reason: the window between the last frame
+the critic was handed and the verdict it wrote is an upper bound on a review
+that happened somewhere inside it. v12 spent 3h10m of bracket on three rounds
+and v13 spent 1h58m on four, which is how you can tell the wider bracket holds
+work that is not review.
+
 It also shows how little of a run is recorded at all: **tool spans cover 16% of
 v12 and 17% of v13**. The rest logs nothing. The largest single omission is the
 frame renders under `cad/snap/` — whole-set images of a 50 MB assembly that the
