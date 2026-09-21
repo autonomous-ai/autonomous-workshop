@@ -236,8 +236,10 @@ h2{font-size:20px;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
   <code>workshop resume</code> restarted it. Everything else that looked empty was a call in flight.</p>
 
   <h3 style="font-size:15px;margin:22px 0 6px">Why one frame costs a minute</h3>
-  <p class="note">Rendering is the single largest cost in both runs — about <b>2h19m of v12's 5h30m</b>
-  and <b>56m of v13's 4h15m</b> — and none of it is graphics hardware. <code>render_review</code>
+  <p class="note">Rendering is the single largest cost in both runs — <b>roughly two hours of v12's
+  5h30m</b> (28m of <code>make_round</code> renders measured from their own logs, plus a 95-minute
+  window in which 91 frames landed) and <b>59m of v13's 4h15m</b>, where the calls are in the
+  foreground and can be read off directly. None of it is graphics hardware: <code>render_review</code>
   rasterises in software, NumPy and Pillow, no GL context. The reason it is slow is not the picture.</p>
   <p class="note">Two things multiply. First, these frames deliberately tessellate <b>ten times finer
   than the default</b>: <code>world_views.py</code> passes an angular tolerance of 0.03 rad instead of

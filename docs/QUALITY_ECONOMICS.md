@@ -795,7 +795,10 @@ restarted it. v12 has 2 minutes unaccounted for in five and a half hours.
 
 ### Rendering is the largest cost, and none of it is the picture
 
-About **2h19m of v12's 5h30m** and **56m of v13's 4h15m** is rasterisation.
+**Roughly two hours of v12's 5h30m** and **59m of v13's 4h15m** is
+rasterisation. (v12's figure is 28m of `make_round` renders, measured from
+their own logs, plus a 95-minute window in which 91 frames landed; v13's calls
+are in the foreground and read off directly.)
 `render_review` draws in software — NumPy and Pillow, no GL context — and two
 things multiply.
 
