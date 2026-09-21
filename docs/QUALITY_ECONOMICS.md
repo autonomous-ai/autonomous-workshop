@@ -781,12 +781,37 @@ background job the trace could not see.
 
 **v13 ran its heavy work in the foreground, and five calls blew the
 600-second tool timeout**: two `make_round --require-component-passes`, two
-`verify_project --strict-fit`, one `world_views.py jupiter`, 50 minutes in all.
-The wording matters — *"did not complete within its 600s timeout and was moved
-to the background."* The command finishes (`verify_project`'s own report records
-793 s for a call the agent gave up on at 601 s); what is lost is the answer, so
-the agent has to go back for it. That is why v13 runs `verify_project` four
-times.
+`verify_project --strict-fit`, one `world_views.py jupiter`. The wording
+matters — *"did not complete within its 600s timeout and was moved to the
+background."* The command finishes (`verify_project`'s own report records 793 s
+for a call the agent gave up on at 601 s), and the agent picks the result up
+almost at once.
+
+**The ceiling and the polling granularity together waste about a quarter of an
+hour, ~2%.** Measured as overshoot — how long a finished job waits to be
+noticed:
+
+| job | finished | noticed | late |
+| --- | ---: | ---: | ---: |
+| v13 `make_round` #1 | +2h48m58s | +2h49m16s | 18 s |
+| v13 `make_round` #2 | +3h02m16s | +3h02m22s | 5 s |
+| v13 `verify_project` #1 | +3h31m39s | +3h32m03s | 23 s |
+| v13 `verify_project` #4 | +4h12m14s | +4h12m35s | 21 s |
+| v12 measures batch | +3h35m52s | +3h40m34s | **4m41s** |
+| v12 component-round sweep | +3h52m25s | +3h59m48s | **7m22s** |
+
+v13's timeouts cost **67 seconds of overshoot, not 50 minutes** — those 50
+minutes are the calls' duration, which was real work. v12's coarser 570-second
+sleeps cost about 12 minutes on the two jobs whose completion can be dated;
+21 of its 54 sleeps (46 minutes) passed with no file written anywhere, which is
+the upper bound on sleeps that watched nothing.
+
+**And the ceiling does not explain the repeats.** `make_round` ran twice
+because round r0003 returned `visual ERROR — Visual render failed or source
+changed`; r0004 then reached the normal PENDING. `verify_project` ran four
+times and **all four passed** (680 s, 547 s, 549 s, 793 s — 42m40s), each a
+fresh sweep after the agent regenerated geometry. That cost belongs to
+re-verifying the whole product after every touch, not to the tool ceiling.
 
 **The only genuinely idle time in either run** is v13's 46.9 minutes from +53m
 to +1h41m: no tool call, no model message, and not one file written anywhere

@@ -223,13 +223,27 @@ h2{font-size:20px;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
   itself — files were landing in 33 of those 54 sleeps, 200 of the 246 minutes — but it means the
   chart's old “model time” residue was mostly a background job the trace could not see. Two minutes
   of the whole run are unaccounted for.</p>
+  <p class="note">The polling granularity does cost something, and it is small. The measures batch
+  finished at +3h35m52s and the poll that reported it ended at +3h40m34s — <b>4m41s late</b>. The
+  component-round sweep finished at +3h52m25s and was reported at +3h59m48s — <b>7m22s late</b>. Put
+  beside v13's 67 seconds of timeout overshoot, about a quarter of an hour across both runs is spent
+  asleep on work that had already finished: <b>roughly 2%</b>. 21 of the 54 sleeps, 46 minutes, passed
+  with no file written anywhere in the workspace — the upper bound on sleeps that watched nothing,
+  since compute that writes nothing still sits inside it.</p>
   <p class="note"><b>v13 ran its heavy work in the foreground, and five calls blew the 600-second
   tool timeout</b> — two <code>make_round --require-component-passes</code>, two
-  <code>verify_project --strict-fit</code> and one <code>world_views.py jupiter</code>, 50 minutes in
-  all. The wording matters: <i>“did not complete within its 600s timeout and was moved to the
-  background.”</i> The command finishes — <code>verify_project</code>'s own report records 793s for a
-  call the agent gave up on at 601s — but the answer does not come back, so the agent has to go and
-  fetch it. That is why v13's <code>verify_project</code> runs four times.</p>
+  <code>verify_project --strict-fit</code> and one <code>world_views.py jupiter</code>. The wording
+  matters: <i>“did not complete within its 600s timeout and was moved to the background.”</i> The
+  command finishes — <code>verify_project</code>'s own report records 793 s for a call the agent gave
+  up on at 601 s — and the four whose task files survive were picked up <b>5 to 23 seconds</b> after
+  they finished. <b>The ceiling costs 67 seconds of overshoot, not 50 minutes.</b> Those 50 minutes
+  are the calls' duration, which was real work.</p>
+  <p class="note">Nor does it explain the repeats, which is what an earlier version of this page said.
+  <code>make_round</code> ran twice because round r0003 came back <code>visual ERROR — Visual render
+  failed or source changed</code>; r0004 then reached the normal PENDING. <code>verify_project</code>
+  ran four times and <b>all four passed</b> (680 s, 547 s, 549 s, 793 s — 42m40s), each a fresh sweep
+  after the agent regenerated geometry. That cost belongs to re-verifying the whole product after
+  every touch, not to the tool ceiling.</p>
   <p class="note"><b>v13's one real gap is 46.9 minutes</b>, from +53m to +1h41m, and it is the only
   stretch in either run where nothing whatever happens: no tool call, no model message, and not one
   file written anywhere under the run root. A session teardown killed the run and
@@ -418,6 +432,11 @@ h2{font-size:20px;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
     <p class="note"><b>Carried spans</b> are the ones a correction imports from its source archive. They
     all share one mtime — the instant the import copied them — so they are drawn as a single block at that
     instant, not as work this run performed. Their durations are the <i>source</i> run's.</p>
+    <p class="note"><b>Overshoot</b> — how long a finished background job waited to be noticed — is
+    the mtime of its <code>tasks/&lt;id&gt;.output</code> against the end of the call that read it.
+    v13's four surviving task files give 18 s, 5 s, 23 s and 21 s. v12's were cleaned up, so its
+    overshoot is measured instead from the last file each job wrote against the poll that first
+    reported it done.</p>
     <p class="note"><b>The blind review</b> is a background subagent. The transcript shows exactly one
     <code>Agent</code> call opening it — +2h37m in v12, +2h45m in v13 — returning in about a second,
     then two and four <code>SendMessage</code> calls back to it, then the verdict file. The bracket
