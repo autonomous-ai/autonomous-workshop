@@ -167,7 +167,11 @@ from workshop.runtime import (
     manager_runtime_selection,
     manager_spec,
 )
-from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS, NativeSessionLauncher
+from workshop.runtime.managers import (
+    MAX_NATIVE_TURN_SECONDS,
+    NATIVE_TOKEN_USAGE_FIELDS,
+    NativeSessionLauncher,
+)
 from workshop.runtime.agent_assets import (
     parse_inventor_custom_agent_bytes,
     product_run_agent_assets,
@@ -7492,6 +7496,12 @@ def _native_token_aggregate(
     return stages
 
 
+def _native_session_token_usage(session: Any) -> dict[str, Any]:
+    """Read the Manager-neutral per-turn usage fields off one launcher outcome."""
+
+    return {name: getattr(session, name, None) for name in NATIVE_TOKEN_USAGE_FIELDS}
+
+
 def _record_native_token_usage(
     paths: NativeRunPaths,
     checkpoint: AgentRunCheckpoint,
@@ -8361,7 +8371,31 @@ def _publication_release_context(
             load_host_renders(run.host_state_root, verified.made),
             "hero",
         ),
+        token_usage=_publication_token_usage(run),
     )
+
+
+def _publication_token_usage(run: AgentRun) -> Optional[Mapping[str, Any]]:
+    """Report the product's lifetime token budget to Factory, never enforce it.
+
+    The cumulative total is sent exactly as the budget holds it, so Factory
+    can snapshot it per release and derive its own increase. A budget that
+    cannot be read is simply not reported: this is statistics riding the
+    import, and it must never be able to fail a publication.
+    """
+
+    try:
+        budget = _load_lifetime_budget(
+            NativeRunPaths(run.run_root, run.host_state_root), run.snapshot()
+        )
+    except Exception:
+        return None
+    if not isinstance(budget, ProductTokenBudget):
+        return None
+    try:
+        return budget.to_dict()
+    except Exception:
+        return None
 
 
 def _existing_release_for_promotion(
@@ -9455,23 +9489,7 @@ def _run_native_session(
                 paths,
                 checkpoint,
                 (
-                    {
-                        "input_tokens": getattr(
-                            last_session, "input_tokens", None
-                        ),
-                        "cached_input_tokens": getattr(
-                            last_session, "cached_input_tokens", None
-                        ),
-                        "cache_write_input_tokens": getattr(
-                            last_session, "cache_write_input_tokens", None
-                        ),
-                        "output_tokens": getattr(
-                            last_session, "output_tokens", None
-                        ),
-                        "reasoning_output_tokens": getattr(
-                            last_session, "reasoning_output_tokens", None
-                        ),
-                    }
+                    _native_session_token_usage(last_session)
                     if launcher_failure is None
                     else None
                 ),

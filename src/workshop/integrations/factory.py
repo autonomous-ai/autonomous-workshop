@@ -27,7 +27,6 @@ from typing import Any, Callable, Dict, Mapping, MutableMapping, Optional, Seque
 
 from workshop._validation import require_sha256
 from workshop.artifacts import (
-    ArtifactEntry,
     ArtifactManifest,
     assert_packable_content,
     build_artifact_manifest,
@@ -42,18 +41,11 @@ from workshop.errors import (
     StateConflict,
 )
 from workshop.make.cad.step_color import read_step_part_colors
-from workshop.make.cad.fe_parts import FePartsError, PartKeying, key_parts
-from workshop.make.cad.posed_occurrences import (
-    PosedOccurrenceError,
-    PosedProvider,
-    posed_occurrences,
-)
 from workshop.make.assembly_package import (
     ASSEMBLY_PACKAGE_PATH,
     is_assembly_package,
     read_assembly_package,
 )
-from workshop.release.renders import HostRenderError, step_triangle_mesh
 from workshop.release.native import (
     DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
     MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION,
@@ -79,6 +71,13 @@ FACTORY_IMPORT_STRING_LIMITS = {
     "title": 300,
     "description": 2_000,
 }
+FACTORY_USAGE_FIELD = "usage"
+FACTORY_USAGE_MAX_BYTES = 1024 * 1024
+# POST /designs/{slug}/import rejects these import field names with HTTP 400,
+# so the usage sidecar must never be renamed onto one of them.
+FACTORY_USAGE_RESERVED_FIELDS = frozenset(
+    {"title", "description", "category", "tags", "status", "license"}
+)
 FACTORY_RELEASE_PAGE_PATH = "workshop-release-page.json"
 FACTORY_IMPORT_ROOT_MAPPING = "workshop-import-root-v1"
 FACTORY_IMPORT_ROOT_PATH = "000_workshop_import_root.py"
@@ -177,7 +176,6 @@ _HEX_COLOUR = re.compile(r"^#[0-9a-f]{6}$")
 FACTORY_COVER_RENDER_PATH = "assembled_review/_assembled.png"
 FACTORY_HOST_HANDOFF_PATHS = frozenset((FACTORY_COVER_RENDER_PATH,))
 MAX_FACTORY_COVER_RENDER_BYTES = 8 * 1024 * 1024
-MAX_FACTORY_TRANSPORT_REASON_CHARS = 500
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
@@ -201,14 +199,12 @@ def _canonical_sha256(value: Any) -> str:
 def _project_notes(
     product_id: str,
     release_page: Mapping[str, Any],
-    occurrence: Optional[Mapping[str, Any]],
 ) -> dict[str, Any]:
     """The project.json Factory receives: identity plus the sealed page's notes.
 
     Factory's content drafter and its copy auditor read project.json in full
     as design notes.  Every word here is the validated Release page's own
-    (summary, what arrives, limitations) or a validated production part
-    name; the adapter authors nothing.
+    (summary, what arrives, limitations); the adapter authors nothing.
     """
 
     notes: dict[str, Any] = {
@@ -224,8 +220,6 @@ def _project_notes(
             and all(isinstance(item, str) and item.strip() for item in value)
         ):
             notes[key] = list(value)
-    if occurrence is not None:
-        notes["parts"] = [item["name"] for item in occurrence["occurrences"]]
     return notes
 
 
@@ -449,14 +443,23 @@ def _make_artifact_entries(
     manifest: ArtifactManifest,
     *,
     conflict_paths: frozenset[str] = FACTORY_HANDOFF_RESERVED_PATHS,
-    skip_paths: frozenset[str] = frozenset(),
+    kept_step: Optional[str] = None,
 ):
-    """Select every sealed Make file except cache content and skipped copies."""
+    """Select every sealed Make file except cache content and extra STEPs.
+
+    Release publishes one STEP only: the sealed primary assembly that already
+    contains every part.  Per-part and duplicate STEP files stay in Made.
+    """
 
     result = []
     archive_paths = set()
     for entry in manifest.entries:
-        if _is_excluded_make_path(entry.path) or entry.path in skip_paths:
+        if _is_excluded_make_path(entry.path):
+            continue
+        if (
+            PurePosixPath(entry.path).suffix.casefold() in FACTORY_STEP_SUFFIXES
+            and entry.path != kept_step
+        ):
             continue
         archive_path = _make_archive_path(
             entry.path,
@@ -467,47 +470,6 @@ def _make_artifact_entries(
         archive_paths.add(archive_path)
         result.append((entry, archive_path))
     return tuple(sorted(result, key=lambda item: item[0].path))
-
-
-def _redundant_primary_copies(
-    manifest: ArtifactManifest,
-    *,
-    primary_source: str,
-    primary_entry: ArtifactEntry,
-    occurrence: Optional[Mapping[str, Any]],
-) -> frozenset[str]:
-    """Return sealed STEP paths that repeat the primary model byte for byte.
-
-    A CAD project keeps its own build output inside itself, because the host
-    gate rebuilds that project in isolation and compares the result against
-    exactly that sealed file.  Make then copies the same bytes up to the
-    required root name the shop reads.  Both are load-bearing where they sit,
-    and neither owner knows about the other, so one sealed tree legitimately
-    carries the assembly twice -- 52.3 MB twice for ad-astra antisol, which is
-    what pushed one handoff past its transport ceiling on 2026-09-21.
-
-    The seal keeps both copies: this trims the outbound handoff only, and only
-    for an exact sha256 match with the primary the shop already receives.  A
-    path the occurrence family names is never dropped, since that transport
-    declares its own bytes.  Files that merely resemble each other are left
-    alone; without one canonical home, dropping either would lose a file the
-    shop's listing has no replacement for.
-    """
-
-    reserved = {primary_source}
-    if occurrence is not None:
-        reserved.add(occurrence["source_step"])
-        if occurrence["source_sidecar"] is not None:
-            reserved.add(occurrence["source_sidecar"])
-        reserved.update(item["source_path"] for item in occurrence["occurrences"])
-    return frozenset(
-        entry.path
-        for entry in manifest.entries
-        if entry.path not in reserved
-        and entry.sha256 == primary_entry.sha256
-        and entry.bytes == primary_entry.bytes
-        and PurePosixPath(entry.path).suffix.casefold() in FACTORY_STEP_SUFFIXES
-    )
 
 
 def _declared_make_artifacts(
@@ -709,13 +671,6 @@ def _sealed_make_output_cover(
     return content, entry.path
 
 
-def _bounded_reason(value: Optional[str]) -> Optional[str]:
-    if value is None:
-        return None
-    text = " ".join(str(value).split())
-    return text[:MAX_FACTORY_TRANSPORT_REASON_CHARS] or None
-
-
 def _handoff_proof_details(handoff: Mapping[str, Any]) -> Dict[str, Any]:
     """Receipt details that record how the sealed model crossed to Factory."""
 
@@ -726,11 +681,6 @@ def _handoff_proof_details(handoff: Mapping[str, Any]) -> Dict[str, Any]:
         "handoff_transport": transport["kind"],
         "occurrence_count": transport["occurrence_count"],
     }
-    reason = transport.get("reason")
-    if reason is not None:
-        details["handoff_transport_reason"] = reason
-    if transport.get("viewer_groups") is not None:
-        details["viewer_groups"] = int(transport["viewer_groups"])
     value = handoff.get("cover_render_sha256")
     if value is not None:
         details["cover_render_sha256"] = require_sha256(
@@ -839,397 +789,6 @@ def _part_color_plan(
         for part in observed
     )
     return writes, target
-
-
-# The posed-geometry provider is replaceable so tests can key occurrences
-# without a CAD kernel; production runs the sealed STEP through the bounded
-# kernel subprocess.
-_POSED_OCCURRENCE_PROVIDER: Optional[PosedProvider] = None
-
-
-def _posed_provider() -> PosedProvider:
-    return _POSED_OCCURRENCE_PROVIDER or posed_occurrences
-
-
-def _keyed_color_plan(
-    observed: Sequence[Mapping[str, Any]],
-    keys: Sequence[Mapping[str, Any]],
-) -> Optional[Tuple[Tuple[Mapping[str, Any], ...], Tuple[Mapping[str, Any], ...]]]:
-    """Plan a keyed colour write: one entry per coloured viewer group.
-
-    ``keys`` are the host's viewer-parity ``assembly_parts`` entries.  The
-    write carries every coloured entry in full (order, part, mesh_name,
-    colour) so a draft the shop has not rendered yet stores the complete
-    table; the target is the shop's current list merged by order, exactly as
-    its endpoint merges.
-    """
-
-    writes = tuple(
-        {
-            "order": int(key["order"]),
-            "part": str(key["part"]),
-            "mesh_name": str(key["mesh_name"]),
-            "color": _normalized_hex(str(key["color"])),
-        }
-        for key in keys
-        if key.get("color")
-    )
-    if not writes:
-        return None
-    merged: Dict[int, Dict[str, Any]] = {
-        int(part["order"]): dict(part) for part in observed
-    }
-    pending = []
-    for write in writes:
-        current = merged.get(write["order"])
-        if current is not None:
-            if current.get("color") == write["color"] and current.get("part") == write["part"]:
-                continue
-            merged[write["order"]] = {**current, **write}
-        else:
-            merged[write["order"]] = {"order": write["order"], **write}
-        pending.append(write)
-    target = tuple(
-        {
-            "order": item["order"],
-            "mesh_name": item.get("mesh_name") or None,
-            "part": item.get("part") or None,
-            "color": _normalized_hex(item["color"]) if item.get("color") else None,
-        }
-        for item in sorted(merged.values(), key=lambda part: part["order"])
-    )
-    return tuple(pending), target
-
-
-def _occurrence_transport(
-    root: Path,
-    manifest: ArtifactManifest,
-    primary_source: str,
-    transport_stem: str,
-) -> Optional[Mapping[str, Any]]:
-    candidates = (
-        "assembled.step.json",
-        PurePosixPath(primary_source).stem + ".step.json",
-        transport_stem + ".step.json",
-    )
-    sidecars = [name for name in dict.fromkeys(candidates) if _manifest_entry(manifest, name)]
-    if len(sidecars) > 1:
-        raise ContractError("Factory handoff requires one occurrence sidecar")
-    source_sidecar = sidecars[0] if sidecars else None
-    if source_sidecar is None:
-        return None
-    source_step = source_sidecar[:-5]
-    step_entry = _manifest_entry(manifest, source_step)
-    if step_entry is None:
-        raise ContractError("Factory occurrence sidecar requires its sealed STEP")
-
-    sidecar_bytes = _read_bound_file(root, manifest, source_sidecar)
-    try:
-        sidecar: Any = json.loads(sidecar_bytes.decode("utf-8"))
-    except (UnicodeError, ValueError) as exc:
-        raise ContractError("Factory occurrence sidecar is malformed") from exc
-
-    if is_assembly_package(sidecar):
-        # Make seals the cadgen assembly-package at this path.  Its occurrence
-        # names are the transport identity, and the build-group contract
-        # places one production STEP per occurrence under parts/.  A single
-        # occurrence is the root solid itself and needs no occurrence family.
-        package = read_assembly_package(sidecar_bytes)
-        if not package.is_multipart:
-            return None
-        parts = []
-        for occurrence in package.occurrences:
-            production = occurrence.production_step_path
-            if _manifest_entry(manifest, production) is None:
-                raise ContractError(
-                    "assembly-package occurrence %s lacks its sealed production STEP %s"
-                    % (occurrence.name, production)
-                )
-            parts.append({"name": occurrence.name, "stepPath": production})
-        sidecar = {
-            "schemaVersion": 1,
-            "entryKind": "assembly",
-            "primaryPose": "assembled",
-            "parts": parts,
-        }
-
-    has_factory_sidecar = (
-        isinstance(sidecar, Mapping)
-        and sidecar.get("schemaVersion") == 1
-        and sidecar.get("entryKind") == "assembly"
-        and sidecar.get("primaryPose") == "assembled"
-        and isinstance(sidecar.get("parts"), list)
-        and bool(sidecar["parts"])
-    )
-    if not has_factory_sidecar:
-        if not isinstance(sidecar, Mapping):
-            raise ContractError("Factory occurrence sidecar is malformed")
-        if {"schemaVersion", "entryKind", "primaryPose", "parts"} & set(sidecar):
-            # A document that claims any part of Factory's schema must satisfy
-            # all of it. Never silently repair a malformed transport contract.
-            raise ContractError("Factory occurrence sidecar is malformed")
-        if (
-            sidecar.get("schema_version") != 1
-            or sidecar.get("kind") != "native-cad.assembly-descriptor"
-        ):
-            # Make stages may own other required JSON documents at this
-            # conventional path. They are product artifacts, not an implicit
-            # request to expose a multipart transport to Factory.
-            return None
-
-        # Native Make may place a richer CAD assembly descriptor beside its
-        # STEP. Translate only the exact, fully bound descriptor+inventory
-        # shape into Factory's narrow sidecar. The descriptor owns occurrence
-        # identity; product inventory owns the sealed STEP paths.
-        product = _read_json_file(root / "product.json", "Made product.json")
-        cad = product.get("cad")
-        inventory = product.get("inventory")
-        native_parts = (
-            inventory.get("parts") if isinstance(inventory, Mapping) else None
-        )
-        native_names = sidecar.get("occurrences")
-        occurrence_count = sidecar.get("occurrence_count")
-        total_printed_parts = (
-            inventory.get("total_printed_parts")
-            if isinstance(inventory, Mapping)
-            else None
-        )
-        if (
-            sidecar.get("schema_version") != 1
-            or not isinstance(cad, Mapping)
-            or not isinstance(inventory, Mapping)
-            or not isinstance(native_parts, list)
-            or not native_parts
-            or not isinstance(native_names, list)
-            or not native_names
-            or not isinstance(occurrence_count, int)
-            or isinstance(occurrence_count, bool)
-            or not isinstance(total_printed_parts, int)
-            or isinstance(total_printed_parts, bool)
-            or occurrence_count != len(native_names)
-            or occurrence_count != len(native_parts)
-            or occurrence_count != total_printed_parts
-        ):
-            raise ContractError("native Made assembly descriptor is malformed")
-
-        def bound_reference(
-            value: Any, label: str, expected_path: Optional[str] = None
-        ) -> Tuple[str, int, str]:
-            if not isinstance(value, Mapping):
-                raise ContractError("%s is malformed" % label)
-            path = value.get("path")
-            declared_bytes = value.get("bytes")
-            if not isinstance(path, str):
-                raise ContractError("%s is malformed" % label)
-            pure = PurePosixPath(path)
-            entry = _manifest_entry(manifest, path)
-            declared_sha256 = require_sha256(value.get("sha256"), label + " sha256")
-            if (
-                pure.is_absolute()
-                or pure.as_posix() != path
-                or any(item in ("", ".", "..") for item in pure.parts)
-                or expected_path is not None
-                and path != expected_path
-                or entry is None
-                or not isinstance(declared_bytes, int)
-                or isinstance(declared_bytes, bool)
-                or entry.bytes != declared_bytes
-                or entry.sha256 != declared_sha256
-            ):
-                raise ContractError("%s is malformed" % label)
-            _read_bound_file(root, manifest, path)
-            return path, declared_bytes, declared_sha256
-
-        descriptor_ref = bound_reference(
-            cad.get("assembly_descriptor"),
-            "Made assembly descriptor reference",
-            source_sidecar,
-        )
-        sidecar_entry = _manifest_entry(manifest, source_sidecar)
-        if sidecar_entry is None or descriptor_ref[1:] != (
-            sidecar_entry.bytes,
-            sidecar_entry.sha256,
-        ):
-            raise ContractError("Made assembly descriptor reference is malformed")
-        assembly_ref = bound_reference(
-            sidecar.get("assembly"), "native assembly STEP", source_step
-        )
-        if assembly_ref != bound_reference(
-            cad.get("assembled_step"), "Made assembled STEP", source_step
-        ):
-            raise ContractError("native assembly STEP bindings differ")
-
-        derived_parts = []
-        derived_names = set()
-        source_paths = set()
-        for native_name, native_part in zip(native_names, native_parts):
-            if not isinstance(native_part, Mapping):
-                raise ContractError("Made product inventory part is malformed")
-            step = native_part.get("step")
-            if (
-                not isinstance(step, Mapping)
-                or native_part.get("quantity") != 1
-                or isinstance(native_part.get("quantity"), bool)
-                or not isinstance(native_name, str)
-                or not _OCCURRENCE_NAME.fullmatch(native_name)
-                or native_name in derived_names
-            ):
-                raise ContractError("Made product inventory part is malformed")
-            source_path, _, _ = bound_reference(
-                step, "Made product inventory STEP"
-            )
-            pure = PurePosixPath(source_path)
-            if (
-                pure.suffix.casefold() != ".step"
-                or source_path == primary_source
-                or source_path in source_paths
-            ):
-                raise ContractError("Made product inventory STEP is malformed")
-            derived_names.add(native_name)
-            source_paths.add(source_path)
-            derived_parts.append({"name": native_name, "stepPath": source_path})
-        sidecar = {
-            "schemaVersion": 1,
-            "entryKind": "assembly",
-            "primaryPose": "assembled",
-            "parts": derived_parts,
-        }
-
-    occurrences = []
-    transported_parts = []
-    names = set()
-    parts_directory = transport_stem + "_parts"
-    for order, part in enumerate(sidecar["parts"]):
-        if not isinstance(part, Mapping):
-            raise ContractError("Factory occurrence sidecar part is malformed")
-        name = part.get("name")
-        source_path = part.get("stepPath")
-        if (
-            not isinstance(name, str)
-            or not _OCCURRENCE_NAME.fullmatch(name)
-            or name in names
-            or not isinstance(source_path, str)
-        ):
-            raise ContractError("Factory occurrence sidecar part is malformed")
-        pure = PurePosixPath(source_path)
-        if (
-            pure.is_absolute()
-            or pure.as_posix() != source_path
-            or any(item in ("", ".", "..") for item in pure.parts)
-            or pure.suffix.casefold() != ".step"
-            or source_path == primary_source
-        ):
-            raise ContractError("Factory occurrence STEP path is unsafe")
-        content = _read_bound_file(root, manifest, source_path)
-        names.add(name)
-        target = "%s/%s.step" % (parts_directory, name)
-        transported = dict(part)
-        transported["stepPath"] = target
-        transported_parts.append(transported)
-        occurrences.append(
-            {
-                "order": order,
-                "name": name,
-                "mesh_name": name,
-                "part": PurePosixPath(target).name,
-                "source_path": source_path,
-                "path": target,
-                "sha256": hashlib.sha256(content).hexdigest(),
-            }
-        )
-    # The shop's viewer numbers part groups from the assembled mesh alone and
-    # keys group i by the i-th slide; a part that splits into several shells
-    # would shift every colour after it.  Key the groups here with the posed
-    # occurrence geometry of the sealed STEP so every group, slivers included,
-    # is owned by the sealed part it belongs to.
-    # The viewer keys its part groups from triangles, and Make now seals STEP
-    # alone, so tessellate here.  These meshes are in-memory keying scaffolding:
-    # nothing writes them, ships them, or treats them as a printability claim.
-    # A solid the kernel cannot turn into triangles degrades the occurrence
-    # family visibly, exactly as an unposable one does.
-    try:
-        assembled_bytes = step_triangle_mesh(
-            _read_bound_file(root, manifest, primary_source)
-        )
-        part_meshes = {
-            occurrence["name"]: step_triangle_mesh(
-                _read_bound_file(root, manifest, occurrence["source_path"])
-            )
-            for occurrence in occurrences
-        }
-    except HostRenderError as exc:
-        raise ContractError(
-            "Factory occurrence family cannot be tessellated: %s" % exc
-        )
-    step_bytes = _read_bound_file(root, manifest, source_step)
-    try:
-        posed = _posed_provider()(step_bytes)
-    except PosedOccurrenceError as exc:
-        raise ContractError("Factory occurrence family cannot be posed: %s" % exc)
-    try:
-        keying = key_parts(
-            assembled_bytes,
-            posed,
-            lead=PurePosixPath(transport_primary_name(transport_stem)).name,
-            slide_order=[occurrence["name"] for occurrence in occurrences],
-            part_meshes=part_meshes,
-        )
-    except FePartsError as exc:
-        raise ContractError("Factory occurrence family cannot be keyed: %s" % exc)
-    if not keying.complete:
-        raise ContractError(
-            "Factory occurrence family leaves occurrences without a viewer group: %s"
-            % ", ".join(keying.unowned_occurrences)
-        )
-    for index, part in enumerate(transported_parts):
-        part["index"] = index
-    transported_sidecar = dict(sidecar)
-    transported_sidecar["parts"] = transported_parts
-    sidecar_payload = _canonical_json(transported_sidecar) + b"\n"
-    return {
-        "source_step": source_step,
-        "source_sidecar": source_sidecar,
-        "step_path": transport_stem + ".step",
-        "step_sha256": step_entry.sha256,
-        "sidecar_path": transport_stem + ".step.json",
-        "sidecar_payload": sidecar_payload,
-        "sidecar_sha256": hashlib.sha256(sidecar_payload).hexdigest(),
-        "parts_directory": parts_directory,
-        "occurrences": tuple(occurrences),
-        "part_keying": keying,
-    }
-
-
-def transport_primary_name(transport_stem: str) -> str:
-    return transport_stem + ".step"
-
-
-def _validated_occurrence_transport(
-    root: Path,
-    manifest: ArtifactManifest,
-    primary_source: str,
-    transport_stem: str,
-) -> Tuple[Optional[Mapping[str, Any]], Optional[str]]:
-    """Return only a complete, safe occurrence family, plus why one is absent.
-
-    The sidecar is optional metadata. A malformed, stale, product-specific, or
-    otherwise unbound document must not make the sealed root assembly
-    unpublishable, nor may any paths from it enter the Factory handoff.  The
-    bounded reason lets the receipt say why a toy went up as one mesh.
-    """
-
-    try:
-        return (
-            _occurrence_transport(
-                root,
-                manifest,
-                primary_source,
-                transport_stem,
-            ),
-            None,
-        )
-    except ContractError as exc:
-        return None, _bounded_reason(str(exc))
 
 
 def _assert_factory_handoff(content: bytes) -> None:
@@ -1398,28 +957,10 @@ def _build_model_handoff(
 
     # Keep assembled.step at the root when Make provides it. Factory's importer
     # ranks that conventional name above all part solids for the product viewer.
+    # Release publishes only this primary assembly STEP, which already holds
+    # every part; per-part production STEPs never cross, so it is one mesh.
     transport_primary = primary_source
-    occurrence: Optional[Mapping[str, Any]] = None
-    transport_reason: Optional[str] = None
     make_output = facts.get("release", {}).get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
-    if sealed_primary["kind"] == "solid" and not make_output:
-        occurrence, transport_reason = _validated_occurrence_transport(
-            root,
-            manifest,
-            primary_source,
-            PurePosixPath(transport_primary).stem,
-        )
-    if occurrence is not None:
-        occurrence_sources = [
-            occurrence["source_step"],
-            occurrence["source_sidecar"],
-            *(item["source_path"] for item in occurrence["occurrences"]),
-        ]
-        if any(
-            path is not None and _is_excluded_make_path(path)
-            for path in occurrence_sources
-        ):
-            occurrence = None
     conflict_paths = set(FACTORY_HANDOFF_RESERVED_PATHS)
     if preserve_import_root:
         conflict_paths.add(FACTORY_IMPORT_ROOT_PATH)
@@ -1436,21 +977,10 @@ def _build_model_handoff(
         for entry in manifest.entries
         if entry.path.casefold().endswith(".step.json")
     )
-    if occurrence is not None:
-        conflict_paths.update(
-            (occurrence["step_path"], occurrence["sidecar_path"])
-        )
-        conflict_paths.update(item["path"] for item in occurrence["occurrences"])
-        conflict_paths.discard(primary_source)
     make_artifacts = _make_artifact_entries(
         manifest,
         conflict_paths=frozenset(conflict_paths),
-        skip_paths=_redundant_primary_copies(
-            manifest,
-            primary_source=primary_source,
-            primary_entry=primary_entry,
-            occurrence=occurrence,
-        ),
+        kept_step=primary_source if sealed_primary["kind"] == "solid" else None,
     )
 
     primary_model = {
@@ -1481,23 +1011,6 @@ def _build_model_handoff(
                 for entry, archive_path in make_artifacts
             ],
         }
-    if occurrence is not None:
-        occurrences = occurrence["occurrences"]
-        transport_facts["factory_assembly"] = {
-            "schema_version": 1,
-            "kind": "factory.occurrence-family",
-            "step": {
-                "path": occurrence["step_path"],
-                "sha256": occurrence["step_sha256"],
-            },
-            "sidecar": {
-                "path": occurrence["sidecar_path"],
-                "sha256": occurrence["sidecar_sha256"],
-            },
-            "parts_directory": occurrence["parts_directory"],
-            "occurrence_count": len(occurrences),
-            "production_steps": [dict(value) for value in occurrences],
-        }
     facts_payload = _canonical_json(transport_facts) + b"\n"
     assert_packable_content("workshop-product-facts.json", facts_payload)
     if not isinstance(release_page_content, bytes) or not release_page_content:
@@ -1525,9 +1038,9 @@ def _build_model_handoff(
     # listing).  A bare {id, name} left an imported product with no source
     # text behind any use claim, so every draft failed the copy gate (Ouray
     # No. 100, 2026-09-05).  Carry the sealed page's own words — nothing is
-    # authored here — plus the validated production part names.
+    # authored here.
     project_payload = _canonical_json(
-        _project_notes(context.wish.product_id, release_page, occurrence)
+        _project_notes(context.wish.product_id, release_page)
     ) + b"\n"
     assert_packable_content("project.json", project_payload)
     if manual_path == FACTORY_RELEASE_LEGACY_MANUAL_PATH:
@@ -1546,18 +1059,6 @@ def _build_model_handoff(
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
             target.chmod(0o755 if entry.executable else 0o644)
-        if occurrence is not None:
-            (staging / occurrence["step_path"]).write_bytes(
-                _read_bound_file(root, manifest, occurrence["source_step"])
-            )
-            (staging / occurrence["sidecar_path"]).write_bytes(
-                occurrence["sidecar_payload"]
-            )
-            for item in occurrence["occurrences"]:
-                target = staging.joinpath(*PurePosixPath(item["path"]).parts)
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(_read_bound_file(root, manifest, item["source_path"]))
-                target.chmod(0o644)
         if any(
             staging.joinpath(*PurePosixPath(path).parts).exists()
             for path in FACTORY_HOST_HANDOFF_PATHS
@@ -1603,18 +1104,9 @@ def _build_model_handoff(
             "manual_path": manual_path,
             "manual_sha256": manual_sha256,
             "transport": {
-                "kind": "multipart" if occurrence is not None else "single-mesh",
-                "occurrence_count": (
-                    len(occurrence["occurrences"]) if occurrence is not None else 1
-                ),
-                "reason": transport_reason,
-                "viewer_groups": (
-                    occurrence["part_keying"].groups.count
-                    if occurrence is not None
-                    else None
-                ),
+                "kind": "single-mesh",
+                "occurrence_count": 1,
             },
-            "part_keying": occurrence["part_keying"] if occurrence is not None else None,
             "cover_render_sha256": (
                 hashlib.sha256(cover_render).hexdigest()
                 if cover_render is not None
@@ -1815,6 +1307,76 @@ def _multipart(
     return buffer.getvalue(), "multipart/form-data; boundary=%s" % boundary
 
 
+def _usage_field(value: Any) -> Optional[Tuple[str, str]]:
+    """Carry the product token budget beside the sealed ZIP, never inside it.
+
+    The document rides the import multipart only. It is deliberately absent
+    from the effect request that mints an intent identity: lifetime usage
+    grows between resumes, so hashing it would mint a fresh intent for every
+    retry and defeat the ledger that keeps one publication from happening
+    twice. The handoff bytes, their allowlist and product_facts_sha256 are
+    untouched, so _assert_factory_handoff still sees the exact sealed tree.
+    """
+
+    if value is None:
+        return None
+    if not isinstance(value, Mapping) or value.get("unit") != "tokens":
+        raise ContractError("Factory usage document must be a token budget")
+    if value.get("usage_status") not in ("observed", "unavailable"):
+        raise ContractError("Factory usage status is unsupported")
+    # "unavailable" still ships with its status intact; usage that cannot be
+    # attributed is never reported as zero.
+    used = value.get("used_tokens")
+    if type(used) is not int or not 0 <= used <= 10**18:
+        raise ContractError("Factory usage total is malformed")
+    encoded = _canonical_json(_plain_usage(value))
+    if len(encoded) > FACTORY_USAGE_MAX_BYTES:
+        raise ContractError("Factory usage document is too large")
+    return (FACTORY_USAGE_FIELD, encoded.decode("utf-8"))
+
+
+def _plain_usage(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {str(key): _plain_usage(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_plain_usage(item) for item in value]
+    return value
+
+
+def _reportable_usage(value: Any) -> Any:
+    """Degrade a usage document Factory cannot take, never fail the release.
+
+    A direct FactoryClient caller still gets the contract error, because a
+    malformed document there is a programming fault.  A publication is
+    different: this is statistics riding an import that has already been
+    sealed and ledgered, so an oversized or unusable document is reported as
+    its totals alone, and dropped entirely when even those will not go.
+    """
+
+    for candidate in (value, _usage_totals(value)):
+        try:
+            if _usage_field(candidate) is not None:
+                return candidate
+        except ContractError:
+            continue
+    return None
+
+
+def _usage_totals(value: Any) -> Any:
+    """The budget without the per-thread observation it carries for detail."""
+
+    if not isinstance(value, Mapping):
+        return None
+    totals = {
+        str(key): item
+        for key, item in value.items()
+        if key not in ("observation", "previous_budget")
+    }
+    totals["observation"] = None
+    totals["previous_budget"] = None
+    return totals
+
+
 def _normalize_import(metadata: Mapping[str, Any]) -> Mapping[str, Any]:
     if not isinstance(metadata, Mapping):
         raise ContractError("Factory import metadata must be an object")
@@ -1916,6 +1478,7 @@ class FactoryClient:
         content: bytes,
         metadata: Mapping[str, Any],
         idempotency_key: str,
+        usage: Any = None,
     ) -> HttpResponse:
         filename = _safe_filename(filename)
         if not isinstance(content, bytes) or not content:
@@ -1928,6 +1491,9 @@ class FactoryClient:
                 fields.append((name, normalized[name]))
         for tag in normalized["tags"] or ("",):
             fields.append(("tags", tag))
+        usage_field = _usage_field(usage)
+        if usage_field is not None:
+            fields.append(usage_field)
         content_type = mimetypes.guess_type(filename)[0] or "application/zip"
         body, multipart_type = _multipart(
             fields, (("file", filename, content_type, content),)
@@ -1948,15 +1514,17 @@ class FactoryClient:
         )
 
     def import_model_version(
-        self, slug: str, *, content: bytes, idempotency_key: str
+        self, slug: str, *, content: bytes, idempotency_key: str, usage: Any = None
     ) -> HttpResponse:
         """Append content to an existing owner draft, never create a design."""
 
         if not isinstance(slug, str) or not slug:
             raise ContractError("Factory design slug is required")
         _assert_factory_handoff(content)
+        usage_field = _usage_field(usage)
         body, content_type = _multipart(
-            (), (("file", "model-handoff.zip", "application/zip", content),)
+            () if usage_field is None else (usage_field,),
+            (("file", "model-handoff.zip", "application/zip", content),),
         )
         return self._request(
             "POST", "/designs/%s/import" % urllib.parse.quote(slug, safe=""),
@@ -2961,7 +2529,12 @@ class FactoryReleaseWriter:
         assert sending.effect_token is not None
         imported_design = None
         try:
-            response = client.import_model_version(old.slug, content=handoff["content"], idempotency_key=sending.idempotency_key)
+            response = client.import_model_version(
+                old.slug,
+                content=handoff["content"],
+                idempotency_key=sending.idempotency_key,
+                usage=_reportable_usage(context.token_usage),
+            )
             if response.status != 200:
                 if response.status in PROVEN_NO_EFFECT_STATUSES:
                     self.ledger.mark_rejected(sending.intent_id, sending.effect_token, "Factory root repair returned HTTP %s" % response.status)
@@ -3444,7 +3017,6 @@ class FactoryReleaseWriter:
         client: FactoryClient,
         imported: Receipt,
         part_colors: Mapping[str, str],
-        part_keys: Sequence[Mapping[str, Any]] = (),
     ) -> None:
         """Render the draft in the exact colours Make sealed into its STEP.
 
@@ -3458,11 +3030,7 @@ class FactoryReleaseWriter:
         if not part_colors:
             return
         preflight = self._content_design(client, imported.slug)
-        keyed = tuple(part_keys)
-        if keyed:
-            plan = _keyed_color_plan(_factory_assembly_parts(preflight), keyed)
-        else:
-            plan = _part_color_plan(_factory_assembly_parts(preflight), part_colors)
+        plan = _part_color_plan(_factory_assembly_parts(preflight), part_colors)
         if plan is None:
             return
         writes, target = plan
@@ -3481,11 +3049,6 @@ class FactoryReleaseWriter:
             "part_colors_sha256": _canonical_sha256(dict(part_colors)),
             "part_colors": dict(part_colors),
         }
-        if keyed:
-            request["assembly_parts"] = [dict(item) for item in writes]
-            request["assembly_parts_sha256"] = _canonical_sha256(
-                [dict(item) for item in writes]
-            )
         intent = self.ledger.prepare(
             kind="factory-part-colors",
             product_id=imported.details.get("product_id"),
@@ -3503,14 +3066,6 @@ class FactoryReleaseWriter:
             "part_colors_sha256": request["part_colors_sha256"],
             "part_colors": dict(part_colors),
             "factory_part_colors_mapping": FACTORY_PART_COLORS_MAPPING,
-            **(
-                {
-                    "assembly_parts_sha256": request["assembly_parts_sha256"],
-                    "viewer_group_keys": len(keyed),
-                }
-                if keyed
-                else {}
-            ),
             "part_colors_effect_request_sha256": intent.request_sha256,
             "import_effect_request_sha256": imported.details.get(
                 "effect_request_sha256"
@@ -3531,11 +3086,7 @@ class FactoryReleaseWriter:
         if intent.state == "unknown":
             try:
                 design = self._content_design(client, imported.slug)
-                current = (
-                    _keyed_color_plan(_factory_assembly_parts(design), keyed)
-                    if keyed
-                    else _part_color_plan(_factory_assembly_parts(design), part_colors)
-                )
+                current = _part_color_plan(_factory_assembly_parts(design), part_colors)
                 if current is None or current[0]:
                     raise StateConflict(
                         "Factory part colours are neither unset nor the exact sealed colours"
@@ -3630,7 +3181,6 @@ class FactoryReleaseWriter:
         product_page_sha256: str,
         manual_sha256: str,
         part_colors: Mapping[str, str],
-        part_keys: Sequence[Mapping[str, Any]] = (),
     ) -> Receipt:
         if page.get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION:
             return imported
@@ -3654,7 +3204,7 @@ class FactoryReleaseWriter:
         # thumbnail from it, and publication reuses the stored colours. The
         # draft Receipt stays the import's own identity; the colour effect
         # keeps its separate durable Receipt in the ledger.
-        self._ensure_part_colors(client, imported, part_colors, part_keys=part_keys)
+        self._ensure_part_colors(client, imported, part_colors)
         return draft
 
     def __call__(
@@ -3730,14 +3280,6 @@ class FactoryReleaseWriter:
             part_colors = _package_part_colors(
                 made_root, context.made.artifact_manifest
             )
-        keying = handoff.get("part_keying")
-        part_keys: Tuple[Mapping[str, Any], ...] = ()
-        if isinstance(keying, PartKeying) and part_colors:
-            part_keys = tuple(
-                {**key.to_dict(), "color": part_colors[key.owner]}
-                for key in keying.keys
-                if key.owner in part_colors
-            )
         # Factory defaults an omitted category to its first active category,
         # which is not a safe classification rule for Workshop products. Send
         # the canonical Toys & Games slug explicitly; an inactive/unknown slug
@@ -3810,7 +3352,6 @@ class FactoryReleaseWriter:
                 product_page_sha256=handoff["product_page_sha256"],
                 manual_sha256=handoff["manual_sha256"],
                 part_colors=part_colors,
-                part_keys=part_keys,
             )
         if intent.state == "rejected":
             raise EffectError("Factory previously rejected this exact model import")
@@ -3839,7 +3380,6 @@ class FactoryReleaseWriter:
                 product_page_sha256=handoff["product_page_sha256"],
                 manual_sha256=handoff["manual_sha256"],
                 part_colors=part_colors,
-                part_keys=part_keys,
             )
 
         context.assert_current()
@@ -3852,6 +3392,7 @@ class FactoryReleaseWriter:
                 content=handoff["content"],
                 metadata=metadata,
                 idempotency_key=sending.idempotency_key,
+                usage=_reportable_usage(context.token_usage),
             )
         except Exception as exc:
             self.ledger.mark_unknown(
@@ -3910,7 +3451,6 @@ class FactoryReleaseWriter:
             product_page_sha256=handoff["product_page_sha256"],
             manual_sha256=handoff["manual_sha256"],
             part_colors=part_colors,
-            part_keys=part_keys,
         )
 
 

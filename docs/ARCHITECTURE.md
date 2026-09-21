@@ -367,7 +367,8 @@ prioritize the remaining deterministic checks and current-stage finalizer.
 - native search and source provenance;
 - concept exploration and design decisions;
 - use of CAD, image-to-CAD, design-reference, STEP-parts,
-  electromechanical-integration, rendering, and other materialized skills;
+  electromechanical-integration, mechanisms, rendering, and other materialized
+  skills;
 - creation and repair of product files;
 - the printable `MANUAL.pdf`, truthful omission record, and bounded Release facts;
 - a compact proposal for the next host transition.

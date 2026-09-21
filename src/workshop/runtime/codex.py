@@ -27,7 +27,11 @@ from workshop.runtime.execution import (
     CODEX_SUBPROCESS_ENVIRONMENT_ALLOWLIST,
     codex_subprocess_environment,
 )
-from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
+from workshop.runtime.managers import (
+    MAX_NATIVE_TURN_SECONDS,
+    native_token_usage_fields,
+    validate_native_token_usage,
+)
 from workshop.runtime.project_boundary import PRODUCT_RUN_ROOT_MARKER
 from workshop.wish.contracts import WISH_REFERENCES_DIRECTORY
 from workshop.runtime.progress import SAFE_NATIVE_ACTIVITY_CLASSES
@@ -1705,34 +1709,14 @@ class CodexNativeSessionOutcome:
             raise ContractError("Codex native session outcome status is invalid")
         if type(self.used_web_search) is not bool:
             raise ContractError("Codex native session search status must be boolean")
-        if (self.input_tokens is None) != (self.output_tokens is None):
-            raise ContractError("Codex native session token usage is incomplete")
-        details = (
-            self.cached_input_tokens,
-            self.cache_write_input_tokens,
-            self.reasoning_output_tokens,
+        validate_native_token_usage(
+            input_tokens=self.input_tokens,
+            cached_input_tokens=self.cached_input_tokens,
+            cache_write_input_tokens=self.cache_write_input_tokens,
+            output_tokens=self.output_tokens,
+            reasoning_output_tokens=self.reasoning_output_tokens,
+            label="Codex native session",
         )
-        if any(count is None for count in details) and not all(
-            count is None for count in details
-        ):
-            raise ContractError("Codex native session token detail is incomplete")
-        if details[0] is not None and self.input_tokens is None:
-            raise ContractError("Codex native session token detail lacks usage")
-        if any(
-            count is not None
-            and (type(count) is not int or not 0 <= count <= 1_000_000_000_000)
-            for count in (self.input_tokens, self.output_tokens, *details)
-        ):
-            raise ContractError("Codex native session token usage is invalid")
-        if (
-            self.cached_input_tokens is not None
-            and (
-                self.cached_input_tokens > self.input_tokens
-                or self.cache_write_input_tokens > self.input_tokens
-                or self.reasoning_output_tokens > self.output_tokens
-            )
-        ):
-            raise ContractError("Codex native session token detail is invalid")
 
     def to_dict(self) -> Mapping[str, Any]:
         value = {
@@ -1740,13 +1724,15 @@ class CodexNativeSessionOutcome:
             "session": self.binding.to_dict(),
             "used_web_search": self.used_web_search,
         }
-        if self.input_tokens is not None:
-            value["input_tokens"] = self.input_tokens
-            value["output_tokens"] = self.output_tokens
-        if self.cached_input_tokens is not None:
-            value["cached_input_tokens"] = self.cached_input_tokens
-            value["cache_write_input_tokens"] = self.cache_write_input_tokens
-            value["reasoning_output_tokens"] = self.reasoning_output_tokens
+        value.update(
+            native_token_usage_fields(
+                input_tokens=self.input_tokens,
+                cached_input_tokens=self.cached_input_tokens,
+                cache_write_input_tokens=self.cache_write_input_tokens,
+                output_tokens=self.output_tokens,
+                reasoning_output_tokens=self.reasoning_output_tokens,
+            )
+        )
         return value
 
 

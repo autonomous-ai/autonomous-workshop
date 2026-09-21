@@ -5,16 +5,16 @@ skill's ``artifact`` tool as an *assembly-package*: the occurrence tree of the
 sealed STEP with one 4x4 row-major transform and one optional surface colour
 per occurrence.  The trusted host reads it here for two purposes only:
 
-* the Factory handoff addresses one production part per occurrence through it
-  so a multi-part toy reaches the shop as addressable, colourable solids; and
+* the Factory handoff reads occurrence colours from it (the part STEPs
+  themselves stay in Made; only the assembled STEP reaches the shop); and
 * the Make gate requires every occurrence of a multi-part package to have its
   sealed production STEP under ``parts/<name>.step``, the same path the
   build-group contract already uses, and requires that name to end in a colour
-  the filament palette stocks (``arm_black``, ``leg_dark_brown``), so the file
-  that reaches the shop says which spool prints it.
+  the filament palette stocks (``arm_black``, ``leg_dark_brown``), so the
+  sealed file says which spool prints it.
 
 STEP is the only geometry format the CAD toolchain writes, so the shop receives
-exchange solids rather than sliced meshes and printability is not asserted
+an exchange solid rather than sliced meshes and printability is not asserted
 here.
 
 Colour channels are the raw values the designer passed to build123d's

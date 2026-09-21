@@ -753,8 +753,13 @@ the two runs, plus the stretches between a result and the next call where the
 model was generating. Under that sit the `make_round` spans, whose durations
 are the tool's own log line `(685.9s, exit 0)`.
 
-**Nothing in a correction runs in parallel.** Across 756 calls, no two overlap
-by a second — the session issues one at a time.
+**Exactly one thing in a correction runs in parallel.** Across 756 calls, no
+two overlap by a second — the session issues one at a time. The exception is the
+blind review: the critic is a **background subagent**, opened with a single
+`Agent` call that returns in about a second, so the session goes straight on to
+the assembly rounds and the verification sweep while it reads. It was inside a
+tool call for **87% of v12's review bracket and 88% of v13's**. That is why the
+bracket looks like it overlaps everything — it does.
 
 **And almost none of it is idle.** The first version of this page was built
 from `cad/measure/**` alone, which only exists for what `make_round` ran, and
@@ -787,6 +792,23 @@ times.
 to +1h41m: no tool call, no model message, and not one file written anywhere
 under the run root. A session teardown killed the run and `workshop resume`
 restarted it. v12 has 2 minutes unaccounted for in five and a half hours.
+
+v13 end to end, from the transcript:
+
+| window | wall | tool | what happened |
+| --- | ---: | ---: | --- |
+| 0 → +2m29s | 2m29s | 42s | host stages the run, imports the v12 archive (86 frames, 290 logs carried) |
+| +2m29s → +12m34s | 10m05s | 3m30s | control rebuild into `.tmp/baseline`, then the edit |
+| +12m34s → +22m37s | 10m03s | 9m30s | `production.py` writes the 220 colour bodies; `gen` rebuilds the entry |
+| +22m37s → +32m38s | 10m01s | 10m00s | `world_views.py jupiter` — **timeout 1 of 5** |
+| +32m38s → +53m59s | 21m21s | 18m56s | polling it out, then the Sol rank ladder; 9 frames land |
+| +53m59s → +1h40m | **46m56s** | — | **dead** — teardown, then `workshop resume` |
+| +1h40m → +2h15m | 34m29s | 33m54s | Anti-Sol ladder, `iso`, `signature`; three board states tessellated |
+| +2h15m → +2h32m | 17m32s | 15m01s | measure scripts. **18 frames copied +2h44m51s, critic dispatched 12 s later** |
+| +2h32m → +3h03m | 30m20s | 26m15s | `make_round --require-component-passes` ×2 — **timeouts 2 and 3** — rounds r0003, r0004 |
+| +3h03m → +3h15m | 12m18s | 9m05s | `inspect interfere`, 220 occurrences, clashCount 0 |
+| +3h15m → +4h12m | 56m40s | 52m21s | `verify_project --strict-fit` ×4 — **timeouts 4 and 5**; verdict at +4h13m |
+| +4h12m → +4h15m | 2m30s | 44s | Release seals `ad-astra-antisol-v13` |
 
 The blind review is the one mark that spans others, and it is drawn as a
 bracket rather than a bar for that reason: the window between the hand-off and

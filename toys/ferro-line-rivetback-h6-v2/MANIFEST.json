@@ -1,0 +1,351 @@
+{
+  "entries": [
+    {
+      "bytes": 17920,
+      "path": "PROVENANCE.json",
+      "sha256": "dd909f19e29e101ca79ac9de87dbc9f95fe7058a2ee3602f6b66e5c0ec27632e"
+    },
+    {
+      "bytes": 1612,
+      "path": "README.md",
+      "sha256": "645061d3ea05635abc673880cc83142ef5057714e27cba74244b81c9b0a80d9a"
+    },
+    {
+      "bytes": 1234,
+      "path": "cad/README.md",
+      "sha256": "22e08db625bd6da6ca02a8bee6ffdcf3f57c2fbf45d2c8a67a384a604d5b3a70"
+    },
+    {
+      "bytes": 44,
+      "path": "cad/assemblies/__init__.py",
+      "sha256": "0d8039ea5d4b0756ffaa304ee18ca37d1a8e4e9bdc5525239fbda34bdfcf2142"
+    },
+    {
+      "bytes": 3408,
+      "path": "cad/assemblies/product.py",
+      "sha256": "ea03c87aba7df230a80fa3e49555f95eb21a2db34af03551d348f0a1b9be7f1f"
+    },
+    {
+      "bytes": 49,
+      "path": "cad/features/__init__.py",
+      "sha256": "56e3ff928a3f9e153e1fab70043dd2d8cc0d8d71203ad9f7790c8570505d6109"
+    },
+    {
+      "bytes": 2374,
+      "path": "cad/features/forms.py",
+      "sha256": "9153e8e4da3f984ac7bd411e1e9808d664a80d72c0b64075468625c099b5983c"
+    },
+    {
+      "bytes": 960,
+      "path": "cad/measure/check_fit.py",
+      "sha256": "5b0d328dce98f6a952b0b4ad669048f2ed57bcc6cc872e9a9dcd04914dc0eadd"
+    },
+    {
+      "bytes": 154,
+      "path": "cad/measure/validate_v2_final.json",
+      "sha256": "527cd37d2527be283ebe69fc5afa8edb3b2385528a96a89b7cad50c6572759ac"
+    },
+    {
+      "bytes": 11822,
+      "path": "cad/measure/verification_v2_final.md",
+      "sha256": "c1fe83cf76a71159cae2b6735196f215e94c4be8b93e7e1cd521f6cf8f8c462e"
+    },
+    {
+      "bytes": 2137,
+      "path": "cad/params.py",
+      "sha256": "2bbe7feea355019d6c2e6df2f8ecef35dddf75fe1d9362c6c959729343b22967"
+    },
+    {
+      "bytes": 53735,
+      "path": "cad/part_cannon_body.step",
+      "sha256": "025a51e60fe3199695d7189e3eb2cda1ab68d714a79a0a07aa2faa92f4bd739c"
+    },
+    {
+      "bytes": 132,
+      "path": "cad/part_cannon_body.step.py",
+      "sha256": "1ae2e3754af6d02db7cbc3c21225308d7245c3e558f4e526dcae7b08fab3dab3"
+    },
+    {
+      "bytes": 227141,
+      "path": "cad/part_carapace_aft.step",
+      "sha256": "2019f31aafc749f015c6bfe803c6e3285d0ec0af9e7700e31f748fdab0ce9e0a"
+    },
+    {
+      "bytes": 132,
+      "path": "cad/part_carapace_aft.step.py",
+      "sha256": "01393cf852ee9c230ca159fa83bb3cce768b714636faf446d4e2039510c5be1e"
+    },
+    {
+      "bytes": 250246,
+      "path": "cad/part_carapace_center.step",
+      "sha256": "76d73089e20723f39d54b485191dd049e98b5a61a324e282b8721bb51860a037"
+    },
+    {
+      "bytes": 135,
+      "path": "cad/part_carapace_center.step.py",
+      "sha256": "9e0fa430b3c6815b7ceb4e75ab5c355d52a39e542f31d4db004a433ea0a404ac"
+    },
+    {
+      "bytes": 258616,
+      "path": "cad/part_carapace_fore.step",
+      "sha256": "86673b39cd554bb5501c65ac0407bded56a8acd573bc518118235d8585dbb8ef"
+    },
+    {
+      "bytes": 133,
+      "path": "cad/part_carapace_fore.step.py",
+      "sha256": "02ea0b6ad790200e5824d4fb34bf6612441d383face113ea64c8d43713980c91"
+    },
+    {
+      "bytes": 404550,
+      "path": "cad/part_chassis_core.step",
+      "sha256": "3411403068bbd4cdf32176e67770a0cad06bdabc8962bee4f37705f07c898fdb"
+    },
+    {
+      "bytes": 120,
+      "path": "cad/part_chassis_core.step.py",
+      "sha256": "b5af138ee26d8a784e1a79f630070356a093411ec92c56e04292a8498bd31aa4"
+    },
+    {
+      "bytes": 54102,
+      "path": "cad/part_energy_conduit.step",
+      "sha256": "ec9d7f333f5aa3e31d5004a564b19def984161c91e2b83ad162873e6e0ee7881"
+    },
+    {
+      "bytes": 122,
+      "path": "cad/part_energy_conduit.step.py",
+      "sha256": "aad233b08da5209f1e151d545e12669b1fe23a59e4584cc6f3f81f61d6264c80"
+    },
+    {
+      "bytes": 84227,
+      "path": "cad/part_foot.step",
+      "sha256": "e5e24d9ce460c9c9a22a1418d07b78207422eae9daf90753765a365d87bb5b0e"
+    },
+    {
+      "bytes": 112,
+      "path": "cad/part_foot.step.py",
+      "sha256": "6096ecd395f45f2073c62f552cb6aa5febc1f539f50d309f10853d35d121c313"
+    },
+    {
+      "bytes": 46632,
+      "path": "cad/part_hip_yoke.step",
+      "sha256": "704b842972abc246dc781a63650b65e64668a272298066f85252dd0dc66ef19d"
+    },
+    {
+      "bytes": 128,
+      "path": "cad/part_hip_yoke.step.py",
+      "sha256": "fd1c659ee829410d3ac39408865cbd213f20496bcc13d9203c4ab6c58018b61c"
+    },
+    {
+      "bytes": 128912,
+      "path": "cad/part_hub_pedestal.step",
+      "sha256": "9f4e628027d1be8296f2b5b42ee84ba1b1a7f8b156e78ccd26712d8ddd45fa89"
+    },
+    {
+      "bytes": 132,
+      "path": "cad/part_hub_pedestal.step.py",
+      "sha256": "88f4021cafd6528c8471704945e2fd0993cdbe9855a4c8483c8297f40e2cc5c0"
+    },
+    {
+      "bytes": 22320,
+      "path": "cad/part_joint_lock_pin.step",
+      "sha256": "26eacb5e0dba8e1034678767a6af18bab54858290ace6cdefd1efda6ec5b5829"
+    },
+    {
+      "bytes": 122,
+      "path": "cad/part_joint_lock_pin.step.py",
+      "sha256": "d27f6bba9612f73504cb123806afe82c9c1515a1bbfe3e94d5b9b545324ff952"
+    },
+    {
+      "bytes": 77099,
+      "path": "cad/part_lower_leg_armor.step",
+      "sha256": "270f261ebb0dc45b25ac4eeb252c27cfd7b47f9e9b8c2f9b95eb6bba3026afc1"
+    },
+    {
+      "bytes": 135,
+      "path": "cad/part_lower_leg_armor.step.py",
+      "sha256": "85182d25f02aa63fd55857f319c8573eeb5d43fda982156cf8d31527d11ad5ef"
+    },
+    {
+      "bytes": 112710,
+      "path": "cad/part_lower_leg_beam.step",
+      "sha256": "562739ea0e633192cb2c0b1722b1b40402c195e9c5157b2b0edf785dc196db6c"
+    },
+    {
+      "bytes": 134,
+      "path": "cad/part_lower_leg_beam.step.py",
+      "sha256": "95ddb9600c4de797ea277e48fc65ecfd52a99918d1d2a53a41f19e6dee711405"
+    },
+    {
+      "bytes": 131373,
+      "path": "cad/part_muzzle_collar.step",
+      "sha256": "a63c8dfeabefb638e3622fe4d06e374635d5706286ad5aff65e030ea985957c4"
+    },
+    {
+      "bytes": 133,
+      "path": "cad/part_muzzle_collar.step.py",
+      "sha256": "5e743c2819759569980f100c4bdf193ffd4364e0c9417a0bf5ea9c5d8bfd09ec"
+    },
+    {
+      "bytes": 117454,
+      "path": "cad/part_sensor_insert.step",
+      "sha256": "1fc0abffe07aa3a7dfc021807d32fbe461582ce96bcf93e877cb8f08ef80045c"
+    },
+    {
+      "bytes": 121,
+      "path": "cad/part_sensor_insert.step.py",
+      "sha256": "ce9ee7c70d97ee099058c03ec3ba584b5dc28971b9bed4387984143e53d7e937"
+    },
+    {
+      "bytes": 77911,
+      "path": "cad/part_upper_leg_armor.step",
+      "sha256": "06e97664481420af40656495ddd0012f8ab63a021ed7581ea4bef92ac0dbb15e"
+    },
+    {
+      "bytes": 135,
+      "path": "cad/part_upper_leg_armor.step.py",
+      "sha256": "ab8d1d950dd90cece75d9ba798c5d3cfcfd2d06143f956029b2c32bcf112d86e"
+    },
+    {
+      "bytes": 107315,
+      "path": "cad/part_upper_leg_beam.step",
+      "sha256": "7dfc0e220198f5ca2088c8908286439c23e3560659494c5b89564d91ee42d144"
+    },
+    {
+      "bytes": 134,
+      "path": "cad/part_upper_leg_beam.step.py",
+      "sha256": "ff1b48b325d539294e2c587038b8fa1d54de27117d112162a7a48ac195025fab"
+    },
+    {
+      "bytes": 71,
+      "path": "cad/parts/__init__.py",
+      "sha256": "51434c9b8333b9d1336d05262c4aa5d25a1899b222961b478d54f890902861b8"
+    },
+    {
+      "bytes": 581,
+      "path": "cad/parts/cannon_body.py",
+      "sha256": "9bf7fe06f353f3cf694119e73efb3981564ddb3fb207ab3b3c00fe5e6fe88caa"
+    },
+    {
+      "bytes": 2605,
+      "path": "cad/parts/carapace.py",
+      "sha256": "4cb8c537ffbceb8b0c3fc9174f12602590c663fe78cc88fc68b5e17b7001f90d"
+    },
+    {
+      "bytes": 93,
+      "path": "cad/parts/carapace_aft.py",
+      "sha256": "7c28f8f7d07df1af7ab2abbde66046478519799f9be3e7196f700ea02dc59034"
+    },
+    {
+      "bytes": 96,
+      "path": "cad/parts/carapace_center.py",
+      "sha256": "c45c7b0ef44c8660916d135797a706944a593dbde672925e4081f2009eb4fc10"
+    },
+    {
+      "bytes": 94,
+      "path": "cad/parts/carapace_fore.py",
+      "sha256": "c07ebdd9c2796b8f69f0c533a14b045df8b1ff48e714e13140f761c6397e5a19"
+    },
+    {
+      "bytes": 2486,
+      "path": "cad/parts/chassis_core.py",
+      "sha256": "2c2d98758fb0bc15f2e087ac98e2cef37c1b38f0c3c16c583cd1db4426adfd82"
+    },
+    {
+      "bytes": 516,
+      "path": "cad/parts/energy_conduit.py",
+      "sha256": "ce673ba374b7e1df983d4f8403b6e30c6437651568cc4166497655f4eb249a68"
+    },
+    {
+      "bytes": 1336,
+      "path": "cad/parts/foot.py",
+      "sha256": "ad065ea0638355a857335e448726146625642c12398dedeb384e1acdb059673d"
+    },
+    {
+      "bytes": 665,
+      "path": "cad/parts/hip_yoke.py",
+      "sha256": "34995ecc75fce481659cfdb064b3ff5bef5b012367e7759ae0d6198d41becb26"
+    },
+    {
+      "bytes": 1885,
+      "path": "cad/parts/hub_pedestal.py",
+      "sha256": "9d50b6202f312ba99748ac79aa8622aabae780cb1e0942f8160f7c7e0ff34dd7"
+    },
+    {
+      "bytes": 436,
+      "path": "cad/parts/joint_lock_pin.py",
+      "sha256": "75529fcddb0e8968dce21f6fdc85fd183720a4d04b215c414f0ff565130a87ba"
+    },
+    {
+      "bytes": 2606,
+      "path": "cad/parts/lower_leg_armor.py",
+      "sha256": "a1eb48f7b113fed20179bcc04e0309ac23f4cdcd16fbd42e8338fabb3edfe9e1"
+    },
+    {
+      "bytes": 1818,
+      "path": "cad/parts/lower_leg_beam.py",
+      "sha256": "2323b1b1fd231dab3142ba2941644dcdf83ee114825b230f8c60205a0759897e"
+    },
+    {
+      "bytes": 637,
+      "path": "cad/parts/muzzle_collar.py",
+      "sha256": "060961407918911c77a4ba77d13a1056657f492cf743ef726440a074b8f04194"
+    },
+    {
+      "bytes": 968,
+      "path": "cad/parts/sensor_insert.py",
+      "sha256": "8c7b16782837f02cec8e5c7db195fa8e49abf632e96c0a4f8edb2bb953b6d11b"
+    },
+    {
+      "bytes": 1305,
+      "path": "cad/parts/upper_leg_armor.py",
+      "sha256": "02c9a5ca79bb5b4836d5a4b9d2a70d81b95a0d1894e2f844aaa77e4eec1120d4"
+    },
+    {
+      "bytes": 1364,
+      "path": "cad/parts/upper_leg_beam.py",
+      "sha256": "db72a939e5dcfb2bddec4e751f97f6e92c55d3d3205357364e41a0792d429700"
+    },
+    {
+      "bytes": 5142879,
+      "path": "cad/rivetback.step",
+      "sha256": "e68a62db3a66d911c9bb6898bac7f9ecb65fcb528c40c550ba3c681162f5886c"
+    },
+    {
+      "bytes": 74,
+      "path": "cad/rivetback.step.py",
+      "sha256": "e76470c975275a5abc666cdb05aa3dac56e44d09aa774d88e8bec77fb2781844"
+    },
+    {
+      "bytes": 4436,
+      "path": "cad/rivetback_spec.md",
+      "sha256": "23228bd8a13236c18955b2780396ba00c8e31c55c5db9fa96df8c645a7f29d64"
+    },
+    {
+      "bytes": 154564,
+      "path": "cad/snap/front_v2.png",
+      "sha256": "cb204e771101b3815568b72541f523b7c3a52c22d3edb4204c4da2b0f2cf59b1"
+    },
+    {
+      "bytes": 498694,
+      "path": "cad/snap/iso_opposite_v2.png",
+      "sha256": "ec02114b2072597cedc605c22fb3bc27903472621f1853aab45d844291e9b465"
+    },
+    {
+      "bytes": 563960,
+      "path": "cad/snap/iso_v2.png",
+      "sha256": "0fc72662ac1ca4e070154fa6f0fd0632ed321fb06cc4883199d7ac55fe72d9ef"
+    },
+    {
+      "bytes": 287318,
+      "path": "cad/snap/top_v2.png",
+      "sha256": "11bef7cd1a61c10567816884a8edcafe961c19144cd06d241328ab4f69cb4c52"
+    },
+    {
+      "bytes": 528,
+      "path": "cad/validation.py",
+      "sha256": "0827e8659463c8c23e26f330345e829d23de2a96e19b521988819f4fd73062fc"
+    }
+  ],
+  "kind": "generated-design-archive",
+  "schema_version": 1
+}

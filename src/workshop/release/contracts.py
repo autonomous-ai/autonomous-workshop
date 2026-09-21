@@ -77,6 +77,13 @@ class ReleaseContext:
     # model: the rendered hero the shop uses as its cover.  Optional, and not
     # a Made byte.
     cover_render: Optional[bytes] = field(default=None, repr=False, compare=False)
+    # The product's lifetime token budget, reported to Factory beside the
+    # import so Workshop token spend stays visible there.  Statistics only:
+    # it is not Release evidence, so it stays out of equality and never
+    # reaches the sealed handoff bytes.
+    token_usage: Optional[Mapping[str, Any]] = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -104,6 +111,11 @@ class ReleaseContext:
             or any(ord(character) < 33 or ord(character) == 127 for character in self.lease_token)
         ):
             raise ContractError("ReleaseContext lease token is malformed")
+        usage = self.token_usage
+        if usage is not None:
+            if not isinstance(usage, Mapping) or usage.get("unit") != "tokens":
+                raise ContractError("ReleaseContext token usage must be a token budget")
+            object.__setattr__(self, "token_usage", _plain_json(usage))
         object.__setattr__(self, "workspace", root)
         self.assert_current()
 

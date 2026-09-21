@@ -922,7 +922,7 @@ Canonical product-run sources live at:
 .agents/product-run/AGENTS.md
 .agents/product-run/.agents/skills/autonomous-workshop/**
 src/workshop/make/skills/{cad,design-reference,electromechanical-integration,
-                          image-to-cad,step-parts}/**
+                          image-to-cad,mechanisms,step-parts}/**
 src/workshop/release/skills/manual-design/**
 inventors/<id>/{inventor.json,TASTE.md,skills/**}
 ```
@@ -1023,8 +1023,8 @@ private Wish demonstrate that:
 | Manager runtime | Status |
 |---|---|
 | Codex | Implemented default |
-| Claude Code | Experimental adapter |
-| Grok Build | Experimental adapter |
+| Claude Code | Experimental adapter; native token usage measured |
+| Grok Build | Experimental adapter; no token usage reported |
 
 The stable seam is the persistent toy project, stage objective and proof
 condition, `STAGE.json`, compact outcome protocol, start/resume adapter, and
@@ -1032,6 +1032,31 @@ bounded native-specialist delegation—not Codex prompt syntax or one vendor's
 custom-agent file format. Every future adapter must preserve the root Manager
 role, exact Inventor binding, host-owned gates, sandbox, checkpoint, and effect
 authority.
+
+The Claude Code adapter reports native token usage to the host through the
+same per-turn contract as Codex: gross input and gross output, plus a
+cached-input, cache-write-input and reasoning-output detail that travels
+together or not at all. One `claude --print --output-format stream-json`
+invocation is one host turn. The adapter reads the terminal `result` event's
+`modelUsage` per-model totals, which Claude Code 2.1.x documents as covering
+every model call in that invocation (main loop, subagents, compaction) and as
+starting fresh on `--resume`, and sums them across models: gross input is
+`inputTokens` plus `cacheReadInputTokens` plus `cacheCreationInputTokens`
+because Claude's `inputTokens` counts only uncached input; cache reads are
+cached input; cache creation is cache-write input; `thinkingTokens` is the
+reasoning subset of `outputTokens`. Per-block `assistant` usage is never
+summed (the CLI marks it non-final and repeats it per content block), an
+earlier `result` is replaced by the latest running total rather than added,
+and the result's `usage` and `total_cost_usd` are not read, so nothing is
+double counted and no dollar figure is carried. A result without valid
+per-model totals leaves that turn unmeasured; totals without a
+`thinkingTokens` subset keep the gross counters and leave the economics
+breakdown unavailable, exactly as a base-only Codex turn does. An error
+result, whose totals Claude Code zeroes, is a failed turn, not a zero-token
+measurement. `workshop status --json`, checkpoints and the public
+`TOKENS.json` then say `measured`, `partial` or `unavailable` for a
+Claude-managed run with the same schema-v3 shape as a Codex run. This is
+telemetry only: Claude Code runs still have no host token budget.
 
 ## Product budgets and legacy timeouts
 
