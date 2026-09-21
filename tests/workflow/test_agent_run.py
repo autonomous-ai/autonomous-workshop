@@ -92,26 +92,6 @@ class AgentRunTest(unittest.TestCase):
             **kwargs,
         )
 
-    def test_final_review_option_is_frozen_and_only_host_can_rebind(self):
-        run = self.create()
-        path = run.run_root / "FINAL-REVIEW-OPTIONS.json"
-        self.assertTrue(json.loads(path.read_bytes())["check_final_review"])
-        self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o400)
-        before = run.snapshot()
-        changes = run.refresh_domain_skill_tools({}, reason="operator experiment", check_final_review=False)
-        self.assertEqual([item["path"] for item in changes], ["FINAL-REVIEW-OPTIONS.json"])
-        after = run.snapshot()
-        self.assertEqual(before.stage, after.stage)
-        self.assertEqual(before.stage_artifacts, after.stage_artifacts)
-        self.assertFalse(json.loads(path.read_bytes())["check_final_review"])
-        run.refresh_domain_skill_tools({}, reason="ordinary refresh")
-        self.assertFalse(json.loads(path.read_bytes())["check_final_review"])
-        path.chmod(0o600)
-        path.write_text('{"schema_version":1,"check_final_review":true}')
-        path.chmod(0o400)
-        with self.assertRaises(StateConflict):
-            run.snapshot()
-
     def test_make_options_default_false_and_survive_resume_and_tool_refresh(self):
         cad = self.root / "cad"
         cad.mkdir()

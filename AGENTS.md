@@ -126,8 +126,7 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0062-step-only-cad-toolchain.md`, and
 `docs/adr/0063-spark-component-first-make.md`, and
 `docs/adr/0063-print-gates-on-source.md`, and
-`docs/adr/0064-operator-selected-turn-boundary.md`, and
-`docs/adr/0069-make-visual-continuity-and-optional-final-review.md` before changing the CLI, runtime,
+`docs/adr/0064-operator-selected-turn-boundary.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the

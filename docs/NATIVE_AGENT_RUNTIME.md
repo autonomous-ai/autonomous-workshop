@@ -1314,12 +1314,3 @@ the actual uploaded archive hash remains part of effect reconciliation.
 The local Factory backend import contract accepts ZIP compression and bounds
 upload and expanded size separately. No package files or gates are omitted to
 meet the transport limit.
-
-## Optional final Make review experiment (ADR 0069)
-
-Make rounds now retain unresolved visual findings and assess form separately
-from assembly. They remain Manager self-inspection. `--check-final-review false`
-on wish/start/fix or an explicit resume omits the final independent critic while
-preserving engineering checks. New runs default true; resume omission preserves
-the choice. Hash-bound not-run evidence and a product-summary disclosure are
-required. See [ADR 0069](adr/0069-make-visual-continuity-and-optional-final-review.md).

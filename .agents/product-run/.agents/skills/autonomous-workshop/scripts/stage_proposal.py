@@ -1956,20 +1956,6 @@ def _validate_signature_review(
     cad_project_path: PurePosixPath,
     concept_sha256: str,
 ) -> None:
-    policy_path = run_root / ".agents/skills/cad/scripts/final_review_policy.py"
-    # Older frozen workspaces have no optional-review capability.
-    if policy_path.is_file():
-        try:
-            policy = runpy.run_path(str(policy_path))
-            if not policy["enabled"]():
-                project = run_root / product_root_value / cad_project_path
-                policy["validate"](project)
-                product = json.loads((run_root / product_root_value / "product.json").read_bytes())
-                if policy["DISCLOSURE"] not in product.get("summary", ""):
-                    raise ValueError("product summary must disclose that final independent review was not run")
-                return
-        except (OSError, ValueError, TypeError, KeyError) as exc:
-            raise ProposalError("Make final review policy: %s" % exc) from exc
     review_relative = (
         PurePosixPath(product_root_value) / cad_project_path / SIGNATURE_REVIEW_PATH
     )

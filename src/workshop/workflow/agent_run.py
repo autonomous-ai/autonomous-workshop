@@ -806,12 +806,9 @@ class AgentRun:
         turn_seconds: Optional[int] = None,
         turn_untimed: bool = False,
         check_motion: bool = False,
-        check_final_review: bool = True,
         wish_reference_files: Optional[Mapping[str, bytes]] = None,
         revision_snapshot: Optional[bytes] = None,
     ) -> "AgentRun":
-        if type(check_final_review) is not bool:
-            raise ContractError("check_final_review must be boolean")
         if type(check_motion) is not bool:
             raise ContractError("agent run check_motion must be boolean")
         _identifier(product_id, "agent run product_id")
@@ -1084,9 +1081,6 @@ class AgentRun:
             (PurePosixPath("WISH.json"), wish_bytes, 0o400),
             (PurePosixPath("MAKE-OPTIONS.json"),
              json.dumps({"schema_version": 1, "check_motion": check_motion},
-                        sort_keys=True, separators=(",", ":")).encode("utf-8"), 0o400),
-            (PurePosixPath("FINAL-REVIEW-OPTIONS.json"),
-             json.dumps({"schema_version": 1, "check_final_review": check_final_review},
                         sort_keys=True, separators=(",", ":")).encode("utf-8"), 0o400),
             (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
             (
@@ -1714,7 +1708,6 @@ class AgentRun:
         motion_skill_root: Optional[Path] = None,
         finalizer_skill_root: Optional[Path] = None,
         check_motion: Optional[bool] = None,
-        check_final_review: Optional[bool] = None,
     ) -> tuple[dict[str, Any], ...]:
         """Bring the run's host-owned domain skills up to the installed source.
 
@@ -1738,11 +1731,7 @@ class AgentRun:
             raise ContractError("domain skill roots must be a mapping")
         if check_motion is not None and type(check_motion) is not bool:
             raise ContractError("agent run check_motion must be boolean")
-        if check_final_review is not None and type(check_final_review) is not bool:
-            raise ContractError("check_final_review must be boolean")
         payload = self._load()
-        if check_final_review is not None and payload["status"] == "complete":
-            raise TransitionError("a completed run has no final review policy to rebind")
         if check_motion is not None and payload["status"] == "complete":
             raise TransitionError("a completed agent run has no motion policy to rebind")
         by_path: dict[str, dict[str, Any]] = {
@@ -1841,25 +1830,6 @@ class AgentRun:
                 target = self.run_root / path
                 if previous is None and (target.exists() or target.is_symlink()):
                     raise StateConflict("untracked MAKE-OPTIONS.json blocks motion policy adoption")
-                writes.append((PurePosixPath(path), content, 0o400))
-                by_path[path] = {"path": path, "sha256": digest,
-                                 "size": len(content), "mode": 0o400}
-                changes.append({"path": path,
-                                "previous_sha256": None if previous is None else previous["sha256"],
-                                "previous_mode": None if previous is None else previous["mode"],
-                                "sha256": digest, "mode": 0o400})
-        if check_final_review is not None:
-            path = "FINAL-REVIEW-OPTIONS.json"
-            content = json.dumps({"schema_version": 1, "check_final_review": check_final_review},
-                                 sort_keys=True, separators=(",", ":")).encode("utf-8")
-            digest = _sha256(content)
-            previous = by_path.get(path)
-            if previous is None or previous["sha256"] != digest:
-                # This is a host-owned input rebind, never an agent edit.
-                # Refuse an untracked file instead of adopting or replacing it.
-                target = self.run_root / path
-                if previous is None and (target.exists() or target.is_symlink()):
-                    raise StateConflict("untracked FINAL-REVIEW-OPTIONS.json blocks final review policy adoption")
                 writes.append((PurePosixPath(path), content, 0o400))
                 by_path[path] = {"path": path, "sha256": digest,
                                  "size": len(content), "mode": 0o400}

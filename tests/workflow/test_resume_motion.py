@@ -69,42 +69,6 @@ class ResumeMotionTest(unittest.TestCase):
     def selected(self):
         return json.loads((self.paths.workspace / "MAKE-OPTIONS.json").read_bytes())["check_motion"]
 
-    def test_final_review_opt_out_and_resume_preserve_exact_run(self):
-        self.start()
-        path = self.paths.workspace / "FINAL-REVIEW-OPTIONS.json"
-        before = host._open_budgeted_agent_run(self.paths).snapshot()
-        host.resume_native_run(self.product_id, check_final_review=False)
-        after = host._open_budgeted_agent_run(self.paths).snapshot()
-        self.assertFalse(json.loads(path.read_bytes())["check_final_review"])
-        self.assertEqual(before.input_sha256s["WISH.json"], after.input_sha256s["WISH.json"])
-        self.assertEqual(before.stage_artifacts, after.stage_artifacts)
-        self.assertEqual(len(self.launcher.starts), 1)
-        host.resume_native_run(self.product_id)
-        self.assertFalse(json.loads(path.read_bytes())["check_final_review"])
-        host.resume_native_run(self.product_id, check_final_review=True)
-        self.assertTrue(json.loads(path.read_bytes())["check_final_review"])
-
-    def test_failed_final_review_tool_rebind_does_not_disable_gate(self):
-        self.start()
-        # Force a genuine frozen tool upgrade before simulating interruption.
-        source = host.product_run_domain_skill_roots()["cad"]
-        with tempfile.TemporaryDirectory() as tmp:
-            import shutil
-            copy = Path(tmp).resolve() / "cad"
-            shutil.copytree(source, copy)
-            with (copy / "scripts/final_review_policy.py").open("a") as stream:
-                stream.write("\n# test upgrade\n")
-            roots = dict(host.product_run_domain_skill_roots(), cad=copy)
-            self.launcher.fail_rebind = True
-            with mock.patch.object(host, "product_run_domain_skill_roots", return_value=roots):
-                with self.assertRaisesRegex(RuntimeError, "interrupted session rebind"):
-                    host.resume_native_run(self.product_id, check_final_review=False)
-            self.assertTrue(json.loads((self.paths.workspace / "FINAL-REVIEW-OPTIONS.json").read_bytes())["check_final_review"])
-            self.launcher.fail_rebind = False
-            with mock.patch.object(host, "product_run_domain_skill_roots", return_value=roots):
-                host.resume_native_run(self.product_id, check_final_review=False)
-            self.assertFalse(json.loads((self.paths.workspace / "FINAL-REVIEW-OPTIONS.json").read_bytes())["check_final_review"])
-
     def test_resume_omission_disables_previously_enabled_run_and_opt_in_reenables(self):
         self.start(check_motion=True)
         for options, expected in (({}, False), ({"check_motion": True}, True), ({}, False)):

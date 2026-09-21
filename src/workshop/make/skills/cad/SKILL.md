@@ -3,13 +3,6 @@ name: cad
 description: Create, modify, inspect, and validate STEP-first parametric CAD parts and assemblies. Use for natural-language CAD specs, reference images, 2D technical drawings, STEP/STP generation or direct inspection, Python CAD source, source-level joints, selector references, geometry facts, measurements, mating deltas, and on-request native GLB viewing exports from CAD geometry. Do not use during a host-identified Workshop v8/v9 early-proof turn; use the host's exact proof commands and load this broad skill only after the proof marker.
 ---
 
-For the operator experiment, root `FINAL-REVIEW-OPTIONS.json` may disable the
-final independent critic. Keep Make-round visual feedback and engineering
-checks; use `cad/scripts/final_review_policy.py <cad-project>` to record
-hash-bound not-run evidence and disclose it in the product summary.
-Absence or true retains the final review requirement.
-
-
 **Motion verification is opt-in.** Standalone `make_round` and `verify_project`
 default to false; pass `--check-motion true` to enable it. Inside Workshop,
 read the immutable run-root `MAKE-OPTIONS.json`: the tools inherit its

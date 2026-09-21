@@ -6612,16 +6612,6 @@ def _launcher_call(
             proof_boundary=make_proof_boundary,
         )
         prompt += _deep_invent_recovery_prompt(checkpoint)
-    if "FINAL-REVIEW-OPTIONS.json" in checkpoint.input_sha256s:
-        prompt += (
-            "\n\nHost final review policy: reread FINAL-REVIEW-OPTIONS.json. "
-            "When check_final_review is false, omit the final independent critic (including animation review), "
-            "not Make round visual feedback or engineering checks. Run cad/scripts/final_review_policy.py "
-            "<cad-project> to write snap/FINAL-REVIEW-NOT-RUN.json, disclose this omission in product.json "
-            "summary and README, then run the final verifier and finalizer normally. "
-            "This operator policy supersedes older mandatory final critic instructions. "
-            "When true, the existing final independent review remains required."
-        )
     if "MAKE-OPTIONS.json" in checkpoint.input_sha256s:
         prompt += (
             "\n\nHost motion policy: reread the immutable run-root MAKE-OPTIONS.json. "
@@ -6631,7 +6621,7 @@ def _launcher_call(
             "sweeps, motion-only manifest authoring, animation generation/reconstruction "
             "and independent motion review; report motion as unverified. Do not run "
             "those checks manually or repeat a motion blocker. When true, apply the "
-            "motion requirements; the final-review option separately controls the independent critic. Other checks still apply."
+            "motion and animation requirements. Other checks still apply."
         )
     if checkpoint.stage == "make" and _has_inspection_correction(paths, checkpoint):
         prompt += (
@@ -9938,7 +9928,6 @@ def start_native_run(
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
     check_motion: bool = False,
-    check_final_review: bool = True,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     revision_snapshot: Optional[bytes] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
@@ -9995,8 +9984,6 @@ def start_native_run(
 
     _reject_grid_keepalive_wish_start()
     validate_limit(max_tokens)
-    if check_final_review is not None and type(check_final_review) is not bool:
-        raise ContractError("check_final_review must be boolean")
     if type(check_motion) is not bool:
         raise ContractError("motion check option must be boolean")
 
@@ -10065,7 +10052,6 @@ def start_native_run(
                 turn_seconds=turn_seconds,
                 turn_untimed=turn_untimed,
                 check_motion=check_motion,
-                check_final_review=check_final_review,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.
@@ -10338,7 +10324,6 @@ def resume_native_run(
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
     check_motion: bool = False,
-    check_final_review: bool | None = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -10356,8 +10341,6 @@ def resume_native_run(
 
     if publish_requested is not None and type(publish_requested) is not bool:
         raise ContractError("legacy publication option must be boolean")
-    if check_final_review is not None and type(check_final_review) is not bool:
-        raise ContractError("check_final_review must be boolean")
     if type(check_motion) is not bool:
         raise ContractError("motion check option must be boolean")
     if type(adopt_turn_budget) is not bool:
@@ -10385,17 +10368,6 @@ def resume_native_run(
             _reasoning_override_context(paths, checkpoint)
 
         if checkpoint.status in ("active", "waiting"):
-            if check_final_review is not None:
-                reason = "workshop resume --check-final-review %s" % str(check_final_review).lower()
-                _refresh_native_run_tools_locked(
-                    checkpoint.product_id, paths, run, reason=reason,
-                    domain_skill_roots={name: root for name, root in product_run_domain_skill_roots().items()
-                                        if name in ("cad", "make-round")},
-                    refresh_review=False, finalizer_skill_root=product_run_agent_assets().skill_root,
-                )
-                run.refresh_domain_skill_tools({}, reason=reason, check_final_review=check_final_review)
-                checkpoint = run.snapshot()
-                _reconcile_motion_resume_outputs(run, checkpoint)
             checkpoint = _adopt_resume_motion_policy(paths, run, checkpoint, check_motion)
             checkpoint = _adopt_resume_inspection_tools(paths, run, checkpoint)
         if adopt_turn_budget:
@@ -10534,7 +10506,6 @@ def _reconcile_motion_resume_outputs(run, checkpoint):
                 and record.get("schema_version") == 1
                 and record.get("correction") == "domain-skill-refresh"
                 and (str(record.get("reason", "")).startswith("workshop resume --check-motion ")
-                     or str(record.get("reason", "")).startswith("workshop resume --check-final-review ")
                      or record.get("reason") == _INSPECTION_REFRESH_REASON
                      or (checkpoint.stage == "make"
                          and record.get("reason") == "workshop resume --refresh-tools"))):

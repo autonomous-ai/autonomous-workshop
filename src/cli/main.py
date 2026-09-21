@@ -560,7 +560,6 @@ def _start_run(
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     turn_minutes: Any = None,
     check_motion: bool = False,
-    check_final_review: bool = True,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     revision_snapshot: Optional[bytes] = None,
     progress: TextIO,
@@ -641,7 +640,6 @@ def _start_run(
         **({"max_tokens": max_tokens} if max_tokens != DEFAULT_PRODUCT_TOKENS else {}),
         **_turn_boundary_options(turn_minutes),
         **({"check_motion": True} if check_motion else {}),
-        **({"check_final_review": False} if not check_final_review else {}),
         wish_reference_files=wish_reference_files,
         **({"revision_snapshot": revision_snapshot} if revision_snapshot is not None else {}),
         github_publish_requested=github,
@@ -681,7 +679,6 @@ def _wish(args: argparse.Namespace) -> int:
         max_tokens=args.max_tokens,
         turn_minutes=args.turn_minutes,
         check_motion=args.check_motion,
-        **({"check_final_review": args.check_final_review} if args.check_final_review is not None else {}),
         wish_reference_files=wish_reference_files(loaded_references),
         progress=progress,
         live_progress=live_progress,
@@ -711,8 +708,7 @@ def _fix(args: argparse.Namespace) -> int:
     receipt = _start_run(
         wish, workflow=workshop_effort("spark"), runtime=runtime,
         github=args.github, max_tokens=args.max_tokens,
-        turn_minutes=args.turn_minutes, check_motion=args.check_motion,
-        **({"check_final_review": args.check_final_review} if args.check_final_review is not None else {}), revision_snapshot=snapshot,
+        turn_minutes=args.turn_minutes, check_motion=args.check_motion, revision_snapshot=snapshot,
         progress=progress, live_progress=_LiveWishProgress(progress, runtime.spec.display_name),
     )
     if args.json:
@@ -983,7 +979,6 @@ def _start(args: argparse.Namespace) -> int:
                     max_tokens=args.max_tokens,
                     turn_minutes=args.turn_minutes,
                     check_motion=args.check_motion,
-                    **({"check_final_review": args.check_final_review} if args.check_final_review is not None else {}),
                     wish_reference_files=reference_files,
                     progress=progress,
                     live_progress=live_progress,
@@ -1131,7 +1126,6 @@ def _resume(args: argparse.Namespace) -> int:
     receipt = resume_native_run(
         args.product_id,
         check_motion=args.check_motion,
-        **({"check_final_review": args.check_final_review} if args.check_final_review is not None else {}),
         **({"adopt_turn_budget": True} if args.turn_budget else {}),
         **({"max_tokens": args.max_tokens} if args.max_tokens is not None else {}),
         **({"reasoning_effort": args.effort} if args.effort is not None else {}),
@@ -1805,8 +1799,6 @@ def parser() -> argparse.ArgumentParser:
         "--strict", action="store_true", help="with --once: exit 1 when the run waits"
     )
     start.set_defaults(handler=_start)
-    start.add_argument("--check-final-review", type=_check_motion, default=True, metavar="true|false",
-                        help="enable final independent review (default: required; resume preserves saved choice)")
     start.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
                        help="enable Make motion checks and animation review for each new run (default: false)")
     start.add_argument(
@@ -1979,8 +1971,6 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     wish.set_defaults(handler=_wish)
-    wish.add_argument("--check-final-review", type=_check_motion, default=True, metavar="true|false",
-                        help="enable final independent review (default: required; resume preserves saved choice)")
     wish.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
                       help="enable Make motion checks and animation review (default: false)")
     wish.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
@@ -1994,8 +1984,6 @@ def parser() -> argparse.ArgumentParser:
     fix.add_argument("--agent", choices=tuple(SUPPORTED_MANAGER_IDS), default=DEFAULT_MANAGER_ID)
     fix.add_argument("--model")
     fix.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS)
-    fix.add_argument("--check-final-review", type=_check_motion, default=True, metavar="true|false",
-                        help="enable final independent review (default: required; resume preserves saved choice)")
     fix.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
                       help="enable Make motion checks and animation review (default: false)")
     fix.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS)
@@ -2018,8 +2006,6 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument("product_id", help="saved Wish id")
     resume.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS, default=None,
                         help="explicit reasoning effort for this and later resumes; omitted keeps the saved selection")
-    resume.add_argument("--check-final-review", type=_check_motion, default=None, metavar="true|false",
-                        help="enable final independent review (default: required; resume preserves saved choice)")
     resume.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
                         help="enable Make motion checks and animation review on resume, including older runs (default: false)")
     resume.add_argument("--max-tokens", type=_token_budget, default=None, metavar="N",

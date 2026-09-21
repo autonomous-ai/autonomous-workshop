@@ -944,11 +944,3 @@ same verdicts; the subsequent repeat took 9.70 seconds. This is one complex
 model replay, not a new native Wish or validation of the reported machine.
 An earlier development run exposed native shape mutation causing cache misses;
 copying validity inputs and non-destructive Boolean operations corrected it.
-
-## Visual issue continuity and optional final critic (2026-09-21)
-
-Workshop-local changes: make-round packet v2 carries unresolved findings,
-separate form/assembly assessments, reference hashes and prior evidence. The CAD
-final_review_policy helper validates host-selected final-critic omission; the
-verifier keeps engineering checks and records not-run. See ADR 0069. These
-changes do not add a Python image judge or alter geometric thresholds.
