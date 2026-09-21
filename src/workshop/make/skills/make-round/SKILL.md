@@ -3,6 +3,13 @@ name: make-round
 description: Run isolated component or assembled-object Make repair rounds with deterministic CAD checks and native visual inspection. Render the selected scope, inspect form and proportions, and record visual errors alongside likeness, build and motion results. Does not replace independent blind review or final verification.
 ---
 
+For the operator experiment, root `FINAL-REVIEW-OPTIONS.json` may disable the
+final independent critic. Keep Make-round visual feedback and engineering
+checks; use `cad/scripts/final_review_policy.py <cad-project>` to record
+hash-bound not-run evidence and disclose it in the product summary.
+Absence or true retains the final review requirement.
+
+
 **Motion verification is opt-in.** Standalone `make_round` and `verify_project`
 default to false; pass `--check-motion true` to enable it. Inside Workshop,
 read the immutable run-root `MAKE-OPTIONS.json`: the tools inherit its
@@ -128,6 +135,11 @@ evidence, and proposed source correction. Keep observations short and concrete.
   "packet_sha256": "<visual packet hash from summary>",
   "status": "fail",
   "observation": "The body is coherent, but the left wheel is visibly offset.",
+  "assessments": {
+    "form": {"status": "pass", "observation": "Body silhouette and proportions match the concept."},
+    "assembly": {"status": "fail", "observation": "Front view shows the misplaced axle."}
+  },
+  "resolutions": [],
   "findings": [{
     "part": "left wheel",
     "defect": "Axle is above the wheel centre",
@@ -136,6 +148,25 @@ evidence, and proposed source correction. Keep observations short and concrete.
   }]
 }
 ```
+
+The packet carries `open_findings` with stable IDs across rounds. An overall
+shape or recognition problem belongs in `findings`, even if local repairs are
+also needed: “cape reads as a lampshade” remains an issue until that silhouette
+changes. Record form/proportions/identity against the Wish and its reference
+images separately from assembly completeness, placement and intersections.
+A clean assembly does not establish a matching form.
+
+For each old finding actually fixed, include a resolution:
+`{"id":"r2-f1","image":"<absolute current packet image path>","change":"<visible correction compared with the previous same view>"}`.
+Inspect the prior view and current view alongside the reference before closing
+it. Unresolved findings carry forward automatically, including through pending
+or failed-render rounds; do not repeat them as new findings. An empty new
+findings list cannot erase them. Both assessments must pass and all carried
+findings must be resolved before the round can pass. If a broad form error
+persists after local repairs, reconsider the shape construction before adding
+more detail. This does not require simplifying away requested detail or motion.
+The tool checks identity, continuity and image bindings; the Manager still owns
+the truth of the visual judgment.
 
 Use `pass` with an empty findings list only after inspection finds no errors;
 use `inconclusive` and describe the missing evidence when a verdict is impossible.
@@ -152,7 +183,8 @@ contradictory findings and repeat submissions. Source edits start a new round;
 never rebind prior prose to new hashes. Manager self-review does not consume or
 replace the independent blind critic allowance.
 
-Final Make allows an initial independent blind review plus up to three focused
+Unless the host disables final review in `FINAL-REVIEW-OPTIONS.json`,
+final Make allows an initial independent blind review plus up to three focused
 repair-and-rereview cycles (four reviews total). After a passing hash-bound
 blind review, the final `--record-visual` may also use
 `--full` to invoke `verify_project --strict-fit` once. Normally run

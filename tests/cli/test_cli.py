@@ -2149,3 +2149,13 @@ class VaultCommandTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FinalReviewOptionTest(unittest.TestCase):
+    def test_new_runs_require_review_and_resume_preserves_saved_choice(self):
+        for command in (("wish", "figure"), ("start", "mei"), ("fix", "toy", "--prompt", "change")):
+            with self.subTest(command=command):
+                self.assertTrue(parser().parse_args(command).check_final_review)
+                self.assertFalse(parser().parse_args((*command, "--check-final-review", "false")).check_final_review)
+        self.assertIsNone(parser().parse_args(("resume", "wish-one")).check_final_review)
+        self.assertTrue(parser().parse_args(("resume", "wish-one", "--check-final-review", "true")).check_final_review)

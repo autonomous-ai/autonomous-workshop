@@ -1,5 +1,21 @@
 # Autonomous Workshop product-run constitution
 
+## Operator-selected final review experiment
+
+Read root `FINAL-REVIEW-OPTIONS.json` when present. `check_final_review` defaults
+to true; absence keeps the existing requirement. When the host sets it false,
+skip the final independent still-image and animation critic. Keep the round
+Manager's visual feedback and all enabled engineering checks. Archive any prior
+`SIGNATURE-REVIEW.json` outside the product; never fabricate a pass. After final
+renders, run `"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/final_review_policy.py
+<cad-project>` to create hash-bound `snap/FINAL-REVIEW-NOT-RUN.json`, and put
+“Final independent visual review was not run (operator experiment).” in the
+product summary and any README. Then run the normal final verifier/finalizer.
+This policy takes precedence over the mandatory final-critic instructions below
+and in referenced templates; it does not disable early form proof or Playtest.
+Resume preserves the saved choice unless `--check-final-review true|false` is
+explicitly supplied. Switching back to true requires the ordinary critic.
+
 ## Operator-selected motion verification
 
 Read the immutable run-root `MAKE-OPTIONS.json` before Make. Its

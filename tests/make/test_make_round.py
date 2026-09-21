@@ -42,6 +42,7 @@ def record_fixture_visual_pass(module, project, summary):
     path.write_text(json.dumps({
         "packet_sha256": summary["visual"]["packet_sha256"],
         "status": "pass", "findings": [],
+        "assessments": {k: {"status": "pass", "observation": "Synthetic visual assessment"} for k in ("form", "assembly")}, "resolutions": [],
         "observation": "Synthetic fixture: visual evidence accepted for this test.",
     }))
     return module.record_visual(Path(project), path)
@@ -137,7 +138,8 @@ class MakeRoundTest(unittest.TestCase):
 
     def _feedback(self, project, summary, status="pass"):
         value = {"packet_sha256": summary["visual"]["packet_sha256"], "status": status,
-                 "findings": [], "observation": "Inspected all views against the concept."}
+                 "findings": [], "observation": "Inspected all views against the concept.",
+                 "assessments": {k: {"status": status, "observation": "Synthetic assessment"} for k in ("form", "assembly")}, "resolutions": []}
         if status == "fail":
             value["findings"] = [{"part": "wheel", "defect": "misplaced axle",
                                   "evidence": "front: axle above wheel centre", "repair": "align centre datum"}]
@@ -529,6 +531,7 @@ class MakeRoundTest(unittest.TestCase):
                 feedback.write_text(json.dumps({
                     "packet_sha256": summary["visual"]["packet_sha256"],
                     "status": "pass",
+                    "assessments": {k: {"status": "pass", "observation": "Synthetic component assessment"} for k in ("form", "assembly")}, "resolutions": [],
                     "findings": [],
                     "observation": "The isolated component is coherent in all three views.",
                 }))

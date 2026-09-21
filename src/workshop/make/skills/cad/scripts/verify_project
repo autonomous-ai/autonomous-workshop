@@ -2477,9 +2477,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--report and --no-report are mutually exclusive")
     try:
         check_motion = runpy.run_path(str(SCRIPTS_DIR / "motion_policy.py"))["enabled"](args.check_motion)
+        review_policy = runpy.run_path(str(SCRIPTS_DIR / "final_review_policy.py"))
+        check_final_review = review_policy["enabled"]()
     except (OSError, ValueError) as exc:
         refuse(str(exc))
     signature_review_sha256 = None
+    review_omission_sha256 = None
     try:
         assembly, parts = _discover_entries(project, args.assembly, cwd)
         printables = _printable_entries(assembly, parts)
@@ -2503,8 +2506,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if not args.quick and not args.dry_run:
         try:
-            signature_review_sha256 = _required_signature_review(project)
-            if check_motion:
+            if check_final_review:
+                signature_review_sha256 = _required_signature_review(project)
+            else:
+                review_omission_sha256 = review_policy["validate"](project)
+            if check_motion and check_final_review:
                 motion_presentation = runpy.run_path(str(SCRIPTS_DIR / "motion_presentation.py"))
                 motion_presentation["validate"](
                     project, json.loads((project / SIGNATURE_REVIEW_RELATIVE).read_bytes())
@@ -2651,6 +2657,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             "signature review",
             f"schema=6 sha256={signature_review_sha256}",
         )
+    if not check_final_review:
+        runner.note("signature review", "not-run: operator-disabled; visual quality unverified; sha256=%s" % review_omission_sha256)
     workflow_started = time.perf_counter()
     result = runner.command([sys.executable, SCRIPTS_DIR / "check_layout", _path_arg(project, cwd)])
 

@@ -59,8 +59,35 @@ def source_hashes(project):
     }
 
 
-def prepare_visual(project, entry, out, cad, refs):
+def prepare_visual(project, entry, out, cad, refs, previous_out=None):
     """Render evidence for native inspection; never infer a visual verdict."""
+    history = {}
+    outstanding = []
+    if previous_out is not None:
+        previous_path = Path(previous_out) / "summary.json"
+        previous = json.loads(previous_path.read_text())
+        prior_visual = previous["visual"]
+        history.update(prior_visual.get("history", {}))
+        outstanding = prior_visual.get("open_findings", [])
+        # Carry the previous packet's backlog even if its observation is pending.
+        if "packet" in prior_visual:
+            prior_packet_path = Path(prior_visual["packet"])
+            if file_hash(prior_packet_path) != prior_visual["packet_sha256"]:
+                raise ValueError("previous visual packet changed")
+            prior_packet = json.loads(prior_packet_path.read_text())
+            history.update(prior_packet.get("history", {}))
+            history[str(prior_packet_path.resolve())] = file_hash(prior_packet_path)
+            history.update(prior_packet["images"])
+            history.update(prior_packet["references"])
+            outstanding = prior_visual.get("open_findings", prior_packet.get("open_findings", []))
+            if "open_findings" not in prior_visual and prior_visual.get("findings"):
+                # Refresh preserves older findings instead of silently clearing them.
+                outstanding = outstanding + [dict(item, id="r%s-f%d" % (previous["round"], i + 1))
+                                             for i, item in enumerate(prior_visual["findings"])]
+        history[str(previous_path.resolve())] = file_hash(previous_path)
+    for path, digest in history.items():
+        if file_hash(path) != digest:
+            raise ValueError("visual review history changed")
     before = source_hashes(project)
     views = out / "visual"
     done = run([sys.executable, str(cad / "render_review"), str(entry),
@@ -68,20 +95,31 @@ def prepare_visual(project, entry, out, cad, refs):
                cwd=project, log=out / "visual-render.log")
     paths = [views / (v + ".png") for v in ("front", "top", "iso")]
     if done.returncode or not all(p.is_file() for p in paths) or before != source_hashes(project):
-        return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}
+        return {"status": "error", "findings": [], "history": history, "open_findings": outstanding, "detail": "Visual render failed or source changed; inspect visual-render.log"}
     references = {}
     for label, ref in refs:
         path = resolve_reference(ref, project)
         if path is not None:
             references[str(path.resolve())] = file_hash(path)
-    packet = {"schema_version": 1, "sources": before,
+    # Bind the Wish's visual references even for isolated component reviews.
+    for ancestor in (project, *project.parents):
+        if (ancestor / "WISH.json").is_file():
+            reference_root = ancestor / "wish-references"
+            if reference_root.is_dir():
+                for path in sorted(reference_root.rglob("*")):
+                    if path.is_file() and not path.is_symlink():
+                        references[str(path.resolve())] = file_hash(path)
+            break
+    packet = {"schema_version": 2, "sources": before,
+              "history": history, "open_findings": outstanding,
               "images": {str(p.resolve()): file_hash(p) for p in paths},
               "references": references}
     packet_path = out / "visual-packet.json"
     packet_path.write_text(json.dumps(packet, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return {"status": "pending", "findings": [], "packet": str(packet_path),
             "packet_sha256": file_hash(packet_path),
-            "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"}
+            "open_findings": outstanding,
+            "detail": "Manager must assess overall form and assembly separately, and resolve every carried finding with current image evidence"}
 
 
 def component_role(project: Path, value: str) -> tuple[str, Path]:
@@ -146,7 +184,10 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
         if file_hash(path) != digest:
             raise ValueError("visual feedback has stale images or references")
     feedback = json.loads(Path(feedback_path).read_text())
-    if set(feedback) != {"packet_sha256", "status", "findings", "observation"}:
+    expected_fields = {"packet_sha256", "status", "findings", "observation"}
+    if packet.get("schema_version") == 2:
+        expected_fields |= {"assessments", "resolutions"}
+    if set(feedback) != expected_fields:
         raise ValueError("invalid visual feedback fields")
     if feedback["packet_sha256"] != visual["packet_sha256"]:
         raise ValueError("visual feedback belongs to a different round")
@@ -160,10 +201,42 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
             raise ValueError("visual findings need part, defect, evidence and repair")
         if any(not isinstance(v, str) or not 1 <= len(v.strip()) <= 1000 for v in item.values()):
             raise ValueError("visual finding text must be nonempty and bounded")
-    if (feedback["status"] == "pass" and findings) or (feedback["status"] == "fail" and not findings):
+    if (feedback["status"] == "pass" and findings) or (feedback["status"] == "fail" and not findings and not packet.get("open_findings")):
         raise ValueError("visual status contradicts findings")
     if not isinstance(feedback["observation"], str) or not 1 <= len(feedback["observation"].strip()) <= 2000:
         raise ValueError("visual feedback needs a bounded observation, including uncertainty")
+    if packet.get("schema_version") == 2:
+        for path, digest in packet["history"].items():
+            if file_hash(path) != digest:
+                raise ValueError("visual review history changed")
+        assessments = feedback["assessments"]
+        if not isinstance(assessments, dict) or set(assessments) != {"form", "assembly"}:
+            raise ValueError("assess overall form and assembly separately")
+        for assessment in assessments.values():
+            if (not isinstance(assessment, dict) or set(assessment) != {"status", "observation"}
+                    or assessment["status"] not in ("pass", "fail", "inconclusive")
+                    or not isinstance(assessment["observation"], str)
+                    or not 1 <= len(assessment["observation"].strip()) <= 2000):
+                raise ValueError("invalid visual assessment")
+        if feedback["status"] == "pass" and any(a["status"] != "pass" for a in assessments.values()):
+            raise ValueError("visual pass requires both form and assembly to pass")
+        outstanding = {item["id"]: item for item in packet["open_findings"]}
+        resolutions = feedback["resolutions"]
+        if not isinstance(resolutions, list) or len(resolutions) > len(outstanding):
+            raise ValueError("invalid visual resolutions")
+        for item in resolutions:
+            if (not isinstance(item, dict) or set(item) != {"id", "image", "change"}
+                    or not isinstance(item["id"], str) or item["id"] not in outstanding
+                    or not isinstance(item["image"], str) or item["image"] not in packet["images"]
+                    or not isinstance(item["change"], str) or not 1 <= len(item["change"].strip()) <= 2000):
+                raise ValueError("resolve each known finding once with a current packet image and visible change")
+            del outstanding[item["id"]]
+        for index, item in enumerate(findings):
+            identity = "r%s-f%d" % (summary["round"], index + 1)
+            outstanding[identity] = dict(item, id=identity)
+        if feedback["status"] == "pass" and outstanding:
+            raise ValueError("unresolved visual findings prevent a pass")
+        visual["open_findings"] = list(outstanding.values())
     visual.update(feedback)
     summary["ok"] = summary["checks_ok"] and feedback["status"] == "pass"
     if full:
@@ -890,7 +963,11 @@ def make_round(args) -> int:
         motion = parse_motion(done.stdout, done.returncode, done.stderr)
 
     # 5. Native visual inspection is a separate evidence submission, not a model call.
-    visual = prepare_visual(project, entry, out, cad, refs)
+    try:
+        visual = prepare_visual(project, entry, out, cad, refs, state.get("last_out"))
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print("make_round: %s" % exc, file=sys.stderr)
+        return 2
     full = None
 
     ok = (
