@@ -759,11 +759,32 @@ restarting it; everywhere else the workspace is being written, by frame renders
 and by the agent's own analysis files, while the model thinks between calls.
 
 The blind review is the one mark that spans others, and it is drawn as a
-bracket rather than a bar for that reason: the window between the last frame
-the critic was handed and the verdict it wrote is an upper bound on a review
-that happened somewhere inside it. v12 spent 3h10m of bracket on three rounds
-and v13 spent 1h58m on four, which is how you can tell the wider bracket holds
-work that is not review.
+bracket rather than a bar for that reason: the window between the hand-off and
+the verdict is an upper bound on a review that happened somewhere inside it.
+
+Both runs recorded the hand-off itself, so the bracket is read rather than
+guessed. v12 listed the 23 frames it showed in `.tmp/build/images.txt` and the
+critic opened them in place; the last of the 23 was written at +2h34m, and the
+verdict at +4h33m, so the bracket is **1h59m for three rounds**. v13 copied its
+18 into `.tmp/review/` under blind names, so the copy time *is* the hand-off:
+**1h28m for four rounds**.
+
+The first cut of the page got this wrong, and the error is worth recording
+because it is the kind that looks like a finding. It bounded the bracket with
+`snap.glob("*.png")`, which does not recurse. Only four of the 98 frames sit at
+the top of `cad/snap/`; the other 94 are in `cad/snap/worlds/`. In v12 that put
+the left edge on `rank-ladder-anti.png` at +1h23m and drew a 3h10m review — an
+hour of rendering counted as reviewing.
+
+**Frames land on both sides of the bracket, and for a different reason in each
+run.** v12 rendered 98 frames and showed 23; the seven that fall inside its
+bracket (`saturn-dark-band-kept` and `-dropped`, the same pair for the Anti-Sol
+army, `saturn-cap-white` and `-beige`, `venus-saturn-hero`) are the agent
+testing the twelve defects the critic filed in round one, and the critic never
+saw them — its own record says rounds two and three are re-reviews *"on the
+same frozen images"*. v13 rendered nothing during its review; two frames it had
+rendered at +31m and +36m and deliberately held out of the blind set were
+handed over at +3h00m, an hour in, when the critic asked for a polar view.
 
 It also shows how little of a run is recorded at all: **tool spans cover 16% of
 v12 and 17% of v13**. The rest logs nothing. The largest single omission is the
@@ -775,12 +796,42 @@ leaving a record. The page draws each frame as the moment its file was written
 and reports the gap back to the previous frame as an upper bound, because model
 time sits in that gap too.
 
+**A gap is not a blank.** Every file in the workspace carries an mtime, so a
+stretch with no tool span still says what was written in it and when, and the
+page now draws that inside each hatched band. v12's two silent stretches
+resolve into this:
+
+| window | what the workspace wrote |
+| --- | --- |
+| +1s → +2m41s | the host projects the source, copies six skill trees and starts the session; the agent unpacks `revision-source.zip` and the Made product tree materialises — 2,483 files |
+| +4m50s → +16m22s | **the edit itself**: `parts/corona.py`, `params.py`, `assemblies/product.py`, `parts/world.py`, two measurement scripts and the README, one file at a time |
+| +16m43s → +24m18s | the 24 component rounds — the only part of any of this that logs spans |
+| +31m48s | `parts/markings.py`, the last source change |
+| +32m12s → +32m16s | `production.py` writes all 220 colour bodies, 63 MB, in **four seconds** |
+| +36m → +54m27s | `snapshots.py` exports the three game states for both armies, 278 MB |
+| +59m23s → +2h34m | 91 frames, each preceded by its own exact-state STEP re-export; 461 MB of scratch STEP survives and more was overwritten |
+| +2h34m → +2h49m | round one of the blind review |
+| +2h49m → +3h49m | 35 measure reports and the seven Saturn frames, testing the critic's defects |
+
+The reason none of it is a span is structural. A span exists here only because
+`make_round` writes a log under `cad/measure/` opening with `(685.9s, exit 0)`.
+The pipeline the agent wrote for itself — `.tmp/build/pipeline.sh` — calls
+`gen`, `production.py`, `snapshots.py`, `snap_frames.py`, `world_views.py` and
+`corona_views.py` directly, so the two most expensive hours of the run are by
+construction invisible to the trace.
+
+That corrects the reading below: the residue left after subtracting spans and
+frames is **not** all model time. `production.py` and `snapshots.py` are real
+compute that never logged a duration. mtimes can say when a stretch ended; they
+cannot split it into thinking and computing.
+
 Three things it shows that a total does not:
 
 - **Most of a correction is not in a tool span at all** — 84% of v12 and 83%
-  of v13. That residue is model time, and the blind review lives inside it.
-  Neither archive kept a token record (`TOKENS.json: unavailable`), so the
-  residue is a subtraction rather than a measurement.
+  of v13. That residue is model time *and* uninstrumented compute, and the
+  blind review lives inside it. Neither archive kept a token record
+  (`TOKENS.json: unavailable`), so the residue is a subtraction rather than a
+  measurement, and nothing in the workspace splits it further.
 - **The carry policy is visible in the render count**, which falls from 74
   invocations to 8: v13 keeps the component rounds of every byte-identical
   part and re-renders only the assembly. Tool time falls from 53 to 43
@@ -791,8 +842,3 @@ Three things it shows that a total does not:
   mtime of the copy. Those 290 spans are the *source* run's work; counting
   them as the importing run's overstates its tool time by more than double,
   which is exactly the mistake the first reading of this data made.
-
-The blind review is drawn as a bracket between the last frame it was handed
-and the verdict it wrote, which is an upper bound rather than a duration: v12
-spent 3h10m of bracket on three review rounds and v13 spent 1h58m on four, so
-the wider bracket plainly contains work that is not review.
