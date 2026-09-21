@@ -746,17 +746,47 @@ Jove Mirror (`ad-astra-antisol-v13`, the first run under the carry policy of
 ADR 0069). Open the file in a browser; it carries its own data and needs no
 server.
 
-Each bar is one recorded tool invocation. The duration is the tool's own log
-line, `(685.9s, exit 0)`; the end is the mtime of the file it wrote, so the
-start is the end minus the duration. 716 spans across the two runs.
+The spine of the page is the Make session's own transcript, which timestamps
+every message: a tool call starts at the assistant message that issued it and
+ends at the result that came back, paired by `tool_use_id`. 756 calls across
+the two runs, plus the stretches between a result and the next call where the
+model was generating. Under that sit the `make_round` spans, whose durations
+are the tool's own log line `(685.9s, exit 0)`.
 
-Two things the shape of the chart answers directly. **Nothing in a correction
-runs in parallel**: across both runs, no two tool spans overlap by as much as a
-second, because the Make session issues one command at a time. And the blank
-stretches are not idle. The only genuinely idle time in either run is the 47
-minutes in v13 between a session teardown killing it and `workshop resume`
-restarting it; everywhere else the workspace is being written, by frame renders
-and by the agent's own analysis files, while the model thinks between calls.
+**Nothing in a correction runs in parallel.** Across 756 calls, no two overlap
+by a second — the session issues one at a time.
+
+**And almost none of it is idle.** The first version of this page was built
+from `cad/measure/**` alone, which only exists for what `make_round` ran, and
+so reported hours of apparent silence in runs that were busy throughout. Against
+the transcript the accounting closes:
+
+| | v12 · 5h30m | v13 · 4h15m |
+| --- | ---: | ---: |
+| inside a tool call | 4h33m · 83% | 3h00m · 71% |
+| …of which waiting on a background job | **4h06m · 75%** | 22m · 9% |
+| model generating | 51m · 16% | 26m · 10% |
+| **unaccounted** | **2m** | **47m** |
+
+**v12 is three-quarters sleep.** It launched its build pipeline in the
+background and polled it with 54 `time.sleep(570)` calls. That is not waste by
+itself — files were landing in 33 of those 54 sleeps, 200 of the 246 minutes —
+but it does mean the residue this page once called model time was mostly a
+background job the trace could not see.
+
+**v13 ran its heavy work in the foreground, and five calls blew the
+600-second tool timeout**: two `make_round --require-component-passes`, two
+`verify_project --strict-fit`, one `world_views.py jupiter`, 50 minutes in all.
+The wording matters — *"did not complete within its 600s timeout and was moved
+to the background."* The command finishes (`verify_project`'s own report records
+793 s for a call the agent gave up on at 601 s); what is lost is the answer, so
+the agent has to go back for it. That is why v13 runs `verify_project` four
+times.
+
+**The only genuinely idle time in either run** is v13's 46.9 minutes from +53m
+to +1h41m: no tool call, no model message, and not one file written anywhere
+under the run root. A session teardown killed the run and `workshop resume`
+restarted it. v12 has 2 minutes unaccounted for in five and a half hours.
 
 The blind review is the one mark that spans others, and it is drawn as a
 bracket rather than a bar for that reason: the window between the hand-off and
@@ -786,8 +816,9 @@ same frozen images"*. v13 rendered nothing during its review; two frames it had
 rendered at +31m and +36m and deliberately held out of the blind set were
 handed over at +3h00m, an hour in, when the critic asked for a polar view.
 
-It also shows how little of a run is recorded at all: **tool spans cover 16% of
-v12 and 17% of v13**. The rest logs nothing. The largest single omission is the
+The `make_round` lanes underneath show how little of a run that instrument
+records: **tool spans cover 16% of v12 and 17% of v13**. The largest single
+omission is the
 frame renders under `cad/snap/` — whole-set images of a 50 MB assembly that the
 Make agent runs directly rather than through `make_round`, so no duration
 survives anywhere. In v12 four of them land between +59m and +83m, six to ten
@@ -820,18 +851,17 @@ The pipeline the agent wrote for itself — `.tmp/build/pipeline.sh` — calls
 `corona_views.py` directly, so the two most expensive hours of the run are by
 construction invisible to the trace.
 
-That corrects the reading below: the residue left after subtracting spans and
-frames is **not** all model time. `production.py` and `snapshots.py` are real
-compute that never logged a duration. mtimes can say when a stretch ended; they
-cannot split it into thinking and computing.
+mtimes alone could not split that stretch into thinking and computing. The
+transcript can, and the answer is neither: v12 launched this pipeline in the
+background and then slept on it.
 
 Three things it shows that a total does not:
 
-- **Most of a correction is not in a tool span at all** — 84% of v12 and 83%
-  of v13. That residue is model time *and* uninstrumented compute, and the
-  blind review lives inside it. Neither archive kept a token record
-  (`TOKENS.json: unavailable`), so the residue is a subtraction rather than a
-  measurement, and nothing in the workspace splits it further.
+- **Most of a correction is not in a `make_round` span at all** — 84% of v12
+  and 83% of v13. The transcript says what that is: tool calls the host never
+  logged, and, in v12, mostly sleeping on a background job. Neither archive
+  kept a token record (`TOKENS.json: unavailable`), so the page can say how
+  long the model spent generating but not how much it generated.
 - **The carry policy is visible in the render count**, which falls from 74
   invocations to 8: v13 keeps the component rounds of every byte-identical
   part and re-renders only the assembly. Tool time falls from 53 to 43
