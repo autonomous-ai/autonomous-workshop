@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_mars_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mars_anti"
+ ],
+ "print": {
+  "world_mars_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0001/overhang-world_mars_anti.log": "07d45f15ecdec4a22ad8c2491864b751c334162866dfa9c19076fa5421f10b55",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0001/thickness-world_mars_anti.log": "46f0c3f21ff340c969cfecb2ac71553df93e10521c6809c0e5235b8a8648dd1a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_mars_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_mars_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The corrected mirror. Front: the disc wall narrows as it rises, Anti-Sol's draft, the exact inverse of the Sol piece and the only difference between the two at this scale. Globe a true sphere, centred, sunk, unbroken by any relief. Top: concentric. Iso: same size as its Sol twin.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0002/visual-packet.json",
+  "packet_sha256": "a297787bcd241244a64a532ed8dc1696e42512212fedb7932a0e4d88636b1d9a",
+  "status": "pass"
+ }
+}

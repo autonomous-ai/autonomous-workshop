@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_belt_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belt_cell"
+ ],
+ "print": {
+  "belt_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/overhang-belt_cell.log": "ee93acc657ebd8b65d33fadb8b6e82d5f02cce77d9bc1df195611c69456095db",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/thickness-belt_cell.log": "53ab06f62cde4c14d2b860e4598ed91bfc2d20f29cbe4d6036765d54087db258"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "belt_cell"
+ ],
+ "round": 2,
+ "scope": "component:belt_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Square asteroid-belt tile, coherent and symmetric. Top view: one smooth circular landing pad centred in the face with a ring of flat-topped rubble boulders around it, all inside the tile's rounded-square outline, none crossing the edge. Front view: every boulder is a separate flat-topped block on the recessed floor, none spiked, nothing overhanging the tile. Iso: one solid, no floating or intersecting bodies. Nothing missing, nothing extra; proportions match a 33.50 mm tile for a 36.00 mm cell.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0002/visual-packet.json",
+  "packet_sha256": "8c3415f33776e7a4c9263f9bcb3a711d119780937727fee2fc060b1aee671916",
+  "status": "pass"
+ }
+}

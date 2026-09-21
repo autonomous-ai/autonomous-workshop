@@ -1,0 +1,62 @@
+{
+ "build": {
+  "belt_cell": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belt_cell"
+ ],
+ "check_motion": false,
+ "checked": [
+  "belt_cell"
+ ],
+ "checks_ok": true,
+ "entry": "part_belt_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belt_cell"
+ ],
+ "print": {
+  "belt_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/overhang-belt_cell.log": "6f0ea147e09091f29cec14ed81be267b6e7820ee66c410c419e7fdbb54f15766",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/thickness-belt_cell.log": "f2aebcba393e405311cc6d322f149f307672736eaa89267dde45bc5c76753682"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:belt_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One square tile, one solid. Iso: a smooth circular central pad with a ring of small flat-topped boulders around it, inside the tile's own rounded square outline -- the belt tile the concept describes. Top: the rubble ring is complete and unbroken all the way round and the central pad is clear of it. Front: the boulders stand proud of a flat slab and nothing on the pad does, which is what a seated disc needs. No missing, extra or floating geometry, no visible intersection, proportions match 33.50 square by 6.00 tall.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/visual-packet.json",
+  "packet_sha256": "9fd2f43015ac27455ca5c5f381865852280c3cfebec542898fd24aec4fd42b7f",
+  "status": "pass"
+ }
+}

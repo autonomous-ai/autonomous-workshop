@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_den_plug.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "den_plug"
+ ],
+ "print": {
+  "den_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/overhang-den_plug.log": "43d3b59e16b57b766a268cb903b46c8b3b0b3d451f68eae258c69bcb4b6afebb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/thickness-den_plug.log": "cf18eaaa1150d945ac9c85864c07fbe1027b26eebfffc2e027f4cdc87242dd28"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "den_plug"
+ ],
+ "round": 2,
+ "scope": "component:den_plug",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Star plug, coherent. Iso: a square flange with a deeper square spigot below it, hex granulation engraved into two corners of the flange and two flame cones standing on the other two. Front view: the spigot is the lower block, the flange sits proud above it with a drafted skirt, and both flames rise clear with drafted sides and no downward-facing ledge. Top view: the two flame feet sit wholly inside the flange corners. One solid, nothing floating, no visible intersections.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0002/visual-packet.json",
+  "packet_sha256": "cba4cbbd6fa931e6f21be567394a7c5a35df4ede4c2c6bbe3d592962d545a8d6",
+  "status": "pass"
+ }
+}

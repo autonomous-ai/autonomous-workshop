@@ -1,0 +1,61 @@
+{
+ "build": {
+  "world_neptune_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_neptune_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_neptune_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_neptune_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_neptune_anti"
+ ],
+ "print": {
+  "world_neptune_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/overhang-world_neptune_anti.log": "90e49cefad867d2a21fefb25d7cee6912f24d7c52ba8ca4ce13a87d714058b37",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/thickness-world_neptune_anti.log": "26a1f3756836f27dbb899cd548ef0e9f3b245b5af9767fec396604f8725cc243"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_neptune_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/visual-packet.json",
+  "packet_sha256": "242afcf381002de54eae95e3ea623213cb59e155ce0c8f7eb281a50e0f6033ee",
+  "status": "pending"
+ }
+}

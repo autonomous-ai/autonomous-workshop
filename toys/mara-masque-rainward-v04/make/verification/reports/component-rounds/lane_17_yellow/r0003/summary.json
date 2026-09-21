@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_lane_17_yellow.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_17_yellow/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_17_yellow"
+ ],
+ "print": {
+  "lane_17_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_17_yellow/r0001/overhang-lane_17_yellow.log": "9623732bd5db5c8c009d927a40adcd0868d6fe1044061d67f98a0521ad2f6982",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_17_yellow/r0001/thickness-lane_17_yellow.log": "688c41d1c5bf76742ae6f0c5f13b9935eb05c6a255ddd5c9871c785c9a0ae8a7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "lane_17_yellow"
+ ],
+ "round": 3,
+ "scope": "component:lane_17_yellow",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One solid annular-sector tile, 2.8 mm thick over its seated part with a 1.0 mm lapping lip along the outer end and one radial stadium key under the seat. Top: a single flat coplanar face with no dimples, rails or connectors, narrow at the centre end and wide at the rim end. Its outer corners step back where the skirt troughs cut inside radius 90, and each step is a clean square shoulder, not a sliver. Front: a flat strip with the key the only feature below the underside. Iso: one piece, nothing floating, missing or extra, and no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_17_yellow/r0003/visual-packet.json",
+  "packet_sha256": "7b8c322b5f883cb0e27f11df9c9ce8a8ac5aa62c43ae822df923d000557cde25",
+  "status": "pass"
+ }
+}

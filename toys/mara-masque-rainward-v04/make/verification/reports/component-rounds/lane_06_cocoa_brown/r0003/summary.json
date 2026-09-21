@@ -1,0 +1,61 @@
+{
+ "build": {
+  "lane_06_cocoa_brown": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "lane_06_cocoa_brown"
+ ],
+ "check_motion": false,
+ "checked": [
+  "lane_06_cocoa_brown"
+ ],
+ "checks_ok": true,
+ "entry": "part_lane_06_cocoa_brown.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_06_cocoa_brown/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_06_cocoa_brown"
+ ],
+ "print": {
+  "lane_06_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_06_cocoa_brown/r0003/overhang-lane_06_cocoa_brown.log": "2ba3aea04182bf2806f5de6b9db19ede22f50f7574bebaef94bff9c324525a8e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_06_cocoa_brown/r0003/thickness-lane_06_cocoa_brown.log": "a93f41f5d0340c4186784246b39255d229747be43643093edb489067ef4056c5"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:lane_06_cocoa_brown",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_06_cocoa_brown/r0003/visual-packet.json",
+  "packet_sha256": "ddaca43002d4e5abc78c02764503a765e6593eb772c5a514d576a14425c76a3f",
+  "status": "pending"
+ }
+}

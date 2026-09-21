@@ -1,0 +1,61 @@
+{
+ "build": {
+  "lane_19_yellow": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "lane_19_yellow"
+ ],
+ "check_motion": false,
+ "checked": [
+  "lane_19_yellow"
+ ],
+ "checks_ok": true,
+ "entry": "part_lane_19_yellow.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_19_yellow/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_19_yellow"
+ ],
+ "print": {
+  "lane_19_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_19_yellow/r0001/overhang-lane_19_yellow.log": "a84304b2de73bd13bf655131f7e58922b0b898001a6cbae8e564a853c5d57746",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_19_yellow/r0001/thickness-lane_19_yellow.log": "a750cc31705409cd1dffc8844391ffb0a4d124d86e6315a5842e633b0a7fa2c2"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:lane_19_yellow",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_19_yellow/r0001/visual-packet.json",
+  "packet_sha256": "7a15392a93026fa8bdcef36bbdca8c0851f21b25012addae7009ba3f73f7e328",
+  "status": "pending"
+ }
+}

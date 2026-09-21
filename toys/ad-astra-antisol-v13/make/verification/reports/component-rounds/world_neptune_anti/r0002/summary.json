@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_neptune_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_neptune_anti"
+ ],
+ "print": {
+  "world_neptune_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/overhang-world_neptune_anti.log": "897716ae84bafb1e3ff5c5a75265337b121e87a6df1d1591256a56ed5c46c192",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/thickness-world_neptune_anti.log": "fae272c8eeb29070ec2a5bc11080317d2eb9c0e3f33f7b5e0414a025f31e1062"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_neptune_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_neptune_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso inspected. A markedly larger globe that overhangs its seat collar and fills most of the \u00d834.00 disc, correctly one step below Uranus in the ladder. Seated concentric, Anti-Sol draft, nothing standing proud. Untouched and byte-identical. No misplaced, missing or extra geometry, no intersections.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0002/visual-packet.json",
+  "packet_sha256": "a5957b31013b83a5c73cc6fa27b2f2a309bac36d38d454b2aff6c7e9e1bda357",
+  "status": "pass"
+ }
+}

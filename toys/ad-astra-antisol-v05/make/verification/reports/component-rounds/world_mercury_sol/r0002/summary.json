@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_mercury_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mercury_sol"
+ ],
+ "print": {
+  "world_mercury_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001/overhang-world_mercury_sol.log": "6182faf655d7ed0544da04f23baa46aaea5dd31a1a5cc3c599b0efe484071cb6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001/thickness-world_mercury_sol.log": "92b345996368e9587b22e019f20ffa0113aa76570f07faee3be59abfc1c392f1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_mercury_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_mercury_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The smallest globe in the set on the same \u00d834.00 disc -- the ball occupies a visibly smaller fraction of the disc than any other world, which is the rank ladder doing its job. Outward-flaring disc, integral collar, flat bed face, one solid.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0002/visual-packet.json",
+  "packet_sha256": "d961da1736bf296bc4baf6f98cb448d950a9e6fec99806131ad6357342a84115",
+  "status": "pass"
+ }
+}

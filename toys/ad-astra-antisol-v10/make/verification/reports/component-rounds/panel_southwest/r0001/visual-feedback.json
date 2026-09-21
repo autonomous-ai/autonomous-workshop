@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "One board panel, one solid. Iso: the playing grid is cut into the top face as narrow grooves on the cell boundaries, and three cells are deep square pockets -- one trap and two belt cells, which is what this quarter carries. Top: a plain rectangle, correct panel outline. Front: a flat slab of one thickness with no raised feature anywhere. No missing, extra or floating geometry and no visible intersection.",
+  "packet_sha256": "f6990f5c3733d61f3780f7fde09d04ca04f426dfac23a37baa07e6915ac5b61f",
+  "status": "pass"
+}

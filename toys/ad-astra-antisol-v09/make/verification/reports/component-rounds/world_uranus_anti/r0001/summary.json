@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_uranus_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_uranus_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_uranus_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_uranus_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_uranus_anti"
+ ],
+ "print": {
+  "world_uranus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/overhang-world_uranus_anti.log": "4609da47b623c41c45b75f460c4bda3413e600de8406e72dadaa09239ab0cd9d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/thickness-world_uranus_anti.log": "da57706abb3bf3aa60b3eb2c1c9db3d2c641ca0b04c3aa514558bcd52e6a140e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_uranus_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The exact mirror of the Sol piece and nothing else. Disc wall collapses inward as it rises where Sol's flares outward, and the hoop leans the other way: the crown nub sits left of the globe's apex in the front view where Sol's sits right, and the top view bows the other side of the Y axis. Front view is square to the ring plane so the hoop is a thin fin on the meridian, both legs landing on the disc top; top view is a near-straight line along Y at the hoop's \u00d824.02 against the globe's \u00d822.02; iso shows the hoop proud of the sphere the whole way round and merging into the disc at each foot. No missing or extra bodies, no floating geometry, no visible intersection, nothing out of place.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/visual-packet.json",
+  "packet_sha256": "9841f61890b405107942c566e2ca666c89bc6a6644f03db9c97744d59f562782",
+  "status": "pass"
+ }
+}

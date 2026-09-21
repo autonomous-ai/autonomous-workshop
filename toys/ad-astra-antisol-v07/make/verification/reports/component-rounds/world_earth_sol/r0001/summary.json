@@ -1,0 +1,61 @@
+{
+ "build": {
+  "world_earth_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_earth_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_earth_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_earth_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_earth_sol"
+ ],
+ "print": {
+  "world_earth_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/overhang-world_earth_sol.log": "a7e6c9eaae2de1b6abec89cc120ee9f255c7a99398788e8317e9e730795138cc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/thickness-world_earth_sol.log": "95728333fb2fc9e713476a6f1845f02fb8521c13c6ddba4dd7eb6d31336e2a46"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_earth_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/visual-packet.json",
+  "packet_sha256": "d2e367b4fe28c3b7b0c41bf65ef349a04e2116fe0636f85820cf56e23b53b6bf",
+  "status": "pending"
+ }
+}

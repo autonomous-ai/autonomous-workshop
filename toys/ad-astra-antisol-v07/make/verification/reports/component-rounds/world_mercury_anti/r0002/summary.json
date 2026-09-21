@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_mercury_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mercury_anti"
+ ],
+ "print": {
+  "world_mercury_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001/overhang-world_mercury_anti.log": "e177ee682fd3b1b5d98b1452e33ac9ab045535677a8218184ebcc295d503e49d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001/thickness-world_mercury_anti.log": "d3579f47881ba3bdcc86ed7b0f6fdd2641ad0cdf0d48ecc69a5e21f8d95aa7b1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_mercury_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_mercury_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Piece coherent: one ball seated on one disc, fused through an integral seat collar, and nothing else. Iso and front: the ball is centred on the disc, sits into it rather than on it, and meets it through a short collar with no gap and no step; the disc's wall is visibly wider at the bed than at the top, which is the Anti-Sol draft. Top view: the ball is concentric with the disc and the disc's rim is a clean unbroken circle. Proportions are right for Mercury -- the globe is clearly smaller than the \u00d834.00 disc and the piece's height reads as the ball plus the disc's exposed 3.00 mm. No missing or extra body, nothing floating, no visible intersection, nothing protruding past the disc.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0002/visual-packet.json",
+  "packet_sha256": "c1d7fecce9dbc90b849a48360cbe77441bb1c341f33362173451d9967d3212b7",
+  "status": "pass"
+ }
+}

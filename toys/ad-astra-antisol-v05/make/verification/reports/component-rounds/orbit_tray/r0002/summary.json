@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_orbit_tray.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "orbit_tray"
+ ],
+ "print": {
+  "orbit_tray": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001/overhang-orbit_tray.log": "93897f094de38139568990eb4549dc5d48998e769420d383fcbb38d3d52b9c7a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001/thickness-orbit_tray.log": "4182c3292c447cdc366ae50bbcdf02e8bd872d909b6dfcb179f1a65f093b3403"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "orbit_tray"
+ ],
+ "round": 2,
+ "scope": "component:orbit_tray",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A flat 164 x 88 plate with eight blind circular sockets on a 4 x 2 grid, all identical and all the same depth. No through holes, flat bed face, no overhang.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0002/visual-packet.json",
+  "packet_sha256": "5ba6fa9a9d63af51fd783e44140305d8cdd61e9401d35c276e9b991524344465",
+  "status": "pass"
+ }
+}

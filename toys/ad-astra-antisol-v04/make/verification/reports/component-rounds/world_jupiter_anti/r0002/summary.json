@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_jupiter_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_jupiter_anti"
+ ],
+ "print": {
+  "world_jupiter_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001/overhang-world_jupiter_anti.log": "630332eca1f3a3130c1d4f64b796dcf0999067e1c1c8b7977ece429e3b3c8226",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001/thickness-world_jupiter_anti.log": "ace038f79ca7620e98fd60143bded9feba201e8070f6320609f1064bcb65b470"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_jupiter_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_jupiter_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: the disc wall narrows as it rises, the Anti-Sol draft and the mirror of its Sol twin, with the same rounded top edge and sharp bed edge. Largest globe in the set, the same ball as its Sol twin. Top: disc, seat collar and globe are concentric on one axis. Iso: one ball on one disc through a short seat collar, no step and no gap at the joint. The outer surface is unbroken everywhere -- every marking in this set is a flush colour inlay, so none is visible on this fused printed solid and none should be. No protrusion, no floating body, no missing or extra part, no visible intersection, and no downward-facing surface added.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0002/visual-packet.json",
+  "packet_sha256": "cebfb9a0a445e66cba4c851595f365bb88a7d2dd5ef743154b7ec53f50b4f512",
+  "status": "pass"
+ }
+}

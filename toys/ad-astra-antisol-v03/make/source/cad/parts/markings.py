@@ -1,0 +1,158 @@
+"""What each world's surface actually shows.
+
+Every marking is a flush colour inlay in the globe's own sphere, described in
+the planet's own frame, in angles rather than millimetres.  Describing them
+that way is what lets one minimum outline width hold from Mercury to Jupiter,
+and it is what makes the same marking correct when the planet is leaning at
+its true obliquity.
+
+Six of the eight worlds are described by latitude, longitude and angular
+size, because a union of round patches is what an albedo map, a cloud pattern
+or a storm actually is.  Earth and Mars are the two exceptions and are
+described by outline: they are the two worlds in the set whose real surfaces
+have shapes a player already recognises -- Earth's coastlines, and the dark
+triangle of Syrtis Major that every telescope owner has drawn since 1659 --
+and drawing either as circles throws that recognition away.  No other world
+here has one: a cloud pattern, a band system and a crater field have no
+outline anybody carries in their head.  Earth's rings live in
+`parts/atlas.py` and Mars's in `parts/mars_atlas.py`.
+
+Each entry is (colour, [region specs]).  A region spec is one of
+    ("blob",    [(lat, lon, angular_radius), ...])
+    ("band",    lat_low, lat_high)
+    ("outline", [[(lon, lat), ...], ...])       closed rings, Earth and Mars
+    ("cap",     boundary_lat)                   everything above a parallel
+and a marking may subtract another one, which is how Earth's dryland sits
+inside Earth's land rather than beside it.  Those subtractions happen while the
+regions are still plain balls and cylinders, never after they have been sliced
+into shells: two slices of one shell share its spherical faces, and a boolean
+between coincident faces is the one that fails silently.
+"""
+
+from __future__ import annotations
+
+from parts import atlas as ATLAS
+from parts import mars_atlas as MARS_ATLAS
+
+# name -> ordered list of (marking key, filament, regions, subtract_keys)
+MARKINGS = {
+    "mercury": [
+        # Two-tone albedo map: smooth plains and the Caloris basin.  Not
+        # craters -- at this radius a crater reads as a print defect, while the
+        # albedo map is what Mercury actually looks like from a distance.
+        ("plains", "dark_gray", [
+            ("blob", [(18, 24, 22), (6, 48, 20), (-22, 118, 22), (-10, 138, 16),
+                      (38, 205, 21), (-6, 255, 18), (2, 162, 14)]),
+        ], ()),
+    ],
+    "mars": [
+        # Syrtis Major, Mare Acidalium and their neighbours, as outlines.  The
+        # six round patches that stood here sat on the right features and in
+        # the right places; what was wrong was that they were circles.  Syrtis
+        # Major is a dark triangle, the southern maria run together into one
+        # belt, and a union of discs says neither.  Not craters -- at this
+        # radius a crater reads as a print defect, while the albedo map is
+        # what Mars actually looks like from a distance.  The rings are in
+        # `parts/mars_atlas.py`, beside Earth's.
+        ("albedo", "cocoa_brown", [
+            ("outline", MARS_ATLAS.ALBEDO_RINGS),
+        ], ()),
+        # The two polar caps.  A blob centred on a pole IS a polar cap, so the
+        # two blobs and their angular radii are the ones this set already had.
+        # What is added is the lobes: left bare, a cap ends on an exact circle
+        # of latitude and reads as a lid laid on the globe rather than as ice,
+        # so a few lobes are unioned onto each one to break that rim.  The
+        # north cap is the larger and the more irregular, as the reference
+        # shows.  The caps stay cut back by `albedo`.
+        ("caps", "white", [
+            ("blob", [(90, 0, MARS_ATLAS.CAP_NORTH_ANGULAR_RADIUS),
+                      (-90, 0, MARS_ATLAS.CAP_SOUTH_ANGULAR_RADIUS)]),
+            ("outline", MARS_ATLAS.CAP_LOBES),
+        ], ("albedo",)),
+    ],
+    "venus": [
+        # The Mariner-10 ultraviolet cloud Y.  Venus is upside down at 177.36
+        # degrees, so this is the only pattern in the set that reads inverted,
+        # and the planet frame is what inverts it.
+        # Longitudes carry a -135 degree offset from the pattern's own meridian.
+        # Venus has no fixed prime meridian in this set, and at the two frames
+        # the product is photographed from -- the iso at -45/35.3 and the Wish's
+        # fixed frame at -35/22 -- the unoffset pattern sat on the far
+        # hemisphere and no view in the evidence showed any of it.  Measured
+        # after the shift: eight of the ten patches face the camera in both
+        # frames on both armies, worst patch 0.03 against the view axis.
+        ("ypattern", "orange", [
+            ("blob", [(-46, -135, 13), (-30, -135, 13), (-14, -135, 13), (0, -135, 13),
+                      (14, -117, 12), (26, -101, 11), (36, -83, 10),
+                      (14, -153, 12), (26, -169, 11), (36, 173, 10)]),
+        ], ()),
+    ],
+    "earth": [
+        # The Americas, Africa, Eurasia and Australia, as coastlines.  The
+        # ordering, the filaments and the subtractions are the ones every
+        # other world here uses; only the shape of a region has changed.
+        ("land", "green", [
+            ("outline", ATLAS.LAND_RINGS),
+        ], ("dryland",)),
+        ("dryland", "beige", [
+            # The Sahara, the Kalahari, inner Asia, the American southwest and
+            # the Australian outback: dry interiors, so they sit inside land
+            # rather than beside it.
+            ("outline", ATLAS.DRYLAND_RINGS),
+        ], ()),
+        ("ice", "white", [
+            # The northern cap encloses the pole and so has no ring; it is the
+            # parallel at 72 degrees.  Left bare it ends on an exact circle of
+            # latitude and reads as a lid laid on the globe, so the lobes are
+            # unioned onto it to break that rim into an ice field.  Greenland
+            # joins them as the one ice sheet with a coastline of its own.
+            ("cap", ATLAS.ARCTIC_CAP_LAT),
+            ("outline", ATLAS.ICE_RINGS),
+        ], ("land", "dryland")),
+    ],
+    "neptune": [
+        ("spot", "dark_gray", [
+            ("blob", [(-22, 0, 17), (-20, 14, 12)]),
+        ], ()),
+        ("streaks", "white", [
+            ("band", -46, -41),
+            ("band", 11, 15),
+            ("band", 30, 33),
+        ], ()),
+    ],
+    "uranus": [
+        # One faint band.  It runs pole to pole on the visible face because the
+        # pole lies 7.77 degrees past horizontal -- the band itself is an
+        # ordinary latitude band, and the obliquity turns it upright.
+        ("band", "white", [
+            ("band", -9, 9),
+        ], ()),
+    ],
+    "saturn": [
+        ("bands", "cocoa_brown", [
+            ("band", -51, -39),
+            ("band", -21, -9),
+            ("band", 9, 21),
+            ("band", 39, 51),
+        ], ()),
+    ],
+    "jupiter": [
+        ("bands", "cocoa_brown", [
+            ("band", -56, -44),
+            ("band", -36, -24),
+            ("band", -16, -4),
+            ("band", 4, 16),
+            ("band", 24, 36),
+            ("band", 44, 56),
+        ], ("spot",)),
+        # The Great Red Spot's latitude is the real one; its longitude is free,
+        # because Jupiter turns in ten hours and this set fixes no meridian.
+        # Carried -110 degrees from where it started so that it faces the
+        # camera in both photographed frames: measured 0.49 against the view
+        # axis at worst, against -0.49 before the shift, where it sat squarely
+        # on the hidden hemisphere of both Jupiters in every rendered view.
+        ("spot", "red", [
+            ("blob", [(-22, -48, 13), (-22, -36, 11), (-22, -60, 11)]),
+        ], ()),
+    ],
+}

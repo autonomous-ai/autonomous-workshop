@@ -1,0 +1,61 @@
+{
+ "build": {
+  "world_mars_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_mars_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_mars_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_mars_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mars_anti"
+ ],
+ "print": {
+  "world_mars_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0001/overhang-world_mars_anti.log": "07d45f15ecdec4a22ad8c2491864b751c334162866dfa9c19076fa5421f10b55",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0001/thickness-world_mars_anti.log": "46f0c3f21ff340c969cfecb2ac71553df93e10521c6809c0e5235b8a8648dd1a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_mars_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0001/visual-packet.json",
+  "packet_sha256": "742539eb496494475aef6b305590bc12f0d2532ab81f8a6306f2cb9b0c4cb461",
+  "status": "pending"
+ }
+}

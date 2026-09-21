@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_uranus_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_uranus_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_uranus_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_uranus_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_uranus_sol"
+ ],
+ "print": {
+  "world_uranus_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001/overhang-world_uranus_sol.log": "a0e440ff0753f9363836b3db0b5d63121760e3a0242ebdcdb340f3f7c1300fc4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001/thickness-world_uranus_sol.log": "512b6083634f3aa277195fe675acfeb9b45dff54f994001c2da5e8221f883552"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.28,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_uranus_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: one sphere seated centrally on a drafted disc that flares outward as it rises, with the hoop seen nearly edge-on as a narrow tab above the ball and its two feet meeting the disc top. Top: the disc's rim is concentric with the ball and the hoop crosses the globe as a single upright line through the middle. Iso: the hoop is a narrow band standing over the ball and leaning toward +X, springing from the globe all the way round with no gap and no unsupported air. Nothing is drawn on the sphere -- the surface is one unbroken curve in all three views, which is what a bare globe should look like. Proportion \u00d822.02 globe on a \u00d833.87 disc reads correctly; no extra or missing bodies, no interpenetration, no floating geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001/visual-packet.json",
+  "packet_sha256": "c65723bca4dfe581d7b722c5dbcf52a118e1d1c7c70240f1a79d9ac54729367e",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "build": {
+  "single_08_beige": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "single_08_beige"
+ ],
+ "check_motion": false,
+ "checked": [
+  "single_08_beige"
+ ],
+ "checks_ok": true,
+ "entry": "part_single_08_beige.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_08_beige/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "single_08_beige"
+ ],
+ "print": {
+  "single_08_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_08_beige/r0001/overhang-single_08_beige.log": "105e8cba63b9ea2925661eff61d8755d7857448b23cd5cd16943a00ead801f30",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_08_beige/r0001/thickness-single_08_beige.log": "fd468899bea6aa6c7bc7740021635ad1d3a61ca40f118921b597f9dc7589290e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:single_08_beige",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_08_beige/r0001/visual-packet.json",
+  "packet_sha256": "ebe54ce4674801f2d3b4400cfaf032dee0908f7d63105d2138ac60966741da2e",
+  "status": "pending"
+ }
+}

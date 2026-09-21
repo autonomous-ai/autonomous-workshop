@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_lane_05_yellow.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_05_yellow/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_05_yellow"
+ ],
+ "print": {
+  "lane_05_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_05_yellow/r0001/overhang-lane_05_yellow.log": "8a46e07422e1dac94b882b53e3c3d358fff803b1e7d6bbb26f397d6cbbcf060e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_05_yellow/r0001/thickness-lane_05_yellow.log": "ea563450254599b60ae5ccedac7f620722ba94dc3a392675aad9ef38de97f427"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.27,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "lane_05_yellow"
+ ],
+ "round": 3,
+ "scope": "component:lane_05_yellow",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Printed top face down on the point-5 lane axis, yellow tone. Top: a clean annular sector - two straight sides and one smooth outer arc at the wide end, with no notch, scallop, bay or shortening cut anywhere into that edge. Front: the flat print face on the bed, the 1.0 mm lapping lip stepping down at the outer end, and the locating key standing proud on the up-facing side; all one solid. Iso: proportions match a 63.35 x 22.35 x 4.0 mm tile, nothing floats, nothing intersects, nothing is missing or extra.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_05_yellow/r0003/visual-packet.json",
+  "packet_sha256": "16f92f5d451e0474d85066064255de4eab28cd09b4c8e055e5875d667ae32985",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "The whole set in the opening position. Top view: a 7 by 9 field in four butted panels, twelve cocoa asteroid tiles filling b4-c6 and e4-f6 as two 2 by 3 blocks, a star on d1 and d9 with three corona cells around each, sixteen worlds on their opening cells and the two trays off the board. Every piece is on a cell centre, nothing overlaps a rib, nothing floats, and no two bodies interpenetrate. The two armies are separable at a glance: white discs on the near half, black on the far half. Front view: the size ladder is monotone from Mercury to Jupiter and every globe stands proud of its own disc; Saturn's ring is the only silhouette that leaves the sphere and it clears the disc rim; the star flames are the tallest things in the frame, as the spec intends. Iso view: the trays sit clear of the board edge and cross nothing in projection. Jupiter now reads as banded rather than bare -- alternating dark belts and bright cream zones over an orange globe, unequal in width, with the Great Red Spot visible as a small oval low on the Sol piece. That is the correction, and it is legible at set scale as well as on the per-world frames.",
+  "packet_sha256": "319ce33492049206c1e93843d47e3fd365305c4b50b72821fa83301634271a1c",
+  "status": "pass"
+}

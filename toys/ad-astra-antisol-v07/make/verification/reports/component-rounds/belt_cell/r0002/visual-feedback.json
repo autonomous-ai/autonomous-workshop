@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Square asteroid-belt tile, coherent and symmetric. Top view: one smooth circular landing pad centred in the face with a ring of flat-topped rubble boulders around it, all inside the tile's rounded-square outline, none crossing the edge. Front view: every boulder is a separate flat-topped block on the recessed floor, none spiked, nothing overhanging the tile. Iso: one solid, no floating or intersecting bodies. Nothing missing, nothing extra; proportions match a 33.50 mm tile for a 36.00 mm cell.",
+  "packet_sha256": "8c3415f33776e7a4c9263f9bcb3a711d119780937727fee2fc060b1aee671916",
+  "status": "pass"
+}

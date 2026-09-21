@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_uranus_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_uranus_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_uranus_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_uranus_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_uranus_anti"
+ ],
+ "print": {
+  "world_uranus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/overhang-world_uranus_anti.log": "9f81fc567eed5493a54a2bb26af851ec58fa3a707ff69dd42555ac2f82eec6e8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/thickness-world_uranus_anti.log": "01a4b6f0e3d52d3dfd6f1e68941903465279ec21f6919694564224d48b409673"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_uranus_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A disc carrying a globe on a short seat collar, one fused body. Front: the disc wall draws inward as it rises, which is this army's cue; the globe is sunk into the disc top and the seat collar meets it without a step or a gap. The globe's outline is a clean circle -- the markings are flush colour inlays and add no relief and no down-facing edge, which is what this view is for. Top: the globe is concentric with the disc. Iso: one body, nothing floating, nothing crossing, and the globe-to-disc proportion sits where the rank ladder puts it.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/visual-packet.json",
+  "packet_sha256": "51e581d6ceab5716cefecbd6519bbdd1363f01da341f9578a3a4f0409e82a998",
+  "status": "pass"
+ }
+}

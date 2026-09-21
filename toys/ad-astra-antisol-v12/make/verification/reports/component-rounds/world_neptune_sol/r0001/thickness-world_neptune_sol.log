@@ -1,0 +1,12 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_neptune_sol.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/thickness-world_neptune_sol.md
+(6.6s, exit 0)
+--- stdout
+part_world_neptune_sol.step.py: 9.81 cm3 solid, grid 0.140 mm (246x247x183), 171295 surface samples, thickness resolved to 0.070 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 171295 samples)
+  PASS  thickness distribution         median 21.77 mm, p95 33.39 mm, max 33.74 mm
+  WARN  hollowable at 1.20 mm wall     6.00 of 9.81 cm3 (61%) in 1 pocket(s)
+  PASS  filament that would save       0.90 cm3, 1.1 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/thickness-world_neptune_sol.md
+
+--- stderr

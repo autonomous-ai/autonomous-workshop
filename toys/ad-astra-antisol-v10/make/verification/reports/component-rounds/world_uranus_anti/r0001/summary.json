@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_uranus_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_uranus_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_uranus_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_uranus_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_uranus_anti"
+ ],
+ "print": {
+  "world_uranus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/overhang-world_uranus_anti.log": "62bdc1a8e51a95c923e5b133cb0b760ccb31e0dba5e97dd227372141cc207519",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/thickness-world_uranus_anti.log": "7961cb6961e9b945bfa8688d404841039aebe6095f7e31e19902b74db1d7448a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_uranus_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed solid: a round disc carrying a globe on an integral seat collar. Front: the disc is 5.00 mm tall and its wall tapers inward as it rises (wider at the bed, narrower at the top), which is the Anti-Sol ownership cue; the globe meets it through a short collar with no step, gap or visible intersection. Top: the globe is concentric in the disc ring. Iso: one continuous body, no floating, duplicated, missing or extra geometry. Proportion: the globe reads as about 0.65 of the disc's own 34.00 mm, which is this world's place on the size ladder (globe \u00d822.02 mm) -- visibly smaller than Jupiter's and larger than Mercury's where it should be. The ring is present and stands nearly UPRIGHT over the globe rather than lying beside it, which is the 97.77 degree obliquity, and the top view shows it edge-on as a single line across the ball. It meets the globe and the seat without a gap or a visible intersection, and it is unmistakably not Saturn's brim.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/visual-packet.json",
+  "packet_sha256": "8ec1fc2a22de0f338625b9c296d858ae02d4f6a6c7ccb2423ad2fdbc7a76ae44",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "A flat dark slab of constant thickness carrying a 3 by 4 block of the field. Front: one rectangular section, no feature standing above the top face or hanging below the bed face. Top: the orthographic flat shading gives every top face the same normal, so the grid reads as a plain rectangle there; the iso view is where the geometry shows. Iso: the engraved grid grooves and the blind terrain pockets are all recessed, the ribs between them are continuous, and the panel's outer edges are square for butting against its neighbours. Nothing floats, nothing protrudes, no extra or missing pocket, no visible intersection.",
+  "packet_sha256": "1e30736bbe10e5a7248c2c2915a4bf6aa580f5343b1353701dc83de65d4bfbd9",
+  "status": "pass"
+}

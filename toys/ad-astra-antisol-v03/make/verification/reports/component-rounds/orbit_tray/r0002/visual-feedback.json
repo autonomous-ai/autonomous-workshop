@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "A flat plate with eight round sockets in a 4x2 grid. Front: one thin slab. Top: eight sockets, evenly pitched, none clipped by the edge. Iso: sockets are shallow wells, not holes. Nothing extra.",
+  "packet_sha256": "03e96cfb50b9331d87e6b42e05ba87ba07382c862ed2915783f84b629bfe3592",
+  "status": "pass"
+}

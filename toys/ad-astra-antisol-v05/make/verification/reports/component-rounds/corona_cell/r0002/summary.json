@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_corona_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "corona_cell"
+ ],
+ "print": {
+  "corona_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0001/overhang-corona_cell.log": "05c5fa46c164462294917f563b94dca3832f6ad456344d39268548fa3466b0b1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0001/thickness-corona_cell.log": "e90c754434ee87f8c6c92baeec7b25e05d34727745c10525ed524bab6995ce78"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "corona_cell"
+ ],
+ "round": 2,
+ "scope": "component:corona_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A 33.50 mm square tile with the flame-tongue star engraved into its face -- cut in, not raised, as the design requires -- and two tapered tongues rising at opposite corners. Both tongues are cones on the tile's own face with no undercut; the engraving reads as sixteen radiating slots around a central eye. Flat bed face, one solid.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0002/visual-packet.json",
+  "packet_sha256": "2b18cc5ea5064e1831a7c8225d8aa362dd1060724bb5890af2ecc8bf075a30fd",
+  "status": "pass"
+ }
+}

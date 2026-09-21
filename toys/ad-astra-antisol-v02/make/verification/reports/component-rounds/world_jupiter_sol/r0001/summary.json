@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_jupiter_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_jupiter_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_jupiter_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_jupiter_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_jupiter_sol"
+ ],
+ "print": {
+  "world_jupiter_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/overhang-world_jupiter_sol.log": "7fec2419d0d00527e1afcb7b301f0581d65ce76a4f7682700d32aa47411a8e1e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/thickness-world_jupiter_sol.log": "13a8abe95c2f688b4be370e64c29783b8de35c3a83115a31d6925dc0c279f1d6"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_jupiter_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A disc carrying a globe on a short seat collar, one fused body. Front: the disc wall flares outward as it rises, which is this army's cue; the globe is sunk into the disc top and the seat collar meets it without a step or a gap. The globe's outline is a clean circle -- the markings are flush colour inlays and add no relief and no down-facing edge, which is what this view is for. Top: the globe is concentric with the disc. Iso: one body, nothing floating, nothing crossing, and the globe-to-disc proportion sits where the rank ladder puts it.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/visual-packet.json",
+  "packet_sha256": "f464f989aec0b1e8d554dfb3377dd63c072495607e0d586799455e1cb3e164e7",
+  "status": "pass"
+ }
+}

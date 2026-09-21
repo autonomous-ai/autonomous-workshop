@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_venus_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_venus_anti"
+ ],
+ "print": {
+  "world_venus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001/overhang-world_venus_anti.log": "2f3ed8cbb89f58162af5ff83e5fbe18d18a232ce376307ddd1e72bc3882c85a4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001/thickness-world_venus_anti.log": "1e8971ab850e2442fed97b0b4e56068391f5a4d7e68e71a8de9b9039ab6b4655"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_venus_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_venus_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso inspected. A globe a little larger than Mercury's and Mars's on the same \u00d834.00 disc, correctly placed in the size ladder, seated concentric on its collar. Anti-Sol disc draft, tapering inward as it rises. Nothing stands proud of the globe. As with Mercury the mirrored map is a flush inlay and does not show in the fused single-colour part; measure/venus-surface.md measures it on the colour bodies at 0 of 1612 points of disagreement against the reflected Sol map. No misplaced, missing or extra geometry, no intersections.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0002/visual-packet.json",
+  "packet_sha256": "48cd97996cb8e871cb98d87de6b0e2edf015ff116a867defdbbfc08410deb5aa",
+  "status": "pass"
+ }
+}

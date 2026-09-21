@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_den_plug.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "den_plug"
+ ],
+ "print": {
+  "den_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/overhang-den_plug.log": "4c9f76fda7173c3c407c23fc4c334453dcb2aef869647f099108fbb4e6a0b07e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/thickness-den_plug.log": "e98e146fc0a3265d8e4775445068353e6f53c188de91e6db223dcc9491eaf29a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "den_plug"
+ ],
+ "round": 2,
+ "scope": "component:den_plug",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso show one square plug with a drafted skirt, a flat proud face, hex granulation engraved into two corners and two flares rising from opposite corners. Both flares lean outward, taper to a rounded tip and sit wholly on the flange. Nothing floats and the two flares do not touch each other.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0002/visual-packet.json",
+  "packet_sha256": "83f6942920828d3b0f1d0caa9a312bb7390a31b2a6247fde4dd6c02896aedae6",
+  "status": "pass"
+ }
+}

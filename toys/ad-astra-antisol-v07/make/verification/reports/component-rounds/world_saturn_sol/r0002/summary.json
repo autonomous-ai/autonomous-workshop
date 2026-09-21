@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_saturn_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_sol"
+ ],
+ "print": {
+  "world_saturn_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001/overhang-world_saturn_sol.log": "8d8bb270fda29e8b3c29477073f2ea23ffc9bc073b42d5fe2ae12d14f09406ae",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001/thickness-world_saturn_sol.log": "a6f6b6d694e6f325ec4f8da44336c8873e331686c76b842ff0a14910daeab314"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_saturn_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_saturn_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Piece coherent: one ball seated on one disc, fused through an integral seat collar, and nothing else. Iso and front: the ball is centred on the disc, sits into it rather than on it, and meets it through a short collar with no gap and no step; the disc's wall is visibly wider at the top than at the bed, which is the Sol draft. Top view: the ball is concentric with the disc and the disc's rim is a clean unbroken circle. Proportions are right for Saturn -- the globe is clearly smaller than the \u00d834.00 disc and the piece's height reads as the ball plus the disc's exposed 3.00 mm. No missing or extra body, nothing floating, no visible intersection, nothing protruding past the disc. Saturn also carries its ring: a flat annulus leaning with the globe, fused to the ball, with the support web filling under its low side and running down to the disc. Front view: the ring is a single plate of one thickness, edge-on across the ball, tipped the opposite way from the other army's, and the web's outer surface is a straight slope rather than a curl. Iso: the ring stands clear of the disc on both sides and nothing about it floats or crosses the globe. The ring is unchanged by this revision and nothing was added to it.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0002/visual-packet.json",
+  "packet_sha256": "ec903525b985eb413c847098ab9c1298d7cb4b78aa8c2249d456ee2d682ee34b",
+  "status": "pass"
+ }
+}

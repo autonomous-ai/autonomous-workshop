@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "A square tile with a smooth round landing pad in the middle and a ring of rubble around it, all below the tile's own top plane. Front: the rubble peaks sit at the tile top, nothing rises above it. Top: the pad is centred and clear. Iso: rubble is a ring, not a field; the pad a world stands on is clean.",
+  "packet_sha256": "7cc219689a54f4b962499c8d15c291c1c3cc7a7e669734185d5b74a1c3d5418a",
+  "status": "pass"
+}

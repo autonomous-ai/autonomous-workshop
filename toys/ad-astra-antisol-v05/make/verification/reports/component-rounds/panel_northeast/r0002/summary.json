@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_panel_northeast.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_northeast"
+ ],
+ "print": {
+  "panel_northeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001/overhang-panel_northeast.log": "3855c984e600e470987382c8bf9990c70a5082b6d99398a269c1d12fdf2993e2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001/thickness-panel_northeast.log": "fe677bbbe3084b1af946658183bf570fe3a5935e7faf8cd8633b6a5034ccb559"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "panel_northeast"
+ ],
+ "round": 2,
+ "scope": "component:panel_northeast",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Flat 152 x 188 plate with the cell grid cut as shallow grooves and five deeper terrain pockets in the north-east quarter's own positions -- the Anti-Sol den, its traps and the belt cells. Every pocket is a blind flat-bottomed recess, no through holes, and the plate sits flat on the bed with no overhang. The top view reads uniformly because the pocket floors face the same way as the field; the iso view is where the depth is legible and it is correct.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0002/visual-packet.json",
+  "packet_sha256": "cdf0b004667fd5025b3b4be493e0b0f89db8fd5c5c1ef717203df9e554c34d12",
+  "status": "pass"
+ }
+}

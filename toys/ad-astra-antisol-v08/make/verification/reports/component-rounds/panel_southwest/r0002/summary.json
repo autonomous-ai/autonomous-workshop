@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_panel_southwest.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_southwest"
+ ],
+ "print": {
+  "panel_southwest": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0001/overhang-panel_southwest.log": "25058a206804576e5c955c125ce33a698d1d697f42f860b6f6ab12fd578a3211",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0001/thickness-panel_southwest.log": "4e7ba05eeff7bc7458ce8a151e67ccc9aff604d76e54ec84e796be38f2f5540b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "panel_southwest"
+ ],
+ "round": 2,
+ "scope": "component:panel_southwest",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso show one flat quarter-panel of the field. The grid is cut in as shallow square-bottomed grooves on the cell boundaries, the terrain pockets are blind rectangular recesses with rounded corners, and the ribs between them are continuous. Thickness is even end to end, the underside is flat, nothing protrudes above the field face.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0002/visual-packet.json",
+  "packet_sha256": "445a8b350a40a6244e1069e4c56cea085e686f33e9c2bc77f7819511a356a06a",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_earth_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_earth_sol"
+ ],
+ "print": {
+  "world_earth_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/overhang-world_earth_sol.log": "a7e6c9eaae2de1b6abec89cc120ee9f255c7a99398788e8317e9e730795138cc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/thickness-world_earth_sol.log": "95728333fb2fc9e713476a6f1845f02fb8521c13c6ddba4dd7eb6d31336e2a46"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_earth_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_earth_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Piece coherent: one ball seated on one disc, fused through an integral seat collar, and nothing else. Iso and front: the ball is centred on the disc, sits into it rather than on it, and meets it through a short collar with no gap and no step; the disc's wall is visibly wider at the top than at the bed, which is the Sol draft. Top view: the ball is concentric with the disc and the disc's rim is a clean unbroken circle. Proportions are right for Earth -- the globe is clearly smaller than the \u00d834.00 disc and the piece's height reads as the ball plus the disc's exposed 3.00 mm. No missing or extra body, nothing floating, no visible intersection, nothing protruding past the disc.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0002/visual-packet.json",
+  "packet_sha256": "aaa13d203d6857cb1604c8d3fd3554cbfd1d217c2035c68c944534a80093da82",
+  "status": "pass"
+ }
+}

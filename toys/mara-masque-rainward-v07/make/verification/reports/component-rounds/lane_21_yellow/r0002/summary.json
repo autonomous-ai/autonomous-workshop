@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_lane_21_yellow.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_21_yellow/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_21_yellow"
+ ],
+ "print": {
+  "lane_21_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_21_yellow/r0001/overhang-lane_21_yellow.log": "477d991e96461486dd648959dd693b79b1cf37f362d144dcb4144223189845a9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_21_yellow/r0001/thickness-lane_21_yellow.log": "d5caf69485b71b11e93d8f7d38369a695ae9ea665fd722f84ef48d1fa5f90937"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "lane_21_yellow"
+ ],
+ "round": 2,
+ "scope": "component:lane_21_yellow",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top view: one annular-sector wedge, both straight sides parallel to this lane's own boundary rays, the outer end a single exact circular arc at radius 79.55 with no notch, scallop or bay cut into it, and the inner end an arc at radius 26.5. Iso view: 2.2 mm of plate with the 0.15 mm rounding on the exposed top edge, the outer 1.0 mm band thinned to the lip that laps the rim ring, and the radial locating key standing proud of the face that meets the bed - the print pose turns the tile top-face-down so the key points up and no face overhangs. Front view: a flat plate of even thickness, flat on the bed, nothing floating. The tone is this point's lane colour, light on odd points and dark on even ones. Nothing misplaced, missing, extra or intersecting; no feature differs from the other twenty-three tiles but the lane angle and the tone.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_21_yellow/r0002/visual-packet.json",
+  "packet_sha256": "87241409ab34712028cfad56582f51c71ff7a947320bfa607a31d9a9e7001d12",
+  "status": "pass"
+ }
+}

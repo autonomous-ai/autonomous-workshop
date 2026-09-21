@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_mercury_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mercury_sol"
+ ],
+ "print": {
+  "world_mercury_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001/overhang-world_mercury_sol.log": "7bd7f46d33b203aceb773d8384e3c236c04931a5272a0d1e5f379b16ddc988b3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001/thickness-world_mercury_sol.log": "864398abd08a51edc6b248256a61232caff99e0d9dfd83ffea92c67236d86ab4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_mercury_sol"
+ ],
+ "round": 3,
+ "scope": "component:world_mercury_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A disc with a globe sunk into its top through a short seat collar, and nothing else. Front: the disc wall widens as it rises, which is the Sol draft, and the globe meets the disc through the collar with no step or gap. Top: disc and globe are concentric on one axis. Iso: one ball, one disc, correct size for rank 1 -- the smallest globe in the set on the same 34 mm disc every world uses. The whole outer surface is smooth: the markings are flush colour inlays and this is the fused printed solid, so no marking is visible here and none should be. No protrusion, no floating body, no missing or extra part, no visible intersection, and no downward-facing surface added anywhere.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0003/visual-packet.json",
+  "packet_sha256": "fb14da656b5fcb6058a766f24872dab06454314aed76d8732ca30f90b818cd6e",
+  "status": "pass"
+ }
+}

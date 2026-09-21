@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Disc, globe and one upright hoop, and nothing else. Front view (down -Y) is square to the ring plane, so the hoop reads as a thin fin standing on the globe's meridian with a small nub clearing the globe's crown and both legs landing on the disc top; top view shows it as a near-straight line along Y with the 7.77 degree lean visible as a slight bow, which is what an upright hoop projects from directly above. Iso shows the hoop standing proud of the sphere all the way round and merging into the disc at each foot. Globe reads as \u00d822 on a \u00d834 disc, the hoop about a millimetre proud of it, hoop crown just above the globe's crown. No missing or extra bodies, no floating geometry, no visible intersection, no part out of place.",
+  "packet_sha256": "e5a5e90d7bd03924f9194036fc797a2135304ad900441b6ecee1623719e91965",
+  "status": "pass"
+}

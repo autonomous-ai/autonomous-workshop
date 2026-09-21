@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "print_ready_claim": false,
+  "checks": [
+    {
+      "id": "refs:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "validate:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "interfere:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_belt_cell",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_belt_cell",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_corona_cell",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_corona_cell",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_den_plug",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_den_plug",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_orbit_tray",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_orbit_tray",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_panel_northeast",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_panel_northeast",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_panel_northwest",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_panel_northwest",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_panel_southeast",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_panel_southeast",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_panel_southwest",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_panel_southwest",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_earth_anti",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_earth_anti",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_earth_sol",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_earth_sol",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_jupiter_anti",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_jupiter_anti",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_jupiter_sol",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_jupiter_sol",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_mars_anti",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_mars_anti",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_mars_sol",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_mars_sol",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_mercury_anti",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_mercury_anti",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_mercury_sol",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_mercury_sol",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_neptune_anti",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_neptune_anti",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_neptune_sol",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_neptune_sol",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_saturn_anti",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_saturn_anti",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_saturn_sol",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_saturn_sol",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_uranus_anti",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_uranus_anti",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_uranus_sol",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_uranus_sol",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_venus_anti",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_venus_anti",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_world_venus_sol",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_world_venus_sol",
+      "status": "passed"
+    }
+  ],
+  "verification_sha256": "e4468d9d4ec01673f81610bbf80baac6375266cbd86b1f78d9f60e1dd6f4f283"
+}

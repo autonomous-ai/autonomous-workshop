@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "The whole set in the opening position, in filament colour. Top: the 7 by 9 field with eight white-based worlds on the near ranks and eight black-based worlds on the far ranks, one piece per cell and every piece inside its own cell; twelve cocoa-brown belt tiles in two 2-by-3 blocks across the middle; a star at each end with three corona cells around it, cyan at the far end and orange at the near one; two grey trays parked clear of the board. Nothing overlaps, nothing floats, nothing is missing or doubled. Front: the size ladder is legible end to end -- Mercury smallest, Jupiter largest -- and every globe sits on its own disc with no gap under it. NEPTUNE, which is what this revision changed, shows THREE WHITE BANDS running across a blue globe on both armies, at three different latitudes and three different widths, and they run round the ball rather than stopping on it. The two Neptunes carry them at mirrored angles, which is the obliquity cue. Saturn's ring reads as a near-flat brim and Uranus's as an upright hoop, and they are not confusable. No visible intersection between any two parts and no part standing proud of a globe that should be flush.",
+  "packet_sha256": "fe9ed678d5e2cd3dfe5582626a5d97f6685d095e227a5ee283f8788ca7867374",
+  "status": "pass"
+}

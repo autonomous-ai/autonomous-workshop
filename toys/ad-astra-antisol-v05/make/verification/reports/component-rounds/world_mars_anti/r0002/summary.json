@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_mars_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mars_anti"
+ ],
+ "print": {
+  "world_mars_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0001/overhang-world_mars_anti.log": "cf60188dd05e8e53a497484334dace03a233db824a5acbb5360abbdf0464bb53",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0001/thickness-world_mars_anti.log": "713c1f3f78403381f7d9adc675b090f9b62853086655cf0d4ee0c94a0088ef30"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_mars_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_mars_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Mirror: inward-collapsing disc with the bed edge proud. Globe, collar and bed face as on the Sol piece. One solid.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0002/visual-packet.json",
+  "packet_sha256": "48a85868517458ba581040e69f6d3f1d65edb085be9ba6ca3618446be6e6f3ac",
+  "status": "pass"
+ }
+}

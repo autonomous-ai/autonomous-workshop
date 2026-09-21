@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_panel_southeast.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_southeast"
+ ],
+ "print": {
+  "panel_southeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0004/overhang-panel_southeast.log": "92ce67e33be0441afe0bfbd6d127a88cb8295d3736e07ab0193e77606e3f3010",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0004/thickness-panel_southeast.log": "599f2aba1b0b28ca378209619a780be8d7a5b7578d63ed986622122fae6bf282"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "panel_southeast"
+ ],
+ "round": 5,
+ "scope": "component:panel_southeast",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One flat dark_gray board quarter, untouched by this correction, and the squarest of the four. Iso: a single rectangular slab with a continuous raised rim and an even grid of shallow cell pockets; two separate runs of deeper belt pockets cross the upper half in a stepped pattern and a third sits at the left edge, which is this quarter's share of the two rivers, and the plain land cells fill the lower half. Pocket pitch is even, no cell missing, doubled or out of line, and none breaks the rim. Front: a plain bar of one constant thickness on the bed datum, nothing proud of the top face, nothing below Z=0. Top: an unbroken square, the correct read for pockets cut into a face rather than raised on it. No misplaced, missing or extra geometry, no visible intersections, no floating bodies.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0005/visual-packet.json",
+  "packet_sha256": "12859720e18b8eb06d1ea9d1de24be1c425def0da718ebb5368199c0202ff76e",
+  "status": "pass"
+ }
+}

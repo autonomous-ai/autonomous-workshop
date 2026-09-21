@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_lane_07_yellow.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_07_yellow/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_07_yellow"
+ ],
+ "print": {
+  "lane_07_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_07_yellow/r0003/overhang-lane_07_yellow.log": "13a07202e3fe50eabd8ecf075e0835ab13530a30fc59536468387ebee4490667",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_07_yellow/r0003/thickness-lane_07_yellow.log": "3030174a43432fe8e3344d4196e7bcaf3e58e9bae510a222c37ac9a7de23dc42"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "lane_07_yellow"
+ ],
+ "round": 4,
+ "scope": "component:lane_07_yellow",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One solid annular-sector tile, 2.8 mm thick over its seated part with a 1.0 mm lapping lip along the outer end and one radial stadium key under the seat. Top: a single flat coplanar face with no dimples, rails or connectors. Both outer corners are stepped back into a bay so the tile stops short of the body at each lane boundary and the crown shows its own base there; every step is a square shoulder, not a sliver. Front: a flat strip with the key the only feature below the underside. Iso: one piece, nothing floating, missing or extra, and no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_07_yellow/r0004/visual-packet.json",
+  "packet_sha256": "c8eae68609728cda52d3e541e9588e354d03c5700f89e1f8315872169d9dfa33",
+  "status": "pass"
+ }
+}

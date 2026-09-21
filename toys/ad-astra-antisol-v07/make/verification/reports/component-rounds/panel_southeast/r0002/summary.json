@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_panel_southeast.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_southeast"
+ ],
+ "print": {
+  "panel_southeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/overhang-panel_southeast.log": "cb069200d54a4701b77e9452ce2d4d06d7ac33a7b6932f8d03ec3017f1a2bcfa",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/thickness-panel_southeast.log": "234560f6d1f6c81c7a733ebed123e17299bba4f12ebaac0b9586e0628ed9e1a3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "panel_southeast"
+ ],
+ "round": 2,
+ "scope": "component:panel_southeast",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Board panel, coherent. Iso: a flat slab with grid grooves on its face and its own set of deeper terrain pockets on the cell grid, including the den pocket, with a plain border. Front view: one slab of constant thickness with nothing standing proud. The flat-shaded top view carries no information; the iso resolves it. Nothing missing or extra, no floating bodies, no visible intersections.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0002/visual-packet.json",
+  "packet_sha256": "02dbcabcdad24846a8db5aad08fb9fe43bf1719784f2193e154ef1ddc2c36c59",
+  "status": "pass"
+ }
+}

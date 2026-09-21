@@ -1,0 +1,6 @@
+{
+  "packet_sha256": "bd1be1a2439b4f75b29001dddbeda7e3d5bcbd138dcd2a6838181a3083665faa",
+  "status": "pass",
+  "observation": "Front, top and iso inspected. The tile is one flat rounded square 33.50 mm on a side and 3.00 mm tall: the front view is a plain bar with an unbroken straight top edge and nothing standing above it at either corner, which is where the two retired tongues used to be. The iso shows the sixteen engraved rays and their central eye cut into the top face, alternating two lengths, evenly spaced and all terminating short of the tile edge. The top view is a featureless rounded square, which is the proof the sunburst is cut rather than raised: a relief would still break the silhouette from directly above. No misplaced, missing or extra geometry, no intersections, proportions match CORONA_TILE 33.50 and CORONA_TILE_H 3.00. (The round was re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "findings": []
+}

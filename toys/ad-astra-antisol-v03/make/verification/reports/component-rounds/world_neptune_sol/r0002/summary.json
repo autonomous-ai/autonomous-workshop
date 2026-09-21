@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_neptune_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_neptune_sol"
+ ],
+ "print": {
+  "world_neptune_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/overhang-world_neptune_sol.log": "e3799c5c6a62897369bbda301100cbc62c991562b104d8228b1a83b263b445bf",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/thickness-world_neptune_sol.log": "405c888a268f9be687cd3137ca50a04f1139ba105762d1a7659ee56108dccc05"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_neptune_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_neptune_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A disc with a globe sunk into its top, and nothing else. The disc wall drafts the way this army's discs draft, the globe is centred on the disc axis and meets it through a short seat collar, and the numeral pocket is flush in the wall. No protrusion, no floating body, no visible intersection, no downward-facing surface added. Front: the disc wall widens as it rises, Sol's draft. Iso: ball size is right for this planet's place in the ladder.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0002/visual-packet.json",
+  "packet_sha256": "576386208fc7dbee20c46f610e0a237ccd972e93462500f66ccdf68b939c997e",
+  "status": "pass"
+ }
+}

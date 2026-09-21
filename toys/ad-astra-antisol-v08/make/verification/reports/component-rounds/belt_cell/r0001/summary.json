@@ -1,0 +1,61 @@
+{
+ "build": {
+  "belt_cell": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belt_cell"
+ ],
+ "check_motion": false,
+ "checked": [
+  "belt_cell"
+ ],
+ "checks_ok": true,
+ "entry": "part_belt_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belt_cell"
+ ],
+ "print": {
+  "belt_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/overhang-belt_cell.log": "d76e14e9879e49d605c872efcc4e758e7c6ca28d9ae41ecdc57b763c779f6af0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/thickness-belt_cell.log": "3c2ca501febba997eaba7563aa8c2c67b8f185acc37e763cbb373443a7ad78dc"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:belt_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/visual-packet.json",
+  "packet_sha256": "51640be59a2ab4cf6b868f880dca199d3d7e130718d807f689323f121b7a7c5e",
+  "status": "pending"
+ }
+}

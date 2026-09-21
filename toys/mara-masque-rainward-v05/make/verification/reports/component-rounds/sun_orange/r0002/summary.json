@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_sun_orange.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_orange"
+ ],
+ "print": {
+  "sun_orange": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0001/overhang-sun_orange.log": "4989a09a4efd0c4132807b47fd05e71413d4660897af234a229938913247133d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0001/thickness-sun_orange.log": "37a838c00fb394febb10e6c3f5ca3b446daaddb6972f4d9d71a0242dff294ba7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.32,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "sun_orange"
+ ],
+ "round": 2,
+ "scope": "component:sun_orange",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top: one continuous disc, 24 lane pockets radiating from the centre platform, four capsule markers in the wider boundaries, and 38 rim tongues that all curl the same way round the ring; the hero arch closes one loop at the lower rim with short tongues running under it. Iso: the underside is flat and unbroken, the deck top is one level, and each tongue's top falls outward on a single flat facet with crisp edges where it meets the vertical flanks. Front: a flat slab profile with the rim notches cut clean through; nothing floats, nothing overhangs, and no part of the rim rises above the deck. No misplaced, missing or extra feature and no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0002/visual-packet.json",
+  "packet_sha256": "40f7360c271264d9efd34daaab3f21a27bb9571b014d2c762c521b492c36c1f3",
+  "status": "pass"
+ }
+}

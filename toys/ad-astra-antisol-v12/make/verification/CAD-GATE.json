@@ -1,0 +1,21 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-20T17:02:41+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 648.68 s
+- Bed: 200 x 200 x 200 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=a27c684e39c000a84ccb71bd02a2621d38a144c05c09be8f0b7977944ed24681` | note | 0.00 |
+| 2 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout' .` | rc=0 | 0.12 |
+| 3 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/gen' antisol.step.py part_belt_cell.step.py part_corona_cell.step.py part_den_plug.step.py part_orbit_tray.step.py part_panel_northeast.step.py part_panel_northwest.step.py part_panel_southeast.step.py part_panel_southwest.step.py part_world_earth_anti.step.py part_world_earth_sol.step.py part_world_jupiter_anti.step.py part_world_jupiter_sol.step.py part_world_mars_anti.step.py part_world_mars_sol.step.py part_world_mercury_anti.step.py part_world_mercury_sol.step.py part_world_neptune_anti.step.py part_world_neptune_sol.step.py part_world_saturn_anti.step.py part_world_saturn_sol.step.py part_world_uranus_anti.step.py part_world_uranus_sol.step.py part_world_venus_anti.step.py part_world_venus_sol.step.py --write --json` | rc=0 | 241.66 |
+| 4 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit' . --bed 200.0 200.0 --entry part_belt_cell.step.py --entry part_corona_cell.step.py --entry part_den_plug.step.py --entry part_orbit_tray.step.py --entry part_panel_northeast.step.py --entry part_panel_northwest.step.py --entry part_panel_southeast.step.py --entry part_panel_southwest.step.py --entry part_world_earth_anti.step.py --entry part_world_earth_sol.step.py --entry part_world_jupiter_anti.step.py --entry part_world_jupiter_sol.step.py --entry part_world_mars_anti.step.py --entry part_world_mars_sol.step.py --entry part_world_mercury_anti.step.py --entry part_world_mercury_sol.step.py --entry part_world_neptune_anti.step.py --entry part_world_neptune_sol.step.py --entry part_world_saturn_anti.step.py --entry part_world_saturn_sol.step.py --entry part_world_uranus_anti.step.py --entry part_world_uranus_sol.step.py --entry part_world_venus_anti.step.py --entry part_world_venus_sol.step.py --strict` | rc=0 | 14.65 |
+| 5 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 measure/check_fit.py` | rc=0 | 0.04 |
+| 6 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_numbers' .` | rc=0 | 2.23 |
+| 7 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_format' .` | rc=0 | 0.07 |
+| 8 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 9 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 10 | `check_motion  # NOT RUN: disabled by Make motion policy; motion is unverified` | skipped | 0.00 |
+| 11 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect' batch (51 JSONL requests)` | rc=0 | 389.91 |

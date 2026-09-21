@@ -1,0 +1,78 @@
+{
+ "build": {
+  "world_mercury_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_mercury_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_mercury_sol"
+ ],
+ "checks_ok": false,
+ "entry": "part_world_mercury_sol.step.py",
+ "full": null,
+ "likeness": [
+  {
+   "az": -161.25,
+   "delta": null,
+   "el": 73.125,
+   "fov": 0.0,
+   "iou": 0.7545,
+   "label": "detail",
+   "ok": false,
+   "poses_path": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001/likeness/ref-000/poses.json",
+   "searched": false
+  }
+ ],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mercury_sol"
+ ],
+ "print": {
+  "world_mercury_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001/overhang-world_mercury_sol.log": "7bd7f46d33b203aceb773d8384e3c236c04931a5272a0d1e5f379b16ddc988b3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001/thickness-world_mercury_sol.log": "864398abd08a51edc6b248256a61232caff99e0d9dfd83ffea92c67236d86ab4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [
+  [
+   "detail",
+   "artifacts/make/r0001/product/cad/ref/mercury-sol.png"
+  ]
+ ],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_mercury_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001/visual-packet.json",
+  "packet_sha256": "c773f379708f00e760793072bc72e8ef713c24df88ee01c1b78ff8ef3490da49",
+  "status": "pending"
+ }
+}

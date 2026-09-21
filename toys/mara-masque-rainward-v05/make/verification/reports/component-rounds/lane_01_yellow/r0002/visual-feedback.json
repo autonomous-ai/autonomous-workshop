@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Printed top face down. Top: a clean annular sector with two straight sides and one smooth outer arc at the wide end - no notch, scallop or bay anywhere on that edge. Front: the flat print face on the bed, the 1.0 mm lapping lip stepping down at the outer end and the locating key standing proud at the top, all of it one solid. Iso: proportions match a 63.35 x 22.35 x 4.0 mm tile; no floating geometry, no intersection, nothing missing or extra.",
+  "packet_sha256": "94347092987c2af4df9e67ac50ff191e7305dc3b318b15b02b928e789c3faa0a",
+  "status": "pass"
+}

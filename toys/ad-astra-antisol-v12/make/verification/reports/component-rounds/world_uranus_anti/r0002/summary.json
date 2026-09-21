@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_uranus_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_uranus_anti"
+ ],
+ "print": {
+  "world_uranus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/overhang-world_uranus_anti.log": "c5069b13e3980b1ac1e7d759588e1d25bc6f82cd8b661892c9286ade8456eac8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/thickness-world_uranus_anti.log": "fcb14bda0d2339a537848ffffaa6188c7895d0080e32a776488d1457b73d3b1d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_uranus_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_uranus_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso inspected. A bare globe with an upright hoop standing over it rather than a plate beside it, the hoop meeting the disc top at two places with a small wedge at each, and its plane leaning the OPPOSITE way to the Sol piece's -- the 97.77 degree obliquity mirrored, visible in these two component frames even though it is not visible at board scale. No marking of any kind on the globe, which is this world's state since the previous revision. Untouched by this revision and byte-identical. No misplaced, missing or extra geometry, no visible intersections.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0002/visual-packet.json",
+  "packet_sha256": "6b82e9e8a2c16192936a2f35fdc577c3689485924c49c55b18ee849f2fc540a1",
+  "status": "pass"
+ }
+}

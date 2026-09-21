@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_saturn_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_saturn_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_saturn_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_saturn_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_anti"
+ ],
+ "print": {
+  "world_saturn_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/overhang-world_saturn_anti.log": "ce51bd6622ef7dc02ac271ef79f235f28cc592169bf1699f891fe168b38b944f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/thickness-world_saturn_anti.log": "bf09501c2f43d7c4496af83f4529574a15f5d2b71ed8296405f46593cd9951ed"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_saturn_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A disc carrying a globe on a short seat collar, with a tilted ring standing clear of the globe, one fused body. Front: the ring leans down toward the right and its underside is carried down to the disc on the low side as a thickened web, tapering to nothing on the high side; the disc wall draws inward as it rises. Top: ring and globe concentric with the disc, ring inside the disc diameter. Iso: one body, the ring reads as a real annulus standing clear of the silhouette, no gap and no clash where it meets the globe.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/visual-packet.json",
+  "packet_sha256": "392f3231c82b79cbcc25ddcf7d39b8baebb2989a81062914a2d32405a5abdf83",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "The complete set, 55 separate solids in setup. Top: 24 lane tiles fan around a plain orange centre platform in strict light/dark alternation, 30 counters sit flat on their own lane tiles in the four setup stacks with tails inward, and the whole rim is one continuous crown of orange flame. The crown now shows its own base: at every lane boundary the tile stops short and an orange bay runs down between two tiles, and between bays the crown carries pointed tongues of uneven height that all lean the same way. No stretch of the perimeter is a plain arc. One domed arch stands clear at the lower rim, its crest the highest point on the whole edge, with an open loop beneath it and two short tongues of the crown running on underneath. Front: a flat slab, board 9 mm, counters 4 mm proud of the lane tops, nothing on the rim standing above the lane tops. Iso: tiles seated and standing proud in their pockets, the centre bar open and clear, no floating part, no missing or extra part, no visible intersection and no counter resting on the crown, a marker or a boundary.",
+  "packet_sha256": "18eaf9a623696ff33748e3131f3d79c0680db86d0136d12cbecec5caa8288b2f",
+  "status": "pass"
+}

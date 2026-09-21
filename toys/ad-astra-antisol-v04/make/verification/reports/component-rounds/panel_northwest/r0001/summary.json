@@ -1,0 +1,61 @@
+{
+ "build": {
+  "panel_northwest": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "panel_northwest"
+ ],
+ "check_motion": false,
+ "checked": [
+  "panel_northwest"
+ ],
+ "checks_ok": true,
+ "entry": "part_panel_northwest.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northwest/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_northwest"
+ ],
+ "print": {
+  "panel_northwest": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northwest/r0001/overhang-panel_northwest.log": "00706b831eb2a2357b704293275b2d3236ea85c620ef65060c00aa52be198f94",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northwest/r0001/thickness-panel_northwest.log": "00345efec91858caff2f4d58f4bb147c391862401c6e01b923f94eb9732bc667"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:panel_northwest",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northwest/r0001/visual-packet.json",
+  "packet_sha256": "fae988bf97b112ca09f61391396cdf7250e966cc63af8e51c10be68e575a51f8",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,65 @@
+{
+ "build": {
+  "sun_orange": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun_orange"
+ ],
+ "check_motion": false,
+ "checked": [
+  "sun_orange"
+ ],
+ "checks_ok": false,
+ "entry": "part_sun_orange.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_orange"
+ ],
+ "print": {
+  "sun_orange": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0001/overhang-sun_orange.log": "28e567b756f53d45b1cdbe1525a276059cda0c58b63f9449abd21e7b5cb7aa53",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0001/thickness-sun_orange.log": "6c3a0422b9d760fe27187e19fbd14890a1994b4b69e3fdb3c2d15ec4957f8362"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no overhang result"
+    ],
+    "overhang_mm2": null,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "no passing wall result"
+    ],
+    "thinnest_mm": null,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:sun_orange",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0001/visual-packet.json",
+  "packet_sha256": "3fa30a8ec650783c4b2d474fd9a4e75b4e7874a7714fcaee4aeb128dff906cdd",
+  "status": "pending"
+ }
+}

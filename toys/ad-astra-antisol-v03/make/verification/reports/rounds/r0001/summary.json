@@ -1,0 +1,634 @@
+{
+ "build": {
+  "belt_cell": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "corona_cell": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "den_plug": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "orbit_tray": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "panel_northeast": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "panel_northwest": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "panel_southeast": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "panel_southwest": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_earth_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_earth_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_jupiter_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_jupiter_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_mars_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_mars_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_mercury_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_mercury_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_neptune_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_neptune_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_saturn_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_saturn_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_uranus_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_uranus_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_venus_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "world_venus_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belt_cell",
+  "corona_cell",
+  "den_plug",
+  "orbit_tray",
+  "panel_northeast",
+  "panel_northwest",
+  "panel_southeast",
+  "panel_southwest",
+  "world_earth_anti",
+  "world_earth_sol",
+  "world_jupiter_anti",
+  "world_jupiter_sol",
+  "world_mars_anti",
+  "world_mars_sol",
+  "world_mercury_anti",
+  "world_mercury_sol",
+  "world_neptune_anti",
+  "world_neptune_sol",
+  "world_saturn_anti",
+  "world_saturn_sol",
+  "world_uranus_anti",
+  "world_uranus_sol",
+  "world_venus_anti",
+  "world_venus_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "belt_cell",
+  "corona_cell",
+  "den_plug",
+  "orbit_tray",
+  "panel_northeast",
+  "panel_northwest",
+  "panel_southeast",
+  "panel_southwest",
+  "world_earth_anti",
+  "world_earth_sol",
+  "world_jupiter_anti",
+  "world_jupiter_sol",
+  "world_mars_anti",
+  "world_mars_sol",
+  "world_mercury_anti",
+  "world_mercury_sol",
+  "world_neptune_anti",
+  "world_neptune_sol",
+  "world_saturn_anti",
+  "world_saturn_sol",
+  "world_uranus_anti",
+  "world_uranus_sol",
+  "world_venus_anti",
+  "world_venus_sol"
+ ],
+ "checks_ok": true,
+ "entry": "antisol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belt_cell",
+  "corona_cell",
+  "den_plug",
+  "orbit_tray",
+  "panel_northeast",
+  "panel_northwest",
+  "panel_southeast",
+  "panel_southwest",
+  "world_earth_anti",
+  "world_earth_sol",
+  "world_jupiter_anti",
+  "world_jupiter_sol",
+  "world_mars_anti",
+  "world_mars_sol",
+  "world_mercury_anti",
+  "world_mercury_sol",
+  "world_neptune_anti",
+  "world_neptune_sol",
+  "world_saturn_anti",
+  "world_saturn_sol",
+  "world_uranus_anti",
+  "world_uranus_sol",
+  "world_venus_anti",
+  "world_venus_sol"
+ ],
+ "print": {
+  "belt_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-belt_cell.log": "02c63e05754df0b199131c3ccb146a5c2afa8270171ea77e75b3cccdf36aa84b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-belt_cell.log": "2336f9e73362da098c72487557b41862ca483adc8af021860e3c25366846beb3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "corona_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-corona_cell.log": "300599e81545e1c963d7353044a8984ca2fa951d2d8f350e30700106cb6f02bf",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-corona_cell.log": "3f427ecd15eb92bebf6b9887c79190bbc364f7a150e950cc096f2f29b2351aa5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "den_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-den_plug.log": "56eb6972ece4528e1fdceae54ea8262a979b1a083d3efb9ab5d43fd321d686e4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-den_plug.log": "12992bdccdf06262aa996484344d8ac587768d935d0fe8fc278dc74ab2638b02"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "orbit_tray": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-orbit_tray.log": "92442df976d854887ed491e810412d72d5f396dea9b79fa728446e7634eb9da7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-orbit_tray.log": "5ce978544489ee87c6afb69c48c1c286d31943e434cb79dbf236cbddaaf8d817"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "panel_northeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-panel_northeast.log": "995d3287dc7f34694f4a25d0f20e36131f74f1ffa61acac4e79994f7b58cf7af",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-panel_northeast.log": "e0e268183af629cecda39e9633e4846f48aef073e5c9e3df6b4680d46547bb28"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "panel_northwest": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-panel_northwest.log": "b8bb51a90883257bdff2739a8db6fba115d8d0f5d28a751ee2384a73df88fb52",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-panel_northwest.log": "ee1d81c7e1b7238da07e5cec7b1aec42803407986d690b8e3374b094606e9ec0"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "panel_southeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-panel_southeast.log": "b59491b399ad1789a2b49579155777f567340c0c78c267741f0b390f6bd57b54",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-panel_southeast.log": "513c4653da1d92379ed901b5c497b95a5d0081c81b94cf2e2d2eb32c62b7f027"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "panel_southwest": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-panel_southwest.log": "26dcecff6c83b806b975c178f79e824bff36de6f9465163897b9ca2c37a595f0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-panel_southwest.log": "32b432105c47ae30e000c349675885de5165cfe96c2dadfcf9e8955a79766b23"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_earth_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_earth_anti.log": "03fc00e9f16d6c2a3b8e5aaf7a88c58decd0da2a931dace8a1efec6ddc78b898",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_earth_anti.log": "ce316b698254f4c59576067a24f50382067c49104a43bc9fc700d3000082ba9d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_earth_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_earth_sol.log": "d93844fb22aa6ff4bf9293e0f6bdc9dac59488cb20d88e508de24c02d8483787",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_earth_sol.log": "9059ec2712c03063ee85b3e960deea47e5f2d3d0f67a1216eb687ee15cd07039"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_jupiter_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_jupiter_anti.log": "de2c0ebefccb25fb25486af213efdf3020359d730b3331aaf810ecd1477eb5af",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_jupiter_anti.log": "d9ba31707cf3bc4c5bf580fbe9bb9b51be3e24475ea4d64ec94f297d086c7dc3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_jupiter_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_jupiter_sol.log": "4fb8067c06a014a78e77959965045ee2ab908811fc8868137339ab0c0a69caba",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_jupiter_sol.log": "6772e29d0f3cb7d703ff6246473bb7990fa938f4795a45dcd59fd4ccd74a0bf8"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_mars_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_mars_anti.log": "a3e568eda753fde7a59318cab187428f5c5b93c39cee3d7db4894e63113f22f1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_mars_anti.log": "4d444eae4559f8dfaa05a9ce6ed3943bf3191901cd16c4dfcea62aacfffc9783"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_mars_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_mars_sol.log": "99d59f08ec46389211871421b54457fbbdb9e39459b2510465f80a3c47e817f4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_mars_sol.log": "597832bb603c5141123a17e59dfc917b025d2c70e73ca46507ec704b3fc2b189"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_mercury_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_mercury_anti.log": "1c6bf5b1850aab4c579d34b3e926eac9c9ac8dd8a495a9f5b28890c6144015c2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_mercury_anti.log": "b570aad597fbbe74bafe442eb971a235b9916e0a63d9c41164e7227d7cac0b37"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_mercury_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_mercury_sol.log": "d20c3cfc2f2aaba02985661e4284210f99c2cde8ef44d2f7dd5c36b7b6145d0c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_mercury_sol.log": "304402449e69949356b4c6b0337fb764f2d2eb36b77666b0dfd81630bd6cc69c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_neptune_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_neptune_anti.log": "4c5b2e077f8ecc85260b429c0f09ab125802f589f7a00cf8621d064377af290e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_neptune_anti.log": "8514aaaa2bbbb3482035d5e56284e4d3e2376970eadbf770c3cb22d61a995af9"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_neptune_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_neptune_sol.log": "5436cf1cdb354f507cf401e299fcaabc91b565d7c11db5328cd1e0cf7107fbb1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_neptune_sol.log": "c7e7b187bd23714b45e7159435e633484c9b58fa0268a0fae4cfd9e628fd8f3f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_saturn_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_saturn_anti.log": "8af8af7d6455a2158f053e316c8767e35d5e0b46566756de0e6c3e8536eff084",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_saturn_anti.log": "c813961b2f97c8961e8cb20bb311935b0eb742ec503bc3c6d69cfd0a582ddf05"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_saturn_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_saturn_sol.log": "d8058276799431732730d67607f3b622d82592ed221f2f6fd6a75addbc935e94",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_saturn_sol.log": "3cf54b23988bd1e0f0a747bcd76fe05df0e1339aa0cbe52d00246b0ffcb30620"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_uranus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_uranus_anti.log": "43973f5c16023fbb4e4b835d70ca3b43ed9c93ea76dd6e9ed2a79aebc3ccfd39",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_uranus_anti.log": "c660b83c98dcb3da4cda7ca2d7c2fc06c7aa19bc58f3fbf90f2a670e10074178"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_uranus_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_uranus_sol.log": "ae7f85a9f0eef6ac6293c35a0c66e2766184ba4156a0d347b089c9b93426a047",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_uranus_sol.log": "45534f5c770a4a6b96bdef75430a2b9cba5b2473dcc46e4a75d3bfa5c937a34c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_venus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_venus_anti.log": "6aa4b28654ab02ddb0c9d1e77ac7b20be44fa4d19bf785507ab43c2bb28d54b5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_venus_anti.log": "6100447add00da6390c7b8c398c710ecdece8a4decb187a9e96ad0334c8ac8b4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "world_venus_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-world_venus_sol.log": "ecb490abf45c1a90009338d01081ef2e4b280a662577e70840a9ab1d8e4ef27d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_venus_sol.log": "f70394651b1f4035328998a79d2e4860598900c6a833e05261b4b74037ccb73b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Visual render failed or source changed; inspect visual-render.log",
+  "findings": [],
+  "status": "error"
+ }
+}

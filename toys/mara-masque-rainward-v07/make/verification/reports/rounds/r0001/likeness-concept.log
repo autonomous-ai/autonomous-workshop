@@ -1,0 +1,6 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/image-to-cad/scripts/render_views.py <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/rainward.step.py --match <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/ref/concept-rim.png --label concept --min 0.9 -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/likeness/ref-000 --shaded --json
+(42.6s, exit 1)
+--- stdout
+{"source":"<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/rainward.step.py","out":"<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/likeness/ref-000","poses":{"concept":{"az":103.125,"el":56.25,"roll":1.0,"fov":0.0}},"views":[{"label":"concept","kind":"match","reference":"<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/ref/concept-rim.png","iou":0.8475,"aspect_delta":0.9241,"poses_tried":249,"ok":false,"az":103.125,"el":56.25,"roll":1.0,"fov":0.0}],"step_drift":[],"mask_contradictions":[],"ok":false,"tolerance":0.1,"size":480}
+
+--- stderr

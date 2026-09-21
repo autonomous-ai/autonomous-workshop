@@ -1,0 +1,62 @@
+{
+ "build": {
+  "panel_southeast": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "panel_southeast"
+ ],
+ "check_motion": false,
+ "checked": [
+  "panel_southeast"
+ ],
+ "checks_ok": true,
+ "entry": "part_panel_southeast.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_southeast"
+ ],
+ "print": {
+  "panel_southeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/overhang-panel_southeast.log": "5fa3200c201e079c55cae29e70d07bb223e202e47f08b4bff1d257d8fab773a7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/thickness-panel_southeast.log": "b2437dc9f1d9856f1b6e572334a047576f56f9880f1eebd8a13adf769730b8ed"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:panel_southeast",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected together as one contact sheet at 500 px a view. Thin rectangular slab, square-ish, ruled into cells with the den and trap pockets of the Sol end sunk into it. Front view is one even slab; iso shows the pocket field at the far edge with full ribs between the pockets. Nothing floating, nothing broken through.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/visual-packet.json",
+  "packet_sha256": "de97f83a6cde46d89f67bde56ed930d850bfb8fd51dd50ba3a89bbcc7c32a4ba",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_drop_a14_beige.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a14_beige/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "drop_a14_beige"
+ ],
+ "print": {
+  "drop_a14_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a14_beige/r0001/overhang-drop_a14_beige.log": "4f50cb057afb4b4fffaaddbb59289af9368f89aa93e0e83a43ec4c09e578ef22",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a14_beige/r0001/thickness-drop_a14_beige.log": "3464e1b90426ae9e2b2cb984d3fc0d64d7b6cc984b84005af409864c6aab43d5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "drop_a14_beige"
+ ],
+ "round": 2,
+ "scope": "component:drop_a14_beige",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One teardrop counter, flat top and bottom, the same solid as every other counter in the set; filament tone is the only difference between the two streams. Top, front and iso show one solid with no overhang and nothing missing, extra or misplaced.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a14_beige/r0002/visual-packet.json",
+  "packet_sha256": "7b4616da60d71a570fca51f6c5f2d83862ba222d53bca82f80cd99358080a9ff",
+  "status": "pass"
+ }
+}

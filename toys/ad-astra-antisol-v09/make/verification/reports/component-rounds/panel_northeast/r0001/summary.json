@@ -1,0 +1,62 @@
+{
+ "build": {
+  "panel_northeast": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "panel_northeast"
+ ],
+ "check_motion": false,
+ "checked": [
+  "panel_northeast"
+ ],
+ "checks_ok": true,
+ "entry": "part_panel_northeast.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_northeast"
+ ],
+ "print": {
+  "panel_northeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001/overhang-panel_northeast.log": "5cbb70aedb145c00d3ad6648dc25284eff043c01d97e0227430a30c9313eecd0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001/thickness-panel_northeast.log": "b3aa845d82bda52a57c7a80d1ae44755bcf22add170fa7abc2f138809c542912"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:panel_northeast",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected together as one contact sheet at 500 px a view. Thin rectangular slab ruled into cells by shallow grooves, with the deeper terrain pockets sunk in its own quadrant. Front view is one even slab of constant thickness; iso shows the grooves as grooves and the pockets as pockets, with a full-width rib left between every pair. Nothing floating, no pocket broken through the underside, no cell missing its rib.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001/visual-packet.json",
+  "packet_sha256": "967fbecea56b2c8416bd0dcd2d331a1983409515e4a6a6b8aa0a2c422cb0ea3d",
+  "status": "pass"
+ }
+}

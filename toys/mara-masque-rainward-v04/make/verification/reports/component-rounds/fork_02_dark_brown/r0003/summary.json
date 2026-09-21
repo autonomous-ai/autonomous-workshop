@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_fork_02_dark_brown.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_02_dark_brown/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_02_dark_brown"
+ ],
+ "print": {
+  "fork_02_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_02_dark_brown/r0001/overhang-fork_02_dark_brown.log": "9545efa744e9bd97a958092272e0ffbe98928564da18e6cfc721cb22f610d1f9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_02_dark_brown/r0001/thickness-fork_02_dark_brown.log": "b6c2d4b97b8d5879dd24887a144fb21396dc178557ac53da7e3b49aad782d731"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "fork_02_dark_brown"
+ ],
+ "round": 3,
+ "scope": "component:fork_02_dark_brown",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Smooth condensed drop inside the preserved 12 x 8 x 4 envelope: flat parallel top and bottom, one broad head and a tail carrying one short rounded terminal notch that tells it apart from the beige set at a glance. One solid, nothing missing or extra, no visible intersection. The fifteen dark-brown counters are instances of this one generated solid and their three packet views hash identically, so this reading is the measured form of each of them.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_02_dark_brown/r0003/visual-packet.json",
+  "packet_sha256": "f7e64667c43aed15dc75df356a1742f19d4ee684df002282bdece02feee47ab5",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "sun_orange": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun_orange"
+ ],
+ "check_motion": false,
+ "checked": [
+  "sun_orange"
+ ],
+ "checks_ok": true,
+ "entry": "part_sun_orange.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_orange"
+ ],
+ "print": {
+  "sun_orange": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0004/overhang-sun_orange.log": "ec660900e79da6a31e426daacce0e7f7cf14ff0f70349055a22b07a99af011cd",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0004/thickness-sun_orange.log": "f271d48596b259054f7eb33c3b06fffd16027e948d4639d6d4d2812fd9157965"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.29,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:sun_orange",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top view: one continuous orange disc, its own edge circle unbroken all the way round, 24 wedge pockets with the constant orange margin between them, the round centre bar with four short engraved ticks, and 32 separate flames standing outside the edge circle. Every pair of flames is parted by open ground running down to the base circle; no two roots touch and no flame crosses inside the circle. The flames flick both ways - some curl with the ring, some against it - in short runs rather than one uniform sweep, and their lengths vary from short nubs to tall licks. Each flame is broad where it meets the circle, holds that width through its lower half and narrows into a small blunt rounded cap. Iso view: the underside is one flat plane, each flame top is a single plane falling from the deck height at the root to a lower tip, and the flanks are vertical with a crisp edge where the ramp meets them. Front view: the stack reads 6.2 mm at the bar, 5.4 mm deck, flames stepping down toward the rim; nothing floats, nothing overhangs, no part is detached. No misplaced, missing or extra geometry, no visible intersection, no wrong orientation.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0004/visual-packet.json",
+  "packet_sha256": "442a46471bbd3adb7595ca97574381dbda5311fad739e4a213ff62c584baad0d",
+  "status": "pass"
+ }
+}

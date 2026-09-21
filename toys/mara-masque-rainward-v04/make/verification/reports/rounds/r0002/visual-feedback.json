@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "The complete set, 55 separate solids in setup. Top: 24 lane tiles fan around a plain orange centre platform in strict light/dark alternation, 30 counters sit flat on their own lane tiles in the four setup stacks with tails inward, and the rim is an unbroken crown of flame. Every tongue tip shows as body beyond the tile edge, and the crown's deeper troughs cut V notches through both the body and the tile above them at the lane boundaries, so the silhouette dips and rises all the way round with no straight stretch. Between two tongues the visible band of body narrows to under two millimetres where a shallow trough sits near a lane axis; it never closes. One closed loop arches out of the rim at the lower edge with two short tongues running underneath it. Front: a flat slab, board 9 mm, counters 4 mm proud of the lane tops, nothing on the rim standing above the lane tops. Iso: tiles seated and standing proud in their pockets, the centre bar open and clear, no floating part, no missing or extra part, no visible intersection and no counter resting on the crown, a marker or a boundary.",
+  "packet_sha256": "fcf3c28962de2250aec41b9c5c79646f83ede36ae7ff9bc0f8a8a901c6c299a4",
+  "status": "pass"
+}

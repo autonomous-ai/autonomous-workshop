@@ -1,0 +1,61 @@
+{
+ "build": {
+  "world_saturn_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_saturn_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_saturn_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_saturn_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_anti"
+ ],
+ "print": {
+  "world_saturn_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/overhang-world_saturn_anti.log": "3047c897f05bf302ec9d8ef3d046804997c25eca78e8c73279029400dedd8074",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/thickness-world_saturn_anti.log": "7c1294115473d0ac70d8e9dcdea5d4fd9f1cd874d068145ffd64aea217a46677"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_saturn_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/visual-packet.json",
+  "packet_sha256": "a12c4c9256661a102b5566c83d9a9b3aaca379d56618373ca7e73181c5c3b57f",
+  "status": "pending"
+ }
+}

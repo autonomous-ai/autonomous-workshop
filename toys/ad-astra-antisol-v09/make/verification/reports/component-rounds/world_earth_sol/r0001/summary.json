@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_earth_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_earth_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_earth_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_earth_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_earth_sol"
+ ],
+ "print": {
+  "world_earth_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/overhang-world_earth_sol.log": "b1d6ce6bb9e40a71f9d08f1a7863200eb41af28a88169ab3fb7851050904a51f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/thickness-world_earth_sol.log": "8f1a3755b0f7b1f5363f1bc5def803ab2b8201e2aedfe3c374982e17998b2bb7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_earth_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected together as one contact sheet at 500 px a view. A ball fractionally larger than Venus's, on the flaring disc, seated and concentric; the two read as the same size at this scale, which matches \u00d816.53 against \u00d816.70. No ring, no extra body, nothing floating.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/visual-packet.json",
+  "packet_sha256": "cb83c264a37d7984e9a33b8bf32b447400c94a2046bd727a63d2a7b05ccf6aa6",
+  "status": "pass"
+ }
+}

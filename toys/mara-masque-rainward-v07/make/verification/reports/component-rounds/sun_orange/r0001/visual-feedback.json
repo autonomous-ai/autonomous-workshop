@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Top view: one continuous orange disc, its own edge circle unbroken all the way round, 24 wedge pockets with the constant orange margin between them, the round centre bar with four short engraved ticks, and 32 separate flames standing outside the edge circle. Every pair of flames is parted by open ground running down to the base circle; no two roots touch and no flame crosses inside the circle. The flames flick both ways - some curl with the ring, some against it - in short runs rather than one uniform sweep, and their lengths vary from short nubs to tall licks. Each flame is broad where it meets the circle, holds that width through its lower half and narrows into a small blunt rounded cap. Iso view: the underside is one flat plane, each flame top is a single plane falling from the deck height at the root to a lower tip, and the flanks are vertical with a crisp edge where the ramp meets them. Front view: the stack reads 6.2 mm at the bar, 5.4 mm deck, flames stepping down toward the rim; nothing floats, nothing overhangs, no part is detached. No misplaced, missing or extra geometry, no visible intersection, no wrong orientation.",
+  "packet_sha256": "d42466814ff226668dd6d309c1646d74890f3654d49612404234b50dfede96b8",
+  "status": "pass"
+}

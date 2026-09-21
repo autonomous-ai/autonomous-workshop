@@ -53,7 +53,7 @@ Internally, the sealed brief that begins one product run is still called a Wish.
 Clone a toy archive into a separate Spark run using a correction brief:
 
 ```bash
-uv run workshop fix toys/mara-masque-rainward-sun \
+uv run workshop fix toys/mara-masque-rainward-v01 \
   --prompt-file docs/examples/rainward-sun-fix.txt
 ```
 
@@ -74,9 +74,9 @@ accepts that directory, so a chain of single-change corrections stays private
 until the run you deliberately leave the flag off:
 
 ```bash
-uv run workshop fix toys/ad-astra-antisol --prompt "…" --no-publish
-uv run workshop fix toys/ad-astra-antisol --prompt "…" --no-publish   # next pair
-uv run workshop fix toys/ad-astra-antisol --prompt "…"                # publish
+uv run workshop fix toys/ad-astra-antisol-v01 --prompt "…" --no-publish
+uv run workshop fix toys/ad-astra-antisol-v01 --prompt "…" --no-publish   # next pair
+uv run workshop fix toys/ad-astra-antisol-v01 --prompt "…"                # publish
 ```
 
 The restriction is frozen when the run is created, so a later `workshop resume`

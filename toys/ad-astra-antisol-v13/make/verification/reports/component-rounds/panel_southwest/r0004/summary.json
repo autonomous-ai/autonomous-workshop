@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_panel_southwest.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_southwest"
+ ],
+ "print": {
+  "panel_southwest": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0004/overhang-panel_southwest.log": "9ae89df9d35549478a93528c5b162950e8491d676c4b61c1c550602fad7c996a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0004/thickness-panel_southwest.log": "b62d47fc448e71d20f2ce534cbb604647098fcce54009eae7935b231fb16d135"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:panel_southwest",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One flat dark_gray board quarter, untouched by this correction. Iso: a single rectangular slab with a continuous raised rim and an even grid of shallow cell pockets; the deeper belt pockets run in two stepped groups, one across the right-hand side and one at the lower edge, which is this quarter's share of the two rivers, with the plain land cells filling the rest. Pocket pitch is even, no cell missing, doubled or out of line, and none breaks the rim. Front: a plain bar of one constant thickness on the bed datum, nothing proud of the top face, nothing below Z=0. Top: an unbroken rectangle, the correct read for pockets cut into a face rather than raised on it. No misplaced, missing or extra geometry, no visible intersections, no floating bodies.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0004/visual-packet.json",
+  "packet_sha256": "a059f6a9bdf5a4cab59acec21c7a8869737b62adc36f75535a383668d30ed9d4",
+  "status": "pass"
+ }
+}

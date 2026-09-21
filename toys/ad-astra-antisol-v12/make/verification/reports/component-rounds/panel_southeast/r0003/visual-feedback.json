@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Iso and front inspected. One board quadrant: a flat slab 9.00 mm thick with the play grid cut into its face as square-bottomed grooves on every boundary between two land cells, a plain free border on the two outer edges and a clean butt edge on the two seam edges, and blind pockets sunk into exactly the cells that take a terrain tile or a den spigot. Every pocket is a square blind hole of even depth with a wall of panel left all round it, none breaks through the slab, and none runs into a neighbour or into the seam. The front view is a bar of even thickness with nothing standing above it. Proportions match the 36.00 mm cell pitch and the 8.00 mm border. No misplaced, missing or extra geometry, no intersections. Untouched by this revision: it differs from the published file only in one NEXT_ASSEMBLY_USAGE_OCCURRENCE line, diffed line by line in measure/revision-part-hashes.md. (The round was re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet_sha256": "9a85aa7676748cf12c9b78c6af28eb8891fa6b7e67f211df2d6b3295a379279e",
+  "status": "pass"
+}

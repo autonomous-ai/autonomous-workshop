@@ -1,0 +1,62 @@
+{
+ "build": {
+  "fork_14_dark_brown": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "fork_14_dark_brown"
+ ],
+ "check_motion": false,
+ "checked": [
+  "fork_14_dark_brown"
+ ],
+ "checks_ok": true,
+ "entry": "part_fork_14_dark_brown.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_14_dark_brown/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_14_dark_brown"
+ ],
+ "print": {
+  "fork_14_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_14_dark_brown/r0001/overhang-fork_14_dark_brown.log": "6e12bfd4aa04c90918f6f44a47c93a04158fe2929643d3aa7e36edee0cb96d08",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_14_dark_brown/r0001/thickness-fork_14_dark_brown.log": "8d755856043ec47261efdefb726d9f7fd905d4733946505cbec9ea410fa79ce3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:fork_14_dark_brown",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Smooth condensed drop inside the preserved 12 x 8 x 4 envelope: flat parallel top and bottom, one broad head and a tail carrying one short rounded terminal notch that tells it apart from the beige set at a glance. One solid, nothing missing or extra, no visible intersection. The fifteen dark-brown counters are instances of this one generated solid and their three packet views hash identically, so this reading is the measured form of each of them.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_14_dark_brown/r0001/visual-packet.json",
+  "packet_sha256": "abc2556a832593a307118fb0e983df40fe05eaf33efd592115f4fed03af45643",
+  "status": "pass"
+ }
+}

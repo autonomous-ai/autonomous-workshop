@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso inspected. A plain slab 164 x 88 x 6.00 mm with eight circular sockets in a four-by-two grid, evenly pitched, all the same diameter, none breaking the slab edge or running into a neighbour. The front view is a flat bar of even thickness with no feature above it; the top view is the plain rectangle the sockets vanish from at normal incidence, which is the same shading behaviour the corona engraving shows and not a missing feature; the iso resolves all eight sockets. No misplaced, missing or extra geometry, no intersections. Untouched and byte-identical. (The round was re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet_sha256": "31e33f0664746f1a98a3eb2b58f5d1ac2d278cfee112e6a7580343b1c9086e0d",
+  "status": "pass"
+}

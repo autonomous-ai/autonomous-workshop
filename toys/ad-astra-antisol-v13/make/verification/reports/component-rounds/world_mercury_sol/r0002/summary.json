@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_mercury_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mercury_sol"
+ ],
+ "print": {
+  "world_mercury_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001/overhang-world_mercury_sol.log": "d9cf72c0d2417f037ad98bea776c19770307f94658993ad143fd7cac1265091d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001/thickness-world_mercury_sol.log": "23ad5c23e532f1b13585057bbaecbb4c1e0e2c4a06c883d1a08b64af61e67d49"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_mercury_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_mercury_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso inspected. The Sol twin of the above and the smallest globe in the set. The disc wall flares OUTWARD as it rises, the opposite draft to its Anti-Sol pair, and the globe sits concentric on its seat collar with nothing standing proud of it. Untouched by this revision and byte-identical to the published set's. No misplaced, missing or extra geometry, no intersections.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0002/visual-packet.json",
+  "packet_sha256": "a9fc5d24d7ab683b019c737701f00dacf71b543603001e3a59b395450742166f",
+  "status": "pass"
+ }
+}

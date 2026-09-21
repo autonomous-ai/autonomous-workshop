@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_den_plug.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "den_plug"
+ ],
+ "print": {
+  "den_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/overhang-den_plug.log": "57330e6b816777e845536ccd0a385101bbd65e99be51e821827c42c1c39eeee7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/thickness-den_plug.log": "6e6d6b108295c9c83923a6b55b34106de4f10b6c05c2ac3897ac0b961cf4e94d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "den_plug"
+ ],
+ "round": 2,
+ "scope": "component:den_plug",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A flanged plug: a spigot below, a flange over it, hex granulation engraved into the four corners, and two flames standing on the flange. Front: the flames rise clear of the flange and lean out; the spigot is a plain block below. Top: the two flame feet sit inboard of the flange corners. Iso: flanged step and granulation read correctly; nothing overhangs into air.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0002/visual-packet.json",
+  "packet_sha256": "56819d1fe47ce6fa0c4caf27b2ccb4322378ca5e3a5e3f40db9b1324cac70f72",
+  "status": "pass"
+ }
+}

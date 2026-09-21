@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_earth_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_earth_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_earth_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_earth_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_earth_sol"
+ ],
+ "print": {
+  "world_earth_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/overhang-world_earth_sol.log": "fc83b84fa47d1cf5961666e59aa8891eb66dccde45180bd9cee534c36d06b534",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/thickness-world_earth_sol.log": "5de2ff94e46c9d3f83b7a7f768b9047f7c0eb23832d38a4ddbedda700d5a36d7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_earth_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed solid: a round disc carrying a globe on an integral seat collar. Front: the disc is 5.00 mm tall and its wall flares outward as it rises (narrower at the bed, wider at the top), which is the Sol ownership cue; the globe meets it through a short collar with no step, gap or visible intersection. Top: the globe is concentric in the disc ring. Iso: one continuous body, no floating, duplicated, missing or extra geometry. Proportion: the globe reads as about 0.49 of the disc's own 34.00 mm, which is this world's place on the size ladder (globe \u00d816.70 mm) -- visibly smaller than Jupiter's and larger than Mercury's where it should be.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/visual-packet.json",
+  "packet_sha256": "3dee1904e31db16c948f83722b1df4131cfb656e558ff695a497b7f5eea4b4e3",
+  "status": "pass"
+ }
+}

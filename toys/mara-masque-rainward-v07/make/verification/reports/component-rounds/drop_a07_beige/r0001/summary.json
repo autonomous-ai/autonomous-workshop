@@ -1,0 +1,61 @@
+{
+ "build": {
+  "drop_a07_beige": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "drop_a07_beige"
+ ],
+ "check_motion": false,
+ "checked": [
+  "drop_a07_beige"
+ ],
+ "checks_ok": true,
+ "entry": "part_drop_a07_beige.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a07_beige/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "drop_a07_beige"
+ ],
+ "print": {
+  "drop_a07_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a07_beige/r0001/overhang-drop_a07_beige.log": "d0fd5f42d270f2e7fc7b28c951d6d9baeb311c85652aa0f2c4259d05cb02866b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a07_beige/r0001/thickness-drop_a07_beige.log": "296d3447ef0b835cf687cb69ecb8fb41618d71c0675645c291f14304e76e09e9"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:drop_a07_beige",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a07_beige/r0001/visual-packet.json",
+  "packet_sha256": "8e1fcb9e2e7b3bc819cdc107d4df0c1971706e5b5b2c1e37c387910af9be72c5",
+  "status": "pending"
+ }
+}

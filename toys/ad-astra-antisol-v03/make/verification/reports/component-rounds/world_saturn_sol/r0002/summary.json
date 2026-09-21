@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_saturn_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_sol"
+ ],
+ "print": {
+  "world_saturn_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001/overhang-world_saturn_sol.log": "504e77ecb6653a7e6ed458e26dfdfe69257ab65ce2e73d8fcc487a2ca4a8de3d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001/thickness-world_saturn_sol.log": "8554904b9edef68fb41f6743a6906c0083dbe61d7c50215775952857eb91998f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_saturn_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_saturn_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Disc, globe and ring. Front: the disc wall widens as it rises, Sol's draft. The ring is tilted at the planet's obliquity and its low side is carried down to the disc as a solid web -- that is the deliberate support-free answer and it is the mirror of the other army's. Top: globe centred, ring crossing it. Iso: ring projects evenly all round; no floating part, no unsupported underside.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0002/visual-packet.json",
+  "packet_sha256": "1a87fed574ad07414552191646067290039bc77496126db5b6b4ab5b584ab8c9",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_neptune_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_neptune_anti"
+ ],
+ "print": {
+  "world_neptune_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/overhang-world_neptune_anti.log": "15375bec9b71703e2b4cde7f90a929f1cd2ff1e2ba9274def2009eccb8ca9ab7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/thickness-world_neptune_anti.log": "45ab573907de6d0c53bd617d6f7cc3146e7d2cc6dacff358b53e3c69e9acb576"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_neptune_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_neptune_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: the disc wall narrows as it rises, the Anti-Sol draft and the mirror of its Sol twin, with the same rounded top edge and sharp bed edge. Mid-ladder globe, the same ball as its Sol twin. Top: disc, seat collar and globe are concentric on one axis. Iso: one ball on one disc through a short seat collar, no step and no gap at the joint. The outer surface is unbroken everywhere -- every marking in this set is a flush colour inlay, so none is visible on this fused printed solid and none should be. No protrusion, no floating body, no missing or extra part, no visible intersection, and no downward-facing surface added.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0002/visual-packet.json",
+  "packet_sha256": "7fc30f36dbedb1b08d392f222984fac5efe0d8242e38236be1b1c7a52a12ab3d",
+  "status": "pass"
+ }
+}

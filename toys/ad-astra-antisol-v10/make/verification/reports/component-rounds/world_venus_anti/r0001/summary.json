@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_venus_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_venus_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_venus_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_venus_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_venus_anti"
+ ],
+ "print": {
+  "world_venus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001/overhang-world_venus_anti.log": "a0c8b9ff7c3747b10235d6c1c6d2e81c1dd2f7a9ef70f0ae46f4c3f1f011127a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001/thickness-world_venus_anti.log": "fd92914ba7da78c3ff177117e4c91c258d551ca0f751d7f34505f7be2d3abfe6"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_venus_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed solid: a round disc carrying a globe on an integral seat collar. Front: the disc is 5.00 mm tall and its wall tapers inward as it rises (wider at the bed, narrower at the top), which is the Anti-Sol ownership cue; the globe meets it through a short collar with no step, gap or visible intersection. Top: the globe is concentric in the disc ring. Iso: one continuous body, no floating, duplicated, missing or extra geometry. Proportion: the globe reads as about 0.49 of the disc's own 34.00 mm, which is this world's place on the size ladder (globe \u00d816.53 mm) -- visibly smaller than Jupiter's and larger than Mercury's where it should be.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001/visual-packet.json",
+  "packet_sha256": "c85258d40b8baf8c4b714acfa775e34649db8a2035989037c56069176d39a812",
+  "status": "pass"
+ }
+}

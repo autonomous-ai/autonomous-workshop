@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "One flat dark_gray board quarter, untouched by this correction. Iso: a single rectangular slab with a continuous raised rim and an even grid of shallow cell pockets; the deeper belt pockets run in two stepped groups, one across the right-hand side and one at the lower edge, which is this quarter's share of the two rivers, with the plain land cells filling the rest. Pocket pitch is even, no cell missing, doubled or out of line, and none breaks the rim. Front: a plain bar of one constant thickness on the bed datum, nothing proud of the top face, nothing below Z=0. Top: an unbroken rectangle, the correct read for pockets cut into a face rather than raised on it. No misplaced, missing or extra geometry, no visible intersections, no floating bodies.",
+  "packet_sha256": "a059f6a9bdf5a4cab59acec21c7a8869737b62adc36f75535a383668d30ed9d4",
+  "status": "pass"
+}

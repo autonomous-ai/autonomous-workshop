@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_neptune_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_neptune_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_neptune_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_neptune_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_neptune_sol"
+ ],
+ "print": {
+  "world_neptune_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/overhang-world_neptune_sol.log": "eef1220fdca3ebe596e7e3b428a517b0f0e374ba6121a9d05de00e6b847c1211",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/thickness-world_neptune_sol.log": "a932a83d88b1952988901991ae128704452cd7bea7f1c7f3a054bcdabc41a848"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_neptune_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed solid: a round disc carrying a globe on an integral seat collar. Front: the disc is 5.00 mm tall and its wall flares outward as it rises (narrower at the bed, wider at the top), which is the Sol ownership cue; the globe meets it through a short collar with no step, gap or visible intersection. Top: the globe is concentric in the disc ring. Iso: one continuous body, no floating, duplicated, missing or extra geometry. Proportion: the globe reads as about 0.64 of the disc's own 34.00 mm, which is this world's place on the size ladder (globe \u00d821.89 mm) -- visibly smaller than Jupiter's and larger than Mercury's where it should be. The white bands and the dark spot are flush colour inlays and are correctly invisible on this single-colour printed solid; nothing on the sphere reads as raised or sunken, which is what a flush inlay must look like here. `measure/neptune-flush.md` measures that on the solids.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/visual-packet.json",
+  "packet_sha256": "7cca17486c63c100f8ccd17610ece8113ee9008de8e9a9e5bf4d5a0f7dd92a03",
+  "status": "pass"
+ }
+}

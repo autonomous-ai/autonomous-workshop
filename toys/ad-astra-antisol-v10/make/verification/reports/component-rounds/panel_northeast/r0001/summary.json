@@ -1,0 +1,62 @@
+{
+ "build": {
+  "panel_northeast": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "panel_northeast"
+ ],
+ "check_motion": false,
+ "checked": [
+  "panel_northeast"
+ ],
+ "checks_ok": true,
+ "entry": "part_panel_northeast.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_northeast"
+ ],
+ "print": {
+  "panel_northeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001/overhang-panel_northeast.log": "ecae46fe19c15a8597b384edbcf5f37ac150ade10c8671cb2c98a0a773e4e338",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001/thickness-panel_northeast.log": "a3aa8381215f515480c26312c9b96bb2dd8b76fd7607d953d9e1d45f1053ef43"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:panel_northeast",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One board panel, one solid. Iso: grid grooves on the cell boundaries and five deep square pockets -- the den cell, two traps and two belt cells. Top: a plain rectangle, correct panel outline. Front: a flat slab of one thickness. No missing, extra or floating geometry and no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001/visual-packet.json",
+  "packet_sha256": "464cddcb186f05b8353821d431a972d6e8750432b22f2fc2ceecf3c09c9505f1",
+  "status": "pass"
+ }
+}

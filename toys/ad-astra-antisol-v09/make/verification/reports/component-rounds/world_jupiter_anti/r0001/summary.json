@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_jupiter_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_jupiter_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_jupiter_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_jupiter_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_jupiter_anti"
+ ],
+ "print": {
+  "world_jupiter_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001/overhang-world_jupiter_anti.log": "fae234391e27b86fdb55f6a0c2b12c2480fb06a709c3a9afb11511a47fa22a90",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001/thickness-world_jupiter_anti.log": "3dab26fb7b24ba1e932629ec22716699a92e0f06ae7cab04b2288595c80194c2"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_jupiter_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected together as one contact sheet at 500 px a view. The mirror, on the inward-collapsing disc; same filling ball, concentric. No ring, nothing floating.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001/visual-packet.json",
+  "packet_sha256": "1a6e3cb7cc1c37a0824d84d9e058640da8219639926b755377000f3ba0e80461",
+  "status": "pass"
+ }
+}

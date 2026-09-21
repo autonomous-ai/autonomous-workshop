@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Iso inspected. A globe a little larger than Mercury's and Mars's on the same \u00d834.00 disc, correctly placed in the size ladder, seated concentric on its collar. Anti-Sol disc draft, tapering inward as it rises. Nothing stands proud of the globe. As with Mercury the mirrored map is a flush inlay and does not show in the fused single-colour part; measure/venus-surface.md measures it on the colour bodies at 0 of 1612 points of disagreement against the reflected Sol map. No misplaced, missing or extra geometry, no intersections. (Round re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet_sha256": "74d07d5b198f1ecc615656ac9eb06ece089851f3654668c33ccd2026ca0213f0",
+  "status": "pass"
+}

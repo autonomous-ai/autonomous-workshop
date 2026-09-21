@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_mars_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mars_sol"
+ ],
+ "print": {
+  "world_mars_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001/overhang-world_mars_sol.log": "7d3640e513eeb0d930ffaf48de3a3cb4878ef54cfa670f07ff56f1793bdae56e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001/thickness-world_mars_sol.log": "38a319d5444fdf76e5328c4f5b193f15587d2f7101a9133f75b25c3b3cdf3cda"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_mars_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_mars_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "\u00d814.72 globe, second smallest, on the outward-flaring disc with its integral collar. Top view concentric, iso shows a flat bed face and no overhang. One solid.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0002/visual-packet.json",
+  "packet_sha256": "13700d235f9a98e3ee160306e7ec24e4d9403187529e500a3a4223a85fbc259d",
+  "status": "pass"
+ }
+}

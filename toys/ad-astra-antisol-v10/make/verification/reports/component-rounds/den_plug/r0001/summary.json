@@ -1,0 +1,62 @@
+{
+ "build": {
+  "den_plug": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "den_plug"
+ ],
+ "check_motion": false,
+ "checked": [
+  "den_plug"
+ ],
+ "checks_ok": true,
+ "entry": "part_den_plug.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "den_plug"
+ ],
+ "print": {
+  "den_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/overhang-den_plug.log": "a429b3894f747de4e38d6c8b187c4e8247c7e067bdbe1ee0094d2700a0548a14",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/thickness-den_plug.log": "417694dcc0fc4d84b4aec7ec1a5cf20c1a811096e5c79c97df8cc4f543994b9c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:den_plug",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One star plug, one solid. Iso: a square flange over a deeper square plug body, granulation engraved into the flange corners, and two tapered flames rising from one edge. Top: the two flames sit on one edge as designed and the flange is otherwise clear. Front: the flange stands proud of the plug body as a continuous lip all the way round and the two flames rise off it with no step at their feet. No missing, extra or floating geometry and no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/visual-packet.json",
+  "packet_sha256": "d1d66be35a7e27983300869012abf4f7dff3b0951f1b3147d72ce35ec1be2a8a",
+  "status": "pass"
+ }
+}

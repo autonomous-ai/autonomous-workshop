@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "One orange disc whose circular edge runs unbroken all the way round, with forty-eight separate flames standing off it. Top: each flame is rooted on its own arc of that edge, every valley between two flames runs down to the circle, and no flame touches a neighbour. There is no closed loop, arch, ribbon or handle anywhere on the part. Iso: all flames curl the same way, every tip is blunt and rounded, each top falls outward from the deck height on one plane. Front: 6.2 mm tall, flat underside, no face overhanging air. Twenty-four lane pockets with their key recesses, the centre bar and four hub dashes are all present; nothing is missing, extra, misplaced or interpenetrating.",
+  "packet_sha256": "9c6adb6d5333b13ba19c5cd188d0b32c84c85ddea144752005a2c74e636c7cd3",
+  "status": "pass"
+}

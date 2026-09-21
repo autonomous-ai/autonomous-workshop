@@ -1,0 +1,62 @@
+{
+ "build": {
+  "sun_orange": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun_orange"
+ ],
+ "check_motion": false,
+ "checked": [
+  "sun_orange"
+ ],
+ "checks_ok": true,
+ "entry": "part_sun_orange.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_orange"
+ ],
+ "print": {
+  "sun_orange": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0005/overhang-sun_orange.log": "2f13b8a6dfcd372af945799f63fdf2d8c05f76535c782d04b615c42b1ea6e58e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0005/thickness-sun_orange.log": "264c36bb04bdf7bbb1b8adbf94268c6e9d03c743edc0f575d9bef693056c6cae"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.29,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:sun_orange",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One orange disc whose circular edge runs unbroken all the way round, with forty-eight separate flames standing off it. Top: each flame is rooted on its own arc of that edge, every valley between two flames runs down to the circle, and no flame touches a neighbour. There is no closed loop, arch, ribbon or handle anywhere on the part. Iso: all flames curl the same way, every tip is blunt and rounded, each top falls outward from the deck height on one plane. Front: 6.2 mm tall, flat underside, no face overhanging air. Twenty-four lane pockets with their key recesses, the centre bar and four hub dashes are all present; nothing is missing, extra, misplaced or interpenetrating.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0005/visual-packet.json",
+  "packet_sha256": "9c6adb6d5333b13ba19c5cd188d0b32c84c85ddea144752005a2c74e636c7cd3",
+  "status": "pass"
+ }
+}

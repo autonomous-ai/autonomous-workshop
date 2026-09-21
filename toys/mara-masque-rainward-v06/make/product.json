@@ -1,0 +1,176 @@
+{
+  "board": {
+    "bank_marks": "four engraved radial ticks on the centre bar top",
+    "banks": 4,
+    "counter_stations_mm": [
+      74.0,
+      63.5,
+      53.0,
+      42.5,
+      32.0
+    ],
+    "disc_radius_mm": 79.7,
+    "envelope_mm": [
+      186.674,
+      188.459
+    ],
+    "height_mm": 6.2,
+    "lane_inner_radius_mm": 26.5,
+    "lanes": 24,
+    "orange_margin_between_tiles_mm": 0.7,
+    "stack_mm": {
+      "bar_top": 6.2,
+      "body_under_the_pocket": 3.8,
+      "deck": 5.4,
+      "tile_thickness": 2.2,
+      "tile_top": 6.0
+    },
+    "tile_bays_or_notches": 0,
+    "tile_fan_radius_mm": 79.55
+  },
+  "colour": {
+    "body": "#FF671F",
+    "body_between_the_two_lane_tones": true,
+    "cream_counter": "#F7F0D1",
+    "dark_brown_counter": "#3D2920",
+    "dark_lane": "#8E3C06",
+    "filaments": {
+      "cream_counters": "beige",
+      "dark_counters": "dark_brown",
+      "dark_lane_tiles": "cocoa_brown",
+      "light_lane_tiles": "yellow",
+      "sun_board": "orange"
+    },
+    "greyscale_min_gap_measured_in_the_render": 0.102,
+    "light_lane": "#FFB549",
+    "relative_luminance": {
+      "fork_dark_brown_counter": 0.17412,
+      "lane_dark_cocoa": 0.288223,
+      "lane_light_yellow": 0.7410412,
+      "single_beige_counter": 0.9377139999999999,
+      "sun_body_orange": 0.5103492000000001
+    }
+  },
+  "counters": {
+    "area_on_a_neighbouring_tile_mm2": 0.0,
+    "centre_bar_sites": 6,
+    "count": 30,
+    "identical_solids": 1,
+    "orange_margin_it_reaches_into_mm": 1.0,
+    "reach_past_its_own_tile_mm": 0.3436,
+    "size_mm": [
+      10.0,
+      7.0,
+      4.5
+    ],
+    "support_by_station": {
+      "station_32.0": 0.97974,
+      "station_42.5": 1.0,
+      "station_53.0": 1.0,
+      "station_63.5": 1.0,
+      "station_74.0": 1.0
+    },
+    "worst_centroid_to_contact_hull_mm": 2.166
+  },
+  "crown": {
+    "adjacent_roots_touch": false,
+    "all_flames_turn_one_way": true,
+    "base_circle_radius_mm": 79.7,
+    "base_circle_unbroken": true,
+    "closed_loops": 0,
+    "flame_length_ratio": 4.096,
+    "flame_rise_mm": [
+      4.15,
+      17.0
+    ],
+    "flames": 48,
+    "material_removed_from_the_top_only": true,
+    "max_root_over_its_root_to_root_arc": 0.5246,
+    "max_tip_radius_mm": 96.7,
+    "max_valley_over_the_smaller_root": 0.9941,
+    "min_flame_plan_clearance_mm": 4.821,
+    "one_plane_per_flame_top": true,
+    "root_arc_mm": [
+      5.104,
+      5.622
+    ],
+    "root_height_mm": 5.4,
+    "separate_pieces_outside_the_edge_counted_in_the_render": 48,
+    "tall_flame_share": 0.25,
+    "tall_flame_spacing": [
+      3,
+      5,
+      4,
+      3,
+      6,
+      4,
+      3,
+      5,
+      4,
+      3,
+      4,
+      4
+    ],
+    "tall_flames": 12,
+    "tip_cap_across_mm": [
+      2.6,
+      4.1
+    ],
+    "tip_height_mm": [
+      3.243,
+      4.202
+    ],
+    "tip_over_disc": 1.2133,
+    "turn_exponent": 1.15,
+    "turn_root_to_tip_deg": [
+      37.13,
+      43.78
+    ],
+    "turn_share_in_the_inner_half": 0.4506,
+    "valley_arc_mm": [
+      4.821,
+      5.366
+    ]
+  },
+  "exported_geometry_mb": {
+    "assembled_step": 5.35,
+    "sun_part_step": 3.15
+  },
+  "rules": {
+    "note": "Carried into this revision byte for byte and not edited.",
+    "path": "RULES.md",
+    "sha256": "d601a858b70b4c1685dced91c7f176d73e4779a3ad784e9b13c7fc88d1fd9d66"
+  },
+  "summary": "You supply two ordinary six-sided dice and a cup each; everything else is in the box. A printed backgammon set built as a small Sun: twenty-four radial lanes in two tones of orange fan out from a raised centre bar, and the rim is a crown of forty-eight separate curled flames standing off the disc's own circular edge, no two the same length. Thirty teardrop drops, fifteen cream and fifteen dark brown, travel the lanes under the ordinary 1911 rules, which come with it in full.",
+  "title": "Rainward Emberfan",
+  "verification": {
+    "blind_review": "BLIND-REVIEWS.md, one independent critic over three rounds",
+    "bridges": 0,
+    "interference_clashes": 0,
+    "motion": "unverified; the set has no coupled mechanism and motion checks are disabled for this run",
+    "not_claimed": [
+      "no print was made",
+      "no physical handling, tile retention or stack stability is claimed",
+      "no durability or human response is claimed",
+      "dice fairness is a property of the dice the player supplies"
+    ],
+    "overhang_gate": "passed on all 55 printable parts at 45 degrees",
+    "print_ready_claim": false,
+    "regions_needing_support": 0,
+    "status": "digitally-verified-not-print-ready",
+    "wall_gate": "passed on all 55 printable parts at a 0.4 mm nozzle"
+  },
+  "what_is_in_the_box": {
+    "counters": 30,
+    "lane_tiles": 24,
+    "not_included_and_not_substituted": [
+      "no printed randomiser, spinner or dice substitute is supplied"
+    ],
+    "player_supplied": [
+      "two ordinary 1-6 dice of any standard make",
+      "one ordinary dice cup per player"
+    ],
+    "printed_parts": 55,
+    "sun_board": 1
+  }
+}

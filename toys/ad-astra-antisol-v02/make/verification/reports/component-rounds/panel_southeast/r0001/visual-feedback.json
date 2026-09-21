@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Flat board panel, uniform thickness, with the playing grid cut into the face as shallow square-bottomed grooves and the terrain cells as blind square pockets. Front: a plain slab, nothing standing proud of the face. Iso: grid grooves and pockets at the right relative depths, pocket walls square, no pocket breaking the panel edge and no rib thinner than its neighbours. The top view carries no shading contrast because every surface it sees faces straight up; the iso view supplies the depth evidence and resolves it.",
+  "packet_sha256": "3129ff8a26d3de091682a4b42f0d5761d071a1a646d2c6c45e10bdf357644214",
+  "status": "pass"
+}

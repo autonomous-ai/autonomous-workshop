@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Storage tray, coherent. Iso: a flat rectangular slab with eight shallow circular sockets in a regular 4 by 2 grid, evenly spaced and all the same size, none breaking the slab edge. Front view: one plain slab of constant thickness. The top view carries no information here -- this renderer is flat-shaded, so a socket floor parallel to the top face takes the same tone as the face -- and the iso resolves it. Nothing missing, nothing extra, no floating geometry.",
+  "packet_sha256": "8d51d70803daaebbc2ccbcb22831d523708e8d77f9412fbd5eebe5e205ae89c3",
+  "status": "pass"
+}

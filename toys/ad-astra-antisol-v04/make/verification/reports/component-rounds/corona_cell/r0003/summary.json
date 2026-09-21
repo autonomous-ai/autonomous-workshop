@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_corona_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "corona_cell"
+ ],
+ "print": {
+  "corona_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0001/overhang-corona_cell.log": "b42b1bf75425ba1346464decf2ba8bc62f0456f74d3df8d29d177f20096eee7e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0001/thickness-corona_cell.log": "66c13f2f1cd4ad5493a6442727c1875cbd927529262243c239643492adf05bc9"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "corona_cell"
+ ],
+ "round": 3,
+ "scope": "component:corona_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A square tile with an engraved sunburst on its face and two raised tongues at one pair of corners. Front: the two tongues rise from the tile and lean, and the rest of the face is flat -- the sunburst is engraved into it rather than raised. Top: the two tongues sit at adjacent corners, on the diagonal away from the star. Iso: the tongues are attached at their feet with no undercut, the sunburst rays are cut in, and the tile floor is flat where a piece stands. Nothing floats, no extra tongue, no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0003/visual-packet.json",
+  "packet_sha256": "0a3080946e2b12a7a6cc636f6aab5ea446b2244841c8cd1f5d6ca92c570605e7",
+  "status": "pass"
+ }
+}

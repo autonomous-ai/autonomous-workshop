@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_jupiter_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_jupiter_sol"
+ ],
+ "print": {
+  "world_jupiter_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/overhang-world_jupiter_sol.log": "9ecc9f245c9394e471a1795ef9d83a39ad069ab7dc66dd4358676eac76b33b40",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/thickness-world_jupiter_sol.log": "8b782562d52eef533f116d2c021a183c50e8e75cf585c715f3d0c416a92a4eb3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_jupiter_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_jupiter_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: the disc wall widens as it rises, which is the Sol draft, and the top edge is rounded while the bed edge is left sharp so the piece stands flat. Largest globe in the set and the ball nearly fills the disc it stands on, which is the top of the rank ladder. Top: disc, seat collar and globe are concentric on one axis. Iso: one ball on one disc through a short seat collar, no step and no gap at the joint. The outer surface is unbroken everywhere -- every marking in this set is a flush colour inlay, so none is visible on this fused printed solid and none should be. No protrusion, no floating body, no missing or extra part, no visible intersection, and no downward-facing surface added.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0002/visual-packet.json",
+  "packet_sha256": "5897baacbbba7b8fdde7b36de2c295b46544317266c30f5272201ef2e7da552f",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_uranus_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_uranus_anti"
+ ],
+ "print": {
+  "world_uranus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/overhang-world_uranus_anti.log": "cd7cbcc0a367e3bbfdf8cec9a1aeafe1314ad3e9b48455faf51476b29e704538",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/thickness-world_uranus_anti.log": "35c8d7922b56a8193a904ab8be8ab4658f3a6e8f13a674c26b2c276dcd8df0bc"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_uranus_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_uranus_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A disc with a globe sunk into its top, and nothing else. The disc wall drafts the way this army's discs draft, the globe is centred on the disc axis and meets it through a short seat collar, and the numeral pocket is flush in the wall. No protrusion, no floating body, no visible intersection, no downward-facing surface added. Front: the disc wall narrows as it rises, Anti-Sol's draft. Iso: ball size is right for this planet's place in the ladder.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0002/visual-packet.json",
+  "packet_sha256": "ffa7d26e7eec90aaa0a7511508150f7b80acfd5414fb78846c7d682421f44c59",
+  "status": "pass"
+ }
+}

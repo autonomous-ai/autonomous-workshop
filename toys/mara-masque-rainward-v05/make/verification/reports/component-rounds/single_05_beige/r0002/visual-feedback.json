@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Printed on its flat bottom. Top: the preserved single-tail drop silhouette - one smooth swept body with one uninterrupted tail ending in a rounded termination and no split notch; the original Bezier outline is intact. Front: a plain 4.0 mm slab with flat parallel top and bottom faces sitting flat on the bed. Iso: one solid, uniform thickness, no floating geometry, no intersection, nothing missing or extra. The three round images are byte-identical across all fifteen single-tail counters, which are the same solid in the same pose, so this inspection covers this component's own packet exactly.",
+  "packet_sha256": "9a64d1eb335be52a6600989f89b32d676465a05d74fcd74b1d7837a5db85312c",
+  "status": "pass"
+}

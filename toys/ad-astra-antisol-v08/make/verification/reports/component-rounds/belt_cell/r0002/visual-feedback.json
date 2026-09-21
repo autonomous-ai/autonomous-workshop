@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso show one square tile with a smooth circular landing pad in the middle and rubble round its edge. The pad is flat and unbroken where a disc would stand; the rubble stops at the tile boundary and nothing reaches above the field datum over the pad. No floating fragments, no intersection with the pad.",
+  "packet_sha256": "0aa7e153b470a329601c3a08a1c98361cb8b363b5ceab4ea5db7f83dc106cfa1",
+  "status": "pass"
+}

@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Board panel, coherent. Iso: a flat slab with the playing grid cut into its face as shallow square-bottomed grooves and five deeper square terrain pockets, all on the cell grid, with a plain border round the field. Front view: one slab of constant thickness with no protrusion. The top view is featureless because the renderer is flat-shaded and every pocket floor is parallel to the face; the iso resolves it. No missing or extra pocket, no floating geometry, no visible intersection.",
+  "packet_sha256": "9c0e8649c054eee0e16d2d41fd4aa8db0dc97e26500e83f0bcb12287b6a43a35",
+  "status": "pass"
+}

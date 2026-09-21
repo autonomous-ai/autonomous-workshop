@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_orbit_tray.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "orbit_tray"
+ ],
+ "print": {
+  "orbit_tray": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001/overhang-orbit_tray.log": "bf83002311cb90591a2b2e47f5cce0c7ef6dcbea136197d29d0769c8c5cf968e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001/thickness-orbit_tray.log": "ed0d3aa62309ed2048d38a225477b9e0401bdb604640a830fd45e82356279f44"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "orbit_tray"
+ ],
+ "round": 2,
+ "scope": "component:orbit_tray",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: a thin flat tray of even thickness. Top: a plain rectangle. Iso: eight blind circular sockets in a 4x2 grid on an even pitch, all the same diameter and depth, none breaking the tray edge. No defects.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0002/visual-packet.json",
+  "packet_sha256": "40ee05b4f37ca0ebb4d230f91b90289bd3731a7f17e9ca2cf09a6d2e1b1943a5",
+  "status": "pass"
+ }
+}

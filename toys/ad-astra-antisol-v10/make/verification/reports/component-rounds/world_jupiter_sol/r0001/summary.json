@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_jupiter_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_jupiter_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_jupiter_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_jupiter_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_jupiter_sol"
+ ],
+ "print": {
+  "world_jupiter_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/overhang-world_jupiter_sol.log": "28b5a0a27d405db08c1e54911a5446aaebac227c9b9a7af8b6647565d40663c5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/thickness-world_jupiter_sol.log": "4275aa29fe3521cd23b7e54fc5df531ac09b981405fda717cb5c41e8e23aba77"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_jupiter_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed solid: a round disc carrying a globe on an integral seat collar. Front: the disc is 5.00 mm tall and its wall flares outward as it rises (narrower at the bed, wider at the top), which is the Sol ownership cue; the globe meets it through a short collar with no step, gap or visible intersection. Top: the globe is concentric in the disc ring. Iso: one continuous body, no floating, duplicated, missing or extra geometry. Proportion: the globe reads as about 0.79 of the disc's own 34.00 mm, which is this world's place on the size ladder (globe \u00d826.97 mm) -- visibly smaller than Jupiter's and larger than Mercury's where it should be.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/visual-packet.json",
+  "packet_sha256": "37403926e2907ef8eb549ee3e814ad003693c22e4d63e3f9dcd8a500063bf272",
+  "status": "pass"
+ }
+}

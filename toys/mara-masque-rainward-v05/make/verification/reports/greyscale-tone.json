@@ -1,0 +1,155 @@
+{
+  "background_rgb": [
+    237,
+    240,
+    244
+  ],
+  "classes": [
+    {
+      "class": "single_beige_counter",
+      "hue_drift_deg": 1.33,
+      "hue_kept": true,
+      "image_share": 0.01491,
+      "rendered_grey": 0.9719,
+      "rendered_rgb": [
+        252,
+        248,
+        234
+      ],
+      "sealed_grey": 0.9377,
+      "sealed_srgb": [
+        0.97,
+        0.94,
+        0.82
+      ]
+    },
+    {
+      "class": "lane_light_yellow",
+      "hue_drift_deg": 4.1,
+      "hue_kept": true,
+      "image_share": 0.19005,
+      "rendered_grey": 0.8969,
+      "rendered_rgb": [
+        255,
+        235,
+        89
+      ],
+      "sealed_grey": 0.8134,
+      "sealed_srgb": [
+        1.0,
+        0.83,
+        0.1
+      ]
+    },
+    {
+      "class": "sun_body_orange",
+      "hue_drift_deg": 6.05,
+      "hue_kept": true,
+      "image_share": 0.07473,
+      "rendered_grey": 0.8406,
+      "rendered_rgb": [
+        255,
+        212,
+        118
+      ],
+      "sealed_grey": 0.6976,
+      "sealed_srgb": [
+        1.0,
+        0.66,
+        0.18
+      ]
+    },
+    {
+      "class": "lane_dark_cocoa",
+      "hue_drift_deg": 4.92,
+      "hue_kept": true,
+      "image_share": 0.19123,
+      "rendered_grey": 0.6755,
+      "rendered_rgb": [
+        203,
+        168,
+        124
+      ],
+      "sealed_grey": 0.4209,
+      "sealed_srgb": [
+        0.6,
+        0.39,
+        0.2
+      ]
+    },
+    {
+      "class": "fork_dark_brown_counter",
+      "hue_drift_deg": 2.7,
+      "hue_kept": true,
+      "image_share": 0.0184,
+      "rendered_grey": 0.4505,
+      "rendered_rgb": [
+        134,
+        111,
+        97
+      ],
+      "sealed_grey": 0.1741,
+      "sealed_srgb": [
+        0.24,
+        0.16,
+        0.12
+      ]
+    }
+  ],
+  "counter_on_tile_separations": [
+    {
+      "counter": "single_beige_counter",
+      "rendered_gap": 0.075,
+      "tile": "lane_light_yellow"
+    },
+    {
+      "counter": "single_beige_counter",
+      "rendered_gap": 0.2964,
+      "tile": "lane_dark_cocoa"
+    },
+    {
+      "counter": "fork_dark_brown_counter",
+      "rendered_gap": 0.4464,
+      "tile": "lane_light_yellow"
+    },
+    {
+      "counter": "fork_dark_brown_counter",
+      "rendered_gap": 0.225,
+      "tile": "lane_dark_cocoa"
+    }
+  ],
+  "every_class_kept_its_hue": true,
+  "greyscale_image": "snap/greyscale-top.png",
+  "kind": "rainward-corona-greyscale-tone-check",
+  "lane_tone_separation": 0.2214,
+  "neighbour_separations": [
+    {
+      "darker": "lane_light_yellow",
+      "lighter": "single_beige_counter",
+      "rendered_gap": 0.075,
+      "sealed_gap": 0.1243
+    },
+    {
+      "darker": "sun_body_orange",
+      "lighter": "lane_light_yellow",
+      "rendered_gap": 0.0563,
+      "sealed_gap": 0.1158
+    },
+    {
+      "darker": "lane_dark_cocoa",
+      "lighter": "sun_body_orange",
+      "rendered_gap": 0.1651,
+      "sealed_gap": 0.2767
+    },
+    {
+      "darker": "fork_dark_brown_counter",
+      "lighter": "lane_dark_cocoa",
+      "rendered_gap": 0.225,
+      "sealed_gap": 0.2468
+    }
+  ],
+  "note": "The renderer lightens every face and clips the two most saturated tops, so the rendered body-to-light-lane gap is narrower than the sealed one. Both numbers are reported.",
+  "pass": true,
+  "render": "snap/top.png",
+  "value_order_matches_sealed_order": true
+}

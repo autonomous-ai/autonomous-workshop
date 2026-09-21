@@ -1,0 +1,6 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_sun_orange.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0001/thickness-sun_orange.md
+(11.2s, exit 1)
+--- stdout
+
+--- stderr
+part_sun_orange.step.py: 19 open edges -- inside and outside are undefined on an open surface. Run check_mesh, then repair_mesh, and fix the solid in the generator.

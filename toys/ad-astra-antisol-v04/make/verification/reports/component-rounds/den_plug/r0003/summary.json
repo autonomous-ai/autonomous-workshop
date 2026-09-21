@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_den_plug.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "den_plug"
+ ],
+ "print": {
+  "den_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/overhang-den_plug.log": "f3036d5e7f6b87b3968d42aaaa8e0c23cff262fafeba18241a2cc361f472d15e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/thickness-den_plug.log": "f367a092091ca4c3022f8e351ff8ef76649f927abd28570af80f42117d31155a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "den_plug"
+ ],
+ "round": 3,
+ "scope": "component:den_plug",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A square flange with a raised flat top, hex granulation engraved into its corners, and two flames rising from one edge. Front: the flange steps up from a drafted skirt, the top face is flat, and the two flames rise clear of it and lean outward. Top: both flames stand at the two border-facing corners and their feet are wholly inside the flange. Iso: the flames taper to a tip, are attached along their feet, and nothing hangs unsupported; the granulation is engraved rather than raised. No floating body, no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0003/visual-packet.json",
+  "packet_sha256": "ccf0469d6c6b1b92e769ca41ca5b4b1a16a6ef9b79ca78e5336d0b862e8763ee",
+  "status": "pass"
+ }
+}

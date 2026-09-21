@@ -1,0 +1,7 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_lane_05_yellow.step.py --write --json
+(2.9s, exit 0)
+--- stdout
+{"ok":true,"sourceRef":"part_lane_05_yellow.step.py","cadPath":"part_lane_05_yellow","kind":"part","outcome":"built","packagePath":"__cadgen__/models/part_lane_05_yellow.step.py"}
+
+--- stderr
+[scripts/gen] generated part GLB/topology artifact: __cadgen__/models/part_lane_05_yellow.step.py

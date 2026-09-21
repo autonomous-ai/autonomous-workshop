@@ -1,0 +1,12 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_orbit_tray.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001/thickness-orbit_tray.md
+(10.2s, exit 0)
+--- stdout
+part_orbit_tray.step.py: 60.39 cm3 solid, grid 0.207 mm (798x430x34), 387119 surface samples, thickness resolved to 0.103 mm
+  PASS  wall >= 0.80 mm (+/-0.10)      0.0% of surface below (0 of 387119 samples)
+  PASS  thickness distribution         median 5.90 mm, p95 23.99 mm, max 164.03 mm
+  WARN  hollowable at 1.20 mm wall     18.95 of 60.39 cm3 (31%) in 1 pocket(s)
+  PASS  filament that would save       2.84 cm3, 3.5 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001/thickness-orbit_tray.md
+
+--- stderr

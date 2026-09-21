@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "One board panel, one solid. Iso: grid grooves on the cell boundaries and five deep square pockets -- the den cell, two traps and two belt cells. Top: a plain rectangle, correct panel outline. Front: a flat slab of one thickness. No missing, extra or floating geometry and no visible intersection.",
+  "packet_sha256": "464cddcb186f05b8353821d431a972d6e8750432b22f2fc2ceecf3c09c9505f1",
+  "status": "pass"
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_lane_03_yellow.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_03_yellow/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_03_yellow"
+ ],
+ "print": {
+  "lane_03_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_03_yellow/r0001/overhang-lane_03_yellow.log": "d12e3007a69319a46e4fe01c2bdf1e48fe5b55eee7aae2d1cacda4c6409bd2f3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_03_yellow/r0001/thickness-lane_03_yellow.log": "8882e289ee8ca8e045848812768b3d75a3217ed8741e7da0fb09b580ea1e106a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "lane_03_yellow"
+ ],
+ "round": 2,
+ "scope": "component:lane_03_yellow",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One tapering lane strip lying top-face-down on the bed. The outer end is a single clean arc with no bay, notch or scallop; the 1.0 mm lapping lip and the radial locating key are both present and correctly placed. Front and iso show one flat solid with no overhang and no extra or missing feature.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_03_yellow/r0002/visual-packet.json",
+  "packet_sha256": "d785f97b44f6490d0136b48946d068fdf972f2115421fc9ccbdbcb16e9fe36e9",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "build": {
+  "world_venus_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_venus_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_venus_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_venus_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_venus_sol"
+ ],
+ "print": {
+  "world_venus_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001/overhang-world_venus_sol.log": "6dffee047e09c475c5f18921efd8c33c2d77f91d03ee0871a84b561530b197b8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001/thickness-world_venus_sol.log": "2c1cd4b52362dbd45da015bdfc45b652748cd18e820cba25f1fe7f66fb4bd431"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_venus_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001/visual-packet.json",
+  "packet_sha256": "bef7a6972aacd311e16b2a5ca709ece6cc063e9b84efc9709c41186004c2ed3f",
+  "status": "pending"
+ }
+}

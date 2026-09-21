@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_single_06_beige.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_06_beige/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "single_06_beige"
+ ],
+ "print": {
+  "single_06_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_06_beige/r0001/overhang-single_06_beige.log": "ade8d0619548d29dffc4bc05a3467c567ce4a9f6f098845300d9305e4ff4c2cc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_06_beige/r0001/thickness-single_06_beige.log": "941052ca5534f8573bf8fed0e349d8ac68426a141646158fa7680f2d3bc07379"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "single_06_beige"
+ ],
+ "round": 3,
+ "scope": "component:single_06_beige",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Printed on its flat bottom. Top: the preserved single-tail drop silhouette - one smooth swept body with one uninterrupted tail ending in a rounded termination and no split notch; the original Bezier outline is intact. Front: a plain 4.0 mm slab with flat parallel top and bottom faces sitting flat on the bed. Iso: one solid, uniform thickness, no floating geometry, no intersection, nothing missing or extra. The three round images are byte-identical across all fifteen single-tail counters, which are the same solid in the same pose, so this inspection covers this component's own packet exactly.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_06_beige/r0003/visual-packet.json",
+  "packet_sha256": "4aad455deb39d9032379ab180ba2cd794c2f0ecadc11d035d504632fb84fbced",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_neptune_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_neptune_sol"
+ ],
+ "print": {
+  "world_neptune_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/overhang-world_neptune_sol.log": "2502f8b32bf64d1466de82d3e94560e95471fbf3e669b10d972327ba80a422c3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/thickness-world_neptune_sol.log": "4706f9e9761b828ef484b7ea43f4c52a9b7196b23a9a0455b485f1b547d3c1c2"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_neptune_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_neptune_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Piece coherent: one ball seated on one disc, fused through an integral seat collar, and nothing else. Iso and front: the ball is centred on the disc, sits into it rather than on it, and meets it through a short collar with no gap and no step; the disc's wall is visibly wider at the top than at the bed, which is the Sol draft. Top view: the ball is concentric with the disc and the disc's rim is a clean unbroken circle. Proportions are right for Neptune -- the globe is clearly smaller than the \u00d834.00 disc and the piece's height reads as the ball plus the disc's exposed 3.00 mm. No missing or extra body, nothing floating, no visible intersection, nothing protruding past the disc.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0002/visual-packet.json",
+  "packet_sha256": "4f0f2733dd65e264dd49ec1c2f05bb507d88fbb1b8632fb2cfa2e84870424adf",
+  "status": "pass"
+ }
+}

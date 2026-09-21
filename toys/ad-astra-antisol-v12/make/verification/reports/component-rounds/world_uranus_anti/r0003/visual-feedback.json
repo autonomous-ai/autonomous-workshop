@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Iso inspected. A bare globe with an upright hoop standing over it rather than a plate beside it, the hoop meeting the disc top at two places with a small wedge at each, and its plane leaning the OPPOSITE way to the Sol piece's -- the 97.77 degree obliquity mirrored, visible in these two component frames even though it is not visible at board scale. No marking of any kind on the globe. Untouched by this revision and byte-identical. No misplaced, missing or extra geometry, no visible intersections. (Round re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet_sha256": "0d3249ee04c4f4f1400e1d4bea40bd50da43185f73569487a9f9b4c97d8d2b3c",
+  "status": "pass"
+}

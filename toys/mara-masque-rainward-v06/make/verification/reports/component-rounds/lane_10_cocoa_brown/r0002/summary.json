@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_lane_10_cocoa_brown.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_10_cocoa_brown/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_10_cocoa_brown"
+ ],
+ "print": {
+  "lane_10_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_10_cocoa_brown/r0001/overhang-lane_10_cocoa_brown.log": "095d72d65b678ee9871f481064cd736dad8f7853199ba792e50e0d14e4ecd5b0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_10_cocoa_brown/r0001/thickness-lane_10_cocoa_brown.log": "511d2d54617307a088080dd33181399c457cf46459ba03ac66cbc5c7459773c0"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "lane_10_cocoa_brown"
+ ],
+ "round": 2,
+ "scope": "component:lane_10_cocoa_brown",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One tapering lane strip lying top-face-down on the bed. The outer end is a single clean arc with no bay, notch or scallop; the 1.0 mm lapping lip and the radial locating key are both present and correctly placed. Front and iso show one flat solid with no overhang and no extra or missing feature.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_10_cocoa_brown/r0002/visual-packet.json",
+  "packet_sha256": "5d75860f17dc49ff1b447c63090ea1d3fc811da0eb88c1ac512104fe16b7c46a",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "build": {
+  "world_uranus_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_uranus_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_uranus_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_uranus_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_uranus_sol"
+ ],
+ "print": {
+  "world_uranus_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001/overhang-world_uranus_sol.log": "b64981c26c973cdbe2ed8292bfa91cb28f68a64c79769b48965d43fdb9a8b8ff",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001/thickness-world_uranus_sol.log": "8280a9443bc5a7deb1de1d297aa3c3ceee243044c2ee6c5d48a66d29dd29ea29"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_uranus_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001/visual-packet.json",
+  "packet_sha256": "2ab972c1f06a9b0d158524e93c987a8a9e50b62a31a5d13f26b1a2eaef3e3232",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "build": {
+  "world_earth_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_earth_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_earth_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_earth_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_earth_anti"
+ ],
+ "print": {
+  "world_earth_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001/overhang-world_earth_anti.log": "d9cb7ff38532eed792a3fa7ec88d37518c1c8e6e8a39ec07c7687036c0128399",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001/thickness-world_earth_anti.log": "4af287fa304444b6a707f27cab3211c97b3e734339882059a2174e21c3b614a8"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_earth_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001/visual-packet.json",
+  "packet_sha256": "e993cbe30f56cfb4957436f17912ab734ca383f117977ab1ac9da5234e694b86",
+  "status": "pending"
+ }
+}

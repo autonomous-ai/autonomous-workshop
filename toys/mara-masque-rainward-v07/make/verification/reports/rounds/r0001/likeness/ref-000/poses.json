@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/rainward.step.py",
+  "size": 480,
+  "tolerance": 0.1,
+  "poses": {
+    "concept": {
+      "az": 103.125,
+      "el": 56.25,
+      "roll": 1.0,
+      "fov": 0.0
+    }
+  }
+}

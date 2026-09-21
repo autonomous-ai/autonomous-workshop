@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_belt_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belt_cell"
+ ],
+ "print": {
+  "belt_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/overhang-belt_cell.log": "2de488e714822ecaff9730199aad7b9b87d36b188fd3017562fe01f08acc6860",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/thickness-belt_cell.log": "2dbeefb5e893b8c8f69a9b5addcdfff10b99d22edc2617b5cef527c2b73b9800"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "belt_cell"
+ ],
+ "round": 3,
+ "scope": "component:belt_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. One tile 33.50 mm square carrying a smooth circular landing pad sunk into a ring of scattered flat-topped boulders. The top view shows the pad as a clean circle with the rubble confined to the perimeter and none of it encroaching on the disc a piece stands on; the front view shows the boulders standing proud of the slab with irregular heights and no spire; the iso shows the rubble as discrete disjoint rocks rather than a fused mat. No misplaced, missing or extra geometry and no visible intersections. Untouched by this revision and byte-identical to the published set's. (The round was re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0003/visual-packet.json",
+  "packet_sha256": "9d8deca75b423d5d32166889ee39fd5815d2fecab3fb3741ba5d5c00f0ca9d02",
+  "status": "pass"
+ }
+}

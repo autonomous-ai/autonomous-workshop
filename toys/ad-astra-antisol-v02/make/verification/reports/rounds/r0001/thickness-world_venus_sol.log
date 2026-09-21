@@ -1,0 +1,12 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_venus_sol.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_venus_sol.md
+(6.1s, exit 0)
+--- stdout
+part_world_venus_sol.step.py: 6.60 cm3 solid, grid 0.133 mm (259x259x151), 160826 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 160826 samples)
+  PASS  thickness distribution         median 4.93 mm, p95 33.47 mm, max 33.80 mm
+  WARN  hollowable at 1.20 mm wall     3.46 of 6.60 cm3 (52%) in 1 pocket(s)
+  PASS  filament that would save       0.52 cm3, 0.6 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-world_venus_sol.md
+
+--- stderr

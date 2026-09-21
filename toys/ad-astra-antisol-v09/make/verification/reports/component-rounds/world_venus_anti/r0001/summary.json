@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_venus_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_venus_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_venus_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_venus_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_venus_anti"
+ ],
+ "print": {
+  "world_venus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001/overhang-world_venus_anti.log": "a37bd4190dc9a2512ac453c668a38e434c9cd05dae4105568094fa4a3a3ebaae",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001/thickness-world_venus_anti.log": "f4c7935e0b5e7e3afc0d42a91e61927745f9be476ab853c750994dae0260a3ce"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_venus_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected together as one contact sheet at 500 px a view. The mirror, on the inward-collapsing disc, seated and concentric. No ring, no extra body, nothing floating.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001/visual-packet.json",
+  "packet_sha256": "0be6ddf2a727d3407f0af85a59b6e48dee0e6087a31808a745a29d3fbab72f9c",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "panel_southeast": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "panel_southeast"
+ ],
+ "check_motion": false,
+ "checked": [
+  "panel_southeast"
+ ],
+ "checks_ok": true,
+ "entry": "part_panel_southeast.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_southeast"
+ ],
+ "print": {
+  "panel_southeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/overhang-panel_southeast.log": "65ac4100d9e23b79ec770460c5f5ac38b440fcf1bd8ea9d5f4fd709cc46d1a4d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/thickness-panel_southeast.log": "b341cc39291244ff3c4b52393b8aee7d6878a8449ec08b27a1f612f4d0e2a1c6"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:panel_southeast",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Flat board panel, uniform thickness, with the playing grid cut into the face as shallow square-bottomed grooves and the terrain cells as blind square pockets. Front: a plain slab, nothing standing proud of the face. Iso: grid grooves and pockets at the right relative depths, pocket walls square, no pocket breaking the panel edge and no rib thinner than its neighbours. The top view carries no shading contrast because every surface it sees faces straight up; the iso view supplies the depth evidence and resolves it.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/visual-packet.json",
+  "packet_sha256": "3129ff8a26d3de091682a4b42f0d5761d071a1a646d2c6c45e10bdf357644214",
+  "status": "pass"
+ }
+}

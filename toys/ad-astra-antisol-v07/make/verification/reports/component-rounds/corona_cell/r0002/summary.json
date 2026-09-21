@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_corona_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "corona_cell"
+ ],
+ "print": {
+  "corona_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0001/overhang-corona_cell.log": "cafd945d07eff15b7d9558a4b726264b67e9c9178302626e1e6ba40ffd7e3abe",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0001/thickness-corona_cell.log": "65fe19f9e9a93e78a7e87463f61177897a652ac468e8f78556f1badc5ca48faa"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "corona_cell"
+ ],
+ "round": 2,
+ "scope": "component:corona_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Corona tile, coherent. Top and iso: a square tile with an engraved eye at the centre and sixteen engraved flame tongues radiating from it, all cut into the face rather than raised, and two raised tongue cones standing on opposite corners. Front view: both cones rise from the tile face with drafted sides and neither leans past the tile edge. One solid, no floating bodies, no visible intersections, no missing or extra part.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0002/visual-packet.json",
+  "packet_sha256": "edac421f59409a478107e6844157e942a4a1b18d52475e655c5542946390ef4e",
+  "status": "pass"
+ }
+}

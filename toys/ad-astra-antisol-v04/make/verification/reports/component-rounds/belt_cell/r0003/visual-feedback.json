@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "A square tile with a ring of faceted rubble around a smooth circular landing pad. Front: the rubble peaks stand proud of the tile's rim and the pad sits below them, which is the intent -- the pad is the flat surface a piece stands on and the rubble is the belt. Top: the pad is a clean circle with rubble all round it and none inside it. Iso: every lump is attached to the tile floor, none floats, and the tile's own outline is square with a rounded corner radius. No missing or extra body, no visible intersection.",
+  "packet_sha256": "8f846c9f008dfea48f01d33850e79533ad5f8da3a5816a66969cecb2e79d2db5",
+  "status": "pass"
+}

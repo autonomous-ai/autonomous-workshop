@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_fork_03_dark_brown.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_03_dark_brown/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "fork_03_dark_brown"
+ ],
+ "print": {
+  "fork_03_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_03_dark_brown/r0001/overhang-fork_03_dark_brown.log": "795e5a73613875baef6f3a5b11574b64ed0c8468ca3cc18f8971c15c37eb888f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_03_dark_brown/r0001/thickness-fork_03_dark_brown.log": "b441fc26ba349ae21ab577ea937719798fc4fd298ee3b625e44c04e3d2f42a94"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "fork_03_dark_brown"
+ ],
+ "round": 3,
+ "scope": "component:fork_03_dark_brown",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Printed on its flat bottom. Top: the preserved split-tail drop silhouette - one smooth swept body ending in a rounded termination, with the split notch at the tail; the original Bezier outline is intact. Front: a plain 4.0 mm slab with flat parallel top and bottom faces sitting flat on the bed. Iso: one solid, uniform thickness, no floating geometry, no intersection, nothing missing or extra. The three round images are byte-identical across all fifteen split-tail counters, which are the same solid in the same pose, so this inspection covers this component's own packet exactly.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/fork_03_dark_brown/r0003/visual-packet.json",
+  "packet_sha256": "948e2d3a7276a687c573b78837c86d2cbf44d99b067594decab19b44b50b4419",
+  "status": "pass"
+ }
+}

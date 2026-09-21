@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_drop_a15_beige.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a15_beige/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "drop_a15_beige"
+ ],
+ "print": {
+  "drop_a15_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a15_beige/r0001/overhang-drop_a15_beige.log": "93add4bdf3da1ebcdc7b445a378d0f93481ddd54d443fdca15ddada774399eb5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a15_beige/r0001/thickness-drop_a15_beige.log": "1c4ccb80da6171a8fa6037a7e2a0608c0ea91b8def93111be1df4a0669cf5d8d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "drop_a15_beige"
+ ],
+ "round": 2,
+ "scope": "component:drop_a15_beige",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top view: one teardrop 10 mm long and 7 mm across - a round head and a tapering tail - identical in plan to every other counter. Iso view: a flat underside, a vertical skirt, and one smooth top face doming over the head and falling away along the tail, so the piece is easy to pick up and sits flat when stacked. Front view: 4.5 mm of solid with the flat face on the bed and the dome above it; nothing floating, nothing undercut. The colour is the side's own tone - cream beige for side A, dark brown for side B - and both tones sit outside the two lane tones in value. Nothing misplaced, missing, extra or intersecting.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_a15_beige/r0002/visual-packet.json",
+  "packet_sha256": "bb97720079e23ec5dd7bf86ebda3c8d4fc0b7d38461da3f73d557cd38c1b504b",
+  "status": "pass"
+ }
+}
