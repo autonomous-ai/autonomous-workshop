@@ -1,5 +1,45 @@
 # Shared skill provenance
 
+## Corrections carry unchanged parts forward by default (2026-09-21)
+
+A Workshop-local change to the vendored `cad` and `make-round` trees, not an
+upstream resync. Both SKILL.md files carry the same block: a `workshop fix`
+run establishes its changed-part set by building and exporting every part and
+hashing each against the source archive's `make/made.json` `product_manifest`,
+and a part whose STEP comes out byte-identical keeps that archive's isolated
+component round and its two per-part print-gate reports instead of
+reproducing them. Nothing about the assembly is ever carried.
+
+This is a default, not a permission the skills grant themselves. The host
+already enforced the precondition: `make_round --require-component-passes`
+rebuilds every part and refuses assembly review for any whose digest no longer
+matches its recorded component pass, so a part that moved cannot be carried
+even by a run that tried. What the block changes is the reading of ADR 0063
+for a correction, which imports a product tree whose component histories
+already pass.
+
+The choice is frozen at run creation in the run-root `MAKE-OPTIONS.json` as
+`carry_unchanged` under `schema_version: 2`, read by
+`motion_policy.carry_unchanged()`. Schema 1 is unchanged and means "carry
+nothing", so `workshop wish`, `workshop start` and `workshop fix --full` write
+the exact pre-policy bytes and no existing checkpoint hash moves. A run created
+before the policy existed has no schema-2 document, so it keeps its original
+behaviour even after the legacy resume path refreshes its `cad` and
+`make-round` copies from source -- the block conditions on the document, not
+on the tool version. The corrections created while the policy was opt-in wrote
+the field as `quick_fix`; both names read as the same choice, and a document
+carrying both is refused rather than guessed. `motion_policy.quick_fix` stays
+as an alias so a tool frozen into such a run still resolves.
+
+Measured on the first run to use it (the Antisol Jove mirror, 2026-09-21):
+20 of 24 printed parts were byte-identical and carried, saving 717 seconds of
+component-round work read from the source archive's own `make_round` logs.
+The remaining four were re-measured because their bytes moved, although the
+movement was one `NEXT_ASSEMBLY_USAGE_OCCURRENCE` line and no geometry. See
+ADR 0069 for the decision and its limits.
+
+This changes the `cad` and `make-round` fingerprints.
+
 ## PETG Basic stock in the filament palette (2026-09-15)
 
 A Workshop-local addition to the vendored `cad` and `image-to-cad` trees, not an

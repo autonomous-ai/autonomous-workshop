@@ -578,6 +578,7 @@ def _start_run(
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     turn_minutes: Any = None,
     check_motion: bool = False,
+    carry_unchanged: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     revision_snapshot: Optional[bytes] = None,
     progress: TextIO,
@@ -666,6 +667,7 @@ def _start_run(
         **({"max_tokens": max_tokens} if max_tokens != DEFAULT_PRODUCT_TOKENS else {}),
         **_turn_boundary_options(turn_minutes),
         **({"check_motion": True} if check_motion else {}),
+        **({"carry_unchanged": True} if carry_unchanged else {}),
         wish_reference_files=wish_reference_files,
         **({"revision_snapshot": revision_snapshot} if revision_snapshot is not None else {}),
         github_publish_requested=github,
@@ -763,7 +765,8 @@ def _fix(args: argparse.Namespace) -> int:
     receipt = _start_run(
         wish, workflow=workshop_effort("spark"), runtime=runtime,
         github=args.github, no_publish=args.no_publish, max_tokens=args.max_tokens,
-        turn_minutes=args.turn_minutes, check_motion=args.check_motion, revision_snapshot=snapshot,
+        turn_minutes=args.turn_minutes, check_motion=args.check_motion,
+        carry_unchanged=not args.full, revision_snapshot=snapshot,
         wish_reference_files=wish_reference_files(loaded_references),
         progress=progress, live_progress=_LiveWishProgress(progress, runtime.spec.display_name),
     )
@@ -2082,6 +2085,29 @@ def parser() -> argparse.ArgumentParser:
             "read-only as %s/ref-NN-<name>"
             % (MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY)
         ),
+    )
+    fix.add_argument(
+        "--full",
+        action="store_true",
+        help=(
+            "regenerate every part's evidence instead of carrying the "
+            "unchanged ones forward. By default a correction rebuilds and "
+            "re-exports every part, and a part whose STEP comes out "
+            "byte-identical to the source archive's keeps that archive's "
+            "component round and per-part gate reports rather than "
+            "reproducing them -- which is sound because a gate is a pure "
+            "function of the STEP it reads, and which the host enforces by "
+            "hash, refusing assembly review for any part that moved. Nothing "
+            "about the assembly is ever carried: the whole-assembly checks, "
+            "the renders, verify_project and the blind review run in full "
+            "either way. Pass this to take the carried evidence out of the "
+            "record anyway, for a correction you want measured from nothing"
+        ),
+    )
+    fix.add_argument(
+        "--quick",
+        action="store_true",
+        help=argparse.SUPPRESS,
     )
     fix.add_argument("--github", action="store_true", help="also commit and push the new public archive")
     fix.add_argument(

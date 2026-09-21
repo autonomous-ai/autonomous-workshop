@@ -10060,6 +10060,7 @@ def start_native_run(
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
     check_motion: bool = False,
+    carry_unchanged: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     revision_snapshot: Optional[bytes] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
@@ -10127,6 +10128,10 @@ def start_native_run(
     validate_limit(max_tokens)
     if type(check_motion) is not bool:
         raise ContractError("motion check option must be boolean")
+    if type(carry_unchanged) is not bool:
+        raise ContractError("carry unchanged option must be boolean")
+    if carry_unchanged and revision_snapshot is None:
+        raise ContractError("carrying unchanged parts forward needs a correction source")
 
     selected_effort = workshop_effort(effort) if effort is not None else None
     selected_runtime = manager_runtime_selection(
@@ -10199,6 +10204,7 @@ def start_native_run(
                 turn_seconds=turn_seconds,
                 turn_untimed=turn_untimed,
                 check_motion=check_motion,
+                carry_unchanged=carry_unchanged,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.

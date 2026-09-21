@@ -136,6 +136,16 @@ def _project_run_workspace_archive(run_root: Path, staging: Path) -> None:
     minus the repository-facing README and cost summaries that a correction
     source does not need. Everything written is transitively bound to the
     sealed Made and Release contracts.
+
+    Hidden files and ``AGENTS.md`` are left out. A correction source may not
+    carry agent controls -- ``_prepare_revision_from_archive`` refuses one --
+    and a Make session can leave its own scratch dotfiles inside the product
+    tree, which Release seals without complaint. Projecting them would produce
+    a staging archive this import then rejects, so a run could seal a toy that
+    could never be corrected from its own workspace. They are dropped here
+    rather than deleted from the workspace, whose bytes are bound to the Made
+    contract and must not move. The root manifest is built from what this
+    writer actually wrote, so it stays exact.
     """
 
     release, made, inventor_id = _run_workspace_contracts(run_root)
@@ -153,11 +163,28 @@ def _project_run_workspace_archive(run_root: Path, staging: Path) -> None:
         title=str(release.product["title"]),
         summary=str(release.product["summary"]),
         publication=publication,
-        writer=lambda relative, content: _write_staged_file(
-            staging,
-            relative,
-            content.encode("utf-8") if isinstance(content, str) else content,
+        writer=lambda relative, content: (
+            None
+            if _is_agent_control_path(relative)
+            else _write_staged_file(
+                staging,
+                relative,
+                content.encode("utf-8") if isinstance(content, str) else content,
+            )
         ),
+    )
+
+
+def _is_agent_control_path(relative: str) -> bool:
+    """Whether a projected path is an agent control or a hidden file.
+
+    The same rule `_prepare_revision_from_archive` enforces on the finished
+    archive, applied one step earlier so the projection cannot build a source
+    that rule would refuse.
+    """
+    return any(
+        part.startswith(".") or part == "AGENTS.md"
+        for part in PurePosixPath(relative).parts
     )
 
 

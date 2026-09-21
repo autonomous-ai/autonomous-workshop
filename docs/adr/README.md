@@ -27,3 +27,4 @@ Do not rewrite an accepted decision to reverse its meaning; add a superseding
 ADR. Small factual corrections that do not change the decision are allowed.
 
 - [0068: Cancellable geometry and disclosed unverified handoff](0068-cancellable-geometry-and-unverified-handoff.md)
+- [0069: Corrections carry byte-identical parts forward](0069-correction-carry-forward.md)
