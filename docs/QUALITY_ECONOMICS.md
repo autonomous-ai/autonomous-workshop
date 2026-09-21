@@ -736,3 +736,37 @@ notes beside the benchmark; do not turn them into lifecycle gate authority.
    reasoning chooses the product rather than repeatedly rebuilding plumbing.
 7. Tune frozen runtime policy only from comparable production evidence. A
    cheaper configuration is not a win if blind product preference falls.
+
+## A measured trace of two correction runs
+
+`correction-run-trace.html` in this directory is a span-by-span waterfall of
+two `workshop fix` runs over the same 24-part Anti-Sol board set: the Antisol
+Mirror (`ad-astra-antisol-v12`, which regenerated everything) and the Antisol
+Jove Mirror (`ad-astra-antisol-v13`, the first run under the carry policy of
+ADR 0069). Open the file in a browser; it carries its own data and needs no
+server.
+
+Each bar is one recorded tool invocation. The duration is the tool's own log
+line, `(685.9s, exit 0)`; the end is the mtime of the file it wrote, so the
+start is the end minus the duration. 716 spans across the two runs.
+
+Three things it shows that a total does not:
+
+- **Most of a correction is not in a tool span at all** — 84% of v12 and 83%
+  of v13. That residue is model time, and the blind review lives inside it.
+  Neither archive kept a token record (`TOKENS.json: unavailable`), so the
+  residue is a subtraction rather than a measurement.
+- **The carry policy is visible in the render count**, which falls from 74
+  invocations to 8: v13 keeps the component rounds of every byte-identical
+  part and re-renders only the assembly. Tool time falls from 53 to 43
+  minutes, and a further 42 minutes of the source run's work is carried
+  rather than repeated.
+- **A correction imports its source's logs in one burst**, all sharing the
+  mtime of the copy. Those 290 spans are the *source* run's work; counting
+  them as the importing run's overstates its tool time by more than double,
+  which is exactly the mistake the first reading of this data made.
+
+The blind review is drawn as a bracket between the last frame it was handed
+and the verdict it wrote, which is an upper bound rather than a duration: v12
+spent 3h10m of bracket on three review rounds and v13 spent 1h58m on four, so
+the wider bracket plainly contains work that is not review.
