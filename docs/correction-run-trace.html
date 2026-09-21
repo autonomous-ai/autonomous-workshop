@@ -235,6 +235,50 @@ h2{font-size:20px;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
   file written anywhere under the run root. A session teardown killed the run and
   <code>workshop resume</code> restarted it. Everything else that looked empty was a call in flight.</p>
 
+  <h3 style="font-size:15px;margin:22px 0 6px">Why one frame costs a minute</h3>
+  <p class="note">Rendering is the single largest cost in both runs — about <b>2h19m of v12's 5h30m</b>
+  and <b>56m of v13's 4h15m</b> — and none of it is graphics hardware. <code>render_review</code>
+  rasterises in software, NumPy and Pillow, no GL context. The reason it is slow is not the picture.</p>
+  <p class="note">Two things multiply. First, these frames deliberately tessellate <b>ten times finer
+  than the default</b>: <code>world_views.py</code> passes an angular tolerance of 0.03 rad instead of
+  build123d's 0.1, because at 0.1 a polar cap reads as about twenty visible facet rings. The comment
+  records the measurement — the same globe is 138,911 triangles at the default and <b>1,357,677</b> at
+  0.03. Second, <code>render_review.render</code> loops over triangles <b>in Python</b>, allocating
+  several small NumPy arrays inside the loop.</p>
+  <p class="note">Rendering a synthetic mesh through the repo's own renderer puts a number on it:</p>
+  <div class="tblbox"><table>
+    <thead><tr><th>triangles</th><th style="text-align:right">900 px</th>
+      <th style="text-align:right">per triangle</th></tr></thead>
+    <tbody>
+      <tr><td class="n">14,400</td><td class="n">0.76 s</td><td class="n">52.6 µs</td></tr>
+      <tr><td class="n">78,400</td><td class="n">3.91 s</td><td class="n">49.9 µs</td></tr>
+      <tr><td class="n">360,000</td><td class="n">18.07 s</td><td class="n">50.2 µs</td></tr>
+      <tr><td class="n">1,537,600</td><td class="n">74.71 s</td><td class="n">48.6 µs</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note" style="margin-top:10px"><b>~50 µs per triangle, flat.</b> 1.36 M triangles ×
+  50 µs = <b>68 seconds</b>, which is exactly the spacing between consecutive world frames in v12. The
+  eight-globe rank ladder is eight such pieces — 10.9 M triangles, 545 s predicted — and v13's
+  <code>world_views.py ladder</code> call took 504 s.</p>
+  <p class="note"><b>The image size does not matter.</b> The same 360,000-triangle mesh takes 19.1 s at
+  150 px and 17.5 s at 1800 px. There is no pixel bottleneck; the whole cost is per-triangle Python
+  and NumPy call overhead. A profile of that render says where it sits:</p>
+  <div class="tblbox"><table>
+    <thead><tr><th>of 28.2 s</th><th style="text-align:right">seconds</th><th>what</th></tr></thead>
+    <tbody>
+      <tr><td><code>np.cross</code></td><td class="n">9.85</td>
+        <td>one call per triangle for the face normal — 35% of the render, on 3-vectors</td></tr>
+      <tr><td>the loop body itself</td><td class="n">10.1</td><td>indexing, bounds, the block loop</td></tr>
+      <tr><td><code>np.ogrid</code></td><td class="n">3.48</td><td>a fresh pixel grid per triangle row-block</td></tr>
+      <tr><td><code>_shade</code></td><td class="n">3.25</td><td>one shading call per triangle</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note" style="margin-top:10px">Every one of those is a per-face call that could be one
+  array call over all faces. Hoisting <code>np.cross</code> and <code>_shade</code> out of the loop
+  alone would take roughly a third off; a fully vectorised rasteriser is an order of magnitude. That
+  is measured on a synthetic mesh through the repo's renderer, not on the runs, so treat it as the
+  size of the prize rather than a promise.</p>
+
   <h3 style="font-size:15px;margin:22px 0 6px">v13 end to end</h3>
   <p class="note">The whole run in twelve steps. <i>wall</i> is the elapsed window, <i>tool</i> is how
   much of it was inside a call.</p>
@@ -272,6 +316,40 @@ h2{font-size:20px;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
   +2h45m, verdict +4h13m, and the session was inside a tool call for 88% of that window. Of the
   4h15m, <b>3h00m is inside a tool call</b>, <b>26m is the model generating</b>, and <b>47m is the
   teardown</b>. Five calls blowing the 600-second timeout cost 50 minutes between them.</p>
+
+  <h3 style="font-size:15px;margin:22px 0 6px">What v12 did while the critic read</h3>
+  <p class="note">102 calls in the 1h55m between dispatch and verdict, and the review's own record
+  says what they were for: <i>“The critic filed twelve defects cold and withdrew six against
+  measurement.”</i> This is the agent producing that measurement.</p>
+  <div class="tblbox"><table>
+    <thead><tr><th>when</th><th>what</th></tr></thead>
+    <tbody>
+      <tr><td class="n">+2h37m</td><td>one <code>Agent</code> call opens the critic; the agent immediately
+        re-reads its own <code>mercury-facing.md</code> and <code>venus-facing.md</code></td></tr>
+      <tr><td class="n">+2h38m</td><td>launches a large measure batch in the background and starts
+        polling it — <b>10 sleeps, 1h25m of the window</b></td></tr>
+      <tr><td class="n">+2h49m</td><td>round one's answer arrives; the round-two disclosed prompt goes
+        back 24 seconds later</td></tr>
+      <tr><td class="n">+2h53m → +3h31m</td><td>reads what the batch is producing — Neptune mirror and
+        flush, Uranus bare, Mercury surface — and re-runs <code>uranus_bare.py</code> by hand</td></tr>
+      <tr><td class="n">+3h28m → +3h34m</td><td>the batch writes the seven Saturn frames
+        (<code>dark-band-kept</code>/<code>-dropped</code>, <code>cap-white</code>/<code>-beige</code>,
+        <code>venus-saturn-hero</code>)</td></tr>
+      <tr><td class="n">+3h40m</td><td><b>473 s in the foreground</b>: the Mercury and Venus surface
+        scans. This is what withdraws <i>“one of the two sets carries a mirrored map”</i></td></tr>
+      <tr><td class="n">+3h49m</td><td><code>make_round --component</code> over all 24 parts, in the
+        background</td></tr>
+      <tr><td class="n">+4h05m</td><td><code>make_round --require-component-passes</code>, the assembly
+        gate</td></tr>
+      <tr><td class="n">+4h22m</td><td><b>333 s</b>: <code>inspect interfere</code> — clashCount 0 over
+        220 occurrences and 412 tested pairs. This is what kills the last two defects in round three</td></tr>
+      <tr><td class="n">+4h28m</td><td>round three goes back; the verdict lands at +4h32m56s</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note" style="margin-top:10px">371 files were written under <code>cad/measure/</code> in
+  that window: 32 the agent's own analysis reports, 216 component-round logs from the sweep at +3h49m,
+  128 assembly-round logs. The review was never the agent waiting — it was the agent building the
+  rebuttal, and six of twelve defects fell to it.</p>
 
   <h3 style="font-size:15px;margin:22px 0 6px">What v12's two silent stretches actually are</h3>
   <p class="note">The first is 16m43s long and the second 3h24m, and neither is the run waiting.</p>

@@ -793,6 +793,73 @@ to +1h41m: no tool call, no model message, and not one file written anywhere
 under the run root. A session teardown killed the run and `workshop resume`
 restarted it. v12 has 2 minutes unaccounted for in five and a half hours.
 
+### Rendering is the largest cost, and none of it is the picture
+
+About **2h19m of v12's 5h30m** and **56m of v13's 4h15m** is rasterisation.
+`render_review` draws in software — NumPy and Pillow, no GL context — and two
+things multiply.
+
+These frames tessellate **ten times finer than the default**: `world_views.py`
+passes an angular tolerance of 0.03 rad instead of build123d's 0.1, because at
+0.1 a polar cap reads as about twenty visible facet rings. Its own comment
+records the measurement: 138,911 triangles at the default, **1,357,677** at
+0.03. And `render_review.render` loops over triangles **in Python**, allocating
+several small NumPy arrays per triangle.
+
+Through the repo's own renderer on a synthetic mesh:
+
+| triangles | 900 px | per triangle |
+| ---: | ---: | ---: |
+| 14,400 | 0.76 s | 52.6 µs |
+| 78,400 | 3.91 s | 49.9 µs |
+| 360,000 | 18.07 s | 50.2 µs |
+| 1,537,600 | 74.71 s | 48.6 µs |
+
+**~50 µs per triangle, flat.** 1.36 M × 50 µs = **68 s**, which is exactly the
+spacing between consecutive world frames in v12; the eight-globe rank ladder is
+eight such pieces (10.9 M triangles, 545 s predicted) and v13's ladder call took
+504 s.
+
+**Image size is irrelevant** — the same 360,000-triangle mesh takes 19.1 s at
+150 px and 17.5 s at 1800 px. There is no pixel bottleneck. A profile of the
+28.2 s render says where the time is:
+
+| | seconds | what |
+| --- | ---: | --- |
+| `np.cross` | 9.85 | one call per triangle for the face normal — 35% of the render, on 3-vectors |
+| the loop body | 10.1 | indexing, bounds, the row-block loop |
+| `np.ogrid` | 3.48 | a fresh pixel grid per triangle row-block |
+| `_shade` | 3.25 | one shading call per triangle |
+
+Every one is a per-face call that could be one array call over all faces.
+Hoisting `np.cross` and `_shade` out of the loop alone is roughly a third; a
+vectorised rasteriser is an order of magnitude. Measured on a synthetic mesh,
+not on the runs — the size of the prize, not a promise.
+
+### What v12 did while the critic read
+
+102 calls in the 1h55m between dispatch and verdict. The review's own record
+says what they were for: *"The critic filed twelve defects cold and withdrew six
+against measurement."* This is the agent producing that measurement.
+
+| when | what |
+| --- | --- |
+| +2h37m | one `Agent` call opens the critic; the agent re-reads its own `mercury-facing.md` and `venus-facing.md` |
+| +2h38m | launches a large measure batch in the background and polls it — **10 sleeps, 1h25m of the window** |
+| +2h49m | round one's answer arrives; the round-two disclosed prompt goes back 24 seconds later |
+| +2h53m → +3h31m | reads what the batch produces — Neptune mirror and flush, Uranus bare, Mercury surface — and re-runs `uranus_bare.py` by hand |
+| +3h28m → +3h34m | the batch writes the seven Saturn frames |
+| +3h40m | **473 s foreground**: the Mercury and Venus surface scans, which withdraw *"one of the two sets carries a mirrored map"* |
+| +3h49m | `make_round --component` over all 24 parts, in the background |
+| +4h05m | `make_round --require-component-passes`, the assembly gate |
+| +4h22m | **333 s**: `inspect interfere` — clashCount 0 over 220 occurrences and 412 tested pairs, which kills the last two defects in round three |
+| +4h28m | round three goes back; the verdict lands at +4h32m56s |
+
+371 files landed under `cad/measure/` in that window: 32 the agent's own
+analysis reports, 216 component-round logs from the sweep at +3h49m, 128
+assembly-round logs. The review was never the agent waiting — it was the agent
+building the rebuttal, and six of twelve defects fell to it.
+
 v13 end to end, from the transcript:
 
 | window | wall | tool | what happened |
