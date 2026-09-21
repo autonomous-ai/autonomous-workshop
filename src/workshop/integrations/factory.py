@@ -27,6 +27,7 @@ from typing import Any, Callable, Dict, Mapping, MutableMapping, Optional, Seque
 
 from workshop._validation import require_sha256
 from workshop.artifacts import (
+    ArtifactEntry,
     ArtifactManifest,
     assert_packable_content,
     build_artifact_manifest,
@@ -448,13 +449,14 @@ def _make_artifact_entries(
     manifest: ArtifactManifest,
     *,
     conflict_paths: frozenset[str] = FACTORY_HANDOFF_RESERVED_PATHS,
+    skip_paths: frozenset[str] = frozenset(),
 ):
-    """Select every sealed Make file except derived Python/CAD cache content."""
+    """Select every sealed Make file except cache content and skipped copies."""
 
     result = []
     archive_paths = set()
     for entry in manifest.entries:
-        if _is_excluded_make_path(entry.path):
+        if _is_excluded_make_path(entry.path) or entry.path in skip_paths:
             continue
         archive_path = _make_archive_path(
             entry.path,
@@ -465,6 +467,47 @@ def _make_artifact_entries(
         archive_paths.add(archive_path)
         result.append((entry, archive_path))
     return tuple(sorted(result, key=lambda item: item[0].path))
+
+
+def _redundant_primary_copies(
+    manifest: ArtifactManifest,
+    *,
+    primary_source: str,
+    primary_entry: ArtifactEntry,
+    occurrence: Optional[Mapping[str, Any]],
+) -> frozenset[str]:
+    """Return sealed STEP paths that repeat the primary model byte for byte.
+
+    A CAD project keeps its own build output inside itself, because the host
+    gate rebuilds that project in isolation and compares the result against
+    exactly that sealed file.  Make then copies the same bytes up to the
+    required root name the shop reads.  Both are load-bearing where they sit,
+    and neither owner knows about the other, so one sealed tree legitimately
+    carries the assembly twice -- 52.3 MB twice for ad-astra antisol, which is
+    what pushed one handoff past its transport ceiling on 2026-09-21.
+
+    The seal keeps both copies: this trims the outbound handoff only, and only
+    for an exact sha256 match with the primary the shop already receives.  A
+    path the occurrence family names is never dropped, since that transport
+    declares its own bytes.  Files that merely resemble each other are left
+    alone; without one canonical home, dropping either would lose a file the
+    shop's listing has no replacement for.
+    """
+
+    reserved = {primary_source}
+    if occurrence is not None:
+        reserved.add(occurrence["source_step"])
+        if occurrence["source_sidecar"] is not None:
+            reserved.add(occurrence["source_sidecar"])
+        reserved.update(item["source_path"] for item in occurrence["occurrences"])
+    return frozenset(
+        entry.path
+        for entry in manifest.entries
+        if entry.path not in reserved
+        and entry.sha256 == primary_entry.sha256
+        and entry.bytes == primary_entry.bytes
+        and PurePosixPath(entry.path).suffix.casefold() in FACTORY_STEP_SUFFIXES
+    )
 
 
 def _declared_make_artifacts(
@@ -1402,6 +1445,12 @@ def _build_model_handoff(
     make_artifacts = _make_artifact_entries(
         manifest,
         conflict_paths=frozenset(conflict_paths),
+        skip_paths=_redundant_primary_copies(
+            manifest,
+            primary_source=primary_source,
+            primary_entry=primary_entry,
+            occurrence=occurrence,
+        ),
     )
 
     primary_model = {

@@ -1670,10 +1670,85 @@ class FactoryReleaseTest(unittest.TestCase):
         intent = self.ledger.latest("verified-toy", "factory-part-colors")
         self.assertEqual(intent.state, "unknown")
 
+    def test_a_cad_project_copy_of_the_primary_travels_once(self):
+        # The CAD project keeps its own build output because the host gate
+        # rebuilds that project and compares the result against exactly that
+        # file; Make copies the same bytes to the required root name the shop
+        # reads. Both are load-bearing where they sit, so the seal keeps both.
+        # The handoff carries the bytes once, under the name Factory ranks.
+        product = self.made.artifact_root
+        (product / "cad").mkdir()
+        (product / "cad" / "antisol.step").write_bytes(TETRA_STEP)
+        (product / "cad" / "source.py").write_bytes(b"# project source\n")
+        self._reseal_product()
+
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            names = set(archive.namelist())
+            self.assertIn("assembled.step", names)
+            self.assertNotIn("cad/antisol.step", names)
+            # Only the exact duplicate goes; the rest of the project travels.
+            self.assertIn("cad/source.py", names)
+            self.assertEqual(
+                archive.read("assembled.step"), TETRA_STEP
+            )
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            declared = {
+                item["source_path"]
+                for item in facts["make_artifacts"]["files"]
+            }
+            self.assertNotIn("cad/antisol.step", declared)
+            self.assertIn("cad/source.py", declared)
+
+    def test_a_production_occurrence_equal_to_the_primary_is_not_trimmed(self):
+        # A one-solid toy's production part legitimately equals its assembly.
+        # The occurrence family declares that path's own bytes, so trimming it
+        # would leave the transport pointing at a file nobody packed.
+        product = self.made.artifact_root
+        (product / "stone_rook_a1.step").write_bytes(TETRA_STEP)
+        (product / "assembled.step.json").write_text(
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "entryKind": "assembly",
+                    "primaryPose": "assembled",
+                    "parts": [
+                        {"name": "stone_rook_a1", "stepPath": "stone_rook_a1.step"}
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        self._reseal_product()
+
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            names = set(archive.namelist())
+            self.assertIn("assembled_parts/stone_rook_a1.step", names)
+
     def test_product_specific_sidecar_is_archived_but_not_used_for_transport(self):
         product = self.made.artifact_root
         (product / "cad").mkdir()
-        (product / "cad" / "star-arm.step").write_bytes(TETRA_STEP)
+        # Distinct bytes from the root assembly on purpose: this test is about
+        # an unusable sidecar, and an exact copy of the primary would instead
+        # exercise the handoff's redundant-copy trim.
+        (product / "cad" / "star-arm.step").write_bytes(
+            step_solid_document([("star-arm", "#4c859e")])
+        )
         (product / "assembled.step.json").write_bytes(
             canonical_json(
                 {
@@ -1714,7 +1789,9 @@ class FactoryReleaseTest(unittest.TestCase):
 
     def test_malformed_occurrence_metadata_is_archived_without_becoming_transport(self):
         product = self.made.artifact_root
-        (product / "component.step").write_bytes(TETRA_STEP)
+        (product / "component.step").write_bytes(
+            step_solid_document([("component", "#4c859e")])
+        )
         (product / "assembled.step.json").write_bytes(
             canonical_json(
                 {
