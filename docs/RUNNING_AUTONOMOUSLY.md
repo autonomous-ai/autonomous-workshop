@@ -6,7 +6,7 @@ Current runner interface after updating to `bbc0a85a`:
 .venv/bin/python run_wish_codex.py --wish 'make a beherit from berserk' --workflow spark --effort medium --dry-run
 .venv/bin/python run_wish_codex.py --wish 'make a beherit from berserk' --workflow spark --effort medium --yes
 .venv/bin/python run_wish.py --wish 'make a beherit from berserk' --agent claude --model sonnet --workflow spark --effort high --dry-run
-.venv/bin/python run_wish_codex.py --resume <wish-id> --yes
+.venv/bin/python run_wish_codex.py --resume <product-id> --yes
 ```
 
 `run_wish.py` defaults to Claude/Sonnet/high/Spark; `run_wish_codex.py` defaults
