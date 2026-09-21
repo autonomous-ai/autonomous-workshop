@@ -102,6 +102,20 @@ class ReviewOccurrencesTest(unittest.TestCase):
         self.assertEqual(len(occurrences), 1)
         self.assertEqual(occurrences[0][2], self.renderer["FALLBACK_COLOURS"][0])
 
+    def test_angular_tolerance_refines_a_curved_surface(self):
+        """A caller must be able to name the angular half of the deflection.
+
+        build123d defaults it to 0.1 rad, which reads as facet rings across a
+        curved cap; a run that needs smooth form should pass a finer value here
+        rather than reimplementing this routine.
+        """
+        from build123d import Sphere
+
+        # A fresh solid each time: OCC keeps the triangulation it already made.
+        default = self.renderer["tessellate_occurrences"](Sphere(10), 0.008)
+        refined = self.renderer["tessellate_occurrences"](Sphere(10), 0.008, 0.05)
+        self.assertGreater(len(refined[0][1]), 3 * len(default[0][1]))
+
     def test_nested_tessellation_failure_is_not_silently_dropped(self):
         with mock.patch.object(Shape, "tessellate", side_effect=RuntimeError("kernel tessellation failed")):
             with self.assertRaisesRegex(RuntimeError, "kernel tessellation failed"):

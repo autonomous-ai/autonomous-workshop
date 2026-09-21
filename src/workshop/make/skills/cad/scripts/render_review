@@ -153,10 +153,21 @@ def _leaves(shape, parent_location=None, inherited_colour=None):
         yield placed
 
 
-def tessellate_occurrences(shape, tolerance: float):
+def tessellate_occurrences(shape, tolerance: float, angular: float | None = None):
+    """Tessellate each placed leaf, optionally naming the angular deflection.
+
+    build123d defaults the angular half of the deflection to 0.1 rad, about
+    sixty-three steps around a full circle, which a reader sees as facet rings
+    across a curved cap however fine the millimetre tolerance is. Callers that
+    render curved organic form pass `angular` instead of copying this routine.
+    """
     occurrences = []
     for index, child in enumerate(_leaves(shape)):
-        vertices, triangles = child.tessellate(tolerance)
+        vertices, triangles = (
+            child.tessellate(tolerance)
+            if angular is None
+            else child.tessellate(tolerance, angular)
+        )
         points = np.asarray([[p.X, p.Y, p.Z] for p in vertices], dtype=float)
         faces = np.asarray(triangles, dtype=np.int64)
         if len(points) and len(faces):
@@ -195,6 +206,98 @@ def _shade(colour, normal, light, toward_viewer):
     return tuple(min(255, max(0, round(channel * brightness))) for channel in colour)
 
 
+def shade_faces(colour, normals, light, toward_viewer):
+    """Flat-shade every face at once, with the arithmetic `_shade` uses.
+
+    Written elementwise rather than as matrix products so a face keeps the
+    identical float brightness it would be given one at a time.
+    """
+    lengths = np.sqrt(normals[:, 0] ** 2 + normals[:, 1] ** 2 + normals[:, 2] ** 2)
+    degenerate = lengths < 1e-12
+    unit = normals / np.where(degenerate, 1.0, lengths)[:, None]
+    diffuse = np.maximum(
+        0.0, unit[:, 0] * light[0] + unit[:, 1] * light[1] + unit[:, 2] * light[2]
+    )
+    rim = np.maximum(
+        0.0,
+        unit[:, 0] * toward_viewer[0]
+        + unit[:, 1] * toward_viewer[1]
+        + unit[:, 2] * toward_viewer[2],
+    )
+    brightness = np.where(
+        degenerate, 0.55, np.minimum(1.18, 0.34 + 0.66 * diffuse + 0.12 * rim)
+    )
+    values = np.rint(np.asarray(colour, dtype=float)[None, :] * brightness[:, None])
+    return np.clip(values, 0, 255).astype(np.uint8)
+
+
+# Pixels one batch may cover. Each cell costs a few float64 temporaries, so
+# this bounds the rasteriser's peak memory; it does not affect its output.
+BATCH_CELLS = 2_000_000
+def _box_classes(size: int):
+    """Powers of two up to the frame, the boxes a batch is padded out to.
+
+    Padding a bounding box up to one of these makes a batch a single
+    rectangular array, and wastes at most three quarters of its cells.
+    """
+    classes = [1]
+    while classes[-1] < size:
+        classes.append(classes[-1] * 2)
+    return np.asarray(classes, dtype=np.int64)
+
+
+def _raster_batch(faces, xs, ys, zs, denominator, left, rightmost, top, bottom,
+                  box_width, box_rows, fills, pixels_flat, depths_flat, size):
+    """Composite one batch of identically boxed faces into the depth buffer."""
+    cells = box_rows * box_width
+    column = left[:, None, None] + np.arange(box_width, dtype=np.int64)[None, None, :]
+    row = top[:, None, None] + np.arange(box_rows, dtype=np.int64)[None, :, None]
+    x = column + 0.5
+    y = row + 0.5
+    x2 = xs[:, 2][:, None, None]
+    y2 = ys[:, 2][:, None, None]
+    share = denominator[:, None, None]
+    # Pixel-centre barycentric coordinates, as in the face-at-a-time pass.
+    w0 = ((ys[:, 1] - ys[:, 2])[:, None, None] * (x - x2)
+          + (xs[:, 2] - xs[:, 1])[:, None, None] * (y - y2)) / share
+    w1 = ((ys[:, 2] - ys[:, 0])[:, None, None] * (x - x2)
+          + (xs[:, 0] - xs[:, 2])[:, None, None] * (y - y2)) / share
+    w2 = 1.0 - w0 - w1
+    inside = (w0 >= -1e-9) & (w1 >= -1e-9) & (w2 >= -1e-9)
+    inside &= (column <= rightmost[:, None, None]) & (row <= bottom[:, None, None])
+    cell = np.flatnonzero(inside.ravel())
+    if not len(cell):
+        return
+    depth = (w0 * zs[:, 0][:, None, None] + w1 * zs[:, 1][:, None, None]
+             + w2 * zs[:, 2][:, None, None])
+
+    local = cell // cells
+    offset = cell - local * cells
+    target = ((top[local] + offset // box_width) * size
+              + left[local] + offset % box_width)
+    candidate = depth.ravel()[cell]
+
+    # The depth test has hysteresis: a surface must beat the one already held
+    # by a clear margin, so which of two near-coincident faces is kept depends
+    # on the order they are drawn in. Taking the maximum would decide it by
+    # floating-point noise instead. Sort each pixel's candidates into draw
+    # order and apply them one layer at a time -- a layer holds at most one
+    # candidate per pixel, so a layer's scatter is exactly what drawing those
+    # faces one after another would write.
+    ordered = np.lexsort((faces[local], target))
+    target, candidate, local = target[ordered], candidate[ordered], local[ordered]
+    opening = np.flatnonzero(np.append(True, target[1:] != target[:-1]))
+    depth_complexity = np.diff(np.append(opening, len(target)))
+    layer = np.arange(len(target)) - np.repeat(opening, depth_complexity)
+    for index in range(int(depth_complexity.max())):
+        held = layer == index
+        pixel, depth_at, face_at = target[held], candidate[held], local[held]
+        visible = depth_at > depths_flat[pixel] + 1e-9
+        pixel, depth_at, face_at = pixel[visible], depth_at[visible], face_at[visible]
+        depths_flat[pixel] = depth_at
+        pixels_flat[pixel] = fills[face_at]
+
+
 def render(occurrences, azimuth: float, elevation: float, size: int, pad: float, *, framing=None):
     toward_viewer, right, up = camera_basis(azimuth, elevation)
     light = np.array([0.35, -0.45, 0.82], dtype=float)
@@ -219,40 +322,61 @@ def render(occurrences, azimuth: float, elevation: float, size: int, pad: float,
     pixels = np.empty((size, size, 3), dtype=np.uint8)
     pixels[:] = BACKGROUND
     depths = np.full((size, size), -np.inf)
+    pixels_flat = pixels.reshape(-1, 3)
+    depths_flat = depths.reshape(-1)
+    classes = _box_classes(size)
+    # A whole-set review frame carries over a million triangles, most of them
+    # smaller than one pixel, so every per-face quantity here is a single array
+    # call and faces are rasterised in batches rather than one at a time.
     for points, faces, colour in occurrences:
+        points = np.asarray(points, dtype=float)
+        faces = np.asarray(faces, dtype=np.int64)
+        if not len(faces):
+            continue
         px = points @ right * scale + x_offset
         py = y_offset - points @ up * scale
         depth = points @ toward_viewer
-        for a, b, c in faces:
-            vertices = points[[a, b, c]]
-            normal = np.cross(vertices[1] - vertices[0], vertices[2] - vertices[0])
-            xs, ys = px[[a, b, c]], py[[a, b, c]]
-            denominator = ((ys[1] - ys[2]) * (xs[0] - xs[2])
-                           + (xs[2] - xs[1]) * (ys[0] - ys[2]))
-            if abs(denominator) < 1e-12:
-                continue
-            left = max(0, int(np.floor(xs.min())))
-            rightmost = min(size - 1, int(np.ceil(xs.max())))
-            top = max(0, int(np.floor(ys.min())))
-            bottom = min(size - 1, int(np.ceil(ys.max())))
-            fill = _shade(colour, normal, light, toward_viewer)
-            # Bound temporary arrays for large projected faces. Pixel-centre
-            # barycentric coordinates interpolate this orthographic depth.
-            for first_row in range(top, bottom + 1, 32):
-                last_row = min(bottom + 1, first_row + 32)
-                y, x = np.ogrid[first_row:last_row, left:rightmost + 1]
-                x, y = x + 0.5, y + 0.5
-                w0 = ((ys[1] - ys[2]) * (x - xs[2])
-                      + (xs[2] - xs[1]) * (y - ys[2])) / denominator
-                w1 = ((ys[2] - ys[0]) * (x - xs[2])
-                      + (xs[0] - xs[2]) * (y - ys[2])) / denominator
-                w2 = 1.0 - w0 - w1
-                inside = (w0 >= -1e-9) & (w1 >= -1e-9) & (w2 >= -1e-9)
-                z = w0 * depth[a] + w1 * depth[b] + w2 * depth[c]
-                existing = depths[first_row:last_row, left:rightmost + 1]
-                visible = inside & (z > existing + 1e-9)
-                existing[visible] = z[visible]
-                pixels[first_row:last_row, left:rightmost + 1][visible] = fill
+        corners = points[faces]
+        normals = np.cross(corners[:, 1] - corners[:, 0], corners[:, 2] - corners[:, 0])
+        fills = shade_faces(colour, normals, light, toward_viewer)
+
+        xs, ys, zs = px[faces], py[faces], depth[faces]
+        denominator = ((ys[:, 1] - ys[:, 2]) * (xs[:, 0] - xs[:, 2])
+                       + (xs[:, 2] - xs[:, 1]) * (ys[:, 0] - ys[:, 2]))
+        with np.errstate(invalid="ignore"):
+            left = np.maximum(0.0, np.floor(xs.min(axis=1))).astype(np.int64)
+            rightmost = np.minimum(size - 1.0, np.ceil(xs.max(axis=1))).astype(np.int64)
+            top = np.maximum(0.0, np.floor(ys.min(axis=1))).astype(np.int64)
+            bottom = np.minimum(size - 1.0, np.ceil(ys.max(axis=1))).astype(np.int64)
+            drawable = np.flatnonzero(
+                (np.abs(denominator) >= 1e-12) & (rightmost >= left) & (bottom >= top)
+            )
+        if not len(drawable):
+            continue
+
+        box_width = classes[np.searchsorted(classes, rightmost[drawable] - left[drawable] + 1)]
+        box_height = classes[np.searchsorted(classes, bottom[drawable] - top[drawable] + 1)]
+        shapes = np.unique(np.stack([box_width, box_height], axis=1), axis=0)
+        # Draw the box classes in the order their first face appears, so that
+        # coincident faces resolve as they would in a single ordered pass.
+        groups = [drawable[(box_width == shape[0]) & (box_height == shape[1])] for shape in shapes]
+        for shape, group in sorted(zip(shapes, groups), key=lambda pair: pair[1][0]):
+            width_class, height_class = int(shape[0]), int(shape[1])
+            step = max(1, BATCH_CELLS // (width_class * height_class))
+            for start in range(0, len(group), step):
+                batch = group[start:start + step]
+                # One face whose own box is over the budget is drawn in row
+                # bands, as the face-at-a-time pass did. A band splits no
+                # batch that holds more than one face, so no pixel ever sees
+                # its candidates out of draw order.
+                band = (max(1, BATCH_CELLS // width_class)
+                        if len(batch) == 1 else height_class)
+                for first in range(0, height_class, band):
+                    rows = min(band, height_class - first)
+                    _raster_batch(batch, xs[batch], ys[batch], zs[batch], denominator[batch],
+                                  left[batch], rightmost[batch], top[batch] + first, bottom[batch],
+                                  width_class, rows, fills[batch],
+                                  pixels_flat, depths_flat, size)
     return Image.fromarray(pixels)
 
 
@@ -298,6 +422,12 @@ def main(argv=None) -> int:
     parser.add_argument("-o", "--out", type=Path)
     parser.add_argument("--size", type=int, default=DEFAULT_SIZE)
     parser.add_argument("--tolerance", type=float, default=DEFAULT_TOLERANCE)
+    parser.add_argument(
+        "--angular-tolerance",
+        type=float,
+        default=None,
+        help="angular deflection in radians; build123d's 0.1 facets curved caps visibly",
+    )
     parser.add_argument("--pad", type=float, default=DEFAULT_PAD)
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args(argv)
@@ -309,9 +439,11 @@ def main(argv=None) -> int:
         parser.error("--size must be at least 128")
     if not 0.0 <= args.pad < 0.4:
         parser.error("--pad must be in [0, 0.4)")
+    if args.angular_tolerance is not None and not 0.0 < args.angular_tolerance <= 1.0:
+        parser.error("--angular-tolerance must be in (0, 1] radians")
 
     source, shape = build_shape(args.source)
-    occurrences = tessellate_occurrences(shape, args.tolerance)
+    occurrences = tessellate_occurrences(shape, args.tolerance, args.angular_tolerance)
     views = [parse_view(value) for value in (args.view or ["iso"])]
     out = args.out or source.parent / "snap" / "review"
     out.mkdir(parents=True, exist_ok=True)

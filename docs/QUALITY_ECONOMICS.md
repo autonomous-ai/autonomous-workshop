@@ -859,10 +859,26 @@ eight such pieces (10.9 M triangles, 545 s predicted) and v13's ladder call took
 | `np.ogrid` | 3.48 | a fresh pixel grid per triangle row-block |
 | `_shade` | 3.25 | one shading call per triangle |
 
-Every one is a per-face call that could be one array call over all faces.
-Hoisting `np.cross` and `_shade` out of the loop alone is roughly a third; a
-vectorised rasteriser is an order of magnitude. Measured on a synthetic mesh,
-not on the runs — the size of the prize, not a promise.
+Every one was a per-face call that could be one array call over all faces, and
+on 2026-09-21 they became one. `render_review` computes face normals and flat
+shading in single array calls and rasterises faces in batches padded to a
+power-of-two box; each pixel's candidates are still applied in draw order, one
+layer at a time, so the depth test keeps the hysteresis that decides which of
+two near-coincident faces is kept. `tessellate_occurrences` also takes the
+angular deflection now, so a run no longer has to reimplement it to ask for a
+smooth cap.
+
+| frame | per-face pass | batched | per triangle |
+| --- | ---: | ---: | ---: |
+| 1,437,600 triangles at 900 px | 83.2 s | **2.2 s** | 57.9 µs → 1.6 µs |
+
+**37×, pixel-identical.** `tests/make/test_render_review_raster.py` draws every
+scene twice — through the renderer and through the per-face pass it replaced —
+and requires the images to match, including sub-pixel triangles, faces larger
+than a batch box, frame-edge clipping, and coplanar faces that depend on draw
+order. The two measured runs predate the change: their renders are what the
+per-face pass cost, and a comparable correction should now spend minutes rather
+than hours on rasterisation.
 
 ### What v12 did while the critic read
 
