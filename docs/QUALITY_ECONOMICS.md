@@ -750,6 +750,16 @@ Each bar is one recorded tool invocation. The duration is the tool's own log
 line, `(685.9s, exit 0)`; the end is the mtime of the file it wrote, so the
 start is the end minus the duration. 716 spans across the two runs.
 
+It also shows how little of a run is recorded at all: **tool spans cover 16% of
+v12 and 17% of v13**. The rest logs nothing. The largest single omission is the
+frame renders under `cad/snap/` — whole-set images of a 50 MB assembly that the
+Make agent runs directly rather than through `make_round`, so no duration
+survives anywhere. In v12 four of them land between +59m and +83m, six to ten
+minutes apart, and they are the most expensive thing that run does without
+leaving a record. The page draws each frame as the moment its file was written
+and reports the gap back to the previous frame as an upper bound, because model
+time sits in that gap too.
+
 Three things it shows that a total does not:
 
 - **Most of a correction is not in a tool span at all** — 84% of v12 and 83%
@@ -760,7 +770,8 @@ Three things it shows that a total does not:
   invocations to 8: v13 keeps the component rounds of every byte-identical
   part and re-renders only the assembly. Tool time falls from 53 to 43
   minutes, and a further 42 minutes of the source run's work is carried
-  rather than repeated.
+  rather than repeated. It reaches the unlogged frames as well, which the span
+  count alone hides: v12 rendered all 98, v13 carried 86 and re-rendered 12.
 - **A correction imports its source's logs in one burst**, all sharing the
   mtime of the copy. Those 290 spans are the *source* run's work; counting
   them as the importing run's overstates its tool time by more than double,
