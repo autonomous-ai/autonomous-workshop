@@ -2,7 +2,7 @@
 
 The design vault is a typed-link graph of game-design knowledge — mechanisms
 link to their known risks, risks to anti-patterns, anti-patterns to the fixes
-that worked, and every shipped wish adds its own `games/<wish-id>` page. The
+that worked, and every shipped wish adds its own `games/<product-id>` page. The
 graph is maintained outside this repository and served by an ops dashboard at
 `/api/gamevault/*` behind one bearer token. The Workshop host is a client of
 that API (`workshop.invent.gamevault`); product runs never talk to it — the

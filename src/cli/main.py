@@ -2122,14 +2122,14 @@ def parser() -> argparse.ArgumentParser:
     status = subcommands.add_parser(
         "status", help="inspect one native Wish checkpoint without running a model"
     )
-    status.add_argument("product_id", help="Wish id printed by 'workshop wish'")
+    status.add_argument("product_id", help="product id printed by 'workshop wish'")
     status.add_argument("--json", action="store_true", help="emit one JSON receipt")
     status.set_defaults(handler=_status)
 
     resume = subcommands.add_parser(
         "resume", help="resume the exact frozen native Manager session for one Wish"
     )
-    resume.add_argument("product_id", help="saved Wish id")
+    resume.add_argument("product_id", help="saved product id")
     resume.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS, default=None,
                         help="explicit reasoning effort for this and later resumes; omitted keeps the saved selection")
     resume.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
@@ -2170,7 +2170,7 @@ def parser() -> argparse.ArgumentParser:
         "publish",
         help="list the sealed Release of a run that was kept local with --no-publish",
     )
-    publish.add_argument("product_id", help="saved Wish id")
+    publish.add_argument("product_id", help="saved product id")
     publish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     publish.add_argument(
         "--strict", action="store_true", help="exit 1 when publication does not complete"

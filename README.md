@@ -63,7 +63,7 @@ publication with fresh evidence. The original run and listing stay unchanged.
 The source must be a local Workshop archive with its `MANIFEST.json`, or the
 private workspace of a run that has sealed its Release; URLs are not accepted.
 `--model`, `--effort`, `--max-tokens` and `--turn-minutes` select the new run's
-settings. Resume a stopped revision with `workshop resume <new-wish-id>`.
+settings. Resume a stopped revision with `workshop resume <new-product-id>`.
 
 ### Correct one thing at a time, publish once
 
@@ -80,7 +80,7 @@ uv run workshop fix toys/ad-astra-antisol-v01 --prompt "…"                # pu
 ```
 
 The restriction is frozen when the run is created, so a later `workshop resume`
-can neither add nor drop it. Each run still gets its own Wish id, workspace,
+can neither add nor drop it. Each run still gets its own product id, workspace,
 budget and effect ledger, and every unreleased directory is a full archive with
 its own `MANIFEST.json`.
 
@@ -88,7 +88,7 @@ If you decide afterwards that a kept-local run should be listed after all,
 publish that exact run instead of correcting it again:
 
 ```bash
-uv run workshop publish <wish-id>
+uv run workshop publish <product-id>
 ```
 
 It lists the bytes that run already sealed — no model runs, no tokens are spent
@@ -144,7 +144,7 @@ uv run workshop wish "A small hand-cranked cam toy" --inventor soren-voss \
 Motion verification is optional for new runs. `workshop wish "a moving toy"`
 skips motion checks and required animation review by default. Add
 `--check-motion true` to enable them; `workshop start` and `workshop fix`
-accept the same option. `workshop resume <wish-id>` also defaults to false,
+accept the same option. `workshop resume <product-id>` also defaults to false,
 including older Wishes and runs that previously enabled motion. Pass
 `--check-motion true` on resume to enable it again. Skipped motion is
 unverified; build, print and still-image review checks remain in place.
@@ -152,7 +152,7 @@ unverified; build, print and still-image review checks remain in place.
 `start <inventor>` is the ongoing Inventor-led loop; `wish "..."` creates one
 product and stops. Omit `--inventor` on a Wish to let the Manager choose the
 best match. `start <inventor> --once` dreams and builds one Inventor-generated
-idea. `resume <wish-id>` continues the same unfinished product and session.
+idea. `resume <product-id>` continues the same unfinished product and session.
 
 For new Spark runs, Workshop selects the inventor before starting Make. An
 explicit `--inventor` binds your choice immediately; otherwise the Manager
@@ -191,8 +191,8 @@ uv run workshop start pico-press --agent codex --model astra --effort high
 Every run prints a run ID (a Wish ID). Check on it or continue the same session:
 
 ```bash
-uv run workshop status <wish-id>
-uv run workshop resume <wish-id>
+uv run workshop status <product-id>
+uv run workshop resume <product-id>
 ```
 
 Codex Astra also supports `--effort ultra`, passed unchanged to native Codex.
@@ -207,7 +207,7 @@ allowance; the separate Daydream session is outside this build budget.
 ```bash
 uv run workshop wish "A simple one-piece gravity desk rocker" --inventor soren-voss \
   --workflow spark --agent codex --model astra --effort medium --max-tokens 10000000
-uv run workshop resume <wish-id> --max-tokens 15000000  # total cap, not extra tokens
+uv run workshop resume <product-id> --max-tokens 15000000  # total cap, not extra tokens
 ```
 
 `wish`, `start` and `resume` also accept `--turn-minutes M`, which bounds each
@@ -399,7 +399,7 @@ Toys that already left the Workshop. After Factory publication, a sanitized snap
 
 Horn Tip and Knockseed are Spark runs on Grok. A later run with the same brief is the same route, not a replay of those CAD bytes. Cradle Crescent and False Lantern are older snapshots.
 
-Private runs live outside Git at `$WORKSHOP_HOME/runs/<wish-id>/workspace`. New
+Private runs live outside Git at `$WORKSHOP_HOME/runs/<product-id>/workspace`. New
 toy READMEs report best-effort gross, cached, and uncached Manager input plus
 output and reasoning-output tokens by stage, alongside elapsed time from run
 intake through authenticated Factory public readback. This is telemetry, never
@@ -444,7 +444,7 @@ Shop -> Scoreboard (views, orders, prints, returns) -> back to Daydream
 
 Route diagrams: [Spark](docs/images/effort-spark.svg) · [Forge](docs/images/effort-forge.svg) · [Quest](docs/images/effort-quest.svg).
 
-Every run is keyed by a Wish id. Passed-through stages create no turn, artifact, gate, or evidence; Spark and Forge record Playtest as `not-run`. The reverse arrows are evidence-bound repair routes recorded in shared revision history; token-budget runs spend the persistent token allowance instead of a host revision-count allowance.
+Every run is keyed by a product id. Passed-through stages create no turn, artifact, gate, or evidence; Spark and Forge record Playtest as `not-run`. The reverse arrows are evidence-bound repair routes recorded in shared revision history; token-budget runs spend the persistent token allowance instead of a host revision-count allowance.
 
 **Who does what.** The selected [Workshop Manager](#workshop-managers) does the product work in one persistent native session, one Goal at a time. Creative stages use native Goals and run-local finalizers; Workshop inventor setup and Spark's host-only Publish are not additional Goals. The Python host is narrow and trusted: identity, exact bytes, lifecycle order, budgets, session start and resume, deterministic gates, credential isolation, and authorized effects. There is no second agent framework, prompt chain, or reward loop.
 
@@ -472,7 +472,7 @@ tests/              component-mirrored deterministic suite
 docs/               architecture, ADRs, and contributor guides
 ```
 
-Private state stays outside the agent-visible checkout: `$WORKSHOP_HOME/daydreams/<inventor>/`, `$WORKSHOP_HOME/runs/<wish-id>/workspace`, and `$WORKSHOP_HOME/state/<wish-id>/`. Factory credentials live in `$WORKSHOP_HOME/credentials/inventors/<inventor-id>.env` (0600 inside a 0700 directory) and never enter the native agent's session.
+Private state stays outside the agent-visible checkout: `$WORKSHOP_HOME/daydreams/<inventor>/`, `$WORKSHOP_HOME/runs/<product-id>/workspace`, and `$WORKSHOP_HOME/state/<product-id>/`. Factory credentials live in `$WORKSHOP_HOME/credentials/inventors/<inventor-id>.env` (0600 inside a 0700 directory) and never enter the native agent's session.
 
 Turn budgets, compaction ceilings, recovery windows, and the blind-review protocol are specified in [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md). See also [Workshop architecture](docs/ARCHITECTURE.md), the [publication boundary](docs/PUBLISH_SEALED_PRODUCT.md), and [Playtest evidence](docs/PLAYTEST_EVIDENCE.md).
 
