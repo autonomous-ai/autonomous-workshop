@@ -84,6 +84,9 @@ def rollout_report(path: Path) -> dict:
     requests = []
     compactions = 0
     calls = []
+    pending = []
+    poll_tokens = 0
+    poll_yields = collections.Counter()
     for line in path.open(encoding="utf-8", errors="replace"):
         try:
             row = json.loads(line)
@@ -96,13 +99,29 @@ def rollout_report(path: Path) -> dict:
             requests.append(
                 (usage.get("input_tokens", 0), usage.get("output_tokens", 0))
             )
+            # An empty `write_stdin` waits without writing. Its yield decides
+            # how much waiting one full-price request covers, so record the
+            # yield asked for beside what the request cost.
+            text = " ".join(pending)
+            if "write_stdin" in text and 'chars:""' in text:
+                poll_tokens += (
+                    usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
+                )
+                asked = [
+                    int(value)
+                    for value in re.findall(r"yield_time_ms\"?:\s*(\d+)", text)
+                ]
+                poll_yields[max(asked) if asked else 0] += 1
+            pending = []
         elif kind == "compacted":
             compactions += 1
         elif kind == "response_item" and payload.get("type") in (
             "custom_tool_call",
             "function_call",
         ):
-            calls.append(payload.get("input") or payload.get("arguments") or "")
+            call = payload.get("input") or payload.get("arguments") or ""
+            calls.append(call)
+            pending.append(" ".join(str(call).split())[:600])
     inputs = [value for value, _ in requests]
     outputs = [value for _, value in requests]
     polls = [call for call in calls if "write_stdin" in call]
@@ -120,6 +139,8 @@ def rollout_report(path: Path) -> dict:
         "compactions": compactions,
         "calls": len(calls),
         "polls": len(polls),
+        "poll_tokens": poll_tokens,
+        "poll_yields": poll_yields,
         "repeats": [
             (count, text)
             for text, count in signatures.most_common(8)
@@ -169,6 +190,19 @@ def report(wish_id: str) -> None:
               % (data["compactions"], data["calls"], data["polls"],
                  "-" if not data["calls"]
                  else "%.0f%%" % (100 * data["polls"] / data["calls"])))
+        spend = data["input"] + data["output"]
+        if data["poll_yields"]:
+            print("      empty polls cost %s tokens (%s of this rollout)"
+                  % (_thousands(data["poll_tokens"]),
+                     "-" if not spend
+                     else "%.0f%%" % (100 * data["poll_tokens"] / spend)))
+            # write_stdin is capped near 30 s in practice, so anything under
+            # 30000 buys another full-price request for the same waiting.
+            for asked, count in sorted(data["poll_yields"].items()):
+                print("        yield %-9s %d poll%s%s"
+                      % ("%dms" % asked if asked else "(unset)", count,
+                         "" if count == 1 else "s",
+                         "" if asked >= 30000 else "   <- below the ~30s practical cap"))
         for count, text in data["repeats"]:
             print("      repeated %2dx  %s" % (count, text[:96]))
 

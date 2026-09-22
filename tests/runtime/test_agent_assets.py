@@ -217,6 +217,10 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
 
         for required in (
             "yield_time_ms: 30000",
+            "upper bound, not a",
+            "continue that cell with `wait` at the same large yield",
+            "`1000` is not a waiting value",
+            "omit `yield_time_ms`",
             "Never put a `sleep` between polls",
             "one `wait_agent` at a long timeout",
             "takes precedence over them",
@@ -236,7 +240,24 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "--cad-verification-path <cad-project>/measure/verification-pipeline.md",
             make,
         )
+        # A compaction drops references/make.md from the session but keeps the
+        # constitution, so the waiting rule has to exist in both.
+        constitution = " ".join(
+            (
+                REPOSITORY / ".agents/product-run/AGENTS.md"
+            ).read_text(encoding="utf-8").split()
+        )
+        for required in (
+            "Wait for a long command in as few requests as possible",
+            "yield_time_ms: 30000",
+            "`1000` is not a waiting value",
+            "Never sleep between polls",
+        ):
+            with self.subTest(constitution=required):
+                self.assertIn(required, constitution)
         self.assertIn("yield_time_ms: 30000", make_round)
+        self.assertIn("continue a yielded `exec` cell with", make_round)
+        self.assertIn("Omit `yield_time_ms` before writing a small one", make_round)
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:
