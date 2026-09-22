@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_den_plug.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "den_plug"
+ ],
+ "print": {
+  "den_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/overhang-den_plug.log": "e15462c389217aa5d331d88b7ecfcb3b9a4d28fe538756cb8be9aa444c398f0a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/thickness-den_plug.log": "c28703dccdf6118bf74ab5b90976494b37df44cefb8ee83144dc889e30460319"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "den_plug"
+ ],
+ "round": 2,
+ "scope": "component:den_plug",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected, with particular attention because this revision exists to leave this part alone. Two tapered flames and no more, standing at the two corners of one edge of the flange, leaning outward symmetrically, identical in profile and height to each other. The front view shows both reaching the same height above a flat flange top; the top view puts both feet well inside the flange and nowhere near its centre, so the square a winning piece lands on is clear; the iso shows the spigot, the drafted skirt, the flange and the hex granulation engraved into the corners the seated disc never covers. Nothing else on the part stands up. No misplaced, missing or extra geometry, no intersections. Byte-identical to the published set's.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0002/visual-packet.json",
+  "packet_sha256": "fea7ee0c4d16f48b6e99710899cdeef65132dfc419e3922dfb9fa9547edaf90c",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_earth_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_earth_anti"
+ ],
+ "print": {
+  "world_earth_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001/overhang-world_earth_anti.log": "7be67009e1926762738b87a9771c979723ec5e51f93ca57bd0ff1897c1c43cf6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001/thickness-world_earth_anti.log": "9f48ab182beca4cf096d1f61cef2bb87a2f3f7f86054498b9bedb9fee0d34acb"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_earth_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_earth_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: the disc wall narrows as it rises, the Anti-Sol draft and the mirror of its Sol twin, with the same rounded top edge and sharp bed edge. Small globe, the same ball as its Sol twin. Top: disc, seat collar and globe are concentric on one axis. Iso: one ball on one disc through a short seat collar, no step and no gap at the joint. The outer surface is unbroken everywhere -- every marking in this set is a flush colour inlay, so none is visible on this fused printed solid and none should be. No protrusion, no floating body, no missing or extra part, no visible intersection, and no downward-facing surface added.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0002/visual-packet.json",
+  "packet_sha256": "79a2b0af02ffbb2f292c7540df8719f54188326d52cc11af29466d782beba8a4",
+  "status": "pass"
+ }
+}

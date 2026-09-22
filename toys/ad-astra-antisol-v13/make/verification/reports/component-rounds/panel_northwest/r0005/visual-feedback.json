@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "One flat dark_gray board quarter, untouched by this correction. Iso: a single rectangular slab, taller than it is wide, with a continuous raised rim and an even grid of shallow square cell pockets cut into its top face; the deeper belt pockets sit in one contiguous run across the lower-left of the quarter and one along the far right edge, which is where this quarter's share of the two rivers belongs, and the plain land cells are the shallower ones around them. Pocket pitch is even, no cell is missing, doubled or out of line, and no pocket breaks the rim. Front: a plain bar of one constant thickness on the bed datum, nothing standing proud of the top face and nothing below Z=0. Top: an unbroken rectangle, the correct read for pockets cut into a face rather than raised on it; it is narrower than the northeast quarter's, which is the asymmetric 7x9 board split rather than a size error. No misplaced, missing or extra geometry, no visible intersections, no floating bodies.",
+  "packet_sha256": "c6257d83855c90105ebcb3d2669e022fd8835d169b97cfdab906a88f2551e860",
+  "status": "pass"
+}

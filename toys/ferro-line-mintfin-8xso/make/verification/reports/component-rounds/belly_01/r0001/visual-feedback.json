@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Perimeter slope leaves a thin edge; minimum measured wall is 0.13 mm.",
+      "evidence": "Front and iso show the sloping thin side rim; top shows a continuous oval. The thickness summary fails at that perimeter, while overhang passes.",
+      "part": "belly_01",
+      "repair": "Preserve the oval outline and flat faces; replace the shrinking loft with a constant-section 1.2 mm or thicker extrusion, then rerun thickness."
+    }
+  ],
+  "observation": "Front, top and iso inspected once. Cream oval is intact, centered and flat-backed; its sloping perimeter produces a thin edge confirmed by the numeric thickness failure.",
+  "packet_sha256": "595f7450fd9fa45f38516dc32838a1232adcc59ce36853eb605b8bdfedbf37b8",
+  "status": "fail"
+}

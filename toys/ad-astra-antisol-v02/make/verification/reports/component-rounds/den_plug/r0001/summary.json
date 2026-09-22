@@ -1,0 +1,62 @@
+{
+ "build": {
+  "den_plug": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "den_plug"
+ ],
+ "check_motion": false,
+ "checked": [
+  "den_plug"
+ ],
+ "checks_ok": true,
+ "entry": "part_den_plug.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "den_plug"
+ ],
+ "print": {
+  "den_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/overhang-den_plug.log": "4af464858391530aa60538e00b7a9aff9b287f271dcb21c98a9d0f738e6edb07",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/thickness-den_plug.log": "d83d9fdebd2758da9dd5324ea1106b26c0412af233f651f6cc4fbcdea819a163"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:den_plug",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Square flange over a spigot, two tall tapered flames at one diagonal and hex granulation engraved into the other two corners. Front: both flames stand wholly on solid flange, lean outward and taper to a point; the flange sits proud of the spigot by a small step. Top: the flame feet are inboard of the flange edge. Iso: one body, no floating geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/visual-packet.json",
+  "packet_sha256": "17b24c022407b51de682db2a95329f071a4ef2e41599168a5691d768855a0757",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "orbit_tray": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "orbit_tray"
+ ],
+ "check_motion": false,
+ "checked": [
+  "orbit_tray"
+ ],
+ "checks_ok": true,
+ "entry": "part_orbit_tray.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "orbit_tray"
+ ],
+ "print": {
+  "orbit_tray": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001/overhang-orbit_tray.log": "cfee909202a955b1f8d337644bab142e4b315104f93f72a8a37fec492c283e84",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001/thickness-orbit_tray.log": "53fb92e0d6e38eefc60b95e758bf60e4bfc6ea232d232cfcf9645b4c004a878a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:orbit_tray",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One tray, one solid. Iso: eight round sockets in a four-by-two grid, evenly pitched, all the same diameter, all clear of the tray edge. Top: the tray is a plain rectangle with the correct 164 by 88 proportion. Front: a thin flat slab of one thickness end to end. No missing, extra or floating geometry and no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001/visual-packet.json",
+  "packet_sha256": "3278137cd6758d59d36c344da0a73616de0e487cdecf05d75247160f9348daa7",
+  "status": "pass"
+ }
+}

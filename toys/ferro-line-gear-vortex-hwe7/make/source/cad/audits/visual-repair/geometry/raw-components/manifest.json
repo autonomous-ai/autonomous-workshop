@@ -1,0 +1,42 @@
+{
+  "status": "PREPARED_NOT_EXECUTED",
+  "purpose": "Fresh raw STEP refs identity reconciliation; no same-name Python entry and no cache changes. Original validate/interfere results remain preserved.",
+  "entries": [
+    {
+      "role": "carrier",
+      "current_master": "artifacts/make/r0001/product/gear_vortex/part_carrier.step",
+      "raw_copy": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-carrier.step",
+      "sha256": "cb457616187187a1b4b8b553fadf999553489ae53702b4e5999a6b1afc92e198"
+    },
+    {
+      "role": "coupon",
+      "current_master": "artifacts/make/r0001/product/gear_vortex/part_coupon.step",
+      "raw_copy": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+      "sha256": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5"
+    },
+    {
+      "role": "gear_18",
+      "current_master": "artifacts/make/r0001/product/gear_vortex/part_gear_18.step",
+      "raw_copy": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-gear_18.step",
+      "sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3"
+    },
+    {
+      "role": "gear_20",
+      "current_master": "artifacts/make/r0001/product/gear_vortex/part_gear_20.step",
+      "raw_copy": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-gear_20.step",
+      "sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af"
+    },
+    {
+      "role": "gear_22",
+      "current_master": "artifacts/make/r0001/product/gear_vortex/part_gear_22.step",
+      "raw_copy": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-gear_22.step",
+      "sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28"
+    },
+    {
+      "role": "gear_26",
+      "current_master": "artifacts/make/r0001/product/gear_vortex/part_gear_26.step",
+      "raw_copy": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-gear_26.step",
+      "sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582"
+    }
+  ]
+}

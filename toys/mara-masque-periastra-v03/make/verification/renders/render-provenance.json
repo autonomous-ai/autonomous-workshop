@@ -1,0 +1,34 @@
+{
+  "renderer": "shared render_review; exact STEP import; per-pixel z-buffer",
+  "camera": {
+    "azimuth_deg": -45,
+    "elevation_deg": 20,
+    "projection": "orthographic"
+  },
+  "signature_common_framing": true,
+  "framing_min_mm": [
+    -95.0,
+    -95.0,
+    0.0
+  ],
+  "framing_max_mm": [
+    95.0,
+    95.000000000177,
+    209.17864578752574
+  ],
+  "states": [
+    "closed",
+    "opened (roof lifted 100 mm)",
+    "playing (roof off, board populated)"
+  ],
+  "inputs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/periastra.step": "ce5fbb1384043f98441cc77d616d777147afc42fc007a067edb75385d7134409",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/opened.step": "6056b6e58669c88cffc56b9930938f64c7d38a0ba85e292637c1882e6bcb3c86",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/playing.step": "6bbe55c3cf6105056bf55195607022f4a9ab777a10ef65530641cd57f8cc17c1"
+  },
+  "outputs": {
+    "iso.png": "9b8765cd62d2bf487301baa1b3c4e719e58594776ee7e05915efda1ece05d981",
+    "signature.png": "d375a746d0cacb0777a593f4beaaf1607772f5517296508b50d9662343a3e956"
+  },
+  "limitations": "Appearance evidence only; review visibility before design acceptance. No physical test implied."
+}

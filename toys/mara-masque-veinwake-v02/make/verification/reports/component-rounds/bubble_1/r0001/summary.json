@@ -1,0 +1,61 @@
+{
+ "build": {
+  "bubble_1": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bubble_1"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bubble_1"
+ ],
+ "checks_ok": true,
+ "entry": "part_bubble_1.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_1/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bubble_1"
+ ],
+ "print": {
+  "bubble_1": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_1/r0001/overhang-bubble_1.log": "7f57f1997a8eeb8cf7d60582fc16e79174a3a459b9d679592e526e00dd44677f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_1/r0001/thickness-bubble_1.log": "1886994689eace8d8a9de6773d0e17e5484e2b6242b59b3f5c2033986f0f012f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:bubble_1",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_1/r0001/visual-packet.json",
+  "packet_sha256": "77f167e0d62a64afee878e5f84d314e19f1fe0c8df11d6565521218da7ddd835",
+  "status": "pending"
+ }
+}

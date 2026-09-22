@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front: a flat slab of uniform thickness with a flat bed face. Top: one plain rectangle, correct for a panel whose relief is all recessed. Iso: the terrain pockets are square, flat-floored, aligned on the cell grid, and the pockets on the seam edges are inset. No pocket breaks an edge, nothing stands proud, no missing or extra pockets.",
+  "packet_sha256": "62a26b7e0922c28966c42d1115876bbca02543faade4c26d788f43087b52ec3d",
+  "status": "pass"
+}

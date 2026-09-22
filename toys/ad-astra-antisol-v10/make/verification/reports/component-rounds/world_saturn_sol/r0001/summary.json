@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_saturn_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_saturn_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_saturn_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_saturn_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_sol"
+ ],
+ "print": {
+  "world_saturn_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001/overhang-world_saturn_sol.log": "67dd5cddbca0239a864905289ffd0673542f5ce1b4d7e5257cef9149f70a072e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001/thickness-world_saturn_sol.log": "5cb3f355a517d5cfa21845fc8255e7b27b3144691f405bbf6892f25e224e2d0c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_saturn_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed solid: a round disc carrying a globe on an integral seat collar. Front: the disc is 5.00 mm tall and its wall flares outward as it rises (narrower at the bed, wider at the top), which is the Sol ownership cue; the globe meets it through a short collar with no step, gap or visible intersection. Top: the globe is concentric in the disc ring. Iso: one continuous body, no floating, duplicated, missing or extra geometry. Proportion: the globe reads as about 0.76 of the disc's own 34.00 mm, which is this world's place on the size ladder (globe \u00d826.00 mm) -- visibly smaller than Jupiter's and larger than Mercury's where it should be. The ring is present and is a near-horizontal brim projecting past the globe on both sides -- it reads as a plate lying almost flat, which is Saturn's 26.73 degree obliquity, and it is plainly a different silhouette from Uranus's upright hoop. It meets the globe and the seat without a gap or a visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001/visual-packet.json",
+  "packet_sha256": "7c6f56ce397109fc1b3ea9bcb6bda1bafcc56fb3258142b590a8decd0f0f8792",
+  "status": "pass"
+ }
+}

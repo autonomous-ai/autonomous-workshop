@@ -1,0 +1,988 @@
+[
+  {
+    "name": "base",
+    "path": "parts/base.step",
+    "sha256": "285b29ce0a9b3b574936478924447b63f783d79c42225620cbf6fdde6b08c7f9",
+    "solids": 1,
+    "bounds_mm": [
+      190.0,
+      190.000000000347,
+      24.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.72,
+      0.78,
+      0.81
+    ]
+  },
+  {
+    "name": "roof",
+    "path": "parts/roof.step",
+    "sha256": "a71eb627ba72630a37c810bf7d4d2a062c1d0d670b33b873114cd93602d7c44b",
+    "solids": 1,
+    "bounds_mm": [
+      182.4,
+      182.400000001105,
+      88.184692283495
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.19,
+      0.36,
+      0.43
+    ]
+  },
+  {
+    "name": "inlay_01",
+    "path": "parts/inlay_01.step",
+    "sha256": "8716bc9be55b196a793294b403dc946b8ae3441020f6b884396464db044f7bd6",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_02",
+    "path": "parts/inlay_02.step",
+    "sha256": "67eda3da2db806338c445fb5791002b0bb9926919d42b17460d4a3af1ed4a9f0",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_03",
+    "path": "parts/inlay_03.step",
+    "sha256": "d69590d313a4d130900aa7613ded2bd4f69b35f7e886c7fc208ea2e3a3051f0c",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_04",
+    "path": "parts/inlay_04.step",
+    "sha256": "f5ed7221c876faae6627b01824d5d86dd162817385ea0325b0933285c5cfd9cc",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_05",
+    "path": "parts/inlay_05.step",
+    "sha256": "f04228de7f83c869a81c1e8d574b94fd4ffbdb06c07e4e1d9c0041f366a4f5bd",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_06",
+    "path": "parts/inlay_06.step",
+    "sha256": "73591203be27142ec0bb908d8802755bdde03d6e4d997dccff309ac43f2d8e6b",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_07",
+    "path": "parts/inlay_07.step",
+    "sha256": "4372c33149bf9b118e0370f3c0d3912f50280f7f8085a4d00cd041b69d8ab232",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_08",
+    "path": "parts/inlay_08.step",
+    "sha256": "4cfab76a48f80ae16cf70469e65aac16d1efaf638657463734b1d01ca012cb7a",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_09",
+    "path": "parts/inlay_09.step",
+    "sha256": "a15e1359dd4ab40ff4ecac8081486500f3dcc051de59116a097254a2e7c760ac",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_10",
+    "path": "parts/inlay_10.step",
+    "sha256": "0b8dc5785f7605409b52421f36f88cef1e7788582e162c1a73334afb1ab3d0a4",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_11",
+    "path": "parts/inlay_11.step",
+    "sha256": "77f9423de7ed8febb074ab1b8d014ffc06cef86b86bd25bc370b861928cb181d",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_12",
+    "path": "parts/inlay_12.step",
+    "sha256": "9cb5e594ef187d1a63f1dc55fcc4ab7bc03ad2ca982d11428e3dd6eda6c0eae6",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_13",
+    "path": "parts/inlay_13.step",
+    "sha256": "2d9944868938630271a57ac1b7e81bfe7c4f7b516b1af4bf666d229ec0ffbbd8",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_14",
+    "path": "parts/inlay_14.step",
+    "sha256": "be9c7f4efb20974add01983e748cd7ad9ab015b900f1bf5ecdd1368272158589",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_15",
+    "path": "parts/inlay_15.step",
+    "sha256": "8709e1b3f49d94f771616fb4e2e0513fa7e38b7ba0635323d512a7e3b0c08db8",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_16",
+    "path": "parts/inlay_16.step",
+    "sha256": "476724f5ed5e6c782021c3f081cf39f3fc4293df6de69c91565bf3d72feffb71",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_17",
+    "path": "parts/inlay_17.step",
+    "sha256": "d4f6ae3acb01a0d92561c0f14225784f61d86ca0eb9fc9f1922074e85a642fbe",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_18",
+    "path": "parts/inlay_18.step",
+    "sha256": "de9e7a9cd32c84ec5e78ca61877d0d215b588b64c2d5f2578109a4a6f39a326a",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_19",
+    "path": "parts/inlay_19.step",
+    "sha256": "3c83e7e7af97854b9cad7cf6ded7ece73192d49d75032b384ed844c042de4c0d",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_20",
+    "path": "parts/inlay_20.step",
+    "sha256": "180ed08f3a933465f794a55e5c913fe43a4c879912a85d5b30c035b589d0fd7c",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_21",
+    "path": "parts/inlay_21.step",
+    "sha256": "35e8f397ea11bdaa21b7f0a326d2c07391e7f82ed11870c6acf237252502dc7b",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_22",
+    "path": "parts/inlay_22.step",
+    "sha256": "8631d6a458a25af432a3a46bc908b576abca8ca2406f173ca65a783231ec823d",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_23",
+    "path": "parts/inlay_23.step",
+    "sha256": "fb29c902aa35b5518f53e5a8509e7e7ec0a19cb91ba36afa25e5b8588047dbf5",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_24",
+    "path": "parts/inlay_24.step",
+    "sha256": "2ae548194619330598e848c6ae6eb2b1434700a9bda28d30489e0085d6a63cc2",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_25",
+    "path": "parts/inlay_25.step",
+    "sha256": "5ea404015a02338881b6f6e95a3d4a27ac3bc29ba0c2d172a849cc328a25f24e",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_26",
+    "path": "parts/inlay_26.step",
+    "sha256": "3e62ee16c7ec9282689470f15d06141d7f8a3d6a500293de1b54843d3649590e",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_27",
+    "path": "parts/inlay_27.step",
+    "sha256": "1f9543c799628e787e28f44f47b47c2f36a73650fd5bf85345c9e70ba3756221",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_28",
+    "path": "parts/inlay_28.step",
+    "sha256": "58fc90bfd6352dd39093274e2c753d90f17466dde314e563d1151901a395211b",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_29",
+    "path": "parts/inlay_29.step",
+    "sha256": "6c7490f13ac4e2ac909eb3f0fb0434f76fd34483fd9910b6aacb21141df95fe9",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_30",
+    "path": "parts/inlay_30.step",
+    "sha256": "bad9ac54c4156f98e39a296f5180bb93814e89b9cd47913219ec42d6861decfb",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_31",
+    "path": "parts/inlay_31.step",
+    "sha256": "c1a95077ecad7c528dcccee7121f3fd48f60c3f27526c65fb7eb14b63ec96c2d",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "inlay_32",
+    "path": "parts/inlay_32.step",
+    "sha256": "dcf5bfb324c68d7a749e5ba1d71aeb410cdccd4d48f817e2ab72b5365bb1e781",
+    "solids": 1,
+    "bounds_mm": [
+      21.5,
+      21.5,
+      2.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.12,
+      0.16,
+      0.32
+    ]
+  },
+  {
+    "name": "single_01",
+    "path": "parts/single_01.step",
+    "sha256": "9cfb0b36ec0785b15efdac9433427f9cd21293f0dfacff7927a49b25927b4f71",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_02",
+    "path": "parts/single_02.step",
+    "sha256": "e1757cd9ccb3ef3543768526899e3cfff12a709f6fc29f485c200f0287a3e11f",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_03",
+    "path": "parts/single_03.step",
+    "sha256": "71a4620c8c8a329f89b5b10d7ae19e0fb384ab418cd440e473e51f51c7b8f336",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_04",
+    "path": "parts/single_04.step",
+    "sha256": "c8802670f21a547de242707f0a37ed11cbd264aaea203eebe7d95504c7aeb11a",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_05",
+    "path": "parts/single_05.step",
+    "sha256": "dea9a5e917bb662eff00a6f9df9ab01d88cbd7e9340f15edd8fdc5348e680c70",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_06",
+    "path": "parts/single_06.step",
+    "sha256": "f3623453f136f8d8928f3dbf883ca3c955b0a28c6355b0a63aa6e901a443dace",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_07",
+    "path": "parts/single_07.step",
+    "sha256": "378b60261c6fbebccc9bd42c02cd7584567bc690588254090a92732831b41535",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_08",
+    "path": "parts/single_08.step",
+    "sha256": "c758086ad32e3e66881ca3ecf58213f3e5caf31b7d68fbcb25bfe276d3ccfd2e",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_09",
+    "path": "parts/single_09.step",
+    "sha256": "a287c03ac8b0fa05b6db6a07b6a7088c50be0453b670e6353abbb581ffcb206f",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_10",
+    "path": "parts/single_10.step",
+    "sha256": "89dba77085077353b8a73a3b7bfae24f180f230bd61472d8a1bf9a1bec9c6273",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_11",
+    "path": "parts/single_11.step",
+    "sha256": "9341df352d8ce89d7216cc47de99d58e62f5a9332935711fec6f6fb0521e9464",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_12",
+    "path": "parts/single_12.step",
+    "sha256": "7e2bf6ad6ec67937150547f99607996e723dee4307ad987d5f9d0efd50b0186b",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000006356
+    ],
+    "bed_z_mm": -3.178346474896898e-12,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "forked_01",
+    "path": "parts/forked_01.step",
+    "sha256": "b361fc4459159b22fe4ed84bce13fb7a49ad6b7e52017743d4db6afa722e6f87",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_02",
+    "path": "parts/forked_02.step",
+    "sha256": "3c11ddfa922ae52f01fa2dc041be4fc3bf08a4ddd41bbd6bfd2bd2d6364630d2",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_03",
+    "path": "parts/forked_03.step",
+    "sha256": "7d93b4fe4a509dfe0c4c75e3454604d50e2fa0b6f706b5bb70d9f84f8e172ce4",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_04",
+    "path": "parts/forked_04.step",
+    "sha256": "c5a188a67208f50c481e9f9865b2f078a70f545a858a205395e1f305078e1f25",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_05",
+    "path": "parts/forked_05.step",
+    "sha256": "be9dff4005d880724dd8c6cf5ddb5e40df05f03886a32fe5f9e1ca7bbe72a7e4",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_06",
+    "path": "parts/forked_06.step",
+    "sha256": "d0cdeae4c6132f8322e0474cc3b86f6cf15af9a4017638996268d6963b70d2dd",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_07",
+    "path": "parts/forked_07.step",
+    "sha256": "e6884857e4fec086ea7f67d7ba4178ec0bc80ca0f4696ff931ec1d07bd68e3b9",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_08",
+    "path": "parts/forked_08.step",
+    "sha256": "8bbbee02b07d3cca724b2520a159aae3127d096273ef4fd427178e4b71c91f2d",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_09",
+    "path": "parts/forked_09.step",
+    "sha256": "0b29e7257b6582f9404787fc81a182144b365f46ad08738c69be9e9c960c852c",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_10",
+    "path": "parts/forked_10.step",
+    "sha256": "59443909fd97d25879a87277b8d506e9ec0ddfa012cb31370b94e0bc740cf5d6",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_11",
+    "path": "parts/forked_11.step",
+    "sha256": "743745ad46597b85904ca846fc784ded79a6570e3fd1eeb6c30c3e14ee70d4eb",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_12",
+    "path": "parts/forked_12.step",
+    "sha256": "5216fd1545fb3daedb7c6c72cef0955aa8af1e395ce62e24b742374dd72984b8",
+    "solids": 1,
+    "bounds_mm": [
+      20.0,
+      20.0,
+      7.000000000000886
+    ],
+    "bed_z_mm": -4.430615547622755e-13,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  }
+]

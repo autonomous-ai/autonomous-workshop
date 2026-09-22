@@ -1,0 +1,54 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_orbit_tray.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "orbit_tray"
+ ],
+ "print": {
+  "orbit_tray": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001/overhang-orbit_tray.log": "836f982769b495db0fdb6a6c8b1029b5f64bcc16ff3ab414ab6632730f728885",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0001/thickness-orbit_tray.log": "27f867d520a7558573772e62ad2a88dd40bd307ad9eb23d386c6fc11a7bc06c3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "orbit_tray"
+ ],
+ "round": 2,
+ "scope": "component:orbit_tray",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/orbit_tray/r0002/visual-packet.json",
+  "packet_sha256": "44e6e67ac42840e45cf1b20e48df697f3fb9c72da70bad4bdb8cfbf68cc9be85",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/counter-moon.step",
+  "source_sha256": "68f72f9def64373dab55b71e0695c98abc40b602aa23d188ffb552c4b730c2cd",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 22.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null,
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/counters/moon-oblique_az-90_el22.png",
+  "output_sha256": "56f5ec19a8d45f1cf90762125380b5eb68fcd254b3985d07598c4bb3a3489bc0"
+}

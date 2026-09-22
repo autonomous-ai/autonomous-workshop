@@ -1,0 +1,62 @@
+{
+ "build": {
+  "sun_counter": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun_counter"
+ ],
+ "check_motion": false,
+ "checked": [
+  "sun_counter"
+ ],
+ "checks_ok": true,
+ "entry": "part_sun_counter.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_counter"
+ ],
+ "print": {
+  "sun_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0002/overhang-sun_counter.log": "15cffba0151a05ced87d42b46950673f2ac0c66da1d648d97d633f5b4290dc7d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0002/thickness-sun_counter.log": "04eb0b094c3478664a44babf9461b2cdba4abcce406c8d688fbcc95904f336e5"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:sun_counter",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso re-inspected after pulling the ray tip corners onto the 10 mm frame circle. Plain round disc, perfectly circular outline with no tail, tab, notch or projection. The sun mark is unchanged in character: one circular ball pocket dead centre, eight separate wedge pockets round it, each wider at the inner end and narrowing to a blunt flat tip, none touching the ball or each other, with an unbroken flat band between the mark and the plateau edge.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0002/visual-packet.json",
+  "packet_sha256": "20c6b20899ab54bcde5e528f0360199e546b6fd41259bf7af3f6a9344b910dcd",
+  "status": "pass"
+ }
+}

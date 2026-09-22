@@ -1,0 +1,59 @@
+{
+  "status": "Completed unapplied validation-only patch; arithmetic import/assertions PASS",
+  "source_binding": {
+    "validation.py": "abac93b1eff9c44ef4f53f0be32ffd85a24b10bdaf3e836e9f91b538dc63d1d0",
+    "candidate_validation.py": "0587478ab036fd5e3942772e833fd1689201704dca576fa5ee2e8f468dfbccc4"
+  },
+  "belly08": {
+    "actual_center": [
+      0.0,
+      126.6,
+      40.5
+    ],
+    "actual_size": [
+      4.8,
+      2.2,
+      1.2
+    ],
+    "world_y_span": [
+      125.5,
+      127.7
+    ],
+    "world_z_span": [
+      40.5,
+      41.7
+    ],
+    "backed_stock_y_interval": [
+      125.5,
+      126.6
+    ],
+    "slit_start_y": 127,
+    "lowest_outer_housing_z": 42.175,
+    "top_to_outer_housing_vertical_clearance": 0.4749999999999943,
+    "existing_exact_bond_area_mm2": 4.146902302738514,
+    "existing_exact_bond_fraction": 0.5,
+    "finding": "Patch overlaps the slit Y range in projection but does not contact or bridge finger material. Its posterior half is a short overhang below the complete housing bounding cylinder; all observed adhesive contact is on unslit stock anterior toY126.6. Keep adhesive on this backed half only.",
+    "evidence": [
+      "BELLY-ASSEMBLY-REPAIR/final-probe.json",
+      "NATIVE-BODY78-LEDGER.json body08_rear: outer#f9R6.625, stock-end#f7Y126.6, slit-root#f13/#f14Y127",
+      "parts/body.py body_stock and complete_body; current barrel end126.6 and post-stock cylindrical housing",
+      "parts/decor.py belly_world: index>=6 identity rotation; BELLY_LAST_CENTER_Y126.6"
+    ]
+  },
+  "face_projection": {
+    "intrinsic_DESIGN_value_preserved": 9.3,
+    "intrinsic_FACE_T_plus_EYE_HEIGHT": 9.3,
+    "assembly_adhesive_film": 0.05,
+    "assembled_projection": 9.350000000000001
+  },
+  "replaced_assertion": {
+    "old": "belly08 rearY < slit_start",
+    "reason": "Old assertion consumed staleY125.4; correctingY126.6 makes127.7<127 false, but this1D exclusion was sufficient rather than necessary. Actual noncontact follows from the vertical housing separation and backed-stock position.",
+    "new": "Backed front interval lies between seam and stock end; stock end precedes slit start; any posterior overhang is strictly below the housing outer cylinder."
+  },
+  "limits": [
+    "No product changes, builds, exports, new source-solid probes or native warm-client operations.",
+    "Existing saved source/STEP measurements support the geometry; this patch adds only truthful parameter feasibility checks.",
+    "Adhesive application, strength and physical motion remain unverified. This is not an exhaustive final geometry or motion PASS."
+  ]
+}

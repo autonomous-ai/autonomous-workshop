@@ -1,0 +1,62 @@
+{
+ "build": {
+  "sun_orange": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun_orange"
+ ],
+ "check_motion": false,
+ "checked": [
+  "sun_orange"
+ ],
+ "checks_ok": true,
+ "entry": "part_sun_orange.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_orange"
+ ],
+ "print": {
+  "sun_orange": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0006/overhang-sun_orange.log": "813dd4306700e3e79edab569120918160fc809f3191c13fd57c7ebc14d8d2f9f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0006/thickness-sun_orange.log": "3100b84c7719578933f6b28e174188323754ab4d0c635d1f9b6477bbcebe9620"
+   },
+   "measured_round": 6,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.58,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 6,
+ "scope": "component:sun_orange",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Same Sun body with the bank markers rebuilt as four engraved V ticks on the centre bar top, and the twenty-four boundary wedges no longer running to the axis. Top: the four ticks read as deliberate radial marks on the bar at the bank boundaries, the stray speckles that the previous hub carried are gone, and the hub edge is a clean circle with no hooks or slivers. The rim is unchanged: forty-eight separate curled flames on an unbroken disc edge, open ground in every valley, blunt rounded tips, all turning the same way, no closed loop, arch, ribbon or handle. Iso: pockets, key recesses, bar and ticks all present and correctly placed. Front: 6.2 mm tall, flat underside, no face over air. Nothing missing, extra, misplaced or interpenetrating.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0006/visual-packet.json",
+  "packet_sha256": "b7de517053dc34a3be7f6a25d8b14bb01d6fcdd7c9f7f57e65e9835635bab30b",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_bubble_3.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_3/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bubble_3"
+ ],
+ "print": {
+  "bubble_3": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_3/r0002/overhang-bubble_3.log": "175a98fccd4a2fcdef1b4305e24a3d0b691abadee546534b867ae524b54bd2dd",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_3/r0002/thickness-bubble_3.log": "7c946e6e5297d2ed9f798b9b6b31477ce526713982b4ccac333a64f1af80077c"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake",
+ "refs": [],
+ "reused": [
+  "bubble_3"
+ ],
+ "round": 3,
+ "scope": "component:bubble_3",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Five interpenetrating cubes of clearly different edge length, each on its own two-axis orientation, fused into one squat mound on the unchanged 28 mm circular foot. Wider than it is tall; every face is a flat square or a clean intersection triangle; no lobe, dome, sphere or round surface survives. No cube floats or detaches, the smallest face measures 5.77 mm2 and the sharpest convex edge is a 42 degree wedge 0.79 mm long, so there is no sliver facet and no blade. The mound stays inside the foot outline. All four bubble packets render byte-identical images to this one. These three views are byte-identical to the previous round's, which the Manager inspected in full.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/bubble_3/r0003/visual-packet.json",
+  "packet_sha256": "61a597bcb73ae52ac05d0375e5edc68422b5770e7ab21311bf906e9dacf0d1b4",
+  "status": "pass"
+ }
+}

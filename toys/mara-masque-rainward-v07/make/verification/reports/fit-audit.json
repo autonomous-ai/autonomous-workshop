@@ -1,0 +1,26 @@
+{
+  "bar_sites": 6,
+  "bar_sites_disjoint": true,
+  "bar_sites_inside_platform": true,
+  "drop_length_over_tick_width": 5.0,
+  "kind": "rainward-sunflare-fit-audit",
+  "landings_checked": 120,
+  "lane_capacity_per_lane": 15,
+  "max_adjacent_tile_contact_mm2": 0.0,
+  "max_tick_area_under_a_bar_site_mm2": 0.0,
+  "min_adjacent_lane_outline_gap_mm": 3.387,
+  "note": "Support is measured against one tile's flat top face only. The lane narrows toward the hub, so a counter at the innermost 32.0 mm station reaches past its own tile's side edge; that shortfall below 1.0 is reported, never hidden, and it lands in the 1.00 mm orange margin, never on a neighbouring tile. Every tile ends on the same exact circular arc at radius 79.55 mm, so no counter loses support to a notch or a bay.",
+  "own_tile_support_by_station": {
+    "station_32.0": 0.97973,
+    "station_42.5": 1.0,
+    "station_53.0": 1.0,
+    "station_63.5": 1.0,
+    "station_74.0": 1.0
+  },
+  "pass": true,
+  "widest_bank_tick_a_drop_bridges_mm": 2.0,
+  "worst_centroid_margin_at": "lane 10, r32.0",
+  "worst_centroid_to_contact_hull_mm": 2.166,
+  "worst_own_tile_support_at": "lane 18, r32.0",
+  "worst_own_tile_support_fraction": 0.97973
+}

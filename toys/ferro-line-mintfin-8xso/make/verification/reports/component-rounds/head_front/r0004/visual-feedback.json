@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso show a coherent rounded head, supported cheek skirt, continuous narrow rim and three recessed magnet pockets. Explicit spline rim fixes STEP transfer: written export reopens as one valid solid with 35 faces. Default wall, additional 1.2 mm wall and overhang checks pass. No physical print claim.",
+  "packet_sha256": "72e450a06a4a0127c853741086924b1c4f5441fdea346b614ec75ef21d15cb18",
+  "status": "pass"
+}

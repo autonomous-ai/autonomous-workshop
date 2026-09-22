@@ -1,0 +1,12 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/board-empty.step",
+  "source_sha256": "d4f0a7643522121cd20f7c261087fd256ebf0a95562cd946b3b5fa392615c3ae",
+  "camera": {
+    "azimuth_deg": -60.0,
+    "elevation_deg": 22.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": "0.28,0.46,0.3"
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/board/inlay-seat_az-60_el22.png",
+  "output_sha256": "7e4cfda0df47aa8272c08ac2c8df30e0234ec3f01a4655e7989adc09cdce0e08"
+}

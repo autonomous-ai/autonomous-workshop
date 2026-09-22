@@ -1,0 +1,29 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_earth_sol.step.py --view front --view top --view iso -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0001/visual
+(16.7s, exit 1)
+--- stdout
+
+--- stderr
+Traceback (most recent call last):
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 326, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 313, in main
+    source, shape = build_shape(args.source)
+                    ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 105, in build_shape
+    shape = builder()
+  File "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_earth_sol.step.py", line 14, in gen_step
+    return build_world("earth", "sol")
+  File "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/parts/world.py", line 351, in build_world
+    body = solids[0] + solids[1:]
+           ~~~~~~~~~~^~~~~~~~~~~~
+  File "<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/lib/python3.13/site-packages/build123d/topology/composite.py", line 499, in __add__
+    result = self._bool_op(summands[:1], summands[1:], fuse_op)
+  File "<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/lib/python3.13/site-packages/build123d/topology/shape_core.py", line 2545, in _bool_op
+    topo_result = downcast(operation.Shape())
+  File "<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/lib/python3.13/site-packages/build123d/topology/shape_core.py", line 3711, in downcast
+    f_downcast: Any = Shape.downcast_LUT[shapetype(obj)]
+                                         ~~~~~~~~~^^^^^
+  File "<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/lib/python3.13/site-packages/build123d/topology/shape_core.py", line 3782, in shapetype
+    raise ValueError("Null TopoDS_Shape object")
+ValueError: Null TopoDS_Shape object

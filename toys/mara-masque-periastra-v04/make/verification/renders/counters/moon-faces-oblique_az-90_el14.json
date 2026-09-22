@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/faces-moon.step",
+  "source_sha256": "fbbf1001b004f119c9415866c110d3dc5dfac233409ba31f8cec060365346a77",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 14.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null,
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/counters/moon-faces-oblique_az-90_el14.png",
+  "output_sha256": "c5f7727c7ea84e42d54556cf9d4c87009e4088a78dec404f2a97d091c1b4998b"
+}

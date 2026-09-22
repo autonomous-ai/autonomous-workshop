@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/faces-sun.step",
+  "source_sha256": "bd83217716838fa470f27d9c33388b573c00978ccc1d37b4fc2b160bfbfeb9ef",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 90.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null,
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/counters/sun-faces-plan_el90.png",
+  "output_sha256": "2b72ae1fed618b6e4ff40585d50feb7d9db6109ca5d3e895e1c9c9993ad6e335"
+}

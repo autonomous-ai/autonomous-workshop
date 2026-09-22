@@ -1,0 +1,18 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_mars_sol.step.py --view front --view top --view iso -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001/visual
+(7.3s, exit 1)
+--- stdout
+
+--- stderr
+Traceback (most recent call last):
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 326, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 314, in main
+    occurrences = tessellate_occurrences(shape, args.tolerance)
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 159, in tessellate_occurrences
+    vertices, triangles = child.tessellate(tolerance)
+                          ~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/lib/python3.13/site-packages/build123d/topology/shape_core.py", line 2280, in tessellate
+    poly.Node(i).Transformed(trsf) for i in range(1, poly.NbNodes() + 1)
+                                                     ^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'NbNodes'

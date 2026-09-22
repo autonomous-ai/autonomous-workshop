@@ -1,0 +1,50 @@
+{
+  "renderer": ".agents/skills/cad/scripts/render_review",
+  "renderer_sha256": "6d30cc239b00292727ccc4a6df58f52a54eeb88c9a2656854e02c91d691164ae",
+  "wrapper_sha256": "7fe6773b1e2d4ce30bc20c3f9103b847c90d19d46c4512a8664d04782d173a4b",
+  "background_rgb": [
+    16,
+    18,
+    22
+  ],
+  "common_framing": true,
+  "tessellation_tolerance_mm": 0.08,
+  "states": [
+    {
+      "sample_index": 0,
+      "step_path": "presentation-states/state_0.step",
+      "step_sha256": "bfc445330daec08d5efc2d2aaf678addce7eba59a8ccae8f8e3a2208dda9fd68",
+      "triangles": 276478
+    },
+    {
+      "sample_index": 12,
+      "step_path": "presentation-states/state_12.step",
+      "step_sha256": "ed64810d6104901057623907d56317bec7254b23801ebe08d7b0b046677637f8",
+      "triangles": 276262
+    },
+    {
+      "sample_index": 24,
+      "step_path": "presentation-states/state_24.step",
+      "step_sha256": "f84ed78180ca0b0d8c573f49f2c365766b2fb8cedddddb0f3772a4a86fd196fd",
+      "triangles": 276260
+    }
+  ],
+  "motion_manifest_sha256": "719b3b7a8c0f0e95fa7fa67e21bf14525c1f890789f6f13b1e34367914c81260",
+  "iso_sha256": "f5b299a1503ca1700a1f414b2acfe3390f9fde20dedeb99d0b4875f5d269516b",
+  "signature_sha256": "6f14632c54644bd6dffc501c616fbd293ed8e80392929b7cf13746fd92bc0ad4",
+  "scope": "Exact CAD still-state presentation. Dark scene background is visible through actual openings. No glow, translucency, motion success, physical fit or print readiness is established.",
+  "signature_camera": {
+    "named_view": "front",
+    "azimuth": -90.0,
+    "elevation": 0.0,
+    "size": 900,
+    "pad": 0.07
+  },
+  "iso_camera": {
+    "azimuth": -65.0,
+    "elevation": 12.0,
+    "size": 900,
+    "pad": 0.07
+  },
+  "iso_provenance": "HERO-EVIDENCE.json"
+}

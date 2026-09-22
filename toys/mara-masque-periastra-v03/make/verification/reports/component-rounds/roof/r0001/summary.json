@@ -1,0 +1,62 @@
+{
+ "build": {
+  "roof": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "roof"
+ ],
+ "check_motion": false,
+ "checked": [
+  "roof"
+ ],
+ "checks_ok": true,
+ "entry": "part_roof.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "roof"
+ ],
+ "print": {
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001/overhang-roof.log": "57568d0516c5565597203b5d92b557d0ff04a2de571fa886c766f75ed38175c3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001/thickness-roof.log": "9143f528a903d6dff2915bc632f6c09b336cdc50f4fde68ff3d14415681178d0"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:roof",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One solid: square backing plate, visible drum with its ring seam, exact hemisphere, one shutter slit, and a bored telescope standing in the slit on a two-arm yoke with its keel. The correction reads directly in two frames. Straight down (top), the tube lies on the slit's own centreline with equal empty slit on both sides and the two arm tops showing as a symmetric pair either side of the tube; the previous archive put one arm outside the tube against one wall. Head on (front), the yoke is a symmetric fork straddling the tube, equal air to each slit wall. Iso matches ref-01 dome/drum/slit/telescope. No misplaced, missing or extra parts, no intersections, no proportion error, nothing on the bare plate margin.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001/visual-packet.json",
+  "packet_sha256": "6ba5de7383f062375360a98c7efa1c9ad67a6a2637d5ca6648852cf0be80bb13",
+  "status": "pass"
+ }
+}

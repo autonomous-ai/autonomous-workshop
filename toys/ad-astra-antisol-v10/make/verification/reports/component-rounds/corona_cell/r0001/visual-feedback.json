@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "One square tile, one solid. Iso: the engraved sunburst reads clearly around a central eye, and two raised tongues stand at two adjacent corners. Top: the two tongues are at the corners, diagonally placed, and nothing else stands proud. Front: the two tongues rise off an otherwise flat tile with no step or gap at their feet. Bounding box 33.59 x 33.54 x 10.00 matches the declared 33.50 x 33.50 x 10.00 (6.00 body plus 4.00 tongue). No missing, extra or floating geometry and no visible intersection.",
+  "packet_sha256": "687864d21bac4ceb35656e23314105711fd51079f15db570005a88f40d378be1",
+  "status": "pass"
+}

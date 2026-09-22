@@ -1,0 +1,220 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0003",
+ "likeness": {},
+ "parts": {
+  "bubble_1": "e477910a2f5d1be97d58fbb1a43a984c5616cb324230dddb6965b81e3c238fdd",
+  "bubble_2": "90d6e0934771266faf25f413ddc494ac71add74278bc2001e6e1449d3c29a8ae",
+  "bubble_3": "62de71fac3103752e99430376590112e7438333fc02a0d57ed00cecdbe20c41c",
+  "bubble_4": "44df65a229e8f81c4857ea396d00922063529d7b3d51f0b86b66fb33da2464fe",
+  "rind": "bebfa17227938c5ad41a9b0ac1c1dcf4b7e2c77f778df2961352d3f00bf0120e",
+  "tooth_1": "98e645c55fbe11a95cb6d8b2bae151c3478527e7b4bdc475b6baff955c92f2b8",
+  "tooth_2": "0a31132df60a3193053a2266843b979d82f8a2051cb4bacd5b4136921eb8117a",
+  "tooth_3": "1fecfb685a5e46620b7b67f6a5d4da31858fad6b28ca969c9159369936fca700",
+  "tooth_4": "859d7f4f899e65f3696ae2877fa3be50d3a16fbdc5c21d9faa156ee2b3945ce4",
+  "tooth_5": "55c26e3584846b26e28b974199c02aae920db703718fa7ae2de50d8d29338681"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "bubble_1": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-bubble_1.log": "6181b34ba370bcf453c780f4d89203dbe913780d5f5a4e12d5f721a384f6d377",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-bubble_1.log": "a409d183644f6f93d2ba3acb099da82712ae790762195da0979e55f3f3775649"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "bubble_2": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-bubble_2.log": "981a17d6e72ebdc4b86dc14cceba1981b3ce8193f7cd7b784a084dc81f88065a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-bubble_2.log": "0a6ee1acc654fe70af102d0f8b38bce94714316d9d960862c6bd21f56dc55758"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "bubble_3": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-bubble_3.log": "2101c419f46e8cf5b7b916f83d7482ebe7833cdc12ddc1199f43c0d140a29591",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-bubble_3.log": "12358005f74d67d93cc0f48607d85545f42306810d4d7b06e371fece6420554e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "bubble_4": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-bubble_4.log": "2aa1090c336407714f471d59408e9b0c1a5ba23848f3344a505e76a6f6b97e4a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-bubble_4.log": "4aa861b75deae30119051364a3b6ac220db4e04bb93efd77b61a6716551aa129"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "rind": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0003/overhang-rind.log": "8454abb8c0848896e6ef20f0e4fb117b1eb0b4e369af8b9a8e97c157d6464b51",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0003/thickness-rind.log": "fb0b0206b20eb04e9410fc739b0bf2562248418313ffabc9d266aad0342896ad"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.29,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tooth_1": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_1.log": "33cfcc7b11e6e396f1eb293084cf914a32ea7e39b6b490ed478374e33569f5a0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-tooth_1.log": "c8e77132be3c64c73bae1710e96f0921795bd3aa4b23f9d341885b0f295b86f3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tooth_2": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_2.log": "e9d6cb9b38f05f65de43af6e67ea8ced08414cee7dd12812c0a2eb68e28a5d17",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-tooth_2.log": "83dee7f5ee6aa9320e49d85784913fb25c18ecd72cc504dfdc9efd3ce6d1aba3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tooth_3": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_3.log": "573e9ec6b171abe59df4f9c5eae15a352ab3529b80629913475039d447ae67f6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-tooth_3.log": "4f5cde3d6452bb86b8f08442cd4bb676d39bdd904d018f1ef0af400d16c35453"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tooth_4": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_4.log": "8957eeaca6cbfe289a580dc31af357955eb3a3b24d420a1c89a4a84e3d540111",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-tooth_4.log": "04582938685143d4d2266f04146b79620f6529b874639abd24807c75f6cc9c9e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tooth_5": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/overhang-tooth_5.log": "aad17c162de665ee7cf106e5b6a8d92723a3ca0564e7dce7501b7a6278428a3d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-tooth_5.log": "4b7ff4c351d382b74a42355ec7e5b6872eb22e7079815609bbde2d478b542d24"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.5.2",
+   "scipy": "1.18.1"
+  },
+  "platform": "darwin",
+  "python": "<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13",
+  "python_version": "3.13.5 (main, Jun 12 2025, 12:22:43) [Clang 20.1.4 ]",
+  "sources": {
+   "check_overhang": "a3bcb271c46a52c21fbf507f56537bdfda27070c31ece232b070382b5e886c97",
+   "check_thickness": "6e1a743b3b228b68bc7ead1c23ca9ba320a813797a869bf6ada16b53c28f0b7d",
+   "make_round": "60b135a36039fe3a8416f73cc89eb456f8a348f21b4a3951377557a11afbbec5",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 3,
+ "scope": "assembly"
+}

@@ -1,0 +1,51 @@
+{
+  "flame_pieces_outside_the_disc_edge": 32,
+  "flame_pieces_raw_regions": 32,
+  "flames_in_the_plan": 32,
+  "greyscale_gaps_light_to_dark": [
+    0.1058,
+    0.1334,
+    0.1764,
+    0.102
+  ],
+  "greyscale_luma": {
+    "fork_dark_brown_counter": 0.4549,
+    "lane_dark_cocoa": 0.5569,
+    "lane_light_yellow": 0.8667,
+    "single_beige_counter": 0.9725,
+    "sun_body_orange": 0.7333
+  },
+  "greyscale_min_gap": 0.102,
+  "greyscale_order_holds": true,
+  "kind": "rainward-sunflare-render-audit",
+  "lane_count": 24,
+  "lane_luma": [
+    0.8682,
+    0.5494,
+    0.8682,
+    0.5494,
+    0.8682,
+    0.5494,
+    0.8682,
+    0.5494,
+    0.8682,
+    0.5494,
+    0.8682,
+    0.5494,
+    0.8682,
+    0.5494,
+    0.8682,
+    0.5494,
+    0.8682,
+    0.5494,
+    0.7289,
+    0.5494,
+    0.8682,
+    0.5494,
+    0.8682,
+    0.5494
+  ],
+  "lane_tones_alternate": true,
+  "pass": true,
+  "render_px_per_mm": 9.0884
+}

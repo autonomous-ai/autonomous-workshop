@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_03_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_03_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_03_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_03_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_03_front"
+ ],
+ "print": {
+  "body_03_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0004/overhang-body_03_front.log": "b6e31d9004453ce09bf2f1f51722810c9a67d1b733f96a70a3e118a08e37670e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0004/thickness-body_03_front.log": "1371e2314a053f4afc6847d3bb515bd20fab3bb4db1f7a896c090e9e15f92640"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:body_03_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The repaired clearance has a clean through crescent in top and iso, replacing the feathered stepped margin. Front shows a constant plate thickness with the centered ball and its connected heel; perimeter and paired ankle reliefs remain intact. No detached geometry or misplaced features are visible; no assembly or physical-fit claim.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0004/visual-packet.json",
+  "packet_sha256": "12b899bf862ff0b345af017e0086ddf01c7db8412f2e1810af8d1368083b02b4",
+  "status": "pass"
+ }
+}

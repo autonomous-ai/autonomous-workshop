@@ -1,0 +1,14 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_mercury_sol.step.py --view front --view top --view iso -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0001/visual
+(3.7s, exit 1)
+--- stdout
+
+--- stderr
+Traceback (most recent call last):
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 326, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 314, in main
+    occurrences = tessellate_occurrences(shape, args.tolerance)
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 165, in tessellate_occurrences
+    raise ValueError("tessellation produced no triangles")
+ValueError: tessellation produced no triangles

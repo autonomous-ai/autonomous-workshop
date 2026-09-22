@@ -1,0 +1,63 @@
+{
+ "build": {
+  "world_mars_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_mars_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_mars_sol"
+ ],
+ "checks_ok": false,
+ "entry": "part_world_mars_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mars_sol"
+ ],
+ "print": {
+  "world_mars_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001/overhang-world_mars_sol.log": "e3595fc5e1238f1b418147c8e451c9be658b8b0652f5ab8b2fe7743b70cfb3b6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001/thickness-world_mars_sol.log": "06ed6ddce52ee21f02d0a9dad3ed124cb37a3aabe434aed920e573421cd7a730"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no overhang result"
+    ],
+    "overhang_mm2": null,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "no passing wall result"
+    ],
+    "thinnest_mm": null,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_mars_sol",
+ "visual": {
+  "detail": "Visual render failed or source changed; inspect visual-render.log",
+  "findings": [],
+  "status": "error"
+ }
+}

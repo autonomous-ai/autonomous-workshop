@@ -1,0 +1,71 @@
+{
+ "build": {
+  "gear_cap": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gear_cap"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gear_cap"
+ ],
+ "checks_ok": false,
+ "entry": "part_gear_cap.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_cap"
+ ],
+ "print": {
+  "gear_cap": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0001/overhang-gear_cap.log": "cea269a6d2a521ae5ec089b5cbb415a0cb52c276d022d0bf7ce7706153e4b1a2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0001/thickness-gear_cap.log": "0dc1862e33598e704de73c75c3be32b165ac8b0f0e330fd6e0ba345e66362681"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 2.2% of surface below (212 of 11372 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:gear_cap",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin thread lead wedges exceed wall-gate taper allowance.",
+    "evidence": "Iso shows abrupt exposed thread termination; thickness report localizes thin bands atZ0 andZ4.7.",
+    "part": "gear_cap",
+    "repair": "Add45degree bore lead-ins at both ends to remove thin thread-start lips while keeping a full central thread."
+   }
+  ],
+  "observation": "Centered open cap and continuous wall are visible in top/front/iso, but exposed thread starts end in thin wedges at both flat faces.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0001/visual-packet.json",
+  "packet_sha256": "a4f4c112c78de45cf617705f60101786711ea9a322322b740ee85e682a24637c",
+  "status": "fail"
+ }
+}

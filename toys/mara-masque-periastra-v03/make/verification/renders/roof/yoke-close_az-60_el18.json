@@ -1,0 +1,12 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/roof.step",
+  "source_sha256": "a71eb627ba72630a37c810bf7d4d2a062c1d0d670b33b873114cd93602d7c44b",
+  "camera": {
+    "azimuth_deg": -60.0,
+    "elevation_deg": 18.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": "0.37,0.46,0.34"
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/roof/yoke-close_az-60_el18.png",
+  "output_sha256": "3c367447addc4f1a526c8412a4ac0c68e6ef48cee29c820e37ca34616c98a969"
+}

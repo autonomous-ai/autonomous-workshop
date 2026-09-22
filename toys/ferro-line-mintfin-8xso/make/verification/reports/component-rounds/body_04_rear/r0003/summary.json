@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_04_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_04_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_04_rear"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_04_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_rear/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_04_rear"
+ ],
+ "print": {
+  "body_04_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_rear/r0003/overhang-body_04_rear.log": "c8d11f54244a95ae5d25ddac9e042525624d03d4ed2053e89c694a5a6ea69400",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_rear/r0003/thickness-body_04_rear.log": "fdb4aa295ad37404d3b241e7ce867368bfa1f5fd9f8110adc7af4cb89facf738"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:body_04_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso show a continuous barrel half, four correctly separated socket sectors and an open central passage. The outer rim and side reliefs are coherent without floating geometry. The stricter1.2mm thickness check nevertheless fails at the socket lip; visual appearance does not override that measured defect.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_rear/r0003/visual-packet.json",
+  "packet_sha256": "8b319794f16bb0b40fccadbaa34780897cf871e291dc219469e072832f85aa13",
+  "status": "pass"
+ }
+}

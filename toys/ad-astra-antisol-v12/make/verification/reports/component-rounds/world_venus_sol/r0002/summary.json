@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_venus_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_venus_sol"
+ ],
+ "print": {
+  "world_venus_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001/overhang-world_venus_sol.log": "c17a699c003477018c37237e02888e1a441109fad66efb102ffca1b4cf5117e3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001/thickness-world_venus_sol.log": "06e0aaade244c6b8f94c2a147e1cc34626d96a2d0257b48d9979c5013316978a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_venus_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_venus_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso inspected. The Sol twin, same globe diameter, opposite disc draft, globe concentric on its seat. Untouched by this revision and byte-identical. No misplaced, missing or extra geometry, no intersections.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0002/visual-packet.json",
+  "packet_sha256": "61195419f3de656abbcbe0a4ea2480b65113b84054cb697f48f0852eefa4d4ec",
+  "status": "pass"
+ }
+}

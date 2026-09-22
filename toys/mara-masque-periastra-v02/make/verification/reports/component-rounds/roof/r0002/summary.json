@@ -1,0 +1,62 @@
+{
+ "build": {
+  "roof": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "roof"
+ ],
+ "check_motion": false,
+ "checked": [
+  "roof"
+ ],
+ "checks_ok": true,
+ "entry": "part_roof.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "roof"
+ ],
+ "print": {
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0002/overhang-roof.log": "adeba1f4f24080e32ea3e450502d0da24915a6b7d2e7ad19a01545132d17deae",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0002/thickness-roof.log": "5ba156666d6950702a5bcac95d204851705543f3fff1426fc64186e6f4a1687c"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:roof",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso re-inspected after shortening the far-side run of the shutter slit. The top view confirms the slit is straight, parallel-sided, centred on the meridian, and now stops well short of the far rim, leaving the far half of the dome unbroken instead of sawing the cap in two. The near side is still open to the bottom of the drum. The telescope tube, its two fork arms and the solid pier remain in the slit, fused to its walls, with no floating or detached geometry. One small arm corner projects a fraction beyond the tube's outline in plan; it is integral structure inside the slit, not a separate feature.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0002/visual-packet.json",
+  "packet_sha256": "ac34c7fc87c605e99569c1c5d107e84e9d3c8f712b629995d15965a5ece5f211",
+  "status": "pass"
+ }
+}

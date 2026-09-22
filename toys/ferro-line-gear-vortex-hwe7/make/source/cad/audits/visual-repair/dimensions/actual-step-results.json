@@ -1,0 +1,1457 @@
+{
+  "status": "MEASURED_NOT_FULL_PRODUCT_GATE",
+  "assembly_sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+  "all44": {
+    "count": 44,
+    "volume_mm3": 216081.1748356602,
+    "uniform_density_center_of_mass_mm": [
+      -0.001271556707266678,
+      -17.790844210519,
+      83.55804158710922
+    ],
+    "radial_offset_from_hub_axis_mm": 36.44195843507478
+  },
+  "rotating32": {
+    "count": 32,
+    "volume_mm3": 121669.91429657706,
+    "uniform_density_center_of_mass_mm": [
+      -6.774791156413733e-10,
+      -28.63497521576258,
+      120.00000001215196
+    ],
+    "radial_offset_from_hub_axis_mm": 1.217082794964159e-08
+  },
+  "rotating_material_groups": {
+    "gears_same_material": {
+      "count": 14,
+      "volume_mm3": 34881.952517713995,
+      "uniform_density_center_of_mass_mm": [
+        2.033993987271096e-12,
+        -30.799999999999997,
+        119.99999999999777
+      ],
+      "radial_offset_from_hub_axis_mm": 3.0190987807903718e-12
+    },
+    "black_rotating_parts": {
+      "count": 18,
+      "volume_mm3": 86787.96177886307,
+      "uniform_density_center_of_mass_mm": [
+        -9.505900810264743e-10,
+        -27.764805088759587,
+        120.00000001703698
+      ],
+      "radial_offset_from_hub_axis_mm": 1.7063480408529506e-08
+    }
+  },
+  "leaves": [
+    {
+      "occurrence": "o1.1",
+      "label": "pedestal_black",
+      "volume_mm3": 34954.13169746186,
+      "center_of_mass_mm": [
+        0.002471428962112,
+        3.9670087752072004e-12,
+        10.559307921539872
+      ],
+      "bounds_mm": {
+        "min": [
+          -52.5,
+          -52.5,
+          -1.285879139104875e-14
+        ],
+        "max": [
+          52.5,
+          52.5,
+          14.000000000000012
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.2",
+      "label": "pedestal_lid_black",
+      "volume_mm3": 27904.840718913925,
+      "center_of_mass_mm": [
+        -2.8155059495484326e-12,
+        -2.0606850014274424e-12,
+        2.30414501564228
+      ],
+      "bounds_mm": {
+        "min": [
+          -49.25000000000001,
+          -50.849999999999994,
+          0.0
+        ],
+        "max": [
+          49.25,
+          49.25,
+          8.6
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.3",
+      "label": "stem_black",
+      "volume_mm3": 11354.067953027961,
+      "center_of_mass_mm": [
+        -0.006493531684337975,
+        2.0061293336828337e-15,
+        58.32862917951418
+      ],
+      "bounds_mm": {
+        "min": [
+          -6.0,
+          -6.0,
+          3.0
+        ],
+        "max": [
+          6.0,
+          6.0,
+          110.5
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.4",
+      "label": "support_collar_black",
+      "volume_mm3": 2769.7868316667445,
+      "center_of_mass_mm": [
+        0.12171941475188748,
+        -9.325873406851315e-14,
+        120.37041830136582
+      ],
+      "bounds_mm": {
+        "min": [
+          -12.5,
+          -6.0000000000000036,
+          107.5
+        ],
+        "max": [
+          12.5,
+          6.000000000000003,
+          132.5
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.5",
+      "label": "rim_trim_yellow",
+      "volume_mm3": 405.5670452078284,
+      "center_of_mass_mm": [
+        1.794020914705962e-14,
+        -3.921060541258381e-14,
+        13.308181818181824
+      ],
+      "bounds_mm": {
+        "min": [
+          -49.5,
+          -49.5,
+          12.689999999999998
+        ],
+        "max": [
+          49.5,
+          49.5,
+          13.89
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.6",
+      "label": "foot_trim_yellow",
+      "volume_mm3": 212.43449523574648,
+      "center_of_mass_mm": [
+        1.6268920275409068e-13,
+        -7.235837252439138e-16,
+        15.0
+      ],
+      "bounds_mm": {
+        "min": [
+          -8.5,
+          -8.5,
+          14.0
+        ],
+        "max": [
+          8.5,
+          8.5,
+          16.0
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.7",
+      "label": "support_main_cap_black",
+      "volume_mm3": 1326.4266575641202,
+      "center_of_mass_mm": [
+        -3.1305200445465046e-06,
+        9.900000465070674,
+        120.00000239681991
+      ],
+      "bounds_mm": {
+        "min": [
+          -11.5000001,
+          6.299999899999852,
+          108.4999999
+        ],
+        "max": [
+          11.5000001,
+          13.50000010119476,
+          131.5000001
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.8",
+      "label": "orange_disc_orange",
+      "volume_mm3": 2124.634519737115,
+      "center_of_mass_mm": [
+        0.013223326530576378,
+        -23.8,
+        120.0
+      ],
+      "bounds_mm": {
+        "min": [
+          -27.5,
+          -24.300000000000008,
+          92.5
+        ],
+        "max": [
+          27.5,
+          -23.299999999999994,
+          147.5
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.9",
+      "label": "sun_yellow",
+      "volume_mm3": 6201.406272257238,
+      "center_of_mass_mm": [
+        0.017819928527104383,
+        -30.799999999999994,
+        119.99999999999896
+      ],
+      "bounds_mm": {
+        "min": [
+          -28.27500009999955,
+          -33.30000010000001,
+          91.72499989999957
+        ],
+        "max": [
+          28.27500010000028,
+          -28.299999899999992,
+          148.27500009999955
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.10",
+      "label": "support_main_cap_black",
+      "volume_mm3": 1326.4266575641198,
+      "center_of_mass_mm": [
+        -3.130520044889342e-06,
+        -37.299999534929334,
+        120.00000239681991
+      ],
+      "bounds_mm": {
+        "min": [
+          -11.5000001,
+          -40.90000010000015,
+          108.4999999
+        ],
+        "max": [
+          11.5000001,
+          -33.699999898805245,
+          131.5000001
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.11",
+      "label": "gear_2_1_yellow",
+      "volume_mm3": 1400.9508231184395,
+      "center_of_mass_mm": [
+        37.4999999892091,
+        -30.8,
+        119.99999999792364
+      ],
+      "bounds_mm": {
+        "min": [
+          25.864652645713843,
+          -33.300000100000005,
+          108.22499989999966
+        ],
+        "max": [
+          49.13534735428616,
+          -28.299999899999996,
+          131.77500010000048
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.12",
+      "label": "gear_2_2_yellow",
+      "volume_mm3": 1573.78392967119,
+      "center_of_mass_mm": [
+        35.87309336509469,
+        -30.8,
+        141.6890680940259
+      ],
+      "bounds_mm": {
+        "min": [
+          23.37977268603645,
+          -33.300000100000005,
+          129.1640679951704
+        ],
+        "max": [
+          48.36763141652539,
+          -28.299999899999996,
+          154.0239053441124
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.13",
+      "label": "gear_2_3_yellow",
+      "volume_mm3": 2122.1915382234783,
+      "center_of_mass_mm": [
+        21.42055890321151,
+        -30.8,
+        161.78102537950176
+      ],
+      "bounds_mm": {
+        "min": [
+          6.6866200752056715,
+          -33.300000100000005,
+          147.01778493485128
+        ],
+        "max": [
+          36.154497752900525,
+          -28.299999899999996,
+          176.54426582956873
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.14",
+      "label": "gear_2_4_yellow",
+      "volume_mm3": 2511.1607162845103,
+      "center_of_mass_mm": [
+        -4.980873728955342,
+        -30.799999999999994,
+        172.51482037483018
+      ],
+      "bounds_mm": {
+        "min": [
+          -21.145407871547327,
+          -33.300000100000005,
+          156.3502862230161
+        ],
+        "max": [
+          11.183660435901155,
+          -28.299999899999996,
+          188.67935453046442
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.15",
+      "label": "gear_2_5_yellow",
+      "volume_mm3": 2918.2624576451167,
+      "center_of_mass_mm": [
+        -35.985857649195104,
+        -30.799999999999997,
+        166.95235939927264
+      ],
+      "bounds_mm": {
+        "min": [
+          -53.760857737770046,
+          -33.300000100000005,
+          149.26124654787756
+        ],
+        "max": [
+          -18.21085753777045,
+          -28.299999899999996,
+          184.64347225112274
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.16",
+      "label": "gear_2_6_yellow",
+      "volume_mm3": 3128.5437668149625,
+      "center_of_mass_mm": [
+        -61.26252664310695,
+        -30.800000000000004,
+        144.58826977655932
+      ],
+      "bounds_mm": {
+        "min": [
+          -79.78011492842433,
+          -33.300000100000005,
+          126.14960774082178
+        ],
+        "max": [
+          -42.76931988746901,
+          -28.299999899999996,
+          163.11326987873045
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.17",
+      "label": "gear_2_7_yellow",
+      "volume_mm3": 3786.083027099299,
+      "center_of_mass_mm": [
+        -72.74550991687006,
+        -30.799999999999994,
+        109.67833429979625
+      ],
+      "bounds_mm": {
+        "min": [
+          -93.52051000518018,
+          -33.300000100000005,
+          89.00326459196152
+        ],
+        "max": [
+          -51.97050980517971,
+          -28.299999899999996,
+          130.35340400761874
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.18",
+      "label": "gear_2_1_yellow",
+      "volume_mm3": 1400.9508231184398,
+      "center_of_mass_mm": [
+        -37.4999999892091,
+        -30.8,
+        120.00000000207636
+      ],
+      "bounds_mm": {
+        "min": [
+          -49.13534735428616,
+          -33.300000100000005,
+          108.2249998999995
+        ],
+        "max": [
+          -25.864652645713843,
+          -28.299999899999996,
+          131.77500010000034
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.19",
+      "label": "gear_2_2_yellow",
+      "volume_mm3": 1573.7839296711913,
+      "center_of_mass_mm": [
+        -35.87309336508769,
+        -30.799999999999997,
+        98.3109319059721
+      ],
+      "bounds_mm": {
+        "min": [
+          -48.36763141651839,
+          -33.300000100000005,
+          85.97609465588562
+        ],
+        "max": [
+          -23.37977268602945,
+          -28.299999899999996,
+          110.8359320048276
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.20",
+      "label": "gear_2_3_yellow",
+      "volume_mm3": 2122.1915382234793,
+      "center_of_mass_mm": [
+        -21.420558903208512,
+        -30.8,
+        78.21897462049526
+      ],
+      "bounds_mm": {
+        "min": [
+          -36.15449775289753,
+          -33.300000100000005,
+          63.45573417042826
+        ],
+        "max": [
+          -6.686620075202673,
+          -28.299999899999996,
+          92.98221506514572
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.21",
+      "label": "gear_2_4_yellow",
+      "volume_mm3": 2511.160716284509,
+      "center_of_mass_mm": [
+        4.980873728955342,
+        -30.799999999999997,
+        67.48517962516883
+      ],
+      "bounds_mm": {
+        "min": [
+          -11.183660435901155,
+          -33.300000100000005,
+          51.320645469534576
+        ],
+        "max": [
+          21.145407871547327,
+          -28.299999899999996,
+          83.6497137769829
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.22",
+      "label": "gear_2_5_yellow",
+      "volume_mm3": 2918.262457645116,
+      "center_of_mass_mm": [
+        35.9858576492031,
+        -30.8,
+        73.04764060072537
+      ],
+      "bounds_mm": {
+        "min": [
+          18.210857537778445,
+          -33.300000100000005,
+          55.35652774887527
+        ],
+        "max": [
+          53.76085773777804,
+          -28.299999899999996,
+          90.73875345212043
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.23",
+      "label": "gear_2_6_yellow",
+      "volume_mm3": 3128.543766814964,
+      "center_of_mass_mm": [
+        61.26252664310695,
+        -30.8,
+        95.4117302234337
+      ],
+      "bounds_mm": {
+        "min": [
+          42.76931988746901,
+          -33.300000100000005,
+          76.88673012126252
+        ],
+        "max": [
+          79.78011492842433,
+          -28.299999899999996,
+          113.85039225917123
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.24",
+      "label": "gear_2_7_yellow",
+      "volume_mm3": 3786.083027099298,
+      "center_of_mass_mm": [
+        72.74550991687808,
+        -30.799999999999997,
+        130.32166570019373
+      ],
+      "bounds_mm": {
+        "min": [
+          51.97050980518771,
+          -33.300000100000005,
+          109.64659599237123
+        ],
+        "max": [
+          93.52051000518819,
+          -28.299999899999996,
+          150.99673540802846
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.1",
+      "label": "carrier_black",
+      "volume_mm3": 80041.35890808883,
+      "center_of_mass_mm": [
+        -1.0306256309754072e-09,
+        -26.728089340219935,
+        120.00000001847229
+      ],
+      "bounds_mm": {
+        "min": [
+          -94.0,
+          -48.500000558975515,
+          26.0
+        ],
+        "max": [
+          94.0,
+          -24.99999999999998,
+          214.0
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.2",
+      "label": "bezel_black",
+      "volume_mm3": 4636.109825709823,
+      "center_of_mass_mm": [
+        -2.2704363607711708e-12,
+        -41.300000000000004,
+        120.00000000001326
+      ],
+      "bounds_mm": {
+        "min": [
+          -34.99849103890053,
+          -43.300000000000004,
+          85.00150896109949
+        ],
+        "max": [
+          34.998491038901,
+          -39.29999999999998,
+          154.998491038901
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.1",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652583,
+      "center_of_mass_mm": [
+        37.50959871412379,
+        -36.09999999899138,
+        119.99999995240708
+      ],
+      "bounds_mm": {
+        "min": [
+          33.9,
+          -38.50000010000023,
+          116.4
+        ],
+        "max": [
+          41.1,
+          -33.6999999,
+          123.6
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.2",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.9058153165259,
+      "center_of_mass_mm": [
+        35.88269209019079,
+        -36.09999999899137,
+        141.68906804757708
+      ],
+      "bounds_mm": {
+        "min": [
+          32.273093376066996,
+          -38.50000010000023,
+          138.08906809517
+        ],
+        "max": [
+          39.473093376067,
+          -33.6999999,
+          145.28906809517
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.3",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652583,
+      "center_of_mass_mm": [
+        21.43015762817679,
+        -36.09999999899138,
+        161.78102533461708
+      ],
+      "bounds_mm": {
+        "min": [
+          17.820558914053,
+          -38.50000010000023,
+          158.18102538221
+        ],
+        "max": [
+          25.020558914053,
+          -33.6999999,
+          165.38102538221
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.4",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652583,
+      "center_of_mass_mm": [
+        -4.971275003699209,
+        -36.09999999899138,
+        172.51482032914708
+      ],
+      "bounds_mm": {
+        "min": [
+          -8.580873717823,
+          -38.50000010000023,
+          168.91482037674
+        ],
+        "max": [
+          -1.380873717823,
+          -33.6999999,
+          176.11482037674
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.5",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652586,
+      "center_of_mass_mm": [
+        -35.97625892364621,
+        -36.09999999899138,
+        166.9523593519071
+      ],
+      "bounds_mm": {
+        "min": [
+          -39.585857637770005,
+          -38.50000010000023,
+          163.35235939950002
+        ],
+        "max": [
+          -32.38585763777,
+          -33.6999999,
+          170.5523593995
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.6",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652592,
+      "center_of_mass_mm": [
+        -61.25292791769621,
+        -36.09999999899137,
+        144.58826973113707
+      ],
+      "bounds_mm": {
+        "min": [
+          -64.86252663182,
+          -38.50000010000023,
+          140.98826977873
+        ],
+        "max": [
+          -57.66252663182,
+          -33.6999999,
+          148.18826977873
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.7",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652583,
+      "center_of_mass_mm": [
+        -72.7359111910562,
+        -36.09999999899138,
+        109.67833425219708
+      ],
+      "bounds_mm": {
+        "min": [
+          -76.34550990518,
+          -38.50000010000023,
+          106.07833429979
+        ],
+        "max": [
+          -69.14550990518,
+          -33.6999999,
+          113.27833429978999
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.8",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.9058153165258,
+      "center_of_mass_mm": [
+        -37.50959871412379,
+        -36.09999999899138,
+        120.00000004759292
+      ],
+      "bounds_mm": {
+        "min": [
+          -41.1,
+          -38.50000010000023,
+          116.4
+        ],
+        "max": [
+          -33.9,
+          -33.6999999,
+          123.6
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.9",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652586,
+      "center_of_mass_mm": [
+        -35.88269209018379,
+        -36.09999999899138,
+        98.31093195242092
+      ],
+      "bounds_mm": {
+        "min": [
+          -39.47309337606,
+          -38.50000010000023,
+          94.710931904828
+        ],
+        "max": [
+          -32.27309337606,
+          -33.6999999,
+          101.91093190482799
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.10",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652586,
+      "center_of_mass_mm": [
+        -21.43015762817379,
+        -36.09999999899138,
+        78.21897466537992
+      ],
+      "bounds_mm": {
+        "min": [
+          -25.020558914050003,
+          -38.50000010000023,
+          74.618974617787
+        ],
+        "max": [
+          -17.82055891405,
+          -33.6999999,
+          81.81897461778699
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.11",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652583,
+      "center_of_mass_mm": [
+        4.971275003699209,
+        -36.09999999899138,
+        67.48517967085192
+      ],
+      "bounds_mm": {
+        "min": [
+          1.380873717823,
+          -38.50000010000023,
+          63.885179623259
+        ],
+        "max": [
+          8.580873717823,
+          -33.6999999,
+          71.085179623259
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.12",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652586,
+      "center_of_mass_mm": [
+        35.97625892365421,
+        -36.09999999899138,
+        73.04764064809092
+      ],
+      "bounds_mm": {
+        "min": [
+          32.385857637777995,
+          -38.50000010000023,
+          69.447640600498
+        ],
+        "max": [
+          39.585857637778,
+          -33.6999999,
+          76.647640600498
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.13",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652592,
+      "center_of_mass_mm": [
+        61.25292791769621,
+        -36.09999999899138,
+        95.41173026885592
+      ],
+      "bounds_mm": {
+        "min": [
+          57.66252663182,
+          -38.50000010000023,
+          91.811730221263
+        ],
+        "max": [
+          64.86252663182,
+          -33.6999999,
+          99.011730221263
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.3.14",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.9058153165258,
+      "center_of_mass_mm": [
+        72.7359111910642,
+        -36.09999999899138,
+        130.3216657477929
+      ],
+      "bounds_mm": {
+        "min": [
+          69.145509905188,
+          -38.50000010000023,
+          126.72166570019999
+        ],
+        "max": [
+          76.345509905188,
+          -33.6999999,
+          133.92166570019998
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.4.1",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652583,
+      "center_of_mass_mm": [
+        0.00959871412379101,
+        -46.09999999899138,
+        151.49999995240708
+      ],
+      "bounds_mm": {
+        "min": [
+          -3.6,
+          -48.50000010000023,
+          147.9
+        ],
+        "max": [
+          3.6,
+          -43.6999999,
+          155.1
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.25.4.2",
+      "label": "bezel_cap_2_black",
+      "volume_mm3": 131.90581531652586,
+      "center_of_mass_mm": [
+        -0.009598714123795362,
+        -46.09999999899138,
+        88.50000004759292
+      ],
+      "bounds_mm": {
+        "min": [
+          -3.600000000000004,
+          -48.50000010000023,
+          84.9
+        ],
+        "max": [
+          3.599999999999996,
+          -43.6999999,
+          92.1
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.26.1",
+      "label": "axle_black",
+      "volume_mm3": 4505.111032882362,
+      "center_of_mass_mm": [
+        -0.16939739438313103,
+        -15.361710333862778,
+        120.0085506273861
+      ],
+      "bounds_mm": {
+        "min": [
+          -11.5,
+          -41.0000001000004,
+          108.50000000000001
+        ],
+        "max": [
+          11.500000000001265,
+          13.500000100000001,
+          131.5
+        ]
+      }
+    },
+    {
+      "occurrence": "o1.26.2",
+      "label": "support_main_cap_black",
+      "volume_mm3": 1326.4266575641204,
+      "center_of_mass_mm": [
+        3.1305200446322133e-06,
+        -9.899999534929325,
+        119.99999760318009
+      ],
+      "bounds_mm": {
+        "min": [
+          -11.5000001,
+          -13.500000100000149,
+          108.4999999
+        ],
+        "max": [
+          11.5000001,
+          -6.299999898805243,
+          131.5000001
+        ]
+      }
+    }
+  ],
+  "gear_profiles": [
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_14.step",
+      "sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "expected_teeth": 14,
+      "actual_tip_arc_count": 14,
+      "tip_arc_count_matches": true,
+      "root_radius_mm": 8.625,
+      "tip_radius_mm": 11.775000000006,
+      "outside_diameter_mm": 23.550000000012,
+      "face_width_mm": 5.000000200000001,
+      "window_count": 5,
+      "window_boundaries_all_straight": true,
+      "maximum_window_vertex_radius_mm": 5.375000000000162,
+      "continuous_radial_root_rim_lower_bound_mm": 3.2499999999998384,
+      "full_outer_wire_to_window_minimum_mm": 3.24999999999972,
+      "each_window_to_outer_wire_minimum_mm": [
+        3.2500000000000164,
+        3.2499999999999734,
+        3.24999999999972,
+        3.2500000000001297,
+        3.2499999999999343
+      ],
+      "method": "Actual exported top-face wires. Public Edge.radius, Vertex.center and Wire.distance_to_with_closest_points. No source profile imports.",
+      "backlash": "Not measured by this script; pitch-circle flank thickness remains separately reconciled."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_15.step",
+      "sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "expected_teeth": 15,
+      "actual_tip_arc_count": 15,
+      "tip_arc_count_matches": true,
+      "root_radius_mm": 9.375,
+      "tip_radius_mm": 12.525000000004,
+      "outside_diameter_mm": 25.050000000008,
+      "face_width_mm": 5.000000200000001,
+      "window_count": 5,
+      "window_boundaries_all_straight": true,
+      "maximum_window_vertex_radius_mm": 6.125000000000223,
+      "continuous_radial_root_rim_lower_bound_mm": 3.249999999999777,
+      "full_outer_wire_to_window_minimum_mm": 3.2499999999997837,
+      "each_window_to_outer_wire_minimum_mm": [
+        3.250000000000228,
+        3.2500000000000524,
+        3.2499999999997837,
+        3.2500000000000773,
+        3.249999999999881
+      ],
+      "method": "Actual exported top-face wires. Public Edge.radius, Vertex.center and Wire.distance_to_with_closest_points. No source profile imports.",
+      "backlash": "Not measured by this script; pitch-circle flank thickness remains separately reconciled."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_18.step",
+      "sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+      "expected_teeth": 18,
+      "actual_tip_arc_count": 18,
+      "tip_arc_count_matches": true,
+      "root_radius_mm": 11.625,
+      "tip_radius_mm": 14.775000000005,
+      "outside_diameter_mm": 29.55000000001,
+      "face_width_mm": 5.000000200000001,
+      "window_count": 5,
+      "window_boundaries_all_straight": true,
+      "maximum_window_vertex_radius_mm": 8.3750000000004,
+      "continuous_radial_root_rim_lower_bound_mm": 3.2499999999996003,
+      "full_outer_wire_to_window_minimum_mm": 3.2499999999997384,
+      "each_window_to_outer_wire_minimum_mm": [
+        3.250000000000132,
+        3.2506597112533426,
+        3.249999999999754,
+        3.2499999999997384,
+        3.2499999999999325
+      ],
+      "method": "Actual exported top-face wires. Public Edge.radius, Vertex.center and Wire.distance_to_with_closest_points. No source profile imports.",
+      "backlash": "Not measured by this script; pitch-circle flank thickness remains separately reconciled."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_20.step",
+      "sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+      "expected_teeth": 20,
+      "actual_tip_arc_count": 20,
+      "tip_arc_count_matches": true,
+      "root_radius_mm": 13.124999999999,
+      "tip_radius_mm": 16.275000000007,
+      "outside_diameter_mm": 32.550000000014,
+      "face_width_mm": 5.000000200000001,
+      "window_count": 5,
+      "window_boundaries_all_straight": true,
+      "maximum_window_vertex_radius_mm": 9.87500000000058,
+      "continuous_radial_root_rim_lower_bound_mm": 3.249999999998419,
+      "full_outer_wire_to_window_minimum_mm": 3.2499999999991283,
+      "each_window_to_outer_wire_minimum_mm": [
+        3.249999999999198,
+        3.249999999999278,
+        3.2499999999997655,
+        3.2499999999991283,
+        3.249999999999545
+      ],
+      "method": "Actual exported top-face wires. Public Edge.radius, Vertex.center and Wire.distance_to_with_closest_points. No source profile imports.",
+      "backlash": "Not measured by this script; pitch-circle flank thickness remains separately reconciled."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_22.step",
+      "sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+      "expected_teeth": 22,
+      "actual_tip_arc_count": 22,
+      "tip_arc_count_matches": true,
+      "root_radius_mm": 14.624999999999,
+      "tip_radius_mm": 17.775000000014,
+      "outside_diameter_mm": 35.550000000028,
+      "face_width_mm": 5.000000200000001,
+      "window_count": 5,
+      "window_boundaries_all_straight": true,
+      "maximum_window_vertex_radius_mm": 11.375000000000481,
+      "continuous_radial_root_rim_lower_bound_mm": 3.2499999999985185,
+      "full_outer_wire_to_window_minimum_mm": 3.2499999999995954,
+      "each_window_to_outer_wire_minimum_mm": [
+        3.2500000000001386,
+        3.250000000000253,
+        3.2500000000037073,
+        3.25000000000695,
+        3.2499999999995954
+      ],
+      "method": "Actual exported top-face wires. Public Edge.radius, Vertex.center and Wire.distance_to_with_closest_points. No source profile imports.",
+      "backlash": "Not measured by this script; pitch-circle flank thickness remains separately reconciled."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_23.step",
+      "sha256": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+      "expected_teeth": 23,
+      "actual_tip_arc_count": 23,
+      "tip_arc_count_matches": true,
+      "root_radius_mm": 15.374999999999,
+      "tip_radius_mm": 18.525000000017,
+      "outside_diameter_mm": 37.050000000034,
+      "face_width_mm": 5.000000200000001,
+      "window_count": 5,
+      "window_boundaries_all_straight": true,
+      "maximum_window_vertex_radius_mm": 12.12500000000017,
+      "continuous_radial_root_rim_lower_bound_mm": 3.2499999999988294,
+      "full_outer_wire_to_window_minimum_mm": 3.2499999999994182,
+      "each_window_to_outer_wire_minimum_mm": [
+        3.2499999999994182,
+        3.270589204442029,
+        3.250000000000317,
+        3.25000000000118,
+        3.250000000000232
+      ],
+      "method": "Actual exported top-face wires. Public Edge.radius, Vertex.center and Wire.distance_to_with_closest_points. No source profile imports.",
+      "backlash": "Not measured by this script; pitch-circle flank thickness remains separately reconciled."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_26.step",
+      "sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+      "expected_teeth": 26,
+      "actual_tip_arc_count": 26,
+      "tip_arc_count_matches": true,
+      "root_radius_mm": 17.624999999996,
+      "tip_radius_mm": 20.775000000014,
+      "outside_diameter_mm": 41.550000000028,
+      "face_width_mm": 5.000000200000001,
+      "window_count": 5,
+      "window_boundaries_all_straight": true,
+      "maximum_window_vertex_radius_mm": 14.37500000000044,
+      "continuous_radial_root_rim_lower_bound_mm": 3.249999999995559,
+      "full_outer_wire_to_window_minimum_mm": 3.2499999999992815,
+      "each_window_to_outer_wire_minimum_mm": [
+        3.2499999999992815,
+        3.249999999999948,
+        3.2500000000006213,
+        3.250000000000895,
+        3.249999999999858
+      ],
+      "method": "Actual exported top-face wires. Public Edge.radius, Vertex.center and Wire.distance_to_with_closest_points. No source profile imports.",
+      "backlash": "Not measured by this script; pitch-circle flank thickness remains separately reconciled."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_sun.step",
+      "sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "expected_teeth": 36,
+      "actual_tip_arc_count": 36,
+      "tip_arc_count_matches": true,
+      "root_radius_mm": 25.124999999994,
+      "tip_radius_mm": 28.275000000044,
+      "outside_diameter_mm": 56.550000000088,
+      "face_width_mm": 5.000000200000001,
+      "window_count": 5,
+      "window_boundaries_all_straight": true,
+      "maximum_window_vertex_radius_mm": 21.875000000000114,
+      "continuous_radial_root_rim_lower_bound_mm": 3.249999999993886,
+      "full_outer_wire_to_window_minimum_mm": 3.24999999999951,
+      "each_window_to_outer_wire_minimum_mm": [
+        3.2727512483177486,
+        3.2500000000077764,
+        3.250000000000139,
+        3.24999999999951,
+        3.2500000000001794
+      ],
+      "method": "Actual exported top-face wires. Public Edge.radius, Vertex.center and Wire.distance_to_with_closest_points. No source profile imports.",
+      "backlash": "Not measured by this script; pitch-circle flank thickness remains separately reconciled."
+    }
+  ],
+  "print_pose_bounds": [
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_axle.step",
+      "sha256": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+      "size_mm": [
+        23.000000000001265,
+        23.0,
+        54.5000002000004
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1e-07
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_bezel.step",
+      "sha256": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+      "size_mm": [
+        69.99698207780153,
+        69.99698207780152,
+        4.0
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1.110223024625e-16
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_carrier.step",
+      "sha256": "cb457616187187a1b4b8b553fadf999553489ae53702b4e5999a6b1afc92e198",
+      "size_mm": [
+        188.0,
+        188.0,
+        23.500000558975522
+      ],
+      "xy_fits220": true,
+      "min_z_mm": 0.0
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_coupon.step",
+      "sha256": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5",
+      "size_mm": [
+        46.0,
+        18.0,
+        13.500000558976017
+      ],
+      "xy_fits220": true,
+      "min_z_mm": 0.0
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_foot_trim.step",
+      "sha256": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+      "size_mm": [
+        17.0,
+        17.0,
+        2.0
+      ],
+      "xy_fits220": true,
+      "min_z_mm": 0.0
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_14.step",
+      "sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "size_mm": [
+        23.550000200000774,
+        23.1330570925533,
+        5.000000200000001
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1e-07
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_15.step",
+      "sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "size_mm": [
+        24.85833331400751,
+        24.987864685625397,
+        5.000000200000001
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1e-07
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_18.step",
+      "sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+      "size_mm": [
+        29.550000200000014,
+        29.242022434482145,
+        5.000000200000001
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1e-07
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_20.step",
+      "sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+      "size_mm": [
+        32.55000019999978,
+        32.55000019999978,
+        5.000000200000001
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1e-07
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_22.step",
+      "sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+      "size_mm": [
+        35.5500001999996,
+        35.30672358963842,
+        5.000000200000001
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1e-07
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_23.step",
+      "sha256": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+      "size_mm": [
+        36.93447525185707,
+        37.015044845060096,
+        5.000000200000001
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1e-07
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_26.step",
+      "sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+      "size_mm": [
+        41.5500002000005,
+        41.349342234743595,
+        5.000000200000001
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1e-07
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_cap.step",
+      "sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "size_mm": [
+        7.2,
+        7.2,
+        4.800000200000222
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1e-07
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_main_cap.step",
+      "sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "size_mm": [
+        23.0000002,
+        23.0000002,
+        7.200000201194907
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1.0119475800476956e-07
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_orange_disc.step",
+      "sha256": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+      "size_mm": [
+        55.0,
+        55.0,
+        1.0
+      ],
+      "xy_fits220": true,
+      "min_z_mm": 0.0
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_pedestal.step",
+      "sha256": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+      "size_mm": [
+        105.0,
+        105.0,
+        14.000000000000014
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -6.429395695521749e-15
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step",
+      "sha256": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+      "size_mm": [
+        100.1,
+        98.5,
+        8.6
+      ],
+      "xy_fits220": true,
+      "min_z_mm": 0.0
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_rim_trim.step",
+      "sha256": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+      "size_mm": [
+        99.0,
+        99.0,
+        1.200000000000003
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1.5543122344752192e-15
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_stem.step",
+      "sha256": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+      "size_mm": [
+        12.0,
+        12.0,
+        107.5
+      ],
+      "xy_fits220": true,
+      "min_z_mm": 0.0
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_sun.step",
+      "sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "size_mm": [
+        56.55000019999983,
+        56.550000199999985,
+        5.000000200000001
+      ],
+      "xy_fits220": true,
+      "min_z_mm": -1e-07
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_support_collar.step",
+      "sha256": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8",
+      "size_mm": [
+        25.0,
+        25.0,
+        12.0
+      ],
+      "xy_fits220": true,
+      "min_z_mm": 0.0
+    }
+  ],
+  "limits": [
+    "Uniform-density COM is digital geometry, not measured physical balance.",
+    "Separate material-group COM permits symmetry assessment without assuming black and gold equal density.",
+    "Bounds from build123d actual BRep are distinguished from render-package conservative bounds.",
+    "No motion, retention, friction, coasting, physical printing or backlash PASS is implied."
+  ]
+}

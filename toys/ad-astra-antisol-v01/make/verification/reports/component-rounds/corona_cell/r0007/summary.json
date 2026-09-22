@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_corona_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0007",
+ "overhang_angle": 45.0,
+ "parts": [
+  "corona_cell"
+ ],
+ "print": {
+  "corona_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0005/overhang-corona_cell.log": "14b352ffe925861470b8d60258a73fd1210f0661db1ad2dfa9173701564eaf66",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0005/thickness-corona_cell.log": "7b633812def6b1e4aebd333e4d02318d88317e42279b87483c49b57fa1d3ffa6"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "corona_cell"
+ ],
+ "round": 7,
+ "scope": "component:corona_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Inspected the front, top and isometric views of this round; they are byte-identical to the renders inspected before the last source change, which touched only Saturn's ring. The engraved corona reads clearly in the isometric view: a central disc with sixteen flame tongues radiating outward, alternating long and short, cut 0.40 mm into the face. Two tapered flames stand at the two corners of the far edge and lean outward. Tile 33.50 square and 3.00 thick, tongues reaching 7.00 above the tile floor. Nothing misplaced, missing or intersecting.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0007/visual-packet.json",
+  "packet_sha256": "133dc0d07e4dee739ee9f0e617476c0cbb5a5d47bc2f63f30e9db4ce7ce538d9",
+  "status": "pass"
+ }
+}

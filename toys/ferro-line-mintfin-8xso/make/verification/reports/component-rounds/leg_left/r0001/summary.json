@@ -1,0 +1,73 @@
+{
+ "build": {
+  "leg_left": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "leg_left"
+ ],
+ "check_motion": true,
+ "checked": [
+  "leg_left"
+ ],
+ "checks_ok": false,
+ "entry": "part_leg_left.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "leg_left"
+ ],
+ "print": {
+  "leg_left": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0001/overhang-leg_left.log": "1f7965319694468a058919325970b8af9a04c6d69296f7560cb3126716eda11e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0001/thickness-leg_left.log": "42e520b1e4fb05e73c148cc5862e951475bb3fc6afb8b34e88aa1f8efef7251e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 20.0% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 2.8,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 1.3% of surface below (1333 of 110897 samples); thinne"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:leg_left",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin toe skirts and unsupported ankle pad",
+    "evidence": "Front/iso recess edges at sole; thickness reports three walls7.9..16.5mm2; support report2.8mm2 at print(13.1,6.6,15)",
+    "part": "leg_left",
+    "repair": "Open the claw recesses forward as full-width toe slots and add a45-degree buttress beneath the ankle pad."
+   }
+  ],
+  "observation": "The bent paw silhouette and upper mounting pad are coherent. Front/iso show claw recesses cutting scalloped thin skirts through the toe edge; the mounting pad also projects beyond its lower support.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0001/visual-packet.json",
+  "packet_sha256": "0757395f49236e071f0f867545a3bc02b41d680d63371932908134de37b6726a",
+  "status": "fail"
+ }
+}

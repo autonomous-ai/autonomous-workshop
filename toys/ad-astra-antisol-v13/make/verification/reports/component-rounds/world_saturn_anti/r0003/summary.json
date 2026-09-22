@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_saturn_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_anti"
+ ],
+ "print": {
+  "world_saturn_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/overhang-world_saturn_anti.log": "f0178ffa4cd614ded9ce448c1429fb97e623311ed9b0e745fcbcb40d3b865a25",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/thickness-world_saturn_anti.log": "da25cc5e567f0ad1fa0b29372514f023fa6af011cda654c52e6bb145f044fa22"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_saturn_anti"
+ ],
+ "round": 3,
+ "scope": "component:world_saturn_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso inspected. The second-largest globe with its ring plate around it, the plate lying at a shallow tilt whose HIGH SIDE IS OPPOSITE to the Sol piece's -- the 26.73 degree obliquity mirrored, visible directly in these two component frames. The ring is one continuous plate fused to the globe with its revolved web beneath, it stays inside the disc's own \u00d834.00 footprint, and its low rim clears the disc top. No misplaced, missing or extra geometry and no visible intersection; the assembly's boolean interference check settles that question and returned zero clashes over 220 occurrences. Untouched by this revision and byte-identical. (Round re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0003/visual-packet.json",
+  "packet_sha256": "0f301204cc01385667328385dd5e500fdc19625d2236f3975031e3976b87449e",
+  "status": "pass"
+ }
+}

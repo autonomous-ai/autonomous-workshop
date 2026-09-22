@@ -144,6 +144,10 @@ from workshop.release.native import (
     read_native_release,
 )
 from workshop.release.verification import try_materialize_digital_verification
+from workshop.release.public_archive import (
+    UNRELEASED_PUBLICATION_STATUS,
+    unreleased_public_slug,
+)
 from workshop.release.public_example import (
     materialize_public_example_if_source_checkout,
 )
@@ -3083,9 +3087,14 @@ def _record_public_example_projection(
     release: NativeRelease,
     made: NativeMade,
     inventor_id: str,
-    receipt: Receipt,
+    receipt: Optional[Receipt] = None,
 ) -> Mapping[str, Any]:
-    """Project the public toy and optionally commit and push that directory."""
+    """Project the toy directory and optionally commit and push it.
+
+    ``receipt`` is the authenticated Factory readback of a published toy.
+    ``None`` projects a locally sealed, unpublished toy instead; the archive
+    keeps its usual shape and records ``unreleased`` publication status.
+    """
 
     checkpoint = run.snapshot()
     github_requested = _github_publication_requested(run)
@@ -3134,8 +3143,8 @@ def _record_public_example_projection(
             public = {
                 "status": "error",
                 "reason": (
-                    "Public Git projection failed closed; Factory publication "
-                    "is still verified and the projection can be retried later."
+                    "Git projection failed closed; the sealed Release is "
+                    "unchanged and the projection can be retried later."
                 ),
             }
         else:
@@ -3173,7 +3182,11 @@ def _record_public_example_projection(
         "product_id": checkpoint.product_id,
         "native_release_sha256": release.release_sha256,
         "package_artifact_sha256": release.package_manifest.artifact_sha256,
-        "publication_slug": receipt.slug,
+        "publication_slug": (
+            receipt.slug
+            if receipt is not None
+            else unreleased_public_slug(release.product["title"])
+        ),
         "projection": public,
     }
     try:
@@ -3190,7 +3203,7 @@ def _try_record_public_example_projection(
     release: NativeRelease,
     made: NativeMade,
     inventor_id: str,
-    receipt: Receipt,
+    receipt: Optional[Receipt] = None,
 ) -> Mapping[str, Any]:
     """Keep even an unexpected projection regression outside the lifecycle."""
 
@@ -3206,8 +3219,8 @@ def _try_record_public_example_projection(
         return {
             "status": "error",
             "reason": (
-                "Public Git projection failed outside the lifecycle; Factory "
-                "publication remains authoritative and projection is retryable."
+                "Git projection failed outside the lifecycle; the sealed "
+                "Release remains authoritative and projection is retryable."
             ),
         }
 
@@ -6792,10 +6805,29 @@ def _record_authorization(
     publish_requested: bool,
     create: bool,
     github_publish_requested: bool = False,
+    local_release_only: bool = False,
+    override_local_release_only: Optional[bool] = None,
 ) -> Mapping[str, Any]:
+    """Record what external effects this exact run is allowed to perform.
+
+    ``publish_requested`` and ``github_publish_requested`` are monotonic
+    grants: once given they are never withdrawn by a later resume.
+    ``local_release_only`` is the restriction ``--no-publish`` freezes when the
+    run is created.  A resume can still neither add nor drop it, so the flag
+    remains a property of the run rather than of one invocation, and no agent
+    turn can reach it.
+
+    ``override_local_release_only`` is the one exception and exists only for
+    ``workshop publish``: the operator who asked to keep a toy local is also
+    the only party allowed to change their mind about it later.  It is
+    rejected at creation, where ``local_release_only`` is the input, and the
+    publish path restores the restriction if publication does not complete.
+    """
+
     path = _authorization_path(paths)
     current = False
     current_github = False
+    current_local = False
     if path.exists() or path.is_symlink():
         try:
             identity = path.lstat()
@@ -6819,7 +6851,13 @@ def _record_authorization(
         # Schema 3 briefly carried a history-disclosure flag (never merged);
         # files written then still read, the flag is ignored and not rewritten.
         withdrawn_expected = github_expected | {"history_disclosure_requested"}
-        expected_by_schema = {1: legacy_expected, 2: github_expected, 3: withdrawn_expected}
+        local_expected = github_expected | {"local_release_only"}
+        expected_by_schema = {
+            1: legacy_expected,
+            2: github_expected,
+            3: withdrawn_expected,
+            4: local_expected,
+        }
         schema = value.get("schema_version")
         if (
             schema not in expected_by_schema
@@ -6828,14 +6866,24 @@ def _record_authorization(
             or value["product_id"] != product_id
             or type(value["publish_requested"]) is not bool
             or (schema >= 2 and type(value["github_publish_requested"]) is not bool)
+            or (schema == 4 and type(value["local_release_only"]) is not bool)
         ):
             raise StateConflict("run authorization is invalid")
         current = value["publish_requested"]
         current_github = value["github_publish_requested"] if schema >= 2 else False
+        current_local = value["local_release_only"] if schema == 4 else False
     elif not create:
         raise StateConflict("run authorization is missing")
+    if override_local_release_only is not None:
+        if create:
+            raise ContractError(
+                "a new run states its restriction through local_release_only"
+            )
+        selected_local = bool(override_local_release_only)
+    else:
+        selected_local = bool(local_release_only) if create else current_local
     value = {
-        "schema_version": 2,
+        "schema_version": 2 if not selected_local else 4,
         "kind": _AUTHORIZATION_KIND,
         "product_id": product_id,
         "publish_requested": bool(current or publish_requested),
@@ -6843,10 +6891,13 @@ def _record_authorization(
             current_github or github_publish_requested
         ),
     }
+    if selected_local:
+        value["local_release_only"] = True
     if (
         create
         or value["publish_requested"] != current
         or value["github_publish_requested"] != current_github
+        or selected_local != current_local
     ):
         _write_private_json(path, value)
     return value
@@ -6861,6 +6912,30 @@ def _github_publication_requested(run: AgentRun) -> bool:
         create=False,
     )
     return authorization["github_publish_requested"] is True
+
+
+def _local_release_only_at(paths: NativeRunPaths, product_id: str) -> bool:
+    """Return the run's frozen ``--no-publish`` restriction.
+
+    A run started before this option existed has no such key and publishes as
+    it always did.
+    """
+
+    authorization = _record_authorization(
+        paths,
+        product_id=product_id,
+        publish_requested=False,
+        github_publish_requested=False,
+        create=False,
+    )
+    return authorization.get("local_release_only") is True
+
+
+def _local_release_only(run: AgentRun) -> bool:
+    return _local_release_only_at(
+        NativeRunPaths(run.run_root, run.host_state_root),
+        run.snapshot().product_id,
+    )
 
 
 def _ready_contract_artifact(
@@ -8426,8 +8501,19 @@ def _attempt_release_publication(
     open until authenticated public readback succeeds. The Factory adapters
     retain ambiguous outcomes in their ledger and reconcile them before any
     later send.
+
+    This is the single choke point for the Factory effect, so a run carrying
+    ``--no-publish`` is refused here as well as at the gate. No agent turn, no
+    resume and no legacy Deliver promotion can reach past it. The only way a
+    kept-local toy ever publishes is ``workshop publish``, which drops the
+    restriction as a deliberate operator act before calling in here, and puts
+    it back if this does not finish.
     """
 
+    if _local_release_only(run):
+        raise StateConflict(
+            "this run was created with --no-publish and cannot publish"
+        )
     try:
         receipt = _read_release_effect(run, verified.release)
         if receipt is not None and receipt.is_verified_public:
@@ -8675,16 +8761,29 @@ def _evaluate_release_stage(
     cad_evidence = _verify_release_print_ready_cad(
         run, checkpoint, context["made"]
     )
-    with wish_run_timing_span(
-        timing_observer,
-        product_id=checkpoint.product_id,
-        stage=checkpoint.stage,
-        operation="effect.factory",
-    ):
-        publication, unused_changed = _attempt_release_publication(run, verified)
-    del unused_changed
-    if not publication.is_verified_public:
-        raise StateConflict("Release requires authenticated public readback")
+    local_only = _local_release_only(run)
+    if local_only:
+        # A --no-publish run performs no external effect at all: no Factory
+        # project, no ledger entry, no credential read. The sealed Release is
+        # projected locally instead, and the gate records that honestly.
+        publication = None
+        _try_record_public_example_projection(
+            run,
+            release=verified.release,
+            made=verified.made,
+            inventor_id=verified.inventor_id,
+        )
+    else:
+        with wish_run_timing_span(
+            timing_observer,
+            product_id=checkpoint.product_id,
+            stage=checkpoint.stage,
+            operation="effect.factory",
+        ):
+            publication, unused_changed = _attempt_release_publication(run, verified)
+        del unused_changed
+        if not publication.is_verified_public:
+            raise StateConflict("Release requires authenticated public readback")
     try:
         verification = (
             None
@@ -8719,9 +8818,13 @@ def _evaluate_release_stage(
     evidence = StageGateEvidence(
         stage="release",
         gate_id=(
-            "release.published-output-v1"
-            if checkpoint.effort == "spark"
-            else "release.public-print-package-v3"
+            "release.local-unreleased-output-v1"
+            if local_only
+            else (
+                "release.published-output-v1"
+                if checkpoint.effort == "spark"
+                else "release.public-print-package-v3"
+            )
         ),
         validator_version="3.0.0",
         passed=True,
@@ -8761,12 +8864,20 @@ def _evaluate_release_stage(
                 "cad_thickness_gate_required": cad_evidence.thickness_gate_required,
                 "cad_print_ready_eligible": cad_evidence.print_ready_eligible,
             }),
-            "publication_status": "public",
-            "factory_readback_verified": True,
-            "page_url": publication.details.get("page_url"),
-            "manual_url": publication.details.get("manual_url"),
-            "manual_readback_sha256": publication.details.get(
-                "manual_readback_sha256"
+            "publication_status": (
+                UNRELEASED_PUBLICATION_STATUS if local_only else "public"
+            ),
+            "factory_readback_verified": not local_only,
+            "page_url": (
+                None if local_only else publication.details.get("page_url")
+            ),
+            "manual_url": (
+                None if local_only else publication.details.get("manual_url")
+            ),
+            "manual_readback_sha256": (
+                None
+                if local_only
+                else publication.details.get("manual_readback_sha256")
             ),
             **verification_checks,
         },
@@ -9620,7 +9731,45 @@ def _native_receipt(
     }
     needs: list[str] = list(checkpoint.needs)
     rounds = _playtest_score_history(paths.host_state) if paths is not None else []
+    local_release_run = False
     if paths is not None:
+        try:
+            local_release_run = _local_release_only_at(
+                paths, checkpoint.product_id
+            )
+        except WorkshopError:
+            local_release_run = False
+    if local_release_run:
+        # A --no-publish run never creates a Factory effect, so there is no
+        # receipt, ledger or retry condition to report. Say exactly that
+        # instead of describing an absent publication as incomplete.
+        publication = {
+            "status": UNRELEASED_PUBLICATION_STATUS,
+            "requested": False,
+            "required": False,
+            "verified": False,
+            "reason": (
+                "This run was started with --no-publish. Its Release is sealed "
+                "locally as an unreleased toy and no Factory effect exists. "
+                "Run 'workshop publish' on it to list these exact bytes."
+            ),
+        }
+        if checkpoint.stage == "release" and checkpoint.status == "complete":
+            # Name where the archive landed: for this run it is the whole
+            # deliverable and the next correction's input. A projection that
+            # never completed is reported, not raised; the sealed Release is
+            # unaffected either way.
+            try:
+                effect_run = _open_budgeted_agent_run(paths)
+                verified = _existing_release_for_promotion(effect_run, checkpoint)
+                projection = _read_public_example_projection(
+                    effect_run, verified.release
+                )
+            except WorkshopError:
+                pass
+            else:
+                publication["public_example"] = dict(projection)
+    elif paths is not None:
         if checkpoint.stage == "release" and checkpoint.status == "waiting":
             wait_run = _open_budgeted_agent_run(paths)
             effect_wait = _read_release_effect_wait(wait_run, checkpoint)
@@ -9923,11 +10072,13 @@ def start_native_run(
     manager_reasoning_effort: Optional[str] = None,
     publish_requested: Optional[bool] = None,
     github_publish_requested: bool = False,
+    local_release_only: bool = False,
     max_rounds: int = 4,
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
     check_motion: bool = False,
+    carry_unchanged: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     revision_snapshot: Optional[bytes] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
@@ -9954,6 +10105,15 @@ def start_native_run(
     ``github_publish_requested`` grants prospective authority to commit and
     push the sanitized public snapshot after verified Factory readback. It is
     false by default and frozen for the run.
+
+    ``local_release_only`` withholds every Factory effect from this run. Make
+    and Release still run and seal exactly as usual, but Release performs no
+    authenticated publication and projects the toy directory with
+    ``unreleased`` publication status instead. It is frozen when the run is
+    created: a resume can neither add it nor drop it, so a run can never
+    publish a toy the operator asked to keep local. ``workshop fix`` accepts
+    such a toy as a correction source, which is what makes a chain of
+    single-change corrections publishable only at its end.
 
     ``max_rounds`` freezes the Invent-Make-Playtest round budget (1-100). Every
     Make revision request and every Playtest ``improve`` verdict spends one
@@ -9986,6 +10146,10 @@ def start_native_run(
     validate_limit(max_tokens)
     if type(check_motion) is not bool:
         raise ContractError("motion check option must be boolean")
+    if type(carry_unchanged) is not bool:
+        raise ContractError("carry unchanged option must be boolean")
+    if carry_unchanged and revision_snapshot is None:
+        raise ContractError("carrying unchanged parts forward needs a correction source")
 
     selected_effort = workshop_effort(effort) if effort is not None else None
     selected_runtime = manager_runtime_selection(
@@ -10000,6 +10164,12 @@ def start_native_run(
         raise ContractError("legacy publication option must be boolean")
     if type(github_publish_requested) is not bool:
         raise ContractError("GitHub publication option must be boolean")
+    if type(local_release_only) is not bool:
+        raise ContractError("local release option must be boolean")
+    if local_release_only and github_publish_requested:
+        raise ContractError(
+            "an unreleased run has no public archive to commit and push"
+        )
     if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
         raise ContractError("round budget must be an integer between 1 and 100")
     if wish_reference_files is not None and not isinstance(wish_reference_files, Mapping):
@@ -10052,6 +10222,7 @@ def start_native_run(
                 turn_seconds=turn_seconds,
                 turn_untimed=turn_untimed,
                 check_motion=check_motion,
+                carry_unchanged=carry_unchanged,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.
@@ -10067,6 +10238,7 @@ def start_native_run(
             product_id=wish.product_id,
             publish_requested=True,
             github_publish_requested=github_publish_requested,
+            local_release_only=local_release_only,
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
@@ -10261,19 +10433,30 @@ def _resume_native_run_locked(
         action = "inspected-terminal"
         if checkpoint.stage == "release":
             verified = _existing_release_for_promotion(run, checkpoint)
-            receipt = _read_release_effect(run, verified.release)
-            if receipt is None or not receipt.is_verified_public:
-                raise StateConflict(
-                    "completed Release lacks its verified Factory receipt"
+            if _local_release_only(run):
+                # A --no-publish run has no receipt to reconcile, by design.
+                # Reprojecting its sealed Release stays available so an
+                # interrupted projection can still be completed later.
+                projection = _try_record_public_example_projection(
+                    run,
+                    release=verified.release,
+                    made=verified.made,
+                    inventor_id=verified.inventor_id,
                 )
-            _assert_required_public_readback(verified.release, receipt)
-            projection = _try_record_public_example_projection(
-                run,
-                release=verified.release,
-                made=verified.made,
-                inventor_id=verified.inventor_id,
-                receipt=receipt,
-            )
+            else:
+                receipt = _read_release_effect(run, verified.release)
+                if receipt is None or not receipt.is_verified_public:
+                    raise StateConflict(
+                        "completed Release lacks its verified Factory receipt"
+                    )
+                _assert_required_public_readback(verified.release, receipt)
+                projection = _try_record_public_example_projection(
+                    run,
+                    release=verified.release,
+                    made=verified.made,
+                    inventor_id=verified.inventor_id,
+                    receipt=receipt,
+                )
             if projection.get("status") == "materialized":
                 action = "reconciled-public-example"
         return _native_receipt(
@@ -10312,6 +10495,87 @@ def _resume_native_run_locked(
         action=action,
         turns=turns,
     )
+
+
+def publish_native_run(
+    product_id: str,
+    *,
+    timing_observer: Optional[WishRunTimingObserver] = None,
+) -> Mapping[str, Any]:
+    """Publish the sealed Release of a run that was kept local.
+
+    This is the operator changing their mind about ``--no-publish``, and it is
+    the only path that may. It runs no agent turn, spends no tokens and edits
+    no geometry: the exact sealed bytes the run already accepted are the ones
+    that reach Factory, so what is listed is what was reviewed locally.
+
+    The restriction is dropped only for the publication attempt and restored
+    unless authenticated public readback succeeds, so a run that fails to
+    publish is left exactly as it was rather than half-open.
+    """
+
+    timing_observer = _validated_timing_observer(timing_observer)
+    paths = native_run_paths(product_id)
+    with _native_run_mutation_lock(paths):
+        run = _open_budgeted_agent_run(paths)
+        checkpoint = run.snapshot()
+        if checkpoint.stage != "release" or checkpoint.status != "complete":
+            raise StateConflict(
+                "publish requires a run already completed at Release"
+            )
+        verified = _existing_release_for_promotion(run, checkpoint)
+        if not _local_release_only(run):
+            # Not a kept-local run: either it published already, or it is a
+            # publishing run whose effect is still owed. Report, never resend.
+            receipt = _read_release_effect(run, verified.release)
+            if receipt is None or not receipt.is_verified_public:
+                raise StateConflict(
+                    "this run already publishes; resume it instead"
+                )
+            _assert_required_public_readback(verified.release, receipt)
+            return _native_receipt(
+                checkpoint, paths=paths, action="publication-already-public"
+            )
+        _record_authorization(
+            paths,
+            product_id=product_id,
+            publish_requested=True,
+            create=False,
+            override_local_release_only=False,
+        )
+        restore = True
+        try:
+            with wish_run_timing_span(
+                timing_observer,
+                product_id=checkpoint.product_id,
+                stage=checkpoint.stage,
+                operation="effect.factory",
+            ):
+                unused_receipt, promoted = _attempt_release_publication(
+                    run, verified
+                )
+                del unused_receipt
+        except _FactoryCredentialsUnavailable:
+            action = "publication-not-created"
+        except _RequiredPublicationUnavailable:
+            action = "publication-unverified"
+        else:
+            restore = False
+            action = (
+                "published-existing-release"
+                if promoted
+                else "publication-already-public"
+            )
+        finally:
+            if restore:
+                _record_authorization(
+                    paths,
+                    product_id=product_id,
+                    publish_requested=True,
+                    create=False,
+                    override_local_release_only=True,
+                )
+        return _native_receipt(checkpoint, paths=paths, action=action)
 
 
 def resume_native_run(

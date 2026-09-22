@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_belt_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belt_cell"
+ ],
+ "print": {
+  "belt_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/overhang-belt_cell.log": "f89db0a7c8b71b1c06a335f470f6be3d71e39e947ab6f3930b4e8b682236c891",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/thickness-belt_cell.log": "3790cde14520dcc9b7b162e7da2e3039258da233786cd2c9052bc1aa2126e7a7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "belt_cell"
+ ],
+ "round": 3,
+ "scope": "component:belt_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A square tile with a ring of faceted rubble around a smooth circular landing pad. Front: the rubble peaks stand proud of the tile's rim and the pad sits below them, which is the intent -- the pad is the flat surface a piece stands on and the rubble is the belt. Top: the pad is a clean circle with rubble all round it and none inside it. Iso: every lump is attached to the tile floor, none floats, and the tile's own outline is square with a rounded corner radius. No missing or extra body, no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0003/visual-packet.json",
+  "packet_sha256": "8f846c9f008dfea48f01d33850e79533ad5f8da3a5816a66969cecb2e79d2db5",
+  "status": "pass"
+ }
+}

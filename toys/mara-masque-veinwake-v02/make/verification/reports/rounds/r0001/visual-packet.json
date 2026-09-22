@@ -1,0 +1,43 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/visual/front.png": "a196845c9a9743822bb0c4f131028542d910275a9780f27f8baad560e144f8a6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/visual/iso.png": "92c157232ced3c4ccd7d8dd510f5a79aa2f11c12bd1bbd84cf536d7ab1609b06",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/visual/top.png": "191c0116077e5b0681cfb106cb076ccbcf56336b937e98034da0c16a08976e0d"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "README.md": "9e9bca094a96c7ce55ef3c360732d2ccb750eda6bdb16220c4092307d5f94128",
+    "measure/check_fit.py": "36c2df2f3933e71f5d8cfde185363b141279d9480ba5c56dfa4f7691f351da2b",
+    "measure/geometry_audit.py": "a4faca6344b6e60bea94e8ec52bc9f4827ab2b2e420c12acffbac848bb09ee02",
+    "measure/rind_wall_audit.py": "92ef58ba258d01058d0a8743633b35267846ffd84fcf2db1b9413a121976eb4a",
+    "measure/rules_audit.py": "86a738204fd5279ebda8064edbd09f71dec18f72ad09b930bd164582e7498e40",
+    "measure/step_lineage.py": "674ae6671b1527f1069aeada2cdc9799980ae412dfe1689652fdb3af9d040164",
+    "part_bubble_1.step": "e477910a2f5d1be97d58fbb1a43a984c5616cb324230dddb6965b81e3c238fdd",
+    "part_bubble_1.step.py": "d5e882e890e26e24e38e8fc99df7325159e9f45b2cfc0f9bbe252da8204fa1b9",
+    "part_bubble_2.step": "90d6e0934771266faf25f413ddc494ac71add74278bc2001e6e1449d3c29a8ae",
+    "part_bubble_2.step.py": "45c2f8855f7866ebe40c95acf1065d2177bf73445259a6edb1282d0bd56685cd",
+    "part_bubble_3.step": "62de71fac3103752e99430376590112e7438333fc02a0d57ed00cecdbe20c41c",
+    "part_bubble_3.step.py": "4ca67676326270c71dac1244432e608b4de352a0128dad47f264b7c6cb6b2488",
+    "part_bubble_4.step": "44df65a229e8f81c4857ea396d00922063529d7b3d51f0b86b66fb33da2464fe",
+    "part_bubble_4.step.py": "47fb0ad1f3767c2088a64e23a0a41c0977335a3cc4b60c64659a0e7caad549aa",
+    "part_rind.step": "042745edf688e2011a56f5d952805008e1034292f23452ba7ba547483362aa8f",
+    "part_rind.step.py": "d6bef5f74745e6374a9eb91863ceca0ac919cad5ac512625126343d37a87dd1e",
+    "part_tooth_1.step": "98e645c55fbe11a95cb6d8b2bae151c3478527e7b4bdc475b6baff955c92f2b8",
+    "part_tooth_1.step.py": "fc22d574ddb1ae1d6745d61f5f49b9f423bfc3fe9c05fa669fbdfcf7969f27dc",
+    "part_tooth_2.step": "0a31132df60a3193053a2266843b979d82f8a2051cb4bacd5b4136921eb8117a",
+    "part_tooth_2.step.py": "4efc8f7e41c2c1f1f03aff94ade0f75f41873056bc3e6e972a3558e0ecafe496",
+    "part_tooth_3.step": "1fecfb685a5e46620b7b67f6a5d4da31858fad6b28ca969c9159369936fca700",
+    "part_tooth_3.step.py": "00b1dafee8542cf7ed21a6a3b61788c13438ba5b17526f93129d1e628d0baad7",
+    "part_tooth_4.step": "859d7f4f899e65f3696ae2877fa3be50d3a16fbdc5c21d9faa156ee2b3945ce4",
+    "part_tooth_4.step.py": "0a375020a23c0fa3cfe9d70544ae700fb99c4f0844c862c46d250b1959b360b6",
+    "part_tooth_5.step": "55c26e3584846b26e28b974199c02aae920db703718fa7ae2de50d8d29338681",
+    "part_tooth_5.step.py": "12ea2b8a14baf4cc0fe7413ca6656945ab2f360d28dda8010776e17dead770ef",
+    "presentation.py": "084e31be42639783439e23607ca9b283d8727a2761aaeb24ee7010f2c2672696",
+    "render_exact.py": "da08f542926c0b6894735d36e70485bb1d8f23bd9f217cb19f42b793ec1b92cf",
+    "veinwake.step": "19eb06877ccfbea050ab4a61d451e6fb712f4a84a88033799c79236abfb69252",
+    "veinwake.step.py": "0d221f1caf51dfa1a75a77abeb1d77f5e7e11220e04458f0bf1f0c9b8e99b338",
+    "veinwake_lib.py": "b7b58066953f1bff7bb2d85dcca957fec66e19a4519b4e30efe594425935f4cc",
+    "veinwake_spec.md": "c7093b7f5f4a82ec6070851a44e7e1f1a2172552fe995b02172b8e9f9e364a08"
+  }
+}

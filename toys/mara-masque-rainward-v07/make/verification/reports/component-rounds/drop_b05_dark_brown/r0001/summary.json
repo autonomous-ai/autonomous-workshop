@@ -1,0 +1,61 @@
+{
+ "build": {
+  "drop_b05_dark_brown": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "drop_b05_dark_brown"
+ ],
+ "check_motion": false,
+ "checked": [
+  "drop_b05_dark_brown"
+ ],
+ "checks_ok": true,
+ "entry": "part_drop_b05_dark_brown.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b05_dark_brown/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "drop_b05_dark_brown"
+ ],
+ "print": {
+  "drop_b05_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b05_dark_brown/r0001/overhang-drop_b05_dark_brown.log": "aa23c27b58742d24da194fe49cb956d6e1c33edb0bea33fcf4c38ffe13e4e4aa",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b05_dark_brown/r0001/thickness-drop_b05_dark_brown.log": "65400cc248ac9774b5ec3801b083a2d22b5b9000ac2c09bcea4c3e77707431c9"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:drop_b05_dark_brown",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b05_dark_brown/r0001/visual-packet.json",
+  "packet_sha256": "437de322a5a0f8c86a17dac5ce7923c1e55f871b353bc5c644737236f7ab0b58",
+  "status": "pending"
+ }
+}

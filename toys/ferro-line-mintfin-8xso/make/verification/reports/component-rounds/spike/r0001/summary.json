@@ -1,0 +1,62 @@
+{
+ "build": {
+  "spike": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "spike"
+ ],
+ "check_motion": true,
+ "checked": [
+  "spike"
+ ],
+ "checks_ok": true,
+ "entry": "part_spike.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "spike"
+ ],
+ "print": {
+  "spike": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike/r0001/overhang-spike.log": "9140128fcfd226722cca013001f7dac9a76d5b43741eb94e3fdadcf437c0d50e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike/r0001/thickness-spike.log": "c4d4f2f153708d2ffd3ab962f33db3ed08671424000e3dc98260bc835ffdc09e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:spike",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show a broad round foot tapering continuously to a blunt leaning tip; top shows the intended posterior offset. No disconnected or misplaced geometry is visible. The additional 1.2 mm screen found an excessive thin edge band at the foot, which will be repaired before assembly.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike/r0001/visual-packet.json",
+  "packet_sha256": "7648c9ade3ed299777cd1c1b2280524a2a56df4266bdfdf531a131ce0be4c6b2",
+  "status": "pass"
+ }
+}

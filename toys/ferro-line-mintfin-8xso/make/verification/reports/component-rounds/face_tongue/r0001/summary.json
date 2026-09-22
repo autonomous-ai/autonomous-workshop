@@ -1,0 +1,62 @@
+{
+ "build": {
+  "face_tongue": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_tongue"
+ ],
+ "check_motion": true,
+ "checked": [
+  "face_tongue"
+ ],
+ "checks_ok": true,
+ "entry": "part_face_tongue.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_tongue/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_tongue"
+ ],
+ "print": {
+  "face_tongue": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_tongue/r0001/overhang-face_tongue.log": "4957457dab09a4661e3a31d1964d2cec84210a58b5edb502f71a74fbf9d2339d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_tongue/r0001/thickness-face_tongue.log": "3bedf52dc1491f211513a71de5e564cbfa091b86f7c5d17f570e34265f65aab1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:face_tongue",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Single coral oval with flat parallel broad faces, consistent1mm extrusion and rounded continuous perimeter; no holes, splits or floating material. Its9x5.5 footprint matches the intended tongue insert. Default0.8 standing-feature wall and support checks pass. Installed position/adhesive fit awaits assembly.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_tongue/r0001/visual-packet.json",
+  "packet_sha256": "8abeb5a81eab5b7908fd4b7135b0c7b0b9c3e7647f0963f6d3d68f743cbca1ef",
+  "status": "pass"
+ }
+}

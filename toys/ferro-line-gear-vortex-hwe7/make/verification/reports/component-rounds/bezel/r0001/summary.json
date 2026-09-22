@@ -1,0 +1,71 @@
+{
+ "build": {
+  "bezel": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bezel"
+ ],
+ "check_motion": true,
+ "checked": [
+  "bezel"
+ ],
+ "checks_ok": false,
+ "entry": "part_bezel.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/bezel/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bezel"
+ ],
+ "print": {
+  "bezel": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/bezel/r0001/overhang-bezel.log": "843b64f6dc187fbe43886a6517aed7b68e927c6875918132c5cb9a963acaaeb1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/bezel/r0001/thickness-bezel.log": "a45f5fbabc84b837e281d3dd4ad74e8a9a10f0800576a70727d5f9a3db89e402"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.8% of surface below (982 of 207873 samples); thinnes"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:bezel",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin ligament between mounting holes and outer knurl",
+    "evidence": "Top view at 12 and 6 oclock; thickness report confirms 0.40\u20130.47 mm wall.",
+    "part": "bezel",
+    "repair": "Move mounting centers inward 0.5 mm and add local inward bosses, preserving OD70."
+   }
+  ],
+  "observation": "The ring is concentric and finely knurled, but both mounting holes nearly break through the outer rim.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/bezel/r0001/visual-packet.json",
+  "packet_sha256": "9ad3652eba1ae7fe889395d3696e26f8601a70d42ba1b79d5bdfbbb2f70c2796",
+  "status": "fail"
+ }
+}

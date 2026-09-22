@@ -1,0 +1,129 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001",
+ "likeness": {},
+ "parts": {
+  "base": "1db4b15610146fc0c993268802e0279d7859f56b42df22f7ba5d3915ad55e1b8",
+  "inlay": "81085d55483e4841813ccbd069c89d4c8d4d285de977e334da709fcdf38e9b90",
+  "moon_counter": "588d285baf2e312d81ca39c92ddad82ff83725aa721f5a5789ffb1a0ec50301e",
+  "roof": "23957b5a061b948099df92c67412ea1f6ca1fd9727b3a273aaa1298c5b46c9ed",
+  "sun_counter": "262ccc86f6e4c40394e8611fd0f98ee7a7aaf2ec5b3e42fab36d66902afe5f3b"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-base.log": "955dc2b4189124b4125d5afc3104966c1027e7a525da0a87433353fc54d8b991",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-base.log": "e4e75c5535d9d9af0004a1c4c2260246223accb712fd739f32fa8830b321871b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "inlay": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-inlay.log": "52e38bfb060b60bf009fe13fce0bd08b31048dc7a450508afc6ec1f4442ea333",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-inlay.log": "00113d3c0e726f415b4c866e02f5726521f9c181e0c41ca115404dde68f793b6"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "moon_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-moon_counter.log": "6052eaaf370d46bf31aa8f58a2e268542331e8a3ebf668bf1bd53f4c24b55373",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-moon_counter.log": "7465c7ec85a08b10e74956cc069a3e46a7757ca1f68404b46667951a2a2b2c67"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 19.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 99.8,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  },
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-roof.log": "2efc773286a6b4a6af02009c7bcbbf58173b5a2d2f5fe5db3eab4079a21a15ca",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-roof.log": "2acfca48024ada81aa8cb765c02b966ec7a6e512c1dab93feb13466c402de5f8"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "sun_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-sun_counter.log": "b2cf83d2ec4ce828187b4db0313bb746c9e2564ca3d3261195d5f0d31d192044",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-sun_counter.log": "f4fc68a474ac43108019505c0e15dba8dce60efbaaa8165a5ed19ee6bc15b372"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 17.7% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 78.9,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.5.2",
+   "scipy": "1.18.1"
+  },
+  "platform": "darwin",
+  "python": "<HOME>/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/bin/python3.13",
+  "python_version": "3.13.5 (main, Jun 12 2025, 12:22:43) [Clang 20.1.4 ]",
+  "sources": {
+   "check_overhang": "a3bcb271c46a52c21fbf507f56537bdfda27070c31ece232b070382b5e886c97",
+   "check_thickness": "6e1a743b3b228b68bc7ead1c23ca9ba320a813797a869bf6ada16b53c28f0b7d",
+   "make_round": "60b135a36039fe3a8416f73cc89eb456f8a348f21b4a3951377557a11afbbec5",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 1,
+ "scope": "assembly"
+}

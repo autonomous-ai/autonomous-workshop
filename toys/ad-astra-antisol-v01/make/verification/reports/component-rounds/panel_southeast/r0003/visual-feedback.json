@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "152 x 152 x 9.00. Den d1, traps d2 and e1 and belt cells e4 and f4 are all present as blind pockets opening upward, and the grid grooves run only between land cells. Probed at Z 8: air in every pocket, material on every land cell, material at Z 2 under each pocket floor. Flat underside, nothing missing, extra or intersecting.",
+  "packet_sha256": "9c782eb873c445fec56e7b1e4283c5023b9689cadc19ca7a90b9fa40acc7d6da",
+  "status": "pass"
+}

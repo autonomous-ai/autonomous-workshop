@@ -1,0 +1,12 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/roof.step",
+  "source_sha256": "a71eb627ba72630a37c810bf7d4d2a062c1d0d670b33b873114cd93602d7c44b",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 14.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/roof/down-slit_az-90_el14.png",
+  "output_sha256": "28102805bd49e42503477be759a24e474228bc7a4b97fb874ec6fdf1b1cff218"
+}

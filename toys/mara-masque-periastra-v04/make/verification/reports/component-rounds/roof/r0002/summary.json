@@ -1,0 +1,62 @@
+{
+ "build": {
+  "roof": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "roof"
+ ],
+ "check_motion": false,
+ "checked": [
+  "roof"
+ ],
+ "checks_ok": true,
+ "entry": "part_roof.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "roof"
+ ],
+ "print": {
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0002/overhang-roof.log": "b8393df2e701982b74bd60351b09ce51e321008704d1f0fd2e1c3380f6d20e0f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0002/thickness-roof.log": "00168f837ed3870a1077c76d2429f5d30908225e4ae67e2cb1ce8583a5db2006"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:roof",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Second round after moving the telescope's footing from y +15.0 to y +13.0 and shortening the tube from 87.0 to 85.3 mm, the two free variables the correction brief grants. Front view down the slit: one tube standing on the exposed drum top, centred, its root spreading into the floor through the cove, the open bore square on the camera near the top of the slit; the tube now sits a little lower in the slit and its mouth stands closer to the shell, which is the intended effect. Top view: the cove flare has moved 2 mm down the slit and is further from the far wall; the tube is still exactly on x = 0 with clear air either side and the bore open and round. Iso: unchanged in character - hemisphere on a visible drum on a bare square plate, slit from far edge over the apex down the near flank to the drum top, only the mouth clearing the shell, and it is visibly smaller than the previous round. No arms, keel, pier or foot block; no floating, misplaced, missing or extra geometry; no visible intersection; no raw sawn face.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0002/visual-packet.json",
+  "packet_sha256": "e4a67addbe5382a71614b4895c4bb82d397914375b9ede9b8666bf9b76a4f19d",
+  "status": "pass"
+ }
+}

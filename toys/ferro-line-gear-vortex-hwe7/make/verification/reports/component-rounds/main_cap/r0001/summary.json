@@ -1,0 +1,62 @@
+{
+ "build": {
+  "main_cap": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "main_cap"
+ ],
+ "check_motion": true,
+ "checked": [
+  "main_cap"
+ ],
+ "checks_ok": true,
+ "entry": "part_main_cap.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/main_cap/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "main_cap"
+ ],
+ "print": {
+  "main_cap": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/main_cap/r0001/overhang-main_cap.log": "7877a2a35242d2fd1333952332a87ea1c60b00f1e5d6fc6d6914d825e41b68f8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/main_cap/r0001/thickness-main_cap.log": "d76ef3a7e1a7790d0eb4d1659d39ff83b1de3ca11f0f795f94a540f057593f16"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:main_cap",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows uniform ring depth; top shows unobstructed large central bore; iso resolves two coarse internal turns with continuous outer wall and no detached geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/main_cap/r0001/visual-packet.json",
+  "packet_sha256": "516498c36b37a23c5aa9faa7fef1faf7e50e6d47fff1570e948e758547d059c6",
+  "status": "pass"
+ }
+}

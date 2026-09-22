@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_corona_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "corona_cell"
+ ],
+ "print": {
+  "corona_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0001/overhang-corona_cell.log": "7e0c4557aecb7e2bb6166571698619a657e8ce65a70be059da432b1fd21c8431",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0001/thickness-corona_cell.log": "ee4dcdc9e649e268ff5be53833b9901d89b30da803727d26d743d54fd8d7c069"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "corona_cell"
+ ],
+ "round": 2,
+ "scope": "component:corona_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso show one square tile with the flame star engraved into its face and two tongues rising from opposite corners. The tongues are drafted to a rounded tip, stand clear of the middle of the tile where a disc sits, and meet the tile in a continuous fillet. Engraving is cut in, not raised. No extra or missing tongues.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0002/visual-packet.json",
+  "packet_sha256": "39617667da25af7261637696afe6a4390df01014bfa0fdd96029b4bdd1832350",
+  "status": "pass"
+ }
+}

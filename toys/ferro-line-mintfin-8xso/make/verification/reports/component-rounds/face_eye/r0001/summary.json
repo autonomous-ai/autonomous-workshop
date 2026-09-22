@@ -1,0 +1,69 @@
+{
+ "build": {
+  "face_eye": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_eye"
+ ],
+ "check_motion": true,
+ "checked": [
+  "face_eye"
+ ],
+ "checks_ok": true,
+ "entry": "part_face_eye.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_eye/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_eye"
+ ],
+ "print": {
+  "face_eye": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_eye/r0001/overhang-face_eye.log": "c4591e792bbe05ef3b173ff8fa3af9db7d1cda96eac8948e05b00241da1ed7d3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_eye/r0001/thickness-face_eye.log": "72f846816354e60a337ae6f450ed15fb9d388b170a430732fb942834be5b4c11"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:face_eye",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Base perimeter edge taper exceeds1.2mm wall gate allowance",
+    "evidence": "Wish thickness report2.38percent taper area,11mm2 in the base rim; top/iso show highlight seat intact.",
+    "part": "face_eye",
+    "repair": "Give the eye a short full-width vertical foot and retain overall15mm diameter and6.7mm height."
+   }
+  ],
+  "observation": "All three views show a domed charcoal eye with flat base and offset highlight recess. The silhouette is coherent, but the additional1.2mm measurement exceeds the allowed edge-taper area at the very thin spherical base perimeter.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_eye/r0001/visual-packet.json",
+  "packet_sha256": "7f50db1a4abbd7357b58ef89ce6f2957754d020423834ac55ecd45f62e807ff3",
+  "status": "fail"
+ }
+}

@@ -1,0 +1,31 @@
+[
+  {
+    "id": "bezel_lower_boss",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.2.f485"
+    ]
+  },
+  {
+    "id": "bezel_upper_boss",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.2.f486"
+    ]
+  },
+  {
+    "id": "bezel_boss_center_separation",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.23.2.f485",
+      "--to",
+      "#o1.23.2.f486",
+      "--axis",
+      "z"
+    ]
+  }
+]

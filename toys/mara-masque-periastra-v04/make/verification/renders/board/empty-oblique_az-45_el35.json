@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/board-empty.step",
+  "source_sha256": "d4f0a7643522121cd20f7c261087fd256ebf0a95562cd946b3b5fa392615c3ae",
+  "camera": {
+    "azimuth_deg": -45.0,
+    "elevation_deg": 35.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null,
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/board/empty-oblique_az-45_el35.png",
+  "output_sha256": "3e69a5131b9fff91444158e8867698c68c45b49ddccb434adbbd73b5bdbc25f9"
+}

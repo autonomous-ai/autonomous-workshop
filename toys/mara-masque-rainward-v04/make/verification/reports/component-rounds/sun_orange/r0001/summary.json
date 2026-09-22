@@ -1,0 +1,62 @@
+{
+ "build": {
+  "sun_orange": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun_orange"
+ ],
+ "check_motion": false,
+ "checked": [
+  "sun_orange"
+ ],
+ "checks_ok": true,
+ "entry": "part_sun_orange.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_orange"
+ ],
+ "print": {
+  "sun_orange": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0001/overhang-sun_orange.log": "6c35d5b75eab6593112d2aefadc31e57fc63d1302d3621bee58b41ddc8e576fd",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0001/thickness-sun_orange.log": "fe2e14a4730efcd952b444f21f1dafaf9dc37bbd34f96108b061fccd4765da0f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.32,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:sun_orange",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One solid disc 191 x 191 x 9 mm. Top: twenty-four blind lane pockets in a fan around a plain centre platform, four wider boundary ridges, and an unbroken skirt of flame around the whole rim - every point on the perimeter is a tongue flank or a trough, no stretch of plain circular edge, tongue heights and widths uneven, every tip leaning the same way round. One closed arch at the lower rim with its window open and two short tongues visible running on underneath it. Front: a flat 9 mm slab, corona flush with the deck top, nothing standing proud. Iso: pockets, ridges, centre bar and skirt all continuous with the body; no floating, missing or extra geometry and no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0001/visual-packet.json",
+  "packet_sha256": "3e1d34dfb29c1dcfc61720f1e101548aee7c8cc94722f13b2673b7ed85cbf512",
+  "status": "pass"
+ }
+}

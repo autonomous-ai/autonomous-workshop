@@ -1,0 +1,12 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_roof.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001/thickness-roof.md
+(7.2s, exit 0)
+--- stdout
+part_roof.step.py: 972.38 cm3 solid, grid 0.667 mm (278x278x137), 246643 surface samples, thickness resolved to 0.334 mm
+  PASS  wall >= 0.80 mm (+/-0.33)      0.0% of surface below (0 of 246643 samples); 7 more within measurement error of the limit
+  PASS  thickness distribution         median 34.36 mm, p95 74.71 mm, max 245.49 mm
+  WARN  hollowable at 1.20 mm wall     819.75 of 972.38 cm3 (84%) in 1 pocket(s), 4 too small to shell
+  PASS  filament that would save       122.96 cm3, 152.5 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001/thickness-roof.md
+
+--- stderr

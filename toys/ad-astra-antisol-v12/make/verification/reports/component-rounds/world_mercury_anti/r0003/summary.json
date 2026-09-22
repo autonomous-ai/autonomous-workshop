@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_mercury_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mercury_anti"
+ ],
+ "print": {
+  "world_mercury_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001/overhang-world_mercury_anti.log": "78f5dac8d1e161b576c7052868e1d2c70ad792aed99166181375c8e1bd6d7b9f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001/thickness-world_mercury_anti.log": "71d2060cb59180def176e4d9b2f86089f458b0009ed537872d967b5f8fd26a73"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_mercury_anti"
+ ],
+ "round": 3,
+ "scope": "component:world_mercury_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso and front inspected. The smallest piece in the set: a globe measuring the expected fraction of a \u00d834.00 disc, seated on a short collar and sunk into the disc top, concentric, with no flat, no step and no stray body anywhere on it. The front view shows the Anti-Sol disc wall tapering INWARD as it rises, which is this army's ownership cue and the opposite of the Sol piece's flare; nothing stands proud of the globe. The colour split this revision mirrors is a flush inlay and by design does not show in a single-colour render of the fused part -- it is measured on the built colour bodies in measure/mercury-surface.md, where the Anti-Sol map matches the Sol map reflected about the facing meridian at 0 of 4920 sampled points of disagreement, and photographed in snap/worlds/mercury-anti-caloris.png. No misplaced, missing or extra geometry, no intersections. (Round re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0003/visual-packet.json",
+  "packet_sha256": "c0c7579dda2cce2aafbc24a4d90988d35c4202ab4a1297cf58b388cf5b8848d3",
+  "status": "pass"
+ }
+}

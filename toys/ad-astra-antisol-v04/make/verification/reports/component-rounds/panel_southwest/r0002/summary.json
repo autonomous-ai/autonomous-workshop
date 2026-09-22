@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_panel_southwest.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_southwest"
+ ],
+ "print": {
+  "panel_southwest": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0001/overhang-panel_southwest.log": "4e639b23552231d797707c8a6f503dd73a40a73e422929272900c0c45ec40dbe",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0001/thickness-panel_southwest.log": "b2c2190a02a28387b2af0badd9ebf396bb12454b3a7c768145e30432e1af88fb"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "panel_southwest"
+ ],
+ "round": 2,
+ "scope": "component:panel_southwest",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A flat dark slab of constant thickness carrying a 3 by 4 block of the field. Front: one rectangular section, no feature standing above the top face or hanging below the bed face. Top: the orthographic flat shading gives every top face the same normal, so the grid reads as a plain rectangle there; the iso view is where the geometry shows. Iso: the engraved grid grooves and the blind terrain pockets are all recessed, the ribs between them are continuous, and the panel's outer edges are square for butting against its neighbours. Nothing floats, nothing protrudes, no extra or missing pocket, no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southwest/r0002/visual-packet.json",
+  "packet_sha256": "1e30736bbe10e5a7248c2c2915a4bf6aa580f5343b1353701dc83de65d4bfbd9",
+  "status": "pass"
+ }
+}

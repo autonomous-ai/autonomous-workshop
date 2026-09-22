@@ -2,7 +2,7 @@
 """Codex runner: Astra medium, Spark; delegates execution to run_wish.py.
 
 python run_wish_codex.py --wish 'make a beherit from berserk' --yes
-python run_wish_codex.py --resume <wish-id> --yes
+python run_wish_codex.py --resume <product-id> --yes
 python run_wish_codex.py --dry-run
 
 --workflow selects Spark/Forge/Quest; --effort selects model reasoning.

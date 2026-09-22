@@ -1,0 +1,62 @@
+{
+ "build": {
+  "spike_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "spike_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "spike_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_spike_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike_front/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "spike_front"
+ ],
+ "print": {
+  "spike_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike_front/r0002/overhang-spike_front.log": "0555bbbd414359cd920d103ba2d42bed41da1a669ebbc89c2854fb0c06c78103",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike_front/r0002/thickness-spike_front.log": "bfa238c943edd539867d617106acc64b9c11e41938437df7397f6ed0024e6c88"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:spike_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso now show a continuous straight basal land beneath the swept oval taper. Top preserves the centered rearward tip and narrow front-to-back foot. The blunt cap and all intervening sections are connected with no visible thin skirt. Final head clearance and adhesive performance remain separate checks.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike_front/r0002/visual-packet.json",
+  "packet_sha256": "107c966320414194e2368bdc1f1f8301e88256eaa57e59c7e5a58e66b2c8d3c5",
+  "status": "pass"
+ }
+}

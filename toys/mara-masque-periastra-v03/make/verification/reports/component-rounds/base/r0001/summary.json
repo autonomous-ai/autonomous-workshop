@@ -1,0 +1,62 @@
+{
+ "build": {
+  "base": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "base"
+ ],
+ "check_motion": false,
+ "checked": [
+  "base"
+ ],
+ "checks_ok": true,
+ "entry": "part_base.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "base"
+ ],
+ "print": {
+  "base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0001/overhang-base.log": "a8a769621210bd28b326886c9c9f8f6a5e9344a01aa0d6f23dd515fc37d7eae0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0001/thickness-base.log": "80f62b781dc161184e18f4c69a13dfcd76871c21bac9ca37339563333f82be5d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:base",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The base is one coherent 190 x 190 x 24 plinth. Iso shows the 8x8 board floor with 32 pockets in the correct staggered dark-cell pattern, each reading as a shallow square well with visible side walls and chamfered plan corners, and the four corner roof ledges standing at the opening corners. Front elevation shows the side wall dropped to the sill between the two full-height corner piers, as before. Top view is featureless because the renderer shades from the surface normal alone and every horizontal face returns the same tone; that is a renderer property, not missing geometry, and the pockets are measured on the built STEP by measure/check_fit.py. No misplaced, missing or extra parts, no intersections, no proportion error.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0001/visual-packet.json",
+  "packet_sha256": "a70095e4db9605d93a3a4c9feea6ef5f5cd0c2797872e527e907b216c3ff9a7f",
+  "status": "pass"
+ }
+}

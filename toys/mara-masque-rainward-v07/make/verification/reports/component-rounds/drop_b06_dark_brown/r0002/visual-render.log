@@ -1,0 +1,8 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_drop_b06_dark_brown.step.py --view front --view top --view iso -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b06_dark_brown/r0002/visual
+(3.1s, exit 0)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b06_dark_brown/r0002/visual/front.png
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b06_dark_brown/r0002/visual/top.png
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b06_dark_brown/r0002/visual/iso.png
+
+--- stderr

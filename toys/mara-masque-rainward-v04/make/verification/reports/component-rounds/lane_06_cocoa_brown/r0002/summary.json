@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_lane_06_cocoa_brown.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_06_cocoa_brown/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_06_cocoa_brown"
+ ],
+ "print": {
+  "lane_06_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_06_cocoa_brown/r0001/overhang-lane_06_cocoa_brown.log": "4f1637604ed8ae91dc782ce9269e4e8b8bc5b5b5a4041b7229c9896c266b1c43",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_06_cocoa_brown/r0001/thickness-lane_06_cocoa_brown.log": "2376471af51b442ae29a5ba050e8c7f83289427b18825152c924f8c5684b2508"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "lane_06_cocoa_brown"
+ ],
+ "round": 2,
+ "scope": "component:lane_06_cocoa_brown",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One solid annular-sector tile, 2.8 mm thick over its seated part with a 1.0 mm lapping lip along the outer end and one radial stadium key under the seat. Top: a single flat coplanar face with no dimples, rails or connectors, narrow at the centre end and wide at the rim end. Its outer corners step back where the skirt troughs cut inside radius 90, and each step is a clean square shoulder, not a sliver. Front: a flat strip with the key the only feature below the underside. Iso: one piece, nothing floating, missing or extra, and no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_06_cocoa_brown/r0002/visual-packet.json",
+  "packet_sha256": "bd59e4e9996ee73ceee5ed7b1785eb3834fd903c4accf5013632c62650eeb93f",
+  "status": "pass"
+ }
+}

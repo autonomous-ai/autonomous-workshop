@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso inspected. One tile 33.50 mm square carrying a smooth circular landing pad sunk into a ring of scattered flat-topped boulders. The top view shows the pad as a clean circle with the rubble confined to the perimeter and none of it encroaching on the disc a piece stands on; the front view shows the boulders standing proud of the slab with irregular heights and no spire; the iso shows the rubble as discrete disjoint rocks rather than a fused mat. No misplaced, missing or extra geometry and no visible intersections. Untouched by this revision and byte-identical to the published set's. (The round was re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet_sha256": "9d8deca75b423d5d32166889ee39fd5815d2fecab3fb3741ba5d5c00f0ca9d02",
+  "status": "pass"
+}

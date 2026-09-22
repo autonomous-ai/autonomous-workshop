@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_single_10_beige.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_10_beige/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "single_10_beige"
+ ],
+ "print": {
+  "single_10_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_10_beige/r0001/overhang-single_10_beige.log": "3b9c561ba6b525a78764e70ad6728c0ef0751fef67708b12459c53d285cf51a4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_10_beige/r0001/thickness-single_10_beige.log": "4f5726cdbf2befc68a6a0eff861dbe6a42efd2d1a213a4290825c5fb61f05c2f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "single_10_beige"
+ ],
+ "round": 2,
+ "scope": "component:single_10_beige",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Smooth condensed drop inside the preserved 12 x 8 x 4 envelope: flat parallel top and bottom, one broad head and a tail tapering to a rounded point, no terminal notch. One solid, nothing missing or extra, no visible intersection. The fifteen beige counters are instances of this one generated solid and their three packet views hash identically, so this reading is the measured form of each of them.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/single_10_beige/r0002/visual-packet.json",
+  "packet_sha256": "a2804855bdfc9fa4211e04c0cc55aa0b2c3a1ab9a06dda9427619beb8423d468",
+  "status": "pass"
+ }
+}

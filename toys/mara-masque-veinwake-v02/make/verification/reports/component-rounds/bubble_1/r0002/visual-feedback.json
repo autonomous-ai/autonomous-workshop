@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Five interpenetrating cubes of clearly different edge length, each on its own two-axis orientation, fused into one squat mound on the unchanged 28 mm circular foot. Wider than it is tall; every face is a flat square or a clean intersection triangle; no lobe, dome, sphere or round surface survives. No cube floats or detaches, no sliver facet remains (smallest face 5.77 mm2), and the mound stays inside the foot outline. All four bubble packets render byte-identical images to this one.",
+  "packet_sha256": "8013afeb697e87ff758600866ce0a8d28960d5b3416c070fb79cfac81bcade8d",
+  "status": "pass"
+}

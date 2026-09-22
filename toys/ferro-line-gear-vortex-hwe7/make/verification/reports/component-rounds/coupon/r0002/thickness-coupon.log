@@ -1,0 +1,15 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_coupon.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/coupon/r0002/thickness-coupon.md
+(13.2s, exit 0)
+--- stdout
+part_coupon.step.py: 2.69 cm3 solid, grid 0.133 mm (350x140x106), 122749 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.2% of surface below (212 of 122749 samples); thinnest 0.13 mm at (-9.2, 0.9, 13.4) in 2 region(s); no region is a wall, 2 taper(s) at feature edges (0.20% of surface, budget 2%); 26 more within measurement error of the limit
+  PASS  thickness distribution         median 2.93 mm, p95 18.00 mm, max 46.00 mm
+  WARN  hollowable at 1.20 mm wall     0.41 of 2.69 cm3 (15%) in 1 pocket(s)
+  PASS  filament that would save       0.06 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.13 mm at (-9.2, 0.9, 13.4)    108 samples, 2.4 mm2, runs 3.2 mm, band 0.73 mm
+        2. [taper] 0.13 mm at (12.3, 1.2, 13.4)    104 samples, 2.2 mm2, runs 3.1 mm, band 0.72 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/coupon/r0002/thickness-coupon.md
+
+--- stderr

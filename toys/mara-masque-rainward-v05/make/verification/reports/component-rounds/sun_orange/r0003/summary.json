@@ -1,0 +1,62 @@
+{
+ "build": {
+  "sun_orange": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun_orange"
+ ],
+ "check_motion": false,
+ "checked": [
+  "sun_orange"
+ ],
+ "checks_ok": true,
+ "entry": "part_sun_orange.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_orange"
+ ],
+ "print": {
+  "sun_orange": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0003/overhang-sun_orange.log": "911e0bd74dc5c13907b86be4d1a60b8c6bb169d0b9c68b6ec8f674cc2250dfcc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0003/thickness-sun_orange.log": "3f0dc4da6ec93c90ebd71fe58a5cacce43a4bd2866d4a84b75e6bbb0f17f22f0"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.32,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:sun_orange",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top: one continuous disc, 24 lane pockets radiating from the centre platform, four capsule markers in the wider boundaries, and 38 rim tongues that all curl the same way round the ring; the hero arch closes one loop at the lower rim with short tongues running under it. Iso: the underside is flat and unbroken, the deck top is one level, and each tongue's top falls outward on a single flat facet with crisp edges where it meets the vertical flanks. Front: a flat slab profile with the rim notches cut clean through; nothing floats, nothing overhangs, and no part of the rim rises above the deck. No misplaced, missing or extra feature and no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0003/visual-packet.json",
+  "packet_sha256": "a744ae4993f0568ea1ecd0c7391d010f1e3929b3f36eeda6229b72836010f828",
+  "status": "pass"
+ }
+}

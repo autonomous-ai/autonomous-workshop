@@ -1,0 +1,12 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/roof.step",
+  "source_sha256": "a71eb627ba72630a37c810bf7d4d2a062c1d0d670b33b873114cd93602d7c44b",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 90.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/roof/slit-plan_el90.png",
+  "output_sha256": "cd2020e19f9333dd23adb483ec02d1c6e81095e48d50e4acc54fd79300a308b7"
+}

@@ -128,7 +128,7 @@ They do not mutate a completed run.
 ## One Manager session per Wish
 
 `workshop wish` first creates and populates one private persistent project at
-`$WORKSHOP_HOME/runs/<wish-id>/workspace`, freezes the selected effort, then
+`$WORKSHOP_HOME/runs/<product-id>/workspace`, freezes the selected effort, then
 starts one coding-agent session with that directory as its working directory
 for the first enabled creative stage. The same session
 handles discovery, research, concept
@@ -367,7 +367,8 @@ prioritize the remaining deterministic checks and current-stage finalizer.
 - native search and source provenance;
 - concept exploration and design decisions;
 - use of CAD, image-to-CAD, design-reference, STEP-parts,
-  electromechanical-integration, rendering, and other materialized skills;
+  electromechanical-integration, mechanisms, rendering, and other materialized
+  skills;
 - creation and repair of product files;
 - the printable `MANUAL.pdf`, truthful omission record, and bounded Release facts;
 - a compact proposal for the next host transition.
@@ -504,7 +505,7 @@ page is the terminal digital handoff, never a printing or delivery receipt.
 ## Shared implementation
 
 ```text
-$WORKSHOP_HOME/runs/<wish-id>/workspace/
+$WORKSHOP_HOME/runs/<product-id>/workspace/
                             private persistent project and coding-agent CWD
   .workshop-product-run-root exact Codex project/instruction boundary
   AGENTS.md                 product-run constitution
@@ -532,9 +533,11 @@ src/
   cli/                     parsing, presentation, and exit codes only
   workshop/
     product/               universal blueprint and compatibility check ids
+    daydream/              pre-Wish Idea, novelty, and Taste-fit contracts
     wish/                  exact customer-intent contract
     match/                 Inventor roster and assignment contract/gate
     invent/                researched concept contract/gate
+      skills/design-vault/ canonical offline vault-query skill
     make/                  Made/CAD contracts and deterministic gates
       skills/              canonical reusable Make domain skills
     playtest/              frozen-run/future evidence contracts and gates
@@ -548,7 +551,10 @@ src/
 
 tests/<component>/         tests mirror component ownership
 
-$WORKSHOP_HOME/state/<wish-id>/
+$WORKSHOP_HOME/daydreams/<inventor>/
+                           saved Ideas awaiting a build
+
+$WORKSHOP_HOME/state/<product-id>/
                            trusted checkpoints, token totals, and effects,
                            outside agent CWD
 

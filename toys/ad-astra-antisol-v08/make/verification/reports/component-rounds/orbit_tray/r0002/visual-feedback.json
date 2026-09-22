@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso show one flat rectangular tray with eight identical circular sockets in a 4 by 2 grid, evenly pitched, all the same depth, none breaking the tray edge or another socket. The underside is flat. No extra or missing socket.",
+  "packet_sha256": "a536564d51f7ee2dd0074fa575b0442c87cafc16cfeafb2f5b2999aed33b6f70",
+  "status": "pass"
+}

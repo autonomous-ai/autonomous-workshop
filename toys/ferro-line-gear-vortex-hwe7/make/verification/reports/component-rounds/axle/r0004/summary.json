@@ -1,0 +1,64 @@
+{
+ "build": {
+  "axle": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "axle"
+ ],
+ "check_motion": true,
+ "checked": [
+  "axle"
+ ],
+ "checks_ok": false,
+ "entry": "part_axle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "axle"
+ ],
+ "print": {
+  "axle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0004/overhang-axle.log": "828b4a2d16fc7d8f1ccf04eb45701f7364542f067e410c77378dac6f9be05aa5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0004/thickness-axle.log": "f69b14edddbe8e9214293006666bc35ba30f4874531adf98970305835a2989fd"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 1.0% of the surface faces down that steeply; "
+    ],
+    "overhang_mm2": 1.1,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.35,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:axle",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "All three views show the thickened shoulder rim, tapered thread ends and broad runout. The central tunnel remains fully open and the outer body is continuous. A small overhang at the D-flat/shoulder join remains a numeric failure requiring repair.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0004/visual-packet.json",
+  "packet_sha256": "1b575061e38624cac09a655c9698d47daa2b2eabbb98ecab0d5175edecf6de84",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,147 @@
+{
+ "build": {
+  "roof": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "roof",
+  "moon_counter",
+  "sun_counter"
+ ],
+ "check_motion": false,
+ "checked": [
+  "roof"
+ ],
+ "checks_ok": false,
+ "entry": "periastra.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "base",
+  "inlay",
+  "moon_counter",
+  "roof",
+  "sun_counter"
+ ],
+ "print": {
+  "base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-base.log": "ef9426d051b5e6264adbe7890dc8c53f83c472e7ea64d70717f042e613b34801",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-base.log": "6d4821344931d70d1d281939a90949cf9d70458e87e7d630ac8341ac66c84cc8"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "inlay": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-inlay.log": "b6f94c12267397bf3911cc3d96337d1bf72c1e812545e5de4ceb86a675c05dca",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-inlay.log": "d01aa28acfaccdee16622ab0721d46586200d6412c18c61f145ef50c7b3f542b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "moon_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-moon_counter.log": "a2f9ca16d3e0df5110a9e40628b41e0a330a88bc5ddb77453b36bc3ff9aafd28",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-moon_counter.log": "d5b8f01cd3548ad6392b57e5d2c307fffdead6e4391d0749ac106b44f072dd5b"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 19.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 99.8,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  },
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-roof.log": "6885b5f8048af5325b0beeb0ed953db293e560aafee13afcdbe2bfef8ece1ff8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-roof.log": "4d8ddfaa7f1a800ae5f25781ff9c6203b18a33020d7df88e32a83896db7455e9"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "sun_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-sun_counter.log": "08c90a0a45b346a34cc0b440b1c42e86fc891b1e484c344937cfcc9ab2a4af43",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-sun_counter.log": "3435e1203dfede9e6039e70c30ccfd5aba334905992963ae802b1805d6c352c6"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 17.7% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 78.9,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "base",
+  "inlay"
+ ],
+ "round": 2,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Closed assembled object, second round, after the telescope's footing moved from y +15.0 to +13.0 and the tube shortened from 87.0 to 85.3 mm. Iso: the roof still seats square on the four integral ledges with an even bare plate margin; drum and its rotation seam unbroken all the way round below the slit; the slit runs from its far edge over the apex and down the near flank to the drum top; the mouth clearing the shell is visibly shorter than in round 1. The stored counters read correctly through the 4.0 mm reveal as alternating orange and cream discs on indigo inlays in their starting rows. Front: reveal, counters, plate on ledges, tube centred in the slit with its cove spreading into the floor, drum wall whole with no channel through it. Top: roof centred on the base with an even margin, slit parallel-walled on the mid-line, tube on x = 0 with clear air either side, bore open, cove flare now further from the far wall. No misplaced, missing, extra or floating parts, no visible intersection, nothing outboard of the drum or dome but the muzzle.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/visual-packet.json",
+  "packet_sha256": "20b437ddbf22d8a1f43d022ddddb46e6ead7336cb391df8d7b53efac74062493",
+  "status": "pass"
+ }
+}

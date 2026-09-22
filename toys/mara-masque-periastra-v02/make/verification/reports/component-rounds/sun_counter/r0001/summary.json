@@ -1,0 +1,62 @@
+{
+ "build": {
+  "sun_counter": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun_counter"
+ ],
+ "check_motion": false,
+ "checked": [
+  "sun_counter"
+ ],
+ "checks_ok": true,
+ "entry": "part_sun_counter.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_counter"
+ ],
+ "print": {
+  "sun_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001/overhang-sun_counter.log": "eb8bc53be63c0dbc5effcf40ecac52c30b823bb89fe6cb7d85f7971726dc07c4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001/thickness-sun_counter.log": "a9c197486e63eff8bac20d68a5f0717e9bf240e1aa6c0f5526d5723d179b7e60"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:sun_counter",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Plain round disc, perfectly circular outline with no tail, tab, notch or projection. Front view shows the 1.0 mm chamfer on the man-face edge, the square-stepped annular rebate and the raised central plateau. Iso shows the sun mark on the plateau: one circular ball pocket dead centre with eight separate wedge pockets round it, each visibly wider at the inner end and narrowing to a blunt flat tip, none touching the ball or each other. No comet outline and no orbit-crown ring remain.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001/visual-packet.json",
+  "packet_sha256": "1f3767c6227b64f9b3e50c6ff6250df337b19e149e885d49d6a60db2a813507c",
+  "status": "pass"
+ }
+}

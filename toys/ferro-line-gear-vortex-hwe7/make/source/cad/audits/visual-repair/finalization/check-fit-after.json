@@ -1,0 +1,306 @@
+{
+  "ok": true,
+  "root": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+  "bed": [
+    220.0,
+    220.0
+  ],
+  "parts": [
+    {
+      "path": "part_axle.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1.0000000024980018e-07,
+      "sizeX": 23.0,
+      "sizeY": 23.0,
+      "sizeZ": 54.50000020000001,
+      "volume": 4505.117047817691,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_bezel.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1.1102230246251565e-16,
+      "sizeX": 69.99698207780106,
+      "sizeY": 69.99698207780106,
+      "sizeZ": 4.0,
+      "volume": 4636.1098257089625,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_carrier.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": 0.0,
+      "sizeX": 188.0,
+      "sizeY": 188.0,
+      "sizeZ": 23.50000055897536,
+      "volume": 80041.35875098134,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_coupon.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": 0.0,
+      "sizeX": 46.0,
+      "sizeY": 18.0,
+      "sizeZ": 13.500000558975357,
+      "volume": 2737.0097253128974,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_foot_trim.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": 0.0,
+      "sizeX": 17.0,
+      "sizeY": 17.0,
+      "sizeZ": 2.0,
+      "volume": 212.43449523574176,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_gear_14.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1e-07,
+      "sizeX": 23.550000200000007,
+      "sizeY": 23.13305709255266,
+      "sizeZ": 5.000000200000001,
+      "volume": 1400.9508231198085,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_gear_15.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1e-07,
+      "sizeX": 24.858333314007332,
+      "sizeY": 24.98786468562553,
+      "sizeZ": 5.000000200000001,
+      "volume": 1573.7839296699754,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_gear_18.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1e-07,
+      "sizeX": 29.5500002,
+      "sizeY": 29.242022434481502,
+      "sizeZ": 5.000000200000001,
+      "volume": 2122.1915382254365,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_gear_20.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1e-07,
+      "sizeX": 32.550000199999985,
+      "sizeY": 32.550000199999985,
+      "sizeZ": 5.000000200000001,
+      "volume": 2511.1607162844066,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_gear_22.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1e-07,
+      "sizeX": 35.5500002,
+      "sizeY": 35.306723589638615,
+      "sizeZ": 5.000000200000001,
+      "volume": 2918.2624576430994,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_gear_23.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1e-07,
+      "sizeX": 36.93447525185685,
+      "sizeY": 37.01504484505996,
+      "sizeZ": 5.000000200000001,
+      "volume": 3128.543766817224,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_gear_26.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1e-07,
+      "sizeX": 41.5500002,
+      "sizeY": 41.34934223474278,
+      "sizeZ": 5.000000200000001,
+      "volume": 3786.083027106113,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_gear_cap.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1e-07,
+      "sizeX": 7.2,
+      "sizeY": 7.2,
+      "sizeZ": 4.8000002,
+      "volume": 131.9058169886072,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_main_cap.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1.0119474777033473e-07,
+      "sizeX": 23.0000002,
+      "sizeY": 23.0000002,
+      "sizeZ": 7.20000020119475,
+      "volume": 1326.4266573755567,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_orange_disc.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": 0.0,
+      "sizeX": 55.0,
+      "sizeY": 55.0,
+      "sizeZ": 1.0,
+      "volume": 2124.6345197370706,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_pedestal.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -6.429395695523604e-15,
+      "sizeX": 105.0,
+      "sizeY": 105.0,
+      "sizeZ": 14.000000000000014,
+      "volume": 34954.13169747018,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_pedestal_lid.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": 0.0,
+      "sizeX": 100.1,
+      "sizeY": 98.5,
+      "sizeZ": 8.6,
+      "volume": 27904.840718915955,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_rim_trim.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": 0.0,
+      "sizeX": 99.0,
+      "sizeY": 99.0,
+      "sizeZ": 1.2,
+      "volume": 405.5670452078293,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_stem.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": 0.0,
+      "sizeX": 12.0,
+      "sizeY": 12.0,
+      "sizeZ": 107.5,
+      "volume": 11354.067953028305,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_sun.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": -1e-07,
+      "sizeX": 56.5500002,
+      "sizeY": 56.5500002,
+      "sizeZ": 5.000000200000001,
+      "volume": 6201.406272253169,
+      "solids": 1,
+      "bodies": 1
+    },
+    {
+      "path": "part_support_collar.step.py",
+      "bed": [
+        220.0,
+        220.0
+      ],
+      "minZ": 0.0,
+      "sizeX": 25.0,
+      "sizeY": 25.0,
+      "sizeZ": 12.0,
+      "volume": 2769.7868316665435,
+      "solids": 1,
+      "bodies": 1
+    }
+  ],
+  "findings": [],
+  "notes": []
+}

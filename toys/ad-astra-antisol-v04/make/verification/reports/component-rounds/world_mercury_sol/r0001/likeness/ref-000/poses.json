@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_mercury_sol.step.py",
+  "size": 480,
+  "tolerance": 0.1,
+  "poses": {
+    "detail": {
+      "az": -161.25,
+      "el": 73.125,
+      "roll": -3.0,
+      "fov": 0.0
+    }
+  }
+}

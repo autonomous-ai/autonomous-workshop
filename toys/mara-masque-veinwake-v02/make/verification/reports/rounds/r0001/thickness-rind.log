@@ -1,0 +1,20 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/part_rind.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-rind.md
+(7.0s, exit 0)
+--- stdout
+part_rind.step.py: 129.51 cm3 solid, grid 0.291 mm (486x451x53), 381480 surface samples, thickness resolved to 0.146 mm
+  PASS  wall >= 0.80 mm (+/-0.15)      0.1% of surface below (299 of 381480 samples); thinnest 0.29 mm at (-55.4, -57.4, 0.0) in 45 region(s); no region is a wall, 45 taper(s) at feature edges (0.08% of surface, budget 2%); 167 more within measurement error of the limit
+  PASS  thickness distribution         median 7.86 mm, p95 21.25 mm, max 62.72 mm
+  WARN  hollowable at 1.20 mm wall     82.55 of 129.51 cm3 (64%) in 1 pocket(s)
+  PASS  filament that would save       12.38 cm3, 15.4 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.29 mm at (-68.8, -6.0, 0.0)     34 samples, 3.6 mm2, runs 19.0 mm, band 0.19 mm
+        2. [taper] 0.29 mm at (68.1, 2.6, 0.0)     30 samples, 3.1 mm2, runs 13.7 mm, band 0.23 mm
+        3. [taper] 0.44 mm at (66.7, -15.2, 0.3)     23 samples, 2.4 mm2, runs 11.7 mm, band 0.21 mm
+        4. [taper] 0.29 mm at (62.7, 51.2, 0.0)     17 samples, 1.9 mm2, runs 6.9 mm, band 0.28 mm
+        5. [taper] 0.29 mm at (69.9, 21.5, 0.2)     17 samples, 1.8 mm2, runs 5.6 mm, band 0.31 mm
+        6. [taper] 0.29 mm at (-68.7, -42.3, 0.0)     16 samples, 1.8 mm2, runs 7.6 mm, band 0.23 mm
+        ... and 39 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/rounds/r0001/thickness-rind.md
+
+--- stderr

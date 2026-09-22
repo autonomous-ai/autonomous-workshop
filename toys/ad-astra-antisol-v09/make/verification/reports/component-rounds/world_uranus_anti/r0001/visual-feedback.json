@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "The exact mirror of the Sol piece and nothing else. Disc wall collapses inward as it rises where Sol's flares outward, and the hoop leans the other way: the crown nub sits left of the globe's apex in the front view where Sol's sits right, and the top view bows the other side of the Y axis. Front view is square to the ring plane so the hoop is a thin fin on the meridian, both legs landing on the disc top; top view is a near-straight line along Y at the hoop's \u00d824.02 against the globe's \u00d822.02; iso shows the hoop proud of the sphere the whole way round and merging into the disc at each foot. No missing or extra bodies, no floating geometry, no visible intersection, nothing out of place.",
+  "packet_sha256": "9841f61890b405107942c566e2ca666c89bc6a6644f03db9c97744d59f562782",
+  "status": "pass"
+}

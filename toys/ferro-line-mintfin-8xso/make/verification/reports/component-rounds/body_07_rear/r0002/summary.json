@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_07_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_07_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_07_rear"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_07_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_07_rear"
+ ],
+ "print": {
+  "body_07_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0002/overhang-body_07_rear.log": "5759c846407bde2be2661c05379cfb4544400f1fb95ac34d8a4dc5e00223d046",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0002/thickness-body_07_rear.log": "7476dd21a27dc50effb52d4a44a1da5fe4d18065fee9b045f7184d2d1cc7f261"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:body_07_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected once. Four coherent socket fingers now have a visibly finite cylindrical inner lip above the spherical cavity, with clear slits and retained preload pad. The outer rim and broad seam remain connected, without extra fragments. Default gates and explicit1.2 mm thickness pass; thin edge area dropped from2.25 to0.72 percent. Motion is not established by these views.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0002/visual-packet.json",
+  "packet_sha256": "8014c13f67cc41a2def0082557257574e8d9cbfc6cbad9867a296e935255b2df",
+  "status": "pass"
+ }
+}

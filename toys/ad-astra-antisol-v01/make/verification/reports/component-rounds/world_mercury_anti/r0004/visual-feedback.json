@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Inspected the front, top and isometric views of this round; they are byte-identical to the renders inspected before the last source change, which touched only Saturn's ring. Anti-Sol Mercury: one \u00d833.87 disc whose wall tapers inward as it rises, one \u00d813.78 globe standing on its own seat collar, total height 16.78 mm. Proportions match the rank-1 row of the ladder. The surface markings and the rank numeral are flush colour inlays, so they carry no silhouette in a single-colour render and were checked by measurement instead; the assembly render shows them in their own filaments. No missing, extra, misplaced or intersecting geometry, no floating body, correct orientation.",
+  "packet_sha256": "c4b1ea127e06edd757457215468d48de9143df8c907c3bfcbef1eae7242b44ac",
+  "status": "pass"
+}

@@ -1,0 +1,429 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004",
+ "likeness": {},
+ "parts": {
+  "axle": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+  "bezel": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+  "carrier": "cb457616187187a1b4b8b553fadf999553489ae53702b4e5999a6b1afc92e198",
+  "coupon": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5",
+  "foot_trim": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+  "gear_14": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+  "gear_15": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+  "gear_18": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+  "gear_20": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+  "gear_22": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+  "gear_23": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+  "gear_26": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+  "gear_cap": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+  "main_cap": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+  "orange_disc": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+  "pedestal": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+  "pedestal_lid": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+  "rim_trim": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+  "stem": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+  "sun": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+  "support_collar": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "axle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0002/overhang-axle.log": "94260d18b98d321380a7e91210ed1d7aba30529854fdcf677c325420182ca0f3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0002/thickness-axle.log": "fbb0be3753a6c983567e2016c54c828644f58543e8acbf6b8f24c0848833f73d"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.28,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "bezel": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-bezel.log": "531788a090310c34f2b857fecda33680e78ccdceb202e81bb1643337d9e4fcb8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-bezel.log": "6f5f5f3578ae317171e2287ab7f2e49ebf7ec5b86881b34342dfc494cdc6e672"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "carrier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-carrier.log": "68db92574985f40d1a69284cf9ba21e3da38b7206014ee067a264f5a4c8172e9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-carrier.log": "1a55b3f083d72fa9ed9c971217b83f7b371f21353b4f19ddf38ab76fafd756a5"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.43,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "coupon": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-coupon.log": "01a5f70db669eea7d44cad9744d93aaa3e5b6ccd390ba191ed383be524e7a2fd",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-coupon.log": "dbd948bdf2b5ca075e7cddf34be57f677e5fea9185996c7a0d270d34452d6b56"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "foot_trim": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-foot_trim.log": "5b4ef1af718dcacf24503375f84d3824c38ab7353c89ed629a95659b5abb29ab",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-foot_trim.log": "c46c0d2d4910deab3fe6624bc915bf504a94974045784978834bd27c979f5bac"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "gear_14": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_14.log": "dce1843fe386b0d53abb1cb9b9c87a5f91a07b72068c169549ad880f2ac9b689",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_14.log": "0b0a06e3591811c0147f0e381b6ca71020eb6899a9419183d62608ebf898dcd7"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "gear_15": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_15.log": "6a47d152ccdf0f9d4613732e91bf0b55571f52826917444ff1d5cdee4e80f42c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_15.log": "d17a9f81e30f36eef7eab35a80d254604753e9566aab3f44befcf0def4d9e1b0"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "gear_18": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_18.log": "77e6692ee747dac0b7e84f5e1327d0b2492fb8ff16204cc8e16209200436353b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_18.log": "c0ff2bf680a634cf5969779e146190f8747ca3d32dfee1d431e920354d85430b"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "gear_20": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_20.log": "0d5ef52421ccb50417c4bd4190f04aee230e3c6674ceae0fc69e44934bbe4351",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_20.log": "de00fbb9297cf3785b0ea1b4540e780954ff346e368cf8262588ec561fcc975b"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "gear_22": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_22.log": "7c13f5377710c5fc29d1985942b9e35b907c5fda70b01f830d190af201b2045e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_22.log": "aca6d971c7d0e45deb79c1d2041a8e3cf3c0ad012f40cf0878155c79bd450b0e"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "gear_23": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_23.log": "798f94e9cd9cc04490ab987861449b1b8aa06dd09bcaf629adea19b79e56d51e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_23.log": "18a82083f6b10405406ceb04b1fc5e24385bc5dabfb8ed0f2fb89cba9610e7bf"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.27,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "gear_26": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_26.log": "cf955683e2c9cfa9716ae47c042fb33ba00e3a8ab8d36d136fe59d69eecb724a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_26.log": "7bc58352c25eb301a72291c2822b4c3b9595a8151f48898d4a0e80733c82c6f8"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "gear_cap": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-gear_cap.log": "50accc68b4ce6dda07db057b59580107258881905394e8a7f17fec5f1dfd4b17",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-gear_cap.log": "9733d46ae1149ad0b28f9862312860ce11f151c2ac580488619241239dbd507a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "main_cap": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-main_cap.log": "26f6804adf46b49ebc988fe649f5bc4475340cb1e544ebfba4383b1bec5352cd",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-main_cap.log": "12900fee39e7c46a523a7e03b2e4d6c2bd30a03447637d84fda916fef73dc691"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "orange_disc": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-orange_disc.log": "ddf80d24cedcdbf00df2056ad6a2f7d079ca8fc29f68d78e4b05b188849d40c2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-orange_disc.log": "fd43cb7831eb6b382312dd2db77a5d7bd5e9b23cffd738444eaa7a8118fe62a4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "pedestal": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-pedestal.log": "23ce761c64755bbbc10a0913c799806056c148456386c3cd2bee4ad63877cc4f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-pedestal.log": "4f578e708bfdd35b27a25e8389e4a56f6ac4350de27c71bf773024447f44aa2b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "pedestal_lid": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-pedestal_lid.log": "614a43d2977b241cd2bec65819f8fa4f4b207be740df35b68dba76d9ada2efb3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-pedestal_lid.log": "3208fe40b9189135997d3f450beeec0fa921e5c296565d8e9b35c8cdec128e88"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.62,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "rim_trim": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-rim_trim.log": "59bf1f6f41fa3584db84ab43ee7f92c34d3a3a008756823bd932c293e5bbe71b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-rim_trim.log": "7107117acd5b9c67d22b8d1b823cff98e7981a378de050d28b66730ea016fa65"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "stem": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-stem.log": "f29d61e59ac2d86c3d58fe6fd9e1c8c279f9b863eb72419db8be8945f78688d8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-stem.log": "509714eb850c13509196a05a160eb0f6b6d0fdb5376ad23cb3ca674d767c5b51"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "sun": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-sun.log": "060f7b77107aec2125be56b4a0640ae49fadf00732e885031e8efc125101331f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-sun.log": "5bcea1dc40e24545a357e196af5446c3217e19b3134abfbb87bbe95e77916870"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "support_collar": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-support_collar.log": "bbce9b7a2591652b25c8be61c50d65952e335020b1606b21ade47dcfb6e0a5b5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-support_collar.log": "b14cff4619cddcb0b4309bd2255330c91a082cfe4d738b18f829d070a9427236"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.5.2",
+   "scipy": "1.18.1"
+  },
+  "platform": "linux",
+  "python": "<HOME>/.local/share/autonomous-workshop-python/bin/python3.13",
+  "python_version": "3.13.15 (main, Aug  7 2026, 02:25:50) [Clang 22.1.3 ]",
+  "sources": {
+   "check_overhang": "a3bcb271c46a52c21fbf507f56537bdfda27070c31ece232b070382b5e886c97",
+   "check_thickness": "6e1a743b3b228b68bc7ead1c23ca9ba320a813797a869bf6ada16b53c28f0b7d",
+   "make_round": "60b135a36039fe3a8416f73cc89eb456f8a348f21b4a3951377557a11afbbec5",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 4,
+ "scope": "assembly"
+}

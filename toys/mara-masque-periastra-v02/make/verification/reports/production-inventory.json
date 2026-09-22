@@ -1,0 +1,444 @@
+[
+  {
+    "name": "base",
+    "path": "parts/base.step",
+    "sha256": "64967abbc153f716c8abb93e49064aaded5db7550df08c19bc4bd094bd496c5a",
+    "solids": 1,
+    "bounds_mm": [
+      190.0,
+      190.000000000347,
+      24.0
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.72,
+      0.78,
+      0.81
+    ]
+  },
+  {
+    "name": "roof",
+    "path": "parts/roof.step",
+    "sha256": "5be96ea49e3435ec99b23678c1f21992b9a889d08321166aa813b5650d367f09",
+    "solids": 1,
+    "bounds_mm": [
+      182.4,
+      182.400000001105,
+      56.06858750833
+    ],
+    "bed_z_mm": 0.0,
+    "srgb": [
+      0.19,
+      0.36,
+      0.43
+    ]
+  },
+  {
+    "name": "single_01",
+    "path": "parts/single_01.step",
+    "sha256": "d05a2b654750d3b334c3117c98bbf6569ccf64dedad190f66a0c70fc9af2da7f",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_02",
+    "path": "parts/single_02.step",
+    "sha256": "d054fc720e90fabd82673166d3c2b5190897044fa9b184a9e42a23d1931f42f0",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_03",
+    "path": "parts/single_03.step",
+    "sha256": "da67b38573e8fb928fdc9e619deba542bf6a5654acc2f39345eab055ebc2445d",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_04",
+    "path": "parts/single_04.step",
+    "sha256": "ee8a27cb7a3c72c0944da2fa527104a2b0074eac945597849efadb75e5226a4b",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_05",
+    "path": "parts/single_05.step",
+    "sha256": "3499dda6055706860f1a39481f544246b837ee5591c3cebe8b715c4cad90bcc6",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_06",
+    "path": "parts/single_06.step",
+    "sha256": "364fa6da3ffe01d6d1e819ab6ae9a2fba7ad2e63d23f92ce98f67c742e4b76cb",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_07",
+    "path": "parts/single_07.step",
+    "sha256": "5e78e7ce73ee48c7dbb298fac7bd1bb51e69ce66f446d3b88824be07b3003def",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_08",
+    "path": "parts/single_08.step",
+    "sha256": "4072c81113c1ecc07d777f461491024d5aee1018b5804880ead81d2a57c9cd62",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_09",
+    "path": "parts/single_09.step",
+    "sha256": "e5308f5491458e8707175d40de2433f61d86113a6256821dc38f9b2e9b9e271f",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_10",
+    "path": "parts/single_10.step",
+    "sha256": "bd388e353bc18ab9a97c0da9347865e2dedc5b39970f1c01cb4d074c38d7c965",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_11",
+    "path": "parts/single_11.step",
+    "sha256": "3608780b3276f7220193f0ae0c838e1770eb39f844fd703c93858bde815000d9",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "single_12",
+    "path": "parts/single_12.step",
+    "sha256": "0b8f687ffc4a4203b7c4c86c5b16bbd750c4afd568cfcf861409e9fca3c8d82a",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.83,
+      0.4,
+      0.18
+    ]
+  },
+  {
+    "name": "forked_01",
+    "path": "parts/forked_01.step",
+    "sha256": "648f570e9d01429111d445f4c825413c789871b9fe546466d3e2038feef9bd1a",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_02",
+    "path": "parts/forked_02.step",
+    "sha256": "2d5be8dcb3246e0d4ff46814c633ded8efe32c67ffa2071380b538adebbdc644",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_03",
+    "path": "parts/forked_03.step",
+    "sha256": "d7a732d6e7fcfc47094afc154b81f6057a08035d5b90430a2010c0cd0db7e6f7",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_04",
+    "path": "parts/forked_04.step",
+    "sha256": "59ea7931b230b201a0a719ab2c6426221aa79d91d806c28c012a547d969669cf",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_05",
+    "path": "parts/forked_05.step",
+    "sha256": "8f0b6b7baa98fa247ed4a39e291240ea8abaacb9e90cafdc7bcb6b4083349c42",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_06",
+    "path": "parts/forked_06.step",
+    "sha256": "fc66ed4d9ed21f2d17484f77cbf4c011569a33a0898eea0a8ca74d26863e1811",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_07",
+    "path": "parts/forked_07.step",
+    "sha256": "b786c52e69bcff36edd859d0222d0423967a45e0276db817de793aafb58a1d7c",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_08",
+    "path": "parts/forked_08.step",
+    "sha256": "8300572ee641614150dceb988872ce64f7ace33087d49b00fa21268b42e5e533",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_09",
+    "path": "parts/forked_09.step",
+    "sha256": "0e38b2479757981c643cff895dd5ed19311a098d57249eb95c3c81265a4da735",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_10",
+    "path": "parts/forked_10.step",
+    "sha256": "0345759b93275e1d47236317e266a1869018d1648ddc9c13ad455efa2f9a283c",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_11",
+    "path": "parts/forked_11.step",
+    "sha256": "99504eeb8d6632f5e9ae488873c6df986d8b5759b3fd3848221065b752ffff23",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  },
+  {
+    "name": "forked_12",
+    "path": "parts/forked_12.step",
+    "sha256": "b4bc2c9883b80533b42f014f553ce1ce05c4f1325aa983a9b6bea904ba3c9937",
+    "solids": 1,
+    "bounds_mm": [
+      16.0,
+      16.0,
+      7.0
+    ],
+    "bed_z_mm": -1.3671617315323846e-16,
+    "srgb": [
+      0.95,
+      0.82,
+      0.48
+    ]
+  }
+]

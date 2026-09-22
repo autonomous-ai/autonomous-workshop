@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/roof.step",
+  "source_sha256": "b8c35fbd2c3c6521338db00cb3cd98da749ed056f6f2e446622c76887e61238b",
+  "camera": {
+    "azimuth_deg": -60.0,
+    "elevation_deg": 18.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": "0.37,0.46,0.34",
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/roof/quarter-close_az-60_el18.png",
+  "output_sha256": "2adaa08fdd4a3d0901b63bba9a6377ff04a1ed96a3ba69fc5146b3e268cfc1b4"
+}

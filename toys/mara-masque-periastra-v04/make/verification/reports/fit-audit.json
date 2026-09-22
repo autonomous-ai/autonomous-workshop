@@ -1,0 +1,235 @@
+{
+  "base_mesh": {
+    "closed": true,
+    "manifold": true,
+    "triangles": 2580,
+    "vertices": 1292
+  },
+  "bridge_disclosed_below_3mm_rule": true,
+  "bridge_mm": 1.4142,
+  "delivered_occurrences": 58,
+  "drum_ring": [
+    {
+      "outer_diameter_mm": 150.0,
+      "outer_wall_gap_mm3": 0,
+      "pieces": 1,
+      "ring_band_gap_mm3": 0,
+      "z_mm": 4.0
+    },
+    {
+      "outer_diameter_mm": 150.0,
+      "outer_wall_gap_mm3": 0,
+      "pieces": 1,
+      "ring_band_gap_mm3": 0,
+      "z_mm": 7.0
+    },
+    {
+      "outer_diameter_mm": 150.0,
+      "outer_wall_gap_mm3": 0,
+      "pieces": 1,
+      "ring_band_gap_mm3": 0,
+      "z_mm": 9.0
+    },
+    {
+      "outer_diameter_mm": 148.0,
+      "outer_wall_gap_mm3": null,
+      "pieces": 1,
+      "ring_band_gap_mm3": 0,
+      "z_mm": 10.7
+    },
+    {
+      "outer_diameter_mm": 150.0,
+      "outer_wall_gap_mm3": null,
+      "pieces": 1,
+      "ring_band_gap_mm3": 0,
+      "z_mm": 13.0
+    },
+    {
+      "outer_diameter_mm": 150.0,
+      "outer_wall_gap_mm3": 0,
+      "pieces": 1,
+      "ring_band_gap_mm3": 0,
+      "z_mm": 14.0
+    }
+  ],
+  "fit_layer": {
+    "backing_floor_mm": 9.0,
+    "clearance_per_side_mm": 0.25,
+    "flush_error_mm": 0.0,
+    "inlay_mm": 21.5,
+    "inlay_thickness_mm": 2.0,
+    "pocket_depth_mm": 2.0,
+    "pocket_opening_mm": 22.0
+  },
+  "floor_face": {
+    "bbox_x_mm": 30.0,
+    "bbox_y_mm": [
+      -75.0,
+      29.2064
+    ],
+    "floor_face_area_mm2": 2384.5425,
+    "foot_footprint_area_mm2": 722.1027,
+    "planar_faces_in_floor_plane": 1
+  },
+  "frozen_designs": {
+    "part_base.step": "1db4b15610146fc0...",
+    "part_inlay.step": "81085d55483e4841...",
+    "part_moon_counter.step": "588d285baf2e312d...",
+    "part_sun_counter.step": "262ccc86f6e4c403..."
+  },
+  "muzzle": {
+    "built_roof_max_z_mm": 88.1847,
+    "built_slit_shoulder_z_mm": 88.1847,
+    "muzzle_top_z_mm": 84.8645,
+    "nominal_apex_z_mm": 89.7,
+    "projection_over_tube_diameter": 0.26,
+    "projection_past_sphere_mm": 3.8993,
+    "under_built_high_point_by_mm": 3.3202,
+    "under_nominal_apex_by_mm": 4.8355
+  },
+  "outboard_below_springing_mm3": 0.0,
+  "pocket_void_residue_mm3": 0,
+  "reveal_mm": 4.0,
+  "roof_asymmetric_percent": 0.0,
+  "roof_asymmetric_volume_mm3": 0,
+  "roof_envelope_mm": [
+    182.4,
+    182.4,
+    88.1847
+  ],
+  "roof_sha256": "da320a57109473fc5031044b55a100f2ddd97314863cfb2ccab60d0e2e82a52d",
+  "roof_solids": 1,
+  "roof_volume_mm3": 1009918.6,
+  "root": {
+    "clear_to_each_slit_wall_mm": 1.7877,
+    "clear_to_far_wall_mm": 3.618,
+    "cove_radius_mm": 6.0,
+    "floor_z_mm": 14.7,
+    "foot_ellipse_mm": [
+      15.0,
+      19.5811
+    ],
+    "root_run_y_mm": 35.246,
+    "root_width_x_mm": 26.4246,
+    "root_y_range_mm": [
+      -9.6576,
+      25.5884
+    ]
+  },
+  "seat": {
+    "chamfer_line_from_centre_mm": 14.4957,
+    "counter_radius_mm": 10.0,
+    "inlay_flat_half_width_mm": 10.75
+  },
+  "slit_slices": [
+    {
+      "centre_x_mm": 1e-06,
+      "lumps": 1,
+      "x_mm": [
+        -11.4028,
+        11.4028
+      ],
+      "y_mm": [
+        -7.784,
+        23.715
+      ],
+      "z_mm": 15.2
+    },
+    {
+      "centre_x_mm": 1e-06,
+      "lumps": 1,
+      "x_mm": [
+        -8.1943,
+        8.1943
+      ],
+      "y_mm": [
+        -4.405,
+        20.189
+      ],
+      "z_mm": 18.0
+    },
+    {
+      "centre_x_mm": 0.0,
+      "lumps": 1,
+      "x_mm": [
+        -7.5,
+        7.5
+      ],
+      "y_mm": [
+        -5.601,
+        14.316
+      ],
+      "z_mm": 25.0
+    },
+    {
+      "centre_x_mm": 0.0,
+      "lumps": 1,
+      "x_mm": [
+        -7.5,
+        7.5
+      ],
+      "y_mm": [
+        -18.188,
+        1.729
+      ],
+      "z_mm": 40.0
+    },
+    {
+      "centre_x_mm": 0.0,
+      "lumps": 1,
+      "x_mm": [
+        -7.5,
+        7.5
+      ],
+      "y_mm": [
+        -34.97,
+        -15.053
+      ],
+      "z_mm": 60.0
+    },
+    {
+      "centre_x_mm": 0.0,
+      "lumps": 1,
+      "x_mm": [
+        -7.5,
+        7.5
+      ],
+      "y_mm": [
+        -44.504,
+        -30.157
+      ],
+      "z_mm": 78.0
+    }
+  ],
+  "telescope": {
+    "apex_z_mm": 89.7,
+    "axis_projection_mm": 2.5855,
+    "cove_radius_mm": 6.0,
+    "elevation_deg": 50.0,
+    "exit_from_apex_deg": 32.37,
+    "foot_centre_y_mm": 13.0,
+    "foot_mm": [
+      15.0,
+      19.5811
+    ],
+    "length_mm": 85.3,
+    "muzzle_top_z_mm": 84.8645
+  },
+  "void": {
+    "clear_mm": 3.0,
+    "counter_mm": 7.0,
+    "floor_z": 11.0,
+    "ledge_top_z": 21.0,
+    "void_mm": 10.0
+  },
+  "zenith": {
+    "axis_probe_radius_mm": 2.0,
+    "axis_probe_z_mm": [
+      85.5,
+      89.7
+    ],
+    "dome_radius_at_z89_mm": 10.223,
+    "roof_material_on_axis_mm3": 0.0,
+    "slit_far_edge_y_mm": 29.2064
+  }
+}

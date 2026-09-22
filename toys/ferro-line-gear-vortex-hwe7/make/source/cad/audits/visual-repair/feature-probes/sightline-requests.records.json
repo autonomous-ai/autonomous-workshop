@@ -1,0 +1,21 @@
+[
+  {
+    "id": "refs:nominal-sightline",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/visual-repair-feature-probes/nominal_sightline.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "interfere:nominal-sightline",
+    "argv": [
+      "interfere",
+      "artifacts/make/r0001/visual-repair-feature-probes/nominal_sightline.step.py",
+      "--tolerance",
+      "0.000001"
+    ]
+  }
+]

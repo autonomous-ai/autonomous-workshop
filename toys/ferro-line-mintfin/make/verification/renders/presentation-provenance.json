@@ -1,0 +1,13 @@
+{
+  "renderer": "native render_review",
+  "reason": "render_product ignored leaf colors and discarded triangles above75000; native review renderer preserves exact geometry and colors.",
+  "state_view": "top",
+  "poses_are_static": true,
+  "motion": "unverified",
+  "states": {
+    "happy.step": "6d84eaf14338089b609ff05cc8b6836aaf859a8a68cfca555e4051dc80c23af2",
+    "sleepy.step": "c9f60e139d883e0edfb517d0bfd3945bee4c79d3755a6594a42a3dccce4491f3",
+    "angry.step": "453639490d362e756b4a6b90d696a3ae9f47a8d8087a6d5ecb75db35b1102850"
+  },
+  "state_directory": "../../states"
+}

@@ -1,0 +1,6 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_axle.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0002/thickness-axle.md
+(8.8s, exit 1)
+--- stdout
+
+--- stderr
+part_axle.step.py: 5 open edges -- inside and outside are undefined on an open surface. Run check_mesh, then repair_mesh, and fix the solid in the generator.

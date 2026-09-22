@@ -1,0 +1,13 @@
+{
+  "type": "single-field length correction",
+  "field": "blind_action_read",
+  "old_length": 1118,
+  "new_length": 968,
+  "old_sha256": "5a96ece7de81be2a7628457737e3a03dcefb86873bfb4dc16418d8c68bd2f3cf",
+  "new_sha256": "3b13fbce07d71577151da15ff1fa9f4a5465ec44e290594547172e1e7cc90908",
+  "archive": "artifacts/make/r0001/blind-review/round2/signature-before-action-length-correction.json",
+  "all_other_fields_unchanged": true,
+  "review_round": 2,
+  "new_review_performed": false,
+  "encoding": "compact sorted UTF-8 JSON, ensure_ascii=False, allow_nan=False, no newline"
+}

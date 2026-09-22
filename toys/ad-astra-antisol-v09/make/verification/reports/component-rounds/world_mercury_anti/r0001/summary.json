@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_mercury_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_mercury_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_mercury_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_mercury_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mercury_anti"
+ ],
+ "print": {
+  "world_mercury_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001/overhang-world_mercury_anti.log": "8b41d20d2ea43066670c8f5e3281886fb74dddc8a960a217ace77861d933e01b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001/thickness-world_mercury_anti.log": "7d6ec64755ec538d9fc329adf70dd018cdd0c893d19a27717812695ba932108a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_mercury_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected together as one contact sheet at 500 px a view. The mirror of the Sol piece: same small ball on the same disc, with the wall collapsing inward as it rises instead of flaring. Ball concentric in top view, seated on its collar. No ring, no extra body, nothing floating.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001/visual-packet.json",
+  "packet_sha256": "11fc12aa91a81e0a6c8d229798ea6508ab15f81f58dd144924f608134b566197",
+  "status": "pass"
+ }
+}

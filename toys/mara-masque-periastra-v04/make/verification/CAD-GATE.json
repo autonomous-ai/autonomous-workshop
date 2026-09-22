@@ -1,0 +1,21 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-18T16:03:40+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 38.24 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=62b4ac3f11b6e6bb43e1c4e570dffe737796fbc80fdc97f756da421ddcadf77d` | note | 0.00 |
+| 2 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout' cad` | rc=0 | 0.05 |
+| 3 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/gen' cad/periastra.step.py cad/part_base.step.py cad/part_inlay.step.py cad/part_moon_counter.step.py cad/part_roof.step.py cad/part_sun_counter.step.py --write --json` | rc=0 | 7.31 |
+| 4 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit' cad --bed 220.0 220.0 --entry cad/part_base.step.py --entry cad/part_inlay.step.py --entry cad/part_moon_counter.step.py --entry cad/part_roof.step.py --entry cad/part_sun_counter.step.py --strict` | rc=0 | 4.57 |
+| 5 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 cad/measure/check_fit.py` | rc=0 | 17.64 |
+| 6 | `check_spec_numbers  # NOT RUN: no *_spec.md; no written parameter claims to hold the source to` | skipped | 0.00 |
+| 7 | `check_spec_format  # NOT RUN: no *_spec.md; no analysis claims to hold the document to` | skipped | 0.00 |
+| 8 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 9 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 10 | `check_motion  # NOT RUN: disabled by Make motion policy; motion is unverified` | skipped | 0.00 |
+| 11 | `<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 '<WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect' batch (13 JSONL requests)` | rc=0 | 8.65 |

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_7": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_7"
+ ],
+ "check_motion": false,
+ "checked": [
+  "body_7"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_7.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_7/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_7"
+ ],
+ "print": {
+  "body_7": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_7/r0001/overhang-body_7.log": "464693f49166c8970e5d17441e20d9c5b6a0942f21240ad6538b7b537e60df0b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_7/r0001/thickness-body_7.log": "b1e43ae1f8a07c86e4bf9294a99d99425433dda9bf2243124f5cb1a0dffaee04"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:body_7",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows the smallest rounded body above the full-size captured joint. Top and iso expose the open throat, continuous stem and rooted blunt crest; geometry tapers consistently toward the tail.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_7/r0001/visual-packet.json",
+  "packet_sha256": "408309d9631ba39fd5991f301f335b9c0609365b59fd65fe0876f09e5a7c23df",
+  "status": "pass"
+ }
+}

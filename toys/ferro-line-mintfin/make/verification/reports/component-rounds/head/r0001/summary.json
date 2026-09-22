@@ -1,0 +1,73 @@
+{
+ "build": {
+  "head": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "head"
+ ],
+ "check_motion": false,
+ "checked": [
+  "head"
+ ],
+ "checks_ok": false,
+ "entry": "part_head.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/head/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "head"
+ ],
+ "print": {
+  "head": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/head/r0001/overhang-head.log": "cf34c3e69b390adcf5b9c5395c9cf62602f9cd0984bb7c7ef783e9f1c57b1867",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/head/r0001/thickness-head.log": "143fea8c54b4c0e4a461c160046f90631f0333da8d3b0269a7d56315fe4c1e6e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 20.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 17.0,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.09) 0.8% of surface below (1245 of 202242 samples); thinne"
+    ],
+    "thinnest_mm": 0.17,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:head",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Retaining grooves extend to rounded corners and leave thin unsupported lips",
+    "evidence": "Iso rear corners near horns; wall report at X25 Y\u00b114.7 Z19.8 and overhang nearX19.3 Y13.7 Z20",
+    "part": "head",
+    "repair": "Localize catch grooves to short straight-wall span atX9..12; remove isolated front cheek strips and preserve sufficient lip thickness."
+   }
+  ],
+  "observation": "Head has six grounded gill blades and two blunt horns. Isometric shows long rear cheek cuts and fragile thin lips extending to rounded corners; numeric reports confirm local thin walls and an unsupported retaining lip.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/head/r0001/visual-packet.json",
+  "packet_sha256": "1075638b574d6be57d61b91fac7a62fd9bfffd8b18a18bd960630535ae42a817",
+  "status": "fail"
+ }
+}

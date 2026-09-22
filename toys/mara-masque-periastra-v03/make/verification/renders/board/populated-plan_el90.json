@@ -1,0 +1,12 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/board-populated.step",
+  "source_sha256": "2280be302377505d79425e2d34eef9e499055a878e7d98bc880a698bacef8a5f",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 90.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/board/populated-plan_el90.png",
+  "output_sha256": "16eac82a8da3f7e3e5721f5d329b36a79e50b40ff437cc229b04d933ce072f88"
+}

@@ -1,0 +1,61 @@
+{
+ "build": {
+  "coupon_receiver_45": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "coupon_receiver_45"
+ ],
+ "check_motion": false,
+ "checked": [
+  "coupon_receiver_45"
+ ],
+ "checks_ok": true,
+ "entry": "part_coupon_receiver_45.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_receiver_45/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "coupon_receiver_45"
+ ],
+ "print": {
+  "coupon_receiver_45": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_receiver_45/r0001/overhang-coupon_receiver_45.log": "0c02684add07fcc93fbc95ac7445f1e692a0611417246cfb853d97865227b063",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_receiver_45/r0001/thickness-coupon_receiver_45.log": "f12e748d47c6785982ce8bb54b27c2c1f3a311820f6827ac8ec44100cf00af0c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:coupon_receiver_45",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_receiver_45/r0001/visual-packet.json",
+  "packet_sha256": "b92e3cc711c7f2bd0cf225bc15def8489dfd690c6ca3cc41cd57895acc50bdb8",
+  "status": "pending"
+ }
+}

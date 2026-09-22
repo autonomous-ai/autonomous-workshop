@@ -1,0 +1,65 @@
+{
+ "build": {
+  "body_04_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_04_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_04_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_04_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_04_front"
+ ],
+ "print": {
+  "body_04_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0001/overhang-body_04_front.log": "487e1d0512601aa9eeb173095633044b333318cb5c022f6484625c72ad68dd0d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0001/thickness-body_04_front.log": "6c7166a34c13086f11b294e11911cd7164ba3082fc2622f501888c66e64da3c7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 43.8% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 49.0,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 2.5% of surface below (4546 of 187889 samples); thinne"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:body_04_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0001/visual-packet.json",
+  "packet_sha256": "83d9e02bb77e045a1e4b93e8be5321c0b2122f15ac82c7fdcebf782ab0b81cbd",
+  "status": "pending"
+ }
+}

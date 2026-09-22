@@ -1,0 +1,22 @@
+{
+  "source": "artifacts/make/r0001/visual-repair-presentation/state_0.step",
+  "source_sha256": "bfc445330daec08d5efc2d2aaf678addce7eba59a8ccae8f8e3a2208dda9fd68",
+  "renderer": ".agents/skills/cad/scripts/render_review",
+  "renderer_sha256": "6d30cc239b00292727ccc4a6df58f52a54eeb88c9a2656854e02c91d691164ae",
+  "wrapper_sha256": "fcccbbd5cea4d533f77fe98b29df75e140194c3760268e0aeff36e96063e8ab2",
+  "camera": {
+    "azimuth": -65.0,
+    "elevation": 12.0,
+    "size": 900,
+    "pad": 0.07
+  },
+  "background_rgb": [
+    16,
+    18,
+    22
+  ],
+  "tessellation_tolerance_mm": 0.08,
+  "triangles": 276478,
+  "image_sha256": "f5b299a1503ca1700a1f414b2acfe3390f9fde20dedeb99d0b4875f5d269516b",
+  "scope": "Exact CAD appearance and depth only; no simulated translucency or glow, no physical fit or motion claim."
+}

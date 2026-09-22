@@ -1,0 +1,62 @@
+{
+ "build": {
+  "axle": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "axle"
+ ],
+ "check_motion": true,
+ "checked": [
+  "axle"
+ ],
+ "checks_ok": true,
+ "entry": "part_axle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "axle"
+ ],
+ "print": {
+  "axle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0005/overhang-axle.log": "dbabda82820e717bb855e0c4e0715f1ff012aabba99260eed4af90c15c586e5f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0005/thickness-axle.log": "67d96c1a0dda612010c50dc57e4574e2ccbed772d15c9388ddad4e5fa88e7c6a"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:axle",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The front and isometric views show a continuous sloping shoulder meeting the keyed shaft without the former flat ledge. Both threaded sections remain distinct, and top view shows the unobstructed central tunnel. No disconnected or misplaced geometry is visible.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0005/visual-packet.json",
+  "packet_sha256": "2d3ffa8bf2bfaa2fb6c9d04d5234f589dd33f052ddcb8fa44c780e5f95c2e71e",
+  "status": "pass"
+ }
+}

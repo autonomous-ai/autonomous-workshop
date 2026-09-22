@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso re-inspected after shortening the far-side run of the shutter slit. The top view confirms the slit is straight, parallel-sided, centred on the meridian, and now stops well short of the far rim, leaving the far half of the dome unbroken instead of sawing the cap in two. The near side is still open to the bottom of the drum. The telescope tube, its two fork arms and the solid pier remain in the slit, fused to its walls, with no floating or detached geometry. One small arm corner projects a fraction beyond the tube's outline in plan; it is integral structure inside the slit, not a separate feature.",
+  "packet_sha256": "ac34c7fc87c605e99569c1c5d107e84e9d3c8f712b629995d15965a5ece5f211",
+  "status": "pass"
+}

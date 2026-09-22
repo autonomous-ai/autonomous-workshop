@@ -1,0 +1,61 @@
+{
+ "build": {
+  "world_mercury_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_mercury_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_mercury_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_mercury_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mercury_anti"
+ ],
+ "print": {
+  "world_mercury_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001/overhang-world_mercury_anti.log": "6e8037ea39f6aaef9631da4c4240cbe34f031556cb9d211cfd81c3ed54100487",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001/thickness-world_mercury_anti.log": "22558d0112e355669131f90eaee3b49138e63ef38831c1258da04b901a7cc816"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_mercury_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0001/visual-packet.json",
+  "packet_sha256": "c6ef7b27c8914c462ac8e1389d1fb5a871a1596482e072c6ce456ec82d59334c",
+  "status": "pending"
+ }
+}

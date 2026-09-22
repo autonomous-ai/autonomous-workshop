@@ -228,6 +228,67 @@ def _sha256(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+#: The frozen run-root Make options. Schema 1 carries ``check_motion`` alone
+#: and means a run may carry nothing forward; schema 2 adds the correction
+#: carry policy, written as ``carry_unchanged`` and, by the runs created while
+#: the policy was opt-in, as ``quick_fix``. The CAD and make-round tools read
+#: all three shapes, so a run started before the policy existed keeps working
+#: unchanged and is never silently upgraded.
+MAKE_OPTIONS_NAME = "MAKE-OPTIONS.json"
+
+
+def _make_options_bytes(*, check_motion: bool, carry_unchanged: bool) -> bytes:
+    """Canonical bytes of the immutable run-root Make options.
+
+    `carry_unchanged` is the correction carry policy: a part whose freshly
+    exported STEP is byte-identical to the source archive's may keep that
+    archive's component round history and per-part gate reports instead of
+    regenerating them.  It is the default for a correction and unavailable to
+    a run with no source, so only a `fix` writes schema 2.
+
+    Schema 1 is the pre-policy document and means "carry nothing".  A run that
+    cannot carry keeps those exact bytes, so no existing checkpoint hash moves,
+    and a run created before the policy existed keeps its original behaviour
+    even if its tools are later refreshed -- the skills condition the policy on
+    schema 2, which such a run does not have.
+    """
+    if type(check_motion) is not bool or type(carry_unchanged) is not bool:
+        raise ContractError("Make options must be boolean")
+    if not carry_unchanged:
+        payload = {"schema_version": 1, "check_motion": check_motion}
+    else:
+        payload = {"schema_version": 2, "check_motion": check_motion,
+                   "carry_unchanged": True}
+    return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _frozen_carry_unchanged(run_root: Path) -> bool:
+    """Read the carry policy already frozen into a run, if any.
+
+    A motion-policy rebind on resume rewrites the options file, and it must not
+    drop a policy the run was created under: a correction that has already
+    carried parts forward cannot have that permission revoked under it.
+
+    `quick_fix` is the original name of this field, written by runs created
+    while the policy was opt-in, and it is read as the same choice.
+    """
+    path = run_root / MAKE_OPTIONS_NAME
+    if path.is_symlink() or not path.is_file():
+        return False
+    if path.stat().st_size > 1024:
+        raise StateConflict("invalid frozen Make options")
+    payload = json.loads(path.read_bytes())
+    if not isinstance(payload, dict):
+        raise StateConflict("invalid frozen Make options")
+    for key in ("carry_unchanged", "quick_fix"):
+        if key in payload:
+            value = payload[key]
+            if type(value) is not bool:
+                raise StateConflict("invalid frozen Make options")
+            return value
+    return False
+
+
 def _host_correction_line(record: Mapping[str, Any]) -> bytes:
     if (
         not isinstance(record, Mapping)
@@ -806,11 +867,19 @@ class AgentRun:
         turn_seconds: Optional[int] = None,
         turn_untimed: bool = False,
         check_motion: bool = False,
+        carry_unchanged: bool = False,
         wish_reference_files: Optional[Mapping[str, bytes]] = None,
         revision_snapshot: Optional[bytes] = None,
     ) -> "AgentRun":
         if type(check_motion) is not bool:
             raise ContractError("agent run check_motion must be boolean")
+        if type(carry_unchanged) is not bool:
+            raise ContractError("agent run carry_unchanged must be boolean")
+        if carry_unchanged and revision_snapshot is None:
+            # The policy's whole soundness argument is that a sealed source
+            # archive already carries per-part hashes and gate reports to
+            # carry forward. A run with nothing to diff against has none.
+            raise ContractError("carry_unchanged requires a revision source")
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
         if type(turn_untimed) is not bool:
@@ -1080,8 +1149,8 @@ class AgentRun:
             ),
             (PurePosixPath("WISH.json"), wish_bytes, 0o400),
             (PurePosixPath("MAKE-OPTIONS.json"),
-             json.dumps({"schema_version": 1, "check_motion": check_motion},
-                        sort_keys=True, separators=(",", ":")).encode("utf-8"), 0o400),
+             _make_options_bytes(check_motion=check_motion,
+                                 carry_unchanged=carry_unchanged), 0o400),
             (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
             (
                 PurePosixPath(MANAGER_PROJECT_PATH),
@@ -1819,9 +1888,11 @@ class AgentRun:
                     }
                 )
         if check_motion is not None:
-            path = "MAKE-OPTIONS.json"
-            content = json.dumps({"schema_version": 1, "check_motion": check_motion},
-                                 sort_keys=True, separators=(",", ":")).encode("utf-8")
+            path = MAKE_OPTIONS_NAME
+            content = _make_options_bytes(
+                check_motion=check_motion,
+                carry_unchanged=_frozen_carry_unchanged(self.run_root),
+            )
             digest = _sha256(content)
             previous = by_path.get(path)
             if previous is None or previous["sha256"] != digest:

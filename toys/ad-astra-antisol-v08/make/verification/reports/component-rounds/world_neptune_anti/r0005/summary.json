@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_neptune_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_neptune_anti"
+ ],
+ "print": {
+  "world_neptune_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/overhang-world_neptune_anti.log": "90e49cefad867d2a21fefb25d7cee6912f24d7c52ba8ca4ce13a87d714058b37",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/thickness-world_neptune_anti.log": "26a1f3756836f27dbb899cd548ef0e9f3b245b5af9767fec396604f8725cc243"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_neptune_anti"
+ ],
+ "round": 5,
+ "scope": "component:world_neptune_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso all show one coherent piece: a Neptune globe centred on the \u00d834.00 disc and sunk into it, the seat collar continuous all round, the bed face flat and down. No missing, extra or floating geometry, no visible intersection, nothing overhanging the disc rim. The disc wall tapers inward as it rises, which is this army's own cue. This round's three renders are byte-identical to the ones inspected in r0001: the printed solid is the disc and the ball, and this revision moved only where the colour split falls inside that ball.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0005/visual-packet.json",
+  "packet_sha256": "b5622d3f532c4f04cf785cbe5053b3a7596afa357091e22681c28900e5aa4f1a",
+  "status": "pass"
+ }
+}

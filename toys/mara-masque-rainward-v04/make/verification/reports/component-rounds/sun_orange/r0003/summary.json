@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_sun_orange.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_orange"
+ ],
+ "print": {
+  "sun_orange": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0002/overhang-sun_orange.log": "e4263aa3e6f45f141bfcd86308c1f78440e3c461bf8b10b16e4ae638a8defb6a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0002/thickness-sun_orange.log": "4a5f72d6504196519564a7759939adc3cf3cde338b33eaad1a4cc50c2cb256ff"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.32,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "sun_orange"
+ ],
+ "round": 3,
+ "scope": "component:sun_orange",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One solid disc 191.0 x 191.3 x 9.0 mm. Top: twenty-four blind lane pockets fan around a plain centre platform, four wider boundary ridges, and an unbroken crown of flame around the whole rim. Every point on the perimeter is a tongue flank or a trough; the tongues are broad at the root, taper to a fine rounded point with no knob on the tip, and every tip leans the same way round the ring. Heights and widths are uneven and the rhythm does not repeat. One domed arch stands at the lower rim, its crest the highest point on the whole edge, its two legs diving into the body and a single open loop between it and the two short tongues running on underneath. Front: a flat 9 mm slab, the crown flush with the deck top, nothing standing proud. Iso: pockets, ridges, centre bar, crown and arch all continuous with the body; no floating, missing or extra geometry and no visible intersection.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0003/visual-packet.json",
+  "packet_sha256": "384d7b8fd3ffad9f83166a76e75e6eafefe67f918db36bcca2342b765ad7cf03",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_sun_orange.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_orange"
+ ],
+ "print": {
+  "sun_orange": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0003/overhang-sun_orange.log": "a6cc6b077fdf99626199d2e413620f7601c92b189889631b9c35d1672a856876",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0003/thickness-sun_orange.log": "2b8bca2707c54f18353b7311b29b7c1e25d51f4340dbf6d22daa1b062df20c63"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.29,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "sun_orange"
+ ],
+ "round": 4,
+ "scope": "component:sun_orange",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One orange disc whose circular edge runs unbroken all the way round, with forty-eight separate flames standing off it. Top: each flame is rooted on its own arc of that edge, every valley between two flames runs down to the circle, and no flame touches a neighbour. There is no closed loop, arch, ribbon or handle anywhere on the part. Iso: all flames curl the same way, every tip is blunt and rounded, each top falls outward from the deck height on one plane. Front: 6.2 mm tall, flat underside, no face overhanging air. Twenty-four lane pockets with their key recesses, the centre bar and four hub dashes are all present; nothing is missing, extra, misplaced or interpenetrating.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0004/visual-packet.json",
+  "packet_sha256": "61552a32f75e3375f69b4eeb6f254257bcab4dc7dcd1612e9ea59f7391cf8d67",
+  "status": "pass"
+ }
+}

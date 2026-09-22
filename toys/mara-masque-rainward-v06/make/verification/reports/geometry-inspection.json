@@ -1,0 +1,460 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "print_ready_claim": false,
+  "checks": [
+    {
+      "id": "refs:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "validate:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "interfere:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a01_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a01_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a02_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a02_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a03_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a03_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a04_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a04_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a05_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a05_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a06_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a06_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a07_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a07_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a08_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a08_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a09_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a09_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a10_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a10_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a11_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a11_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a12_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a12_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a13_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a13_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a14_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a14_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_a15_beige",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_a15_beige",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b01_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b01_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b02_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b02_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b03_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b03_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b04_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b04_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b05_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b05_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b06_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b06_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b07_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b07_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b08_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b08_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b09_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b09_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b10_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b10_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b11_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b11_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b12_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b12_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b13_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b13_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b14_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b14_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_drop_b15_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_drop_b15_dark_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_01_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_01_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_02_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_02_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_03_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_03_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_04_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_04_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_05_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_05_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_06_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_06_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_07_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_07_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_08_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_08_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_09_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_09_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_10_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_10_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_11_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_11_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_12_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_12_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_13_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_13_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_14_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_14_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_15_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_15_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_16_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_16_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_17_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_17_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_18_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_18_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_19_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_19_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_20_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_20_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_21_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_21_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_22_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_22_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_23_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_23_yellow",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_lane_24_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_lane_24_cocoa_brown",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_sun_orange",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_sun_orange",
+      "status": "passed"
+    }
+  ],
+  "verification_sha256": "c58be39737142df922570a7a59289969903585c5c70817b9b4d49a1275bc32cd"
+}

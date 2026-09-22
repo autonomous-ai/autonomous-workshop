@@ -1,0 +1,62 @@
+{
+ "build": {
+  "gear_26": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gear_26"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gear_26"
+ ],
+ "checks_ok": true,
+ "entry": "part_gear_26.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_26/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_26"
+ ],
+ "print": {
+  "gear_26": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_26/r0001/overhang-gear_26.log": "147a9abf0e2991f66b39affd5f8e646a09d97a64caf4e491f22eb88c3d91e03a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_26/r0001/thickness-gear_26.log": "ff9f147c7e04ebf507ea264dfc7975000e4b54d5135d4c315efe8ff3adfa3d7b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:gear_26",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "gear_26 shows five connected swept spokes, a concentric open bore, distinct broad tooth tips and a continuous root rim. Front is uniformly thick; top and iso show no missing or extra geometry. Spoke sweep alternates from its neighbor.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_26/r0001/visual-packet.json",
+  "packet_sha256": "3fc79031c1384536830371fd60d88165ba4020d0e49d057e900add3d8117890b",
+  "status": "pass"
+ }
+}

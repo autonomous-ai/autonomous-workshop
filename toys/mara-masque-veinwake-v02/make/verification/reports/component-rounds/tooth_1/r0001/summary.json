@@ -1,0 +1,61 @@
+{
+ "build": {
+  "tooth_1": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "tooth_1"
+ ],
+ "check_motion": false,
+ "checked": [
+  "tooth_1"
+ ],
+ "checks_ok": true,
+ "entry": "part_tooth_1.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/tooth_1/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "tooth_1"
+ ],
+ "print": {
+  "tooth_1": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/tooth_1/r0001/overhang-tooth_1.log": "7be1bed2840d896fddb97c83526db877cb1d7507d24ac055e5c108bbaee90165",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/tooth_1/r0001/thickness-tooth_1.log": "7bb779c1817a60bcdf95f036eb3a1bbb182d8e3224e6978b7b7b4ed52267612e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:tooth_1",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/veinwake/measure/component-rounds/tooth_1/r0001/visual-packet.json",
+  "packet_sha256": "0beea7e181b2ad8111d7ea19073b85070e9510517f780e86a0be5aeb56caeeda",
+  "status": "pending"
+ }
+}

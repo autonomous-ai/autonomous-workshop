@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Iso and front inspected. The smallest piece in the set: a globe measuring the expected fraction of a \u00d834.00 disc, seated on a short collar and sunk into the disc top, concentric, with no flat, no step and no stray body anywhere on it. The front view shows the Anti-Sol disc wall tapering INWARD as it rises, which is this army's ownership cue and the opposite of the Sol piece's flare; nothing stands proud of the globe. The colour split this revision mirrors is a flush inlay and by design does not show in a single-colour render of the fused part -- it is measured on the built colour bodies in measure/mercury-surface.md, where the Anti-Sol map matches the Sol map reflected about the facing meridian at 0 of 4920 sampled points of disagreement, and photographed in snap/worlds/mercury-anti-caloris.png. No misplaced, missing or extra geometry, no intersections. (Round re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet_sha256": "c0c7579dda2cce2aafbc24a4d90988d35c4202ab4a1297cf58b388cf5b8848d3",
+  "status": "pass"
+}

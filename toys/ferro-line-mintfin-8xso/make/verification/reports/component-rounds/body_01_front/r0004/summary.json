@@ -1,0 +1,73 @@
+{
+ "build": {
+  "body_01_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_01_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_front"
+ ],
+ "print": {
+  "body_01_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0004/overhang-body_01_front.log": "e639a86864f72014e58428800f781b0956b8f063e1b2168a8db0bfbbac1511db",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0004/thickness-body_01_front.log": "4c41c0e7d0637054535b10ce175ce4e12c84d9f32cf43b49bc571490e6545a24"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 42.8% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 3.5,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 6.1% of surface below (11039 of 178650 samples); thinn"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:body_01_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Broad thin front land and unsupported ball-root underside after directional parent clearance",
+    "evidence": "Top and iso show a long shallow crescent terminating near the ball base; front shows the thin plate. Wish wall: 0.20 mm at print (0.8,8.1,0.3), band 5.10 mm. Overhang: 3.5 mm2 at (0.1,7.4,1.3).",
+    "part": "body_01_front",
+    "repair": "Replace only body01 front tapered land with a constant axial section whose parent-clearance leading profile is carried through its depth; add a tangent 45-degree rear heel under the incoming ball, preserving the sphere contact and the current parent clearance envelope."
+   }
+  ],
+  "observation": "Viewed front, top and iso once. Mint front half remains connected, with centered incoming ball and symmetric open ankle corners. The new parent-clearance boundary leaves a broad thin crescent across the front land; the ball underside meets a recessed clearance pocket. Numeric checks locate a 279.3 mm2 wall region below 1.2 mm and a 3.5 mm2 unsupported region near the ball root.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0004/visual-packet.json",
+  "packet_sha256": "f65b09dd4ee67acd5f96e5b5182d0c3fabf37eca1e3248944cc61a71ebd85d6a",
+  "status": "fail"
+ }
+}

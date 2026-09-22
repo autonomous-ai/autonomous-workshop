@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_neptune_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_neptune_sol"
+ ],
+ "print": {
+  "world_neptune_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/overhang-world_neptune_sol.log": "1fb5d789d1c01ed73ed3aaeaa63fd9456d55791932c7302459378ddd11f61341",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/thickness-world_neptune_sol.log": "b9fadfc19d360d4d9a75fc0eb13aed264c78c747b5e2a781df7d670d3b31069c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_neptune_sol"
+ ],
+ "round": 5,
+ "scope": "component:world_neptune_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso all show one coherent piece: a Neptune globe centred on the \u00d834.00 disc and sunk into it, the seat collar continuous all round, the bed face flat and down. No missing, extra or floating geometry, no visible intersection, nothing overhanging the disc rim. The disc wall flares outward as it rises, which is this army's own cue. This round's three renders are byte-identical to the ones inspected in r0001: the printed solid is the disc and the ball, and this revision moved only where the colour split falls inside that ball.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0005/visual-packet.json",
+  "packet_sha256": "50b28f33933e4d51f25e7ba4834942d1a2bc83fad167a882a649b1058194a0cc",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front shows a flat bed face and symmetrical chamfered barrel shoulder. Top and iso show the offset spherical socket, four separated fingers and internal preload pads attached to the body. No floating or missing geometry is visible; motion, elastic retention and bonded assembly remain unverified.",
+  "packet_sha256": "f5671aa2acec1f5ca5e1f07588fdf3abdf3b10e4f56f62d218068b4735fb4b8f",
+  "status": "pass"
+}

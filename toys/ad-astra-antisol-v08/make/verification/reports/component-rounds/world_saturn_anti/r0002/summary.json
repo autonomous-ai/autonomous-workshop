@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_saturn_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_anti"
+ ],
+ "print": {
+  "world_saturn_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/overhang-world_saturn_anti.log": "f1643ac8684bc4f9a2797427d96e183cfa0a36c0b2b29b845cd204a1095f9ae8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/thickness-world_saturn_anti.log": "c3bd1f5bf047209b28101604282a5ab8701119aafde6f0d706a3a7c450a5909a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_saturn_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_saturn_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso all show one coherent piece: a Saturn globe centred on the \u00d834.00 disc and sunk into it, the seat collar continuous all round, the bed face flat and down. No missing, extra or floating geometry, no visible intersection, nothing overhanging the disc rim. The disc wall tapers inward as it rises, which is this army's own cue. The ring is a single flat annulus tilted at the planet's obliquity, fused to the globe on its high side, and the web under its low side runs down to the disc as one smooth surface with no step or spiral.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0002/visual-packet.json",
+  "packet_sha256": "2c0aaa8a15ffc26317593c521d0ef68bdae07d599759b53de2fa0cd30382c7aa",
+  "status": "pass"
+ }
+}

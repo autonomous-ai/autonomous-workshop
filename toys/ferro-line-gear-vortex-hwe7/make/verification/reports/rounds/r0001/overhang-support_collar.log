@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_support_collar.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-support_collar.md
+(4.8s, exit 0)
+--- stdout
+part_support_collar.step.py: 21.5 cm2 of surface, grid 0.400 mm, 170 unsupported samples over 1 region(s)
+  PASS  no face under 45 deg needs support     12.7% of the surface faces down that steeply; 0 region(s) need support, 1 bridge, 0 below 1 mm2
+  PASS  bridges within 12 mm                   1 region(s), longest span 4.0 mm
+        every unsupported region, largest first:
+        1. [bridge  ]    26.3 mm2 at (0.1, -10.5, 9.2)  span   4.0 mm of 7x4, 10.4 mm of air below
+RESULT: prints unsupported
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-support_collar.md
+
+--- stderr

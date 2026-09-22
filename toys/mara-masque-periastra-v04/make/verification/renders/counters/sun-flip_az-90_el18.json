@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/flip-sun.step",
+  "source_sha256": "90e7d8bb95800fa9cc4f8094c2a8cd4248ba6d2aa3ea6ed57032360fdcfdb656",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 18.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": "0.5,0.5,0.62",
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/counters/sun-flip_az-90_el18.png",
+  "output_sha256": "69bf348573a19e7dda835381a5b8c67a34e5e624aadb49a6694ed0d9c2afea70"
+}

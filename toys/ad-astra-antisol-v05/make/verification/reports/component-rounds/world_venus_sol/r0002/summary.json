@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_venus_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_venus_sol"
+ ],
+ "print": {
+  "world_venus_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001/overhang-world_venus_sol.log": "799df5484b1395eea42f48fa781b3110cd370cdf4f1f6b639d70701ead36d354",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001/thickness-world_venus_sol.log": "9f4274c20ce882184fe92010d0be5cfdc8d19f4cd8a3bdfd56578056775cbaee"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_venus_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_venus_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One solid: a \u00d834.00 disc flaring outward as it rises with a rounded top edge, a \u00d816.53 globe sunk into its top face, and the integral seat collar between them. Front view shows the ball meeting the collar with no step and no undercut; top view is concentric; iso shows a flat bed face and nothing overhanging it. The numeral and the surface markings are flush colour inlays and correctly show as no relief at all in this single-colour gate render.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0002/visual-packet.json",
+  "packet_sha256": "bf5a5133540b92d019dd62952dc9f7f603e2aabe15f01b25a239412e12072927",
+  "status": "pass"
+ }
+}

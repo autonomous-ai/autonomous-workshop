@@ -1,0 +1,14 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/part_belly_03.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_03/r0001/thickness-belly_03.md
+(5.0s, exit 1)
+--- stdout
+part_belly_03.step.py: 0.30 cm3 solid, grid 0.133 mm (316x67x14), 32264 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      3.4% of surface below (1013 of 32264 samples); thinnest 0.13 mm at (7.0, 3.9, 0.1) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (3.40% of surface, budget 2%) -- OVER BUDGET; 287 more within measurement error of the limit
+  PASS  thickness distribution         median 1.20 mm, p95 2.47 mm, max 4.80 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 0.30 cm3 (0%) in 0 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.13 mm at (7.0, 3.9, 0.1)   1013 samples, 20.9 mm2, runs 42.3 mm, band 0.49 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_03/r0001/thickness-belly_03.md
+
+--- stderr

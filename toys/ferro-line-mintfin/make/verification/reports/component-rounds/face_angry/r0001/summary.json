@@ -1,0 +1,62 @@
+{
+ "build": {
+  "face_angry": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_angry"
+ ],
+ "check_motion": false,
+ "checked": [
+  "face_angry"
+ ],
+ "checks_ok": true,
+ "entry": "part_face_angry.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_angry/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_angry"
+ ],
+ "print": {
+  "face_angry": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_angry/r0001/overhang-face_angry.log": "ec5c52aac115394d2f23cdf41b71937e8392735105887defbc50dcb33d22793b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_angry/r0001/thickness-face_angry.log": "0ffbc75c8aca78779f39094ca237cdb673b9ca50ec29d3e84f46c13fe7a1f191"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:face_angry",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Isometric shows round eyes beneath two sloping heavy brow bars and a downturned mouth. Front confirms raised marks above the flat plate; top shows symmetric free-ended arms. No detached decoration, extra limb or blocked slot.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_angry/r0001/visual-packet.json",
+  "packet_sha256": "6df792adb5c7f83745b936db68b2893201ac5dd3479743f8f727e8c06e10bb43",
+  "status": "pass"
+ }
+}

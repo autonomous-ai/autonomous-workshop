@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/counter-moon.step",
+  "source_sha256": "68f72f9def64373dab55b71e0695c98abc40b602aa23d188ffb552c4b730c2cd",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 90.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": "0.5,0.5,0.75",
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/counters/moon-symbol-plan.png",
+  "output_sha256": "0b1bc5acb021b326949182ebdc9bf5cf1c346ae372ddbbd6ee2f02bcd4a696ce"
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "face_nostril": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_nostril"
+ ],
+ "check_motion": true,
+ "checked": [
+  "face_nostril"
+ ],
+ "checks_ok": true,
+ "entry": "part_face_nostril.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_nostril/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_nostril"
+ ],
+ "print": {
+  "face_nostril": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_nostril/r0002/overhang-face_nostril.log": "0b045a1ed936a6429a16addb5a2afa66246fdacd12bcb313b785785fdcc250aa",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_nostril/r0002/thickness-face_nostril.log": "d69ddf50bca1b52901f545c7970ae9d107a2a9353b2b083e61ec36a18059d34a"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:face_nostril",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show the thicker flat-backed charcoal cylinder; top remains circular with unchanged diameter. It is one small standing facial feature, evaluated at the Wish0.8mm standing-feature minimum. Default wall and overhang pass.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_nostril/r0002/visual-packet.json",
+  "packet_sha256": "5332094ccff229ef523f3819edb8de734819001641eba32b7aaf63a9ea441b5e",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_lane_04_cocoa_brown.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_04_cocoa_brown/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_04_cocoa_brown"
+ ],
+ "print": {
+  "lane_04_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_04_cocoa_brown/r0001/overhang-lane_04_cocoa_brown.log": "b56797e0bb2e7f9431f9612ceeb8aa41e66a6d5e0f6e86b3a93ceb1888d2d73c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_04_cocoa_brown/r0001/thickness-lane_04_cocoa_brown.log": "6f1cfe6ea5915c1d30daa855607e56c08d9da824952921b926dbf87a0ed62d0b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "lane_04_cocoa_brown"
+ ],
+ "round": 3,
+ "scope": "component:lane_04_cocoa_brown",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Printed top face down on the point-4 lane axis, cocoa brown tone. Top: a clean annular sector - two straight sides and one smooth outer arc at the wide end, with no notch, scallop, bay or shortening cut anywhere into that edge. Front: the flat print face on the bed, the 1.0 mm lapping lip stepping down at the outer end, and the locating key standing proud on the up-facing side; all one solid. Iso: proportions match a 63.35 x 22.35 x 4.0 mm tile, nothing floats, nothing intersects, nothing is missing or extra.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_04_cocoa_brown/r0003/visual-packet.json",
+  "packet_sha256": "2114acea5db7f4a3cc306c91464c512352609ecded305bddb3ae494b62846d01",
+  "status": "pass"
+ }
+}

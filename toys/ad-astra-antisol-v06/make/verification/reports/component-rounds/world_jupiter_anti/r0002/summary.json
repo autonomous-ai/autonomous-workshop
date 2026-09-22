@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_jupiter_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_jupiter_anti"
+ ],
+ "print": {
+  "world_jupiter_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001/overhang-world_jupiter_anti.log": "8496314500998212a66d67fed1fd616b8b7f3ce453b04679f8c0714c71e11753",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001/thickness-world_jupiter_anti.log": "6f570197c3bf7505e316df208cb1f69ca0644029e3245f971a4131be71268a81"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_jupiter_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_jupiter_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The mirror of the Sol piece: same globe, same seat, and a disc whose wall is visibly wider at the bottom than at the top, which is the Anti-Sol taper. Read against the Sol front view the two are plainly opposite and plainly the same size. No protrusion, no floating body, no extra geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0002/visual-packet.json",
+  "packet_sha256": "c5d458784e9ce78ec238073061cb6772adb392980210e547ffc94053492eb479",
+  "status": "pass"
+ }
+}

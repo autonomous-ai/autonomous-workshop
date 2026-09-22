@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_uranus_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_uranus_sol"
+ ],
+ "print": {
+  "world_uranus_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001/overhang-world_uranus_sol.log": "85952e8b8ed2f22b491a0765fed239579ad5a55561d1bfc212d4787873e255bc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001/thickness-world_uranus_sol.log": "27a8bbdd2ebf3c201b9015e67404732d0a123fd48fbc6c3bc4f9904146cc6a0b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_uranus_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_uranus_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "A disc with a globe sunk into its top, and nothing else. The disc wall drafts the way this army's discs draft, the globe is centred on the disc axis and meets it through a short seat collar, and the numeral pocket is flush in the wall. No protrusion, no floating body, no visible intersection, no downward-facing surface added. Front: the disc wall widens as it rises, Sol's draft. Iso: ball size is right for this planet's place in the ladder.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0002/visual-packet.json",
+  "packet_sha256": "d8f56e49e078e618cd0a4b47b7be8c5c07a87d222325059c57fb3592c3c549a7",
+  "status": "pass"
+ }
+}

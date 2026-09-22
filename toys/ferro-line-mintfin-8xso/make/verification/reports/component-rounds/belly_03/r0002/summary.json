@@ -1,0 +1,62 @@
+{
+ "build": {
+  "belly_03": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_03"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_03"
+ ],
+ "checks_ok": true,
+ "entry": "part_belly_03.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_03/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_03"
+ ],
+ "print": {
+  "belly_03": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_03/r0002/overhang-belly_03.log": "d6bd63765d12f4579935f6f065161f0f0fbc8f2ee667ae0113af44c0dbc15e9c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_03/r0002/thickness-belly_03.log": "70bb31c3e3b9f87959418679e08f4e4bb830752572db98d808d6e97fdaf16b44"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:belly_03",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Single cream elliptical scale with uninterrupted flat faces, uniform shallow edge and rounded ends. No splits, internal holes or detached geometry. Default and1.2mm wall checks and overhang check pass. Its reduced size follows the third body section; assembled location is not proven here.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_03/r0002/visual-packet.json",
+  "packet_sha256": "a28fb45fe74fdc44b604abab836107953cce9ab4ce22d8218dbd41d0be1e8ca5",
+  "status": "pass"
+ }
+}

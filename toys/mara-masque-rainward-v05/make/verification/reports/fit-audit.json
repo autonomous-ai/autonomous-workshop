@@ -1,0 +1,18 @@
+{
+  "bar_sites_disjoint": true,
+  "bar_sites_inside_platform": true,
+  "kind": "rainward-corona-fit-audit",
+  "landings_checked": 240,
+  "lane_capacity_per_lane": 15,
+  "max_adjacent_tile_contact_mm2": 0.0,
+  "max_marker_footprint_contact_mm2": 0.0,
+  "min_adjacent_lane_outline_gap_mm": 2.407,
+  "min_rim_radius_under_an_outer_counter_mm": 87.723,
+  "note": "Support is measured against one tile's flat top face only. A counter tail may overhang the boundary; that overhang is the shortfall below 1.0 and is reported, never hidden. Every tile now ends on the same exact circular arc at radius 89.85, so no counter loses any support to a notch, a bay or a shortened tile end.",
+  "pass": true,
+  "rim_note": "Reported over the whole 8 degree band around each lane axis. Support itself is measured on the exact counter outlines below and is the verdict.",
+  "worst_centroid_margin_at": "lane 12, r33, single",
+  "worst_centroid_to_contact_hull_mm": 2.416,
+  "worst_own_tile_support_at": "lane 16, r85, single",
+  "worst_own_tile_support_fraction": 0.90769
+}

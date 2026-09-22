@@ -1,0 +1,62 @@
+{
+ "build": {
+  "gills_left": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gills_left"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gills_left"
+ ],
+ "checks_ok": true,
+ "entry": "part_gills_left.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/gills_left/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gills_left"
+ ],
+ "print": {
+  "gills_left": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/gills_left/r0001/overhang-gills_left.log": "1038ee1255c7d22b41e6fc5ed0f0af51310bd708dc78447b34390a02f474d65c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/gills_left/r0001/thickness-gills_left.log": "0f3fdd01ff35315c82b97e1ae0e19dfb613841a9cf0ae92e6751c6f000215429"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:gills_left",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top clearly shows three fanned gill leaves with stepped barbs and a shared root; iso shows raised sloped central shafts above the flat leaf bases. Front confirms the common bed plane and low raised profile. All three leaves are connected with open gaps between them, without floating pieces. Whole-head placement remains pending.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/gills_left/r0001/visual-packet.json",
+  "packet_sha256": "3c8a6c07b51fd4cc6a3adc80b7d16c0062401caab9c70446d1d06b4d7907cbf7",
+  "status": "pass"
+ }
+}

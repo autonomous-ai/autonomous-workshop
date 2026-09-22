@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "One-millimeter minor-axis footprint leaves extensive thin material",
+      "evidence": "Top/iso very narrow oval; default21.9% thin surface, extra1.2 wall62.5% with11.4mm2 region.",
+      "part": "belly_08",
+      "repair": "Widen minor axis to2.2mm and move centerY126 to125.4 so rear edge126.5 stays within flat section126.6 and before slitroot127."
+    }
+  ],
+  "observation": "Front, top and iso inspected. Small cream ellipse is coherent but too narrow along its minor axis; thin ends occupy a substantial fraction of the part. Default and1.2mm wall checks both fail.",
+  "packet_sha256": "165c753516760074b95bb14bd2963d1341bde9a46d5d4c933813d218410d29e9",
+  "status": "fail"
+}

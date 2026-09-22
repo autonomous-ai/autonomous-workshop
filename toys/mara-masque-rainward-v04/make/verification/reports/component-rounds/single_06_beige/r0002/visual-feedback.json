@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Smooth condensed drop inside the preserved 12 x 8 x 4 envelope: flat parallel top and bottom, one broad head and a tail tapering to a rounded point, no terminal notch. One solid, nothing missing or extra, no visible intersection. The fifteen beige counters are instances of this one generated solid and their three packet views hash identically, so this reading is the measured form of each of them.",
+  "packet_sha256": "6de5fd15c8d51cc2ef7945bfae7c17b26459f4be90d7e4c00db1f5c5ffc24a8a",
+  "status": "pass"
+}

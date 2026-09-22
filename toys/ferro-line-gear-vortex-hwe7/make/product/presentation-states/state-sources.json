@@ -1,0 +1,25 @@
+{
+  "method": "Exact B-rep leaves transformed by official check_motion pose table. Parent graph detached without changing leaf geometry.",
+  "manifest_sha256": "719b3b7a8c0f0e95fa7fa67e21bf14525c1f890789f6f13b1e34367914c81260",
+  "steps": 128,
+  "states": [
+    {
+      "condition_id": "operating-full-revolution",
+      "sample_index": 0,
+      "source": "state_0.step",
+      "sha256": "bfc445330daec08d5efc2d2aaf678addce7eba59a8ccae8f8e3a2208dda9fd68"
+    },
+    {
+      "condition_id": "operating-full-revolution",
+      "sample_index": 12,
+      "source": "state_12.step",
+      "sha256": "ed64810d6104901057623907d56317bec7254b23801ebe08d7b0b046677637f8"
+    },
+    {
+      "condition_id": "operating-full-revolution",
+      "sample_index": 24,
+      "source": "state_24.step",
+      "sha256": "f84ed78180ca0b0d8c573f49f2c365766b2fb8cedddddb0f3772a4a86fd196fd"
+    }
+  ]
+}

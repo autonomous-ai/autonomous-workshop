@@ -1,0 +1,6 @@
+{
+  "packet_sha256": "0f301204cc01385667328385dd5e500fdc19625d2236f3975031e3976b87449e",
+  "status": "pass",
+  "observation": "Iso inspected. The second-largest globe with its ring plate around it, the plate lying at a shallow tilt whose HIGH SIDE IS OPPOSITE to the Sol piece's -- the 26.73 degree obliquity mirrored, visible directly in these two component frames. The ring is one continuous plate fused to the globe with its revolved web beneath, it stays inside the disc's own \u00d834.00 footprint, and its low rim clears the disc top. No misplaced, missing or extra geometry and no visible intersection; the assembly's boolean interference check settles that question and returned zero clashes over 220 occurrences. Untouched by this revision and byte-identical. (Round re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "findings": []
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "inlay": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "inlay"
+ ],
+ "check_motion": false,
+ "checked": [
+  "inlay"
+ ],
+ "checks_ok": true,
+ "entry": "part_inlay.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/inlay/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "inlay"
+ ],
+ "print": {
+  "inlay": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/inlay/r0001/overhang-inlay.log": "59dbf7a3488c31392fffc0bbd4f53ef4842c8aa8b1391a82d26e4ca4a6184a66",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/inlay/r0001/thickness-inlay.log": "23ad02a99d49b1954134bf66427617abfe26b43d028f3aed034ef533b534d7c4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:inlay",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One flat tile. Top view shows a square with all four plan corners chamfered by an equal cut and no rounding; front view shows a uniform thin slab 21.5 wide against 2.0 thick, flat top and flat bottom, bed side at z=0; iso shows one prism with no draft, relief, retention feature, boss or hole. Its indigo reads clearly darker than the base grey at the same lighting, which is the point of the part. No missing or extra geometry, no proportion error.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/inlay/r0001/visual-packet.json",
+  "packet_sha256": "b7e052cf5368dce3bf92fa93acc9ea4f6cfc05a95419bedd5297021cc8f83e6c",
+  "status": "pass"
+ }
+}

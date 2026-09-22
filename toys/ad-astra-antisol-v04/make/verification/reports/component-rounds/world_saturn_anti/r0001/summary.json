@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_saturn_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_saturn_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_saturn_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_saturn_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_anti"
+ ],
+ "print": {
+  "world_saturn_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/overhang-world_saturn_anti.log": "57d4ec2286ce11e42ad473a46bd06cc26038582f16f0e215e9fa3e2b1b52c9ae",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/thickness-world_saturn_anti.log": "04ac91fae8ef8fbaf396a885eceb2af1d1f09e7406dad3188ded81e39e057c0b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_saturn_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: the disc wall narrows as it rises, the Anti-Sol draft and the mirror of its Sol twin, with the same rounded top edge and sharp bed edge. The ring leans the opposite way, which is the same ownership cue as the disc draft; it meets the globe along its inner edge and its web runs down to the disc on the low side. Clear of the disc's outer edge all round. Top: disc, seat collar and globe are concentric on one axis. Iso: one ball on one disc through a short seat collar, no step and no gap at the joint. The outer surface is unbroken everywhere -- every marking in this set is a flush colour inlay, so none is visible on this fused printed solid and none should be. No protrusion, no floating body, no missing or extra part, no visible intersection, and no downward-facing surface added.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/visual-packet.json",
+  "packet_sha256": "5a3de8b472898216c0b1f61a2877cd43031c2d3005fab326358a9460407d872d",
+  "status": "pass"
+ }
+}

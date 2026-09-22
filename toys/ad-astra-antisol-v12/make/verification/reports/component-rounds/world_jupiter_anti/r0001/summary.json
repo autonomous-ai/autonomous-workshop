@@ -1,0 +1,61 @@
+{
+ "build": {
+  "world_jupiter_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_jupiter_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_jupiter_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_jupiter_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_jupiter_anti"
+ ],
+ "print": {
+  "world_jupiter_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001/overhang-world_jupiter_anti.log": "931320cf7a3b93f68452550c0aa9994f1b6b390f00f1147b88ee90b085ed786b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001/thickness-world_jupiter_anti.log": "8e7795d8a0e56c9ae8d96f19dfe752384d4fa462d56a4ff629cd01b46875acc7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_jupiter_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_anti/r0001/visual-packet.json",
+  "packet_sha256": "691f3bd68ba0c03a52bb763e4149b1b081c5e1d615b245d406645433867b2334",
+  "status": "pending"
+ }
+}

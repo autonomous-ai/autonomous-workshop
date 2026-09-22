@@ -1,0 +1,71 @@
+{
+ "build": {
+  "pedestal": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "pedestal"
+ ],
+ "check_motion": true,
+ "checked": [
+  "pedestal"
+ ],
+ "checks_ok": false,
+ "entry": "part_pedestal.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pedestal"
+ ],
+ "print": {
+  "pedestal": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal/r0001/overhang-pedestal.log": "8d42b23d5c37ac022ab312e068dc37e68991bc7680c1cbedf578bb0f10790e89",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal/r0001/thickness-pedestal.log": "a97388ca67c0834fa34cb78b2bec296422bb045115b3f6e525978fcebc84e084"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 31.7% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 458.5,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.5,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:pedestal",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Unintended central boss notches and missing black finish",
+    "evidence": "Iso shows three radial cuts into the central boss, plus dark blue-gray surface.",
+    "part": "pedestal",
+    "repair": "Restrict bayonet-slot cuts to the outer annulus; assign black. Repair overhangs identified in numeric report."
+   }
+  ],
+  "observation": "Round low cavity is coherent, but three slot cutters also notch the central socket boss. The current surface is blue-gray.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal/r0001/visual-packet.json",
+  "packet_sha256": "97d30e41a8ecf78fca3ad5ced8a9175ecb02b0e2affb91febc75d3533545fe1d",
+  "status": "fail"
+ }
+}

@@ -1,0 +1,137 @@
+{
+ "build": {
+  "base": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "moon_counter": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "roof": {
+   "failures": [],
+   "verdict": "PASS"
+  },
+  "sun_counter": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "base",
+  "moon_counter",
+  "roof",
+  "sun_counter"
+ ],
+ "check_motion": false,
+ "checked": [
+  "base",
+  "moon_counter",
+  "roof",
+  "sun_counter"
+ ],
+ "checks_ok": true,
+ "entry": "periastra.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "base",
+  "moon_counter",
+  "roof",
+  "sun_counter"
+ ],
+ "print": {
+  "base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-base.log": "298ec37cac580f668699ad74c33c5a5b075b6f6e1134938b00602d253aa5725f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-base.log": "d150a86892aba19d22966f2d0a16a9e15278e1ce9998bbf74da5aa852d839daa"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "moon_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-moon_counter.log": "3b3b389680309e429d0cd0803d8c78510bdd5e9fdedd321b8e15b7cc378c1730",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-moon_counter.log": "09587be27731dcbab900c76e7859774ca84f24c1cde573c06da69856d2b745f6"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-roof.log": "5052294250595d2ab902834c6b52d84359e069b0e977e3c7254abe77694823ef",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-roof.log": "cceb9e72e0a009ef3c6c3eb5679f62f1b9db0e6dc3bd4cc4273ddc913d7d1c5a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "sun_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-sun_counter.log": "abdc9fb794f7f147a6c97201380701610235a6136c39929440a9b326c73cca42",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-sun_counter.log": "96562f360cdd680afabe1efb22045c5f90c7c4fb01571d5f5b846359c3199b51"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected on the closed stored state. The roof sits square on the four corner ledges of the base with an even gap all round; the domed roof is centred on the board box and its plate covers the 184 mm opening. The 24 counters are stored on the board beneath and are visible through the four lowered sill spans in the front and iso views, so the complete starting position still fits inside the closed box. The shutter slit is straight, parallel-sided and centred on the board's mid-line; the telescope tube stands in it at 45 degrees. No misplaced, missing or extra parts, no visible intersections, no floating geometry, and the roof does not foul the corner piers.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/visual-packet.json",
+  "packet_sha256": "4d67df4531ea2e1bae6d4a002af2dfad46fab1102ff54a063ab99e19549b789c",
+  "status": "pass"
+ }
+}

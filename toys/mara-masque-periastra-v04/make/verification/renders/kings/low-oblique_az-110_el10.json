@@ -1,0 +1,13 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/kings.step",
+  "source_sha256": "f0b2172584470927e2515eef95d81cda34f89d72558131d24c3e7320b2b8c951",
+  "camera": {
+    "azimuth_deg": -110.0,
+    "elevation_deg": 10.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": "0.5,0.55,0.55",
+    "tessellation_mm": 0.01
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/kings/low-oblique_az-110_el10.png",
+  "output_sha256": "762a60c7bb36e56da1fd7d6c5cdce34fcba74df62048909e44ef4bac90a6337a"
+}

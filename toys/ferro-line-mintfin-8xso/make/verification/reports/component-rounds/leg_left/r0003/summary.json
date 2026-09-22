@@ -1,0 +1,62 @@
+{
+ "build": {
+  "leg_left": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "leg_left"
+ ],
+ "check_motion": true,
+ "checked": [
+  "leg_left"
+ ],
+ "checks_ok": true,
+ "entry": "part_leg_left.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "leg_left"
+ ],
+ "print": {
+  "leg_left": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0003/overhang-leg_left.log": "9067a6c624ae21e02d71e3b01c37b309f51eee3a1aad732ad434073ee74294a1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0003/thickness-leg_left.log": "78ee1247b5c1e9b8bedbc162939047646dd9836b352ba1746bdb9384b62cc140"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:leg_left",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show the thin toe skirts replaced by a broad flat bonding face. Top retains the bent tapered paw and ankle pad; the underside has a continuous flat sole and the mounting pad has its sloped support. No toe fins, slots or detached pieces remain. Claws are separate components; full-paw appearance and assembly remain to be reviewed.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0003/visual-packet.json",
+  "packet_sha256": "c40f2d042948fd8bf83d95ab67a0d57f6064ea752bf18be4369b6174be3a5c46",
+  "status": "pass"
+ }
+}

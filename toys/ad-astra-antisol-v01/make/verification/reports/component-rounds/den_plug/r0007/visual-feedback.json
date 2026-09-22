@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Inspected the front, top and isometric views of this round; they are byte-identical to the renders inspected before the last source change, which touched only Saturn's ring. Spigot, drafted skirt and flat 36.00 flange all present and in proportion; the top face is flat and clear for a piece to seat on. Both prominences stand at the two border-facing corners, full at the foot and drawn out into a long tongue that leans outward, and their bases are cut back where they leave the flange. Hexagonal granulation is visible in all four corners. Total height 24.00. No missing, extra or intersecting geometry.",
+  "packet_sha256": "b889d3074a56d6f638edf4e54cdcab030c1564ce261df132553b0778a867c5d3",
+  "status": "pass"
+}

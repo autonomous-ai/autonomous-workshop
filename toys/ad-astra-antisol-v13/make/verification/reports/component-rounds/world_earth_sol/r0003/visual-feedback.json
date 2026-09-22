@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Iso inspected. Sol twin of the above, same globe, opposite draft. Untouched and byte-identical. No misplaced, missing or extra geometry, no intersections. (Round re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet_sha256": "723ee78b1a2f61f5a8e36b8172158f83049cd52c4e729bbfce916c03289b2abe",
+  "status": "pass"
+}

@@ -1,0 +1,17 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_saturn_sol.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0005/thickness-world_saturn_sol.md
+(10.5s, exit 0)
+--- stdout
+part_world_saturn_sol.step.py: 14.55 cm3 solid, grid 0.147 mm (235x235x202), 194610 surface samples, thickness resolved to 0.074 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (4 of 194610 samples); thinnest 0.15 mm at (-12.5, -6.9, 23.2) in 4 region(s); no region is a wall, 4 taper(s) at feature edges (0.00% of surface, budget 2%)
+  PASS  thickness distribution         median 25.87 mm, p95 33.44 mm, max 35.21 mm
+  WARN  hollowable at 1.20 mm wall     9.77 of 14.55 cm3 (67%) in 1 pocket(s)
+  PASS  filament that would save       1.47 cm3, 1.8 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.29 mm at (-11.0, 9.6, 22.4)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.17 mm
+        2. [taper] 0.29 mm at (-11.8, 8.4, 22.8)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.17 mm
+        3. [taper] 0.15 mm at (-12.5, -6.9, 23.2)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.15 mm
+        4. [taper] 0.44 mm at (-4.2, -15.2, 19.0)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.14 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0005/thickness-world_saturn_sol.md
+
+--- stderr

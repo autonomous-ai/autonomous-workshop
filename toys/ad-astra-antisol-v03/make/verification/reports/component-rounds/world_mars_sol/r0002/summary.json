@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_mars_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mars_sol"
+ ],
+ "print": {
+  "world_mars_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001/overhang-world_mars_sol.log": "f29c8c6396a14bf4832a8f6becd1fa02781f57abee6183a658f9abfc871ec236",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001/thickness-world_mars_sol.log": "4156b6c397ca987d4b48ad46dcb01bb71f3b992a150c7ff3d881241bdcbbc7ec"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_mars_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_mars_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The corrected piece. Front: the disc wall widens as it rises, Sol's draft. The globe is a true sphere, centred, sunk into the disc top, with no bump, ridge or crater anywhere on it -- the albedo correction is a flush colour inlay and correctly leaves the printed silhouette a plain ball. Top: disc and globe concentric. Iso: proportion right for rank 2, the second-smallest world. Nothing added, nothing missing.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0002/visual-packet.json",
+  "packet_sha256": "9457a66157d316b794d015ab0496e86ecfe0b87fd0dbce06866211c6efe67c8d",
+  "status": "pass"
+ }
+}

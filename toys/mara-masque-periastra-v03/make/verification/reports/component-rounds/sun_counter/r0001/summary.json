@@ -1,0 +1,64 @@
+{
+ "build": {
+  "sun_counter": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun_counter"
+ ],
+ "check_motion": false,
+ "checked": [
+  "sun_counter"
+ ],
+ "checks_ok": false,
+ "entry": "part_sun_counter.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_counter"
+ ],
+ "print": {
+  "sun_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001/overhang-sun_counter.log": "06e2bb45e3b3079bcd52adaf0ec4b972eb15e5ca51a76e9518050f01244a06f8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001/thickness-sun_counter.log": "4ed0f70444b641b6e15808b1cd6bccf2cd1a1ca1c56782cd5e90fcb9c6393827"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 17.7% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 78.9,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:sun_counter",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Visual inspection only; the numeric overhang verdict is separate and reported unchanged. Iso shows the three step heights: flat rim band at full face level, flat sunk field inside it, and the Sun standing back out of that field to face level - an unbroken ball ringed by clear field with eight detached wedges widening outward, each island carrying its small top bevel. Top view matches ref-02. Front shows a circular disc 20.0 across by 7.0 thick with a chamfer on both face edges and no tail, tab or notch. This geometry is frozen by the correction and its STEP hashes byte-identical to the archive; nothing about it was touched. No misplaced, missing or extra geometry, no intersections, no proportion error.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001/visual-packet.json",
+  "packet_sha256": "3fad2e0c21e7b6efc8fbfc2aae6c8a7837d0ec334601139abd1b2cde1f040562",
+  "status": "pass"
+ }
+}

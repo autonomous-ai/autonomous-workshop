@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso all show one coherent set with nothing missing, extra, floating or interpenetrating. Top: the 7x9 field is complete across four butted panels, all sixteen worlds stand in the mirrored opening setup one per cell, twelve belt tiles fill the two 2x3 blocks either side of the middle, three corona cells and the den sit at each end in that army's own colour, and the two trays stand clear of the board. Front: the size ladder rises monotonically across the row and every disc rests flat on the field with no piece leaning, sinking or overhanging its neighbour. Iso: the rank ladder, the two disc colours and the two flame colours all read. Neptune, the world this revision corrects, shows on both pieces as a blue globe carrying several separate short white marks at differing angles and a dark oval -- not as a ball with rings round it -- and it is plainly a different surface from Uranus's single broad band two cells away. No part crosses another anywhere in the three views. This round's three renders are byte-identical to the r0004 renders inspected above; only documentation changed between them.",
+  "packet_sha256": "e17ce896e75ee2f38dfa617ac538507f7cd2a4e8f5ee1a03abed813556424295",
+  "status": "pass"
+}

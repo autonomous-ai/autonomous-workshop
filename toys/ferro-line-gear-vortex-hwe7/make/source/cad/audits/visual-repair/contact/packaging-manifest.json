@@ -1,0 +1,59 @@
+{
+  "status": "EVIDENCE_PACKAGED_WITH_JSON_ARRAY_TRANSPORT",
+  "scope": "238 fixed-center discrete BRep samples; not a continuous or coupled-motion pass.",
+  "records": [
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-mesh-contact/source-bindings.json",
+      "packaged_path": "source-bindings.json",
+      "sha256": "60ab99b5f60456cf0363452fb3e5e32d8420e94199247b586157eda70e0abf93"
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-mesh-contact/PLAN.json",
+      "packaged_path": "PLAN.json",
+      "sha256": "35368ec4003ac7d4800e6d07b1e4b10230c520e43dad9131c70218f40ac1d989"
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-mesh-contact/README.md",
+      "packaged_path": "README.md",
+      "sha256": "c258b7fad6a3f1e432b820c433b433bad546561b5475dae3a573af88a718b82c"
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-mesh-contact/runs/all17-r1/summary.json",
+      "packaged_path": "summary.json",
+      "sha256": "0c3404ab6effd3a04194309386da9cdf6b5d5f24a55d85a80aeecc2fdea7d7a4"
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-mesh-contact/runs/all17-r1/contact-results.json",
+      "packaged_path": "contact-results.json",
+      "sha256": "58a70bd1d84cd5e6709fc2f2ed4cb0b2b3b9a4381a9feb911e1d07386da3afd3"
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-mesh-contact/runs/all17-r1/contact-results.jsonl",
+      "packaged_path": "contact-results.records.json",
+      "sha256": "19e25ef9e2915eb482d25526b157f357c93113fef0c156b8b077c141f34f0944",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-mesh-contact/runs/all17-r1/contact-results.jsonl",
+        "packaged_path": "contact-results.jsonl",
+        "sha256": "3fe4e5af2ad7cb25cab104b6a6c8f194c5d603db48a9777bd4398e755d66eb54"
+      },
+      "bytes": 121925,
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-mesh-contact/runs/all17-r1/run-identity.json",
+      "packaged_path": "run-identity.json",
+      "sha256": "1035582406758912695fe59761afedc9c8d6c47cf9d72ce57941ab979b0fbb81"
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-mesh-contact/SUMMARY.md",
+      "packaged_path": "SUMMARY.md",
+      "sha256": "62315b6a0b75f8d76e17b9e0d29ae294a92a867d471bde0dc33b238b21e10ccf"
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-documentation/contact-audit.json",
+      "packaged_path": "contact-audit.json",
+      "sha256": "220e9160ac2add3487386bf98414492ee8123aad3ac749e66d938745de939a76"
+    }
+  ],
+  "manifest_policy_repair": "gear_vortex/audits/manifest-policy-repair.json (relative to product root)"
+}

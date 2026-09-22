@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "One flat tile. Top view shows a square with all four plan corners chamfered by an equal cut and no rounding; front view shows a uniform thin slab 21.5 wide against 2.0 thick, flat top and flat bottom, bed side at z=0; iso shows one prism with no draft, relief, retention feature, boss or hole. Its indigo reads clearly darker than the base grey at the same lighting, which is the point of the part. No missing or extra geometry, no proportion error.",
+  "packet_sha256": "b7e052cf5368dce3bf92fa93acc9ea4f6cfc05a95419bedd5297021cc8f83e6c",
+  "status": "pass"
+}

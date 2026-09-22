@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Printed top face down on the point-13 lane axis, yellow tone. Top: a clean annular sector - two straight sides and one smooth outer arc at the wide end, with no notch, scallop, bay or shortening cut anywhere into that edge. Front: the flat print face on the bed, the 1.0 mm lapping lip stepping down at the outer end, and the radial locating key standing proud on the up-facing side; all one solid, uniform 2.8 mm over the seated part. Its lower side is the wider 1.6 mm bank boundary, which shows in the front view as the deeper step. Iso: proportions match a 63.35 x 22.35 x 4.0 mm tile; nothing floats, nothing intersects, nothing is missing or extra.",
+  "packet_sha256": "a52a9524fb59edbfce1e404c429ce1d0b34fd1839dadd7bc198a38214d15c32d",
+  "status": "pass"
+}

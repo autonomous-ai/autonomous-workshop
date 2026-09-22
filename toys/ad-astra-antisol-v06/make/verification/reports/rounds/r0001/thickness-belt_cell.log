@@ -1,0 +1,14 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_belt_cell.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-belt_cell.md
+(6.3s, exit 0)
+--- stdout
+part_belt_cell.step.py: 5.71 cm3 solid, grid 0.133 mm (256x256x50), 157874 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (3 of 157874 samples); thinnest 0.13 mm at (-11.3, 15.8, 5.7) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.00% of surface, budget 2%)
+  PASS  thickness distribution         median 5.93 mm, p95 33.47 mm, max 44.87 mm
+  WARN  hollowable at 1.20 mm wall     2.50 of 5.71 cm3 (44%) in 1 pocket(s)
+  PASS  filament that would save       0.38 cm3, 0.5 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.13 mm at (-11.3, 15.8, 5.7)      3 samples, 0.1 mm2, runs 0.2 mm, band 0.33 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-belt_cell.md
+
+--- stderr

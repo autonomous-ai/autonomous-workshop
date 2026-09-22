@@ -1,0 +1,77 @@
+{
+  "arm_spans": [
+    [
+      18.0,
+      [
+        -9.0,
+        -5.0
+      ],
+      [
+        5.0,
+        9.0
+      ]
+    ],
+    [
+      25.0,
+      [
+        -9.0,
+        -5.0
+      ],
+      [
+        5.0,
+        9.0
+      ]
+    ],
+    [
+      32.0,
+      [
+        -9.0,
+        -5.0
+      ],
+      [
+        5.0,
+        9.0
+      ]
+    ]
+  ],
+  "arm_tube_overlap_mm": 2.5,
+  "base_mesh": {
+    "closed": true,
+    "manifold": true,
+    "triangles": 2580,
+    "vertices": 1292
+  },
+  "bridge_disclosed_below_3mm_rule": true,
+  "bridge_mm": 1.4142,
+  "delivered_occurrences": 58,
+  "fit_layer": {
+    "backing_floor_mm": 9.0,
+    "clearance_per_side_mm": 0.25,
+    "flush_error_mm": 0.0,
+    "inlay_mm": 21.5,
+    "inlay_thickness_mm": 2.0,
+    "pocket_depth_mm": 2.0,
+    "pocket_opening_mm": 22.0
+  },
+  "frozen_counters": {
+    "part_moon_counter.step": "588d285baf2e312d...",
+    "part_sun_counter.step": "262ccc86f6e4c403..."
+  },
+  "pocket_void_residue_mm3": 0,
+  "reveal_mm": 4.0,
+  "roof_asymmetric_percent": 0.0,
+  "roof_asymmetric_volume_mm3": 0,
+  "roof_volume_mm3": 986005.2,
+  "seat": {
+    "chamfer_line_from_centre_mm": 14.4957,
+    "counter_radius_mm": 10.0,
+    "inlay_flat_half_width_mm": 10.75
+  },
+  "void": {
+    "clear_mm": 3.0,
+    "counter_mm": 7.0,
+    "floor_z": 11.0,
+    "ledge_top_z": 21.0,
+    "void_mm": 10.0
+  }
+}

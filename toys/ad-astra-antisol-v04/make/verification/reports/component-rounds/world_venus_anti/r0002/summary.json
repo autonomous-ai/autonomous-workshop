@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_venus_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_venus_anti"
+ ],
+ "print": {
+  "world_venus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001/overhang-world_venus_anti.log": "a7191d3d2f8faa4fd6158fe1c9a1ffb8d07ac0c34af94f075c5b919f927ef02f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0001/thickness-world_venus_anti.log": "46b76f0e2d4465ffd9a19070d3ffb84ad74e8238b0a70a6b83b8971535097376"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_venus_anti"
+ ],
+ "round": 2,
+ "scope": "component:world_venus_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: the disc wall narrows as it rises, the Anti-Sol draft and the mirror of its Sol twin, with the same rounded top edge and sharp bed edge. Small globe, the same ball as its Sol twin. Top: disc, seat collar and globe are concentric on one axis. Iso: one ball on one disc through a short seat collar, no step and no gap at the joint. The outer surface is unbroken everywhere -- every marking in this set is a flush colour inlay, so none is visible on this fused printed solid and none should be. No protrusion, no floating body, no missing or extra part, no visible intersection, and no downward-facing surface added.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_anti/r0002/visual-packet.json",
+  "packet_sha256": "bcba7440d19d644ddca332dee5cf4df12c3fae5b8e62e147a87cc0b8f21e8e46",
+  "status": "pass"
+ }
+}

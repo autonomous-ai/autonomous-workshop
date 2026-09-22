@@ -1,0 +1,64 @@
+{
+ "build": {
+  "sun_counter": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun_counter"
+ ],
+ "check_motion": false,
+ "checked": [
+  "sun_counter"
+ ],
+ "checks_ok": false,
+ "entry": "part_sun_counter.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_counter"
+ ],
+ "print": {
+  "sun_counter": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001/overhang-sun_counter.log": "d92596b6efb96f65dbd2db0ec9d645db2cc8805ac1a7a7afd73bba17a5e70b14",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001/thickness-sun_counter.log": "e536509bb39e903ef69209ad06dadd868fab9dabbe69429172aa3c15e08d2acf"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 17.7% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 78.9,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:sun_counter",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso and top: a round disc with a flat rim band, a sunk circular field inside it, and the Sun mark raised back out of that field to full face level - one unbroken central ball inside a clear ring, with eight separate blunt wedges round it, all held inside the symbol circle with clear field at every tip. Front: a plain cylinder with an equal chamfer top and bottom and no tail, tab or notch on the outline. The mark's cog-like reading is the disclosed, commissioner-accepted characteristic, not a new defect. Nothing misplaced, missing, extra or intersecting; byte-identical to the frozen archive design. The separate check_overhang span-proxy failure on the bed-side field floor is carried unchanged and is recorded in the round's numeric verdict, not here.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_counter/r0001/visual-packet.json",
+  "packet_sha256": "fa01ddb31bb752bb77804186dbe84c19287bc466123a608e1799bdf239489f4d",
+  "status": "pass"
+ }
+}

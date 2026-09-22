@@ -54,7 +54,10 @@ All implementation and product-run work must preserve these boundaries:
 - Spark accepts Make's output as-is: no duplicate host CAD rebuild, geometry
   acceptance pass, or new manual review. Host-only Release publishes existing
   Make assets with deterministic site metadata; it creates no native Release
-  turn or new PDF. Identity, exact bytes, credential isolation, and authenticated
+  turn or new PDF. A run created with `--no-publish` freezes one restriction:
+  Release still seals and projects the toy locally with `unreleased`
+  publication status, but performs no Factory effect, credential read or ledger
+  write, and no resume can add or drop that restriction. Identity, exact bytes, credential isolation, and authenticated
   effect reconciliation remain host responsibilities. Forge/Quest keep their
   existing verification. See ADR 0061 for migration and live-acceptance status.
 - A capable Forge or Quest Make attempt may return directly to Invent only when

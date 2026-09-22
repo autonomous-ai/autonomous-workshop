@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "The closed object is coherent: the 190 x 190 x 24 base, the roof plate seated on its four ledges, the drum, the exact hemisphere and the telescope standing in the slit. Front and iso both show the telescope centred in the slit with a symmetric two-arm yoke, which is the defect this revision corrects. Through the open perimeter reveal the stored contents are visible as three distinct colours - indigo inlays seated in the board, orange Sun counters and cream Moon counters standing on them - which confirms the inlays are seated, flush and a different colour from the base. No part is misplaced, floating or duplicated; no visible intersection; proportions match the 110.7 mm closed height against the 190 mm footprint. The two counters fail check_overhang on its connected-region span proxy exactly as the archive recorded; that geometry is frozen by the correction and is reported unrepaired, with the product making no print-ready claim.",
+  "packet_sha256": "31d240c41ed6e91c23153b191f7a3c57c2d85ae406d236d753809256eb17481c",
+  "status": "pass"
+}

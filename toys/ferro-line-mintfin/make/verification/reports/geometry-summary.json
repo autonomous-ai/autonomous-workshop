@@ -1,0 +1,14 @@
+{
+  "status": "pass",
+  "length_mm": 180.0,
+  "repaired_color_regions": [
+    "head_mint_10",
+    "head_charcoal_07",
+    "head_charcoal_08"
+  ],
+  "repair": "Internal horn color plane moved fromZ18.5 to19.2; exact external fused shape unchanged",
+  "all_81_production_solids_valid": "78 prior unchanged passes plus3 fresh repaired passes",
+  "motion": "unverified",
+  "initial_report": "inspection-results.json",
+  "repair_report": "repair-inspection-results.json"
+}

@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "A flat rectangular tray with eight blind circular sockets in a 4 by 2 grid. Front: one slab of constant thickness, nothing above the top face. Top: uniform under flat shading. Iso: eight identical sockets, evenly pitched, all recessed and blind, none breaking the tray's outer edge or its underside. Nothing floats or protrudes; no missing or extra socket; no visible intersection.",
+  "packet_sha256": "80655ab8528549f79b041454a64001ca888159edc8c36ebe03acf285d039f28e",
+  "status": "pass"
+}

@@ -736,3 +736,272 @@ notes beside the benchmark; do not turn them into lifecycle gate authority.
    reasoning chooses the product rather than repeatedly rebuilding plumbing.
 7. Tune frozen runtime policy only from comparable production evidence. A
    cheaper configuration is not a win if blind product preference falls.
+
+## A measured trace of two correction runs
+
+`correction-run-trace.html` in this directory is a span-by-span waterfall of
+two `workshop fix` runs over the same 24-part Anti-Sol board set: the Antisol
+Mirror (`ad-astra-antisol-v12`, which regenerated everything) and the Antisol
+Jove Mirror (`ad-astra-antisol-v13`, the first run under the carry policy of
+ADR 0069). Open the file in a browser; it carries its own data and needs no
+server.
+
+The spine of the page is the Make session's own transcript, which timestamps
+every message: a tool call starts at the assistant message that issued it and
+ends at the result that came back, paired by `tool_use_id`. 756 calls across
+the two runs, plus the stretches between a result and the next call where the
+model was generating. Under that sit the `make_round` spans, whose durations
+are the tool's own log line `(685.9s, exit 0)`.
+
+**Exactly one thing in a correction runs in parallel.** Across 756 calls, no
+two overlap by a second — the session issues one at a time. The exception is the
+blind review: the critic is a **background subagent**, opened with a single
+`Agent` call that returns in about a second, so the session goes straight on to
+the assembly rounds and the verification sweep while it reads. It was inside a
+tool call for **87% of v12's review bracket and 88% of v13's**. That is why the
+bracket looks like it overlaps everything — it does.
+
+**And almost none of it is idle.** The first version of this page was built
+from `cad/measure/**` alone, which only exists for what `make_round` ran, and
+so reported hours of apparent silence in runs that were busy throughout. Against
+the transcript the accounting closes:
+
+| | v12 · 5h30m | v13 · 4h15m |
+| --- | ---: | ---: |
+| inside a tool call | 4h33m · 83% | 3h00m · 71% |
+| …of which waiting on a background job | **4h06m · 75%** | 22m · 9% |
+| model generating | 51m · 16% | 26m · 10% |
+| **unaccounted** | **2m** | **47m** |
+
+**v12 is three-quarters sleep.** It launched its build pipeline in the
+background and polled it with 54 `time.sleep(570)` calls. That is not waste by
+itself — files were landing in 33 of those 54 sleeps, 200 of the 246 minutes —
+but it does mean the residue this page once called model time was mostly a
+background job the trace could not see.
+
+**v13 ran its heavy work in the foreground, and five calls blew the
+600-second tool timeout**: two `make_round --require-component-passes`, two
+`verify_project --strict-fit`, one `world_views.py jupiter`. The wording
+matters — *"did not complete within its 600s timeout and was moved to the
+background."* The command finishes (`verify_project`'s own report records 793 s
+for a call the agent gave up on at 601 s), and the agent picks the result up
+almost at once.
+
+**The ceiling and the polling granularity together waste about a quarter of an
+hour, ~2%.** Measured as overshoot — how long a finished job waits to be
+noticed:
+
+| job | finished | noticed | late |
+| --- | ---: | ---: | ---: |
+| v13 `make_round` #1 | +2h48m58s | +2h49m16s | 18 s |
+| v13 `make_round` #2 | +3h02m16s | +3h02m22s | 5 s |
+| v13 `verify_project` #1 | +3h31m39s | +3h32m03s | 23 s |
+| v13 `verify_project` #4 | +4h12m14s | +4h12m35s | 21 s |
+| v12 measures batch | +3h35m52s | +3h40m34s | **4m41s** |
+| v12 component-round sweep | +3h52m25s | +3h59m48s | **7m22s** |
+
+v13's timeouts cost **67 seconds of overshoot, not 50 minutes** — those 50
+minutes are the calls' duration, which was real work. v12's coarser 570-second
+sleeps cost about 12 minutes on the two jobs whose completion can be dated;
+21 of its 54 sleeps (46 minutes) passed with no file written anywhere, which is
+the upper bound on sleeps that watched nothing.
+
+**And the ceiling does not explain the repeats.** `make_round` ran twice
+because round r0003 returned `visual ERROR — Visual render failed or source
+changed`; r0004 then reached the normal PENDING. `verify_project` ran four
+times and **all four passed** (680 s, 547 s, 549 s, 793 s — 42m40s), each a
+fresh sweep after the agent regenerated geometry. That cost belongs to
+re-verifying the whole product after every touch, not to the tool ceiling.
+
+**The only genuinely idle time in either run** is v13's 46.9 minutes from +53m
+to +1h41m: no tool call, no model message, and not one file written anywhere
+under the run root. A session teardown killed the run and `workshop resume`
+restarted it. v12 has 2 minutes unaccounted for in five and a half hours.
+
+### Rendering is the largest cost, and none of it is the picture
+
+**Roughly two hours of v12's 5h30m** and **59m of v13's 4h15m** is
+rasterisation. (v12's figure is 28m of `make_round` renders, measured from
+their own logs, plus a 95-minute window in which 91 frames landed; v13's calls
+are in the foreground and read off directly.)
+`render_review` draws in software — NumPy and Pillow, no GL context — and two
+things multiply.
+
+These frames tessellate **ten times finer than the default**: `world_views.py`
+passes an angular tolerance of 0.03 rad instead of build123d's 0.1, because at
+0.1 a polar cap reads as about twenty visible facet rings. Its own comment
+records the measurement: 138,911 triangles at the default, **1,357,677** at
+0.03. And `render_review.render` loops over triangles **in Python**, allocating
+several small NumPy arrays per triangle.
+
+Through the repo's own renderer on a synthetic mesh:
+
+| triangles | 900 px | per triangle |
+| ---: | ---: | ---: |
+| 14,400 | 0.76 s | 52.6 µs |
+| 78,400 | 3.91 s | 49.9 µs |
+| 360,000 | 18.07 s | 50.2 µs |
+| 1,537,600 | 74.71 s | 48.6 µs |
+
+**~50 µs per triangle, flat.** 1.36 M × 50 µs = **68 s**, which is exactly the
+spacing between consecutive world frames in v12; the eight-globe rank ladder is
+eight such pieces (10.9 M triangles, 545 s predicted) and v13's ladder call took
+504 s.
+
+**Image size is irrelevant** — the same 360,000-triangle mesh takes 19.1 s at
+150 px and 17.5 s at 1800 px. There is no pixel bottleneck. A profile of the
+28.2 s render says where the time is:
+
+| | seconds | what |
+| --- | ---: | --- |
+| `np.cross` | 9.85 | one call per triangle for the face normal — 35% of the render, on 3-vectors |
+| the loop body | 10.1 | indexing, bounds, the row-block loop |
+| `np.ogrid` | 3.48 | a fresh pixel grid per triangle row-block |
+| `_shade` | 3.25 | one shading call per triangle |
+
+Every one was a per-face call that could be one array call over all faces, and
+on 2026-09-21 they became one. `render_review` computes face normals and flat
+shading in single array calls and rasterises faces in batches padded to a
+power-of-two box; each pixel's candidates are still applied in draw order, one
+layer at a time, so the depth test keeps the hysteresis that decides which of
+two near-coincident faces is kept. `tessellate_occurrences` also takes the
+angular deflection now, so a run no longer has to reimplement it to ask for a
+smooth cap.
+
+| frame | per-face pass | batched | per triangle |
+| --- | ---: | ---: | ---: |
+| 1,437,600 triangles at 900 px | 83.2 s | **2.2 s** | 57.9 µs → 1.6 µs |
+
+**37×, pixel-identical.** `tests/make/test_render_review_raster.py` draws every
+scene twice — through the renderer and through the per-face pass it replaced —
+and requires the images to match, including sub-pixel triangles, faces larger
+than a batch box, frame-edge clipping, and coplanar faces that depend on draw
+order. The two measured runs predate the change: their renders are what the
+per-face pass cost, and a comparable correction should now spend minutes rather
+than hours on rasterisation.
+
+### What v12 did while the critic read
+
+102 calls in the 1h55m between dispatch and verdict. The review's own record
+says what they were for: *"The critic filed twelve defects cold and withdrew six
+against measurement."* This is the agent producing that measurement.
+
+| when | what |
+| --- | --- |
+| +2h37m | one `Agent` call opens the critic; the agent re-reads its own `mercury-facing.md` and `venus-facing.md` |
+| +2h38m | launches a large measure batch in the background and polls it — **10 sleeps, 1h25m of the window** |
+| +2h49m | round one's answer arrives; the round-two disclosed prompt goes back 24 seconds later |
+| +2h53m → +3h31m | reads what the batch produces — Neptune mirror and flush, Uranus bare, Mercury surface — and re-runs `uranus_bare.py` by hand |
+| +3h28m → +3h34m | the batch writes the seven Saturn frames |
+| +3h40m | **473 s foreground**: the Mercury and Venus surface scans, which withdraw *"one of the two sets carries a mirrored map"* |
+| +3h49m | `make_round --component` over all 24 parts, in the background |
+| +4h05m | `make_round --require-component-passes`, the assembly gate |
+| +4h22m | **333 s**: `inspect interfere` — clashCount 0 over 220 occurrences and 412 tested pairs, which kills the last two defects in round three |
+| +4h28m | round three goes back; the verdict lands at +4h32m56s |
+
+371 files landed under `cad/measure/` in that window: 32 the agent's own
+analysis reports, 216 component-round logs from the sweep at +3h49m, 128
+assembly-round logs. The review was never the agent waiting — it was the agent
+building the rebuttal, and six of twelve defects fell to it.
+
+v13 end to end, from the transcript:
+
+| window | wall | tool | what happened |
+| --- | ---: | ---: | --- |
+| 0 → +2m29s | 2m29s | 42s | host stages the run, imports the v12 archive (86 frames, 290 logs carried) |
+| +2m29s → +12m34s | 10m05s | 3m30s | control rebuild into `.tmp/baseline`, then the edit |
+| +12m34s → +22m37s | 10m03s | 9m30s | `production.py` writes the 220 colour bodies; `gen` rebuilds the entry |
+| +22m37s → +32m38s | 10m01s | 10m00s | `world_views.py jupiter` — **timeout 1 of 5** |
+| +32m38s → +53m59s | 21m21s | 18m56s | polling it out, then the Sol rank ladder; 9 frames land |
+| +53m59s → +1h40m | **46m56s** | — | **dead** — teardown, then `workshop resume` |
+| +1h40m → +2h15m | 34m29s | 33m54s | Anti-Sol ladder, `iso`, `signature`; three board states tessellated |
+| +2h15m → +2h32m | 17m32s | 15m01s | measure scripts. **18 frames copied +2h44m51s, critic dispatched 12 s later** |
+| +2h32m → +3h03m | 30m20s | 26m15s | `make_round --require-component-passes` ×2 — **timeouts 2 and 3** — rounds r0003, r0004 |
+| +3h03m → +3h15m | 12m18s | 9m05s | `inspect interfere`, 220 occurrences, clashCount 0 |
+| +3h15m → +4h12m | 56m40s | 52m21s | `verify_project --strict-fit` ×4 — **timeouts 4 and 5**; verdict at +4h13m |
+| +4h12m → +4h15m | 2m30s | 44s | Release seals `ad-astra-antisol-v13` |
+
+The blind review is the one mark that spans others, and it is drawn as a
+bracket rather than a bar for that reason: the window between the hand-off and
+the verdict is an upper bound on a review that happened somewhere inside it.
+
+Both runs recorded the hand-off itself, so the bracket is read rather than
+guessed. v12 listed the 23 frames it showed in `.tmp/build/images.txt` and the
+critic opened them in place; the last of the 23 was written at +2h34m, and the
+verdict at +4h33m, so the bracket is **1h59m for three rounds**. v13 copied its
+18 into `.tmp/review/` under blind names, so the copy time *is* the hand-off:
+**1h28m for four rounds**.
+
+The first cut of the page got this wrong, and the error is worth recording
+because it is the kind that looks like a finding. It bounded the bracket with
+`snap.glob("*.png")`, which does not recurse. Only four of the 98 frames sit at
+the top of `cad/snap/`; the other 94 are in `cad/snap/worlds/`. In v12 that put
+the left edge on `rank-ladder-anti.png` at +1h23m and drew a 3h10m review — an
+hour of rendering counted as reviewing.
+
+**Frames land on both sides of the bracket, and for a different reason in each
+run.** v12 rendered 98 frames and showed 23; the seven that fall inside its
+bracket (`saturn-dark-band-kept` and `-dropped`, the same pair for the Anti-Sol
+army, `saturn-cap-white` and `-beige`, `venus-saturn-hero`) are the agent
+testing the twelve defects the critic filed in round one, and the critic never
+saw them — its own record says rounds two and three are re-reviews *"on the
+same frozen images"*. v13 rendered nothing during its review; two frames it had
+rendered at +31m and +36m and deliberately held out of the blind set were
+handed over at +3h00m, an hour in, when the critic asked for a polar view.
+
+The `make_round` lanes underneath show how little of a run that instrument
+records: **tool spans cover 16% of v12 and 17% of v13**. The largest single
+omission is the
+frame renders under `cad/snap/` — whole-set images of a 50 MB assembly that the
+Make agent runs directly rather than through `make_round`, so no duration
+survives anywhere. In v12 four of them land between +59m and +83m, six to ten
+minutes apart, and they are the most expensive thing that run does without
+leaving a record. The page draws each frame as the moment its file was written
+and reports the gap back to the previous frame as an upper bound, because model
+time sits in that gap too.
+
+**A gap is not a blank.** Every file in the workspace carries an mtime, so a
+stretch with no tool span still says what was written in it and when, and the
+page now draws that inside each hatched band. v12's two silent stretches
+resolve into this:
+
+| window | what the workspace wrote |
+| --- | --- |
+| +1s → +2m41s | the host projects the source, copies six skill trees and starts the session; the agent unpacks `revision-source.zip` and the Made product tree materialises — 2,483 files |
+| +4m50s → +16m22s | **the edit itself**: `parts/corona.py`, `params.py`, `assemblies/product.py`, `parts/world.py`, two measurement scripts and the README, one file at a time |
+| +16m43s → +24m18s | the 24 component rounds — the only part of any of this that logs spans |
+| +31m48s | `parts/markings.py`, the last source change |
+| +32m12s → +32m16s | `production.py` writes all 220 colour bodies, 63 MB, in **four seconds** |
+| +36m → +54m27s | `snapshots.py` exports the three game states for both armies, 278 MB |
+| +59m23s → +2h34m | 91 frames, each preceded by its own exact-state STEP re-export; 461 MB of scratch STEP survives and more was overwritten |
+| +2h34m → +2h49m | round one of the blind review |
+| +2h49m → +3h49m | 35 measure reports and the seven Saturn frames, testing the critic's defects |
+
+The reason none of it is a span is structural. A span exists here only because
+`make_round` writes a log under `cad/measure/` opening with `(685.9s, exit 0)`.
+The pipeline the agent wrote for itself — `.tmp/build/pipeline.sh` — calls
+`gen`, `production.py`, `snapshots.py`, `snap_frames.py`, `world_views.py` and
+`corona_views.py` directly, so the two most expensive hours of the run are by
+construction invisible to the trace.
+
+mtimes alone could not split that stretch into thinking and computing. The
+transcript can, and the answer is neither: v12 launched this pipeline in the
+background and then slept on it.
+
+Three things it shows that a total does not:
+
+- **Most of a correction is not in a `make_round` span at all** — 84% of v12
+  and 83% of v13. The transcript says what that is: tool calls the host never
+  logged, and, in v12, mostly sleeping on a background job. Neither archive
+  kept a token record (`TOKENS.json: unavailable`), so the page can say how
+  long the model spent generating but not how much it generated.
+- **The carry policy is visible in the render count**, which falls from 74
+  invocations to 8: v13 keeps the component rounds of every byte-identical
+  part and re-renders only the assembly. Tool time falls from 53 to 43
+  minutes, and a further 42 minutes of the source run's work is carried
+  rather than repeated. It reaches the unlogged frames as well, which the span
+  count alone hides: v12 rendered all 98, v13 carried 86 and re-rendered 12.
+- **A correction imports its source's logs in one burst**, all sharing the
+  mtime of the copy. Those 290 spans are the *source* run's work; counting
+  them as the importing run's overstates its tool time by more than double,
+  which is exactly the mistake the first reading of this data made.

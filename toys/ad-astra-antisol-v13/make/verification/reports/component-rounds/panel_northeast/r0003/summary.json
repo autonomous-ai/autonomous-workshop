@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_panel_northeast.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_northeast"
+ ],
+ "print": {
+  "panel_northeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001/overhang-panel_northeast.log": "a8be7f355e09be88ba74965ea0b500bbf328e9d74deb7126fcc0b2611ac06f3b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0001/thickness-panel_northeast.log": "851e3504d3a2c5edfb5d7bf5dd186b58dcd85291f9ec7068a2e0ffa285a09cfb"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "panel_northeast"
+ ],
+ "round": 3,
+ "scope": "component:panel_northeast",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Iso and front inspected. One board quadrant: a flat slab 9.00 mm thick with the play grid cut into its face as square-bottomed grooves on every boundary between two land cells, a plain free border on the two outer edges and a clean butt edge on the two seam edges, and blind pockets sunk into exactly the cells that take a terrain tile or a den spigot. Every pocket is a square blind hole of even depth with a wall of panel left all round it, none breaks through the slab, and none runs into a neighbour or into the seam. The front view is a bar of even thickness with nothing standing above it. Proportions match the 36.00 mm cell pitch and the 8.00 mm border. No misplaced, missing or extra geometry, no intersections. Untouched by this revision: it differs from the published file only in one NEXT_ASSEMBLY_USAGE_OCCURRENCE line, diffed line by line in measure/revision-part-hashes.md. (The round was re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0003/visual-packet.json",
+  "packet_sha256": "c74ebd44c564f83b4e50abc76e24b5600507b4ed0a40a46fb30da2ff4435ee01",
+  "status": "pass"
+ }
+}

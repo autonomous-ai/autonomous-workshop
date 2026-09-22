@@ -89,7 +89,13 @@ ARTIFACT_DEBRIS_SUFFIXES = (
     "~",
 )
 MAX_ENTRIES = 4096
-MAX_PACK_BYTES = 50 * 1024 * 1024
+# One toy's whole sealed Make tree travels in a single Pack.  A component-first
+# product with per-occurrence production solids and its recorded make-round
+# evidence deflates well past the old 50 MiB ceiling (ad-astra antisol, 2026-09-21:
+# 208 MB sealed, 65.7 MB deflated), so the ceiling is the transport budget, not a
+# proxy for a tidy product.  MAX_FILE_BYTES and MAX_EXPANDED_BYTES still bound any
+# single member and the whole expansion.
+MAX_PACK_BYTES = 96 * 1024 * 1024
 MAX_FILE_BYTES = 95 * 1024 * 1024
 MAX_EXPANDED_BYTES = 512 * 1024 * 1024
 SECRET_PATTERNS = {
@@ -165,7 +171,7 @@ def _validate_pack_limit(maximum_bytes: int) -> int:
         raise ArtifactError("Pack limit must be a positive integer")
     if maximum_bytes > MAX_PACK_BYTES:
         raise ArtifactError(
-            "Pack limit cannot exceed the canonical 50 MB limit (%d bytes)"
+            "Pack limit cannot exceed the canonical %d-byte limit"
             % MAX_PACK_BYTES
         )
     return maximum_bytes

@@ -1,0 +1,71 @@
+{
+ "build": {
+  "belly_05": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_05"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_05"
+ ],
+ "checks_ok": false,
+ "entry": "part_belly_05.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_05/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_05"
+ ],
+ "print": {
+  "belly_05": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_05/r0001/overhang-belly_05.log": "b165da98f77e5025a8bf4ce2e5c9ac9b594f123b8aa7ad37c3d015be052ff36f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_05/r0001/thickness-belly_05.log": "06b0e2344dd2ae5a0c91b2a78c4e295413bcb750f60849fbd9a399fd44fd02b9"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 5.3% of surface below (778 of 15447 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:belly_05",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Perimeter slope leaves a thin edge; minimum measured wall is 0.13 mm.",
+    "evidence": "Front and iso show the sloping thin side rim; top shows a continuous oval. The thickness summary fails at that perimeter, while overhang passes.",
+    "part": "belly_05",
+    "repair": "Preserve the oval outline and flat faces; replace the shrinking loft with a constant-section 1.2 mm or thicker extrusion, then rerun thickness."
+   }
+  ],
+  "observation": "Front, top and iso inspected once. Cream oval is intact, centered and flat-backed; its sloping perimeter produces a thin edge confirmed by the numeric thickness failure.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_05/r0001/visual-packet.json",
+  "packet_sha256": "69ffd29397907554224d5692fe0395d2db3db2fc9c7686b55a21af2e292e39ba",
+  "status": "fail"
+ }
+}

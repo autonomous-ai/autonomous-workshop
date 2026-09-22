@@ -1,0 +1,16 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_lane_15_yellow.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/thickness-lane_15_yellow.md
+(8.1s, exit 0)
+--- stdout
+part_lane_15_yellow.step.py: 2.20 cm3 solid, grid 0.133 mm (396x397x35), 122043 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (334 of 122043 samples); thinnest 0.13 mm at (-53.5, -68.8, 0.1) in 3 region(s); no region is a wall, 3 taper(s) at feature edges (0.01% of surface, budget 2%)
+  PASS  thickness distribution         median 2.80 mm, p95 15.27 mm, max 63.47 mm
+  WARN  hollowable at 1.20 mm wall     0.23 of 2.20 cm3 (10%) in 1 pocket(s)
+  PASS  filament that would save       0.03 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.13 mm at (-53.5, -68.8, 0.1)    163 samples, 0.1 mm2, runs 0.9 mm, band 0.08 mm
+        2. [taper] 0.13 mm at (-68.8, -53.5, 0.1)    170 samples, 0.1 mm2, runs 0.7 mm, band 0.07 mm
+        3. [taper] 0.27 mm at (-20.7, -16.6, 0.1)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.03 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/thickness-lane_15_yellow.md
+
+--- stderr

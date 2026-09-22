@@ -1,0 +1,335 @@
+{
+  "status": "generated-and-native-geometry-validated",
+  "count": 44,
+  "export_script_exit_code": 0,
+  "assembly_sha256": "1090686699b62b20fdf935bbc3fdebfe1eb98bee3c214da4f3128937fb6e79b4",
+  "assembly_package_sha256": "7fdd68e20617c8adec514780a9e45d679dd520618f04416871f05ec90aab6b39",
+  "export_binding_sha256": "44f2fe489b03084e60433541468ea0893a6c11cfd8c61dfad88de00fbd7ebbda",
+  "records": [
+    {
+      "name": "pedestal_black",
+      "occurrence_id": "o1.1",
+      "master_sha256": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+      "production_step_sha256": "b57d4831bf0f548cf0671c59c9238ad8d54f1b067bdc55bbcf8d9aede1fc3b33",
+      "relative_path": "parts/pedestal_black.step"
+    },
+    {
+      "name": "pedestal_lid_black",
+      "occurrence_id": "o1.2",
+      "master_sha256": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+      "production_step_sha256": "0cfed8faf687e9f667ba9aa6d039b87a9d330a9980cae8508fe3efb0ad47030f",
+      "relative_path": "parts/pedestal_lid_black.step"
+    },
+    {
+      "name": "stem_black",
+      "occurrence_id": "o1.3",
+      "master_sha256": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+      "production_step_sha256": "5820c6701624272a7d3bb66991b9db5c02ed17229fcc28bd9b51ef91c301a05d",
+      "relative_path": "parts/stem_black.step"
+    },
+    {
+      "name": "support_collar_black",
+      "occurrence_id": "o1.4",
+      "master_sha256": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8",
+      "production_step_sha256": "35526aeed9336e9daa9391ed9c44f757228f2d3ce526510dd6a645bbe43873e7",
+      "relative_path": "parts/support_collar_black.step"
+    },
+    {
+      "name": "rim_trim_yellow",
+      "occurrence_id": "o1.5",
+      "master_sha256": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+      "production_step_sha256": "8bbeab3b5d5aee8883c3138c17a35ec9341476e4e850b47c751669404e9fab56",
+      "relative_path": "parts/rim_trim_yellow.step"
+    },
+    {
+      "name": "foot_trim_yellow",
+      "occurrence_id": "o1.6",
+      "master_sha256": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+      "production_step_sha256": "c3b9c72e34384ef8423bfec6c15a85407409e701da9ee494eaabc3ef5ae1dfa0",
+      "relative_path": "parts/foot_trim_yellow.step"
+    },
+    {
+      "name": "axle_black",
+      "occurrence_id": "o1.26.1",
+      "master_sha256": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+      "production_step_sha256": "db784bae46b7bca8bc39ab22b06657b67ae43599b07062843a43d99ddda62b00",
+      "relative_path": "parts/axle_black.step"
+    },
+    {
+      "name": "rear_main_cap_black",
+      "occurrence_id": "o1.7",
+      "master_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "production_step_sha256": "f3465ed67f1b875a3249859cf7021be4700db7b1381830adbe7e17a3e9b101a2",
+      "relative_path": "parts/rear_main_cap_black.step"
+    },
+    {
+      "name": "support_main_cap_black",
+      "occurrence_id": "o1.26.2",
+      "master_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "production_step_sha256": "d6317e0aba79b03781f3e802a2744f4be545fb07349dd96505c3b9573f2645f4",
+      "relative_path": "parts/support_main_cap_black.step"
+    },
+    {
+      "name": "orange_disc_orange",
+      "occurrence_id": "o1.8",
+      "master_sha256": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+      "production_step_sha256": "9302a501783cd911af1dbaf1cd1349a5299d21bc54eafe1a78b906b18d1894f0",
+      "relative_path": "parts/orange_disc_orange.step"
+    },
+    {
+      "name": "carrier_black",
+      "occurrence_id": "o1.25.1",
+      "master_sha256": "cb457616187187a1b4b8b553fadf999553489ae53702b4e5999a6b1afc92e198",
+      "production_step_sha256": "5a5d13f1b36ca73036d89b378b32339b823abc91c257bc6849b0ce0a8ba32943",
+      "relative_path": "parts/carrier_black.step"
+    },
+    {
+      "name": "sun_yellow",
+      "occurrence_id": "o1.9",
+      "master_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "production_step_sha256": "ce1d72732159fdd7966f0de9ba71fe48c737671035cda237f43b282343d76334",
+      "relative_path": "parts/sun_yellow.step"
+    },
+    {
+      "name": "front_main_cap_black",
+      "occurrence_id": "o1.10",
+      "master_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "production_step_sha256": "246a4becd81676813e871aace6084dfdaf5ac50daaf718bb68e69b54f7ac9beb",
+      "relative_path": "parts/front_main_cap_black.step"
+    },
+    {
+      "name": "bezel_black",
+      "occurrence_id": "o1.25.2",
+      "master_sha256": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+      "production_step_sha256": "bca07e875b027ec14c1d1b7864a8d6fb760a25a9f0feaafad533c227af60f264",
+      "relative_path": "parts/bezel_black.step"
+    },
+    {
+      "name": "gear_1_1_yellow",
+      "occurrence_id": "o1.11",
+      "master_sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "production_step_sha256": "ee31ad105b06a938e7ce3e92cec95a78f90506a327713f96b802010af711e894",
+      "relative_path": "parts/gear_1_1_yellow.step"
+    },
+    {
+      "name": "gear_1_2_yellow",
+      "occurrence_id": "o1.12",
+      "master_sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "production_step_sha256": "8456a418e09e98c5924b9d842813864bbe0bfa2da07624f1fd33205b7dcb3951",
+      "relative_path": "parts/gear_1_2_yellow.step"
+    },
+    {
+      "name": "gear_1_3_yellow",
+      "occurrence_id": "o1.13",
+      "master_sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+      "production_step_sha256": "2bea65576029aa69479c36e79f8dc73b812c41c49deb5d3a9891c788e84538d1",
+      "relative_path": "parts/gear_1_3_yellow.step"
+    },
+    {
+      "name": "gear_1_4_yellow",
+      "occurrence_id": "o1.14",
+      "master_sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+      "production_step_sha256": "dab8dc9c0a2e39ddb560861dd6206c4cb38f00ea7c893ea072ec534ab0a24caf",
+      "relative_path": "parts/gear_1_4_yellow.step"
+    },
+    {
+      "name": "gear_1_5_yellow",
+      "occurrence_id": "o1.15",
+      "master_sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+      "production_step_sha256": "d1e309b4a7b396e650efb5bb880859bbba9187ce9d50819c4b5f7433335e3a52",
+      "relative_path": "parts/gear_1_5_yellow.step"
+    },
+    {
+      "name": "gear_1_6_yellow",
+      "occurrence_id": "o1.16",
+      "master_sha256": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+      "production_step_sha256": "3f90e53e7b0bb6d15816dd7ae6fa5a2b0e30ee77070500054f583bb5012c3173",
+      "relative_path": "parts/gear_1_6_yellow.step"
+    },
+    {
+      "name": "gear_1_7_yellow",
+      "occurrence_id": "o1.17",
+      "master_sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+      "production_step_sha256": "f07fa3b6024540685792d910a5f7ff95cc54ff3c26d774e352afba4a0a5d9602",
+      "relative_path": "parts/gear_1_7_yellow.step"
+    },
+    {
+      "name": "gear_2_1_yellow",
+      "occurrence_id": "o1.18",
+      "master_sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "production_step_sha256": "96844356d4d2aa2fd57e8c07960cdd204a5ef5563223828d5dbee76187e9f493",
+      "relative_path": "parts/gear_2_1_yellow.step"
+    },
+    {
+      "name": "gear_2_2_yellow",
+      "occurrence_id": "o1.19",
+      "master_sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "production_step_sha256": "bae22f60335f252257b4247ff26c5c558fe36aa3e9099b4d8b60b12e70fbb213",
+      "relative_path": "parts/gear_2_2_yellow.step"
+    },
+    {
+      "name": "gear_2_3_yellow",
+      "occurrence_id": "o1.20",
+      "master_sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+      "production_step_sha256": "ba2cb730a7c51bdc5194bf8394d280bb3c1ebd5fd2285e932753b7987c0a9d6b",
+      "relative_path": "parts/gear_2_3_yellow.step"
+    },
+    {
+      "name": "gear_2_4_yellow",
+      "occurrence_id": "o1.21",
+      "master_sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+      "production_step_sha256": "17fb17a04218c06f307931dc9bbff3077711391b7539031e1494a7e8dbaffd5d",
+      "relative_path": "parts/gear_2_4_yellow.step"
+    },
+    {
+      "name": "gear_2_5_yellow",
+      "occurrence_id": "o1.22",
+      "master_sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+      "production_step_sha256": "b923c5eed078eb4cc94948b36daa500d3737f0be03c0ff25b06ca3e29a98bb44",
+      "relative_path": "parts/gear_2_5_yellow.step"
+    },
+    {
+      "name": "gear_2_6_yellow",
+      "occurrence_id": "o1.23",
+      "master_sha256": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+      "production_step_sha256": "53c38cbaecc088c47a3a13036935166f1f3ab53d484d1f8557e2e264eafd7494",
+      "relative_path": "parts/gear_2_6_yellow.step"
+    },
+    {
+      "name": "gear_2_7_yellow",
+      "occurrence_id": "o1.24",
+      "master_sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+      "production_step_sha256": "639487e767e009a3e2a37a5aa3b5a6ee93b671b4f6629e348b325e1663d1b5f4",
+      "relative_path": "parts/gear_2_7_yellow.step"
+    },
+    {
+      "name": "cap_1_1_black",
+      "occurrence_id": "o1.25.3.1",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "0389d8881fa3142c79544240d3ad419165c8d53a5bb8b753456f92c52d41b053",
+      "relative_path": "parts/cap_1_1_black.step"
+    },
+    {
+      "name": "cap_1_2_black",
+      "occurrence_id": "o1.25.3.2",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "b6d23d48872f2d86d573a803e4351c8869c57cdc1d1dbdfa2358a80c62aeeea3",
+      "relative_path": "parts/cap_1_2_black.step"
+    },
+    {
+      "name": "cap_1_3_black",
+      "occurrence_id": "o1.25.3.3",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "4dd27af0d9447626bc42ee7115108811fa5fe0b4c0d4b41a6dfba14330e07257",
+      "relative_path": "parts/cap_1_3_black.step"
+    },
+    {
+      "name": "cap_1_4_black",
+      "occurrence_id": "o1.25.3.4",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "e702a038b727b81adbb93ed70234b88b47a191a652408a61c7f294b26902a84a",
+      "relative_path": "parts/cap_1_4_black.step"
+    },
+    {
+      "name": "cap_1_5_black",
+      "occurrence_id": "o1.25.3.5",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "95c0c3ae1c4f7ed8a0df12b800023c07d422069b6a4d43a441e9709679bee4d0",
+      "relative_path": "parts/cap_1_5_black.step"
+    },
+    {
+      "name": "cap_1_6_black",
+      "occurrence_id": "o1.25.3.6",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "9380f041f108d20629d32b2997be2a8494516733a8519fb143353a74ebd3bbdb",
+      "relative_path": "parts/cap_1_6_black.step"
+    },
+    {
+      "name": "cap_1_7_black",
+      "occurrence_id": "o1.25.3.7",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "f09dbd510112cd1590bebe6c00bd816db96efeb439aee74de877ffab5207c4c0",
+      "relative_path": "parts/cap_1_7_black.step"
+    },
+    {
+      "name": "cap_2_1_black",
+      "occurrence_id": "o1.25.3.8",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "b9b1b40cf8c17eb810ab66c35271ccdad08ee44d0afb4e14eb7f952cd6d5e56f",
+      "relative_path": "parts/cap_2_1_black.step"
+    },
+    {
+      "name": "cap_2_2_black",
+      "occurrence_id": "o1.25.3.9",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "ddf43bcbf0e587436e1a984110480ce76e1ce33ce5e7e8b2d2c1832e780b38aa",
+      "relative_path": "parts/cap_2_2_black.step"
+    },
+    {
+      "name": "cap_2_3_black",
+      "occurrence_id": "o1.25.3.10",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "82b1620c8a102d57d1a0782df758672d9e23b243c971bb1626ffa9f626eec09f",
+      "relative_path": "parts/cap_2_3_black.step"
+    },
+    {
+      "name": "cap_2_4_black",
+      "occurrence_id": "o1.25.3.11",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "c7b20aa0cef98db8d53b768071161dc134e4eacca90a768dc7f6199a8a815fc0",
+      "relative_path": "parts/cap_2_4_black.step"
+    },
+    {
+      "name": "cap_2_5_black",
+      "occurrence_id": "o1.25.3.12",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "2413ff241be2b400669e81fd3c985b66064697a50a19381932cfb4a9407ae1d6",
+      "relative_path": "parts/cap_2_5_black.step"
+    },
+    {
+      "name": "cap_2_6_black",
+      "occurrence_id": "o1.25.3.13",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "227a1c224bf2764ce9f5c7b2f8309a633fdede47895dbd81d3c38f7bb8c2cf1a",
+      "relative_path": "parts/cap_2_6_black.step"
+    },
+    {
+      "name": "cap_2_7_black",
+      "occurrence_id": "o1.25.3.14",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "97452b2ce96fb69ef9a88f19d1b123e2ae8780fa067e2c303198d5f611e0d3bd",
+      "relative_path": "parts/cap_2_7_black.step"
+    },
+    {
+      "name": "bezel_cap_1_black",
+      "occurrence_id": "o1.25.4.1",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "3e754f36a941d12cf2a8b8172902535efc2bc02a97b715a57fd5f821130a1100",
+      "relative_path": "parts/bezel_cap_1_black.step"
+    },
+    {
+      "name": "bezel_cap_2_black",
+      "occurrence_id": "o1.25.4.2",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "a1022d3786dfdbc903435dca38d5e1605919e3fa8f8bb28fbfdcb07b0c8a3614",
+      "relative_path": "parts/bezel_cap_2_black.step"
+    }
+  ],
+  "claims": "Exact pinned-master imports, unique labels, one positive-volume solid and print-bed Z=0 asserted during native generation. Full production-output inspection pending; no physical testing or print-readiness claim.",
+  "native_geometry_inspection": {
+    "summary_path": "artifacts/make/r0001/visual-repair-production/inspection/summary.json",
+    "summary_sha256": "2f19393d21c119e4e391e017c4af553375155b97cbb6dc968fa4d4c708ebab7b",
+    "manifest": {
+      "path": "artifacts/make/r0001/visual-repair-production/inspection/inspection-manifest.json",
+      "sha256": "f5fb90b190cd1aac463ba618e6a5a4b791e379dffcee9756e98c5d09cc75ca70"
+    },
+    "status": "PASS",
+    "scope": "Native raw STEP refs and validity; one solid per export. No motion, physical fit or print-readiness claim."
+  },
+  "export_input_assembly_sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+  "export_input_assembly_package_sha256": "d2cc8fc5756f052d35a92a71b4591901969046121e847c40300cbd2262551efe",
+  "final_export_equivalence": {
+    "path": "gear_vortex/audits/visual-repair/finalization/final-delivery-export-bridge.json",
+    "sha256": "9e88d3c76ca232d267af20a960afc8146c979512dc0e5cb1e1464b31de7688a9"
+  }
+}

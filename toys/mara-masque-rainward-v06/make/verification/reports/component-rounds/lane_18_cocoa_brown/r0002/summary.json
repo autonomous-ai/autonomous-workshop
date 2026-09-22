@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_lane_18_cocoa_brown.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_18_cocoa_brown/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_18_cocoa_brown"
+ ],
+ "print": {
+  "lane_18_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_18_cocoa_brown/r0001/overhang-lane_18_cocoa_brown.log": "d049576a34f4d94392baf436ddb727e25303965bdc7bb578bacfd7388cb00b9d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_18_cocoa_brown/r0001/thickness-lane_18_cocoa_brown.log": "cd6bd7e7e3b56bdc0fb428e11040ca7f5aa46568ff09191a91957f9cc3a23e46"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "lane_18_cocoa_brown"
+ ],
+ "round": 2,
+ "scope": "component:lane_18_cocoa_brown",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One tapering lane strip lying top-face-down on the bed. The outer end is a single clean arc with no bay, notch or scallop; the 1.0 mm lapping lip and the radial locating key are both present and correctly placed. Front and iso show one flat solid with no overhang and no extra or missing feature.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_18_cocoa_brown/r0002/visual-packet.json",
+  "packet_sha256": "9686d0f6cc43483e73d1d259e10481a330745d5b411d6f86437e877638647333",
+  "status": "pass"
+ }
+}

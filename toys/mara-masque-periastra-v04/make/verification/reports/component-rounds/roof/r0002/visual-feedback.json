@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Second round after moving the telescope's footing from y +15.0 to y +13.0 and shortening the tube from 87.0 to 85.3 mm, the two free variables the correction brief grants. Front view down the slit: one tube standing on the exposed drum top, centred, its root spreading into the floor through the cove, the open bore square on the camera near the top of the slit; the tube now sits a little lower in the slit and its mouth stands closer to the shell, which is the intended effect. Top view: the cove flare has moved 2 mm down the slit and is further from the far wall; the tube is still exactly on x = 0 with clear air either side and the bore open and round. Iso: unchanged in character - hemisphere on a visible drum on a bare square plate, slit from far edge over the apex down the near flank to the drum top, only the mouth clearing the shell, and it is visibly smaller than the previous round. No arms, keel, pier or foot block; no floating, misplaced, missing or extra geometry; no visible intersection; no raw sawn face.",
+  "packet_sha256": "e4a67addbe5382a71614b4895c4bb82d397914375b9ede9b8666bf9b76a4f19d",
+  "status": "pass"
+}

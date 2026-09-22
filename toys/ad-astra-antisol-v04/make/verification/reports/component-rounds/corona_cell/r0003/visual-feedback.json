@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "A square tile with an engraved sunburst on its face and two raised tongues at one pair of corners. Front: the two tongues rise from the tile and lean, and the rest of the face is flat -- the sunburst is engraved into it rather than raised. Top: the two tongues sit at adjacent corners, on the diagonal away from the star. Iso: the tongues are attached at their feet with no undercut, the sunburst rays are cut in, and the tile floor is flat where a piece stands. Nothing floats, no extra tongue, no visible intersection.",
+  "packet_sha256": "0a3080946e2b12a7a6cc636f6aab5ea446b2244841c8cd1f5d6ca92c570605e7",
+  "status": "pass"
+}

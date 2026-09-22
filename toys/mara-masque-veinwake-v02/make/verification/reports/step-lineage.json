@@ -1,0 +1,97 @@
+{
+  "status": "pass",
+  "scope": "Exact exported STEP bytes only; no physical or print claim.",
+  "snapshot_sha256": "9ce8801e80778249d5652372214c893eb072824c8bab5ac489c65e16f992baa3",
+  "source_artifact_sha256": "554e21777e8db2f278f21abc070d1e1533a493b5a95e10898b9420675c2caae4",
+  "expected_changed": [
+    "assembly",
+    "bubble_1",
+    "bubble_2",
+    "bubble_3",
+    "bubble_4",
+    "rind"
+  ],
+  "actually_changed": [
+    "assembly",
+    "bubble_1",
+    "bubble_2",
+    "bubble_3",
+    "bubble_4",
+    "rind"
+  ],
+  "unchanged": [
+    "tooth_1",
+    "tooth_2",
+    "tooth_3",
+    "tooth_4",
+    "tooth_5"
+  ],
+  "rows": [
+    {
+      "part": "rind",
+      "baseline_sha256": "2385415b012378743fcd5e46844cd43072ec43a681d5768f29650e204e6572fb",
+      "revision_sha256": "bebfa17227938c5ad41a9b0ac1c1dcf4b7e2c77f778df2961352d3f00bf0120e",
+      "changed": true
+    },
+    {
+      "part": "tooth_1",
+      "baseline_sha256": "98e645c55fbe11a95cb6d8b2bae151c3478527e7b4bdc475b6baff955c92f2b8",
+      "revision_sha256": "98e645c55fbe11a95cb6d8b2bae151c3478527e7b4bdc475b6baff955c92f2b8",
+      "changed": false
+    },
+    {
+      "part": "tooth_2",
+      "baseline_sha256": "0a31132df60a3193053a2266843b979d82f8a2051cb4bacd5b4136921eb8117a",
+      "revision_sha256": "0a31132df60a3193053a2266843b979d82f8a2051cb4bacd5b4136921eb8117a",
+      "changed": false
+    },
+    {
+      "part": "tooth_3",
+      "baseline_sha256": "1fecfb685a5e46620b7b67f6a5d4da31858fad6b28ca969c9159369936fca700",
+      "revision_sha256": "1fecfb685a5e46620b7b67f6a5d4da31858fad6b28ca969c9159369936fca700",
+      "changed": false
+    },
+    {
+      "part": "tooth_4",
+      "baseline_sha256": "859d7f4f899e65f3696ae2877fa3be50d3a16fbdc5c21d9faa156ee2b3945ce4",
+      "revision_sha256": "859d7f4f899e65f3696ae2877fa3be50d3a16fbdc5c21d9faa156ee2b3945ce4",
+      "changed": false
+    },
+    {
+      "part": "tooth_5",
+      "baseline_sha256": "55c26e3584846b26e28b974199c02aae920db703718fa7ae2de50d8d29338681",
+      "revision_sha256": "55c26e3584846b26e28b974199c02aae920db703718fa7ae2de50d8d29338681",
+      "changed": false
+    },
+    {
+      "part": "bubble_1",
+      "baseline_sha256": "6bf68b612a0dc2294c13be20b5157c408eba12cd153fc2cb3433c7838e824d88",
+      "revision_sha256": "e477910a2f5d1be97d58fbb1a43a984c5616cb324230dddb6965b81e3c238fdd",
+      "changed": true
+    },
+    {
+      "part": "bubble_2",
+      "baseline_sha256": "ca3c70ed54c06e14a94c589a915828733882730d42bb306f5cae67f5a3077638",
+      "revision_sha256": "90d6e0934771266faf25f413ddc494ac71add74278bc2001e6e1449d3c29a8ae",
+      "changed": true
+    },
+    {
+      "part": "bubble_3",
+      "baseline_sha256": "6886e6c10c75aab40f0a13433724da85586c5b24764729448918f09e322b78a1",
+      "revision_sha256": "62de71fac3103752e99430376590112e7438333fc02a0d57ed00cecdbe20c41c",
+      "changed": true
+    },
+    {
+      "part": "bubble_4",
+      "baseline_sha256": "5fe721fc6e6ccd1c5d9b6ed56ebbe8053faa45dc1c803ad52c20b67026d70346",
+      "revision_sha256": "44df65a229e8f81c4857ea396d00922063529d7b3d51f0b86b66fb33da2464fe",
+      "changed": true
+    },
+    {
+      "part": "assembly",
+      "baseline_sha256": "586ccdfc102ad5f840e590a67d2623775656d87284b4823217ea347e2c13ba0b",
+      "revision_sha256": "903e4c4382fb31c07ffcd750896bf19b13e06ee5db97a82269cb9506dc237e21",
+      "changed": true
+    }
+  ]
+}

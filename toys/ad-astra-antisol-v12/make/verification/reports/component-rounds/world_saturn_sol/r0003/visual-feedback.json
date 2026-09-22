@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Iso inspected. The Sol twin, ring tilted the other way, same plate and web, same clearance to the disc top, same \u00d834.00 footprint. Untouched and byte-identical. No misplaced, missing or extra geometry, no visible intersections. (Round re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet_sha256": "cb1880c81fc7c6ae598296a98f1e1f4f8e4fc53d94f71a799747f0c58a566b7b",
+  "status": "pass"
+}

@@ -1,0 +1,12 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_corona_cell.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/thickness-corona_cell.md
+(4.1s, exit 0)
+--- stdout
+part_corona_cell.step.py: 3.21 cm3 solid, grid 0.133 mm (256x256x27), 143932 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 143932 samples)
+  PASS  thickness distribution         median 2.93 mm, p95 33.47 mm, max 44.87 mm
+  WARN  hollowable at 1.20 mm wall     0.37 of 3.21 cm3 (11%) in 1 pocket(s)
+  PASS  filament that would save       0.06 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0003/thickness-corona_cell.md
+
+--- stderr

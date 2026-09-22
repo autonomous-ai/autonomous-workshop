@@ -1,0 +1,62 @@
+{
+ "build": {
+  "coupon_receiver_55": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "coupon_receiver_55"
+ ],
+ "check_motion": false,
+ "checked": [
+  "coupon_receiver_55"
+ ],
+ "checks_ok": true,
+ "entry": "part_coupon_receiver_55.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_receiver_55/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "coupon_receiver_55"
+ ],
+ "print": {
+  "coupon_receiver_55": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_receiver_55/r0001/overhang-coupon_receiver_55.log": "358ad4971a898d461a094c2c4dc3535564265a18054174c0e7bd205b2aed18b0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_receiver_55/r0001/thickness-coupon_receiver_55.log": "3e4833ee7b48f78c02febc1e390a64c62700bde9a388a04daf5c1f2b112a3b35"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:coupon_receiver_55",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a grounded ring and handle. Top and iso expose the open C sector, continuous tapered throat and three clear identification notches in the handle rim. Bearing wall remains broad, with no detached feature or incorrect orientation.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_receiver_55/r0001/visual-packet.json",
+  "packet_sha256": "2447a54c3ea24eacda3199131ed4c904eda1db5df111910e1df9ef9d2758a4d7",
+  "status": "pass"
+ }
+}

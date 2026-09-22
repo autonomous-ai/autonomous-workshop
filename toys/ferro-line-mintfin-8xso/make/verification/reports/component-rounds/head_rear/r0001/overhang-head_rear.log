@@ -1,0 +1,17 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/part_head_rear.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_rear/r0001/overhang-head_rear.md
+(8.4s, exit 1)
+--- stdout
+part_head_rear.step.py: 88.3 cm2 of surface, grid 0.400 mm, 737 unsupported samples over 6 region(s)
+  FAIL  no face under 45 deg needs support     28.3% of the surface faces down that steeply; 2 region(s) need support, 3 bridge, 1 below 1 mm2; worst 33.9 mm2 spanning 2.7 mm
+  PASS  bridges within 12 mm                   3 region(s), longest span 3.0 mm
+        every unsupported region, largest first:
+        1. [overhang]    33.9 mm2 at (-30.1, 0.1, 10.0)  span   2.7 mm of 3x17, 2.4 mm of air below
+        2. [overhang]    31.2 mm2 at (30.2, 0.2, 10.0)  span   2.6 mm of 3x16, 2.4 mm of air below
+        3. [bridge  ]    14.8 mm2 at (0.0, -19.1, 11.3)  span   3.0 mm of 3x4, 7.6 mm of air below
+        4. [bridge  ]     8.9 mm2 at (16.9, -16.4, 12.0)  span   2.7 mm of 3x3, 5.6 mm of air below
+        5. [bridge  ]     8.9 mm2 at (-16.9, -16.5, 12.0)  span   2.7 mm of 3x3, 6.0 mm of air below
+        6. [trace   ]     0.2 mm2 at (3.6, 9.4, 27.2)  span   0.9 mm of 1x1, 1.6 mm of air below
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_rear/r0001/overhang-head_rear.md
+
+--- stderr

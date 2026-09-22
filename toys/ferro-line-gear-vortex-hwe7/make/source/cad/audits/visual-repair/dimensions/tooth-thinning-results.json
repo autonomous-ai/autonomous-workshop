@@ -1,0 +1,4163 @@
+{
+  "status": "PASS",
+  "binding_sha256": "9be96c4db50f6133a965128cfd930755c8717fb43a5ec15e5addcb3bb76a0b43",
+  "method": "Actual BRep overlap between public Edge.make_circle and actual exported top planar Face; exact arc lengths, connected fragments merged only at declared tolerance. No source profile reconstruction or point-sampled tooth widths.",
+  "scope": "Measured thinning on nominal module1.5 pitchcircle R=m*z/2. Does not independently prove pitch diameter,module,pressure angle,involute law,contact or motion. Equal per-flank attribution derives symmetrically from total measured tooth thickness.",
+  "tolerances": {
+    "kernel_intersection_tolerance_mm": 1e-07,
+    "connectivity_tolerance_mm": 1e-07,
+    "geometry_tolerance_mm": 1e-06,
+    "nominal_comparison_tolerance_mm": 0.001
+  },
+  "rows": [
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_14.step",
+      "sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "teeth": 14,
+      "module_mm": 1.5,
+      "status": "PASS",
+      "raw_intersection_types": [
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge"
+      ],
+      "nominal_pitch_radius_mm": 10.5,
+      "measured_top_plane_z_mm": 5.0,
+      "raw_arc_edge_count": 14,
+      "connected_tooth_arc_count": 14,
+      "measured_teeth": [
+        {
+          "index": 0,
+          "arc_length_mm": 1.9961945285096359,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999808413545,
+          "delta_from_nominal_0_18_mm": -1.915864550339208e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -7.2962572915844905,
+              -7.550803237735714,
+              5.0
+            ],
+            [
+              -5.737918848952647,
+              -8.793536676607049,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "arc_length_mm": 1.9961945285095017,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998084142155,
+          "delta_from_nominal_0_18_mm": -1.9158578445921393e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              7.296257291584489,
+              7.550803237735715,
+              5.0
+            ],
+            [
+              5.737918848952768,
+              8.793536676606987,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "arc_length_mm": 1.9961945285096965,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998084132418,
+          "delta_from_nominal_0_18_mm": -1.9158675812480652e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -8.985058822770453,
+              5.433113099444447,
+              5.0
+            ],
+            [
+              -9.84987141405341,
+              3.637311249620275,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 3,
+          "arc_length_mm": 1.9961945285089813,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998084168178,
+          "delta_from_nominal_0_18_mm": -1.915831820964442e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              10.452597702223708,
+              -0.9965948401771189,
+              5.0
+            ],
+            [
+              10.452597702223708,
+              0.9965948401771152,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 4,
+          "arc_length_mm": 1.9961945285096312,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998084135682,
+          "delta_from_nominal_0_18_mm": -1.9158643171923728e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              5.737918848952647,
+              -8.793536676607047,
+              5.0
+            ],
+            [
+              7.296257291584488,
+              -7.5508032377357175,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 5,
+          "arc_length_mm": 1.9961945285060128,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998084316604,
+          "delta_from_nominal_0_18_mm": -1.91568339524828e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -10.452597702223848,
+              0.9965948401756408,
+              5.0
+            ],
+            [
+              -10.452597702223848,
+              -0.9965948401756395,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 6,
+          "arc_length_mm": 1.9961945285053506,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999808434971,
+          "delta_from_nominal_0_18_mm": -1.9156502883976856e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -3.2975299297937175,
+              -9.968766040093143,
+              5.0
+            ],
+            [
+              -1.3543136761472234,
+              -10.412292469317237,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 7,
+          "arc_length_mm": 1.9961945285092908,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998084152702,
+          "delta_from_nominal_0_18_mm": -1.9158472974734053e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              3.2975299297937255,
+              9.968766040093143,
+              5.0
+            ],
+            [
+              1.3543136761433225,
+              10.412292469317741,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 8,
+          "arc_length_mm": 1.9961945285097058,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998084131952,
+          "delta_from_nominal_0_18_mm": -1.9158680475417356e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              8.985058822770451,
+              -5.433113099444451,
+              5.0
+            ],
+            [
+              9.84987141405341,
+              -3.637311249620276,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 9,
+          "arc_length_mm": 1.9961945285092884,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998084152824,
+          "delta_from_nominal_0_18_mm": -1.9158471753488726e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -1.354313676143323,
+              10.412292469317741,
+              5.0
+            ],
+            [
+              -3.2975299297937246,
+              9.968766040093143,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 10,
+          "arc_length_mm": 1.9961945285053506,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999808434971,
+          "delta_from_nominal_0_18_mm": -1.9156502883976856e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              1.3543136761472212,
+              -10.412292469317237,
+              5.0
+            ],
+            [
+              3.2975299297937246,
+              -9.968766040093143,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 11,
+          "arc_length_mm": 1.9961945285095986,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998084137314,
+          "delta_from_nominal_0_18_mm": -1.9158626851645266e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -5.737918848952702,
+              8.793536676607069,
+              5.0
+            ],
+            [
+              -7.296257291584489,
+              7.550803237735717,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 12,
+          "arc_length_mm": 1.9961945285096918,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999808413265,
+          "delta_from_nominal_0_18_mm": -1.91586734810123e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -9.849871414053409,
+              -3.6373112496202777,
+              5.0
+            ],
+            [
+              -8.985058822770455,
+              -5.433113099444446,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 13,
+          "arc_length_mm": 1.9961945285097047,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998084132007,
+          "delta_from_nominal_0_18_mm": -1.9158679920305843e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              9.84987141405341,
+              3.637311249620274,
+              5.0
+            ],
+            [
+              8.985058822770437,
+              5.433113099444446,
+              5.0
+            ]
+          ]
+        }
+      ],
+      "minimum_per_flank_removal_mm": 0.17999998084131952,
+      "maximum_per_flank_removal_mm": 0.1799999808434971,
+      "maximum_absolute_nominal_delta_mm": 1.9158680475417356e-08
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_15.step",
+      "sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "teeth": 15,
+      "module_mm": 1.5,
+      "status": "PASS",
+      "raw_intersection_types": [
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge"
+      ],
+      "nominal_pitch_radius_mm": 11.25,
+      "measured_top_plane_z_mm": 5.0,
+      "raw_arc_edge_count": 15,
+      "connected_tooth_arc_count": 15,
+      "measured_teeth": [
+        {
+          "index": 0,
+          "arc_length_mm": 1.996194494562587,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781487896,
+          "delta_from_nominal_0_18_mm": -2.185121028563941e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -9.651542583671059,
+              -5.780157935176445,
+              5.0
+            ],
+            [
+              -8.479747549752545,
+              -7.392995434359847,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "arc_length_mm": 1.9961944945629317,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781470655,
+          "delta_from_nominal_0_18_mm": -2.1852934461996654e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              6.757354539653009,
+              -8.994479397131947,
+              5.0
+            ],
+            [
+              8.238870812101972,
+              -7.660516153725826,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "arc_length_mm": 1.996194494562522,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781491138,
+          "delta_from_nominal_0_18_mm": -2.185088610051622e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -8.479747549752549,
+              7.392995434359842,
+              5.0
+            ],
+            [
+              -9.6515425836711,
+              5.7801579351765415,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 3,
+          "arc_length_mm": 1.996194494562592,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999978148764,
+          "delta_from_nominal_0_18_mm": -2.1851235820768977e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -4.739632710786162,
+              10.202861449948525,
+              5.0
+            ],
+            [
+              -6.466120851555225,
+              9.206073057122808,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 4,
+          "arc_length_mm": 1.9961944945604237,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781596054,
+          "delta_from_nominal_0_18_mm": -2.1840394492933513e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -10.753637001278566,
+              3.3048133449156945,
+              5.0
+            ],
+            [
+              -11.168124921558181,
+              1.3548009951542987,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 5,
+          "arc_length_mm": 1.9961944945597292,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781630782,
+          "delta_from_nominal_0_18_mm": -2.1836921715312485e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -11.168124921558183,
+              -1.354800995154298,
+              5.0
+            ],
+            [
+              -10.75363700127877,
+              -3.3048133449150283,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 6,
+          "arc_length_mm": 1.996194494561243,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781555087,
+          "delta_from_nominal_0_18_mm": -2.184449121589438e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -6.466120851555224,
+              -9.206073057122808,
+              5.0
+            ],
+            [
+              -4.739632710787385,
+              -10.202861449947958,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 7,
+          "arc_length_mm": 1.996194494562933,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781470588,
+          "delta_from_nominal_0_18_mm": -2.18529411233348e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              8.238870812101975,
+              7.6605161537258235,
+              5.0
+            ],
+            [
+              6.757354539653015,
+              8.994479397131947,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 8,
+          "arc_length_mm": 1.9961944945632715,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781453668,
+          "delta_from_nominal_0_18_mm": -2.185463310322433e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -0.17999231791318654,
+              11.248560030754732,
+              5.0
+            ],
+            [
+              -2.1626480813421063,
+              11.040174512944404,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 9,
+          "arc_length_mm": 1.9961944945634258,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781445952,
+          "delta_from_nominal_0_18_mm": -2.1855404708226445e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              10.642395631094352,
+              3.6471790785843368,
+              5.0
+            ],
+            [
+              9.831534901584332,
+              5.468402095578707,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 10,
+          "arc_length_mm": 1.9961944945634313,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781445675,
+          "delta_from_nominal_0_18_mm": -2.185543246380206e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              9.831534901584334,
+              -5.468402095578707,
+              5.0
+            ],
+            [
+              10.642395631094352,
+              -3.6471790785843323,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 11,
+          "arc_length_mm": 1.996194494563399,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781447296,
+          "delta_from_nominal_0_18_mm": -2.1855270371240465e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              4.41077038190595,
+              10.349280392283411,
+              5.0
+            ],
+            [
+              2.514766189176642,
+              10.96532949864132,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 12,
+          "arc_length_mm": 1.9961944945632015,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781457166,
+          "delta_from_nominal_0_18_mm": -2.1854283382971573e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              2.514766189177152,
+              -10.965329498641207,
+              5.0
+            ],
+            [
+              4.410770381906254,
+              -10.349280392283282,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 13,
+          "arc_length_mm": 1.9961944945631598,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781459253,
+          "delta_from_nominal_0_18_mm": -2.1854074661042944e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              11.205753562341403,
+              -0.996788392825994,
+              5.0
+            ],
+            [
+              11.205753562341402,
+              0.9967883928259984,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 14,
+          "arc_length_mm": 1.996194494562502,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999781492138,
+          "delta_from_nominal_0_18_mm": -2.1850786180444004e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -2.162648081341512,
+              -11.040174512944521,
+              5.0
+            ],
+            [
+              -0.17999231791335688,
+              -11.248560030754726,
+              5.0
+            ]
+          ]
+        }
+      ],
+      "minimum_per_flank_removal_mm": 0.17999999781445675,
+      "maximum_per_flank_removal_mm": 0.17999999781630782,
+      "maximum_absolute_nominal_delta_mm": 2.185543246380206e-09
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_18.step",
+      "sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+      "teeth": 18,
+      "module_mm": 1.5,
+      "status": "PASS",
+      "raw_intersection_types": [
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge"
+      ],
+      "nominal_pitch_radius_mm": 13.5,
+      "measured_top_plane_z_mm": 5.0,
+      "raw_arc_edge_count": 18,
+      "connected_tooth_arc_count": 18,
+      "measured_teeth": [
+        {
+          "index": 0,
+          "arc_length_mm": 1.9961945176985891,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624687785,
+          "delta_from_nominal_0_18_mm": -1.3753122141135776e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -12.310136599285762,
+              5.541708843572027,
+              5.0
+            ],
+            [
+              -12.992253517056497,
+              3.667608014569301,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "arc_length_mm": 1.9961945177002618,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624604152,
+          "delta_from_nominal_0_18_mm": -1.3753958472140226e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -1.355807660732426,
+              13.431745440824093,
+              5.0
+            ],
+            [
+              -3.3198850467892527,
+              13.08542560546292,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "arc_length_mm": 1.9961945176996743,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999862463353,
+          "delta_from_nominal_0_18_mm": -1.375366470712791e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              9.67236847026787,
+              -9.417817590894828,
+              5.0
+            ],
+            [
+              10.954328938553136,
+              -7.8900365972521165,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 3,
+          "arc_length_mm": 1.9961945176964848,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624793,
+          "delta_from_nominal_0_18_mm": -1.3752069982775339e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -13.46312057616315,
+              0.9971882228006659,
+              5.0
+            ],
+            [
+              -13.46312057616315,
+              -0.9971882228006643,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 4,
+          "arc_length_mm": 1.996194517693619,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624936286,
+          "delta_from_nominal_0_18_mm": -1.3750637128939758e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -10.954328938549606,
+              -7.890036597257049,
+              5.0
+            ],
+            [
+              -9.672368470267848,
+              -9.41781759089482,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 5,
+          "arc_length_mm": 1.9961945176993625,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624649116,
+          "delta_from_nominal_0_18_mm": -1.3753508831815253e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              13.463120576163044,
+              -0.9971882228021008,
+              5.0
+            ],
+            [
+              13.463120576163044,
+              0.9971882228020987,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 6,
+          "arc_length_mm": 1.9961945176991827,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999862465811,
+          "delta_from_nominal_0_18_mm": -1.3753418903750259e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -5.8679699547802,
+              12.157998544571253,
+              5.0
+            ],
+            [
+              -7.595150621382611,
+              11.16081032176927,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 7,
+          "arc_length_mm": 1.9961945176968086,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624776814,
+          "delta_from_nominal_0_18_mm": -1.375223185329233e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              5.86796995478297,
+              -12.157998544569924,
+              5.0
+            ],
+            [
+              7.59515062138319,
+              -11.160810321768878,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 8,
+          "arc_length_mm": 1.996194517697396,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624747438,
+          "delta_from_nominal_0_18_mm": -1.3752525618304645e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              1.355807660734659,
+              -13.431745440823867,
+              5.0
+            ],
+            [
+              3.3198850467886434,
+              -13.085425605463074,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 9,
+          "arc_length_mm": 1.996194517693619,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624936286,
+          "delta_from_nominal_0_18_mm": -1.3750637128939758e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -9.672368470267848,
+              9.417817590894822,
+              5.0
+            ],
+            [
+              -10.954328938549605,
+              7.89003659725705,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 10,
+          "arc_length_mm": 1.9961945177002587,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624604308,
+          "delta_from_nominal_0_18_mm": -1.3753956917827992e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              3.3198850467892522,
+              13.085425605462921,
+              5.0
+            ],
+            [
+              1.355807660732427,
+              13.431745440824093,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 11,
+          "arc_length_mm": 1.9961945176996352,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624635483,
+          "delta_from_nominal_0_18_mm": -1.3753645167202677e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              12.992253517056854,
+              3.6676080145680308,
+              5.0
+            ],
+            [
+              12.310136599285872,
+              5.541708843571779,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 12,
+          "arc_length_mm": 1.9961945176985891,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624687785,
+          "delta_from_nominal_0_18_mm": -1.3753122141135776e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -12.992253517056497,
+              -3.667608014569299,
+              5.0
+            ],
+            [
+              -12.310136599285762,
+              -5.541708843572025,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 13,
+          "arc_length_mm": 1.9961945176996727,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624633606,
+          "delta_from_nominal_0_18_mm": -1.3753663929971793e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              10.954328938553145,
+              7.890036597252138,
+              5.0
+            ],
+            [
+              9.672368470267848,
+              9.417817590894824,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 14,
+          "arc_length_mm": 1.9961945176991827,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999862465811,
+          "delta_from_nominal_0_18_mm": -1.3753418903750259e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              7.595150621382613,
+              11.16081032176927,
+              5.0
+            ],
+            [
+              5.867969954780201,
+              12.157998544571251,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 15,
+          "arc_length_mm": 1.9961945176969045,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624772018,
+          "delta_from_nominal_0_18_mm": -1.3752279814926993e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -3.319885046788646,
+              -13.085425605463076,
+              5.0
+            ],
+            [
+              -1.355807660735138,
+              -13.43174544082382,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 16,
+          "arc_length_mm": 1.9961945176996383,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624635327,
+          "delta_from_nominal_0_18_mm": -1.3753646721514912e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              12.310136599285874,
+              -5.541708843571778,
+              5.0
+            ],
+            [
+              12.992253517056852,
+              -3.6676080145680285,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 17,
+          "arc_length_mm": 1.9961945176967966,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999998624777414,
+          "delta_from_nominal_0_18_mm": -1.3752225858087996e-08,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -7.595150621383187,
+              -11.160810321768878,
+              5.0
+            ],
+            [
+              -5.867969954782972,
+              -12.157998544569924,
+              5.0
+            ]
+          ]
+        }
+      ],
+      "minimum_per_flank_removal_mm": 0.17999998624604152,
+      "maximum_per_flank_removal_mm": 0.17999998624936286,
+      "maximum_absolute_nominal_delta_mm": 1.3753958472140226e-08
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_20.step",
+      "sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+      "teeth": 20,
+      "module_mm": 1.5,
+      "status": "PASS",
+      "raw_intersection_types": [
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge"
+      ],
+      "nominal_pitch_radius_mm": 15.0,
+      "measured_top_plane_z_mm": 5.0,
+      "raw_arc_edge_count": 20,
+      "connected_tooth_arc_count": 20,
+      "measured_teeth": [
+        {
+          "index": 0,
+          "arc_length_mm": 1.9961945047202068,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273606904,
+          "delta_from_nominal_0_18_mm": -7.26393095673572e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -3.6764507178926173,
+              14.542479503815928,
+              5.0
+            ],
+            [
+              -5.573543874351801,
+              13.92607657169371,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "arc_length_mm": 1.9961945047199303,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273620726,
+          "delta_from_nominal_0_18_mm": -7.263792733969154e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              14.966805646003678,
+              -0.9973608949387434,
+              5.0
+            ],
+            [
+              14.966805646003678,
+              0.9973608949387429,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "arc_length_mm": 1.9961945047202496,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999927360476,
+          "delta_from_nominal_0_18_mm": -7.2639523840400955e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              14.542479503815926,
+              3.6764507178926165,
+              5.0
+            ],
+            [
+              13.926076571693638,
+              5.573543874351819,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 3,
+          "arc_length_mm": 1.996194504717712,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273731637,
+          "delta_from_nominal_0_18_mm": -7.262683621167554e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -5.573543874351909,
+              -13.926076571693605,
+              5.0
+            ],
+            [
+              -3.676450717895175,
+              -14.54247950381528,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 4,
+          "arc_length_mm": 1.9961945047192577,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273654355,
+          "delta_from_nominal_0_18_mm": -7.263456447414995e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -0.9973608949384034,
+              -14.9668056460037,
+              5.0
+            ],
+            [
+              0.9973608949384072,
+              -14.966805646003701,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 5,
+          "arc_length_mm": 1.9961945047188978,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999927367235,
+          "delta_from_nominal_0_18_mm": -7.263276480262704e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -11.522166093864875,
+              9.60414954618007,
+              5.0
+            ],
+            [
+              -12.694634144380867,
+              7.990385719120126,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 6,
+          "arc_length_mm": 1.99619450472025,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999927360474,
+          "delta_from_nominal_0_18_mm": -7.2639526060847e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              5.573543874351818,
+              13.926076571693642,
+              5.0
+            ],
+            [
+              3.6764507178926165,
+              14.542479503815928,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 7,
+          "arc_length_mm": 1.9961945047177188,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273731304,
+          "delta_from_nominal_0_18_mm": -7.262686951836628e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -13.926076571693605,
+              5.573543874351909,
+              5.0
+            ],
+            [
+              -14.542479503815283,
+              3.6764507178951655,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 8,
+          "arc_length_mm": 1.9961945047188578,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999927367435,
+          "delta_from_nominal_0_18_mm": -7.2632564962482604e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -9.604149546180064,
+              -11.522166093864875,
+              5.0
+            ],
+            [
+              -7.990385719120183,
+              -12.694634144380883,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 9,
+          "arc_length_mm": 1.996194504719251,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273654688,
+          "delta_from_nominal_0_18_mm": -7.2634531167459215e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -14.9668056460037,
+              0.9973608949384096,
+              5.0
+            ],
+            [
+              -14.966805646003701,
+              -0.9973608949384011,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 10,
+          "arc_length_mm": 1.9961945047199103,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273621725,
+          "delta_from_nominal_0_18_mm": -7.263782741961933e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              11.522166093865813,
+              -9.60414954617894,
+              5.0
+            ],
+            [
+              12.694634144382228,
+              -7.990385719118043,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 11,
+          "arc_length_mm": 1.9961945047199403,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273620226,
+          "delta_from_nominal_0_18_mm": -7.263797729972765e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              12.694634144382206,
+              7.990385719118004,
+              5.0
+            ],
+            [
+              11.522166093865815,
+              9.604149546178942,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 12,
+          "arc_length_mm": 1.9961945047199436,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999927362006,
+          "delta_from_nominal_0_18_mm": -7.263799395307302e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -7.9903857191180006,
+              12.694634144382203,
+              5.0
+            ],
+            [
+              -9.604149546178942,
+              11.522166093865813,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 13,
+          "arc_length_mm": 1.9961945047177188,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273731304,
+          "delta_from_nominal_0_18_mm": -7.262686951836628e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -14.542479503815283,
+              -3.676450717895163,
+              5.0
+            ],
+            [
+              -13.926076571693606,
+              -5.573543874351907,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 14,
+          "arc_length_mm": 1.9961945047176721,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273733636,
+          "delta_from_nominal_0_18_mm": -7.2626636371531106e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              3.676450717895166,
+              -14.542479503815283,
+              5.0
+            ],
+            [
+              5.57354387435189,
+              -13.926076571693672,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 15,
+          "arc_length_mm": 1.9961945047199303,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273620726,
+          "delta_from_nominal_0_18_mm": -7.263792733969154e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              0.9973608949387437,
+              14.966805646003678,
+              5.0
+            ],
+            [
+              -0.9973608949387427,
+              14.966805646003678,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 16,
+          "arc_length_mm": 1.9961945047199103,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273621725,
+          "delta_from_nominal_0_18_mm": -7.263782741961933e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              9.604149546178942,
+              11.522166093865817,
+              5.0
+            ],
+            [
+              7.990385719118051,
+              12.694634144382224,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 17,
+          "arc_length_mm": 1.9961945047188714,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273673672,
+          "delta_from_nominal_0_18_mm": -7.263263268608711e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              7.990385719120175,
+              -12.694634144380887,
+              5.0
+            ],
+            [
+              9.604149546180064,
+              -11.522166093864861,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 18,
+          "arc_length_mm": 1.9961945047189045,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999273672018,
+          "delta_from_nominal_0_18_mm": -7.2632798109317775e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -12.69463414438087,
+              -7.9903857191201215,
+              5.0
+            ],
+            [
+              -11.522166093864875,
+              -9.604149546180066,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 19,
+          "arc_length_mm": 1.9961945047202034,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999927360707,
+          "delta_from_nominal_0_18_mm": -7.263929291401183e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              13.926076571693708,
+              -5.573543874351804,
+              5.0
+            ],
+            [
+              14.542479503815926,
+              -3.6764507178926227,
+              5.0
+            ]
+          ]
+        }
+      ],
+      "minimum_per_flank_removal_mm": 0.1799999927360474,
+      "maximum_per_flank_removal_mm": 0.17999999273733636,
+      "maximum_absolute_nominal_delta_mm": 7.2639526060847e-09
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_22.step",
+      "sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+      "teeth": 22,
+      "module_mm": 1.5,
+      "status": "PASS",
+      "raw_intersection_types": [
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge"
+      ],
+      "nominal_pitch_radius_mm": 16.5,
+      "measured_top_plane_z_mm": 5.0,
+      "raw_arc_edge_count": 22,
+      "connected_tooth_arc_count": 22,
+      "measured_teeth": [
+        {
+          "index": 0,
+          "arc_length_mm": 1.9961944902155913,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999999883768,
+          "delta_from_nominal_0_18_mm": -1.162320240055692e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -14.394578508638464,
+              -8.065116834779456,
+              5.0
+            ],
+            [
+              -13.316012337508008,
+              -9.743398556321875,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "arc_length_mm": 1.9961944902194528,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.179999999986446,
+          "delta_from_nominal_0_18_mm": -1.355399126268253e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -10.03158768680364,
+              13.100276656695812,
+              5.0
+            ],
+            [
+              -11.539290950094923,
+              11.793844342242984,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "arc_length_mm": 1.9961944902192879,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999999865285,
+          "delta_from_nominal_0_18_mm": -1.347150169195288e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -1.3565643008612247,
+              16.44413978588206,
+              5.0
+            ],
+            [
+              -3.331235632002098,
+              16.1602249106898,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 3,
+          "arc_length_mm": 1.9961944902170274,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999999876587,
+          "delta_from_nominal_0_18_mm": -1.2341294652884471e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              1.356564300863209,
+              -16.4441397858819,
+              5.0
+            ],
+            [
+              3.331235632001839,
+              -16.160224910689884,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 4,
+          "arc_length_mm": 1.9961944902192585,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998654315,
+          "delta_from_nominal_0_18_mm": -1.3456846748027829e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              3.3312356320020795,
+              16.160224910689834,
+              5.0
+            ],
+            [
+              1.3565643008612258,
+              16.44413978588206,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 5,
+          "arc_length_mm": 1.9961944902191817,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998658156,
+          "delta_from_nominal_0_18_mm": -1.3418433031375798e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              15.5216528620006,
+              -5.597168251138124,
+              5.0
+            ],
+            [
+              16.083702924269037,
+              -3.68300152645378,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 6,
+          "arc_length_mm": 1.9961944902176942,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999999873253,
+          "delta_from_nominal_0_18_mm": -1.2674694627179406e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -11.53929095009609,
+              -11.793844342241867,
+              5.0
+            ],
+            [
+              -10.031587686806306,
+              -13.100276656693762,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 7,
+          "arc_length_mm": 1.996194490214243,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998905092,
+          "delta_from_nominal_0_18_mm": -1.0949074980004525e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              5.934463461871488,
+              -15.39584825268526,
+              5.0
+            ],
+            [
+              7.749158665581229,
+              -14.567104721791736,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 8,
+          "arc_length_mm": 1.9961944902191853,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998657978,
+          "delta_from_nominal_0_18_mm": -1.3420209388215198e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -5.93446346186683,
+              15.395848252687056,
+              5.0
+            ],
+            [
+              -7.749158665581188,
+              14.567104721791758,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 9,
+          "arc_length_mm": 1.9961944902155913,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999999883768,
+          "delta_from_nominal_0_18_mm": -1.162320240055692e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -13.316012337508006,
+              9.743398556321877,
+              5.0
+            ],
+            [
+              -14.394578508638464,
+              8.06511683477946,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 10,
+          "arc_length_mm": 1.996194490214243,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998905092,
+          "delta_from_nominal_0_18_mm": -1.0949074980004525e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -7.749158665581225,
+              -14.56710472179174,
+              5.0
+            ],
+            [
+              -5.934463461871484,
+              -15.395848252685262,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 11,
+          "arc_length_mm": 1.9961944902174378,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998745353,
+          "delta_from_nominal_0_18_mm": -1.25464638678352e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              10.031587686808138,
+              -13.100276656692358,
+              5.0
+            ],
+            [
+              11.539290950097545,
+              -11.793844342240437,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 12,
+          "arc_length_mm": 1.9961944902191635,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998659066,
+          "delta_from_nominal_0_18_mm": -1.3409329202573872e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              7.749158665581186,
+              14.567104721791761,
+              5.0
+            ],
+            [
+              5.934463461866857,
+              15.395848252687069,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 13,
+          "arc_length_mm": 1.996194490217042,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998765137,
+          "delta_from_nominal_0_18_mm": -1.2348622124846997e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -3.331235632001855,
+              -16.160224910689845,
+              5.0
+            ],
+            [
+              -1.3565643008632198,
+              -16.444139785881898,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 14,
+          "arc_length_mm": 1.996194490219189,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999999865779,
+          "delta_from_nominal_0_18_mm": -1.3422096767357061e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              16.083702924269033,
+              3.683001526453784,
+              5.0
+            ],
+            [
+              15.5216528620006,
+              5.597168251138125,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 15,
+          "arc_length_mm": 1.9961944902180973,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999999871238,
+          "delta_from_nominal_0_18_mm": -1.2876200106148872e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -15.521652862000607,
+              5.597168251138108,
+              5.0
+            ],
+            [
+              -16.083702924268792,
+              3.6830015264548264,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 16,
+          "arc_length_mm": 1.9961944902191615,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998659166,
+          "delta_from_nominal_0_18_mm": -1.340833000185171e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              11.539290950096385,
+              11.793844342241577,
+              5.0
+            ],
+            [
+              10.031587686805473,
+              13.100276656694398,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 17,
+          "arc_length_mm": 1.9961944902165438,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999999879005,
+          "delta_from_nominal_0_18_mm": -1.2099488078121112e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -16.469821382437836,
+              0.9974886618872174,
+              5.0
+            ],
+            [
+              -16.469821382437836,
+              -0.9974886618872152,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 18,
+          "arc_length_mm": 1.9961944902186082,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998686833,
+          "delta_from_nominal_0_18_mm": -1.313166242411512e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              16.46982138243778,
+              -0.9974886618882449,
+              5.0
+            ],
+            [
+              16.46982138243778,
+              0.9974886618882465,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 19,
+          "arc_length_mm": 1.9961944902180973,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999999871238,
+          "delta_from_nominal_0_18_mm": -1.2876200106148872e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -16.083702924268792,
+              -3.6830015264548246,
+              5.0
+            ],
+            [
+              -15.521652862000607,
+              -5.597168251138104,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 20,
+          "arc_length_mm": 1.996194490218918,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998671345,
+          "delta_from_nominal_0_18_mm": -1.328653853605033e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              13.316012337508326,
+              -9.743398556321438,
+              5.0
+            ],
+            [
+              14.39457850864039,
+              -8.065116834776104,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 21,
+          "arc_length_mm": 1.9961944902189381,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999998670335,
+          "delta_from_nominal_0_18_mm": -1.3296641565574419e-11,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              14.394578508640372,
+              8.06511683477605,
+              5.0
+            ],
+            [
+              13.316012337508337,
+              9.743398556321427,
+              5.0
+            ]
+          ]
+        }
+      ],
+      "minimum_per_flank_removal_mm": 0.179999999986446,
+      "maximum_per_flank_removal_mm": 0.17999999998905092,
+      "maximum_absolute_nominal_delta_mm": 1.355399126268253e-11
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_23.step",
+      "sha256": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+      "teeth": 23,
+      "module_mm": 1.5,
+      "status": "PASS",
+      "raw_intersection_types": [
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge"
+      ],
+      "nominal_pitch_radius_mm": 17.25,
+      "measured_top_plane_z_mm": 5.0,
+      "raw_arc_edge_count": 23,
+      "connected_tooth_arc_count": 23,
+      "measured_teeth": [
+        {
+          "index": 0,
+          "arc_length_mm": 1.996194507470895,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136072486,
+          "delta_from_nominal_0_18_mm": -8.639275128619062e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              7.0371396829465205,
+              -15.749322686474486,
+              5.0
+            ],
+            [
+              8.808542491029044,
+              -14.831455733802276,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "arc_length_mm": 1.996194507468934,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999913617054,
+          "delta_from_nominal_0_18_mm": -8.638294579643713e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -6.706949622434646,
+              -15.892744469163386,
+              5.0
+            ],
+            [
+              -4.827062888438306,
+              -16.560856374930065,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "arc_length_mm": 1.9961945074710827,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136063105,
+          "delta_from_nominal_0_18_mm": -8.639368942464642e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              15.232375985051714,
+              8.095506275089889,
+              5.0
+            ],
+            [
+              14.19576398943408,
+              9.800142078372442,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 3,
+          "arc_length_mm": 1.9961945074715692,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999913603878,
+          "delta_from_nominal_0_18_mm": -8.639612192329338e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              4.480418972410741,
+              16.657981445291096,
+              5.0
+            ],
+            [
+              2.527067045468264,
+              17.063892643465252,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 4,
+          "arc_length_mm": 1.9961945074666665,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136283917,
+          "delta_from_nominal_0_18_mm": -8.637160819890966e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -10.746048879414946,
+              -13.493885040314558,
+              5.0
+            ],
+            [
+              -9.11612787994322,
+              -14.644408915231823,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 5,
+          "arc_length_mm": 1.9961945074710636,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999913606406,
+          "delta_from_nominal_0_18_mm": -8.63935939454663e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              14.195763989434088,
+              -9.800142078372435,
+              5.0
+            ],
+            [
+              15.232375985051709,
+              -8.095506275089898,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 6,
+          "arc_length_mm": 1.9961945074706653,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136083977,
+          "delta_from_nominal_0_18_mm": -8.639160220536013e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              16.313393242160387,
+              -5.606754937272994,
+              5.0
+            ],
+            [
+              16.851659617288334,
+              -3.6856570843003618,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 7,
+          "arc_length_mm": 1.9961945074685357,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999913619046,
+          "delta_from_nominal_0_18_mm": -8.638095405633095e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -16.192838775347518,
+              -5.94596269712504,
+              5.0
+            ],
+            [
+              -15.397996385059745,
+              -7.77587341240123,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 8,
+          "arc_length_mm": 1.9961945074676777,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136233358,
+          "delta_from_nominal_0_18_mm": -8.63766641545638e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -2.1704265942080365,
+              -17.112911745204414,
+              5.0
+            ],
+            [
+              -0.17999672484099477,
+              -17.24906087817672,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 9,
+          "arc_length_mm": 1.9961945074668885,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136272815,
+          "delta_from_nominal_0_18_mm": -8.637271842193428e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -9.11612787994143,
+              14.644408915232972,
+              5.0
+            ],
+            [
+              -10.746048879413436,
+              13.493885040315721,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 10,
+          "arc_length_mm": 1.9961945074711422,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999913606013,
+          "delta_from_nominal_0_18_mm": -8.639398696441702e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              12.483376709486985,
+              11.904948799933466,
+              5.0
+            ],
+            [
+              11.025299862910337,
+              13.266697514186014,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 11,
+          "arc_length_mm": 1.9961945074718603,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136024225,
+          "delta_from_nominal_0_18_mm": -8.639757742567866e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              8.808542491028486,
+              14.83145573380261,
+              5.0
+            ],
+            [
+              7.037139682945052,
+              15.749322686475143,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 12,
+          "arc_length_mm": 1.996194507468934,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999913617054,
+          "delta_from_nominal_0_18_mm": -8.638294579643713e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              2.5270670454705506,
+              -17.063892643464918,
+              5.0
+            ],
+            [
+              4.48041897241043,
+              -16.657981445291178,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 13,
+          "arc_length_mm": 1.9961945074711633,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136059075,
+          "delta_from_nominal_0_18_mm": -8.639409243560436e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -4.827062888435854,
+              16.56085637493078,
+              5.0
+            ],
+            [
+              -6.706949622434337,
+              15.89274446916351,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 14,
+          "arc_length_mm": 1.9961945074715117,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136041656,
+          "delta_from_nominal_0_18_mm": -8.639583437553e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -0.1799967248380403,
+              17.24906087817675,
+              5.0
+            ],
+            [
+              -2.1704265942089003,
+              17.112911745204308,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 15,
+          "arc_length_mm": 1.9961945074685126,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136191613,
+          "delta_from_nominal_0_18_mm": -8.638083859313639e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -16.924902449284772,
+              3.33319322605123,
+              5.0
+            ],
+            [
+              -17.196565925122414,
+              1.356694653530441,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 16,
+          "arc_length_mm": 1.9961945074685357,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999913619046,
+          "delta_from_nominal_0_18_mm": -8.638095405633095e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -15.397996385059745,
+              7.77587341240123,
+              5.0
+            ],
+            [
+              -16.192838775347518,
+              5.945962697125042,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 17,
+          "arc_length_mm": 1.9961945074706264,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999913608592,
+          "delta_from_nominal_0_18_mm": -8.639140791633082e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              16.851659617288334,
+              3.6856570843003587,
+              5.0
+            ],
+            [
+              16.313393242160437,
+              5.606754937272974,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 18,
+          "arc_length_mm": 1.9961945074664826,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999913629311,
+          "delta_from_nominal_0_18_mm": -8.637068893424527e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -13.98816285091354,
+              -10.09424588844169,
+              5.0
+            ],
+            [
+              -12.729091370102845,
+              -11.641852640004235,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 19,
+          "arc_length_mm": 1.996194507471009,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999913606679,
+          "delta_from_nominal_0_18_mm": -8.639332083060225e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              17.221132746924,
+              -0.9975404316731822,
+              5.0
+            ],
+            [
+              17.221132746924,
+              0.9975404316731762,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 20,
+          "arc_length_mm": 1.99619450746528,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999913635324,
+          "delta_from_nominal_0_18_mm": -8.63646759663439e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -12.729091370100829,
+              11.64185264000644,
+              5.0
+            ],
+            [
+              -13.988162850911086,
+              10.094245888445089,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 21,
+          "arc_length_mm": 1.9961945074678615,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136224165,
+          "delta_from_nominal_0_18_mm": -8.637758341922819e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              11.02529986291366,
+              -13.266697514183253,
+              5.0
+            ],
+            [
+              12.4833767094877,
+              -11.904948799932711,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 22,
+          "arc_length_mm": 1.9961945074684897,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999136192757,
+          "delta_from_nominal_0_18_mm": -8.638072424016485e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -17.19656592512245,
+              -1.3566946535304654,
+              5.0
+            ],
+            [
+              -16.92490244928478,
+              -3.333193226051227,
+              5.0
+            ]
+          ]
+        }
+      ],
+      "minimum_per_flank_removal_mm": 0.17999999136024225,
+      "maximum_per_flank_removal_mm": 0.1799999913635324,
+      "maximum_absolute_nominal_delta_mm": 8.639757742567866e-09
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_26.step",
+      "sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+      "teeth": 26,
+      "module_mm": 1.5,
+      "status": "PASS",
+      "raw_intersection_types": [
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge"
+      ],
+      "nominal_pitch_radius_mm": 19.5,
+      "measured_top_plane_z_mm": 5.0,
+      "raw_arc_edge_count": 26,
+      "connected_tooth_arc_count": 26,
+      "measured_teeth": [
+        {
+          "index": 0,
+          "arc_length_mm": 1.9961945043272746,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999929325351,
+          "delta_from_nominal_0_18_mm": -7.06746489109733e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              10.241696026629652,
+              -16.59390437775628,
+              5.0
+            ],
+            [
+              11.883814660126294,
+              -15.460431725012343,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "arc_length_mm": 1.9961945043225988,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.179999992934873,
+          "delta_from_nominal_0_18_mm": -7.065126983452075e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -16.780143338708655,
+              9.933619155795704,
+              5.0
+            ],
+            [
+              -17.70741617096585,
+              8.166848385284055,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "arc_length_mm": 1.9961945043218714,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293523672,
+          "delta_from_nominal_0_18_mm": -7.0647632743892075e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -13.915272202906849,
+              13.660717386689749,
+              5.0
+            ],
+            [
+              -15.238416092496808,
+              12.167196677621922,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 3,
+          "arc_length_mm": 1.9961945043266343,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999929328553,
+          "delta_from_nominal_0_18_mm": -7.0671447027770284e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              18.669813537004462,
+              -5.629215086802503,
+              5.0
+            ],
+            [
+              19.147325585417946,
+              -3.6918725500752827,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 4,
+          "arc_length_mm": 1.9961945043262261,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293305935,
+          "delta_from_nominal_0_18_mm": -7.066940643785102e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              19.147325585417946,
+              3.6918725500752796,
+              5.0
+            ],
+            [
+              18.66981353700458,
+              5.629215086802109,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 5,
+          "arc_length_mm": 1.9961945043217415,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293530167,
+          "delta_from_nominal_0_18_mm": -7.064698326342267e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -15.238416092498689,
+              -12.167196677619563,
+              5.0
+            ],
+            [
+              -13.915272202909051,
+              -13.660717386687505,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 6,
+          "arc_length_mm": 1.9961945043261147,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293311508,
+          "delta_from_nominal_0_18_mm": -7.066884910589266e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              13.915272202909286,
+              -13.660717386687265,
+              5.0
+            ],
+            [
+              15.238416092501655,
+              -12.167196677615902,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 7,
+          "arc_length_mm": 1.9961945043262683,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293303826,
+          "delta_from_nominal_0_18_mm": -7.06696173802257e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              15.238416092499767,
+              12.167196677618218,
+              5.0
+            ],
+            [
+              13.915272202907087,
+              13.660717386689509,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 8,
+          "arc_length_mm": 1.9961945043256568,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.179999992933344,
+          "delta_from_nominal_0_18_mm": -7.0666559826015884e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              17.707416170967655,
+              8.166848385280147,
+              5.0
+            ],
+            [
+              16.780143338709284,
+              9.93361915579463,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 9,
+          "arc_length_mm": 1.9961945043228067,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999929347691,
+          "delta_from_nominal_0_18_mm": -7.06523090032718e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -7.838569115612177,
+              -17.855162676933855,
+              5.0
+            ],
+            [
+              -5.972909704336747,
+              -18.56271396277603,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 10,
+          "arc_length_mm": 1.9961945043257336,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999929333056,
+          "delta_from_nominal_0_18_mm": -7.0666943963182405e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -11.883814660123342,
+              -15.46043172501461,
+              5.0
+            ],
+            [
+              -10.241696026627793,
+              -16.59390437775743,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 11,
+          "arc_length_mm": 1.996194504323603,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293437097,
+          "delta_from_nominal_0_18_mm": -7.06562902630381e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              1.356999580666979,
+              -19.452726085000798,
+              5.0
+            ],
+            [
+              3.337774426138402,
+              -19.2122164749468,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 12,
+          "arc_length_mm": 1.9961945043236033,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293437074,
+          "delta_from_nominal_0_18_mm": -7.065629248348415e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -3.337774426138397,
+              -19.2122164749468,
+              5.0
+            ],
+            [
+              -1.3569995806669735,
+              -19.452726085000798,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 13,
+          "arc_length_mm": 1.9961945043228586,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999929347431,
+          "delta_from_nominal_0_18_mm": -7.065256879545956e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              5.972909704336727,
+              -18.562713962776037,
+              5.0
+            ],
+            [
+              7.838569115612183,
+              -17.85516267693385,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 14,
+          "arc_length_mm": 1.9961945043260194,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999929331627,
+          "delta_from_nominal_0_18_mm": -7.06683728202151e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              3.337774426138749,
+              19.212216474946736,
+              5.0
+            ],
+            [
+              1.3569995806649282,
+              19.45272608500094,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 15,
+          "arc_length_mm": 1.996194504321854,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293524538,
+          "delta_from_nominal_0_18_mm": -7.064754614649615e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -19.147325585417132,
+              -3.6918725500794807,
+              5.0
+            ],
+            [
+              -18.669813537004607,
+              -5.62921508680202,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 16,
+          "arc_length_mm": 1.9961945043245646,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293389013,
+          "delta_from_nominal_0_18_mm": -7.066109863895775e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -10.241696026626748,
+              16.593904377758072,
+              5.0
+            ],
+            [
+              -11.883814660121438,
+              15.460431725016075,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 17,
+          "arc_length_mm": 1.996194504325647,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999929333489,
+          "delta_from_nominal_0_18_mm": -7.06665109762028e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              16.78014333870928,
+              -9.93361915579463,
+              5.0
+            ],
+            [
+              17.707416170967655,
+              -8.166848385280153,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 18,
+          "arc_length_mm": 1.9961945043225988,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.179999992934873,
+          "delta_from_nominal_0_18_mm": -7.065126983452075e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -17.707416170965853,
+              -8.166848385284055,
+              5.0
+            ],
+            [
+              -16.780143338708655,
+              -9.9336191557957,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 19,
+          "arc_length_mm": 1.9961945043260672,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293313884,
+          "delta_from_nominal_0_18_mm": -7.066861151816539e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -5.972909704333256,
+              18.562713962777153,
+              5.0
+            ],
+            [
+              -7.838569115611796,
+              17.85516267693403,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 20,
+          "arc_length_mm": 1.9961945043260194,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999929331627,
+          "delta_from_nominal_0_18_mm": -7.06683728202151e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -1.3569995806649295,
+              19.45272608500094,
+              5.0
+            ],
+            [
+              -3.3377744261387496,
+              19.212216474946736,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 21,
+          "arc_length_mm": 1.996194504324019,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999929341629,
+          "delta_from_nominal_0_18_mm": -7.065837082098625e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -19.474462034540334,
+              0.9976614983277483,
+              5.0
+            ],
+            [
+              -19.474462034540338,
+              -0.9976614983277456,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 22,
+          "arc_length_mm": 1.9961945043261018,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293312152,
+          "delta_from_nominal_0_18_mm": -7.066878471295723e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              11.883814660124393,
+              15.4604317250138,
+              5.0
+            ],
+            [
+              10.24169602662861,
+              16.593904377756925,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 23,
+          "arc_length_mm": 1.9961945043218454,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999929352497,
+          "delta_from_nominal_0_18_mm": -7.064750284779819e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -18.669813537004607,
+              5.629215086802022,
+              5.0
+            ],
+            [
+              -19.147325585417132,
+              3.6918725500794913,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 24,
+          "arc_length_mm": 1.99619450432677,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293278746,
+          "delta_from_nominal_0_18_mm": -7.067212537403833e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              19.474462034540267,
+              -0.9976614983291212,
+              5.0
+            ],
+            [
+              19.474462034540267,
+              0.9976614983291221,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 25,
+          "arc_length_mm": 1.9961945043260714,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999293313673,
+          "delta_from_nominal_0_18_mm": -7.066863261240286e-09,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              7.838569115611798,
+              17.85516267693402,
+              5.0
+            ],
+            [
+              5.972909704333256,
+              18.562713962777156,
+              5.0
+            ]
+          ]
+        }
+      ],
+      "minimum_per_flank_removal_mm": 0.1799999929325351,
+      "maximum_per_flank_removal_mm": 0.17999999293530167,
+      "maximum_absolute_nominal_delta_mm": 7.06746489109733e-09
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_sun.step",
+      "sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "teeth": 36,
+      "module_mm": 1.5,
+      "status": "PASS",
+      "raw_intersection_types": [
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge",
+        "Edge"
+      ],
+      "nominal_pitch_radius_mm": 27.0,
+      "measured_top_plane_z_mm": 5.0,
+      "raw_arc_edge_count": 36,
+      "connected_tooth_arc_count": 36,
+      "measured_teeth": [
+        {
+          "index": 0,
+          "arc_length_mm": 1.996194490917677,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963733393,
+          "delta_from_nominal_0_18_mm": -3.626660638467172e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              25.69565879929173,
+              8.290543942973827,
+              5.0
+            ],
+            [
+              25.01307555958399,
+              10.165925980969174,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 1,
+          "arc_length_mm": 1.9961944909169382,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999996377033,
+          "delta_from_nominal_0_18_mm": -3.622966926464244e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              18.107821315676645,
+              20.027651065452673,
+              5.0
+            ],
+            [
+              16.57899587089511,
+              21.310487932303285,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 2,
+          "arc_length_mm": 1.9961944909145162,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963891433,
+          "delta_from_nominal_0_18_mm": -3.6108566137116327e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -26.39836525865077,
+              5.668007733839106,
+              5.0
+            ],
+            [
+              -26.74492185186354,
+              3.702587627283345,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 3,
+          "arc_length_mm": 1.9961944909145162,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963891433,
+          "delta_from_nominal_0_18_mm": -3.6108566137116327e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              3.702587627283347,
+              -26.744921851863538,
+              5.0
+            ],
+            [
+              5.6680077338391195,
+              -26.398365258650767,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 4,
+          "arc_length_mm": 1.9961944909167553,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963779478,
+          "delta_from_nominal_0_18_mm": -3.622052102691953e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              23.865646156733796,
+              12.626596276177366,
+              5.0
+            ],
+            [
+              22.867776216866666,
+              14.354957711372968,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 5,
+          "arc_length_mm": 1.9961944909178675,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963723867,
+          "delta_from_nominal_0_18_mm": -3.6276132098223e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              0.9978699398676999,
+              26.981553987550633,
+              5.0
+            ],
+            [
+              -0.997869939867702,
+              26.981553987550633,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 6,
+          "arc_length_mm": 1.9961944909172866,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999996375291,
+          "delta_from_nominal_0_18_mm": -3.624708866389881e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              26.74492185186388,
+              3.7025876272808995,
+              5.0
+            ],
+            [
+              26.398365258650706,
+              5.668007733839399,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 7,
+          "arc_length_mm": 1.9961944909151037,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963862057,
+          "delta_from_nominal_0_18_mm": -3.613794263834791e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -18.107821315674954,
+              -20.027651065454197,
+              5.0
+            ],
+            [
+              -16.57899587089476,
+              -21.310487932303538,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 8,
+          "arc_length_mm": 1.9961944909113507,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999964049707,
+          "delta_from_nominal_0_18_mm": -3.5950292742725765e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              25.01307555958636,
+              -10.165925980963333,
+              5.0
+            ],
+            [
+              25.695658799291728,
+              -8.290543942973835,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 9,
+          "arc_length_mm": 1.9961944909178702,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963723734,
+          "delta_from_nominal_0_18_mm": -3.6276265324985957e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              26.981553987550633,
+              -0.9978699398676993,
+              5.0
+            ],
+            [
+              26.981553987550633,
+              0.9978699398677029,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 10,
+          "arc_length_mm": 1.996194490913365,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963948987,
+          "delta_from_nominal_0_18_mm": -3.605101217551976e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -14.354957711371593,
+              -22.867776216867576,
+              5.0
+            ],
+            [
+              -12.626596276178931,
+              -23.865646156732986,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 11,
+          "arc_length_mm": 1.9961944909139406,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999996392021,
+          "delta_from_nominal_0_18_mm": -3.6079789156318043e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              12.626596276180386,
+              -23.865646156732215,
+              5.0
+            ],
+            [
+              14.3549577113735,
+              -22.867776216866375,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 12,
+          "arc_length_mm": 1.9961944909140006,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963917213,
+          "delta_from_nominal_0_18_mm": -3.608278675848453e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -22.867776216866325,
+              14.354957711373517,
+              5.0
+            ],
+            [
+              -23.865646156732204,
+              12.62659627618037,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 13,
+          "arc_length_mm": 1.9961944909151157,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963861457,
+          "delta_from_nominal_0_18_mm": -3.6138542158781206e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              8.290543942976552,
+              -25.69565879929085,
+              5.0
+            ],
+            [
+              10.165925980969437,
+              -25.01307555958381,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 14,
+          "arc_length_mm": 1.9961944909157872,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963827884,
+          "delta_from_nominal_0_18_mm": -3.617211530304587e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -0.9978699398666568,
+              -26.98155398755067,
+              5.0
+            ],
+            [
+              0.9978699398666518,
+              -26.981553987550672,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 15,
+          "arc_length_mm": 1.9961944909167524,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963779623,
+          "delta_from_nominal_0_18_mm": -3.6220376697926326e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              14.354957711372968,
+              22.867776216866673,
+              5.0
+            ],
+            [
+              12.626596276177366,
+              23.865646156733796,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 16,
+          "arc_length_mm": 1.9961944909176756,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999996373346,
+          "delta_from_nominal_0_18_mm": -3.626653977129024e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              10.165925980969174,
+              25.01307555958398,
+              5.0
+            ],
+            [
+              8.290543942973827,
+              25.695658799291728,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 17,
+          "arc_length_mm": 1.9961944909153555,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963849467,
+          "delta_from_nominal_0_18_mm": -3.615053256744716e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              16.578995870897593,
+              -21.31048793230134,
+              5.0
+            ],
+            [
+              18.107821315677814,
+              -20.027651065451614,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 18,
+          "arc_length_mm": 1.9961944909166505,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963784719,
+          "delta_from_nominal_0_18_mm": -3.6215280774243297e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -16.57899587089227,
+              21.310487932305477,
+              5.0
+            ],
+            [
+              -18.107821315673775,
+              20.027651065455267,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 19,
+          "arc_length_mm": 1.996194490913437,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999996394539,
+          "delta_from_nominal_0_18_mm": -3.6054609298119544e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -23.865646156732986,
+              -12.626596276178885,
+              5.0
+            ],
+            [
+              -22.867776216867526,
+              -14.354957711371613,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 20,
+          "arc_length_mm": 1.9961944909145162,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963891433,
+          "delta_from_nominal_0_18_mm": -3.6108566137116327e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -26.744921851863538,
+              -3.702587627283341,
+              5.0
+            ],
+            [
+              -26.39836525865077,
+              -5.668007733839103,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 21,
+          "arc_length_mm": 1.9961944909157632,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963829083,
+          "delta_from_nominal_0_18_mm": -3.6170916262179276e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -26.981553987550676,
+              0.9978699398666501,
+              5.0
+            ],
+            [
+              -26.981553987550676,
+              -0.9978699398666466,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 22,
+          "arc_length_mm": 1.9961944909150677,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963863855,
+          "delta_from_nominal_0_18_mm": -3.6136144077048016e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -25.01307555958389,
+              10.16592598096941,
+              5.0
+            ],
+            [
+              -25.695658799290854,
+              8.290543942976555,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 23,
+          "arc_length_mm": 1.9961944909114047,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999996404701,
+          "delta_from_nominal_0_18_mm": -3.5952990584675604e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -8.290543942973827,
+              25.69565879929173,
+              5.0
+            ],
+            [
+              -10.165925980963337,
+              25.013075559586284,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 24,
+          "arc_length_mm": 1.9961944909087368,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999964180402,
+          "delta_from_nominal_0_18_mm": -3.581959728826689e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -25.695658799290854,
+              -8.290543942976552,
+              5.0
+            ],
+            [
+              -25.013075559586273,
+              -10.165925980963545,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 25,
+          "arc_length_mm": 1.9961944909145402,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963890234,
+          "delta_from_nominal_0_18_mm": -3.610976517798292e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -5.668007733839113,
+              -26.39836525865077,
+              5.0
+            ],
+            [
+              -3.7025876272833287,
+              -26.744921851863545,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 26,
+          "arc_length_mm": 1.996194490917286,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963752944,
+          "delta_from_nominal_0_18_mm": -3.624705535720807e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -3.7025876272809,
+              26.74492185186388,
+              5.0
+            ],
+            [
+              -5.668007733839399,
+              26.398365258650706,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 27,
+          "arc_length_mm": 1.9961944909161229,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963811097,
+          "delta_from_nominal_0_18_mm": -3.6188901875178203e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              22.86777621686791,
+              -14.354957711371055,
+              5.0
+            ],
+            [
+              23.865646156734577,
+              -12.626596276175913,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 28,
+          "arc_length_mm": 1.996194490917286,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963752944,
+          "delta_from_nominal_0_18_mm": -3.624705535720807e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              5.668007733839398,
+              26.398365258650706,
+              5.0
+            ],
+            [
+              3.702587627280899,
+              26.74492185186388,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 29,
+          "arc_length_mm": 1.996194490917298,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963752344,
+          "delta_from_nominal_0_18_mm": -3.6247654877641367e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              26.398365258650706,
+              -5.668007733839413,
+              5.0
+            ],
+            [
+              26.74492185186388,
+              -3.7025876272809084,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 30,
+          "arc_length_mm": 1.9961944909166505,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963784719,
+          "delta_from_nominal_0_18_mm": -3.6215280774243297e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              20.02765106545526,
+              -18.10782131567379,
+              5.0
+            ],
+            [
+              21.310487932305463,
+              -16.578995870892285,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 31,
+          "arc_length_mm": 1.9961944909087368,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999964180402,
+          "delta_from_nominal_0_18_mm": -3.581959728826689e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -10.16592598096355,
+              -25.01307555958627,
+              5.0
+            ],
+            [
+              -8.290543942976544,
+              -25.695658799290854,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 32,
+          "arc_length_mm": 1.9961944909150557,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963864455,
+          "delta_from_nominal_0_18_mm": -3.613554455661472e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -21.31048793230353,
+              -16.578995870894783,
+              5.0
+            ],
+            [
+              -20.027651065454204,
+              -18.107821315674947,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 33,
+          "arc_length_mm": 1.9961944909161708,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.179999999638087,
+          "delta_from_nominal_0_18_mm": -3.6191299956911394e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -12.626596276175885,
+              23.86564615673457,
+              5.0
+            ],
+            [
+              -14.354957711371053,
+              22.867776216867867,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 34,
+          "arc_length_mm": 1.9961944909153795,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.17999999963848268,
+          "delta_from_nominal_0_18_mm": -3.6151731608313753e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              -20.0276510654516,
+              18.107821315677825,
+              5.0
+            ],
+            [
+              -21.310487932301335,
+              16.578995870897593,
+              5.0
+            ]
+          ]
+        },
+        {
+          "index": 35,
+          "arc_length_mm": 1.9961944909169382,
+          "nominal_unthinned_tooth_arc_length_mm": 2.356194490192345,
+          "per_flank_removal_mm": 0.1799999996377033,
+          "delta_from_nominal_0_18_mm": -3.622966926464244e-10,
+          "within_required_0_15_to_0_25": true,
+          "within_nominal_diagnostic_tolerance": true,
+          "constituent_arc_count": 1,
+          "endpoints_mm": [
+            [
+              21.31048793230329,
+              16.578995870895106,
+              5.0
+            ],
+            [
+              20.027651065452673,
+              18.10782131567664,
+              5.0
+            ]
+          ]
+        }
+      ],
+      "minimum_per_flank_removal_mm": 0.17999999963723734,
+      "maximum_per_flank_removal_mm": 0.17999999964180402,
+      "maximum_absolute_nominal_delta_mm": 3.6276265324985957e-10
+    }
+  ],
+  "expected_total_teeth": 174,
+  "measured_total_teeth": 174,
+  "nominal_comparison_note": "0.001mm tolerance is a declared diagnostic comparison allowance for exported spline/intersection precision, not a relaxed Wish limit. The required0.15..0.25mm interval is tested without widened thresholds. Every raw nominal delta is retained."
+}

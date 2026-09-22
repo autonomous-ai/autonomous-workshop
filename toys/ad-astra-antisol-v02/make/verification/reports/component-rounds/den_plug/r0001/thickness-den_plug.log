@@ -1,0 +1,16 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_den_plug.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/thickness-den_plug.md
+(7.4s, exit 0)
+--- stdout
+part_den_plug.step.py: 9.90 cm3 solid, grid 0.147 mm (250x250x168), 175412 surface samples, thickness resolved to 0.074 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (11 of 175412 samples); thinnest 0.15 mm at (17.4, -17.7, 24.0) in 3 region(s); no region is a wall, 3 taper(s) at feature edges (0.01% of surface, budget 2%); 26 more within measurement error of the limit
+  PASS  thickness distribution         median 8.23 mm, p95 33.52 mm, max 43.66 mm
+  WARN  hollowable at 1.20 mm wall     5.75 of 9.90 cm3 (58%) in 3 pocket(s), 1 too small to shell
+  PASS  filament that would save       0.86 cm3, 1.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.29 mm at (-17.3, -17.7, 24.0)      4 samples, 0.1 mm2, runs 0.7 mm, band 0.12 mm
+        2. [taper] 0.15 mm at (17.4, -17.7, 24.0)      4 samples, 0.1 mm2, runs 0.6 mm, band 0.14 mm
+        3. [taper] 0.29 mm at (17.1, -12.9, 8.3)      3 samples, 0.1 mm2, runs 0.8 mm, band 0.07 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/thickness-den_plug.md
+
+--- stderr

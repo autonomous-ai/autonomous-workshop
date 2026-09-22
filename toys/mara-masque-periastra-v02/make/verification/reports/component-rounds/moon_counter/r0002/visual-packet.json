@@ -1,0 +1,28 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0002/visual/front.png": "4f001621b69fc7edd748aa312d8538aecb2477ccfb1b2c84b0aa44c3eeea117d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0002/visual/iso.png": "203e68fd96ad69e9c2cd4193131d0374b754eb344f4c1aaf57d8e550a5a05a98",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/moon_counter/r0002/visual/top.png": "2bf504d6fcf898e0c3f81177d6359cc142f1982898914c30e05c51c19457a0e4"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "README.md": "2855fdfd8bef7fc4cfe9b8749ccae246e801c937f90ae69970e4bdb361ef6114",
+    "assembly.py": "57db9cecf7a705e01710c19806ea020b97336d7625a7eb99f5ade0e57d800110",
+    "export_delivery.py": "cc032d0265e3879ad2646f5577a83d5afccc0a1d5484f734094682b8b98d62b6",
+    "measure/check_fit.py": "570ef79b77df83a71e8b4dfa3852940ebd1cd365c3f9c3802d52e8dff545b3bd",
+    "part_base.step": "590aa6c78a8480f8d07e9344af11f075f2dc4350cd8a27462bc8ae4453e8f72c",
+    "part_base.step.py": "d0f221cec878d0862ec283a0c1cd764bc9add7ac5b5c612278464f232969614c",
+    "part_moon_counter.step": "5a25e9b6612061eb5bc6ae1884c5ba59f5e0ab04051d53e5b641dd7101c25226",
+    "part_moon_counter.step.py": "9d0809d61b552d7f2f14fcd40c0e564a373fcd5b17702082874b97acd80e0d95",
+    "part_roof.step": "5d2d0678d31551e58db866cff87427f3f1e615ba4d600861eb541e96c2543354",
+    "part_roof.step.py": "6df733b532bd9da90e51b13c7e24fb0a7d415764607b1ef15f88e824c29bab99",
+    "part_sun_counter.step": "e750eec66811843616d70c6b25e7e03e56c0ab01986516e7382df52f096c540c",
+    "part_sun_counter.step.py": "11919bf1480752454d5d80529fc24c7160a98a34af334ada5297ed2aace75146",
+    "periastra.step": "b2e1f4fd1d9f80ff2db0909f2b1677ccfe1eb3ad534edf4e36fd0e8052d15883",
+    "periastra.step.py": "05488ac7310df1ea5fc4a9cc9e3876c46f3cb25d7a289943110ded8cccd84d1e",
+    "periastra_lib.py": "3f74231b3909834ae39bb71991a9db09d32f918a68e1c72c045bffa954733505",
+    "render_evidence.py": "80b0729b28c1074b36f8050f463a53022e4e1f94bf268942657dacdcf82af6a6",
+    "write_states.py": "d8f4ea58971d351846d0c6c31e49831fabb60ad785557446fe46a701743b4546"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin ligament between mounting holes and outer knurl",
+      "evidence": "Top view at 12 and 6 oclock; thickness report confirms 0.40\u20130.47 mm wall.",
+      "part": "bezel",
+      "repair": "Move mounting centers inward 0.5 mm and add local inward bosses, preserving OD70."
+    }
+  ],
+  "observation": "The ring is concentric and finely knurled, but both mounting holes nearly break through the outer rim.",
+  "packet_sha256": "9ad3652eba1ae7fe889395d3696e26f8601a70d42ba1b79d5bdfbbb2f70c2796",
+  "status": "fail"
+}

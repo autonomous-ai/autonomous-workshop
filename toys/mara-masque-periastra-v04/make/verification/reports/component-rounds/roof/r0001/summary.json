@@ -1,0 +1,62 @@
+{
+ "build": {
+  "roof": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "roof"
+ ],
+ "check_motion": false,
+ "checked": [
+  "roof"
+ ],
+ "checks_ok": true,
+ "entry": "part_roof.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "roof"
+ ],
+ "print": {
+  "roof": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001/overhang-roof.log": "d29fd26581daa6622b80ae8ce701f766eaff33231f9f7b205ff1e95db052a628",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001/thickness-roof.log": "389e6e3a0101c35c0f9a69f71f672003e130fa07f33b6cc1e6589e460cc4958c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:roof",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front view (along the slit): one tube standing on the exposed drum top, centred in the slit, its root spreading into the floor through a smooth cove, its open muzzle near the top of the slit; the drum wall below the slit is unbroken and its rotation-ring seam runs straight across without a notch. Top view: the slit is a clean parallel-walled channel, the tube lies on its mid-line with clear air either side, the cove flare stops short of both walls, and the bore is open and round. Iso view: hemisphere on a visible drum on a bare square plate, the slit running from its far edge over the apex and down the near flank to the drum top, with only a short mouth clearing the shell. No arms, keel, pier or foot block anywhere; no floating, misplaced, missing or extra geometry, no visible intersection, no raw sawn face.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/roof/r0001/visual-packet.json",
+  "packet_sha256": "fec7a439866756ed2f7166e25b9db4ea26ca66c37c8c5e7b11a8b2c67ba1a3a8",
+  "status": "pass"
+ }
+}

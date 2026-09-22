@@ -1,0 +1,1521 @@
+{
+  "assembly": "mintfin.step.py",
+  "conditions": [
+    {
+      "id": "j00-pitch-up-25",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face"
+        ],
+        "axis_point": [
+          0,
+          48,
+          30
+        ],
+        "axis_direction": [
+          1,
+          0,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 25,
+        "steps": 157,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.35079963036977574,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j00-twist-positive-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face"
+        ],
+        "axis_point": [
+          0,
+          48,
+          30
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 20,
+        "steps": 78,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.35079963036977574,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j00-twist-negative-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face"
+        ],
+        "axis_point": [
+          0,
+          48,
+          30
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": -20,
+        "steps": 78,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.35079963036977574,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j00-rigid-axial-capture",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Rigid +Y withdrawal obstructed by retaining mouth, conditional on construction bonds. Threshold exceeds all pad material; no snap-force or arbitrary-direction retention claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.segment_01.structural",
+        "obstacle_parts": [
+          "mintfin.figure.head.structural"
+        ],
+        "translation": [
+          0,
+          10,
+          0
+        ],
+        "steps": 67,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 6.145000000000001,
+        "maxStepMm": 0.15
+      }
+    },
+    {
+      "id": "j00-sphere-approach-only",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "Sphere-only free access ending 0.2mm before retaining lip contact; excludes child shell and compliant insertion. It is not an assembly-path proof.",
+      "inputs": {
+        "start": [
+          0,
+          63,
+          30
+        ],
+        "end": [
+          0,
+          56.027856,
+          30
+        ],
+        "radius": 5.0,
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "j01-pitch-up-25",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01"
+        ],
+        "axis_point": [
+          0,
+          57.85,
+          34
+        ],
+        "axis_direction": [
+          1,
+          0,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 25,
+        "steps": 144,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8442419287150397,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j01-twist-positive-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01"
+        ],
+        "axis_point": [
+          0,
+          57.85,
+          34
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 20,
+        "steps": 75,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8442419287150397,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j01-twist-negative-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01"
+        ],
+        "axis_point": [
+          0,
+          57.85,
+          34
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": -20,
+        "steps": 75,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8442419287150397,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j01-rigid-axial-capture",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Rigid +Y withdrawal obstructed by retaining mouth, conditional on construction bonds. Threshold exceeds all pad material; no snap-force or arbitrary-direction retention claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.segment_02.structural",
+        "obstacle_parts": [
+          "mintfin.figure.chain_01.segment_01.structural"
+        ],
+        "translation": [
+          0,
+          10,
+          0
+        ],
+        "steps": 67,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 4.470194015235491,
+        "maxStepMm": 0.15
+      }
+    },
+    {
+      "id": "j01-sphere-approach-only",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "Sphere-only free access ending 0.2mm before retaining lip contact; excludes child shell and compliant insertion. It is not an assembly-path proof.",
+      "inputs": {
+        "start": [
+          0,
+          72.85,
+          34
+        ],
+        "end": [
+          0,
+          66.277856,
+          34
+        ],
+        "radius": 5.0,
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "j02-pitch-up-25",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02"
+        ],
+        "axis_point": [
+          0,
+          68.775,
+          33.5
+        ],
+        "axis_direction": [
+          1,
+          0,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 25,
+        "steps": 133,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8406992291673387,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j02-twist-positive-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02"
+        ],
+        "axis_point": [
+          0,
+          68.775,
+          33.5
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 20,
+        "steps": 76,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8406992291673387,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j02-twist-negative-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02"
+        ],
+        "axis_point": [
+          0,
+          68.775,
+          33.5
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": -20,
+        "steps": 76,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8406992291673387,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j02-rigid-axial-capture",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Rigid +Y withdrawal obstructed by retaining mouth, conditional on construction bonds. Threshold exceeds all pad material; no snap-force or arbitrary-direction retention claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.segment_03.structural",
+        "obstacle_parts": [
+          "mintfin.figure.chain_01.chain_02.segment_02.structural"
+        ],
+        "translation": [
+          0,
+          10,
+          0
+        ],
+        "steps": 67,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 4.453192637235245,
+        "maxStepMm": 0.15
+      }
+    },
+    {
+      "id": "j02-sphere-approach-only",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "Sphere-only free access ending 0.2mm before retaining lip contact; excludes child shell and compliant insertion. It is not an assembly-path proof.",
+      "inputs": {
+        "start": [
+          0,
+          83.775,
+          33.5
+        ],
+        "end": [
+          0,
+          76.282953,
+          33.5
+        ],
+        "radius": 4.75,
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "j03-pitch-up-25",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03"
+        ],
+        "axis_point": [
+          0,
+          80.05,
+          33
+        ],
+        "axis_direction": [
+          1,
+          0,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 25,
+        "steps": 122,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8406992291673107,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j03-twist-positive-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03"
+        ],
+        "axis_point": [
+          0,
+          80.05,
+          33
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 20,
+        "steps": 76,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8406992291673107,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j03-twist-negative-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03"
+        ],
+        "axis_point": [
+          0,
+          80.05,
+          33
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": -20,
+        "steps": 76,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8406992291673107,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j03-rigid-axial-capture",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Rigid +Y withdrawal obstructed by retaining mouth, conditional on construction bonds. Threshold exceeds all pad material; no snap-force or arbitrary-direction retention claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.structural",
+        "obstacle_parts": [
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03.structural"
+        ],
+        "translation": [
+          0,
+          10,
+          0
+        ],
+        "steps": 67,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 4.453192637234409,
+        "maxStepMm": 0.15
+      }
+    },
+    {
+      "id": "j03-sphere-approach-only",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "Sphere-only free access ending 0.2mm before retaining lip contact; excludes child shell and compliant insertion. It is not an assembly-path proof.",
+      "inputs": {
+        "start": [
+          0,
+          95.05,
+          33
+        ],
+        "end": [
+          0,
+          87.557953,
+          33
+        ],
+        "radius": 4.75,
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "j04-pitch-up-25",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04"
+        ],
+        "axis_point": [
+          0,
+          90.525,
+          33
+        ],
+        "axis_direction": [
+          1,
+          0,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 25,
+        "steps": 112,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8388181096530275,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j04-twist-positive-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04"
+        ],
+        "axis_point": [
+          0,
+          90.525,
+          33
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 20,
+        "steps": 63,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8388181096530275,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j04-twist-negative-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04"
+        ],
+        "axis_point": [
+          0,
+          90.525,
+          33
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": -20,
+        "steps": 63,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8388181096530275,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j04-rigid-axial-capture",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Rigid +Y withdrawal obstructed by retaining mouth, conditional on construction bonds. Threshold exceeds all pad material; no snap-force or arbitrary-direction retention claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05.structural",
+        "obstacle_parts": [
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.structural"
+        ],
+        "translation": [
+          0,
+          10,
+          0
+        ],
+        "steps": 67,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 4.44393064373748,
+        "maxStepMm": 0.15
+      }
+    },
+    {
+      "id": "j04-sphere-approach-only",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "Sphere-only free access ending 0.2mm before retaining lip contact; excludes child shell and compliant insertion. It is not an assembly-path proof.",
+      "inputs": {
+        "start": [
+          0,
+          105.525,
+          33
+        ],
+        "end": [
+          0,
+          98.47227600000001,
+          33
+        ],
+        "radius": 4.625,
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "j05-pitch-up-25",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05"
+        ],
+        "axis_point": [
+          0,
+          101.525,
+          34
+        ],
+        "axis_direction": [
+          1,
+          0,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 25,
+        "steps": 101,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374300276,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j05-twist-positive-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05"
+        ],
+        "axis_point": [
+          0,
+          101.525,
+          34
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 20,
+        "steps": 61,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374300276,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j05-twist-negative-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05"
+        ],
+        "axis_point": [
+          0,
+          101.525,
+          34
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": -20,
+        "steps": 61,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374300276,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j05-rigid-axial-capture",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Rigid +Y withdrawal obstructed by retaining mouth, conditional on construction bonds. Threshold exceeds all pad material; no snap-force or arbitrary-direction retention claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06.structural",
+        "obstacle_parts": [
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05.structural"
+        ],
+        "translation": [
+          0,
+          10,
+          0
+        ],
+        "steps": 67,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 4.434125419404958,
+        "maxStepMm": 0.15
+      }
+    },
+    {
+      "id": "j05-sphere-approach-only",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "Sphere-only free access ending 0.2mm before retaining lip contact; excludes child shell and compliant insertion. It is not an assembly-path proof.",
+      "inputs": {
+        "start": [
+          0,
+          116.525,
+          34
+        ],
+        "end": [
+          0,
+          108.71108600000001,
+          34
+        ],
+        "radius": 4.5,
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "j06-pitch-up-25",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06"
+        ],
+        "axis_point": [
+          0,
+          111.075,
+          37.1
+        ],
+        "axis_direction": [
+          1,
+          0,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 25,
+        "steps": 91,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374325818,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j06-twist-positive-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06"
+        ],
+        "axis_point": [
+          0,
+          111.075,
+          37.1
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 20,
+        "steps": 57,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374325818,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j06-twist-negative-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06"
+        ],
+        "axis_point": [
+          0,
+          111.075,
+          37.1
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": -20,
+        "steps": 57,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374325818,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j06-rigid-axial-capture",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Rigid +Y withdrawal obstructed by retaining mouth, conditional on construction bonds. Threshold exceeds all pad material; no snap-force or arbitrary-direction retention claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07.structural",
+        "obstacle_parts": [
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06.structural"
+        ],
+        "translation": [
+          0,
+          10,
+          0
+        ],
+        "steps": 67,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 4.434125419402236,
+        "maxStepMm": 0.15
+      }
+    },
+    {
+      "id": "j06-sphere-approach-only",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "Sphere-only free access ending 0.2mm before retaining lip contact; excludes child shell and compliant insertion. It is not an assembly-path proof.",
+      "inputs": {
+        "start": [
+          0,
+          126.075,
+          37.1
+        ],
+        "end": [
+          0,
+          118.261086,
+          37.1
+        ],
+        "radius": 4.5,
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "j07-pitch-up-25",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07"
+        ],
+        "axis_point": [
+          0,
+          119.25,
+          41.8
+        ],
+        "axis_direction": [
+          1,
+          0,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 25,
+        "steps": 80,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374317672,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j07-twist-positive-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07"
+        ],
+        "axis_point": [
+          0,
+          119.25,
+          41.8
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 20,
+        "steps": 52,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374317672,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j07-twist-negative-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07"
+        ],
+        "axis_point": [
+          0,
+          119.25,
+          41.8
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": -20,
+        "steps": 52,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374317672,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j07-rigid-axial-capture",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Rigid +Y withdrawal obstructed by retaining mouth, conditional on construction bonds. Threshold exceeds all pad material; no snap-force or arbitrary-direction retention claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08.structural",
+        "obstacle_parts": [
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07.structural"
+        ],
+        "translation": [
+          0,
+          10,
+          0
+        ],
+        "steps": 67,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 4.43412541940121,
+        "maxStepMm": 0.15
+      }
+    },
+    {
+      "id": "j07-sphere-approach-only",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "Sphere-only free access ending 0.2mm before retaining lip contact; excludes child shell and compliant insertion. It is not an assembly-path proof.",
+      "inputs": {
+        "start": [
+          0,
+          134.25,
+          41.8
+        ],
+        "end": [
+          0,
+          127.036086,
+          41.8
+        ],
+        "radius": 4.5,
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "j08-pitch-up-25",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.chain_09",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08"
+        ],
+        "axis_point": [
+          0,
+          128.0,
+          48.8
+        ],
+        "axis_direction": [
+          1,
+          0,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 25,
+        "steps": 66,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374301863,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j08-twist-positive-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.chain_09",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08"
+        ],
+        "axis_point": [
+          0,
+          128.0,
+          48.8
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": 20,
+        "steps": 45,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374301863,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j08-twist-negative-20",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Neutral distal subtree with all downstream joints held neutral. Only exact invariant sphere/pad contact is allowed; no arbitrary combined pose claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.chain_09",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08"
+        ],
+        "axis_point": [
+          0,
+          128.0,
+          48.8
+        ],
+        "axis_direction": [
+          0,
+          1,
+          0
+        ],
+        "start_deg": 0,
+        "end_deg": -20,
+        "steps": 45,
+        "allow_seated_contact": false
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.8368577374301863,
+        "maxStepMm": 0.35
+      }
+    },
+    {
+      "id": "j08-rigid-axial-capture",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Rigid +Y withdrawal obstructed by retaining mouth, conditional on construction bonds. Threshold exceeds all pad material; no snap-force or arbitrary-direction retention claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.chain_09.tail",
+        "obstacle_parts": [
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08.structural"
+        ],
+        "translation": [
+          0,
+          10,
+          0
+        ],
+        "steps": 67,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 4.434125419401091,
+        "maxStepMm": 0.15
+      }
+    },
+    {
+      "id": "j08-sphere-approach-only",
+      "check": "clear_path_proxy",
+      "expect": "clear",
+      "description": "Sphere-only free access ending 0.2mm before retaining lip contact; excludes child shell and compliant insertion. It is not an assembly-path proof.",
+      "inputs": {
+        "start": [
+          0,
+          143.0,
+          48.8
+        ],
+        "end": [
+          0,
+          135.78608599999998,
+          48.8
+        ],
+        "radius": 4.5,
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.active_face",
+          "mintfin.figure.chain_01.segment_01",
+          "mintfin.figure.chain_01.chain_02.segment_02",
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07",
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08"
+        ]
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001
+      }
+    },
+    {
+      "id": "happy-face-normal-withdrawal",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "Entire installed bonded face kit withdraws along its normal; reversed path is geometric placement. No magnetic retention, adhesive strength or snap compliance claim.",
+      "inputs": {
+        "moving_part": "mintfin.figure.active_face",
+        "obstacle_parts": [
+          "mintfin.figure.head",
+          "mintfin.figure.chain_01"
+        ],
+        "translation": [
+          0,
+          -11.737771208805668,
+          2.494940289813112
+        ],
+        "steps": 48,
+        "allow_seated_contact": true
+      },
+      "thresholds": {
+        "maxOverlapMm3": 0.001,
+        "maxStepMm": 0.25
+      }
+    }
+  ],
+  "retention": {
+    "fixed_parts": [
+      "mintfin.figure.head.structural"
+    ],
+    "proofs": [
+      {
+        "part": "mintfin.figure.chain_01.segment_01.structural",
+        "condition": "j00-rigid-axial-capture",
+        "supports": [
+          "mintfin.figure.head.structural"
+        ]
+      },
+      {
+        "part": "mintfin.figure.chain_01.chain_02.segment_02.structural",
+        "condition": "j01-rigid-axial-capture",
+        "supports": [
+          "mintfin.figure.chain_01.segment_01.structural"
+        ]
+      },
+      {
+        "part": "mintfin.figure.chain_01.chain_02.chain_03.segment_03.structural",
+        "condition": "j02-rigid-axial-capture",
+        "supports": [
+          "mintfin.figure.chain_01.chain_02.segment_02.structural"
+        ]
+      },
+      {
+        "part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.structural",
+        "condition": "j03-rigid-axial-capture",
+        "supports": [
+          "mintfin.figure.chain_01.chain_02.chain_03.segment_03.structural"
+        ]
+      },
+      {
+        "part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05.structural",
+        "condition": "j04-rigid-axial-capture",
+        "supports": [
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.structural"
+        ]
+      },
+      {
+        "part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06.structural",
+        "condition": "j05-rigid-axial-capture",
+        "supports": [
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05.structural"
+        ]
+      },
+      {
+        "part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07.structural",
+        "condition": "j06-rigid-axial-capture",
+        "supports": [
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06.structural"
+        ]
+      },
+      {
+        "part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08.structural",
+        "condition": "j07-rigid-axial-capture",
+        "supports": [
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07.structural"
+        ]
+      },
+      {
+        "part": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.chain_09.tail",
+        "condition": "j08-rigid-axial-capture",
+        "supports": [
+          "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08.structural"
+        ]
+      }
+    ]
+  }
+}

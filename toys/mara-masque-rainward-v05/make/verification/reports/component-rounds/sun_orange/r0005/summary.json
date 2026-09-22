@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_sun_orange.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun_orange"
+ ],
+ "print": {
+  "sun_orange": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0003/overhang-sun_orange.log": "911e0bd74dc5c13907b86be4d1a60b8c6bb169d0b9c68b6ec8f674cc2250dfcc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0003/thickness-sun_orange.log": "3f0dc4da6ec93c90ebd71fe58a5cacce43a4bd2866d4a84b75e6bbb0f17f22f0"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.32,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "sun_orange"
+ ],
+ "round": 5,
+ "scope": "component:sun_orange",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Repaired geometry, inspected fresh. Top: one continuous disc with 24 lane pockets radiating from the centre platform and four capsule markers in the wider boundaries. The rim carries 38 slender tongues: each leaves the body on a sharp V between its neighbours, sheds its width at once, and curls to a blunt tip, and every one of them curls the same way round the ring. The hero arch closes its one loop at the lower rim with short tongues running on underneath it. Iso: every tongue top is a single flat facet falling outward from the deck line to a low tip, with a straight crisp crease where it meets each vertical flank; nothing is rounded over or blended into a flank. Front: the underside is one flat unbroken plane on the bed and the rim steps down and out; no feature rises above the deck top. No misplaced, missing or extra feature, no visible intersection and no floating geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/sun_orange/r0005/visual-packet.json",
+  "packet_sha256": "5d453d72edf3ec49f11066495e2005ebea95ae17868b265a0debf45fd59eebef",
+  "status": "pass"
+ }
+}

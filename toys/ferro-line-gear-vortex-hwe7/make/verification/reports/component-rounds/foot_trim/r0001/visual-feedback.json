@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Missing brass surface color",
+      "evidence": "Top and isometric views show a dark neutral ring instead of brass.",
+      "part": "foot_trim",
+      "repair": "Assign the shared brass sRGB color to the printable solid."
+    }
+  ],
+  "observation": "The ring is open and uniformly thick, but its rendered finish is dark blue-gray.",
+  "packet_sha256": "040bb825740852247a5ffcbb1eb01898f2d8c88a29277bc2fc6331f1db03189f",
+  "status": "fail"
+}

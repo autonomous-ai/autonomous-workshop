@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso inspected on the closed stored state. The roof sits square on the four corner ledges of the base with an even gap all round; the domed roof is centred on the board box and its plate covers the 184 mm opening. The 24 counters are stored on the board beneath and are visible through the four lowered sill spans in the front and iso views, so the complete starting position still fits inside the closed box. The shutter slit is straight, parallel-sided and centred on the board's mid-line; the telescope tube stands in it at 45 degrees. No misplaced, missing or extra parts, no visible intersections, no floating geometry, and the roof does not foul the corner piers.",
+  "packet_sha256": "4d67df4531ea2e1bae6d4a002af2dfad46fab1102ff54a063ab99e19549b789c",
+  "status": "pass"
+}

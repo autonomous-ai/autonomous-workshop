@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_07_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_07_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_07_rear"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_07_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_07_rear"
+ ],
+ "print": {
+  "body_07_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0004/overhang-body_07_rear.log": "0b6a727381d1227d1af19e807fa04d9fe36b4068ada64591ec2954036a9c7314",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0004/thickness-body_07_rear.log": "c8ea80c1b8ae7c18214695c5342263447d52d73779965be790ca5907a7949eb7"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:body_07_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top shows the paired root openings extending into the horizontal slit, with broad material remaining around the barrel perimeter. Front and iso retain the four socket fingers, internal pads and flat bed. The former ledge is removed without a visible loose sliver; the numeric support and 1.2 mm checks pass. Physical compliance and bonding are unverified.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0004/visual-packet.json",
+  "packet_sha256": "338576b8e82a069e273598c724754408c420e961894bf330fd491b33dea09a19",
+  "status": "pass"
+ }
+}

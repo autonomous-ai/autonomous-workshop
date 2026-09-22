@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Ten parts, all present and correctly seated. Front view: the near row reads bubble, tooth, tooth; every marker foot sits inside its pocket with the rim visible in front of it, none floats or sinks and none intersects the rock. Top view: the nine cells read XOX / XOO / OXX, matching the declared draw, and each marker is centred in its pocket. Iso view: the rock is angular everywhere, with sixteen flat wall facets, chipped corners and a faceted cavity band all the way round; markers stand clear of the rim. Proportions match the brief - 140 by 130 board, 28 mm markers rising 26 mm from their pocket floors. Tall pointed tooth against squat blocky cube cluster is unmistakable in all three views. No missing, extra, misplaced or intersecting geometry.",
+  "packet_sha256": "8ec0527e410cb8106635e6c6a935449f2b0628630d32c42aeacca43702d49898",
+  "status": "pass"
+}

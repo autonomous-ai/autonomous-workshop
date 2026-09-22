@@ -1,0 +1,22 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_mars_sol.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001/thickness-world_mars_sol.md
+(7.3s, exit 1)
+--- stdout
+
+--- stderr
+Traceback (most recent call last):
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness", line 669, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness", line 507, in main
+    verts, faces = weld(entry_mesh(entry, entry_role(entry)))
+                        ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/printlib.py", line 238, in entry_mesh
+    return tessellate(build_entry(path, namespace), deviation=deviation,
+                      angular=angular)
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/printlib.py", line 225, in tessellate
+    vectors, triangles = shape.tessellate(deviation, angular)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/lib/python3.13/site-packages/build123d/topology/shape_core.py", line 2280, in tessellate
+    poly.Node(i).Transformed(trsf) for i in range(1, poly.NbNodes() + 1)
+                                                     ^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'NbNodes'

@@ -1,0 +1,12 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/roof.step",
+  "source_sha256": "a71eb627ba72630a37c810bf7d4d2a062c1d0d670b33b873114cd93602d7c44b",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 8.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": "0.5,0.42,0.38"
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/roof/telescope-close_az-90_el8.png",
+  "output_sha256": "166c9104d534fb3295768f17d4d8596c145a7401acd0059947d5dbf7a3935818"
+}

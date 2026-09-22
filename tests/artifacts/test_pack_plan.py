@@ -3,7 +3,11 @@ import unittest
 from pathlib import Path
 
 from workshop.artifacts.core import assert_packable_content
-from workshop.artifacts.core import MAX_PACK_BYTES
+from workshop.artifacts.core import (
+    MAX_EXPANDED_BYTES,
+    MAX_FILE_BYTES,
+    MAX_PACK_BYTES,
+)
 from workshop.errors import ArtifactError
 from workshop.artifacts.pack import (
     Artifact,
@@ -71,6 +75,18 @@ class PackPlanTest(unittest.TestCase):
 
         self.assertNotIn(secret_name, str(raised.exception))
 
+    def test_canonical_ceiling_carries_one_whole_sealed_make_tree(self):
+        # A component-first toy ships its assembly, one production solid per
+        # occurrence, and its recorded make-round evidence in a single Pack.
+        # The ad-astra antisol set deflated to 65.7 MB and was refused by the
+        # former 50 MiB ceiling, so the ceiling has to clear a real product,
+        # not a tidy one.  It must also clear the largest single member the
+        # same module admits, or a legal file could never travel.
+        self.assertEqual(MAX_PACK_BYTES, 96 * 1024 * 1024)
+        self.assertGreater(MAX_PACK_BYTES, 65_733_164)
+        self.assertGreater(MAX_PACK_BYTES, MAX_FILE_BYTES)
+        self.assertLess(MAX_PACK_BYTES, MAX_EXPANDED_BYTES)
+
     def test_limit_above_canonical_ceiling_is_rejected_before_write(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = self.artifact(temporary)
@@ -87,7 +103,8 @@ class PackPlanTest(unittest.TestCase):
                 with self.subTest(operation=operation):
                     with self.assertRaisesRegex(
                         ArtifactError,
-                        "cannot exceed the canonical 50 MB limit",
+                        "cannot exceed the canonical %d-byte limit"
+                        % MAX_PACK_BYTES,
                     ):
                         operation()
             self.assertFalse(destination.exists())

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_jupiter_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_jupiter_sol"
+ ],
+ "print": {
+  "world_jupiter_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/overhang-world_jupiter_sol.log": "c9167c3283d21c600b85f1ef9dbaf615227cf1c0e85121b2171cb8f8a0b6759d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/thickness-world_jupiter_sol.log": "96e04a8b7973f318f611dc6ddb478459c06f4648ad0ceeb602afa3566cd2a8be"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_jupiter_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_jupiter_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The largest globe in the set, filling the disc almost edge to edge in top view and standing well proud of the seat collar in front view. One sphere, one seat, one disc; the disc's wall is visibly wider at the top than at the bottom, which is the Sol flare. Nothing protrudes past the sphere's own silhouette and nothing floats. The markings this revision changes are flush colour inlays and partition this same solid, so the printed part is correctly a plain ball on a plain disc.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0002/visual-packet.json",
+  "packet_sha256": "e3f925ded77cdb90ce0ec9a6da392ff31b9a8e11e1a88d2b63047583d7059aa9",
+  "status": "pass"
+ }
+}

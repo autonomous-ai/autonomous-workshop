@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "A square tile with two tapered tongues at opposite corners and an engraved sunburst around a central eye. The sunburst does not register in the flat-lit top view but is plainly cut into the face in the iso view, which resolves it; the tongues are cones rising off the tile corners with no undercut. Nothing floats and nothing overhangs the tile footprint.",
+  "packet_sha256": "d8aeb793ab08e2891e21174cc8ee086f3c97f0b3d33a4eb5d87166708d4e20a1",
+  "status": "pass"
+}

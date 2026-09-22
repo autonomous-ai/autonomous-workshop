@@ -1,0 +1,1143 @@
+{
+ "build": {
+  "sun_orange": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun_orange"
+ ],
+ "check_motion": false,
+ "checked": [
+  "sun_orange"
+ ],
+ "checks_ok": true,
+ "entry": "rainward.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "drop_a01_beige",
+  "drop_a02_beige",
+  "drop_a03_beige",
+  "drop_a04_beige",
+  "drop_a05_beige",
+  "drop_a06_beige",
+  "drop_a07_beige",
+  "drop_a08_beige",
+  "drop_a09_beige",
+  "drop_a10_beige",
+  "drop_a11_beige",
+  "drop_a12_beige",
+  "drop_a13_beige",
+  "drop_a14_beige",
+  "drop_a15_beige",
+  "drop_b01_dark_brown",
+  "drop_b02_dark_brown",
+  "drop_b03_dark_brown",
+  "drop_b04_dark_brown",
+  "drop_b05_dark_brown",
+  "drop_b06_dark_brown",
+  "drop_b07_dark_brown",
+  "drop_b08_dark_brown",
+  "drop_b09_dark_brown",
+  "drop_b10_dark_brown",
+  "drop_b11_dark_brown",
+  "drop_b12_dark_brown",
+  "drop_b13_dark_brown",
+  "drop_b14_dark_brown",
+  "drop_b15_dark_brown",
+  "lane_01_yellow",
+  "lane_02_cocoa_brown",
+  "lane_03_yellow",
+  "lane_04_cocoa_brown",
+  "lane_05_yellow",
+  "lane_06_cocoa_brown",
+  "lane_07_yellow",
+  "lane_08_cocoa_brown",
+  "lane_09_yellow",
+  "lane_10_cocoa_brown",
+  "lane_11_yellow",
+  "lane_12_cocoa_brown",
+  "lane_13_yellow",
+  "lane_14_cocoa_brown",
+  "lane_15_yellow",
+  "lane_16_cocoa_brown",
+  "lane_17_yellow",
+  "lane_18_cocoa_brown",
+  "lane_19_yellow",
+  "lane_20_cocoa_brown",
+  "lane_21_yellow",
+  "lane_22_cocoa_brown",
+  "lane_23_yellow",
+  "lane_24_cocoa_brown",
+  "sun_orange"
+ ],
+ "print": {
+  "drop_a01_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a01_beige.log": "88427edf02b0cbc05258f92a413e83672a1b96d8e475c60499473db853a8495e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a01_beige.log": "1bf34805765d4d3daf2f662117a9f04dba62052e4dfe69e39b13e81dd02650e2"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a02_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a02_beige.log": "aca43f0062fb07938dca297751fee4c5846929aabaee73a8c0e4d832ffedf08a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a02_beige.log": "cc1ed51aa5581c869d605b3323facf3ef393e525b0c49eebccc64ed1b502f691"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a03_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a03_beige.log": "6fea2c21be62da67564c55e414342fde4129e8860146dee4235f05a77c971017",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a03_beige.log": "3be357d080a0202491c92af89faad7d6d24fbfa923292fe09b94a6dbf97745b6"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a04_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a04_beige.log": "b1401d4fcb5d490c61d5145475736a865bc510e3bc7373e3d1c534504bdb01f7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a04_beige.log": "143bb51904b4c53043c7b518b085255bf25ce6cc2ad60c8d8d808cfd4fd22fb7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a05_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a05_beige.log": "2b557999fe690582fea3f82220e28f96d625fb9eee6a304ba216c92334b887bc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a05_beige.log": "60b807021cd770f24b90d6ad2ea62cdc260a1ed764fba272f13af556b4c1001b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a06_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a06_beige.log": "e08da5f37ab38f2ed3b2bbaa30fdeffee09db5461ad3d816ce3865bf6b24a01b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a06_beige.log": "a6f9ba20132f955b80719a362b0a371332b3c990a88b607ba443af8f396f46ee"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a07_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a07_beige.log": "348a657284b778f4ee62b754d47103226a7eab9038ac46df9ea53c863249c953",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a07_beige.log": "093adc3eb06a69d5428dcaa10f05e08c2f6debae8d134ace7b4c9060e43f4870"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a08_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a08_beige.log": "e0f9ad017978146170455dd045b4479d037a8a2da7d7bcffc19777fc07377c84",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a08_beige.log": "684d989293d8ccfc74c3899b5c8448450f7189b4360514b803055b14ab3fa397"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a09_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a09_beige.log": "243d6aa6d1ceb2c98493063ebe1d2f98464613f1101699e216ca1930c6735668",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a09_beige.log": "83df549e7149ad537cffcb9beb5385b564f17e2273c69ada64130ef1856b7c9d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a10_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a10_beige.log": "c4d50c7b0cb7d8340037c8e7e2e10dec9955c29b62f95bc1e55b64b81ffb72c0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a10_beige.log": "da93196332a0cd2c72559b4f06fbbe7cd445a2d0a78ca57971747edca9e4a5b1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a11_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a11_beige.log": "eb91825a87f166aecae63942ce3951908166ec257b962d0504ed2f406bb6332d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a11_beige.log": "5c4eac534b8c63dfd9c5f74bea7f8d22ea21b65121aa57a17527bc835abc6df4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a12_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a12_beige.log": "35222cce6a5b578f505db93ca3a16162287ea5361ca27c6aefb57e3ef7ed0777",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a12_beige.log": "a7b6e7713ed0d6d93df107ac65abbaa5fc6749bfefe3b26806fd79d4a8ee727b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a13_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a13_beige.log": "0f389e6f74562671c0fdad456f3c7aead6fc7a4764da0ee1dddfa1f6567bf66b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a13_beige.log": "f36b4c8114b34aad68a4eea0c0980e87b53954c1cb79287c18660b3f31fcbbd5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a14_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a14_beige.log": "1260d369af3bfc9408ba051329968e0241f3eae3462e39f14dac5653fe47e2aa",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a14_beige.log": "674ec218f755f07d2c7494d69480e31a9fb72d929d8df8e4f136c1b60cb0fe80"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_a15_beige": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_a15_beige.log": "48edab463fe9230e9f41f16d3b6d9f9887e66f4a98b2dc0c36ad267de5dfbfe1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_a15_beige.log": "0c39d2c84ccac2910990986825d0edd179d1809d24ec17fc83f4ba315bbe272c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b01_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b01_dark_brown.log": "c8ec2bdf26d0394147b021dcd96fbf609a8e96c478944b3a678025da8e0312db",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b01_dark_brown.log": "ddb748ecb70ec761d58b19a8e5203d86f69de501d35a4673f57d2a4f730060ae"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b02_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b02_dark_brown.log": "0eef160fbfb8725df94897ce884feb481d35a98f6d30c8471af3d596d549c60c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b02_dark_brown.log": "86bcf12ac908dc97c4bf6e930f8b9fea05841824fdc7190b921155b7be1ad491"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b03_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b03_dark_brown.log": "f9b4f1dca6fb9a53631764892a067687390262b8a003cb716c908de4f6f8982b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b03_dark_brown.log": "0c3ed53dbebdd7b9340dd8e94f1c76ec8047501cb9368cb7aa74da5fb669ae0a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b04_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b04_dark_brown.log": "00e04c8e6b93e115565f3af3b8d0db558a716539e43d2f320027966123757341",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b04_dark_brown.log": "a05967b6d9fb7832b3570664cfb27cef2171dc571f31da77a7196774ed793f4d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b05_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b05_dark_brown.log": "b2767a2f6ac87aa9e7a064f507fe9cf8b168079e79461d0d2e607909bd78738f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b05_dark_brown.log": "d3eae859de83e4a22a6d535614797ee14e38ff8f81ecfcc563b4c32ad6d485e6"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b06_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b06_dark_brown.log": "ece05a1c759a1383b0854203f9d864ff924a6e5bd07ab70b6f169b3e4053b567",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b06_dark_brown.log": "aca01852aa387ee3758e4929e28b9b838fb288b64d05c880d44fd15dd00ac5b3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b07_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b07_dark_brown.log": "4403c3ff24890be7c57b996b53ca2d2e02ada7f287d8fb6ea9dcd8da13bdb1ce",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b07_dark_brown.log": "55d3765b0e6e106d4c1030b8eabc1f9d99a5a5a8fdf6771d8437e833ea0bcaf7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b08_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b08_dark_brown.log": "01538df6b756a3e60cb66b0332231da88f04fe53245312db35c6e01dd39b863e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b08_dark_brown.log": "0500872e2ea4cdaffd608aab1666cd538cb62778969f036c7738d3e79e453058"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b09_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b09_dark_brown.log": "3303ea60b27693fbcddd165fe368e8409fb935f08573300749267aaf97bb2da0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b09_dark_brown.log": "3050f776f4dc0df810dd840b38a63216fae02d64486383d218dbceb1de0f435f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b10_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b10_dark_brown.log": "ff5f30cb9f0008fd807e5870cc6efde701166471668a23ecf1861f2bb762b887",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b10_dark_brown.log": "21fcb55fc1f6beb147114b1b356c3d99205b42c7d3aee48f8b95499e9d9c624f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b11_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b11_dark_brown.log": "1368a536e11346a39578597b8f153444e117a48b66fc890fed54e5884c1b4ab4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b11_dark_brown.log": "0481171d87bad69f35e58f5034c5332183a7b03efa1fe8af588322825af98e43"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b12_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b12_dark_brown.log": "0ea308ecd6452bd6d184f9b00cfbf143690521cb728cd9fd71e06cda6c72f577",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b12_dark_brown.log": "5c9fd11dd9b2b925c085732fae82e7755984a65bac77d638fd38ae13bfd0bb52"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b13_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b13_dark_brown.log": "8130b2400956369419bc5c170d6850baa0bb6a1f7f52143fb14746158800255b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b13_dark_brown.log": "0bd1b5e1f2cf3f150cabe8d7bf58e3403824a04feabe4ff1a1b5761878b0e186"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b14_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b14_dark_brown.log": "2b48e53e5bfeb58068237366f9653674cf94974f317fbf85bca2431a42739295",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b14_dark_brown.log": "b1af52abfd0edfa54527bd1840b88e1b0d9087a9268a81c8b0b028f0cb75538b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "drop_b15_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-drop_b15_dark_brown.log": "0ef6b389858a826ba5d000540007b5c5964efb125766e3bb1a467331094312c2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-drop_b15_dark_brown.log": "521866a3175186347c952c3eb6095e191fd11412e3c0a956d06ce70024c15c19"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_01_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_01_yellow.log": "67ed9548e40238f86c83662b5fb211ac11d80af58ac1bd2f0ba520f4220c121d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_01_yellow.log": "ad88cc0d8b2c3a013b5e0a69f07eb0d950170c34b5f0ed8901661126d1245e73"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_02_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_02_cocoa_brown.log": "ed3af1724b336df707457314cbce127b76f2d1b415f5a381b8d5dcc81d9e154f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_02_cocoa_brown.log": "8d77f23475dc35602f794adcb53a3bf8d0732aa59f1d9962da6a98345d7f0093"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_03_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_03_yellow.log": "bdc9b5395f8e50878596e1b8292ba80c89351a41ff02893009370fd440ecf512",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_03_yellow.log": "56f86c1efcb100146e7ea143d9a5f8e5acc069cb8037edfef015ad91ad348634"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_04_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_04_cocoa_brown.log": "24481f529b2364f83d7f927c4f83960eaaf62601ceb4c45e84d7df9d0d2e42af",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_04_cocoa_brown.log": "05cfbf842e34c6faa18a2f9c13cfb4cb3bfdba8d6ce5ece6f8518d4c30914b93"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.27,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_05_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_05_yellow.log": "cd5e32ad51151f7278a6bc53d792bfb1117cfb8841d6e0ad68e6e24c60c5709a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_05_yellow.log": "fc30e8205ad3b6483ace02fa7fc0b2991f0f5745440d0e9226375649c4486879"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_06_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_06_cocoa_brown.log": "3e24e718b6e11aa8abd0887105adba0b9eceef55d66ee7092715a86efa8de381",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_06_cocoa_brown.log": "68ed6d012f7fe7c045edbb6390878379e45d929b8129778c0a0272d71a5ca000"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_07_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_07_yellow.log": "3241f78bee6e9b8e1155755e50e713fe949b98734e4b7b5f39d22d94f67e27d4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_07_yellow.log": "17ada7e4668ebfe1759da8c7831187da07b532af57e697a73d8bda1ece9e6fcb"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.27,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_08_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_08_cocoa_brown.log": "c7f5317dabbc2ec861b1991584bd04c938784cc57856a9671efea033e983a111",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_08_cocoa_brown.log": "0d8f68402a2cd80ed8ba59e07dc56320d42d0dc9df3ce9021117b37266b0e50d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_09_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_09_yellow.log": "cacb5f7081e436820758a4dea546c0e20fbe844cc855fef0b29a14791d33f267",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_09_yellow.log": "f54fef3daa21369f9650c2b851bbea3e3dbdda8ef2e0272977d6c4784825783d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_10_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_10_cocoa_brown.log": "62d6d7fac4991dafad4388dd3b4b93750cdfe1604d3771f1cff9779c002141b0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_10_cocoa_brown.log": "ff9cca885510ea7bfbf59b9077aa9e9d0e00c3469d5de6aa26d0261a9c46f611"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_11_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_11_yellow.log": "5b2150688ca78a60742b0ec25bd6a82250e183db30783bbe1253dae49d01c7bb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_11_yellow.log": "dcb901456ba78c202c1cf6f4c1fe681f5fa39a1e75cdbadd8bdf5b254eeb0384"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_12_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_12_cocoa_brown.log": "f502b23256e40c751ad4c6d39cdfb1f0a764128fb698901c606fbb4deef1b39c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_12_cocoa_brown.log": "8d1d2bc0af2f7ed4b51db7d06a918521ce7b491716dcbe42c64e7639640a6eb5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_13_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_13_yellow.log": "b2bb5f817809ff0fe240b592c6cc03939900273601882c3c216b3f00bfd1f6bb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_13_yellow.log": "d857e823c542c338e0fee8748fc4b122c9cbd7e512a0c7a794e33e9f9c730928"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_14_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_14_cocoa_brown.log": "d60bae5129893be4c0b42ab0814ea3d125f751e1945fc88a024523f984c69225",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_14_cocoa_brown.log": "a176a4b05d78545b99fbe5f3c79af93c195157fb9f92e0fe2137d421970aac38"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_15_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_15_yellow.log": "f1dfe3e113a85d20c7d89a1f9418e87646c438c7b8b058e8cb3cfdbbf339e878",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_15_yellow.log": "813fb3afdc0c4a0a94888407476ff052bf925340977eeb91ab031f4c934ca672"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_16_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_16_cocoa_brown.log": "fe4e0efe454d43f4bd64dc9a2401cc69bd340ce739ec9051d56719a7d536d398",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_16_cocoa_brown.log": "e5e0b05b778a37735e4c648247c00904c0fe01b26490f835a31504df4227f90b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.27,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_17_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_17_yellow.log": "ef7ecdf585deb69dacf1ef5785d5e84d0cbd81429299d76518ba9d55768895c4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_17_yellow.log": "5a4758ea566d65391e523dc6b011d876b5575ce4e8381cf6cb179ce6f58c1bc4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_18_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_18_cocoa_brown.log": "9eea70f8f977a78a88119db5ed0a91b12ead06b47cfb9bdd4ce0693e0701317b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_18_cocoa_brown.log": "9fa2919c86f501bdd86c20736ad3fbd4f9571fbfdf528634fc458b89cb10acaa"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_19_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_19_yellow.log": "d9845919450adf01f8bf5709c5d885b1260b7973fa035538d763df5b998b27f7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_19_yellow.log": "faf26f1d9f934f79ac7bcfd15094c48e5c215255ef98e7013a57841ab5bbca37"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.27,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_20_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_20_cocoa_brown.log": "0b1a9592b7a496fd628fb89d1e571a405ae0f08e01a27f6c4b0cba1568ac5f3d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_20_cocoa_brown.log": "52bf81b4092b1765ce1a1b34c6f5ea8d1ef9ff5eadb4208c97590f84460b40c9"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_21_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_21_yellow.log": "015585b12aabe359d3324593bd34ce4298521afeb9f2226fb12d237fd706cf06",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_21_yellow.log": "523212cf8293d2e3d647ff3a1610bdb2f71ca55485f13c11310fd7357a80d7a2"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_22_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_22_cocoa_brown.log": "6e09d7e0f7cd88e954db4cdfdb51064aeeebfbc98d0c4f265d2c53dd12c93fa8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_22_cocoa_brown.log": "47db5ac999e65c090c67cc788f30893912cbd3ac01375e71f31808c103e096eb"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_23_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_23_yellow.log": "2be18eb652535a5acfb61b792a4e2984c4163304aeafae110ea988885cfafc07",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_23_yellow.log": "7a264cffa895ac9a71bd6110df4378667b0b55da30886236fb197a5cc2a618a4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "lane_24_cocoa_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/overhang-lane_24_cocoa_brown.log": "8ead7fa0831fdd64ad99e3f891f04bf2dcc20ee4267bb3972341d2b069b6f852",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-lane_24_cocoa_brown.log": "a9962f6ca86d2f55c9bba27a860547d7d4f60c3fee7e0679987fde276946dcb7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "sun_orange": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/overhang-sun_orange.log": "2788a8bc7be00c30391ef42c6b1eec7c3a48d4dd43492bd4a22ccbead926132b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-sun_orange.log": "be89412aad3cc2ae78a400f2c4821ccbd29706817beff75fc0ecefeed0dcef5f"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.29,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "drop_a01_beige",
+  "drop_a02_beige",
+  "drop_a03_beige",
+  "drop_a04_beige",
+  "drop_a05_beige",
+  "drop_a06_beige",
+  "drop_a07_beige",
+  "drop_a08_beige",
+  "drop_a09_beige",
+  "drop_a10_beige",
+  "drop_a11_beige",
+  "drop_a12_beige",
+  "drop_a13_beige",
+  "drop_a14_beige",
+  "drop_a15_beige",
+  "drop_b01_dark_brown",
+  "drop_b02_dark_brown",
+  "drop_b03_dark_brown",
+  "drop_b04_dark_brown",
+  "drop_b05_dark_brown",
+  "drop_b06_dark_brown",
+  "drop_b07_dark_brown",
+  "drop_b08_dark_brown",
+  "drop_b09_dark_brown",
+  "drop_b10_dark_brown",
+  "drop_b11_dark_brown",
+  "drop_b12_dark_brown",
+  "drop_b13_dark_brown",
+  "drop_b14_dark_brown",
+  "drop_b15_dark_brown",
+  "lane_01_yellow",
+  "lane_02_cocoa_brown",
+  "lane_03_yellow",
+  "lane_04_cocoa_brown",
+  "lane_05_yellow",
+  "lane_06_cocoa_brown",
+  "lane_07_yellow",
+  "lane_08_cocoa_brown",
+  "lane_09_yellow",
+  "lane_10_cocoa_brown",
+  "lane_11_yellow",
+  "lane_12_cocoa_brown",
+  "lane_13_yellow",
+  "lane_14_cocoa_brown",
+  "lane_15_yellow",
+  "lane_16_cocoa_brown",
+  "lane_17_yellow",
+  "lane_18_cocoa_brown",
+  "lane_19_yellow",
+  "lane_20_cocoa_brown",
+  "lane_21_yellow",
+  "lane_22_cocoa_brown",
+  "lane_23_yellow",
+  "lane_24_cocoa_brown"
+ ],
+ "round": 2,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Fifty-five loose solids in the opening setup, with the four bank dashes widened to 1.6 mm since the previous round. Top: twenty-four lane tiles fan from the hub to one clean outer circle, tones alternating light and dark, a constant thin orange margin at every one of the twenty-four boundaries, and no notch, bay or scallop in any tile end; thirty teardrop counters sit two, five, three and five to a lane on the correct points, each inside its own lane and clear of its neighbours. The rim is forty-eight separate curled flames standing off an unbroken disc edge, with open background in every valley and no closed loop, arch, ribbon or handle anywhere. Iso: every tile is seated in its pocket and stands slightly proud, the centre bar is the highest part of the board, the four hub dashes are visible at the bank boundaries. Front: one flat board 6.2 mm tall with counters resting on the tile tops. Nothing floats, nothing interpenetrates, and no part is missing, extra, oversized or misplaced.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/visual-packet.json",
+  "packet_sha256": "e69fa039abc1496632faf973a1776ff33339df1086995fb74e9a87ab153a30e9",
+  "status": "pass"
+ }
+}

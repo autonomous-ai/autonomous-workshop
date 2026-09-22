@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_drop_b06_dark_brown.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b06_dark_brown/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "drop_b06_dark_brown"
+ ],
+ "print": {
+  "drop_b06_dark_brown": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b06_dark_brown/r0001/overhang-drop_b06_dark_brown.log": "fdd479c492354d63e375ef6f7a786ed685acb016730f75d3b01ea55922cd0824",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b06_dark_brown/r0001/thickness-drop_b06_dark_brown.log": "e04fdef8d9680fe97b6d08e02c8b4585cc89772a40c505ba3ca82438c035d308"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "drop_b06_dark_brown"
+ ],
+ "round": 2,
+ "scope": "component:drop_b06_dark_brown",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top view: one teardrop 10 mm long and 7 mm across - a round head and a tapering tail - identical in plan to every other counter. Iso view: a flat underside, a vertical skirt, and one smooth top face doming over the head and falling away along the tail, so the piece is easy to pick up and sits flat when stacked. Front view: 4.5 mm of solid with the flat face on the bed and the dome above it; nothing floating, nothing undercut. The colour is the side's own tone - cream beige for side A, dark brown for side B - and both tones sit outside the two lane tones in value. Nothing misplaced, missing, extra or intersecting.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/drop_b06_dark_brown/r0002/visual-packet.json",
+  "packet_sha256": "a50048cb1e33bbdfac293d0c520a61f83c84ff44acdab227c3718b7147c5f830",
+  "status": "pass"
+ }
+}

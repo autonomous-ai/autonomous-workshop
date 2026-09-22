@@ -1,0 +1,10 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/antisol.step.py --view front --view top --view iso -o <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/visual
+(466.3s, exit 0)
+--- stdout
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/visual/front.png
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/visual/top.png
+<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/visual/iso.png
+
+--- stderr
+<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/lib/python3.13/site-packages/build123d/topology/shape_core.py:2597: UserWarning: Boolean operation unable to clean
+  result = self._bool_op(args, tools, operation)

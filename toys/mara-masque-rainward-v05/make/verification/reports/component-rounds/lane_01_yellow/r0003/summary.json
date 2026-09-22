@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_lane_01_yellow.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_01_yellow/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "lane_01_yellow"
+ ],
+ "print": {
+  "lane_01_yellow": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_01_yellow/r0001/overhang-lane_01_yellow.log": "eeca3c41cfd8a2ad6373aa56875495cb8389eaf3cf4fc9e7dc194743fa34e488",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_01_yellow/r0001/thickness-lane_01_yellow.log": "2b5540c7d04fb6feef8051c5f71ddb9c8307d94c57353ff8552ee31b864a2967"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "lane_01_yellow"
+ ],
+ "round": 3,
+ "scope": "component:lane_01_yellow",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Printed top face down. Top: a clean annular sector with two straight sides and one smooth outer arc at the wide end - no notch, scallop or bay anywhere on that edge. Front: the flat print face on the bed, the 1.0 mm lapping lip stepping down at the outer end and the locating key standing proud at the top, all of it one solid. Iso: proportions match a 63.35 x 22.35 x 4.0 mm tile; no floating geometry, no intersection, nothing missing or extra.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/lane_01_yellow/r0003/visual-packet.json",
+  "packet_sha256": "6b482bc9f30ab18addeced4de55c7d173141df7d83748bb908d5de9f2ac46132",
+  "status": "pass"
+ }
+}

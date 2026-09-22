@@ -1,0 +1,12 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/counter-sun.step",
+  "source_sha256": "049c0e0cfce66a649aa5372dd570dd179fac155985b12265d9c5348eea6eb569",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 90.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/counters/sun-plan_el90.png",
+  "output_sha256": "245bd93d86cd36f9fc8e9747384dfdfccd965c681fd349c624bf70e41008f4f1"
+}

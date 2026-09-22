@@ -1,0 +1,107 @@
+{
+  "banks": 4,
+  "components": {
+    "lane_tiles_dark": 12,
+    "lane_tiles_light": 12,
+    "single_tail_counters": 15,
+    "split_tail_counters": 15,
+    "sun_body": 1
+  },
+  "crown": {
+    "all_tongues_turn_one_way": true,
+    "closed_loop_area_mm2": 91.723,
+    "closed_loops": 1,
+    "deepest_flame_depth_mm": 9.24,
+    "longest_plain_circular_arc_deg": 1.317,
+    "longest_tangential_rim_run_deg": 0.088,
+    "max_radius_mm": 99.0,
+    "mid_width_over_root_max": 0.268,
+    "min_tip_thickness_mm": 1.5,
+    "narrowest_root_mm": 8.409,
+    "narrowest_root_over_own_length": 1.156,
+    "ramp_slope_deg": [
+      24.9,
+      58.48
+    ],
+    "root_height_mm": 8.0,
+    "tip_height_mm": [
+      3.579,
+      4.238
+    ],
+    "tongue_length_mm": [
+      2.325,
+      9.085
+    ],
+    "tongue_length_ratio": 3.908,
+    "tongues": 38,
+    "troughs_at_or_over_9mm_deep": 8,
+    "turn_in_the_outer_half_deg": [
+      29.91,
+      34.56
+    ],
+    "turn_root_to_tip_deg": [
+      37.41,
+      43.22
+    ]
+  },
+  "crown_envelope_mm": [
+    191.105,
+    192.514
+  ],
+  "exported_geometry_mb": {
+    "assembled_step": 9.16,
+    "note": "down from 48.3 MB and 11.7 MB on the set being corrected; the Sun part misses the brief's 4 MB target because the preserved 280-sample hero arch plan may not be changed",
+    "sun_part_step": 6.85
+  },
+  "filaments": {
+    "lane_tiles_dark": "cocoa_brown",
+    "lane_tiles_light": "yellow",
+    "single_tail_counters": "beige",
+    "split_tail_counters": "dark_brown",
+    "sun_body": "orange"
+  },
+  "geometry_inspection": {
+    "checks": 113,
+    "status": "passed",
+    "unverified": 0
+  },
+  "lane_count": 24,
+  "motion": "unverified",
+  "pieces_per_lane": 15,
+  "player_supplied": {
+    "dice": "two ordinary cubic 1-6 dice of any standard make, opposite pairs 1-6, 2-5 and 3-4, of a size that throws freely on a table",
+    "dice_cups": "one ordinary six-sided die cup per player",
+    "reason": "packaging decision under the player-supplied allowance in the inventor's taste; the rules, component functions, quantities and probabilities are unchanged",
+    "substitute_randomiser": "none - no printed randomiser, spinner, teetotum or card draw replaces the dice"
+  },
+  "playtest": "not-run",
+  "print_gates": {
+    "bridges": 0,
+    "note": "the verifier's print-gate tier was not opened, so no combined print-readiness verdict exists and none is claimed",
+    "nozzle_mm": 0.4,
+    "overhang": "pass on all 55",
+    "parts_measured": 55,
+    "regions_needing_support": 0,
+    "wall": "pass on all 55"
+  },
+  "print_ready_claim": false,
+  "printed_parts": 55,
+  "product_id": "wish-20260918-014828-b8fc431a",
+  "revision_of": "Rainward Flarecrown",
+  "signature_review": {
+    "blocking_visual_defects": 0,
+    "note": "round 3 is disclosed as primed; no naive recognition is claimed for it",
+    "reviewer": "one independent native critic, images only",
+    "rounds": 3
+  },
+  "status": "digitally-verified-not-print-ready",
+  "summary": "The box holds the Sun board, its 24 lane tiles and 30 counters only: no dice and no dice cups are included. Each player supplies one ordinary six-sided die cup, and the pair shares two ordinary 1-6 dice of any standard make - two cubic dice, faces 1 through 6, standard opposite pairs 1-6, 2-5 and 3-4, of a size that throws freely on a table. A Sun-shaped backgammon set: 24 lanes alternate between two filament tones around a 190 mm disc that stands 9 mm tall, the fan of tiles closes on one clean circle, and outside that circle 38 slender flames curl the same way round the rim, each shedding its width where it leaves the board and laying its top back from the deck down to a low tip.",
+  "tiles": {
+    "bays_or_notches": 0,
+    "max_tile_lip_overhang_mm": 2.75,
+    "outer_edge_is_one_circular_arc": true,
+    "outer_radius_mm": 89.85
+  },
+  "title": "Rainward Bladefire",
+  "worst_own_tile_support_fraction": 0.90769
+}

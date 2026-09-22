@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Iso inspected. A markedly larger globe that overhangs its seat collar and fills most of the \u00d834.00 disc, correctly one step below Uranus in the ladder. Seated concentric, Anti-Sol draft, nothing standing proud. Untouched and byte-identical. No misplaced, missing or extra geometry, no intersections. (Round re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "packet_sha256": "2c334362b41617417b732410d4e08977eec6315a4225ac243c67851369ec6dc9",
+  "status": "pass"
+}

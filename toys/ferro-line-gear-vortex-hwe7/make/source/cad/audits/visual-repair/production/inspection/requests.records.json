@@ -1,0 +1,835 @@
+[
+  {
+    "id": "sculpture-pedestal_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/pedestal_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-pedestal_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/pedestal_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-pedestal_lid_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/pedestal_lid_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-pedestal_lid_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/pedestal_lid_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-stem_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/stem_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-stem_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/stem_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-support_collar_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/support_collar_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-support_collar_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/support_collar_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-rim_trim_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/rim_trim_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-rim_trim_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/rim_trim_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-foot_trim_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/foot_trim_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-foot_trim_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/foot_trim_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-axle_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/axle_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-axle_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/axle_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-rear_main_cap_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/rear_main_cap_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-rear_main_cap_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/rear_main_cap_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-support_main_cap_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/support_main_cap_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-support_main_cap_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/support_main_cap_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-orange_disc_orange-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/orange_disc_orange.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-orange_disc_orange-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/orange_disc_orange.step"
+    ]
+  },
+  {
+    "id": "sculpture-carrier_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/carrier_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-carrier_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/carrier_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-sun_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/sun_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-sun_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/sun_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-front_main_cap_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/front_main_cap_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-front_main_cap_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/front_main_cap_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-bezel_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/bezel_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-bezel_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/bezel_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_1_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_1_1_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_1_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_1_1_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_2_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_1_2_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_2_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_1_2_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_3_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_1_3_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_3_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_1_3_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_4_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_1_4_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_4_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_1_4_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_5_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_1_5_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_5_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_1_5_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_6_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_1_6_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_6_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_1_6_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_7_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_1_7_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_1_7_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_1_7_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_1_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_2_1_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_1_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_2_1_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_2_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_2_2_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_2_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_2_2_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_3_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_2_3_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_3_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_2_3_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_4_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_2_4_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_4_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_2_4_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_5_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_2_5_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_5_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_2_5_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_6_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_2_6_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_6_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_2_6_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_7_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/gear_2_7_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-gear_2_7_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/gear_2_7_yellow.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_1_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_1_1_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_1_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_1_1_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_2_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_1_2_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_2_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_1_2_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_3_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_1_3_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_3_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_1_3_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_4_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_1_4_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_4_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_1_4_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_5_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_1_5_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_5_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_1_5_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_6_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_1_6_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_6_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_1_6_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_7_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_1_7_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_1_7_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_1_7_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_1_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_2_1_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_1_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_2_1_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_2_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_2_2_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_2_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_2_2_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_3_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_2_3_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_3_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_2_3_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_4_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_2_4_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_4_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_2_4_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_5_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_2_5_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_5_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_2_5_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_6_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_2_6_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_6_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_2_6_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_7_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/cap_2_7_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-cap_2_7_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/cap_2_7_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-bezel_cap_1_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/bezel_cap_1_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-bezel_cap_1_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/bezel_cap_1_black.step"
+    ]
+  },
+  {
+    "id": "sculpture-bezel_cap_2_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/parts/bezel_cap_2_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "sculpture-bezel_cap_2_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/parts/bezel_cap_2_black.step"
+    ]
+  },
+  {
+    "id": "coupon-coupon_plate_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/coupon-kit/coupon_plate_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "coupon-coupon_plate_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/coupon-kit/coupon_plate_black.step"
+    ]
+  },
+  {
+    "id": "coupon-coupon_gear_14_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/coupon-kit/coupon_gear_14_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "coupon-coupon_gear_14_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/coupon-kit/coupon_gear_14_yellow.step"
+    ]
+  },
+  {
+    "id": "coupon-coupon_gear_15_yellow-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/coupon-kit/coupon_gear_15_yellow.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "coupon-coupon_gear_15_yellow-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/coupon-kit/coupon_gear_15_yellow.step"
+    ]
+  },
+  {
+    "id": "coupon-coupon_cap_1_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/coupon-kit/coupon_cap_1_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "coupon-coupon_cap_1_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/coupon-kit/coupon_cap_1_black.step"
+    ]
+  },
+  {
+    "id": "coupon-coupon_cap_2_black-refs",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/coupon-kit/coupon_cap_2_black.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "coupon-coupon_cap_2_black-validate",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/coupon-kit/coupon_cap_2_black.step"
+    ]
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "packet_sha256": "71bd0f42127abbdac84a345a2f1c515a102b75193f86d2b8c74825dc070d7b5b",
+  "status": "pass",
+  "observation": "Iso inspected. The Sol twin, same globe diameter, opposite disc draft, globe concentric on its seat. Untouched by this revision and byte-identical. No misplaced, missing or extra geometry, no intersections. (Round re-run after a measurement script's baseline path changed; the rendered views are byte-identical to the ones inspected in the previous round and this is the same inspection recorded against the current source.)",
+  "findings": []
+}

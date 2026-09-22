@@ -63,6 +63,44 @@ class RevisionTest(unittest.TestCase):
         self.assertFalse((workspace / "agent-run.json").exists())
         self.assertFalse((workspace / "release-effect.json").exists())
 
+    def test_attaches_reference_images_and_keeps_image_less_bytes_stable(self):
+        from workshop.wish.contracts import WishReference
+
+        reference = WishReference(
+            "ref-01-faceted-rock-board.png",
+            "a" * 64, "image/png", 4096, 800, 800,
+        )
+        wish, _ = prepare_revision(
+            self.source, "Facet the rind", references=[reference],
+            reference_sources={"ref-01-faceted-rock-board.png": "https://example.com/r.png"},
+        )
+        self.assertEqual([item.name for item in wish.references], [reference.name])
+        self.assertIn("references", wish.to_dict())
+        self.assertEqual(
+            wish.context["reference_sources"],
+            {"ref-01-faceted-rock-board.png": "https://example.com/r.png"},
+        )
+        wish.assert_valid()
+        # The revision identity is unchanged for a correction without images:
+        # an image-less fix keeps the canonical bytes it had before --ref.
+        bare, _ = prepare_revision(self.source, "Facet the rind")
+        self.assertEqual(bare.references, ())
+        self.assertNotIn("references", bare.to_dict())
+        self.assertNotIn("reference_sources", bare.context)
+
+    def test_accepts_an_unreleased_archive_and_records_its_status(self):
+        """A --no-publish toy is a correction source; a Factory draft is not."""
+        self.publication["publication"] = {
+            "adapter": "none", "status": "unreleased", "slug": "original",
+            "observed_at": "2026-09-17T00:00:00+00:00",
+        }
+        self.seal()
+        wish, snapshot = prepare_revision(self.source, "Fix one pair")
+        self.assertEqual(wish.context["revision"]["source_status"], "unreleased")
+        self.assertIsNone(wish.context["revision"]["source_page_url"])
+        self.assertEqual(wish.context["inventor_id"], "mara-masque")
+        self.assertTrue(snapshot)
+
     def test_refuses_drift_extra_files_links_and_unpublished(self):
         for mutation in ("drift", "extra", "link", "draft"):
             with self.subTest(mutation=mutation):

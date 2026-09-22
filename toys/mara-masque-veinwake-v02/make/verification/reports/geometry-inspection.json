@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "print_ready_claim": false,
+  "checks": [
+    {
+      "id": "refs:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "validate:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "interfere:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_bubble_1",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_bubble_1",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_bubble_2",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_bubble_2",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_bubble_3",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_bubble_3",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_bubble_4",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_bubble_4",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_rind",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_rind",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_tooth_1",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_tooth_1",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_tooth_2",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_tooth_2",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_tooth_3",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_tooth_3",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_tooth_4",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_tooth_4",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_tooth_5",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_tooth_5",
+      "status": "passed"
+    }
+  ],
+  "verification_sha256": "e29e2a5414a8c73bcc86d984074dfc80e55584c10ab68ef706a699f03ccccb42"
+}

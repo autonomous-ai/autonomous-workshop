@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin crescent bordering incoming-cup clearance",
+      "evidence": "Top and iso show several recessed clearance terraces behind the ball;1.2mm check finds50.7mm2 wall band3.44mm at(-5.1,12.2,0.3).",
+      "part": "body_02_front",
+      "repair": "Apply the approved1.2mm constant front land with leading-clearance projection and tangent sphere heel, retaining ankle cuts and rear convex flank."
+    }
+  ],
+  "observation": "Front, top and iso inspected. Centered sphere and broad elliptical flank remain connected, with symmetric ankle corners. Stepped parent-cup clearance leaves a thin crescent beside the ball; measured wall region is50.7mm2, minimum0.20mm. Overhang passes.",
+  "packet_sha256": "a7cc2aecea36ec2c8fd5629ec881bf618a96f237ea45e5cfc7a7bc73cad8f53d",
+  "status": "fail"
+}

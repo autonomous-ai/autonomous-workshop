@@ -1,0 +1,2373 @@
+{
+ "assembly": {
+  "root": {
+   "children": [
+    {
+     "children": [],
+     "id": "o1.1",
+     "leafPartIds": [
+      "o1.1"
+     ],
+     "name": "sun_orange",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.2",
+     "leafPartIds": [
+      "o1.2"
+     ],
+     "name": "lane_01_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.3",
+     "leafPartIds": [
+      "o1.3"
+     ],
+     "name": "lane_02_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.4",
+     "leafPartIds": [
+      "o1.4"
+     ],
+     "name": "lane_03_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.5",
+     "leafPartIds": [
+      "o1.5"
+     ],
+     "name": "lane_04_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.6",
+     "leafPartIds": [
+      "o1.6"
+     ],
+     "name": "lane_05_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.7",
+     "leafPartIds": [
+      "o1.7"
+     ],
+     "name": "lane_06_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.8",
+     "leafPartIds": [
+      "o1.8"
+     ],
+     "name": "lane_07_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.9",
+     "leafPartIds": [
+      "o1.9"
+     ],
+     "name": "lane_08_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.10",
+     "leafPartIds": [
+      "o1.10"
+     ],
+     "name": "lane_09_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.11",
+     "leafPartIds": [
+      "o1.11"
+     ],
+     "name": "lane_10_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.12",
+     "leafPartIds": [
+      "o1.12"
+     ],
+     "name": "lane_11_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.13",
+     "leafPartIds": [
+      "o1.13"
+     ],
+     "name": "lane_12_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.14",
+     "leafPartIds": [
+      "o1.14"
+     ],
+     "name": "lane_13_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.15",
+     "leafPartIds": [
+      "o1.15"
+     ],
+     "name": "lane_14_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.16",
+     "leafPartIds": [
+      "o1.16"
+     ],
+     "name": "lane_15_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.17",
+     "leafPartIds": [
+      "o1.17"
+     ],
+     "name": "lane_16_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.18",
+     "leafPartIds": [
+      "o1.18"
+     ],
+     "name": "lane_17_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.19",
+     "leafPartIds": [
+      "o1.19"
+     ],
+     "name": "lane_18_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.20",
+     "leafPartIds": [
+      "o1.20"
+     ],
+     "name": "lane_19_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.21",
+     "leafPartIds": [
+      "o1.21"
+     ],
+     "name": "lane_20_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.22",
+     "leafPartIds": [
+      "o1.22"
+     ],
+     "name": "lane_21_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.23",
+     "leafPartIds": [
+      "o1.23"
+     ],
+     "name": "lane_22_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.24",
+     "leafPartIds": [
+      "o1.24"
+     ],
+     "name": "lane_23_yellow",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.25",
+     "leafPartIds": [
+      "o1.25"
+     ],
+     "name": "lane_24_cocoa_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.26",
+     "leafPartIds": [
+      "o1.26"
+     ],
+     "name": "single_01_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.27",
+     "leafPartIds": [
+      "o1.27"
+     ],
+     "name": "single_02_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.28",
+     "leafPartIds": [
+      "o1.28"
+     ],
+     "name": "single_03_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.29",
+     "leafPartIds": [
+      "o1.29"
+     ],
+     "name": "single_04_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.30",
+     "leafPartIds": [
+      "o1.30"
+     ],
+     "name": "single_05_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.31",
+     "leafPartIds": [
+      "o1.31"
+     ],
+     "name": "single_06_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.32",
+     "leafPartIds": [
+      "o1.32"
+     ],
+     "name": "single_07_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.33",
+     "leafPartIds": [
+      "o1.33"
+     ],
+     "name": "single_08_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.34",
+     "leafPartIds": [
+      "o1.34"
+     ],
+     "name": "single_09_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.35",
+     "leafPartIds": [
+      "o1.35"
+     ],
+     "name": "single_10_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.36",
+     "leafPartIds": [
+      "o1.36"
+     ],
+     "name": "single_11_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.37",
+     "leafPartIds": [
+      "o1.37"
+     ],
+     "name": "single_12_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.38",
+     "leafPartIds": [
+      "o1.38"
+     ],
+     "name": "single_13_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.39",
+     "leafPartIds": [
+      "o1.39"
+     ],
+     "name": "single_14_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.40",
+     "leafPartIds": [
+      "o1.40"
+     ],
+     "name": "single_15_beige",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.41",
+     "leafPartIds": [
+      "o1.41"
+     ],
+     "name": "fork_01_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.42",
+     "leafPartIds": [
+      "o1.42"
+     ],
+     "name": "fork_02_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.43",
+     "leafPartIds": [
+      "o1.43"
+     ],
+     "name": "fork_03_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.44",
+     "leafPartIds": [
+      "o1.44"
+     ],
+     "name": "fork_04_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.45",
+     "leafPartIds": [
+      "o1.45"
+     ],
+     "name": "fork_05_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.46",
+     "leafPartIds": [
+      "o1.46"
+     ],
+     "name": "fork_06_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.47",
+     "leafPartIds": [
+      "o1.47"
+     ],
+     "name": "fork_07_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.48",
+     "leafPartIds": [
+      "o1.48"
+     ],
+     "name": "fork_08_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.49",
+     "leafPartIds": [
+      "o1.49"
+     ],
+     "name": "fork_09_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.50",
+     "leafPartIds": [
+      "o1.50"
+     ],
+     "name": "fork_10_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.51",
+     "leafPartIds": [
+      "o1.51"
+     ],
+     "name": "fork_11_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.52",
+     "leafPartIds": [
+      "o1.52"
+     ],
+     "name": "fork_12_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.53",
+     "leafPartIds": [
+      "o1.53"
+     ],
+     "name": "fork_13_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.54",
+     "leafPartIds": [
+      "o1.54"
+     ],
+     "name": "fork_14_dark_brown",
+     "nodeType": "part"
+    },
+    {
+     "children": [],
+     "id": "o1.55",
+     "leafPartIds": [
+      "o1.55"
+     ],
+     "name": "fork_15_dark_brown",
+     "nodeType": "part"
+    }
+   ],
+   "id": "o1",
+   "leafPartIds": [
+    "o1.1",
+    "o1.2",
+    "o1.3",
+    "o1.4",
+    "o1.5",
+    "o1.6",
+    "o1.7",
+    "o1.8",
+    "o1.9",
+    "o1.10",
+    "o1.11",
+    "o1.12",
+    "o1.13",
+    "o1.14",
+    "o1.15",
+    "o1.16",
+    "o1.17",
+    "o1.18",
+    "o1.19",
+    "o1.20",
+    "o1.21",
+    "o1.22",
+    "o1.23",
+    "o1.24",
+    "o1.25",
+    "o1.26",
+    "o1.27",
+    "o1.28",
+    "o1.29",
+    "o1.30",
+    "o1.31",
+    "o1.32",
+    "o1.33",
+    "o1.34",
+    "o1.35",
+    "o1.36",
+    "o1.37",
+    "o1.38",
+    "o1.39",
+    "o1.40",
+    "o1.41",
+    "o1.42",
+    "o1.43",
+    "o1.44",
+    "o1.45",
+    "o1.46",
+    "o1.47",
+    "o1.48",
+    "o1.49",
+    "o1.50",
+    "o1.51",
+    "o1.52",
+    "o1.53",
+    "o1.54",
+    "o1.55"
+   ],
+   "name": "rainward_corona",
+   "nodeType": "assembly"
+  }
+ },
+ "assemblyMates": [],
+ "bbox": {
+  "max": [
+   96.29135287690578,
+   94.1506578282455,
+   12.821478421682956
+  ],
+  "min": [
+   -94.75390621494218,
+   -98.20728173548585,
+   -0.021478421682955894
+  ]
+ },
+ "capabilities": {
+  "edgeClassification": {
+   "algorithm": "oc-brep-continuity-v1",
+   "angularToleranceDeg": 2,
+   "samples": 3
+  },
+  "surfaceEdgeRendering": {
+   "algorithm": "oc-polygon-on-triangulation-v1",
+   "classCodes": {
+    "boundary": 5,
+    "degenerate": 4,
+    "feature": 1,
+    "nonManifold": 6,
+    "none": 0,
+    "seam": 3,
+    "tangent": 2,
+    "unknown": 7
+   },
+   "primitiveAttributes": {
+    "barycentric": "_CAD_EDGE_BARYCENTRIC",
+    "class": "_CAD_EDGE_CLASS"
+   },
+   "visibilityClasses": [
+    "feature"
+   ]
+  }
+ },
+ "components": {
+  "0383586bfd06f15b": {
+   "contentHash": "0383586bfd06f15bb01ed0db1035941643720d09094c9364b32f4838b8ca74b4",
+   "glb": "components/0383586bfd06f15b.glb"
+  },
+  "0ccd103ed42cc843": {
+   "contentHash": "0ccd103ed42cc8439e3b91511ee65e1c3bf5899ecbfce8d059fc50fc8424b60a",
+   "glb": "components/0ccd103ed42cc843.glb"
+  },
+  "12522fb27a63fdb7": {
+   "contentHash": "12522fb27a63fdb79efa1fd60f3cd71cbd84f2207b60f40bea2f7b9185675028",
+   "glb": "components/12522fb27a63fdb7.glb"
+  },
+  "12c05e65d571b7b2": {
+   "contentHash": "12c05e65d571b7b23531f2b52921d9d1f96c836dda46f6d5e14ed285ca5e46fa",
+   "glb": "components/12c05e65d571b7b2.glb"
+  },
+  "1ebb7b1891fe6571": {
+   "contentHash": "1ebb7b1891fe6571aa35fa397773d2d55ec5056d2bcc87479bae383df9eee62a",
+   "glb": "components/1ebb7b1891fe6571.glb"
+  },
+  "257fa8eb39a74528": {
+   "contentHash": "257fa8eb39a745280caf48d87916e17fa260e354dfece4a54fa5c9c8756ab668",
+   "glb": "components/257fa8eb39a74528.glb"
+  },
+  "28b87757cb51ef91": {
+   "contentHash": "28b87757cb51ef91318689a5d42caf02e10500a3acea0015ebddcd2f15eedbe8",
+   "glb": "components/28b87757cb51ef91.glb"
+  },
+  "374f65bda1a7cc6d": {
+   "contentHash": "374f65bda1a7cc6dbb757d0c7c4e4284c8878b2a240d6c98734ba0b484b95a59",
+   "glb": "components/374f65bda1a7cc6d.glb"
+  },
+  "51f5843fdb8e928e": {
+   "contentHash": "51f5843fdb8e928e69e27ce94ef69bf216cead532fd34888598940736fb259c0",
+   "glb": "components/51f5843fdb8e928e.glb"
+  },
+  "54b8d0bfa6188b8a": {
+   "contentHash": "54b8d0bfa6188b8afe7583113fc0e40abe4f17d7ce8658deb6513cfd827829bd",
+   "glb": "components/54b8d0bfa6188b8a.glb"
+  },
+  "5aee8c29b5d746a9": {
+   "contentHash": "5aee8c29b5d746a9cb1bf5dbf27bb1eda26fca27ddebca9a1cdff3c326803721",
+   "glb": "components/5aee8c29b5d746a9.glb"
+  },
+  "5af95da4eff62d2d": {
+   "contentHash": "5af95da4eff62d2d4b2ec90561d45096a0b867fa3f8fb5ef4ec78ea70c0b08de",
+   "glb": "components/5af95da4eff62d2d.glb"
+  },
+  "6c112e240ad97070": {
+   "contentHash": "6c112e240ad97070ec1ab295ecabece9649bf2340f1b3989f6c4bd70b68d0e4a",
+   "glb": "components/6c112e240ad97070.glb"
+  },
+  "73498f921a3f9a13": {
+   "contentHash": "73498f921a3f9a1399c111a6294bf63a1d5c61636b7d52bd1513b3d782100d71",
+   "glb": "components/73498f921a3f9a13.glb"
+  },
+  "76b745ad8bb3c812": {
+   "contentHash": "76b745ad8bb3c81216de2111edd9be87bbe8c1fe11026b2efab228ba13127822",
+   "glb": "components/76b745ad8bb3c812.glb"
+  },
+  "8796f3841de62299": {
+   "contentHash": "8796f3841de6229983142e6085214aa82ceb317ac3fd7677df7a59d426be4ff3",
+   "glb": "components/8796f3841de62299.glb"
+  },
+  "8e24a3a0478e35a2": {
+   "contentHash": "8e24a3a0478e35a23f03bbe1dd89e659d46373917adcbb93ea0c4c5f5673a913",
+   "glb": "components/8e24a3a0478e35a2.glb"
+  },
+  "a63451da41c55382": {
+   "contentHash": "a63451da41c553828212f383f45ac6b133f8b29644b4f4639389900e5802cca2",
+   "glb": "components/a63451da41c55382.glb"
+  },
+  "a8503931aa16d7f2": {
+   "contentHash": "a8503931aa16d7f2d0ae9c001607681353bbae3db120d83f58d7c4c48d0fb09b",
+   "glb": "components/a8503931aa16d7f2.glb"
+  },
+  "a8edd554b500c0f0": {
+   "contentHash": "a8edd554b500c0f0e8d605c36dff74c2239ee1a59e9b2aebbc804250ecc7ee05",
+   "glb": "components/a8edd554b500c0f0.glb"
+  },
+  "b29b4f084e850990": {
+   "contentHash": "b29b4f084e850990cabd91560702ecf6975627134d1d129f5d51e2068b2dbef6",
+   "glb": "components/b29b4f084e850990.glb"
+  },
+  "c41333f5d1f746cf": {
+   "contentHash": "c41333f5d1f746cfbfc9384479e776534ddfec3df0b2d6d31e2e956524f1c097",
+   "glb": "components/c41333f5d1f746cf.glb"
+  },
+  "cad21976c7f79802": {
+   "contentHash": "cad21976c7f798023685be31a21213dd23caaf6e999481d96325ec3ca5065c4f",
+   "glb": "components/cad21976c7f79802.glb"
+  },
+  "ebdb616b319e6864": {
+   "contentHash": "ebdb616b319e6864d12f8df5e9ea2af606812c8d702dc875f566988ace5dfcad",
+   "glb": "components/ebdb616b319e6864.glb"
+  },
+  "ee0fc5a01b8ea7e7": {
+   "contentHash": "ee0fc5a01b8ea7e7cd7de1b562dbd83eba63778c950f544201a07e60c9f12d53",
+   "glb": "components/ee0fc5a01b8ea7e7.glb"
+  },
+  "f41ecdce7473452f": {
+   "contentHash": "f41ecdce7473452fa375963860e281c4d2913b80c0e1f36bb368f167a4b8f341",
+   "glb": "components/f41ecdce7473452f.glb"
+  },
+  "f87b75968db784d0": {
+   "contentHash": "f87b75968db784d0a694a9ae53c69c803fb86884cb8f85a20ed1642dfcd1e381",
+   "glb": "components/f87b75968db784d0.glb"
+  }
+ },
+ "edgeRendering": {
+  "visibilityClasses": [
+   "feature"
+  ]
+ },
+ "entryKind": "assembly",
+ "generatedAt": "2026-09-17T17:55:12+00:00",
+ "kind": "assembly-package",
+ "mesh": {
+  "angularDeflection": 0.6,
+  "linearDeflection": 0.02,
+  "relative": true,
+  "resolution": {
+   "angularExplicit": false,
+   "hints": {
+    "bboxDiag": 271.35,
+    "complexityScore": 32246.1,
+    "curvaturePressureScore": 23461.1,
+    "effectiveComplexityScore": 32246.1,
+    "leafOccurrenceCount": 55,
+    "occurrenceCurvedEdgeCount": 7463,
+    "occurrenceCurvedFaceCount": 5873,
+    "occurrenceEdgeCount": 32276,
+    "occurrenceFaceCount": 13175,
+    "profile": "coarse-assembly",
+    "prototypeCurvedEdgeCount": 7043,
+    "prototypeCurvedFaceCount": 5663,
+    "prototypeEdgeCount": 31646,
+    "prototypeFaceCount": 12909
+   },
+   "linearExplicit": false,
+   "mode": "auto",
+   "profile": "coarse-assembly"
+  }
+ },
+ "occurrences": [
+  {
+   "color": [
+    1.0,
+    0.66,
+    0.18,
+    1.0
+   ],
+   "component": "c41333f5d1f746cf",
+   "id": "o1.1",
+   "name": "sun_orange",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "54b8d0bfa6188b8a",
+   "id": "o1.2",
+   "name": "lane_01_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "257fa8eb39a74528",
+   "id": "o1.3",
+   "name": "lane_02_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "6c112e240ad97070",
+   "id": "o1.4",
+   "name": "lane_03_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "ee0fc5a01b8ea7e7",
+   "id": "o1.5",
+   "name": "lane_04_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "a63451da41c55382",
+   "id": "o1.6",
+   "name": "lane_05_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "a8503931aa16d7f2",
+   "id": "o1.7",
+   "name": "lane_06_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "28b87757cb51ef91",
+   "id": "o1.8",
+   "name": "lane_07_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "b29b4f084e850990",
+   "id": "o1.9",
+   "name": "lane_08_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "12c05e65d571b7b2",
+   "id": "o1.10",
+   "name": "lane_09_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "0ccd103ed42cc843",
+   "id": "o1.11",
+   "name": "lane_10_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "76b745ad8bb3c812",
+   "id": "o1.12",
+   "name": "lane_11_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "ebdb616b319e6864",
+   "id": "o1.13",
+   "name": "lane_12_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "51f5843fdb8e928e",
+   "id": "o1.14",
+   "name": "lane_13_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "f41ecdce7473452f",
+   "id": "o1.15",
+   "name": "lane_14_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "a8edd554b500c0f0",
+   "id": "o1.16",
+   "name": "lane_15_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "8e24a3a0478e35a2",
+   "id": "o1.17",
+   "name": "lane_16_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "12522fb27a63fdb7",
+   "id": "o1.18",
+   "name": "lane_17_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "f87b75968db784d0",
+   "id": "o1.19",
+   "name": "lane_18_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "8796f3841de62299",
+   "id": "o1.20",
+   "name": "lane_19_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "1ebb7b1891fe6571",
+   "id": "o1.21",
+   "name": "lane_20_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "5aee8c29b5d746a9",
+   "id": "o1.22",
+   "name": "lane_21_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "cad21976c7f79802",
+   "id": "o1.23",
+   "name": "lane_22_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    1.0,
+    0.83,
+    0.1,
+    1.0
+   ],
+   "component": "374f65bda1a7cc6d",
+   "id": "o1.24",
+   "name": "lane_23_yellow",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.6,
+    0.39,
+    0.2,
+    1.0
+   ],
+   "component": "5af95da4eff62d2d",
+   "id": "o1.25",
+   "name": "lane_24_cocoa_brown",
+   "transform": [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.26",
+   "name": "single_01_beige",
+   "transform": [
+    1.0,
+    -0.0,
+    0.0,
+    85.0,
+    0.0,
+    1.0,
+    -0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.27",
+   "name": "single_02_beige",
+   "transform": [
+    1.0,
+    -0.0,
+    0.0,
+    72.0,
+    0.0,
+    1.0,
+    -0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.28",
+   "name": "single_03_beige",
+   "transform": [
+    1.0,
+    -0.0,
+    0.0,
+    59.0,
+    0.0,
+    1.0,
+    -0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.29",
+   "name": "single_04_beige",
+   "transform": [
+    1.0,
+    -0.0,
+    0.0,
+    46.0,
+    0.0,
+    1.0,
+    -0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.30",
+   "name": "single_05_beige",
+   "transform": [
+    1.0,
+    -0.0,
+    0.0,
+    33.0,
+    0.0,
+    1.0,
+    -0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.31",
+   "name": "single_06_beige",
+   "transform": [
+    0.8660254037844387,
+    -0.49999999999999994,
+    0.0,
+    73.6121593216773,
+    0.49999999999999994,
+    0.8660254037844387,
+    -0.0,
+    42.49999999999999,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.32",
+   "name": "single_07_beige",
+   "transform": [
+    0.8660254037844387,
+    -0.49999999999999994,
+    0.0,
+    62.353829072479584,
+    0.49999999999999994,
+    0.8660254037844387,
+    -0.0,
+    35.99999999999999,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.33",
+   "name": "single_08_beige",
+   "transform": [
+    0.8660254037844387,
+    -0.49999999999999994,
+    0.0,
+    51.095498823281886,
+    0.49999999999999994,
+    0.8660254037844387,
+    -0.0,
+    29.499999999999996,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.34",
+   "name": "single_09_beige",
+   "transform": [
+    -0.25881904510252074,
+    -0.9659258262890683,
+    0.0,
+    -21.999618833714273,
+    0.9659258262890683,
+    -0.25881904510252074,
+    -0.0,
+    82.10369523457081,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.35",
+   "name": "single_10_beige",
+   "transform": [
+    -0.25881904510252074,
+    -0.9659258262890683,
+    0.0,
+    -18.6349712473815,
+    0.9659258262890683,
+    -0.25881904510252074,
+    -0.0,
+    69.54665949281292,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.36",
+   "name": "single_11_beige",
+   "transform": [
+    -0.25881904510252074,
+    -0.9659258262890683,
+    0.0,
+    -15.27032366104873,
+    0.9659258262890683,
+    -0.25881904510252074,
+    -0.0,
+    56.98962375105503,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.37",
+   "name": "single_12_beige",
+   "transform": [
+    -0.25881904510252074,
+    -0.9659258262890683,
+    0.0,
+    -11.90567607471596,
+    0.9659258262890683,
+    -0.25881904510252074,
+    -0.0,
+    44.43258800929714,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.38",
+   "name": "single_13_beige",
+   "transform": [
+    -0.25881904510252074,
+    -0.9659258262890683,
+    0.0,
+    -8.541028488383189,
+    0.9659258262890683,
+    -0.25881904510252074,
+    -0.0,
+    31.875552267539256,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.39",
+   "name": "single_14_beige",
+   "transform": [
+    -2.220446049250313e-16,
+    1.0,
+    0.0,
+    -1.5614246689128753e-14,
+    -1.0,
+    -2.220446049250313e-16,
+    0.0,
+    -85.0,
+    0.0,
+    -0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.97,
+    0.94,
+    0.82,
+    1.0
+   ],
+   "component": "0383586bfd06f15b",
+   "id": "o1.40",
+   "name": "single_15_beige",
+   "transform": [
+    -2.220446049250313e-16,
+    1.0,
+    0.0,
+    -1.3226185430791413e-14,
+    -1.0,
+    -2.220446049250313e-16,
+    0.0,
+    -72.0,
+    0.0,
+    -0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.41",
+   "name": "fork_01_dark_brown",
+   "transform": [
+    0.25881904510252074,
+    0.9659258262890683,
+    0.0,
+    21.999618833714262,
+    -0.9659258262890683,
+    0.25881904510252074,
+    -0.0,
+    -82.10369523457081,
+    -0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.42",
+   "name": "fork_02_dark_brown",
+   "transform": [
+    0.25881904510252074,
+    0.9659258262890683,
+    0.0,
+    18.634971247381493,
+    -0.9659258262890683,
+    0.25881904510252074,
+    -0.0,
+    -69.54665949281292,
+    -0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.43",
+   "name": "fork_03_dark_brown",
+   "transform": [
+    2.220446049250313e-16,
+    -1.0,
+    0.0,
+    5.204748896376251e-15,
+    1.0,
+    2.220446049250313e-16,
+    -0.0,
+    85.0,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.44",
+   "name": "fork_04_dark_brown",
+   "transform": [
+    2.220446049250313e-16,
+    -1.0,
+    0.0,
+    4.408728476930472e-15,
+    1.0,
+    2.220446049250313e-16,
+    -0.0,
+    72.0,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.45",
+   "name": "fork_05_dark_brown",
+   "transform": [
+    2.220446049250313e-16,
+    -1.0,
+    0.0,
+    3.6127080574846916e-15,
+    1.0,
+    2.220446049250313e-16,
+    -0.0,
+    59.0,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.46",
+   "name": "fork_06_dark_brown",
+   "transform": [
+    2.220446049250313e-16,
+    -1.0,
+    0.0,
+    2.8166876380389124e-15,
+    1.0,
+    2.220446049250313e-16,
+    -0.0,
+    46.0,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.47",
+   "name": "fork_07_dark_brown",
+   "transform": [
+    2.220446049250313e-16,
+    -1.0,
+    0.0,
+    2.0206672185931327e-15,
+    1.0,
+    2.220446049250313e-16,
+    -0.0,
+    33.0,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.48",
+   "name": "fork_08_dark_brown",
+   "transform": [
+    -0.9659258262890682,
+    -0.258819045102521,
+    0.0,
+    -82.1036952345708,
+    0.258819045102521,
+    -0.9659258262890682,
+    -0.0,
+    21.999618833714287,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.49",
+   "name": "fork_09_dark_brown",
+   "transform": [
+    -0.9659258262890682,
+    -0.258819045102521,
+    0.0,
+    -69.5466594928129,
+    0.258819045102521,
+    -0.9659258262890682,
+    -0.0,
+    18.634971247381515,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.50",
+   "name": "fork_10_dark_brown",
+   "transform": [
+    -0.9659258262890682,
+    -0.258819045102521,
+    0.0,
+    -56.98962375105502,
+    0.258819045102521,
+    -0.9659258262890682,
+    -0.0,
+    15.27032366104874,
+    0.0,
+    0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.51",
+   "name": "fork_11_dark_brown",
+   "transform": [
+    -0.9659258262890682,
+    0.2588190451025208,
+    0.0,
+    -82.10369523457081,
+    -0.2588190451025208,
+    -0.9659258262890682,
+    0.0,
+    -21.99961883371427,
+    0.0,
+    -0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.52",
+   "name": "fork_12_dark_brown",
+   "transform": [
+    -0.9659258262890682,
+    0.2588190451025208,
+    0.0,
+    -69.54665949281292,
+    -0.2588190451025208,
+    -0.9659258262890682,
+    0.0,
+    -18.634971247381497,
+    0.0,
+    -0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.53",
+   "name": "fork_13_dark_brown",
+   "transform": [
+    -0.9659258262890682,
+    0.2588190451025208,
+    0.0,
+    -56.98962375105503,
+    -0.2588190451025208,
+    -0.9659258262890682,
+    0.0,
+    -15.270323661048726,
+    0.0,
+    -0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.54",
+   "name": "fork_14_dark_brown",
+   "transform": [
+    -0.9659258262890682,
+    0.2588190451025208,
+    0.0,
+    -44.43258800929714,
+    -0.2588190451025208,
+    -0.9659258262890682,
+    0.0,
+    -11.905676074715956,
+    0.0,
+    -0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "color": [
+    0.24,
+    0.16,
+    0.12,
+    1.0
+   ],
+   "component": "73498f921a3f9a13",
+   "id": "o1.55",
+   "name": "fork_15_dark_brown",
+   "transform": [
+    -0.9659258262890682,
+    0.2588190451025208,
+    0.0,
+    -31.875552267539256,
+    -0.2588190451025208,
+    -0.9659258262890682,
+    0.0,
+    -8.541028488383187,
+    0.0,
+    -0.0,
+    1.0,
+    8.8,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  }
+ ],
+ "packageSchemaVersion": 3,
+ "profile": "index",
+ "rootName": "assembled",
+ "schemaVersion": 2,
+ "sourceClosureFiles": [
+  "cad/assemblies/__init__.py",
+  "cad/assemblies/product.py",
+  "cad/features/__init__.py",
+  "cad/params.py",
+  "cad/parts/__init__.py",
+  "cad/parts/body.py",
+  "cad/parts/counter.py",
+  "cad/parts/tile.py",
+  "cad/profiles.py",
+  "cad/rainward.step.py",
+  "cad/validation.py"
+ ],
+ "sourceClosureHash": "06066bcc8c713a46ca10425a6132872f42989fd5cb358f61445e1c2e96b635ad",
+ "sourceHash": "24aa9959ad126a9f8bbc2393c964824538da5ec613ebe13673cdb512c5bcd54f",
+ "sourceKind": "python",
+ "sourcePath": "cad/rainward.step.py",
+ "stats": {
+  "occurrenceCount": 55,
+  "shapeCount": 55
+ },
+ "stepHash": "9a08b55df004248e68233e6d12b4d7690bb0ed8f1a9ae28a2403d31c60f1068d",
+ "stepPath": "assembled.step",
+ "units": "mm"
+}

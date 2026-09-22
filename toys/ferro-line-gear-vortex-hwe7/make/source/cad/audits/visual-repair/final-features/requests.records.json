@@ -1,0 +1,89 @@
+[
+  {
+    "id": "knurl_groove_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.2.f5",
+      "--to",
+      "#o1.25.2.f482",
+      "--axis",
+      "z"
+    ]
+  },
+  {
+    "id": "knurl_floor",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.2.f481"
+    ]
+  },
+  {
+    "id": "bezel_outer",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.2.f1"
+    ]
+  },
+  {
+    "id": "bezel_height",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.2.f2",
+      "--to",
+      "#o1.25.2.f4",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "coupon_post_left",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+      "#o1.f11"
+    ]
+  },
+  {
+    "id": "coupon_post_right",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+      "#o1.f12"
+    ]
+  },
+  {
+    "id": "coupon_seat_left",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+      "#o1.f7"
+    ]
+  },
+  {
+    "id": "coupon_seat_right",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+      "#o1.f8"
+    ]
+  },
+  {
+    "id": "coupon_post_spacing",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+      "--from",
+      "#o1.f11",
+      "--to",
+      "#o1.f12",
+      "--axis",
+      "x"
+    ]
+  }
+]

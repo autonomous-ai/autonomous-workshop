@@ -1,5 +1,45 @@
 # Shared skill provenance
 
+## Corrections carry unchanged parts forward by default (2026-09-21)
+
+A Workshop-local change to the vendored `cad` and `make-round` trees, not an
+upstream resync. Both SKILL.md files carry the same block: a `workshop fix`
+run establishes its changed-part set by building and exporting every part and
+hashing each against the source archive's `make/made.json` `product_manifest`,
+and a part whose STEP comes out byte-identical keeps that archive's isolated
+component round and its two per-part print-gate reports instead of
+reproducing them. Nothing about the assembly is ever carried.
+
+This is a default, not a permission the skills grant themselves. The host
+already enforced the precondition: `make_round --require-component-passes`
+rebuilds every part and refuses assembly review for any whose digest no longer
+matches its recorded component pass, so a part that moved cannot be carried
+even by a run that tried. What the block changes is the reading of ADR 0063
+for a correction, which imports a product tree whose component histories
+already pass.
+
+The choice is frozen at run creation in the run-root `MAKE-OPTIONS.json` as
+`carry_unchanged` under `schema_version: 2`, read by
+`motion_policy.carry_unchanged()`. Schema 1 is unchanged and means "carry
+nothing", so `workshop wish`, `workshop start` and `workshop fix --full` write
+the exact pre-policy bytes and no existing checkpoint hash moves. A run created
+before the policy existed has no schema-2 document, so it keeps its original
+behaviour even after the legacy resume path refreshes its `cad` and
+`make-round` copies from source -- the block conditions on the document, not
+on the tool version. The corrections created while the policy was opt-in wrote
+the field as `quick_fix`; both names read as the same choice, and a document
+carrying both is refused rather than guessed. `motion_policy.quick_fix` stays
+as an alias so a tool frozen into such a run still resolves.
+
+Measured on the first run to use it (the Antisol Jove mirror, 2026-09-21):
+20 of 24 printed parts were byte-identical and carried, saving 717 seconds of
+component-round work read from the source archive's own `make_round` logs.
+The remaining four were re-measured because their bytes moved, although the
+movement was one `NEXT_ASSEMBLY_USAGE_OCCURRENCE` line and no geometry. See
+ADR 0069 for the decision and its limits.
+
+This changes the `cad` and `make-round` fingerprints.
+
 ## PETG Basic stock in the filament palette (2026-09-15)
 
 A Workshop-local addition to the vendored `cad` and `image-to-cad` trees, not an
@@ -314,6 +354,22 @@ part was printed.
   contract; no measurements, thresholds or exit codes change.
   Geometry, measurement, inspection, validation, export, and `cadgen`
   algorithms are otherwise the reviewed upstream bytes.
+- Adapted locally on 2026-09-21 so `render_review` rasterises whole batches of
+  triangles instead of one at a time. A whole-set review frame carries over a
+  million triangles, most of them smaller than a pixel, and the per-face pass
+  cost a flat ~50 us each: about two hours of one measured correction run was
+  software rasterisation. Face normals, flat shading and bounding boxes are now
+  one array call each, and faces are drawn in batches padded to a power-of-two
+  box. The depth test keeps its hysteresis exactly -- each pixel's candidates
+  are applied in draw order, one layer at a time -- so which of two
+  near-coincident faces is kept does not change. A differential test draws
+  every scene twice, through the renderer and through the per-face pass it
+  replaced, and requires identical pixels; on 1.44 M triangles at 900 px the
+  frame falls from 83 s to 2.2 s with identical output. `tessellate_occurrences`
+  also accepts the angular deflection (`--angular-tolerance`), which build123d
+  defaults to 0.1 rad; runs that render curved form previously had to
+  reimplement the routine to pass it. No view, colour, framing or verdict
+  changes.
 - Adapted locally on 2026-08-27 in the canonical `cadgen` STEP writer to apply
   the STEP header only after Open CASCADE transfer and to set its `FILE_NAME`
   timestamp to the fixed ISO-8601 value `1970-01-01T00:00:00`. This preserves
@@ -457,6 +513,43 @@ the artifact. It runs only when `HARNESS_WORKSPACE` is set, which Harness sets
 on the engine it launches and nothing else does, so Workshop's own product runs
 write no extra file; it never raises. Upstream does not carry it; re-apply on
 the next resync. `tests/make/test_harness_verdict.py` covers it.
+
+## `mechanisms` (2026-09-18)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `cf81f5113ffdb261e39f71166fe4aeae56509413` (2026-09-18), the commit that
+  added the tree. It is pinned on its own and does not move the other five
+  upstream trees off `facbc58`; the 36 upstream commits between the two
+  revisions are not taken here.
+- Reference only: `SKILL.md` plus eight `references/` pages on joints, gears,
+  linkages, cams and intermittent drives, energy sources, automaton layouts,
+  mechanism verification and a failure catalogue. It has no script, no gate
+  and no dependency, and upstream changed no other skill in the same commit.
+  Every tool and field it names — `cadfits.slot_for`/`peg_for`/
+  `mating_clearance`/`print_in_place_gap`, `cadmount`, `check_motion`, and
+  the manifest's `driven`, `obstacle_parts`, `retention`, `maxStepMm`,
+  `maxOverlapMm3` and `assembly_sequence` — is present in the reviewed `cad`
+  tree at `facbc58`.
+- Local path adaptations, prose only. Upstream's bare
+  `skills/cad/references/motion-manifests.md` (three places) and
+  `skills/cad/scripts/cadfits.py` do not resolve in the materialized
+  `.agents/skills` layout, so they read "the CAD skill's `references/...`" /
+  "the CAD skill's `scripts/...`", the wording the product-run references
+  already use. The failure catalogue's "this repository" names the upstream
+  repository, and `SKILL.md` gains one paragraph saying `output/trotter`,
+  `output/manta_ray` and `trotter-src` are upstream machines that are not
+  materialized in a run, so an agent does not go looking for those paths.
+  Lines were reflowed where a rewrite lengthened them; no rule, number or
+  formula changed. Only `SKILL.md`, `joints.md`, `verification.md` and
+  `failure-catalog.md` differ from upstream; `gears.md`, `linkages.md`,
+  `cams-intermittent.md`, `energy-drive.md` and `automata-patterns.md` are
+  byte-identical.
+- No standalone license file in the pinned tree, like `design-reference`,
+  `electromechanical-integration` and `image-to-cad`; this ledger does not
+  infer an MIT grant for it.
+- Motion checks remain opt-in (`MAKE-OPTIONS.json` `check_motion`, 2026-09-14).
+  The design pages apply to any moving product; `verification.md` describes
+  evidence only a `check_motion: true` run produces.
 
 ## `make-round`
 

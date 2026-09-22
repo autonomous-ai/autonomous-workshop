@@ -1,0 +1,2 @@
+<HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/lib/python3.13/site-packages/build123d/topology/shape_core.py:2597: UserWarning: Boolean operation unable to clean
+  result = self._bool_op(args, tools, operation)

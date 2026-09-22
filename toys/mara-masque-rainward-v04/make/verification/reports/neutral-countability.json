@@ -1,0 +1,182 @@
+{
+  "boundaries_over_all_rings": 24,
+  "boundary_angles_deg": [
+    10.2,
+    25.2,
+    39.5,
+    54.8,
+    68.9,
+    83.8,
+    98.1,
+    112.4,
+    126.8,
+    141.1,
+    155.5,
+    170.1,
+    184.9,
+    200.8,
+    215.6,
+    230.7,
+    245.6,
+    261.5,
+    276.9,
+    292.6,
+    308.3,
+    324.0,
+    339.5,
+    354.9
+  ],
+  "boundary_spacing_uniform": true,
+  "expected_bank_angles_deg": [
+    7.5,
+    97.5,
+    187.5,
+    277.5
+  ],
+  "geometric_body_between_tiles_mm": {
+    "bank": 1.6,
+    "ordinary": 0.8
+  },
+  "geometric_gap_between_tile_tops_mm": {
+    "bank": 1.9,
+    "ordinary": 1.1
+  },
+  "kind": "rainward-corona-neutral-countability",
+  "lanes_expected": 24,
+  "pass": true,
+  "render": "snap/neutral-board-top.png",
+  "rings": [
+    {
+      "all_angles_deg": [
+        10.21,
+        25.2,
+        54.79,
+        83.77,
+        98.14,
+        112.42,
+        126.75,
+        141.1,
+        155.47,
+        170.06,
+        184.91,
+        245.64,
+        276.91,
+        292.57,
+        308.3,
+        324.01,
+        339.46,
+        354.94
+      ],
+      "bank_angles_deg": [
+        10.2,
+        98.1,
+        184.9,
+        276.9
+      ],
+      "bank_widths_mm": [
+        2.121,
+        2.121,
+        1.924,
+        2.101
+      ],
+      "banks_at_expected_angles": true,
+      "banks_clearly_wider": true,
+      "boundaries_found": 18,
+      "ordinary_width_max_mm": 1.296,
+      "ordinary_width_median_mm": 1.227,
+      "radius_mm": 45.0,
+      "spacing_uniform": false
+    },
+    {
+      "all_angles_deg": [
+        9.49,
+        24.54,
+        39.47,
+        54.21,
+        68.94,
+        83.44,
+        97.95,
+        112.39,
+        126.89,
+        141.38,
+        155.98,
+        170.7,
+        185.51,
+        215.56,
+        230.72,
+        246.09,
+        261.51,
+        277.06,
+        292.57,
+        308.1,
+        323.61,
+        339.01,
+        354.32
+      ],
+      "bank_angles_deg": [
+        9.5,
+        98.0,
+        185.5,
+        277.1
+      ],
+      "bank_widths_mm": [
+        2.121,
+        2.094,
+        1.937,
+        1.937
+      ],
+      "banks_at_expected_angles": true,
+      "banks_clearly_wider": true,
+      "boundaries_found": 23,
+      "ordinary_width_max_mm": 1.335,
+      "ordinary_width_median_mm": 1.23,
+      "radius_mm": 60.0,
+      "spacing_uniform": false
+    },
+    {
+      "all_angles_deg": [
+        9.07,
+        24.16,
+        39.05,
+        68.6,
+        83.28,
+        97.83,
+        112.44,
+        127.04,
+        141.59,
+        156.32,
+        171.06,
+        185.91,
+        200.84,
+        231.11,
+        246.37,
+        261.73,
+        277.16,
+        292.55,
+        307.98,
+        323.36,
+        338.71,
+        353.93
+      ],
+      "bank_angles_deg": [
+        9.1,
+        97.8,
+        185.9,
+        277.2
+      ],
+      "bank_widths_mm": [
+        2.094,
+        2.127,
+        2.094,
+        2.094
+      ],
+      "banks_at_expected_angles": true,
+      "banks_clearly_wider": true,
+      "boundaries_found": 22,
+      "ordinary_width_max_mm": 1.407,
+      "ordinary_width_median_mm": 1.276,
+      "radius_mm": 75.0,
+      "spacing_uniform": false
+    }
+  ]
+}

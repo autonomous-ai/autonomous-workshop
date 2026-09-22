@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "A flat rectangular slab with eight circular sockets in a 4 by 2 grid. The flat-lit top view does not shade the shallow socket walls and reads as a blank rectangle; the iso view resolves all eight sockets, evenly pitched and none overlapping. Front view is the plain 6.00 mm slab edge, correct for a tray with blind sockets.",
+  "packet_sha256": "32e3c7dd9a24d86f065b0492851628f170d686d86d25601576ebc182a4d92dc7",
+  "status": "pass"
+}

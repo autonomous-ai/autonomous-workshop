@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "scope": "Exact STEP presentation, no physical performance claim",
+  "camera_forward": [
+    0,
+    -1,
+    0.9
+  ],
+  "projection": "orthographic",
+  "common_frame_bounds": [
+    [
+      -70.0,
+      -65.0,
+      0.0
+    ],
+    [
+      70.0,
+      65.0,
+      87.0
+    ]
+  ],
+  "state_sha256s": {
+    "presentation/states/before.step": "4f575409c2cc13666cb09ca3f435ae9ea9e5487d867867f61d121910e2900327",
+    "presentation/states/after.step": "468a1e9b0610d1ebb6966af530693d79bd97356f0a47c658414d8c35f720109c"
+  },
+  "hero_step_sha256": "f13d27e8268844e97f2b1e41adbd3c0f4aa6ab01bec7c9ed21a3a9c3ca33fecd",
+  "renderer_sha256": "da08f542926c0b6894735d36e70485bb1d8f23bd9f217cb19f42b793ec1b92cf",
+  "iso_sha256": "382dea8cfa8630ccea255a918a333a3939d8b6f94d8e80af2d7a84561623d7b4",
+  "signature_sha256": "366b3ba6cba18d92bc965578127b74dcb93a2d371b964fc3cc0bb27c836176e0",
+  "top_sha256": "9c25780312367502b535cedf1b868ae02c8614abfb8ddc1913c4300f7339b6d7",
+  "top_neutral_sha256": "a40fca3db56f0c3220962410be03f54bfc57eef487dd98069a993abd692647d9",
+  "overhead_camera_forward": [
+    0.0,
+    -0.02,
+    1.0
+  ],
+  "mean_rgb_difference": 3.569857175925926,
+  "leaf_srgb_materials": true,
+  "reason": "Standard tool sheet recentred each state; use shared framing and fixed elevated front camera."
+}

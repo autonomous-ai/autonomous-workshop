@@ -1,0 +1,12 @@
+{
+  "source": "<WORKSHOP_RUN>/artifacts/make/r0001/product/evidence-states/counter-sun.step",
+  "source_sha256": "049c0e0cfce66a649aa5372dd570dd179fac155985b12265d9c5348eea6eb569",
+  "camera": {
+    "azimuth_deg": -90.0,
+    "elevation_deg": 22.0,
+    "projection": "orthographic",
+    "crop_cx_cy_frac": null
+  },
+  "output": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/snap/counters/sun-oblique_az-90_el22.png",
+  "output_sha256": "017525622497d20649fd75689d531bc462251e4bd40a5bbf9e4d7b48236dbb46"
+}

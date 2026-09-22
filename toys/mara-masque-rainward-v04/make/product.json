@@ -1,0 +1,61 @@
+{
+  "banks": 4,
+  "components": {
+    "lane_tiles_dark": 12,
+    "lane_tiles_light": 12,
+    "single_tail_counters": 15,
+    "split_tail_counters": 15,
+    "sun_body": 1
+  },
+  "crown": {
+    "closed_loop_area_mm2": 81.513,
+    "closed_loops": 1,
+    "deepest_flame_depth_mm": 9.24,
+    "longest_plain_circular_arc_deg": 1.198,
+    "max_radius_mm": 99.0,
+    "min_tip_thickness_mm": 1.3,
+    "narrowest_root_mm": 8.409,
+    "narrowest_root_over_own_length": 1.156,
+    "tongue_length_mm": [
+      2.325,
+      9.085
+    ],
+    "tongue_length_ratio": 3.908,
+    "tongues": 38,
+    "troughs_at_or_over_9mm_deep": 8
+  },
+  "crown_envelope_mm": [
+    190.999,
+    192.311
+  ],
+  "filaments": {
+    "lane_tiles_dark": "cocoa_brown",
+    "lane_tiles_light": "yellow",
+    "single_tail_counters": "beige",
+    "split_tail_counters": "dark_brown",
+    "sun_body": "orange"
+  },
+  "lane_count": 24,
+  "motion": "unverified",
+  "pieces_per_lane": 15,
+  "player_supplied": {
+    "dice": "two ordinary cubic 1-6 dice of any standard make, opposite pairs 1-6, 2-5 and 3-4, of a size that throws freely on a table",
+    "dice_cups": "one ordinary six-sided die cup per player",
+    "reason": "packaging decision under the player-supplied allowance in the inventor's taste; the rules, component functions, quantities and probabilities are unchanged",
+    "substitute_randomiser": "none - no printed randomiser, spinner, teetotum or card draw replaces the dice"
+  },
+  "playtest": "not-run",
+  "print_ready_claim": false,
+  "printed_parts": 55,
+  "product_id": "wish-20260917-154943-eab11431",
+  "revision_of": "Rainward Corona",
+  "status": "digitally-verified-not-print-ready",
+  "summary": "The box holds the Sun board, its 24 lane tiles and 30 counters only: no dice and no dice cups are included. Each player supplies one ordinary six-sided die cup, and the pair shares two ordinary 1-6 dice of any standard make - two cubic dice, faces 1 through 6, standard opposite pairs 1-6, 2-5 and 3-4, of a size that throws freely on a table. A Sun-shaped backgammon set: 24 lanes alternate between two filament tones around a 190 mm disc that stands 9 mm tall, and the whole rim is one unbroken crown of flame - 38 tongues that touch their neighbours at the root, no plain circular edge left anywhere, and one closed magnetic loop arching out of the fire.",
+  "sun_dimensions_mm": [
+    190,
+    190,
+    9
+  ],
+  "title": "Rainward Flarecrown",
+  "worst_own_tile_support_fraction": 0.90769
+}

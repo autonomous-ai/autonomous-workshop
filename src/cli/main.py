@@ -88,6 +88,7 @@ from workshop.wish import (
 from workshop.wish.contracts import MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY
 from workshop.workflow import (
     native_run_status,
+    publish_native_run,
     refresh_native_run_tools,
     resume_native_run,
     start_native_run,
@@ -442,6 +443,22 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
             print("Product page: %s (%s)" % (page_url, publication.get("status")))
         else:
             print("Product page: %s" % publication.get("status", "not-created"))
+        if publication.get("status") == "unreleased":
+            # The local archive is this run's whole deliverable and the next
+            # correction's input, so name it rather than leaving the operator
+            # to guess where it landed.
+            example = publication.get("public_example")
+            archive = example.get("path") if isinstance(example, Mapping) else None
+            if isinstance(archive, str) and archive:
+                print("Unreleased archive: %s" % archive)
+                print(
+                    "Correct it again: %s"
+                    % _shell_command(
+                        "workshop", "fix", archive, "--prompt", "...", "--no-publish"
+                    )
+                )
+            elif isinstance(example, Mapping) and example.get("reason"):
+                print("Unreleased archive: not written — %s" % example["reason"])
         manual_url = publication.get("manual_url")
         if isinstance(manual_url, str) and manual_url:
             print("Manual PDF: %s (hash-verified)" % manual_url)
@@ -556,10 +573,12 @@ def _start_run(
     workflow,
     runtime,
     github: bool,
+    no_publish: bool = False,
     max_rounds: int = DEFAULT_MAX_ROUNDS,
     max_tokens: int = DEFAULT_PRODUCT_TOKENS,
     turn_minutes: Any = None,
     check_motion: bool = False,
+    carry_unchanged: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     revision_snapshot: Optional[bytes] = None,
     progress: TextIO,
@@ -610,6 +629,14 @@ def _start_run(
                     file=progress,
                     flush=True,
                 )
+    if no_publish:
+        print(
+            "Publication: disabled (--no-publish). Release seals this toy "
+            "locally as an unreleased archive under toys/; no Factory listing "
+            "is created.",
+            file=progress,
+            flush=True,
+        )
     print(
         "Starting one native %s session for %s..."
         % (runtime.spec.display_name, workflow.enabled_stages[0].title()),
@@ -640,15 +667,32 @@ def _start_run(
         **({"max_tokens": max_tokens} if max_tokens != DEFAULT_PRODUCT_TOKENS else {}),
         **_turn_boundary_options(turn_minutes),
         **({"check_motion": True} if check_motion else {}),
+        **({"carry_unchanged": True} if carry_unchanged else {}),
         wish_reference_files=wish_reference_files,
         **({"revision_snapshot": revision_snapshot} if revision_snapshot is not None else {}),
         github_publish_requested=github,
+        **({"local_release_only": True} if no_publish else {}),
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
 
 
+def _reject_conflicting_publication_options(args: argparse.Namespace) -> None:
+    """Fail before any work when the two publication options contradict.
+
+    The host rejects this too, but only after a workspace exists and the CLI
+    has already announced a run that cannot start.
+    """
+
+    if args.no_publish and args.github:
+        raise WorkshopError(
+            "choose --no-publish or --github, not both: an unreleased run has "
+            "no public archive to commit and push"
+        )
+
+
 def _wish(args: argparse.Namespace) -> int:
+    _reject_conflicting_publication_options(args)
     workflow = workshop_effort(args.workflow)
     loaded_references = load_wish_references(list(args.references or ()))
     context: dict = {"source": "workshop-cli"}
@@ -675,6 +719,7 @@ def _wish(args: argparse.Namespace) -> int:
         workflow=workflow,
         runtime=runtime,
         github=args.github,
+        no_publish=args.no_publish,
         max_rounds=args.max_rounds,
         max_tokens=args.max_tokens,
         turn_minutes=args.turn_minutes,
@@ -693,6 +738,7 @@ def _wish(args: argparse.Namespace) -> int:
 def _fix(args: argparse.Namespace) -> int:
     from workshop.workflow.revision import prepare_revision
 
+    _reject_conflicting_publication_options(args)
     if args.prompt_file is not None:
         try:
             prompt = args.prompt_file.read_text(encoding="utf-8")
@@ -700,15 +746,28 @@ def _fix(args: argparse.Namespace) -> int:
             raise WorkshopError("cannot read correction prompt file") from exc
     else:
         prompt = args.prompt
-    wish, snapshot = prepare_revision(args.source, prompt)
+    loaded_references = load_wish_references(list(args.references or ()))
+    # A correction without images calls exactly as it did before --ref existed,
+    # so its Wish keeps the canonical bytes of the pre-reference contract.
+    reference_options = (
+        {
+            "references": [item.reference for item in loaded_references],
+            "reference_sources": wish_reference_sources(loaded_references),
+        }
+        if loaded_references
+        else {}
+    )
+    wish, snapshot = prepare_revision(args.source, prompt, **reference_options)
     runtime = manager_runtime_selection(
         args.agent, model=args.model, reasoning_effort=args.effort,
     )
     progress = sys.stderr if args.json else sys.stdout
     receipt = _start_run(
         wish, workflow=workshop_effort("spark"), runtime=runtime,
-        github=args.github, max_tokens=args.max_tokens,
-        turn_minutes=args.turn_minutes, check_motion=args.check_motion, revision_snapshot=snapshot,
+        github=args.github, no_publish=args.no_publish, max_tokens=args.max_tokens,
+        turn_minutes=args.turn_minutes, check_motion=args.check_motion,
+        carry_unchanged=not args.full, revision_snapshot=snapshot,
+        wish_reference_files=wish_reference_files(loaded_references),
         progress=progress, live_progress=_LiveWishProgress(progress, runtime.spec.display_name),
     )
     if args.json:
@@ -1137,6 +1196,26 @@ def _resume(args: argparse.Namespace) -> int:
         _print_json(receipt)
     else:
         _print_native_receipt(receipt, verb="Resume")
+    return _native_exit_code(receipt, strict=args.strict)
+
+
+def _publish(args: argparse.Namespace) -> int:
+    progress = sys.stderr if args.json else sys.stdout
+    live_progress = _LiveWishProgress(progress, "Publication")
+    print(
+        "Publishing the sealed Release of %s; no model runs and no geometry "
+        "changes." % args.product_id,
+        file=progress,
+        flush=True,
+    )
+    receipt = publish_native_run(
+        args.product_id,
+        timing_observer=live_progress.timing,
+    )
+    if args.json:
+        _print_json(receipt)
+    else:
+        _print_native_receipt(receipt, verb="Publish")
     return _native_exit_code(receipt, strict=args.strict)
 
 
@@ -1968,6 +2047,11 @@ def parser() -> argparse.ArgumentParser:
             % (MIN_TURN_MINUTES, MAX_TURN_MINUTES, UNTIMED_TURN)
         ),
     )
+    wish.add_argument(
+        "--no-publish",
+        action="store_true",
+        help="seal this toy locally instead of publishing it: Make and Release run exactly as usual, but no Factory listing is created and the toy directory records 'unreleased' publication status. `workshop fix` accepts that directory, so a chain of single-change corrections can be published only at its end (default: publish)",
+    )
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
     wish.set_defaults(handler=_wish)
@@ -1988,7 +2072,49 @@ def parser() -> argparse.ArgumentParser:
                       help="enable Make motion checks and animation review (default: false)")
     fix.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS)
     fix.add_argument("--turn-minutes", type=_turn_minutes, default=None)
+    fix.add_argument(
+        "--ref",
+        action="append",
+        dest="references",
+        type=str,
+        metavar="IMAGE_OR_URL",
+        help=(
+            "attach one reference image to the correction brief, a local file "
+            "or an http(s) link (PNG, JPEG, or WebP; repeat for up to %d); a "
+            "link is downloaded once now, and the run receives the bytes "
+            "read-only as %s/ref-NN-<name>"
+            % (MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY)
+        ),
+    )
+    fix.add_argument(
+        "--full",
+        action="store_true",
+        help=(
+            "regenerate every part's evidence instead of carrying the "
+            "unchanged ones forward. By default a correction rebuilds and "
+            "re-exports every part, and a part whose STEP comes out "
+            "byte-identical to the source archive's keeps that archive's "
+            "component round and per-part gate reports rather than "
+            "reproducing them -- which is sound because a gate is a pure "
+            "function of the STEP it reads, and which the host enforces by "
+            "hash, refusing assembly review for any part that moved. Nothing "
+            "about the assembly is ever carried: the whole-assembly checks, "
+            "the renders, verify_project and the blind review run in full "
+            "either way. Pass this to take the carried evidence out of the "
+            "record anyway, for a correction you want measured from nothing"
+        ),
+    )
+    fix.add_argument(
+        "--quick",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
     fix.add_argument("--github", action="store_true", help="also commit and push the new public archive")
+    fix.add_argument(
+        "--no-publish",
+        action="store_true",
+        help="seal this toy locally instead of publishing it: Make and Release run exactly as usual, but no Factory listing is created and the toy directory records 'unreleased' publication status. `workshop fix` accepts that directory, so a chain of single-change corrections can be published only at its end (default: publish)",
+    )
     fix.add_argument("--json", action="store_true")
     fix.add_argument("--strict", action="store_true")
     fix.set_defaults(handler=_fix)
@@ -1996,14 +2122,14 @@ def parser() -> argparse.ArgumentParser:
     status = subcommands.add_parser(
         "status", help="inspect one native Wish checkpoint without running a model"
     )
-    status.add_argument("product_id", help="Wish id printed by 'workshop wish'")
+    status.add_argument("product_id", help="product id printed by 'workshop wish'")
     status.add_argument("--json", action="store_true", help="emit one JSON receipt")
     status.set_defaults(handler=_status)
 
     resume = subcommands.add_parser(
         "resume", help="resume the exact frozen native Manager session for one Wish"
     )
-    resume.add_argument("product_id", help="saved Wish id")
+    resume.add_argument("product_id", help="saved product id")
     resume.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS, default=None,
                         help="explicit reasoning effort for this and later resumes; omitted keeps the saved selection")
     resume.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
@@ -2039,6 +2165,17 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     resume.set_defaults(handler=_resume)
+
+    publish = subcommands.add_parser(
+        "publish",
+        help="list the sealed Release of a run that was kept local with --no-publish",
+    )
+    publish.add_argument("product_id", help="saved product id")
+    publish.add_argument("--json", action="store_true", help="emit one JSON receipt")
+    publish.add_argument(
+        "--strict", action="store_true", help="exit 1 when publication does not complete"
+    )
+    publish.set_defaults(handler=_publish)
 
     doctor = subcommands.add_parser(
         "doctor", help="check native runtime prerequisites without exposing credentials"

@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "One solid: square backing plate, visible drum with its ring seam, exact hemisphere, one shutter slit, and a bored telescope standing in the slit on a two-arm yoke with its keel. The correction reads directly in two frames. Straight down (top), the tube lies on the slit's own centreline with equal empty slit on both sides and the two arm tops showing as a symmetric pair either side of the tube; the previous archive put one arm outside the tube against one wall. Head on (front), the yoke is a symmetric fork straddling the tube, equal air to each slit wall. Iso matches ref-01 dome/drum/slit/telescope. No misplaced, missing or extra parts, no intersections, no proportion error, nothing on the bare plate margin.",
+  "packet_sha256": "6ba5de7383f062375360a98c7efa1c9ad67a6a2637d5ca6648852cf0be80bb13",
+  "status": "pass"
+}

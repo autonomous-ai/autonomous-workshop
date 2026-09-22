@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "One printed solid: a round disc carrying a globe on an integral seat collar. Front: the disc is 5.00 mm tall and its wall tapers inward as it rises (wider at the bed, narrower at the top), which is the Anti-Sol ownership cue; the globe meets it through a short collar with no step, gap or visible intersection. Top: the globe is concentric in the disc ring. Iso: one continuous body, no floating, duplicated, missing or extra geometry. Proportion: the globe reads as about 0.49 of the disc's own 34.00 mm, which is this world's place on the size ladder (globe \u00d816.70 mm) -- visibly smaller than Jupiter's and larger than Mercury's where it should be.",
+  "packet_sha256": "391a9070819ede3ddb2d8da3223097466e08ed118ec1bd38099afccef52d1fb0",
+  "status": "pass"
+}

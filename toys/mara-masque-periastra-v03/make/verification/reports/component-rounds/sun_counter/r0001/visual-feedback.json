@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Visual inspection only; the numeric overhang verdict is separate and reported unchanged. Iso shows the three step heights: flat rim band at full face level, flat sunk field inside it, and the Sun standing back out of that field to face level - an unbroken ball ringed by clear field with eight detached wedges widening outward, each island carrying its small top bevel. Top view matches ref-02. Front shows a circular disc 20.0 across by 7.0 thick with a chamfer on both face edges and no tail, tab or notch. This geometry is frozen by the correction and its STEP hashes byte-identical to the archive; nothing about it was touched. No misplaced, missing or extra geometry, no intersections, no proportion error.",
+  "packet_sha256": "3fad2e0c21e7b6efc8fbfc2aae6c8a7837d0ec334601139abd1b2cde1f040562",
+  "status": "pass"
+}

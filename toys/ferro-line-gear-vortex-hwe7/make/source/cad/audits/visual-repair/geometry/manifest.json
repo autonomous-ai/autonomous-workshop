@@ -1,0 +1,256 @@
+{
+  "schema_version": 1,
+  "status": "prepared_not_executed",
+  "prepared_utc": "2026-09-21T07:38:50.639309+00:00",
+  "scope": "Current nine component refs/full validations and full 44-leaf assembly refs/validate/interfere. No heavy operation executed in preparation.",
+  "request_file": "requests.jsonl",
+  "request_sha256": "9bbd555d28fe1418909933e9a2739c2619594919c9fc4f1671cda31fb564eb17",
+  "request_count": 21,
+  "component_roles": [
+    "gear_14",
+    "gear_15",
+    "gear_23",
+    "carrier",
+    "coupon",
+    "gear_18",
+    "gear_20",
+    "gear_22",
+    "gear_26"
+  ],
+  "component_count": 9,
+  "expected_assembly_leaf_count": 44,
+  "expected_assembly_pair_count": 946,
+  "native_command": [
+    "<HOME>/.local/share/autonomous-workshop-python/bin/python",
+    ".agents/skills/cad/scripts/inspect",
+    "batch"
+  ],
+  "execution_binding_policy": "No prepared source/STEP snapshot is treated as the execution binding. run-batch.sh records exact current source and export hashes immediately before batch execution; run only after component rounds pass and assembly is regenerated. Rejects the historical assembly export.",
+  "inspection_options": {
+    "full_validate": true,
+    "skip_self_intersection": false,
+    "restricted_refs": false,
+    "max_pairs": null,
+    "interference_tolerance_mm3": "native default 1.0 (not overridden)",
+    "cache_policy": "Preserve all caches; native tool alone decides exact BRep/options/tool reuse."
+  },
+  "reference": {
+    "path": ".agents/skills/cad/references/inspection-and-validation.md",
+    "sha256": "6fde2319dcb60cd1df4111f354193541c5edb8246047c182a9a298774a1bd258",
+    "correction": "workshop-geometry-inspection-v2 / Geometry inspection correction v1"
+  },
+  "historical_evidence": {
+    "manifest": "artifacts/make/r0001/product/gear_vortex/measure/audits/final-geometry/manifest.json",
+    "manifest_sha256": "9135ee56050396734efa8a4d116e4de3fea74b95f42183a45603a2e4fa27fa98",
+    "summary": "artifacts/make/r0001/product/gear_vortex/measure/audits/final-geometry/summary.json",
+    "summary_sha256": "94a7d3ba9b135bb85087dd1736c872a16bbf64e683ab924529d46be0755d6f4e",
+    "raw_results": "artifacts/make/r0001/product/gear_vortex/measure/audits/final-geometry/results.jsonl",
+    "raw_results_sha256": "2b2a451629232ec6d2bf54c3a76acdef4dc3cddb8fd07e0ad3de91ec2a64e3a4",
+    "summary_bindings_match": true
+  },
+  "exact_unchanged_step_evidence": [
+    {
+      "role": "axle",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_axle.step",
+      "observed_current_sha256": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+      "historical_step_sha256": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:axle",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "bezel",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_bezel.step",
+      "observed_current_sha256": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+      "historical_step_sha256": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:bezel",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "foot_trim",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_foot_trim.step",
+      "observed_current_sha256": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+      "historical_step_sha256": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:foot_trim",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "gear_cap",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_gear_cap.step",
+      "observed_current_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "historical_step_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:gear_cap",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "main_cap",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_main_cap.step",
+      "observed_current_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "historical_step_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:main_cap",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "orange_disc",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_orange_disc.step",
+      "observed_current_sha256": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+      "historical_step_sha256": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:orange_disc",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "pedestal",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_pedestal.step",
+      "observed_current_sha256": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+      "historical_step_sha256": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:pedestal",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "pedestal_lid",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step",
+      "observed_current_sha256": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+      "historical_step_sha256": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:pedestal_lid",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "rim_trim",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_rim_trim.step",
+      "observed_current_sha256": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+      "historical_step_sha256": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:rim_trim",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "stem",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_stem.step",
+      "observed_current_sha256": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+      "historical_step_sha256": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:stem",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "sun",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_sun.step",
+      "observed_current_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "historical_step_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:sun",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "support_collar",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_support_collar.step",
+      "observed_current_sha256": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8",
+      "historical_step_sha256": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:support_collar",
+      "historical_validation_response_ok": true
+    }
+  ],
+  "changed_or_unbound_old_exports": [
+    {
+      "role": "carrier",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_carrier.step",
+      "observed_current_sha256": "cb457616187187a1b4b8b553fadf999553489ae53702b4e5999a6b1afc92e198",
+      "historical_step_sha256": "31a402dd70e04ded7f1fad56aa8fecb9f67db850e0d272ee0722e9fb6f405b80",
+      "exact_step_bytes_match": false,
+      "historical_validation_request": "validate:carrier",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "coupon",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_coupon.step",
+      "observed_current_sha256": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5",
+      "historical_step_sha256": "420ff78b344597b22616949fd8c8a306c6a52a61cf94f4634242b88f3aef139b",
+      "exact_step_bytes_match": false,
+      "historical_validation_request": "validate:coupon",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "gear_18",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_gear_18.step",
+      "observed_current_sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+      "historical_step_sha256": "b530695efe1753b996944c855171784d8880a4322882d3f9bd9b249d0cc38640",
+      "exact_step_bytes_match": false,
+      "historical_validation_request": "validate:gear_18",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "gear_20",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_gear_20.step",
+      "observed_current_sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+      "historical_step_sha256": "f15fdbc63c910fa87d4f4195105b65e43ccae76f23356673e181681992f150f2",
+      "exact_step_bytes_match": false,
+      "historical_validation_request": "validate:gear_20",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "gear_22",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_gear_22.step",
+      "observed_current_sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+      "historical_step_sha256": "3bc0f3d7b56c26681d3dfc4b671e5aaed98ec4e2c762f3ff948f51a406bd1644",
+      "exact_step_bytes_match": false,
+      "historical_validation_request": "validate:gear_22",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "gear_26",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_gear_26.step",
+      "observed_current_sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+      "historical_step_sha256": "8b31f14c74c7958da148d8b489cbacd7bd7688d0b9a9d58b0c53be527dad786d",
+      "exact_step_bytes_match": false,
+      "historical_validation_request": "validate:gear_26",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "gear_vortex",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/gear_vortex.step",
+      "observed_current_sha256": "b09ea2ab604b26262bea462a682304e0816cd87bb7c3a5fd4807b8d114d19997",
+      "historical_step_sha256": "b09ea2ab604b26262bea462a682304e0816cd87bb7c3a5fd4807b8d114d19997",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:assembly",
+      "historical_validation_response_ok": true
+    }
+  ],
+  "retired_roles_not_current_production": [
+    {
+      "role": "gear_16",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_gear_16.step",
+      "observed_current_sha256": null,
+      "historical_step_sha256": "b5719d6bc598e925f3b7ba85904ee0eba3b1bd7bf7e31349f5483c1526ac3ce5",
+      "exact_step_bytes_match": false,
+      "historical_validation_request": "validate:gear_16",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "gear_24",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_gear_24.step",
+      "observed_current_sha256": null,
+      "historical_step_sha256": "c9081f6b8f847a9a8ad9b0abbef5c984df2080d0e0ad16a1fe4b58a55598f790",
+      "exact_step_bytes_match": false,
+      "historical_validation_request": "validate:gear_24",
+      "historical_validation_response_ok": true
+    }
+  ],
+  "historical_assembly_sha256": "b09ea2ab604b26262bea462a682304e0816cd87bb7c3a5fd4807b8d114d19997",
+  "interpretation": "Exact unchanged STEP matches support historical intrinsic-solid evidence only. They do not transfer old assembly placements, source generation, optical corridor or kinematics; normal final gates and source-byte reconciliation remain. Changed retained-gear STEP files are in the primary native batch.",
+  "completion_checklist": [
+    "Every response has ok=true and exitCode=0; refs success alone is not geometry validity.",
+    "Current assembly refs reports exactly 44 leaf occurrences and source/export identity reconciles.",
+    "All nine component validations and full assembly validation complete without omitted self-intersection checks or occurrences.",
+    "Unrestricted interference covers all 946 possible pairs by tested or bbox-excluded counts, truncates none and reports no clashes at unchanged default tolerance.",
+    "Interpret measured defects as failures; native exit3 exhausted/cancelled outcomes are UNVERIFIED. Preserve reports and do not repeatedly rerun an identical exhausted inspection.",
+    "Standalone batch does not replace final integrated verification, motion or independent review."
+  ]
+}

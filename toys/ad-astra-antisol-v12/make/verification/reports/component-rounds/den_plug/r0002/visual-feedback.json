@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso inspected, with particular attention because this revision exists to leave this part alone. Two tapered flames and no more, standing at the two corners of one edge of the flange, leaning outward symmetrically, identical in profile and height to each other. The front view shows both reaching the same height above a flat flange top; the top view puts both feet well inside the flange and nowhere near its centre, so the square a winning piece lands on is clear; the iso shows the spigot, the drafted skirt, the flange and the hex granulation engraved into the corners the seated disc never covers. Nothing else on the part stands up. No misplaced, missing or extra geometry, no intersections. Byte-identical to the published set's.",
+  "packet_sha256": "fea7ee0c4d16f48b6e99710899cdeef65132dfc419e3922dfb9fa9547edaf90c",
+  "status": "pass"
+}
