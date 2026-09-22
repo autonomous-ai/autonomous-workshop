@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_05_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_05_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_05_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_05_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_05_front/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_05_front"
+ ],
+ "print": {
+  "body_05_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_05_front/r0004/overhang-body_05_front.log": "9611ac9c27ccd5ae102d14b81ba662fcf52b73fe1a2f6ac6a0d922a61e29ea47",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_05_front/r0004/thickness-body_05_front.log": "c27931dde76acb353b05713eea29bf604d8b5a5c2f4279d14460a7eaf3c4c9af"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:body_05_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The revised front has a clean through crescent above the centered ball in top and iso, a continuous oval perimeter, and an even seam plate in front. The neck and tangent heel visibly connect the ball to the land. No feathered shelf, floating piece or misplaced feature remains. The wall check passes; joint motion is still pending.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_05_front/r0004/visual-packet.json",
+  "packet_sha256": "0ebb76d739cb4d38bbc70bea73f2b4bc182096fc289fe5b229044da615368d69",
+  "status": "pass"
+ }
+}

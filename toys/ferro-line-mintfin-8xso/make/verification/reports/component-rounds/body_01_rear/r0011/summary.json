@@ -1,0 +1,69 @@
+{
+ "build": {
+  "body_01_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_rear"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_01_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0011",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_rear"
+ ],
+ "print": {
+  "body_01_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0011/overhang-body_01_rear.log": "2aea3bb6683a85bd6c54a61cd3860bb159caac314afe22e86d74ddd362e90949",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0011/thickness-body_01_rear.log": "19ad06f783828130f7ad57c3d572551eeb287f37a55f5ccbf6e038a40f49e005"
+   },
+   "measured_round": 11,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 11,
+ "scope": "component:body_01_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Retaining lip still fails1.2mm wall gate",
+    "evidence": "Iso mouth edge; extra wall check17.3mm2 thin band at(4.3,-7.5,7.5), width1.28mm despite default wall/supportPASS.",
+    "part": "body_01_rear",
+    "repair": "Increase true throat land and adjust neck/clearance jointly while preserving0.6 radial undercut,2mm socket shell and25degree travel; recheck affected components."
+   }
+  ],
+  "observation": "All views inspected. Body half has coherent convex shoulder, flat split face, open ankle corners and four slitted cup sectors. Simple throat land removes the prior rolled ridge, but the retaining edge still contains a measured thin circumferential band at1.2mm threshold.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0011/visual-packet.json",
+  "packet_sha256": "d9b276ebe6de76e62108c6633ef332d1eeccceb1b1a6302eb3c5d1986e8c44cf",
+  "status": "fail"
+ }
+}

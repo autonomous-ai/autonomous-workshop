@@ -1,0 +1,161 @@
+{
+  "scope": "Preflight only; no geometry measurement",
+  "arms": [
+    1,
+    2
+  ],
+  "pairs_per_arm": 7,
+  "samples_per_pair": 17,
+  "expected_rows": 238,
+  "distance_limit_mm": 1e-06,
+  "overlap_limit_mm3": 0.001,
+  "maximum_tip_interval_arc_mm": 0.330287977643034,
+  "travel_bounds": [
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        14
+      ],
+      "angular_interval_rad": [
+        0.01090830782496456,
+        0.028049934407051724
+      ],
+      "tip_arc_interval_bound_mm": [
+        0.30843240375087294,
+        0.330287977643034
+      ],
+      "tip_chord_interval_bound_mm": [
+        0.30843087455583285,
+        0.33027714982489476
+      ]
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        14,
+        15
+      ],
+      "angular_interval_rad": [
+        0.028049934407051724,
+        0.02617993877991494
+      ],
+      "tip_arc_interval_bound_mm": [
+        0.330287977643034,
+        0.3279037332184346
+      ],
+      "tip_chord_interval_bound_mm": [
+        0.33027714982489476,
+        0.32789436906217817
+      ]
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        15,
+        18
+      ],
+      "angular_interval_rad": [
+        0.02617993877991494,
+        0.02181661564992912
+      ],
+      "tip_arc_interval_bound_mm": [
+        0.3279037332184346,
+        0.3223404962277027
+      ],
+      "tip_chord_interval_bound_mm": [
+        0.32789436906217817,
+        0.3223341036530891
+      ]
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        18,
+        20
+      ],
+      "angular_interval_rad": [
+        0.02181661564992912,
+        0.019634954084936207
+      ],
+      "tip_arc_interval_bound_mm": [
+        0.3223404962277027,
+        0.31955887773233677
+      ],
+      "tip_chord_interval_bound_mm": [
+        0.3223341036530891,
+        0.31955374442422
+      ]
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        20,
+        22
+      ],
+      "angular_interval_rad": [
+        0.019634954084936207,
+        0.017849958259032916
+      ],
+      "tip_arc_interval_bound_mm": [
+        0.31955887773233677,
+        0.31728300805431003
+      ],
+      "tip_chord_interval_bound_mm": [
+        0.31955374442422,
+        0.3172787958614015
+      ]
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        22,
+        23
+      ],
+      "angular_interval_rad": [
+        0.017849958259032916,
+        0.017073873117335832
+      ],
+      "tip_arc_interval_bound_mm": [
+        0.31728300805431003,
+        0.31629349949864627
+      ],
+      "tip_chord_interval_bound_mm": [
+        0.3172787958614015,
+        0.3162896576385878
+      ]
+    },
+    {
+      "pair": 6,
+      "teeth": [
+        23,
+        26
+      ],
+      "angular_interval_rad": [
+        0.017073873117335832,
+        0.015103810834566312
+      ],
+      "tip_arc_interval_bound_mm": [
+        0.31629349949864627,
+        0.31378167008811514
+      ],
+      "tip_chord_interval_bound_mm": [
+        0.3162896576385878,
+        0.3137786875351447
+      ]
+    }
+  ],
+  "loaded_phases_rad": [
+    0.0,
+    0.19011376097069907,
+    0.1040293622226447,
+    0.24446425722762416,
+    0.169855254807782,
+    0.019864224902187186,
+    0.1897329244796094,
+    0.0001956519105270338
+  ],
+  "source_bindings_sha256": "60ab99b5f60456cf0363452fb3e5e32d8420e94199247b586157eda70e0abf93",
+  "diagnostic_script_sha256": "e1080be02d7be8abdc4836d4585ac0de88159638eca9b5e6d8af8cdf4d4bdfd2",
+  "analytic_qualification": "APPLICABLE to bound current source parameters; not BRep contact proof"
+}

@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_08_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_08_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_08_rear"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_08_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_rear/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_08_rear"
+ ],
+ "print": {
+  "body_08_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_rear/r0001/overhang-body_08_rear.log": "3188b740b5752492e3b02c583b2677fef6463c01952810aa595c0b7b427a4753",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_rear/r0001/thickness-body_08_rear.log": "41c98363ba946d078d1936fcefb1b41b648df29b14aaa964e177c59457bdddd8"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 3.9% of surface below (1392 of 38963 samples); thinnes"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:body_08_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin base wedges, projecting incoming-stem remnant and thin mouth edge.",
+    "evidence": "Top view shows a rounded extra nub beyond the outline; iso shows narrow sloping margins around the cylindrical housing. Extra1.2mm check finds four WALL regions of9.7,6.2,6.1,5.8mm2, plus2.42percent tapered edges. Defaultwall also fails; overhang passes.",
+    "part": "body_08_rear",
+    "repair": "Replace rear cosmetic wedges by a full-section1.2mm flat bonding land fused to the required socket, omit incoming-stem remnant from this rear part, and retain the mouth undercut while addressing its thin lip."
+   }
+  ],
+  "observation": "Front, top and iso inspected once. Four socket fingers and preload pad are present, but narrow cosmetic wedges remain around their base and an incoming-stem remnant protrudes past the elliptical outline. Wall measurements fail at these margins and the lip.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_rear/r0001/visual-packet.json",
+  "packet_sha256": "b610e23bab833564c9b8f6310b5c91449f7f8e65e4cd6950066dd29046b9b3a5",
+  "status": "fail"
+ }
+}

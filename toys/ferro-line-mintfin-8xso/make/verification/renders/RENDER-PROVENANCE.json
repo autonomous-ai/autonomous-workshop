@@ -1,0 +1,37 @@
+{
+  "method": "Unaltered side-by-side native render_review images, common iso view/size and equal object framing. No triangle deletion, recoloring, rescaling or geometry painting.",
+  "renderer": "render_review",
+  "inputs": [
+    {
+      "path": "artifacts/make/r0001/design/canonical-faithful/happy/iso.png",
+      "sha256": "a131594b2e7c5b32278e5505ec73a163e251715662dfab153eae6c701424ee3d",
+      "expression": "happy"
+    },
+    {
+      "path": "artifacts/make/r0001/design/canonical-faithful/sleepy/iso.png",
+      "sha256": "b6d114e2a69c3392fbc2406d9ac04b426cdd6c284b5d148b37474fa3b3212519",
+      "expression": "sleepy"
+    }
+  ],
+  "view": "iso",
+  "size_each": [
+    1000,
+    1000
+  ],
+  "object_pixel_bounds": [
+    [
+      70,
+      87,
+      930,
+      913
+    ],
+    [
+      70,
+      87,
+      930,
+      913
+    ]
+  ],
+  "signature_sha256": "160811e3c898483b0de4504967300fc6238bbefa641854364272083b0ab68bfb",
+  "limitation": "Exact static expression states; not a motion proof. Faithful native renderer replaces faulty render_product triangle subsampling."
+}

@@ -1,0 +1,71 @@
+{
+  "status": "PREPARED_NOT_EXECUTED",
+  "masters": [
+    {
+      "teeth": 14,
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_14.step",
+      "sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178"
+    },
+    {
+      "teeth": 15,
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_15.step",
+      "sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543"
+    },
+    {
+      "teeth": 18,
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_18.step",
+      "sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3"
+    },
+    {
+      "teeth": 20,
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_20.step",
+      "sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af"
+    },
+    {
+      "teeth": 22,
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_22.step",
+      "sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28"
+    },
+    {
+      "teeth": 23,
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_23.step",
+      "sha256": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8"
+    },
+    {
+      "teeth": 26,
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_26.step",
+      "sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582"
+    },
+    {
+      "teeth": 36,
+      "path": "artifacts/make/r0001/product/gear_vortex/part_sun.step",
+      "sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d"
+    }
+  ],
+  "nominal_module_mm": 1.5,
+  "required_per_flank_interval_mm": [
+    0.15,
+    0.25
+  ],
+  "nominal_per_flank_removal_mm": 0.18,
+  "kernel_intersection_tolerance_mm": 1e-07,
+  "connectivity_tolerance_mm": 1e-07,
+  "geometry_tolerance_mm": 1e-06,
+  "nominal_comparison_tolerance_mm": 0.001,
+  "public_api_reference": "Installed build123d Shape.intersect, Edge.make_circle, Wire.combine, Wire.length; source docstrings reviewed read-only. Face+Edge promises edge-on-surface overlap. Actual kernel support must still be demonstrated by execution.",
+  "api_source_bindings": [
+    {
+      "path": "<HOME>/.local/share/autonomous-workshop-python/lib/python3.13/site-packages/build123d/topology/shape_core.py",
+      "sha256": "f3a8c231bd67016e29b5c12727305792f167f0254206f91cb44420b2e2d2fa03"
+    },
+    {
+      "path": "<HOME>/.local/share/autonomous-workshop-python/lib/python3.13/site-packages/build123d/topology/one_d.py",
+      "sha256": "2743dd53a42907e5618918a04958591c3a9705d1d30a3d75fd86986707e1fec2"
+    },
+    {
+      "path": "<HOME>/.local/share/autonomous-workshop-python/lib/python3.13/site-packages/build123d/topology/two_d.py",
+      "sha256": "0bba9f5078f8e7cd33e5388c0d24b0b24d9ae0965bd38460c9a18438b6e43fb2"
+    }
+  ],
+  "no_execution_claim": true
+}

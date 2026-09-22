@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin shoulder lip and truncated thread-end wedges",
+      "evidence": "Front and iso show a fine lip around the shoulder; numeric report locates thin walls at the shoulder and thread ends.",
+      "part": "axle",
+      "repair": "Thicken shoulder downward while retaining orange seat datum; taper thread ends and runout to self-supporting slopes."
+    }
+  ],
+  "observation": "The hollow sightline is clear and threads render intact. The shoulder has a visibly knife-thin outer lip, consistent with the wall and overhang failures.",
+  "packet_sha256": "3585d072b655d147b43b082bcc43a94daba0b82dbaba7a99ec63f3cecc01465f",
+  "status": "fail"
+}

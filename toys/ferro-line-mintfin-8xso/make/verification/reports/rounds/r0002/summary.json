@@ -1,0 +1,992 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": true,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "mintfin.step.py",
+ "full": null,
+ "geometry_status": "unverified",
+ "likeness": [],
+ "min": 0.9,
+ "motion": {
+  "conditions": [],
+  "detail": "check_motion exit 3: missing or invalid motion condition evidence;  condition 3/46: j00-twist-negative-20 [rotation_motion_collision] (1m47s elapsed) [j00-twist-negative-20] sweep: 79 to ",
+  "returncode": 3,
+  "verdict": "unverified"
+ },
+ "motion_status": "unverified",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_01",
+  "belly_02",
+  "belly_03",
+  "belly_04",
+  "belly_05",
+  "belly_06",
+  "belly_07",
+  "belly_08",
+  "body_01_front",
+  "body_01_rear",
+  "body_02_front",
+  "body_02_rear",
+  "body_03_front",
+  "body_03_rear",
+  "body_04_front",
+  "body_04_rear",
+  "body_05_front",
+  "body_05_rear",
+  "body_06_front",
+  "body_06_rear",
+  "body_07_front",
+  "body_07_rear",
+  "body_08_front",
+  "body_08_rear",
+  "claw",
+  "coupon_ball",
+  "coupon_socket",
+  "face_eye",
+  "face_happy_mouth",
+  "face_highlight",
+  "face_nostril",
+  "face_plate",
+  "face_sleepy_lid",
+  "face_sleepy_mouth",
+  "face_tongue",
+  "gills_left",
+  "gills_right",
+  "head_front",
+  "head_rear",
+  "horn_left",
+  "horn_middle",
+  "horn_right",
+  "leg_left",
+  "leg_right",
+  "spike",
+  "spike_front",
+  "tail_left",
+  "tail_right"
+ ],
+ "print": {
+  "belly_01": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-belly_01.log": "f0b63f9053f655010445b28935f75a8bd61062b0946e2e557fc12a2ab10ed4f5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-belly_01.log": "ffb37598e3546bf01363be93b445757ffe0aa39a65f76199859fb730eb07a04f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "belly_02": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-belly_02.log": "2fd84a09a0fba4a502b4b230c94dd24e567362892aad9e47b5d6630c42b0ba12",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-belly_02.log": "a6aa04ab34eb3bdc1034f70590fe61ad5245b00da46acf359e253f108dbbf7dc"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "belly_03": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-belly_03.log": "e9db33a47c50aa7f847f2ecc026a7dc69e5bdf3c91da72777efc0db8fa9f860b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-belly_03.log": "1f76a6870bbaa971560010b7617953a93ba34b08c43b9a52e8d7894da5378311"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "belly_04": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-belly_04.log": "b55f2008f1ef835189306cf13ce4edcf7a78a9c3acf902000fe2e24e09d5b0e0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-belly_04.log": "3244d5b079d9d1c87691faaa03de3ecf90f242d423982fd8f3000e7de032ba0d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "belly_05": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-belly_05.log": "901f53ce6103d9a3f23045594e5762ad8d03ccfa4a221ce60be3e576f3af244d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-belly_05.log": "1ae3b0cd658bb2da3120afdd0d721ce10ca41785f4d72d81160e038b77ef5b81"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "belly_06": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-belly_06.log": "f4088b7986198cc8c8aeaba27e095344beeaba4cac89d728bfd66ef03c2a6970",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-belly_06.log": "91982f884d942f2554d4cb3d37c34db82f7752fa02eecab0ed9463d729dd4e12"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "belly_07": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-belly_07.log": "5498eb08b7bfc80895116e3df8c1f6682145c28e68e60d4d5210d7c2c7b5e3a2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-belly_07.log": "102660b041e2bdaef836bf1c995d2ae471e3919b28d13984deed6ecbfbcbfd80"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "belly_08": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-belly_08.log": "61a192d210d83e02562bad9f0a7f9bec2c0e989d17596dfb3e3afeb7dc8c6513",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-belly_08.log": "f471d632802b17ddd9d18d88497e41b1d7be09411415cb7a144bf585a9f24468"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_01_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_01_front.log": "b00ca1844f38a7dea7e90a367800b7093a5a32a482caf9aa0e314111b0964ff8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_01_front.log": "21990590deecf3745e6f551ecc0a45f8cb60fa02af55fc8ad7233893d9147b22"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_01_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_01_rear.log": "ace563049a5ba805e8cd50b5cecc9576d195f4a60e47335fc0c944dbf4c9ee1a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_01_rear.log": "cd4032d654fb53d6ef0d3051a3493f3ce703a0bfa4a051e7b3b44e7909346dee"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.4,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_02_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_02_front.log": "09f54fe507f89053d75d1e4acaab777074e0062d06afe9d403e276995c9b127d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_02_front.log": "c6fa2675c290ab61f17308fd0d1812676937614d7b3fc3a532e1719577405ef3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_02_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_02_rear.log": "c46117f975fb6072af99f41547659f2f36f3192c5c2622a823ed4d1ee776c59d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_02_rear.log": "5769336abdeb6f0e3706a7f44bb3ed12e91e73d77b5f76efc9997c6182c60928"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_03_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_03_front.log": "e3b4e9614e7f635b06637e8b61afb866719561f1dfb9e0b1f9e8c17453a897cb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_03_front.log": "ce9e2d7c21924e16f9d7d10a3ff868b0785343166ffdf103eccb49b798496a5f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_03_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_03_rear.log": "a930d8815605d4fd5e19c2c83ad090ee6d1ca738208af45476b6e595de016264",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_03_rear.log": "5a3af43d96d6268411984f42dbdcfc642bd286b1be588050bbaf760f02b7ca39"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_04_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_04_front.log": "64e293ad6243e96259a733841bdd43b455732db76a59d8a30f5c0ca5e9a09795",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_04_front.log": "a95852a32001a90445bc8f79dce250931625fbc8e528ece27aea801b99b7eea5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_04_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_04_rear.log": "984b662f9dd885ad4d1f0fd97681d804de684110d6f0d4ac723969ea01d8f5f4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_04_rear.log": "19ee7a66f2bffd216d6bcab95cc9e1dcffb959cec1e4df8a84da1a6cb6410ef7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_05_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_05_front.log": "4e4ef53ef4f0ab340bb76e1a30a4011b4f00535431e7358be5740a1b7c456f58",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_05_front.log": "5f0b7b75f199d25c527fb688cde0f20e1d61c70f321fd90e2df93da8d07a01fe"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_05_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_05_rear.log": "c963dcb97e1bb8154a477babfc369f362b7e0e73e1bc52caac64039b0e6f9b1e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_05_rear.log": "d602076d51f61deea73345c0561f6289f6a4f8dca19937171fb933eb7cba2fd9"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_06_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_06_front.log": "a125801f9815d3b713dc4a592971448fce34940479cd32c6dfd1a40d2144873f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_06_front.log": "2f61dc8d247c0a6791af5e38ddbf774b28420bd7c01813a4340947e88ab5bdf7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_06_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_06_rear.log": "3bda2f9ccba43bb9efccf31443ba3fc7ee11e1e5921c3d8cc1818e6a89ba20d3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_06_rear.log": "84be7005afa8b646becda8eaca4113837cdfe86dbc97543674df55d160823f3e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_07_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_07_front.log": "76f5f9e5b196495f5f9ef515ab853feeb40b7e4a217e4408cdc56989cb20019c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_07_front.log": "40ea30379494716ee54a62c0f0977ef6401bd0c46fef219545832b82082e48c5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_07_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_07_rear.log": "93882efaab5d7982744cf8b7da7b8c40f81075a723f00c956dcba12463bc45f8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_07_rear.log": "9a114e7858f2b13781c269957983658f0356a913a11639f3aa89319576d3a91d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_08_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_08_front.log": "78ceefdd052f89d30ccf4fd19acd9062ea417522fd32ae22df206298c978e2f1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_08_front.log": "50d48b80cd58fc2883c6f8f2fd65610d760824b7028b0a632f9ca00ff161c047"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "body_08_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-body_08_rear.log": "9fac493eb93b6ceccba3e134b5392494b35e963671d7b4f556940e6e36b0e2d1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-body_08_rear.log": "f137babfef3147a95e919e9a2212d346eaf1254e3945140f7789898c21d6d5b3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "claw": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-claw.log": "3a430e8b55b3e498b90538a743f2f3387cc64ec185c759fdc0cb891f2dfebc00",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-claw.log": "b01b227ca9546783334606dddf9f552ee21c020d7bd115de71c59240bf2ce211"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "coupon_ball": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-coupon_ball.log": "1e7a56ef13dc1d2694806316bceb57ef0297a8227d4ec1c635ebb032f1eda491",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-coupon_ball.log": "e776a26fadf9078ffecd1095c42eef20cf8eb0ee8b189c98bd3c7cabe491e2a4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "coupon_socket": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-coupon_socket.log": "10341629468caa0787b9014ad960c7be82d59eb33f4b1687c5a3fd045280d8b4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-coupon_socket.log": "d1ffafad008ee3c7d1e3995639462fb6dd0d8ab586fa36524b4f1b918b894670"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "face_eye": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-face_eye.log": "9be8e6fcd31db47107eefbf5d11a83cb250804c4cefba09d62f705604c895701",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-face_eye.log": "6c8460cfb839224e1344e0b9a185e0bf912f9ee6bfc135c935ab6e85f93c28f2"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "face_happy_mouth": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-face_happy_mouth.log": "be6d1b8e537afc894f331d075806a51e5d54a27e6aad14681d25ff9ef9f4e6db",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-face_happy_mouth.log": "adb9ac752ea162ee22da45bb185bc5061b3ac73d070334104a1f3255f56f1ef7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "face_highlight": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-face_highlight.log": "a5622de7ce0e0a0e0768476578ef2d556a67970bbb8eb590b4a249d28ca4d6bf",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-face_highlight.log": "64bfd40e2a7d7737a5ef9bb0b6ce7e2e6f348cdd2cf066131fa172a2f01946a2"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "face_nostril": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-face_nostril.log": "1f5e97cf1a8b045568bbad8731f50d2899b072f7d0f94a24d0d20401899994d9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-face_nostril.log": "d13fe1d28361bcff8d38f17ffd9dc4d232547dcf6d2679dc428bb9765b4bf00f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "face_plate": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-face_plate.log": "f09a613cf78a2c1af00b2b0e29cb68fa5dc4f46b763808584405cf3490529dd5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-face_plate.log": "6639c3b53eacf9089f384cefc7eeb385c43d5fc05e864ee780f17db75fa651fa"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "face_sleepy_lid": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-face_sleepy_lid.log": "f4c86b4d4a207beb84788a42cd85dcf1a0e0d211cb980d8bd57dcf88e5f1b129",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-face_sleepy_lid.log": "7f8f0a0d455f97a8baf5f2b8bf036b4315c0b25bc568b7d08fe2b34134c37f8a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "face_sleepy_mouth": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-face_sleepy_mouth.log": "69590e811001c6566e70835fe78fdc5624ca27d7eeb3161cdbbb7e070d2dcf7c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-face_sleepy_mouth.log": "d374eaa430ffe5da2a4079cb33b7add74d953d956c6cc8a567fc18e041e3dfd7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "face_tongue": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-face_tongue.log": "36192e69e528cc6c9e525e6bbd2f1147207494cf98fa876bd07373894ffa6742",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-face_tongue.log": "b5f362c9261811199200e3f43e52162174f15814593f667d30cd58e1ff469789"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "gills_left": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-gills_left.log": "d88c741bc1cbeede51bbe73b1e3ffc755319bdeb8cd0b47c36d4b0fa55d3e9ba",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-gills_left.log": "dd6b5bec0481be05eac3f5e0e50414b161f0980533cbd2186bc8eef6646fb4c0"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "gills_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-gills_right.log": "b3ba7288d869c9bf7f48395e3d89b449f9338e9d90135e62b3baee0909ea47b0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-gills_right.log": "6348fe2b1cd6fbcf8ef174c6263cf0f5468519109b8fbd1dd2c622596140fda8"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "head_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/overhang-head_front.log": "b10136f4f53c80c4a9e2e1e08fd5127cd59ce004af98e52047f30e13773c4e25",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-head_front.log": "2a6777c9d4325d0dc40530c9ff4be7da189d4335913487056ab70e9c9f660651"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.21,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "head_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/overhang-head_rear.log": "043d52fea63de64b9114596d892c5901832ec3a146de1f6ce24f6e087df8f5fb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/thickness-head_rear.log": "c651316f8b6649000685d5b2d5d3a417c3b1205b151ce98adb0b64d16ee4ab78"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.21,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "horn_left": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/overhang-horn_left.log": "5efd2a73f4347e6f78298363b0b443601162b1138e72beacf8b9f1629f381203",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/thickness-horn_left.log": "767a0f4054f5975d15a87a453dd8306949635ffa19683b0a27947c7f9ea176bc"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "horn_middle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/overhang-horn_middle.log": "d47ccb72904e2b69a2d7ade01172f360c9b6534b58dd0beb05152e16cbd5f501",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/thickness-horn_middle.log": "95754b2f9de1cb89c7967ce4506609c4e2b403581b1d5176b9695d934136c755"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "horn_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/overhang-horn_right.log": "8eac507f79e529fda3da470e0e63597f4c0d6295aab0ea118fb48dcb9efbb723",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/thickness-horn_right.log": "b0d4ef65257007ea76e594f7b1818bd03a6a3a1e71fb02f1925bb5f74289303c"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "leg_left": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/overhang-leg_left.log": "af91ec99e22ad1d97a58db71c14d04d5acf65e11df67f0ded7c55dd83044c5a4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/thickness-leg_left.log": "a4a704cc7c60eacd5da55275bd7671e650b57b294d4c41d5e61b10a22bf7fd6b"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "leg_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/overhang-leg_right.log": "75713f8e92bb1a5092b0f97288b21bb0b2b93ce08ba5faee9b69cd1c57713145",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/thickness-leg_right.log": "9828956cd17aae587b3dd703fdf33e0545c5e007ed4e40c490bf9b9280071609"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "spike": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/overhang-spike.log": "9a3eebcdcc2659c2bcaeaf704e81703cee7ad4dad452e0ded52bc81eb41c6cc5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/thickness-spike.log": "4426bb9199e40dc027ae2f3df0fe4c8cdc68b17ee9501048bf23b9e9854aa3f3"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "spike_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/overhang-spike_front.log": "1b22464d10ba3ba6bf8739c29d6b036ea74c79280b10e76ccbc43430215fb76f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/thickness-spike_front.log": "1e7cf5fb4e9fbc67df7aa384d0c1a490ac0904ecf80a0eaba1b7cd4282a95898"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tail_left": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/overhang-tail_left.log": "b2f6d3e40af0b755790df7a60f2b7133f56543f4e24355c8d8390f81082f6fd6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/thickness-tail_left.log": "862fb7eb58ee5f70dbeeaeae8dca7fd95a3c498acff8d968578516471945cffa"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "tail_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/overhang-tail_right.log": "1075bbf4fa3f77ba74288612af4d3ee975ae066772ea5c876de9caed7b3df67b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/thickness-tail_right.log": "5d37dcc0223d0902cb3e80a596c8107152bae38584cea26e180961b6b4b3dc16"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_ready_claim": false,
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [
+  "belly_01",
+  "belly_02",
+  "belly_03",
+  "belly_04",
+  "belly_05",
+  "belly_06",
+  "belly_07",
+  "belly_08",
+  "body_01_front",
+  "body_01_rear",
+  "body_02_front",
+  "body_02_rear",
+  "body_03_front",
+  "body_03_rear",
+  "body_04_front",
+  "body_04_rear",
+  "body_05_front",
+  "body_05_rear",
+  "body_06_front",
+  "body_06_rear",
+  "body_07_front",
+  "body_07_rear",
+  "body_08_front",
+  "body_08_rear",
+  "claw",
+  "coupon_ball",
+  "coupon_socket",
+  "face_eye",
+  "face_happy_mouth",
+  "face_highlight",
+  "face_nostril",
+  "face_plate",
+  "face_sleepy_lid",
+  "face_sleepy_mouth",
+  "face_tongue",
+  "gills_left",
+  "gills_right",
+  "head_front"
+ ],
+ "round": 2,
+ "scope": "assembly",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Inspected front, top and iso once. Front shows symmetric happy cheek plate, eye highlights, smile/tongue, three horns and paired three-leaf gills; four-ground-paw arrangement is consistent with top. Top shows eight progressively smaller convex body sections, centered spikes, four bent legs and twelve claws, plus separate sleepy face and coupon pieces. Iso preserves the large rounded head and raised five-lobe fan. No visible missing, displaced or intersecting parts. Apparent open leg-top caps are unused outer shoulders; targeted underside views and exact contact audit show inward connections. The0.05mm adhesive assumption does not visibly disrupt either expression. Numeric motion remains UNVERIFIED after exhausted allowance; this is visual inspection only.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0002/visual-packet.json",
+  "packet_sha256": "33d7f463d74862000d172167d345ad45e2c457be74562d4ccc9191834097809a",
+  "status": "pass"
+ }
+}

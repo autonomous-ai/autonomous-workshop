@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso inspected. Local crown ramp removes the unsupported seam ledge while preserving the rear flat crown, convex flank, open four-finger socket and symmetric ankle notches. No floating or misplaced geometry is visible. Default and explicit1.2mm wall checks and overhang pass.",
+  "packet_sha256": "52765e9a62d27b163596a4341fef7243f68dc87d53574c2441fd29bd05eedd72",
+  "status": "pass"
+}

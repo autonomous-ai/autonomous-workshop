@@ -1,0 +1,4202 @@
+[
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "tokens": [
+        {
+          "line": 1,
+          "token": "artifacts/make/r0001/visual-repair-delivery/current-assembly#",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [],
+          "warnings": [],
+          "entryFacts": {
+            "size": [
+              188.0,
+              134.71605599999998,
+              213.314634
+            ],
+            "extentAxis": "z",
+            "center": [
+              0.0,
+              0.39225599999999616,
+              106.657317
+            ],
+            "diag": 314.6355809865583,
+            "kind": "assembly"
+          },
+          "planes": [
+            {
+              "axis": "y",
+              "coordinate": -25.0,
+              "normalSign": 1,
+              "faceCount": 2,
+              "totalArea": 51419.416133000006,
+              "bbox": {
+                "min": [
+                  -94.0,
+                  -25.00000000000002,
+                  26.001997000000003
+                ],
+                "max": [
+                  94.0,
+                  -24.99999999999998,
+                  213.99800299999998
+                ]
+              },
+              "selectors": [
+                "o1.25.1.f3"
+              ]
+            },
+            {
+              "axis": "y",
+              "coordinate": -28.0,
+              "normalSign": -1,
+              "faceCount": 2,
+              "totalArea": 50188.694611,
+              "bbox": {
+                "min": [
+                  -94.0,
+                  -28.00000000000002,
+                  26.001997000000003
+                ],
+                "max": [
+                  94.0,
+                  -27.99999999999998,
+                  213.99800299999998
+                ]
+              },
+              "selectors": [
+                "o1.25.1.f1"
+              ]
+            },
+            {
+              "axis": "y",
+              "coordinate": -28.300000000000036,
+              "normalSign": 1,
+              "faceCount": 58,
+              "totalArea": 17197.52047499999,
+              "bbox": {
+                "min": [
+                  -93.52397,
+                  -28.30000000000001,
+                  48.69407071065359
+                ],
+                "max": [
+                  93.52397,
+                  -28.299999999999986,
+                  191.3059292893454
+                ]
+              },
+              "selectors": [
+                "o1.11.f296",
+                "o1.12.f302",
+                "o1.13.f320",
+                "o1.14.f332",
+                "o1.15.f344",
+                "o1.16.f350",
+                "o1.17.f368",
+                "o1.18.f296",
+                "o1.19.f302",
+                "o1.20.f320",
+                "o1.21.f332",
+                "o1.22.f344",
+                "o1.23.f350",
+                "o1.24.f368",
+                "o1.25.1.f108",
+                "o1.25.1.f119",
+                "o1.25.1.f130",
+                "o1.25.1.f141",
+                "o1.25.1.f152",
+                "o1.25.1.f163",
+                "o1.25.1.f183",
+                "o1.25.1.f194",
+                "o1.25.1.f34",
+                "o1.25.1.f45",
+                "o1.25.1.f56",
+                "o1.25.1.f67",
+                "o1.25.1.f78",
+                "o1.25.1.f97",
+                "o1.9.f4"
+              ]
+            },
+            {
+              "axis": "z",
+              "coordinate": 0.0,
+              "normalSign": -1,
+              "faceCount": 4,
+              "totalArea": 16639.908395,
+              "bbox": {
+                "min": [
+                  -67.26888635878313,
+                  -67.27106494198645,
+                  -1.285879139104875e-14
+                ],
+                "max": [
+                  67.27575913638756,
+                  67.27503294198645,
+                  1.285879139104875e-14
+                ]
+              },
+              "selectors": [
+                "o1.1.f3",
+                "o1.2.f7"
+              ]
+            },
+            {
+              "axis": "y",
+              "coordinate": -33.3,
+              "normalSign": -1,
+              "faceCount": 30,
+              "totalArea": 16413.916857,
+              "bbox": {
+                "min": [
+                  -93.52397,
+                  -33.300000000000004,
+                  48.69407071065359
+                ],
+                "max": [
+                  93.52397,
+                  -33.3,
+                  191.3059292893454
+                ]
+              },
+              "selectors": [
+                "o1.11.f297",
+                "o1.12.f303",
+                "o1.13.f321",
+                "o1.14.f333",
+                "o1.15.f345",
+                "o1.16.f351",
+                "o1.17.f369",
+                "o1.18.f297",
+                "o1.19.f303",
+                "o1.20.f321",
+                "o1.21.f333",
+                "o1.22.f345",
+                "o1.23.f351",
+                "o1.24.f369",
+                "o1.9.f5"
+              ]
+            },
+            {
+              "axis": "z",
+              "coordinate": 14.0,
+              "normalSign": 1,
+              "faceCount": 6,
+              "totalArea": 16225.047365,
+              "bbox": {
+                "min": [
+                  -52.5,
+                  -52.5,
+                  13.999999999999988
+                ],
+                "max": [
+                  52.5,
+                  52.5,
+                  14.000000000000012
+                ]
+              },
+              "selectors": [
+                "o1.1.f2",
+                "o1.1.f35",
+                "o1.6.f3"
+              ]
+            },
+            {
+              "axis": "z",
+              "coordinate": 11.0,
+              "normalSign": -1,
+              "faceCount": 4,
+              "totalArea": 14817.978045,
+              "bbox": {
+                "min": [
+                  -49.5,
+                  -49.498006,
+                  10.999999999999988
+                ],
+                "max": [
+                  49.5,
+                  49.498006,
+                  11.000000000000012
+                ]
+              },
+              "selectors": [
+                "o1.1.f32",
+                "o1.3.f2"
+              ]
+            },
+            {
+              "axis": "z",
+              "coordinate": 3.000000000000001,
+              "normalSign": -1,
+              "faceCount": 6,
+              "totalArea": 13869.379335999998,
+              "bbox": {
+                "min": [
+                  -63.17075551603236,
+                  -63.172949106277244,
+                  2.999999999999998
+                ],
+                "max": [
+                  63.17767592503401,
+                  63.176944606277246,
+                  3.000000000000002
+                ]
+              },
+              "selectors": [
+                "o1.1.f36",
+                "o1.2.f24",
+                "o1.3.f6"
+              ]
+            }
+          ],
+          "entryPositioning": {
+            "kind": "assembly",
+            "bbox": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            },
+            "bboxFacts": {
+              "size": [
+                188.0,
+                134.71605599999998,
+                213.314634
+              ],
+              "extentAxis": "z",
+              "center": [
+                0.0,
+                0.39225599999999616,
+                106.657317
+              ],
+              "diag": 314.6355809865583
+            },
+            "majorPlanes": [
+              {
+                "axis": "y",
+                "coordinate": -25.0,
+                "normalSign": 1,
+                "faceCount": 2,
+                "totalArea": 51419.416133000006,
+                "bbox": {
+                  "min": [
+                    -94.0,
+                    -25.00000000000002,
+                    26.001997000000003
+                  ],
+                  "max": [
+                    94.0,
+                    -24.99999999999998,
+                    213.99800299999998
+                  ]
+                },
+                "selectors": [
+                  "o1.25.1.f3"
+                ]
+              },
+              {
+                "axis": "y",
+                "coordinate": -28.0,
+                "normalSign": -1,
+                "faceCount": 2,
+                "totalArea": 50188.694611,
+                "bbox": {
+                  "min": [
+                    -94.0,
+                    -28.00000000000002,
+                    26.001997000000003
+                  ],
+                  "max": [
+                    94.0,
+                    -27.99999999999998,
+                    213.99800299999998
+                  ]
+                },
+                "selectors": [
+                  "o1.25.1.f1"
+                ]
+              },
+              {
+                "axis": "y",
+                "coordinate": -28.300000000000036,
+                "normalSign": 1,
+                "faceCount": 58,
+                "totalArea": 17197.52047499999,
+                "bbox": {
+                  "min": [
+                    -93.52397,
+                    -28.30000000000001,
+                    48.69407071065359
+                  ],
+                  "max": [
+                    93.52397,
+                    -28.299999999999986,
+                    191.3059292893454
+                  ]
+                },
+                "selectors": [
+                  "o1.11.f296",
+                  "o1.12.f302",
+                  "o1.13.f320",
+                  "o1.14.f332",
+                  "o1.15.f344",
+                  "o1.16.f350",
+                  "o1.17.f368",
+                  "o1.18.f296",
+                  "o1.19.f302",
+                  "o1.20.f320",
+                  "o1.21.f332",
+                  "o1.22.f344",
+                  "o1.23.f350",
+                  "o1.24.f368",
+                  "o1.25.1.f108",
+                  "o1.25.1.f119",
+                  "o1.25.1.f130",
+                  "o1.25.1.f141",
+                  "o1.25.1.f152",
+                  "o1.25.1.f163",
+                  "o1.25.1.f183",
+                  "o1.25.1.f194",
+                  "o1.25.1.f34",
+                  "o1.25.1.f45",
+                  "o1.25.1.f56",
+                  "o1.25.1.f67",
+                  "o1.25.1.f78",
+                  "o1.25.1.f97",
+                  "o1.9.f4"
+                ]
+              },
+              {
+                "axis": "z",
+                "coordinate": 0.0,
+                "normalSign": -1,
+                "faceCount": 4,
+                "totalArea": 16639.908395,
+                "bbox": {
+                  "min": [
+                    -67.26888635878313,
+                    -67.27106494198645,
+                    -1.285879139104875e-14
+                  ],
+                  "max": [
+                    67.27575913638756,
+                    67.27503294198645,
+                    1.285879139104875e-14
+                  ]
+                },
+                "selectors": [
+                  "o1.1.f3",
+                  "o1.2.f7"
+                ]
+              },
+              {
+                "axis": "y",
+                "coordinate": -33.3,
+                "normalSign": -1,
+                "faceCount": 30,
+                "totalArea": 16413.916857,
+                "bbox": {
+                  "min": [
+                    -93.52397,
+                    -33.300000000000004,
+                    48.69407071065359
+                  ],
+                  "max": [
+                    93.52397,
+                    -33.3,
+                    191.3059292893454
+                  ]
+                },
+                "selectors": [
+                  "o1.11.f297",
+                  "o1.12.f303",
+                  "o1.13.f321",
+                  "o1.14.f333",
+                  "o1.15.f345",
+                  "o1.16.f351",
+                  "o1.17.f369",
+                  "o1.18.f297",
+                  "o1.19.f303",
+                  "o1.20.f321",
+                  "o1.21.f333",
+                  "o1.22.f345",
+                  "o1.23.f351",
+                  "o1.24.f369",
+                  "o1.9.f5"
+                ]
+              },
+              {
+                "axis": "z",
+                "coordinate": 14.0,
+                "normalSign": 1,
+                "faceCount": 6,
+                "totalArea": 16225.047365,
+                "bbox": {
+                  "min": [
+                    -52.5,
+                    -52.5,
+                    13.999999999999988
+                  ],
+                  "max": [
+                    52.5,
+                    52.5,
+                    14.000000000000012
+                  ]
+                },
+                "selectors": [
+                  "o1.1.f2",
+                  "o1.1.f35",
+                  "o1.6.f3"
+                ]
+              },
+              {
+                "axis": "z",
+                "coordinate": 11.0,
+                "normalSign": -1,
+                "faceCount": 4,
+                "totalArea": 14817.978045,
+                "bbox": {
+                  "min": [
+                    -49.5,
+                    -49.498006,
+                    10.999999999999988
+                  ],
+                  "max": [
+                    49.5,
+                    49.498006,
+                    11.000000000000012
+                  ]
+                },
+                "selectors": [
+                  "o1.1.f32",
+                  "o1.3.f2"
+                ]
+              },
+              {
+                "axis": "z",
+                "coordinate": 3.000000000000001,
+                "normalSign": -1,
+                "faceCount": 6,
+                "totalArea": 13869.379335999998,
+                "bbox": {
+                  "min": [
+                    -63.17075551603236,
+                    -63.172949106277244,
+                    2.999999999999998
+                  ],
+                  "max": [
+                    63.17767592503401,
+                    63.176944606277246,
+                    3.000000000000002
+                  ]
+                },
+                "selectors": [
+                  "o1.1.f36",
+                  "o1.2.f24",
+                  "o1.3.f6"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "errors": []
+    },
+    "id": "raw-assembly-facts"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "tokens": [
+        {
+          "line": 1,
+          "token": "#o1.1",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.1",
+              "displaySelector": "o1.1",
+              "copyText": "#o1.1",
+              "label": "Occurrence o1.1",
+              "summary": "pedestal_black",
+              "detail": {
+                "path": "1.1",
+                "name": "pedestal_black",
+                "labelRef": "#pedestal_black",
+                "sourceName": "pedestal_black",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0,
+                  0.0,
+                  -0.0,
+                  0.0,
+                  -0.0,
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -52.5,
+                    -52.117216,
+                    -0.0
+                  ],
+                  "max": [
+                    52.5,
+                    52.117216,
+                    14.0
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 41,
+                "edgeCount": 101,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 2,
+          "token": "#o1.2",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.2",
+              "displaySelector": "o1.2",
+              "copyText": "#o1.2",
+              "label": "Occurrence o1.2",
+              "summary": "pedestal_lid_black",
+              "detail": {
+                "path": "1.2",
+                "name": "pedestal_lid_black",
+                "labelRef": "#pedestal_lid_black",
+                "sourceName": "pedestal_lid_black",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  0.866025,
+                  -0.5,
+                  0.0,
+                  0.0,
+                  0.5,
+                  0.866025,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -67.097207,
+                    -66.965772,
+                    0.0
+                  ],
+                  "max": [
+                    68.456021,
+                    67.750284,
+                    8.6
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 25,
+                "edgeCount": 57,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 3,
+          "token": "#o1.3",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.3",
+              "displaySelector": "o1.3",
+              "copyText": "#o1.3",
+              "label": "Occurrence o1.3",
+              "summary": "stem_black",
+              "detail": {
+                "path": "1.3",
+                "name": "stem_black",
+                "labelRef": "#stem_black",
+                "sourceName": "stem_black",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0,
+                  3.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -6.0,
+                    -5.956253,
+                    3.0
+                  ],
+                  "max": [
+                    6.0,
+                    5.956253,
+                    110.5
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 12,
+                "edgeCount": 24,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 4,
+          "token": "#o1.4",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.4",
+              "displaySelector": "o1.4",
+              "copyText": "#o1.4",
+              "label": "Occurrence o1.4",
+              "summary": "support_collar_black",
+              "detail": {
+                "path": "1.4",
+                "name": "support_collar_black",
+                "labelRef": "#support_collar_black",
+                "sourceName": "support_collar_black",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  6.0,
+                  0.0,
+                  1.0,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -12.424725,
+                    -6.0,
+                    107.5
+                  ],
+                  "max": [
+                    12.424725,
+                    6.0,
+                    132.5
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 12,
+                "edgeCount": 30,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 5,
+          "token": "#o1.5",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.5",
+              "displaySelector": "o1.5",
+              "copyText": "#o1.5",
+              "label": "Occurrence o1.5",
+              "summary": "rim_trim_yellow",
+              "detail": {
+                "path": "1.5",
+                "name": "rim_trim_yellow",
+                "labelRef": "#rim_trim_yellow",
+                "sourceName": "rim_trim_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0,
+                  12.69,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -49.5,
+                    -49.139089,
+                    12.69
+                  ],
+                  "max": [
+                    49.5,
+                    49.139089,
+                    13.89
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 4,
+                "edgeCount": 6,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 6,
+          "token": "#o1.6",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.6",
+              "displaySelector": "o1.6",
+              "copyText": "#o1.6",
+              "label": "Occurrence o1.6",
+              "summary": "foot_trim_yellow",
+              "detail": {
+                "path": "1.6",
+                "name": "foot_trim_yellow",
+                "labelRef": "#foot_trim_yellow",
+                "sourceName": "foot_trim_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0,
+                  14.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -8.5,
+                    -8.438025,
+                    14.0
+                  ],
+                  "max": [
+                    8.5,
+                    8.438025,
+                    16.0
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 4,
+                "edgeCount": 6,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 7,
+          "token": "#o1.7",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.7",
+              "displaySelector": "o1.7",
+              "copyText": "#o1.7",
+              "label": "Occurrence o1.7",
+              "summary": "rear_main_cap_black",
+              "detail": {
+                "path": "1.7",
+                "name": "rear_main_cap_black",
+                "labelRef": "#rear_main_cap_black",
+                "sourceName": "support_main_cap_black",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  13.5,
+                  0.0,
+                  1.0,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -11.5,
+                    6.3,
+                    108.583848
+                  ],
+                  "max": [
+                    11.5,
+                    13.5,
+                    131.416152
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 9,
+                "edgeCount": 21,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 8,
+          "token": "#o1.8",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.8",
+              "displaySelector": "o1.8",
+              "copyText": "#o1.8",
+              "label": "Occurrence o1.8",
+              "summary": "orange_disc_orange",
+              "detail": {
+                "path": "1.8",
+                "name": "orange_disc_orange",
+                "labelRef": "#orange_disc_orange",
+                "sourceName": "orange_disc_orange",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -23.3,
+                  0.0,
+                  1.0,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -27.5,
+                    -24.3,
+                    92.700506
+                  ],
+                  "max": [
+                    27.5,
+                    -23.3,
+                    147.299494
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 5,
+                "edgeCount": 9,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 9,
+          "token": "#o1.9",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.9",
+              "displaySelector": "o1.9",
+              "copyText": "#o1.9",
+              "label": "Occurrence o1.9",
+              "summary": "sun_yellow",
+              "detail": {
+                "path": "1.9",
+                "name": "sun_yellow",
+                "labelRef": "#sun_yellow",
+                "sourceName": "sun_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -28.3,
+                  0.0,
+                  1.0,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -28.27454,
+                    -33.3,
+                    91.72546
+                  ],
+                  "max": [
+                    28.27454,
+                    -28.3,
+                    148.27454
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 430,
+                "edgeCount": 1284,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 10,
+          "token": "#o1.10",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.10",
+              "displaySelector": "o1.10",
+              "copyText": "#o1.10",
+              "label": "Occurrence o1.10",
+              "summary": "front_main_cap_black",
+              "detail": {
+                "path": "1.10",
+                "name": "front_main_cap_black",
+                "labelRef": "#front_main_cap_black",
+                "sourceName": "support_main_cap_black",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  1.0,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -11.5,
+                    -40.9,
+                    108.583848
+                  ],
+                  "max": [
+                    11.5,
+                    -33.7,
+                    131.416152
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 9,
+                "edgeCount": 21,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 11,
+          "token": "#o1.11",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.11",
+              "displaySelector": "o1.11",
+              "copyText": "#o1.11",
+              "label": "Occurrence o1.11",
+              "summary": "gear_1_1_yellow",
+              "detail": {
+                "path": "1.11",
+                "name": "gear_1_1_yellow",
+                "labelRef": "#gear_1_1_yellow",
+                "sourceName": "gear_2_1_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  0.981983,
+                  -0.188971,
+                  0.0,
+                  37.5,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -28.3,
+                  0.188971,
+                  0.981983,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    23.752249,
+                    -33.3,
+                    106.416899
+                  ],
+                  "max": [
+                    51.247751,
+                    -28.3,
+                    133.583101
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 297,
+                "edgeCount": 885,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 12,
+          "token": "#o1.12",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.12",
+              "displaySelector": "o1.12",
+              "copyText": "#o1.12",
+              "label": "Occurrence o1.12",
+              "summary": "gear_1_2_yellow",
+              "detail": {
+                "path": "1.12",
+                "name": "gear_1_2_yellow",
+                "labelRef": "#gear_1_2_yellow",
+                "sourceName": "gear_2_2_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  0.994594,
+                  -0.103842,
+                  0.0,
+                  35.873093,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -28.3,
+                  0.103842,
+                  0.994594,
+                  0.0,
+                  141.689068,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    22.309044,
+                    -33.3,
+                    127.981964
+                  ],
+                  "max": [
+                    49.626961,
+                    -28.3,
+                    155.41599
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 303,
+                "edgeCount": 903,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 13,
+          "token": "#o1.13",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.13",
+              "displaySelector": "o1.13",
+              "copyText": "#o1.13",
+              "label": "Occurrence o1.13",
+              "summary": "gear_1_3_yellow",
+              "detail": {
+                "path": "1.13",
+                "name": "gear_1_3_yellow",
+                "labelRef": "#gear_1_3_yellow",
+                "sourceName": "gear_2_3_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  0.970267,
+                  -0.242037,
+                  0.0,
+                  21.420559,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -28.3,
+                  0.242037,
+                  0.970267,
+                  0.0,
+                  161.781025,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    3.546761,
+                    -33.3,
+                    144.018828
+                  ],
+                  "max": [
+                    39.294357,
+                    -28.3,
+                    179.543223
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 321,
+                "edgeCount": 957,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 14,
+          "token": "#o1.14",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.14",
+              "displaySelector": "o1.14",
+              "copyText": "#o1.14",
+              "label": "Occurrence o1.14",
+              "summary": "gear_1_4_yellow",
+              "detail": {
+                "path": "1.14",
+                "name": "gear_1_4_yellow",
+                "labelRef": "#gear_1_4_yellow",
+                "sourceName": "gear_2_4_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  0.985609,
+                  -0.16904,
+                  0.0,
+                  -4.980874,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -28.3,
+                  0.16904,
+                  0.985609,
+                  0.0,
+                  172.51482,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -23.771983,
+                    -33.3,
+                    153.723712
+                  ],
+                  "max": [
+                    13.810235,
+                    -28.3,
+                    191.305929
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 333,
+                "edgeCount": 993,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 15,
+          "token": "#o1.15",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.15",
+              "displaySelector": "o1.15",
+              "copyText": "#o1.15",
+              "label": "Occurrence o1.15",
+              "summary": "gear_1_5_yellow",
+              "detail": {
+                "path": "1.15",
+                "name": "gear_1_5_yellow",
+                "labelRef": "#gear_1_5_yellow",
+                "sourceName": "gear_2_5_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  0.999803,
+                  -0.019863,
+                  0.0,
+                  -35.985858,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -28.3,
+                  0.019863,
+                  0.999803,
+                  0.0,
+                  166.952359,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -54.107344,
+                    -33.3,
+                    148.94943
+                  ],
+                  "max": [
+                    -17.864371,
+                    -28.3,
+                    184.955289
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 345,
+                "edgeCount": 1029,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 16,
+          "token": "#o1.16",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.16",
+              "displaySelector": "o1.16",
+              "copyText": "#o1.16",
+              "label": "Occurrence o1.16",
+              "summary": "gear_1_6_yellow",
+              "detail": {
+                "path": "1.16",
+                "name": "gear_1_6_yellow",
+                "labelRef": "#gear_1_6_yellow",
+                "sourceName": "gear_2_6_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  0.982055,
+                  -0.188597,
+                  0.0,
+                  -61.262527,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -28.3,
+                  0.188597,
+                  0.982055,
+                  0.0,
+                  144.58827,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -82.832093,
+                    -33.3,
+                    122.940907
+                  ],
+                  "max": [
+                    -39.580133,
+                    -28.3,
+                    166.2573
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 351,
+                "edgeCount": 1047,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 17,
+          "token": "#o1.17",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.17",
+              "displaySelector": "o1.17",
+              "copyText": "#o1.17",
+              "label": "Occurrence o1.17",
+              "summary": "gear_1_7_yellow",
+              "detail": {
+                "path": "1.17",
+                "name": "gear_1_7_yellow",
+                "labelRef": "#gear_1_7_yellow",
+                "sourceName": "gear_2_7_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  -0.000196,
+                  0.0,
+                  -72.74551,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -28.3,
+                  0.000196,
+                  1.0,
+                  0.0,
+                  109.678334,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -93.52397,
+                    -33.3,
+                    88.999599
+                  ],
+                  "max": [
+                    -51.96705,
+                    -28.3,
+                    130.357069
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 369,
+                "edgeCount": 1101,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 18,
+          "token": "#o1.18",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.18",
+              "displaySelector": "o1.18",
+              "copyText": "#o1.18",
+              "label": "Occurrence o1.18",
+              "summary": "gear_2_1_yellow",
+              "detail": {
+                "path": "1.18",
+                "name": "gear_2_1_yellow",
+                "labelRef": "#gear_2_1_yellow",
+                "sourceName": "gear_2_1_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -0.981983,
+                  0.188971,
+                  0.0,
+                  -37.5,
+                  -0.0,
+                  -0.0,
+                  -1.0,
+                  -28.3,
+                  -0.188971,
+                  -0.981983,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -51.247751,
+                    -33.3,
+                    106.416899
+                  ],
+                  "max": [
+                    -23.752249,
+                    -28.3,
+                    133.583101
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 297,
+                "edgeCount": 885,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 19,
+          "token": "#o1.19",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.19",
+              "displaySelector": "o1.19",
+              "copyText": "#o1.19",
+              "label": "Occurrence o1.19",
+              "summary": "gear_2_2_yellow",
+              "detail": {
+                "path": "1.19",
+                "name": "gear_2_2_yellow",
+                "labelRef": "#gear_2_2_yellow",
+                "sourceName": "gear_2_2_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -0.994594,
+                  0.103842,
+                  0.0,
+                  -35.873093,
+                  -0.0,
+                  -0.0,
+                  -1.0,
+                  -28.3,
+                  -0.103842,
+                  -0.994594,
+                  0.0,
+                  98.310932,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -49.626961,
+                    -33.3,
+                    84.58401
+                  ],
+                  "max": [
+                    -22.309044,
+                    -28.3,
+                    112.018036
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 303,
+                "edgeCount": 903,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 20,
+          "token": "#o1.20",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.20",
+              "displaySelector": "o1.20",
+              "copyText": "#o1.20",
+              "label": "Occurrence o1.20",
+              "summary": "gear_2_3_yellow",
+              "detail": {
+                "path": "1.20",
+                "name": "gear_2_3_yellow",
+                "labelRef": "#gear_2_3_yellow",
+                "sourceName": "gear_2_3_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -0.970267,
+                  0.242037,
+                  0.0,
+                  -21.420559,
+                  -0.0,
+                  -0.0,
+                  -1.0,
+                  -28.3,
+                  -0.242037,
+                  -0.970267,
+                  0.0,
+                  78.218975,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -39.294357,
+                    -33.3,
+                    60.456777
+                  ],
+                  "max": [
+                    -3.546761,
+                    -28.3,
+                    95.981172
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 321,
+                "edgeCount": 957,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 21,
+          "token": "#o1.21",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.21",
+              "displaySelector": "o1.21",
+              "copyText": "#o1.21",
+              "label": "Occurrence o1.21",
+              "summary": "gear_2_4_yellow",
+              "detail": {
+                "path": "1.21",
+                "name": "gear_2_4_yellow",
+                "labelRef": "#gear_2_4_yellow",
+                "sourceName": "gear_2_4_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -0.985609,
+                  0.16904,
+                  0.0,
+                  4.980874,
+                  -0.0,
+                  -0.0,
+                  -1.0,
+                  -28.3,
+                  -0.16904,
+                  -0.985609,
+                  0.0,
+                  67.48518,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -13.810235,
+                    -33.3,
+                    48.694071
+                  ],
+                  "max": [
+                    23.771983,
+                    -28.3,
+                    86.276288
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 333,
+                "edgeCount": 993,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 22,
+          "token": "#o1.22",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.22",
+              "displaySelector": "o1.22",
+              "copyText": "#o1.22",
+              "label": "Occurrence o1.22",
+              "summary": "gear_2_5_yellow",
+              "detail": {
+                "path": "1.22",
+                "name": "gear_2_5_yellow",
+                "labelRef": "#gear_2_5_yellow",
+                "sourceName": "gear_2_5_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -0.999803,
+                  0.019863,
+                  0.0,
+                  35.985858,
+                  -0.0,
+                  -0.0,
+                  -1.0,
+                  -28.3,
+                  -0.019863,
+                  -0.999803,
+                  0.0,
+                  73.047641,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    17.864371,
+                    -33.3,
+                    55.044711
+                  ],
+                  "max": [
+                    54.107344,
+                    -28.3,
+                    91.05057
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 345,
+                "edgeCount": 1029,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 23,
+          "token": "#o1.23",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.23",
+              "displaySelector": "o1.23",
+              "copyText": "#o1.23",
+              "label": "Occurrence o1.23",
+              "summary": "gear_2_6_yellow",
+              "detail": {
+                "path": "1.23",
+                "name": "gear_2_6_yellow",
+                "labelRef": "#gear_2_6_yellow",
+                "sourceName": "gear_2_6_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -0.982055,
+                  0.188597,
+                  0.0,
+                  61.262527,
+                  -0.0,
+                  -0.0,
+                  -1.0,
+                  -28.3,
+                  -0.188597,
+                  -0.982055,
+                  0.0,
+                  95.41173,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    39.580133,
+                    -33.3,
+                    73.7427
+                  ],
+                  "max": [
+                    82.832093,
+                    -28.3,
+                    117.059093
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 351,
+                "edgeCount": 1047,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 24,
+          "token": "#o1.24",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.24",
+              "displaySelector": "o1.24",
+              "copyText": "#o1.24",
+              "label": "Occurrence o1.24",
+              "summary": "gear_2_7_yellow",
+              "detail": {
+                "path": "1.24",
+                "name": "gear_2_7_yellow",
+                "labelRef": "#gear_2_7_yellow",
+                "sourceName": "gear_2_7_yellow",
+                "parentId": "o1",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -1.0,
+                  0.000196,
+                  0.0,
+                  72.74551,
+                  -0.0,
+                  -0.0,
+                  -1.0,
+                  -28.3,
+                  -0.000196,
+                  -1.0,
+                  0.0,
+                  130.321666,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    51.96705,
+                    -33.3,
+                    109.642931
+                  ],
+                  "max": [
+                    93.52397,
+                    -28.3,
+                    151.000401
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 369,
+                "edgeCount": 1101,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 25,
+          "token": "#o1.25.1",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.1",
+              "displaySelector": "o1.25.1",
+              "copyText": "#o1.25.1",
+              "label": "Occurrence o1.25.1",
+              "summary": "carrier_black",
+              "detail": {
+                "path": "1.25.1",
+                "name": "carrier_black",
+                "labelRef": "#carrier_black",
+                "sourceName": "carrier_black",
+                "parentId": "o1.25",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -25.0,
+                  0.0,
+                  1.0,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -94.0,
+                    -48.5,
+                    26.685366
+                  ],
+                  "max": [
+                    94.0,
+                    -25.0,
+                    213.314634
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 203,
+                "edgeCount": 475,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 26,
+          "token": "#o1.25.2",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.2",
+              "displaySelector": "o1.25.2",
+              "copyText": "#o1.25.2",
+              "label": "Occurrence o1.25.2",
+              "summary": "bezel_black",
+              "detail": {
+                "path": "1.25.2",
+                "name": "bezel_black",
+                "labelRef": "#bezel_black",
+                "sourceName": "bezel_black",
+                "parentId": "o1.25",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -39.3,
+                  0.0,
+                  1.0,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -34.998491,
+                    -43.3,
+                    85.001509
+                  ],
+                  "max": [
+                    34.998491,
+                    -39.3,
+                    154.998491
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 488,
+                "edgeCount": 1458,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 27,
+          "token": "#o1.25.3.1",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.1",
+              "displaySelector": "o1.25.3.1",
+              "copyText": "#o1.25.3.1",
+              "label": "Occurrence o1.25.3.1",
+              "summary": "cap_1_1_black",
+              "detail": {
+                "path": "1.25.3.1",
+                "name": "cap_1_1_black",
+                "labelRef": "#cap_1_1_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  37.5,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  1.0,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    33.9,
+                    -38.5,
+                    116.426248
+                  ],
+                  "max": [
+                    41.1,
+                    -33.7,
+                    123.573752
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 28,
+          "token": "#o1.25.3.2",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.2",
+              "displaySelector": "o1.25.3.2",
+              "copyText": "#o1.25.3.2",
+              "label": "Occurrence o1.25.3.2",
+              "summary": "cap_1_2_black",
+              "detail": {
+                "path": "1.25.3.2",
+                "name": "cap_1_2_black",
+                "labelRef": "#cap_1_2_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  35.873093,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  1.0,
+                  0.0,
+                  141.689068,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    32.273093,
+                    -38.5,
+                    138.115316
+                  ],
+                  "max": [
+                    39.473093,
+                    -33.7,
+                    145.26282
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 29,
+          "token": "#o1.25.3.3",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.3",
+              "displaySelector": "o1.25.3.3",
+              "copyText": "#o1.25.3.3",
+              "label": "Occurrence o1.25.3.3",
+              "summary": "cap_1_3_black",
+              "detail": {
+                "path": "1.25.3.3",
+                "name": "cap_1_3_black",
+                "labelRef": "#cap_1_3_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  21.420559,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  1.0,
+                  0.0,
+                  161.781025,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    17.820559,
+                    -38.5,
+                    158.207273
+                  ],
+                  "max": [
+                    25.020559,
+                    -33.7,
+                    165.354777
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 30,
+          "token": "#o1.25.3.4",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.4",
+              "displaySelector": "o1.25.3.4",
+              "copyText": "#o1.25.3.4",
+              "label": "Occurrence o1.25.3.4",
+              "summary": "cap_1_4_black",
+              "detail": {
+                "path": "1.25.3.4",
+                "name": "cap_1_4_black",
+                "labelRef": "#cap_1_4_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  -4.980874,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  1.0,
+                  0.0,
+                  172.51482,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -8.580874,
+                    -38.5,
+                    168.941068
+                  ],
+                  "max": [
+                    -1.380874,
+                    -33.7,
+                    176.088572
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 31,
+          "token": "#o1.25.3.5",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.5",
+              "displaySelector": "o1.25.3.5",
+              "copyText": "#o1.25.3.5",
+              "label": "Occurrence o1.25.3.5",
+              "summary": "cap_1_5_black",
+              "detail": {
+                "path": "1.25.3.5",
+                "name": "cap_1_5_black",
+                "labelRef": "#cap_1_5_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  -35.985858,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  1.0,
+                  0.0,
+                  166.952359,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -39.585858,
+                    -38.5,
+                    163.378607
+                  ],
+                  "max": [
+                    -32.385858,
+                    -33.7,
+                    170.526111
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 32,
+          "token": "#o1.25.3.6",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.6",
+              "displaySelector": "o1.25.3.6",
+              "copyText": "#o1.25.3.6",
+              "label": "Occurrence o1.25.3.6",
+              "summary": "cap_1_6_black",
+              "detail": {
+                "path": "1.25.3.6",
+                "name": "cap_1_6_black",
+                "labelRef": "#cap_1_6_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  -61.262527,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  1.0,
+                  0.0,
+                  144.58827,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -64.862527,
+                    -38.5,
+                    141.014518
+                  ],
+                  "max": [
+                    -57.662527,
+                    -33.7,
+                    148.162022
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 33,
+          "token": "#o1.25.3.7",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.7",
+              "displaySelector": "o1.25.3.7",
+              "copyText": "#o1.25.3.7",
+              "label": "Occurrence o1.25.3.7",
+              "summary": "cap_1_7_black",
+              "detail": {
+                "path": "1.25.3.7",
+                "name": "cap_1_7_black",
+                "labelRef": "#cap_1_7_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  -72.74551,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  1.0,
+                  0.0,
+                  109.678334,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -76.34551,
+                    -38.5,
+                    106.104582
+                  ],
+                  "max": [
+                    -69.14551,
+                    -33.7,
+                    113.252086
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 34,
+          "token": "#o1.25.3.8",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.8",
+              "displaySelector": "o1.25.3.8",
+              "copyText": "#o1.25.3.8",
+              "label": "Occurrence o1.25.3.8",
+              "summary": "cap_2_1_black",
+              "detail": {
+                "path": "1.25.3.8",
+                "name": "cap_2_1_black",
+                "labelRef": "#cap_2_1_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -1.0,
+                  -0.0,
+                  0.0,
+                  -37.5,
+                  0.0,
+                  -0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  -1.0,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -41.1,
+                    -38.5,
+                    116.426248
+                  ],
+                  "max": [
+                    -33.9,
+                    -33.7,
+                    123.573752
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 35,
+          "token": "#o1.25.3.9",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.9",
+              "displaySelector": "o1.25.3.9",
+              "copyText": "#o1.25.3.9",
+              "label": "Occurrence o1.25.3.9",
+              "summary": "cap_2_2_black",
+              "detail": {
+                "path": "1.25.3.9",
+                "name": "cap_2_2_black",
+                "labelRef": "#cap_2_2_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -1.0,
+                  -0.0,
+                  0.0,
+                  -35.873093,
+                  0.0,
+                  -0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  -1.0,
+                  0.0,
+                  98.310932,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -39.473093,
+                    -38.5,
+                    94.73718
+                  ],
+                  "max": [
+                    -32.273093,
+                    -33.7,
+                    101.884684
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 36,
+          "token": "#o1.25.3.10",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.10",
+              "displaySelector": "o1.25.3.10",
+              "copyText": "#o1.25.3.10",
+              "label": "Occurrence o1.25.3.10",
+              "summary": "cap_2_3_black",
+              "detail": {
+                "path": "1.25.3.10",
+                "name": "cap_2_3_black",
+                "labelRef": "#cap_2_3_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -1.0,
+                  -0.0,
+                  0.0,
+                  -21.420559,
+                  0.0,
+                  -0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  -1.0,
+                  0.0,
+                  78.218975,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -25.020559,
+                    -38.5,
+                    74.645223
+                  ],
+                  "max": [
+                    -17.820559,
+                    -33.7,
+                    81.792727
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 37,
+          "token": "#o1.25.3.11",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.11",
+              "displaySelector": "o1.25.3.11",
+              "copyText": "#o1.25.3.11",
+              "label": "Occurrence o1.25.3.11",
+              "summary": "cap_2_4_black",
+              "detail": {
+                "path": "1.25.3.11",
+                "name": "cap_2_4_black",
+                "labelRef": "#cap_2_4_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -1.0,
+                  -0.0,
+                  0.0,
+                  4.980874,
+                  0.0,
+                  -0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  -1.0,
+                  0.0,
+                  67.48518,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    1.380874,
+                    -38.5,
+                    63.911428
+                  ],
+                  "max": [
+                    8.580874,
+                    -33.7,
+                    71.058932
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 38,
+          "token": "#o1.25.3.12",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.12",
+              "displaySelector": "o1.25.3.12",
+              "copyText": "#o1.25.3.12",
+              "label": "Occurrence o1.25.3.12",
+              "summary": "cap_2_5_black",
+              "detail": {
+                "path": "1.25.3.12",
+                "name": "cap_2_5_black",
+                "labelRef": "#cap_2_5_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -1.0,
+                  -0.0,
+                  0.0,
+                  35.985858,
+                  0.0,
+                  -0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  -1.0,
+                  0.0,
+                  73.047641,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    32.385858,
+                    -38.5,
+                    69.473889
+                  ],
+                  "max": [
+                    39.585858,
+                    -33.7,
+                    76.621393
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 39,
+          "token": "#o1.25.3.13",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.13",
+              "displaySelector": "o1.25.3.13",
+              "copyText": "#o1.25.3.13",
+              "label": "Occurrence o1.25.3.13",
+              "summary": "cap_2_6_black",
+              "detail": {
+                "path": "1.25.3.13",
+                "name": "cap_2_6_black",
+                "labelRef": "#cap_2_6_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -1.0,
+                  -0.0,
+                  0.0,
+                  61.262527,
+                  0.0,
+                  -0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  -1.0,
+                  0.0,
+                  95.41173,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    57.662527,
+                    -38.5,
+                    91.837978
+                  ],
+                  "max": [
+                    64.862527,
+                    -33.7,
+                    98.985482
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 40,
+          "token": "#o1.25.3.14",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.3.14",
+              "displaySelector": "o1.25.3.14",
+              "copyText": "#o1.25.3.14",
+              "label": "Occurrence o1.25.3.14",
+              "summary": "cap_2_7_black",
+              "detail": {
+                "path": "1.25.3.14",
+                "name": "cap_2_7_black",
+                "labelRef": "#cap_2_7_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.3",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -1.0,
+                  -0.0,
+                  0.0,
+                  72.74551,
+                  0.0,
+                  -0.0,
+                  -1.0,
+                  -33.7,
+                  0.0,
+                  -1.0,
+                  0.0,
+                  130.321666,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    69.14551,
+                    -38.5,
+                    126.747914
+                  ],
+                  "max": [
+                    76.34551,
+                    -33.7,
+                    133.895418
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 41,
+          "token": "#o1.25.4.1",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.4.1",
+              "displaySelector": "o1.25.4.1",
+              "copyText": "#o1.25.4.1",
+              "label": "Occurrence o1.25.4.1",
+              "summary": "bezel_cap_1_black",
+              "detail": {
+                "path": "1.25.4.1",
+                "name": "bezel_cap_1_black",
+                "labelRef": "#bezel_cap_1_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.4",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  -43.7,
+                  0.0,
+                  1.0,
+                  0.0,
+                  151.5,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -3.6,
+                    -48.5,
+                    147.926248
+                  ],
+                  "max": [
+                    3.6,
+                    -43.7,
+                    155.073752
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 42,
+          "token": "#o1.25.4.2",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.25.4.2",
+              "displaySelector": "o1.25.4.2",
+              "copyText": "#o1.25.4.2",
+              "label": "Occurrence o1.25.4.2",
+              "summary": "bezel_cap_2_black",
+              "detail": {
+                "path": "1.25.4.2",
+                "name": "bezel_cap_2_black",
+                "labelRef": "#bezel_cap_2_black",
+                "sourceName": "bezel_cap_2_black",
+                "parentId": "o1.25.4",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -1.0,
+                  -0.0,
+                  0.0,
+                  -0.0,
+                  0.0,
+                  -0.0,
+                  -1.0,
+                  -43.7,
+                  0.0,
+                  -1.0,
+                  0.0,
+                  88.5,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -3.6,
+                    -48.5,
+                    84.926248
+                  ],
+                  "max": [
+                    3.6,
+                    -43.7,
+                    92.073752
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 11,
+                "edgeCount": 25,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 43,
+          "token": "#o1.26.1",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.26.1",
+              "displaySelector": "o1.26.1",
+              "copyText": "#o1.26.1",
+              "label": "Occurrence o1.26.1",
+              "summary": "axle_black",
+              "detail": {
+                "path": "1.26.1",
+                "name": "axle_black",
+                "labelRef": "#axle_black",
+                "sourceName": "axle_black",
+                "parentId": "o1.26",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -1.0,
+                  13.5,
+                  0.0,
+                  1.0,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -11.5,
+                    -41.0,
+                    108.583848
+                  ],
+                  "max": [
+                    11.5,
+                    13.5,
+                    131.416152
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 122,
+                "edgeCount": 351,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "line": 44,
+          "token": "#o1.26.2",
+          "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+          "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+          "stepHash": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 49,
+            "leafOccurrenceCount": 44,
+            "shapeCount": 44,
+            "faceCount": 6187,
+            "edgeCount": 18094,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -94.0,
+                -66.965772,
+                -0.0
+              ],
+              "max": [
+                94.0,
+                67.750284,
+                213.314634
+              ]
+            }
+          },
+          "selections": [
+            {
+              "status": "resolved",
+              "selectorType": "occurrence",
+              "normalizedSelector": "o1.26.2",
+              "displaySelector": "o1.26.2",
+              "copyText": "#o1.26.2",
+              "label": "Occurrence o1.26.2",
+              "summary": "support_main_cap_black",
+              "detail": {
+                "path": "1.26.2",
+                "name": "support_main_cap_black",
+                "labelRef": "#support_main_cap_black",
+                "sourceName": "support_main_cap_black",
+                "parentId": "o1.26",
+                "childCount": 0,
+                "descendantOccurrenceIds": [],
+                "transform": [
+                  -1.0,
+                  -0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  -0.0,
+                  -1.0,
+                  -6.3,
+                  0.0,
+                  -1.0,
+                  0.0,
+                  120.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "bbox": {
+                  "min": [
+                    -11.5,
+                    -13.5,
+                    108.583848
+                  ],
+                  "max": [
+                    11.5,
+                    -6.3,
+                    131.416152
+                  ]
+                },
+                "shapeCount": 1,
+                "faceCount": 9,
+                "edgeCount": 21,
+                "vertexCount": null
+              }
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "errors": []
+    },
+    "id": "raw-assembly-labels"
+  }
+]

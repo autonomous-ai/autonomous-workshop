@@ -1,0 +1,36 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex --manifest <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/motion.json --json
+(600.2s, exit 3)
+--- stdout
+
+--- stderr
+check_motion: building gear_vortex.step.py ...
+check_motion: building gear_vortex.step.py done in 32s
+check_motion: 56 condition(s), up to ~52,901 sampled Boolean/distance operations before any stops early
+check_motion condition: 56 to go
+check_motion condition 1/56: sun-withdraws [linear_motion_collision] (0s elapsed)
+[sun-withdraws] sweep: 32 to go
+[sun-withdraws] sweep: 1/32 (3%), 10s elapsed, ~5m01s left
+[sun-withdraws] sweep: 3/32 (9%), 27s elapsed, ~4m19s left
+[sun-withdraws] sweep: 5/32 (15%), 43s elapsed, ~3m52s left
+[sun-withdraws] sweep: 6/32 (18%), 53s elapsed, ~3m51s left
+[sun-withdraws] sweep: 7/32 (21%), 1m06s elapsed, ~3m54s left
+[sun-withdraws] sweep: 8/32 (25%), 1m19s elapsed, ~3m56s left
+[sun-withdraws] sweep: 9/32 (28%), 1m33s elapsed, ~3m59s left
+[sun-withdraws] sweep: 10/32 (31%), 1m48s elapsed, ~3m58s left
+[sun-withdraws] sweep: 11/32 (34%), 2m01s elapsed, ~3m51s left
+[sun-withdraws] sweep: 12/32 (37%), 2m15s elapsed, ~3m45s left
+[sun-withdraws] sweep: 13/32 (40%), 2m32s elapsed, ~3m42s left
+[sun-withdraws] sweep: 14/32 (43%), 2m47s elapsed, ~3m35s left
+[sun-withdraws] sweep: 15/32 (46%), 3m03s elapsed, ~3m27s left
+[sun-withdraws] sweep: 16/32 (50%), 3m19s elapsed, ~3m19s left
+[sun-withdraws] sweep: 17/32 (53%), 3m36s elapsed, ~3m10s left
+[sun-withdraws] sweep: 18/32 (56%), 3m53s elapsed, ~3m01s left
+[sun-withdraws] sweep: 19/32 (59%), 4m10s elapsed, ~2m51s left
+[sun-withdraws] sweep: 20/32 (62%), 4m23s elapsed, ~2m38s left
+[sun-withdraws] sweep: 21/32 (65%), 4m35s elapsed, ~2m24s left
+[sun-withdraws] sweep: 22/32 (68%), 4m46s elapsed, ~2m10s left
+[sun-withdraws] sweep: 24/32 (75%), 5m05s elapsed, ~1m42s left
+[sun-withdraws] sweep: 26/32 (81%), 5m15s elapsed, ~1m13s left
+[sun-withdraws] sweep: 32/32 (100%), 5m21s elapsed, ~0s left
+check_motion condition 2/56: operating-full-revolution [coupled_motion_collision] (5m21s elapsed)
+[operating-full-revolution] coupled sweep: 97 to go

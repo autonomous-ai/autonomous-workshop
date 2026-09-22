@@ -1,0 +1,22 @@
+{
+  "status": "PASS_EXACT_NATIVE_SEMANTIC_EQUIVALENCE",
+  "old_step_sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+  "regenerated_step_sha256": "8a662f4ec45e21f6b9d5e72f59c04d2b75332f451c928c574dc7d6a582939381",
+  "native_diff": {
+    "path": "artifacts/make/r0001/visual-repair-preflight-fit-documentation/assembly-diff.json",
+    "sha256": "e2040636b149188fd7da924a0c7b58539c8ad68f85c6889d75bf61851b180e83"
+  },
+  "native_package_semantics_equal": {
+    "components": true,
+    "occurrences": true,
+    "assemblyMates": true,
+    "assembly": true,
+    "bbox": true,
+    "stats": true
+  },
+  "occurrences": 44,
+  "geometry_changed": false,
+  "topology_changed": false,
+  "colors_and_transforms_equal": true,
+  "scope": "Native comparison plus exact equality of all component, occurrence, hierarchy, mating, bbox and statistics records. Export difference is terminal presentation serialization only. No new physical or motion claim."
+}

@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin membrane between converging relief tip and slit root",
+      "evidence": "Default fine-grid wall2.6mm2 at print(0.2,-14.0,1.5), minimum0.13mm; underside partly hidden in exterior views. Overhang passes.",
+      "part": "body_02_rear",
+      "repair": "Open only the small tip membrane into the existing central slit, preserving at least2mm actual radial cavity wall at the affected axial stations, then rerun both thickness resolutions."
+    }
+  ],
+  "observation": "Front, top and iso inspected. Correctly centered relief clears the roof support failure while preserving exterior form. A thin membrane now remains at its closing tip next to the axial socket slit, measured2.6mm2 under the default fine-grid wall check. Explicit1.2mm coarser check passes but does not override this measured failure.",
+  "packet_sha256": "2e72d77b3c9cdc354782bf2c38a7605812b82c1082ddc030815b7c8a7cd49d15",
+  "status": "fail"
+}

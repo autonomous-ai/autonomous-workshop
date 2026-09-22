@@ -1,0 +1,62 @@
+{
+ "build": {
+  "bezel": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bezel"
+ ],
+ "check_motion": true,
+ "checked": [
+  "bezel"
+ ],
+ "checks_ok": true,
+ "entry": "part_bezel.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/bezel/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bezel"
+ ],
+ "print": {
+  "bezel": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/bezel/r0002/overhang-bezel.log": "f70bd475ea2ffc6ba269286bdf807c376053d3ec30846bc0e08792303155e781",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/bezel/r0002/thickness-bezel.log": "85b2f5781d5170a58ef24a025783207e6a0d9aa6b862a1fd645e4c7d2f8e6475"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:bezel",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Both mounting bores have visibly wider surrounding walls. Two small inward bosses are symmetric, outer knurl remains continuous, and all three views show a clean ring.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/bezel/r0002/visual-packet.json",
+  "packet_sha256": "954f1d09a80ab2a0c67d9258d7784ffec2e26105d0cebc1522901baa78f6941b",
+  "status": "pass"
+ }
+}

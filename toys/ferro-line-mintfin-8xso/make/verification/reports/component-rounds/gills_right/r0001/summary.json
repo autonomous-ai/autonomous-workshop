@@ -1,0 +1,62 @@
+{
+ "build": {
+  "gills_right": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gills_right"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gills_right"
+ ],
+ "checks_ok": true,
+ "entry": "part_gills_right.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/gills_right/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gills_right"
+ ],
+ "print": {
+  "gills_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/gills_right/r0001/overhang-gills_right.log": "13875b4c9aee81da22ab04fde980b89e10d5a14a49981d609e180d967271e306",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/gills_right/r0001/thickness-gills_right.log": "e993a8423eaa89ef19aa908f05447fdbca08ceb7ff649881f60f000517baea6f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:gills_right",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top shows the mirrored three-leaf fan and distinct barbed margins. Iso confirms each raised central shaft is joined to its leaf and all leaves share the mounting root; front shows a common flat base and shallow raised profile. No detached leaves or unintended bridges across the gaps. Whole-head fit remains pending.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/gills_right/r0001/visual-packet.json",
+  "packet_sha256": "718655ff03d8835d00955c1726e7c2668671ebba7c8467ebd8e6c01967e3b0bf",
+  "status": "pass"
+ }
+}

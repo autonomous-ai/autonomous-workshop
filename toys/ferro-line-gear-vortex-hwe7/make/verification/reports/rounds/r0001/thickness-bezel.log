@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_bezel.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-bezel.md
+(12.1s, exit 0)
+--- stdout
+part_bezel.step.py: 4.65 cm3 solid, grid 0.133 mm (530x530x35), 208389 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.5% of surface below (325 of 208389 samples); thinnest 0.13 mm at (-26.2, 23.2, 3.8) in 117 region(s); no region is a wall, 105 taper(s) at feature edges and 12 spot(s) too small to be a wall (0.46% of surface, budget 2%); 23 more within measurement error of the limit
+  PASS  thickness distribution         median 4.00 mm, p95 6.00 mm, max 29.33 mm
+  WARN  hollowable at 1.20 mm wall     0.98 of 4.65 cm3 (21%) in 2 pocket(s), 1 too small to shell
+  PASS  filament that would save       0.15 cm3, 0.2 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.33 mm at (-21.8, -27.4, 3.7)     10 samples, 0.6 mm2, runs 2.7 mm, band 0.24 mm
+        2. [taper] 0.40 mm at (8.7, 33.8, 3.3)      5 samples, 0.5 mm2, runs 0.9 mm, band 0.55 mm
+        3. [taper] 0.13 mm at (21.8, -27.4, 3.7)      7 samples, 0.4 mm2, runs 2.5 mm, band 0.17 mm
+        4. [taper] 0.33 mm at (-27.0, -22.3, 3.7)      7 samples, 0.4 mm2, runs 0.8 mm, band 0.50 mm
+        5. [taper] 0.20 mm at (-5.1, 34.6, 3.8)      7 samples, 0.4 mm2, runs 0.9 mm, band 0.45 mm
+        6. [taper] 0.13 mm at (-34.5, 5.8, 3.4)      6 samples, 0.4 mm2, runs 0.8 mm, band 0.51 mm
+        ... and 111 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-bezel.md
+
+--- stderr

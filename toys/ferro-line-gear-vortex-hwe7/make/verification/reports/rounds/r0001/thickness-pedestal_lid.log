@@ -1,0 +1,14 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-pedestal_lid.md
+(14.0s, exit 0)
+--- stdout
+part_pedestal_lid.step.py: 27.05 cm3 solid, grid 0.207 mm (488x481x46), 387601 surface samples, thickness resolved to 0.103 mm
+  PASS  wall >= 0.80 mm (+/-0.10)      0.0% of surface below (1 of 387601 samples); thinnest 0.62 mm at (-24.7, 42.6, 8.5) in 1 region(s); no region is a wall, 0 taper(s) at feature edges and 1 spot(s) too small to be a wall (0.00% of surface, budget 2%)
+  PASS  thickness distribution         median 2.90 mm, p95 8.48 mm, max 98.46 mm
+  WARN  hollowable at 1.20 mm wall     4.03 of 27.05 cm3 (15%) in 1 pocket(s)
+  PASS  filament that would save       0.60 cm3, 0.7 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [spot ] 0.62 mm at (-24.7, 42.6, 8.5)      1 samples, 0.2 mm2, runs 0.0 mm, band 1.14 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-pedestal_lid.md
+
+--- stderr

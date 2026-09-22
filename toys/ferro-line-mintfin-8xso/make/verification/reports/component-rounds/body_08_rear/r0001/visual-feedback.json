@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin base wedges, projecting incoming-stem remnant and thin mouth edge.",
+      "evidence": "Top view shows a rounded extra nub beyond the outline; iso shows narrow sloping margins around the cylindrical housing. Extra1.2mm check finds four WALL regions of9.7,6.2,6.1,5.8mm2, plus2.42percent tapered edges. Defaultwall also fails; overhang passes.",
+      "part": "body_08_rear",
+      "repair": "Replace rear cosmetic wedges by a full-section1.2mm flat bonding land fused to the required socket, omit incoming-stem remnant from this rear part, and retain the mouth undercut while addressing its thin lip."
+    }
+  ],
+  "observation": "Front, top and iso inspected once. Four socket fingers and preload pad are present, but narrow cosmetic wedges remain around their base and an incoming-stem remnant protrudes past the elliptical outline. Wall measurements fail at these margins and the lip.",
+  "packet_sha256": "b610e23bab833564c9b8f6310b5c91449f7f8e65e4cd6950066dd29046b9b3a5",
+  "status": "fail"
+}

@@ -1,0 +1,716 @@
+{
+  "schema_version": 1,
+  "status": "Seven-gear visual repair implemented in source; new geometry and independent visual verification pending. Earlier audits are historical snapshots. Formal motion at assemblyr3 was UNVERIFIED, not passed. No print-ready or physical-performance claim.",
+  "subject_sha256": "330bdb04154b5273e6d5b3c2af1183d0910861109b2f5fdeb8711e60d62aa669",
+  "name": "Gear Vortex",
+  "module_mm": 1.5,
+  "pressure_angle_degrees": 20,
+  "backlash_per_flank_mm": 0.18,
+  "gear_face_thickness_mm": 5,
+  "spokes_per_gear": 5,
+  "spoke_min_width_mm": 2.4,
+  "root_rim_radial_width_mm": 3,
+  "planet_post_diameter_mm": 4,
+  "planet_bore_diameter_mm": 4.7,
+  "planet_hub_diameter_mm": 7.2,
+  "standoff_mm": 0.3,
+  "spiral": {
+    "r0_mm": 37.5,
+    "growth_per_radian": 0.2049,
+    "formula": "r=37.5*exp(0.2049*theta)",
+    "arm_rotation_degrees": 180,
+    "arm_extent_degrees": 188.07563975338124,
+    "carrier_arm_width_mm": 7,
+    "carrier_thickness_mm": 3,
+    "end_angle_rad": 3.2825391564912385,
+    "planets_per_arm": 7,
+    "carrier_field_outer_diameter_mm": 188,
+    "carrier_field_inner_diameter_mm": 58,
+    "carrier_field_z_mm": [
+      0,
+      3
+    ]
+  },
+  "core": {
+    "fixed_sun_teeth": 36,
+    "sun_tip_diameter_mm": 56.55,
+    "bezel_outer_diameter_mm": 70,
+    "bezel_inner_diameter_mm": 58,
+    "bezel_width_mm": 6,
+    "bezel_attaches_to": "rotating carrier",
+    "orange_disc_outer_diameter_mm": 55,
+    "orange_disc_hole_diameter_mm": 18,
+    "orange_disc_thickness_mm": 1,
+    "orange_to_spoke_rear_gap_mm": 4,
+    "hollow_axle_outer_diameter_mm": 17.6,
+    "hollow_axle_bore_diameter_mm": 14,
+    "carrier_main_bore_diameter_mm": 18.3,
+    "sun_keyed_bore_envelope_mm": 17.8,
+    "illumination": "ambient light only",
+    "bezel_mount_radius_mm": 31.5,
+    "bezel_mount_boss_diameter_mm": 7.0,
+    "carrier_bezel_pillar_diameter_mm": 5.6,
+    "axle_key_flat_x_mm": 8.1,
+    "axle_front_thread_flat": "Continuous x8.1 D-flat clips front thread crests so keyed sun/orange can pass; service-path result must be read separately.",
+    "axle_shoulder_z_mm": [
+      -2.7,
+      -1.7
+    ],
+    "axle_shoulder_ramp_height_mm": 4.4,
+    "axle_shoulder_ramp_start_z_mm": -7.1
+  },
+  "envelope": {
+    "wheel_swept_radius_mm": 94.24911785242796,
+    "wheel_swept_diameter_mm": 188.49823570485592,
+    "hub_height_mm": 120,
+    "overall_height_mm": 214.24911785242796,
+    "pedestal_diameter_mm": 105,
+    "pedestal_height_mm": 14,
+    "full_turn_pedestal_clearance_mm": 11.750882147572042,
+    "stem_diameter_mm": 12,
+    "stem_center_behind_rearmost_rotating_surface_mm": 25.0,
+    "stem_clearance_mm": 19.0,
+    "envelope_basis": "Current seven-gear source-derived nominal envelope; conservative fields also include main0.35+planet0.35mm radial play; no current BRep measurement claim.",
+    "stub_nominal_swept_radius_mm": 94.24911785242796,
+    "stem_clearance_scope": "Nominal axial separation of wheel rear plane Y=-25 and stem nearest surface Y=-6; source-derived, not physical proof.",
+    "conservative_swept_radius_including_play_mm": 94.94911785242796,
+    "conservative_swept_diameter_including_play_mm": 189.89823570485592,
+    "conservative_height_including_play_mm": 214.94911785242795,
+    "conservative_pedestal_clearance_including_play_mm": 11.050882147572043
+  },
+  "minimum_nonmesh_envelope_clearance_mm": 3.8941615285404136,
+  "minimum_nonmesh_clearance_after_independent_journal_play_mm": 3.1941615285404135,
+  "gears": [
+    {
+      "id": "gear_1_1",
+      "arm": 1,
+      "index_from_core": 1,
+      "teeth": 14,
+      "x_mm": 37.5,
+      "y_mm": 0.0,
+      "r_mm": 37.5,
+      "theta_rad": 0.0,
+      "pitch_radius_mm": 10.5,
+      "tip_radius_mm": 11.775,
+      "root_radius_mm": 8.625,
+      "phase_rad": 0.22439947525641335,
+      "arm_placement_rotation_rad": 0.0,
+      "carrier_relative_speed_ratio": 2.5714285714285716,
+      "absolute_speed_ratio": 3.5714285714285716,
+      "spoke_handedness": -1,
+      "positive_drive_loaded_phase_offset_rad": -0.03428571428571429
+    },
+    {
+      "id": "gear_1_2",
+      "arm": 1,
+      "index_from_core": 2,
+      "teeth": 15,
+      "x_mm": 35.87309337606704,
+      "y_mm": 21.689068095171887,
+      "r_mm": 41.92009665071191,
+      "theta_rad": 0.5437989879590406,
+      "pitch_radius_mm": 11.25,
+      "tip_radius_mm": 12.525,
+      "root_radius_mm": 9.375,
+      "phase_rad": 0.04002936222264469,
+      "arm_placement_rotation_rad": 0.0,
+      "carrier_relative_speed_ratio": -2.4,
+      "absolute_speed_ratio": -1.4,
+      "spoke_handedness": 1,
+      "positive_drive_loaded_phase_offset_rad": 0.064
+    },
+    {
+      "id": "gear_1_3",
+      "arm": 1,
+      "index_from_core": 3,
+      "teeth": 18,
+      "x_mm": 21.420558914052613,
+      "y_mm": 41.781025382213016,
+      "r_mm": 46.952043897784975,
+      "theta_rad": 1.097051270031718,
+      "pitch_radius_mm": 13.5,
+      "tip_radius_mm": 14.775,
+      "root_radius_mm": 11.625,
+      "phase_rad": 0.3244642572276242,
+      "arm_placement_rotation_rad": 0.0,
+      "carrier_relative_speed_ratio": 2.0,
+      "absolute_speed_ratio": 3.0,
+      "spoke_handedness": -1,
+      "positive_drive_loaded_phase_offset_rad": -0.08
+    },
+    {
+      "id": "gear_1_4",
+      "arm": 1,
+      "index_from_core": 4,
+      "teeth": 20,
+      "x_mm": -4.980873717822746,
+      "y_mm": 52.51482037674069,
+      "r_mm": 52.75050200893103,
+      "theta_rad": 1.6653604494461343,
+      "pitch_radius_mm": 15.0,
+      "tip_radius_mm": 16.275,
+      "root_radius_mm": 13.125,
+      "phase_rad": 0.07385525480778199,
+      "arm_placement_rotation_rad": 0.0,
+      "carrier_relative_speed_ratio": -1.8,
+      "absolute_speed_ratio": -0.8,
+      "spoke_handedness": 1,
+      "positive_drive_loaded_phase_offset_rad": 0.096
+    },
+    {
+      "id": "gear_1_5",
+      "arm": 1,
+      "index_from_core": 5,
+      "teeth": 22,
+      "x_mm": -35.98585763777823,
+      "y_mm": 46.95235939950222,
+      "r_mm": 59.156622647903646,
+      "theta_rad": 2.224732136636722,
+      "pitch_radius_mm": 16.5,
+      "tip_radius_mm": 17.775,
+      "root_radius_mm": 14.625,
+      "phase_rad": 0.12895513399309627,
+      "arm_placement_rotation_rad": 0.0,
+      "carrier_relative_speed_ratio": 1.6363636363636365,
+      "absolute_speed_ratio": 2.6363636363636367,
+      "spoke_handedness": -1,
+      "positive_drive_loaded_phase_offset_rad": -0.10909090909090909
+    },
+    {
+      "id": "gear_1_6",
+      "arm": 1,
+      "index_from_core": 6,
+      "teeth": 23,
+      "x_mm": -61.26252663182039,
+      "y_mm": 24.588269778736763,
+      "r_mm": 66.0127274093901,
+      "theta_rad": 2.7599152269161573,
+      "pitch_radius_mm": 17.25,
+      "tip_radius_mm": 18.525,
+      "root_radius_mm": 15.375,
+      "phase_rad": 0.0645155331752616,
+      "arm_placement_rotation_rad": 0.0,
+      "carrier_relative_speed_ratio": -1.565217391304348,
+      "absolute_speed_ratio": -0.5652173913043479,
+      "spoke_handedness": 1,
+      "positive_drive_loaded_phase_offset_rad": 0.1252173913043478
+    },
+    {
+      "id": "gear_1_7",
+      "arm": 1,
+      "index_from_core": 7,
+      "teeth": 26,
+      "x_mm": -72.7455099051878,
+      "y_mm": -10.321665700200548,
+      "r_mm": 73.47411785242797,
+      "theta_rad": 3.2825391564912385,
+      "pitch_radius_mm": 19.5,
+      "tip_radius_mm": 20.775,
+      "root_radius_mm": 17.625,
+      "phase_rad": 0.12942642114129627,
+      "arm_placement_rotation_rad": 0.0,
+      "carrier_relative_speed_ratio": 1.3846153846153846,
+      "absolute_speed_ratio": 2.3846153846153846,
+      "spoke_handedness": -1,
+      "positive_drive_loaded_phase_offset_rad": -0.12923076923076923
+    },
+    {
+      "id": "gear_2_1",
+      "arm": 2,
+      "index_from_core": 1,
+      "teeth": 14,
+      "x_mm": -37.5,
+      "y_mm": -0.0,
+      "r_mm": 37.5,
+      "theta_rad": 3.141592653589793,
+      "pitch_radius_mm": 10.5,
+      "tip_radius_mm": 11.775,
+      "root_radius_mm": 8.625,
+      "phase_rad": 0.22439947525641335,
+      "arm_placement_rotation_rad": 3.141592653589793,
+      "carrier_relative_speed_ratio": 2.5714285714285716,
+      "absolute_speed_ratio": 3.5714285714285716,
+      "spoke_handedness": -1,
+      "positive_drive_loaded_phase_offset_rad": -0.03428571428571429
+    },
+    {
+      "id": "gear_2_2",
+      "arm": 2,
+      "index_from_core": 2,
+      "teeth": 15,
+      "x_mm": -35.87309337606704,
+      "y_mm": -21.689068095171887,
+      "r_mm": 41.92009665071191,
+      "theta_rad": 3.6853916415488337,
+      "pitch_radius_mm": 11.25,
+      "tip_radius_mm": 12.525,
+      "root_radius_mm": 9.375,
+      "phase_rad": 0.04002936222264469,
+      "arm_placement_rotation_rad": 3.141592653589793,
+      "carrier_relative_speed_ratio": -2.4,
+      "absolute_speed_ratio": -1.4,
+      "spoke_handedness": 1,
+      "positive_drive_loaded_phase_offset_rad": 0.064
+    },
+    {
+      "id": "gear_2_3",
+      "arm": 2,
+      "index_from_core": 3,
+      "teeth": 18,
+      "x_mm": -21.420558914052613,
+      "y_mm": -41.781025382213016,
+      "r_mm": 46.952043897784975,
+      "theta_rad": 4.238643923621511,
+      "pitch_radius_mm": 13.5,
+      "tip_radius_mm": 14.775,
+      "root_radius_mm": 11.625,
+      "phase_rad": 0.3244642572276242,
+      "arm_placement_rotation_rad": 3.141592653589793,
+      "carrier_relative_speed_ratio": 2.0,
+      "absolute_speed_ratio": 3.0,
+      "spoke_handedness": -1,
+      "positive_drive_loaded_phase_offset_rad": -0.08
+    },
+    {
+      "id": "gear_2_4",
+      "arm": 2,
+      "index_from_core": 4,
+      "teeth": 20,
+      "x_mm": 4.980873717822746,
+      "y_mm": -52.51482037674069,
+      "r_mm": 52.75050200893103,
+      "theta_rad": 4.806953103035927,
+      "pitch_radius_mm": 15.0,
+      "tip_radius_mm": 16.275,
+      "root_radius_mm": 13.125,
+      "phase_rad": 0.07385525480778199,
+      "arm_placement_rotation_rad": 3.141592653589793,
+      "carrier_relative_speed_ratio": -1.8,
+      "absolute_speed_ratio": -0.8,
+      "spoke_handedness": 1,
+      "positive_drive_loaded_phase_offset_rad": 0.096
+    },
+    {
+      "id": "gear_2_5",
+      "arm": 2,
+      "index_from_core": 5,
+      "teeth": 22,
+      "x_mm": 35.98585763777823,
+      "y_mm": -46.95235939950222,
+      "r_mm": 59.156622647903646,
+      "theta_rad": 5.366324790226515,
+      "pitch_radius_mm": 16.5,
+      "tip_radius_mm": 17.775,
+      "root_radius_mm": 14.625,
+      "phase_rad": 0.12895513399309627,
+      "arm_placement_rotation_rad": 3.141592653589793,
+      "carrier_relative_speed_ratio": 1.6363636363636365,
+      "absolute_speed_ratio": 2.6363636363636367,
+      "spoke_handedness": -1,
+      "positive_drive_loaded_phase_offset_rad": -0.10909090909090909
+    },
+    {
+      "id": "gear_2_6",
+      "arm": 2,
+      "index_from_core": 6,
+      "teeth": 23,
+      "x_mm": 61.26252663182039,
+      "y_mm": -24.588269778736763,
+      "r_mm": 66.0127274093901,
+      "theta_rad": 5.90150788050595,
+      "pitch_radius_mm": 17.25,
+      "tip_radius_mm": 18.525,
+      "root_radius_mm": 15.375,
+      "phase_rad": 0.0645155331752616,
+      "arm_placement_rotation_rad": 3.141592653589793,
+      "carrier_relative_speed_ratio": -1.565217391304348,
+      "absolute_speed_ratio": -0.5652173913043479,
+      "spoke_handedness": 1,
+      "positive_drive_loaded_phase_offset_rad": 0.1252173913043478
+    },
+    {
+      "id": "gear_2_7",
+      "arm": 2,
+      "index_from_core": 7,
+      "teeth": 26,
+      "x_mm": 72.7455099051878,
+      "y_mm": 10.321665700200548,
+      "r_mm": 73.47411785242797,
+      "theta_rad": 6.424131810081032,
+      "pitch_radius_mm": 19.5,
+      "tip_radius_mm": 20.775,
+      "root_radius_mm": 17.625,
+      "phase_rad": 0.12942642114129627,
+      "arm_placement_rotation_rad": 3.141592653589793,
+      "carrier_relative_speed_ratio": 1.3846153846153846,
+      "absolute_speed_ratio": 2.3846153846153846,
+      "spoke_handedness": -1,
+      "positive_drive_loaded_phase_offset_rad": -0.12923076923076923
+    }
+  ],
+  "meshes": [
+    {
+      "a": "sun",
+      "b": "gear_1_1",
+      "required_center_distance_mm": 37.5,
+      "actual_center_distance_mm": 37.5
+    },
+    {
+      "a": "gear_1_1",
+      "b": "gear_1_2",
+      "required_center_distance_mm": 21.75,
+      "actual_center_distance_mm": 21.75
+    },
+    {
+      "a": "gear_1_2",
+      "b": "gear_1_3",
+      "required_center_distance_mm": 24.75,
+      "actual_center_distance_mm": 24.749999999999996
+    },
+    {
+      "a": "gear_1_3",
+      "b": "gear_1_4",
+      "required_center_distance_mm": 28.5,
+      "actual_center_distance_mm": 28.500000000000007
+    },
+    {
+      "a": "gear_1_4",
+      "b": "gear_1_5",
+      "required_center_distance_mm": 31.5,
+      "actual_center_distance_mm": 31.499999999999982
+    },
+    {
+      "a": "gear_1_5",
+      "b": "gear_1_6",
+      "required_center_distance_mm": 33.75,
+      "actual_center_distance_mm": 33.75000000000003
+    },
+    {
+      "a": "gear_1_6",
+      "b": "gear_1_7",
+      "required_center_distance_mm": 36.75,
+      "actual_center_distance_mm": 36.75000000000003
+    },
+    {
+      "a": "sun",
+      "b": "gear_2_1",
+      "required_center_distance_mm": 37.5,
+      "actual_center_distance_mm": 37.5
+    },
+    {
+      "a": "gear_2_1",
+      "b": "gear_2_2",
+      "required_center_distance_mm": 21.75,
+      "actual_center_distance_mm": 21.75
+    },
+    {
+      "a": "gear_2_2",
+      "b": "gear_2_3",
+      "required_center_distance_mm": 24.75,
+      "actual_center_distance_mm": 24.749999999999996
+    },
+    {
+      "a": "gear_2_3",
+      "b": "gear_2_4",
+      "required_center_distance_mm": 28.5,
+      "actual_center_distance_mm": 28.500000000000007
+    },
+    {
+      "a": "gear_2_4",
+      "b": "gear_2_5",
+      "required_center_distance_mm": 31.5,
+      "actual_center_distance_mm": 31.499999999999982
+    },
+    {
+      "a": "gear_2_5",
+      "b": "gear_2_6",
+      "required_center_distance_mm": 33.75,
+      "actual_center_distance_mm": 33.75000000000003
+    },
+    {
+      "a": "gear_2_6",
+      "b": "gear_2_7",
+      "required_center_distance_mm": 36.75,
+      "actual_center_distance_mm": 36.75000000000003
+    }
+  ],
+  "kinematics": {
+    "carrier_input": "C radians",
+    "sun_angle": "0",
+    "planet_angle": "phase_i + loaded_offset_i + (1+(-1)^i*36/z_i)*C; i=0 at inner planet; arm2 also adds pi to the entire placed solid",
+    "mesh_phase": "z_j*phase_j = (z_i+z_j)*beta + z_j*pi + pi - z_i*phase_i modulo2pi",
+    "caution": "Only carrier-relative speed magnitudes increase monotonically inward.",
+    "carrier_relative_speed_factor": "(-1)^i*36/z_i",
+    "world_speed_factor": "1+(-1)^i*36/z_i",
+    "phase_rad_field_scope": "Current centered tooth phase, before positive-drive offset and separate complete-solid arm half-turn.",
+    "positive_drive_loaded_offset": "(-1)^(i+1)*(i+1)*0.48/z_i radians; backlash remains on reversal."
+  },
+  "balance": "Arm2 must be full arm1 geometry rotatedpi, including spoke phases, not just an equivalent tooth phase.",
+  "mechanisms": [
+    "mechanisms/spur-gear-reduction-train"
+  ],
+  "unmet_or_qualified_requirements": [
+    "Seven planets per arm instead of11\u201321 invokes explicit fewer/bigger fallback; bounded comparison does not prove global impossibility or waive required dense black-hole identity.",
+    "Ambient orange does not emit light.",
+    "Physical coasting, balance and fit untested.",
+    "Motion follows Manager current MAKE-OPTIONS; no motion proven by this handoff."
+  ],
+  "addendum_factor": 0.85,
+  "nonmesh_clearance_scope": "Nonmeshing planets on spiral arms only. Fixed sun is the hub: its nonneighbor envelope gap1.1200966507mm nominal/0.4200966507mm after main0.35+planet0.35mm play. No2mm hub gap claimed.",
+  "revision_history": [
+    {
+      "revision": "documentation-reconciliation-after-assembly-r2",
+      "previous_design_sha256": "34827fb4f82d6ee8a7ce7c8715c6cf048aecacf318f12adf4291aa59c22207b6",
+      "previous_envelope": {
+        "wheel_swept_radius_mm": 94.3043172643837,
+        "wheel_swept_diameter_mm": 188.6086345287674,
+        "hub_height_mm": 120,
+        "overall_height_mm": 214.3043172643837,
+        "pedestal_diameter_mm": 105,
+        "pedestal_height_mm": 14,
+        "full_turn_pedestal_clearance_mm": 11.695682735616302,
+        "stem_diameter_mm": 12,
+        "stem_center_behind_rearmost_rotating_surface_mm": 16,
+        "stem_clearance_mm": 10
+      },
+      "previous_nonmesh_clearance_scope": "spiral planets; sun-to-second-planet1.513690 nominal,1.163690 after play",
+      "scope": "Source/documentation reconciliation only; no geometry regenerated or gate verdict authored. Original design study remains in artifacts/make/r0001/design/.",
+      "changes": [
+        "Carrier bezel pillars OD5.6; bezel local bosses remain OD7.",
+        "Axle front threaded section retains continuous x8.1 D-flat; shoulder ramp height4.4.",
+        "Rim inlay seated at global Z12.69..13.89.",
+        "Sun-to-second-planet gap accounts for both main and planet journal radial plays.",
+        "Correct world factor is 1+(-1)^i*36/z_i for zero-based inner index i."
+      ]
+    },
+    {
+      "revision": "seven-gear-dark-field-visual-repair",
+      "previous_design_sha256": "3c715cfeaed699973517baf25f92e3efc304b03922bc86550f405f88717f081f",
+      "previous_envelope": {
+        "wheel_swept_radius_mm": 94.3043172643837,
+        "wheel_swept_diameter_mm": 188.6086345287674,
+        "hub_height_mm": 120,
+        "overall_height_mm": 214.3043172643837,
+        "pedestal_diameter_mm": 105,
+        "pedestal_height_mm": 14,
+        "full_turn_pedestal_clearance_mm": 11.695682735616302,
+        "stem_diameter_mm": 12,
+        "stem_center_behind_rearmost_rotating_surface_mm": 25.0,
+        "stem_clearance_mm": 19.0,
+        "envelope_basis": "Conservative original envelope retained; .85m stub nominal swept radius94.079317264mm is smaller.",
+        "stub_nominal_swept_radius_mm": 94.0793172643837,
+        "stem_clearance_scope": "Nominal axial separation of wheel rear plane Y=-25 and stem nearest surface Y=-6; source-derived, not physical proof."
+      },
+      "previous_source_references": [
+        {
+          "path": "artifacts/make/r0001/product/gear_vortex/params.py",
+          "sha256": "35ae4371681b61c47065477101d0fd88565e267876b8c84892cf74a9011b95ad"
+        },
+        {
+          "path": "artifacts/make/r0001/product/gear_vortex/parts/core.py",
+          "sha256": "86a3a247efc77dec9d60a40bf5b1bdcb82e6b7e308e2df9e5fb47cf0753cb441"
+        },
+        {
+          "path": "artifacts/make/r0001/product/gear_vortex/parts/carrier.py",
+          "sha256": "9812fda775ce0f9b574d9e4caf61e52d3e5e0861630e8e113353392e2f2d8a73"
+        },
+        {
+          "path": "artifacts/make/r0001/product/gear_vortex/assemblies/product.py",
+          "sha256": "9746a05f783fbe1a781082a8e10c4bb59428d532f083b8bb41ece99967792800"
+        }
+      ],
+      "scope": "Replacement draft only, outside active product; no CAD or report edited by this documentation task.",
+      "changes": [
+        "Seven planets per arm14/15/18/20/22/23/26 replace six16/18/20/22/24/26; old16/24 remain archived evidence.",
+        "Exact logarithmic center law r=37.5exp(0.2049theta), end3.2825391564912385 radians; phases and loaded offsets recalculated at56-bisection precision.",
+        "Integral matte-black carrier annulusOD188/ID58/thickness3 at localz0..3 retains open orange core and all existing axial interfaces.",
+        "New14/15 coupon at21.75mm centers;44 sculpture leaf occurrences,21 printable roles,49 printed pieces including coupon kit.",
+        "New source-derived clearance and contact bounds supersede six-gear analytic numbers; new geometry and visual verification pending.",
+        "Prior assemblyr3 formal motion verdict UNVERIFIED (600-second limit), never passed; physical print/fit/coast remain unknown."
+      ],
+      "qualified_handoff": {
+        "path": "artifacts/make/r0001/visual-repair-design-supplement.md",
+        "sha256": "7f7fead933a8f237e638dc5c12e2b8911e810ffa7e0af20dc1987d4d81383946"
+      },
+      "qualified_numbers": {
+        "path": "artifacts/make/r0001/visual-repair-qualified-candidates.json",
+        "sha256": "e5e04568ba848ab0c8afb7c816380ecc6bc171316e2ab0e0e4dced07d410618e"
+      }
+    }
+  ],
+  "sun_to_second_planet_clearance": {
+    "nominal_tip_envelope_gap_mm": 1.1200966507119148,
+    "main_journal_radial_play_mm": 0.35,
+    "planet_journal_radial_play_mm": 0.35,
+    "gap_after_both_plays_mm": 0.4200966507119148,
+    "scope": "Separate hub-to-planet clearance; not the consecutive spiral-wrap requirement."
+  },
+  "stand": {
+    "rim_trim_seated_z_mm": [
+      12.69,
+      13.89
+    ],
+    "rim_trim_height_mm": 1.2,
+    "rim_trim_top_width_mm": 1.2,
+    "rim_trim_bottom_flat_width_mm": 1.0,
+    "seat": "Source placement on lower V-groove flank; gravity seating does not establish physical retention."
+  },
+  "current_source_references": [
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/params.py",
+      "sha256": "27516d7fca9bf415014586a6ac1217c0ff838bc0e8f47677861d3787c040257c",
+      "scope": "Current source snapshot at draft preparation; rebinding needed if source changes."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/core.py",
+      "sha256": "86a3a247efc77dec9d60a40bf5b1bdcb82e6b7e308e2df9e5fb47cf0753cb441",
+      "scope": "Current source snapshot at draft preparation; rebinding needed if source changes."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/carrier.py",
+      "sha256": "87010474540aadd3a32ee944bcee4b5b422720c5529e2700356ad3fd52a0c796",
+      "scope": "Current source snapshot at draft preparation; rebinding needed if source changes."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/gears.py",
+      "sha256": "cf1b6860d2b2a2f5e7d3db346593debfb887e6cab79a6b15e356e97b2eaef46a",
+      "scope": "Current source snapshot at draft preparation; rebinding needed if source changes."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/coupon.py",
+      "sha256": "a86dd0e2cd49c913dd599987fde9f0dac0010f17da661480143fdb7b83a5a4f4",
+      "scope": "Current source snapshot at draft preparation; rebinding needed if source changes."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/features/gearing.py",
+      "sha256": "6203d0b50468de5dd2d49531f2021ec8b810e5ea5d1836e56fa405e7fef3b077",
+      "scope": "Current source snapshot at draft preparation; rebinding needed if source changes."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/assemblies/product.py",
+      "sha256": "9746a05f783fbe1a781082a8e10c4bb59428d532f083b8bb41ece99967792800",
+      "scope": "Current source snapshot at draft preparation; rebinding needed if source changes."
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/validation.py",
+      "sha256": "09bc5efcee77b3b94a8c0d12eff577e1cff5d3fdedb1d08654ecd38e4dbdb29c",
+      "scope": "Current source snapshot at draft preparation; rebinding needed if source changes."
+    }
+  ],
+  "spoke_source_nominal_width_mm": 2.6,
+  "inventory": {
+    "sculpture_leaf_occurrences": 44,
+    "printable_roles": 21,
+    "printed_pieces_including_coupon_kit": 49,
+    "planet_teeth": [
+      14,
+      15,
+      18,
+      20,
+      22,
+      23,
+      26
+    ],
+    "sculpture_quantity_each_planet": 2,
+    "sculpture_small_caps": 16,
+    "total_small_caps_including_coupon": 18,
+    "main_caps": 3,
+    "archived_not_current_planets": [
+      16,
+      24
+    ]
+  },
+  "coupon": {
+    "teeth": [
+      14,
+      15
+    ],
+    "center_distance_mm": 21.75,
+    "post_x_mm": [
+      -10.875,
+      10.875
+    ],
+    "extra_each_gear": 1,
+    "extra_caps": 2,
+    "physical_test_status": "UNVERIFIED"
+  },
+  "analytical_qualification": {
+    "source": "artifacts/make/r0001/visual-repair-qualified-candidates.json",
+    "branch": "robust",
+    "minimum_contact_ratio": 1.288192833261523,
+    "maximum_center_distance_error_mm": 2.842170943040401e-14,
+    "gear_feature_screen": [
+      {
+        "teeth": 14,
+        "tip_OD": 23.55,
+        "tip_chord": 0.8463804118605732,
+        "window_radial_length": 1.525,
+        "minimum_sampled_tangential_aperture": 1.6952774294780053,
+        "minimum_sampled_web": 2.6738964873023647,
+        "hand": -1
+      },
+      {
+        "teeth": 15,
+        "tip_OD": 25.05,
+        "tip_chord": 0.8583303783573615,
+        "window_radial_length": 2.275,
+        "minimum_sampled_tangential_aperture": 1.904323805816542,
+        "minimum_sampled_web": 2.6422551229999405,
+        "hand": 1
+      },
+      {
+        "teeth": 18,
+        "tip_OD": 29.55,
+        "tip_chord": 0.8872804985694354,
+        "window_radial_length": 4.525,
+        "minimum_sampled_tangential_aperture": 2.077875268554596,
+        "minimum_sampled_web": 2.6142201113211208,
+        "hand": -1
+      },
+      {
+        "teeth": 20,
+        "tip_OD": 32.55,
+        "tip_chord": 0.9023829628660326,
+        "window_radial_length": 6.025,
+        "minimum_sampled_tangential_aperture": 2.1097321853715605,
+        "minimum_sampled_web": 2.6087864736373825,
+        "hand": 1
+      },
+      {
+        "teeth": 22,
+        "tip_OD": 35.55,
+        "tip_chord": 0.9150894081229131,
+        "window_radial_length": 7.525,
+        "minimum_sampled_tangential_aperture": 2.125572757768507,
+        "minimum_sampled_web": 2.6059217311630873,
+        "hand": -1
+      },
+      {
+        "teeth": 23,
+        "tip_OD": 37.05,
+        "tip_chord": 0.9207193590285618,
+        "window_radial_length": 8.275,
+        "minimum_sampled_tangential_aperture": 2.130644303333805,
+        "minimum_sampled_web": 2.604933064148083,
+        "hand": 1
+      },
+      {
+        "teeth": 26,
+        "tip_OD": 41.55,
+        "tip_chord": 0.9353187246182797,
+        "window_radial_length": 10.525,
+        "minimum_sampled_tangential_aperture": 2.1401646569397417,
+        "minimum_sampled_web": 2.603180498863356,
+        "hand": -1
+      }
+    ],
+    "scope": "Source-level mathematics only; sampled web/aperture checks are not exact BRep thickness passes."
+  },
+  "verification_state": {
+    "geometry": "PENDING for seven-gear assembly",
+    "visual": "PENDING fresh independent signature review; prior six-gear failure retained",
+    "motion": "UNVERIFIED; assemblyr3 formal check hit600-second limit",
+    "physical_print_fit_coast_balance": "UNVERIFIED",
+    "print_ready_claim": false
+  }
+}

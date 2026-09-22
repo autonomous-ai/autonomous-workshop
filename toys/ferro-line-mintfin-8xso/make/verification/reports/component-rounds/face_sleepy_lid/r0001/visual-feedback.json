@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Acute ribbon end corners too thin",
+      "evidence": "Top/iso pointed ends at x\u00b17; thickness0.13/0.20mm in1.7/1.3mm2 regions, combined3.87% over2% allowance.",
+      "part": "face_sleepy_lid",
+      "repair": "Round the four vertical end edges while keeping the continuous closed-lid curve and flat attachment face."
+    }
+  ],
+  "observation": "All three views inspected. Curved closed-lid ribbon is coherent and flat, but its two outer ends finish in acute corners. Default wall gate identifies two thin end spots above its small-feature allowance.",
+  "packet_sha256": "c7eb09b3f5416b0c4b1d0b589517a6ed8d26eb702560842a3b25b4d2fa7f662b",
+  "status": "fail"
+}

@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_01_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_01_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_front"
+ ],
+ "print": {
+  "body_01_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0001/overhang-body_01_front.log": "7dc6b6b5e4a22b4f2c803b7861d0cbbb913bcc0b1ce49be232e658673a254520",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0001/thickness-body_01_front.log": "5856b064ca5a434851ccfedc8c075c2b530055786497e8eb0653d57c7617576f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 6.6% of surface below (13471 of 217492 samples); thinn"
+    ],
+    "thinnest_mm": 0.14,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:body_01_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Broad thin rim tapers to zero thickness",
+    "evidence": "Front shows a knife edge at the bed; top and iso show wide taper band around full perimeter.",
+    "part": "body_01_front",
+    "repair": "Add a 1.2 mm constant-section perimeter land before the shrinking profile."
+   }
+  ],
+  "observation": "All three views inspected. Ball is centered laterally and attached to the plate, but the wide elliptical rim tapers to a knife edge, consistent with the measured thickness failure.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0001/visual-packet.json",
+  "packet_sha256": "5ad9fb7cb4085d9aff393760b9d7bda23203620b4cb24e4f59fb7bfa81efc688",
+  "status": "fail"
+ }
+}

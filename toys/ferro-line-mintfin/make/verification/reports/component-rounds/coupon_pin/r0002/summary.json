@@ -1,0 +1,62 @@
+{
+ "build": {
+  "coupon_pin": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "coupon_pin"
+ ],
+ "check_motion": false,
+ "checked": [
+  "coupon_pin"
+ ],
+ "checks_ok": true,
+ "entry": "part_coupon_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_pin/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "coupon_pin"
+ ],
+ "print": {
+  "coupon_pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_pin/r0002/overhang-coupon_pin.log": "c48d602da8e52adeb462a10fcf576390feda7b009bdfbdf1b96e7dcad3abb80f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_pin/r0002/thickness-coupon_pin.log": "de758c2ecf94aa7c5fed48a2cd931277d4111edbbe3462dced83327cf0caf346"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:coupon_pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and isometric views show the shallow bottom relief rising into the grounded pin; its waist and two broad retaining caps are concentric. Top shows a rounded handle with a continuous stem. No misplaced or detached features.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_pin/r0002/visual-packet.json",
+  "packet_sha256": "7e0ece3b540a6a9534a5490c1a08acf2254b16226f87932d35d20b6a4793dc74",
+  "status": "pass"
+ }
+}

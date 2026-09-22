@@ -1,0 +1,64 @@
+{
+ "build": {
+  "body_07_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_07_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_07_rear"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_07_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_07_rear"
+ ],
+ "print": {
+  "body_07_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0003/overhang-body_07_rear.log": "4d649dd6a12b1f8291ead8b6779d601da2f6e676c14ab7c47af38e9bb1f46a6b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0003/thickness-body_07_rear.log": "41f6f311799a618dc32c410f6ba5e4e47eed26e6c923c9a7177714880fe230b3"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 22.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 1.1,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:body_07_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a level bed face and aligned four-finger socket; top and iso show an unbroken chamfered barrel shoulder and spherical cavity with pads. No misplaced or detached part is visible. The measured internal overhang failure remains a required source repair; this visual result does not waive it.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_rear/r0003/visual-packet.json",
+  "packet_sha256": "b06dc795860be183914dbcc015dc1fa0daed9758a1a7161046a0173f6f3109e3",
+  "status": "pass"
+ }
+}

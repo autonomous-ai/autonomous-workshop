@@ -1,0 +1,395 @@
+[
+  {
+    "id": "optical_gap",
+    "value_mm": 4.0,
+    "from_ref": "o1.8.f2",
+    "to_ref": "o1.9.f4"
+  },
+  {
+    "id": "orange_thickness",
+    "value_mm": 1.0,
+    "from_ref": "o1.8.f2",
+    "to_ref": "o1.8.f3"
+  },
+  {
+    "id": "sun_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.9.f4",
+    "to_ref": "o1.9.f5"
+  },
+  {
+    "id": "bezel_thickness",
+    "value_mm": 4.0,
+    "from_ref": "o1.23.2.f2",
+    "to_ref": "o1.23.2.f4"
+  },
+  {
+    "id": "orange_outer_radius",
+    "radius_mm": 27.5,
+    "diameter_mm": 55.0,
+    "ref": "o1.8.f1",
+    "origin": [
+      0.0,
+      -23.3,
+      120.0
+    ]
+  },
+  {
+    "id": "bezel_outer_radius",
+    "radius_mm": 35.0,
+    "diameter_mm": 70.0,
+    "ref": "o1.23.2.f1",
+    "origin": [
+      0.0,
+      -39.3,
+      120.0
+    ]
+  },
+  {
+    "id": "bezel_inner_radius",
+    "radius_mm": 29.0,
+    "diameter_mm": 58.0,
+    "ref": "o1.23.2.f484",
+    "origin": [
+      0.0,
+      -38.3,
+      120.0
+    ]
+  },
+  {
+    "id": "gear_1_1_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.11.f308",
+    "to_ref": "o1.11.f309"
+  },
+  {
+    "id": "gear_1_1_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.11.f307",
+    "origin": [
+      39.0,
+      -28.3,
+      120.0
+    ]
+  },
+  {
+    "id": "gear_1_2_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.12.f320",
+    "to_ref": "o1.12.f321"
+  },
+  {
+    "id": "gear_1_2_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.12.f319",
+    "origin": [
+      36.624007,
+      -28.3,
+      145.389066
+    ]
+  },
+  {
+    "id": "gear_1_3_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.13.f332",
+    "to_ref": "o1.13.f333"
+  },
+  {
+    "id": "gear_1_3_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.13.f331",
+    "origin": [
+      18.421212,
+      -28.3,
+      167.318687
+    ]
+  },
+  {
+    "id": "gear_1_4_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.14.f344",
+    "to_ref": "o1.14.f345"
+  },
+  {
+    "id": "gear_1_4_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.14.f343",
+    "origin": [
+      -11.731033,
+      -28.3,
+      176.434175
+    ]
+  },
+  {
+    "id": "gear_1_5_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.15.f356",
+    "to_ref": "o1.15.f357"
+  },
+  {
+    "id": "gear_1_5_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.15.f355",
+    "origin": [
+      -44.958622,
+      -28.3,
+      167.151001
+    ]
+  },
+  {
+    "id": "gear_1_6_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.16.f368",
+    "to_ref": "o1.16.f369"
+  },
+  {
+    "id": "gear_1_6_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.16.f367",
+    "origin": [
+      -70.586669,
+      -28.3,
+      139.774859
+    ]
+  },
+  {
+    "id": "gear_2_1_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.17.f308",
+    "to_ref": "o1.17.f309"
+  },
+  {
+    "id": "gear_2_1_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.17.f307",
+    "origin": [
+      -39.0,
+      -28.3,
+      120.0
+    ]
+  },
+  {
+    "id": "gear_2_2_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.18.f320",
+    "to_ref": "o1.18.f321"
+  },
+  {
+    "id": "gear_2_2_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.18.f319",
+    "origin": [
+      -36.624007,
+      -28.3,
+      94.610934
+    ]
+  },
+  {
+    "id": "gear_2_3_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.19.f332",
+    "to_ref": "o1.19.f333"
+  },
+  {
+    "id": "gear_2_3_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.19.f331",
+    "origin": [
+      -18.421212,
+      -28.3,
+      72.681313
+    ]
+  },
+  {
+    "id": "gear_2_4_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.20.f344",
+    "to_ref": "o1.20.f345"
+  },
+  {
+    "id": "gear_2_4_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.20.f343",
+    "origin": [
+      11.731033,
+      -28.3,
+      63.565825
+    ]
+  },
+  {
+    "id": "gear_2_5_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.21.f356",
+    "to_ref": "o1.21.f357"
+  },
+  {
+    "id": "gear_2_5_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.21.f355",
+    "origin": [
+      44.958622,
+      -28.3,
+      72.848999
+    ]
+  },
+  {
+    "id": "gear_2_6_yellow_face_width",
+    "value_mm": 4.9999999999999964,
+    "from_ref": "o1.22.f368",
+    "to_ref": "o1.22.f369"
+  },
+  {
+    "id": "gear_2_6_yellow_bore",
+    "radius_mm": 2.35,
+    "diameter_mm": 4.7,
+    "ref": "o1.22.f367",
+    "origin": [
+      70.586669,
+      -28.3,
+      100.225141
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f28",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f28",
+    "origin": [
+      36.624007,
+      -28.0,
+      145.389066
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f41",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f41",
+    "origin": [
+      18.421212,
+      -28.0,
+      167.318687
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f54",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f54",
+    "origin": [
+      -11.731033,
+      -28.0,
+      176.434175
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f67",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f67",
+    "origin": [
+      -44.958622,
+      -28.0,
+      167.151001
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f80",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f80",
+    "origin": [
+      -70.586669,
+      -28.0,
+      139.774859
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f99",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f99",
+    "origin": [
+      -39.0,
+      -28.0,
+      120.0
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f110",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f110",
+    "origin": [
+      -36.624007,
+      -28.0,
+      94.610934
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f123",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f123",
+    "origin": [
+      -18.421212,
+      -28.0,
+      72.681313
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f136",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f136",
+    "origin": [
+      11.731033,
+      -28.0,
+      63.565825
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f149",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f149",
+    "origin": [
+      44.958622,
+      -28.0,
+      72.848999
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f162",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f162",
+    "origin": [
+      70.586669,
+      -28.0,
+      100.225141
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f181",
+    "radius_mm": 2.0,
+    "diameter_mm": 4.0,
+    "ref": "o1.23.1.f181",
+    "origin": [
+      39.0,
+      -28.0,
+      120.0
+    ]
+  }
+]

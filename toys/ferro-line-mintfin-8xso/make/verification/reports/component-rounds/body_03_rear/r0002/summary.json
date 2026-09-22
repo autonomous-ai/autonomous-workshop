@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_03_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_03_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_03_rear"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_03_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_rear/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_03_rear"
+ ],
+ "print": {
+  "body_03_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_rear/r0002/overhang-body_03_rear.log": "029ea7a04bc88f364cf6b342547a5c9b3c0cd3d9ff786ecfbdcf274f90002dad",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_rear/r0002/thickness-body_03_rear.log": "06910f31dbaec652824d8706db6233e26c867991810a38269401ca696c401d64"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:body_03_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected once. Four raised socket fingers surround an open cavity with visible preload land and clear radial slots. The elliptical rim is continuous between symmetric ankle cutouts, and the flat seam sits at the print datum. No misplaced or detached geometry is visible.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_rear/r0002/visual-packet.json",
+  "packet_sha256": "016d9e0df9b0bd2514b49e0a7cae0f10dee1da6623be9be2fa8d34377d65d6f8",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin crescent around parent clearance",
+      "evidence": "Visible stepped margin behind ball; measured wall49.6mm2 with4.15mm band at print(2.1,12.1,.3)",
+      "part": "body_04_front",
+      "repair": "Use a projected clearance through a constant1.2mm front land and preserve the ball/heel."
+    }
+  ],
+  "observation": "Top and iso show a stepped crescent feathering into the seam stock behind the centered ball. Outer silhouette and ankle reliefs are coherent; wall check identifies the clearance margin as too thin.",
+  "packet_sha256": "2aa29f0e2f443f999c14619b7ee1ad7edb0f272ca31fd01df2541f8f450937fc",
+  "status": "fail"
+}

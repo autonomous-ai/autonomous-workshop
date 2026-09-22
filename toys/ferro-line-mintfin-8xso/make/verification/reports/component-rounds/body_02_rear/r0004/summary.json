@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_02_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_02_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_02_rear"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_02_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_02_rear"
+ ],
+ "print": {
+  "body_02_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0004/overhang-body_02_rear.log": "df36a7384324560cd5498f0066286db1ae7df885b7ffc68105fb0fca901e24b2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0004/thickness-body_02_rear.log": "33d4579bdec11379c688df27625113e03dfb1fc5ddbddb34cb9e626e52d7125c"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 39.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 10.9,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:body_02_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Relief offset to wrong side of unsupported roof",
+    "evidence": "Native exterior views conceal underside; deterministic source-face bounds place new ramp atX\u221216.5..\u22125.5, while failed roof remainsX\u00b15.184 at printY\u221214.2.",
+    "part": "body_02_rear",
+    "repair": "Force positive local extrusion direction, centering relief atX\u00b15.5 and removing the unintended side groove by rebuilding from unchanged base stock."
+   }
+  ],
+  "observation": "Front, top and iso inspected; outer crown, flank, ankle corners and socket remain coherent. The unchanged unsupported roof remains hidden under the plate. Source-face inspection located the attempted relief at X\u221216.5..\u22125.5, beside the intended centered roof, due polygon winding reversing extrusion. Explicit1.2mm wall passes but support fails10.9mm2.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0004/visual-packet.json",
+  "packet_sha256": "adf67b7835425e45e3dd515ac4a83d33eba98bdf428cab63c0adcb4f4ebf9277",
+  "status": "fail"
+ }
+}

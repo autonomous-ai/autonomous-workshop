@@ -1,0 +1,62 @@
+{
+ "build": {
+  "gear_cap": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gear_cap"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gear_cap"
+ ],
+ "checks_ok": true,
+ "entry": "part_gear_cap.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_cap"
+ ],
+ "print": {
+  "gear_cap": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0003/overhang-gear_cap.log": "6cbac233dde94339bf96f0cb1162cf6ea902da950ee7e25a1838422608663d0d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0003/thickness-gear_cap.log": "1220f10c535278842903913ba821a870844c93d49a20579ce04f5a9c3cb847b7"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:gear_cap",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Uniform cylindrical outer wall and open concentric bore. Both lead-ins are visibly gradual and preserve a continuous internal thread; all three views show no disconnected slivers.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0003/visual-packet.json",
+  "packet_sha256": "b597255f1b6711ffe9f7e29f0925c69275f2d3ace5edced6f8e4f937c1b79403",
+  "status": "pass"
+ }
+}

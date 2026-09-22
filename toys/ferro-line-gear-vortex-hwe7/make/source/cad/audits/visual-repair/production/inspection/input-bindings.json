@@ -1,0 +1,886 @@
+{
+  "schema_version": 1,
+  "status": "PREPARED_NOT_EXECUTED",
+  "request_count": 98,
+  "delivery_file_count": 49,
+  "sculpture_files": 44,
+  "coupon_files": 5,
+  "requests": {
+    "path": "artifacts/make/r0001/visual-repair-production/inspection/requests.jsonl",
+    "sha256": "358122667dd754d9281c1eac9baa7bef9eb647389360380c15d64e426aa313c5"
+  },
+  "source_bindings": [
+    {
+      "path": "artifacts/make/r0001/product/production-parts.json",
+      "sha256": "ac2d850657f6c108b2e4d9a987e4ce46919731396bb9ee8008a63bcff8bc31e8"
+    },
+    {
+      "path": "artifacts/make/r0001/product/coupon-kit/manifest.json",
+      "sha256": "0b0b82424067f8ab66ae25640dd6d8f99c95d90d9af2ed1d7ea047a9a586dfa1"
+    },
+    {
+      "path": "artifacts/make/r0001/product/assembled.step",
+      "sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff"
+    },
+    {
+      "path": "artifacts/make/r0001/product/assembled.step.json",
+      "sha256": "d2cc8fc5756f052d35a92a71b4591901969046121e847c40300cbd2262551efe"
+    },
+    {
+      "path": "artifacts/make/r0001/visual-repair-production/export-binding-all-r1.json",
+      "sha256": "44f2fe489b03084e60433541468ea0893a6c11cfd8c61dfad88de00fbd7ebbda"
+    },
+    {
+      "path": "artifacts/make/r0001/visual-repair-production/current-assembly-binding.json",
+      "sha256": "ec6f2aeb76ca5dd1ec6a30da35e4afd99b0c5d5b87aec195944331369b06f5bd"
+    }
+  ],
+  "records": [
+    {
+      "name": "pedestal_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/pedestal_black.step",
+      "step_sha256": "b57d4831bf0f548cf0671c59c9238ad8d54f1b067bdc55bbcf8d9aede1fc3b33",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.1",
+      "master_sha256": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-pedestal_black-refs",
+        "sculpture-pedestal_black-validate"
+      ]
+    },
+    {
+      "name": "pedestal_lid_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/pedestal_lid_black.step",
+      "step_sha256": "0cfed8faf687e9f667ba9aa6d039b87a9d330a9980cae8508fe3efb0ad47030f",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.2",
+      "master_sha256": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-pedestal_lid_black-refs",
+        "sculpture-pedestal_lid_black-validate"
+      ]
+    },
+    {
+      "name": "stem_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/stem_black.step",
+      "step_sha256": "5820c6701624272a7d3bb66991b9db5c02ed17229fcc28bd9b51ef91c301a05d",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.3",
+      "master_sha256": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-stem_black-refs",
+        "sculpture-stem_black-validate"
+      ]
+    },
+    {
+      "name": "support_collar_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/support_collar_black.step",
+      "step_sha256": "35526aeed9336e9daa9391ed9c44f757228f2d3ce526510dd6a645bbe43873e7",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.4",
+      "master_sha256": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-support_collar_black-refs",
+        "sculpture-support_collar_black-validate"
+      ]
+    },
+    {
+      "name": "rim_trim_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/rim_trim_yellow.step",
+      "step_sha256": "8bbeab3b5d5aee8883c3138c17a35ec9341476e4e850b47c751669404e9fab56",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.5",
+      "master_sha256": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-rim_trim_yellow-refs",
+        "sculpture-rim_trim_yellow-validate"
+      ]
+    },
+    {
+      "name": "foot_trim_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/foot_trim_yellow.step",
+      "step_sha256": "c3b9c72e34384ef8423bfec6c15a85407409e701da9ee494eaabc3ef5ae1dfa0",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.6",
+      "master_sha256": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-foot_trim_yellow-refs",
+        "sculpture-foot_trim_yellow-validate"
+      ]
+    },
+    {
+      "name": "axle_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/axle_black.step",
+      "step_sha256": "db784bae46b7bca8bc39ab22b06657b67ae43599b07062843a43d99ddda62b00",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.26.1",
+      "master_sha256": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-axle_black-refs",
+        "sculpture-axle_black-validate"
+      ]
+    },
+    {
+      "name": "rear_main_cap_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/rear_main_cap_black.step",
+      "step_sha256": "f3465ed67f1b875a3249859cf7021be4700db7b1381830adbe7e17a3e9b101a2",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.7",
+      "master_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-rear_main_cap_black-refs",
+        "sculpture-rear_main_cap_black-validate"
+      ]
+    },
+    {
+      "name": "support_main_cap_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/support_main_cap_black.step",
+      "step_sha256": "d6317e0aba79b03781f3e802a2744f4be545fb07349dd96505c3b9573f2645f4",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.26.2",
+      "master_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-support_main_cap_black-refs",
+        "sculpture-support_main_cap_black-validate"
+      ]
+    },
+    {
+      "name": "orange_disc_orange",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/orange_disc_orange.step",
+      "step_sha256": "9302a501783cd911af1dbaf1cd1349a5299d21bc54eafe1a78b906b18d1894f0",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.8",
+      "master_sha256": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-orange_disc_orange-refs",
+        "sculpture-orange_disc_orange-validate"
+      ]
+    },
+    {
+      "name": "carrier_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/carrier_black.step",
+      "step_sha256": "5a5d13f1b36ca73036d89b378b32339b823abc91c257bc6849b0ce0a8ba32943",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.1",
+      "master_sha256": "cb457616187187a1b4b8b553fadf999553489ae53702b4e5999a6b1afc92e198",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-carrier_black-refs",
+        "sculpture-carrier_black-validate"
+      ]
+    },
+    {
+      "name": "sun_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/sun_yellow.step",
+      "step_sha256": "ce1d72732159fdd7966f0de9ba71fe48c737671035cda237f43b282343d76334",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.9",
+      "master_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-sun_yellow-refs",
+        "sculpture-sun_yellow-validate"
+      ]
+    },
+    {
+      "name": "front_main_cap_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/front_main_cap_black.step",
+      "step_sha256": "246a4becd81676813e871aace6084dfdaf5ac50daaf718bb68e69b54f7ac9beb",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.10",
+      "master_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-front_main_cap_black-refs",
+        "sculpture-front_main_cap_black-validate"
+      ]
+    },
+    {
+      "name": "bezel_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/bezel_black.step",
+      "step_sha256": "bca07e875b027ec14c1d1b7864a8d6fb760a25a9f0feaafad533c227af60f264",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.2",
+      "master_sha256": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-bezel_black-refs",
+        "sculpture-bezel_black-validate"
+      ]
+    },
+    {
+      "name": "gear_1_1_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_1_1_yellow.step",
+      "step_sha256": "ee31ad105b06a938e7ce3e92cec95a78f90506a327713f96b802010af711e894",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.11",
+      "master_sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_1_1_yellow-refs",
+        "sculpture-gear_1_1_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_1_2_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_1_2_yellow.step",
+      "step_sha256": "8456a418e09e98c5924b9d842813864bbe0bfa2da07624f1fd33205b7dcb3951",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.12",
+      "master_sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_1_2_yellow-refs",
+        "sculpture-gear_1_2_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_1_3_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_1_3_yellow.step",
+      "step_sha256": "2bea65576029aa69479c36e79f8dc73b812c41c49deb5d3a9891c788e84538d1",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.13",
+      "master_sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_1_3_yellow-refs",
+        "sculpture-gear_1_3_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_1_4_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_1_4_yellow.step",
+      "step_sha256": "dab8dc9c0a2e39ddb560861dd6206c4cb38f00ea7c893ea072ec534ab0a24caf",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.14",
+      "master_sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_1_4_yellow-refs",
+        "sculpture-gear_1_4_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_1_5_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_1_5_yellow.step",
+      "step_sha256": "d1e309b4a7b396e650efb5bb880859bbba9187ce9d50819c4b5f7433335e3a52",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.15",
+      "master_sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_1_5_yellow-refs",
+        "sculpture-gear_1_5_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_1_6_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_1_6_yellow.step",
+      "step_sha256": "3f90e53e7b0bb6d15816dd7ae6fa5a2b0e30ee77070500054f583bb5012c3173",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.16",
+      "master_sha256": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_1_6_yellow-refs",
+        "sculpture-gear_1_6_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_1_7_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_1_7_yellow.step",
+      "step_sha256": "f07fa3b6024540685792d910a5f7ff95cc54ff3c26d774e352afba4a0a5d9602",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.17",
+      "master_sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_1_7_yellow-refs",
+        "sculpture-gear_1_7_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_2_1_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_2_1_yellow.step",
+      "step_sha256": "96844356d4d2aa2fd57e8c07960cdd204a5ef5563223828d5dbee76187e9f493",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.18",
+      "master_sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_2_1_yellow-refs",
+        "sculpture-gear_2_1_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_2_2_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_2_2_yellow.step",
+      "step_sha256": "bae22f60335f252257b4247ff26c5c558fe36aa3e9099b4d8b60b12e70fbb213",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.19",
+      "master_sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_2_2_yellow-refs",
+        "sculpture-gear_2_2_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_2_3_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_2_3_yellow.step",
+      "step_sha256": "ba2cb730a7c51bdc5194bf8394d280bb3c1ebd5fd2285e932753b7987c0a9d6b",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.20",
+      "master_sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_2_3_yellow-refs",
+        "sculpture-gear_2_3_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_2_4_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_2_4_yellow.step",
+      "step_sha256": "17fb17a04218c06f307931dc9bbff3077711391b7539031e1494a7e8dbaffd5d",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.21",
+      "master_sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_2_4_yellow-refs",
+        "sculpture-gear_2_4_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_2_5_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_2_5_yellow.step",
+      "step_sha256": "b923c5eed078eb4cc94948b36daa500d3737f0be03c0ff25b06ca3e29a98bb44",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.22",
+      "master_sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_2_5_yellow-refs",
+        "sculpture-gear_2_5_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_2_6_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_2_6_yellow.step",
+      "step_sha256": "53c38cbaecc088c47a3a13036935166f1f3ab53d484d1f8557e2e264eafd7494",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.23",
+      "master_sha256": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_2_6_yellow-refs",
+        "sculpture-gear_2_6_yellow-validate"
+      ]
+    },
+    {
+      "name": "gear_2_7_yellow",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/gear_2_7_yellow.step",
+      "step_sha256": "639487e767e009a3e2a37a5aa3b5a6ee93b671b4f6629e348b325e1663d1b5f4",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.24",
+      "master_sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-gear_2_7_yellow-refs",
+        "sculpture-gear_2_7_yellow-validate"
+      ]
+    },
+    {
+      "name": "cap_1_1_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_1_1_black.step",
+      "step_sha256": "0389d8881fa3142c79544240d3ad419165c8d53a5bb8b753456f92c52d41b053",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.1",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_1_1_black-refs",
+        "sculpture-cap_1_1_black-validate"
+      ]
+    },
+    {
+      "name": "cap_1_2_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_1_2_black.step",
+      "step_sha256": "b6d23d48872f2d86d573a803e4351c8869c57cdc1d1dbdfa2358a80c62aeeea3",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.2",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_1_2_black-refs",
+        "sculpture-cap_1_2_black-validate"
+      ]
+    },
+    {
+      "name": "cap_1_3_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_1_3_black.step",
+      "step_sha256": "4dd27af0d9447626bc42ee7115108811fa5fe0b4c0d4b41a6dfba14330e07257",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.3",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_1_3_black-refs",
+        "sculpture-cap_1_3_black-validate"
+      ]
+    },
+    {
+      "name": "cap_1_4_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_1_4_black.step",
+      "step_sha256": "e702a038b727b81adbb93ed70234b88b47a191a652408a61c7f294b26902a84a",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.4",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_1_4_black-refs",
+        "sculpture-cap_1_4_black-validate"
+      ]
+    },
+    {
+      "name": "cap_1_5_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_1_5_black.step",
+      "step_sha256": "95c0c3ae1c4f7ed8a0df12b800023c07d422069b6a4d43a441e9709679bee4d0",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.5",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_1_5_black-refs",
+        "sculpture-cap_1_5_black-validate"
+      ]
+    },
+    {
+      "name": "cap_1_6_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_1_6_black.step",
+      "step_sha256": "9380f041f108d20629d32b2997be2a8494516733a8519fb143353a74ebd3bbdb",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.6",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_1_6_black-refs",
+        "sculpture-cap_1_6_black-validate"
+      ]
+    },
+    {
+      "name": "cap_1_7_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_1_7_black.step",
+      "step_sha256": "f09dbd510112cd1590bebe6c00bd816db96efeb439aee74de877ffab5207c4c0",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.7",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_1_7_black-refs",
+        "sculpture-cap_1_7_black-validate"
+      ]
+    },
+    {
+      "name": "cap_2_1_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_2_1_black.step",
+      "step_sha256": "b9b1b40cf8c17eb810ab66c35271ccdad08ee44d0afb4e14eb7f952cd6d5e56f",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.8",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_2_1_black-refs",
+        "sculpture-cap_2_1_black-validate"
+      ]
+    },
+    {
+      "name": "cap_2_2_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_2_2_black.step",
+      "step_sha256": "ddf43bcbf0e587436e1a984110480ce76e1ce33ce5e7e8b2d2c1832e780b38aa",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.9",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_2_2_black-refs",
+        "sculpture-cap_2_2_black-validate"
+      ]
+    },
+    {
+      "name": "cap_2_3_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_2_3_black.step",
+      "step_sha256": "82b1620c8a102d57d1a0782df758672d9e23b243c971bb1626ffa9f626eec09f",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.10",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_2_3_black-refs",
+        "sculpture-cap_2_3_black-validate"
+      ]
+    },
+    {
+      "name": "cap_2_4_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_2_4_black.step",
+      "step_sha256": "c7b20aa0cef98db8d53b768071161dc134e4eacca90a768dc7f6199a8a815fc0",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.11",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_2_4_black-refs",
+        "sculpture-cap_2_4_black-validate"
+      ]
+    },
+    {
+      "name": "cap_2_5_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_2_5_black.step",
+      "step_sha256": "2413ff241be2b400669e81fd3c985b66064697a50a19381932cfb4a9407ae1d6",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.12",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_2_5_black-refs",
+        "sculpture-cap_2_5_black-validate"
+      ]
+    },
+    {
+      "name": "cap_2_6_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_2_6_black.step",
+      "step_sha256": "227a1c224bf2764ce9f5c7b2f8309a633fdede47895dbd81d3c38f7bb8c2cf1a",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.13",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_2_6_black-refs",
+        "sculpture-cap_2_6_black-validate"
+      ]
+    },
+    {
+      "name": "cap_2_7_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/cap_2_7_black.step",
+      "step_sha256": "97452b2ce96fb69ef9a88f19d1b123e2ae8780fa067e2c303198d5f611e0d3bd",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.3.14",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-cap_2_7_black-refs",
+        "sculpture-cap_2_7_black-validate"
+      ]
+    },
+    {
+      "name": "bezel_cap_1_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/bezel_cap_1_black.step",
+      "step_sha256": "3e754f36a941d12cf2a8b8172902535efc2bc02a97b715a57fd5f821130a1100",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.4.1",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-bezel_cap_1_black-refs",
+        "sculpture-bezel_cap_1_black-validate"
+      ]
+    },
+    {
+      "name": "bezel_cap_2_black",
+      "scope": "sculpture",
+      "target": "artifacts/make/r0001/product/parts/bezel_cap_2_black.step",
+      "step_sha256": "a1022d3786dfdbc903435dca38d5e1605919e3fa8f8bb28fbfdcb07b0c8a3614",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": "o1.25.4.2",
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "sculpture-bezel_cap_2_black-refs",
+        "sculpture-bezel_cap_2_black-validate"
+      ]
+    },
+    {
+      "name": "coupon_plate_black",
+      "scope": "coupon",
+      "target": "artifacts/make/r0001/product/coupon-kit/coupon_plate_black.step",
+      "step_sha256": "18b84c9bc4fcfc6b21a3106007c6f9d7cef3dfae676dc14b417730d1b423a101",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": null,
+      "master_sha256": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "coupon-coupon_plate_black-refs",
+        "coupon-coupon_plate_black-validate"
+      ]
+    },
+    {
+      "name": "coupon_gear_14_yellow",
+      "scope": "coupon",
+      "target": "artifacts/make/r0001/product/coupon-kit/coupon_gear_14_yellow.step",
+      "step_sha256": "318a375abffcae5383c3ce348004c9f41959fa7e13f724753189c881147a9911",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": null,
+      "master_sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "coupon-coupon_gear_14_yellow-refs",
+        "coupon-coupon_gear_14_yellow-validate"
+      ]
+    },
+    {
+      "name": "coupon_gear_15_yellow",
+      "scope": "coupon",
+      "target": "artifacts/make/r0001/product/coupon-kit/coupon_gear_15_yellow.step",
+      "step_sha256": "5abc07fa870e3da9556a3e2afcf9202af5b5b385d1aabc0f16118173ef00208b",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": null,
+      "master_sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "coupon-coupon_gear_15_yellow-refs",
+        "coupon-coupon_gear_15_yellow-validate"
+      ]
+    },
+    {
+      "name": "coupon_cap_1_black",
+      "scope": "coupon",
+      "target": "artifacts/make/r0001/product/coupon-kit/coupon_cap_1_black.step",
+      "step_sha256": "616b8974ad8887aadce4606ce9d678364629f392d7964c3ff4b6a6193f224fc9",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": null,
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "coupon-coupon_cap_1_black-refs",
+        "coupon-coupon_cap_1_black-validate"
+      ]
+    },
+    {
+      "name": "coupon_cap_2_black",
+      "scope": "coupon",
+      "target": "artifacts/make/r0001/product/coupon-kit/coupon_cap_2_black.step",
+      "step_sha256": "d1c6648b4bf0dd5a8054be792bb8a467bf54d7973b576763005a7ec0dd7be36f",
+      "expected_solid_count": 1,
+      "expected_positive_volume": true,
+      "expected_print_bed_min_z_mm": 0,
+      "bed_z_tolerance_mm": 1e-05,
+      "assembly_occurrence_id": null,
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "native_raw_package_status": "PENDING native raw-file inspection; no package copied from generated-source exports",
+      "request_ids": [
+        "coupon-coupon_cap_2_black-refs",
+        "coupon-coupon_cap_2_black-validate"
+      ]
+    }
+  ],
+  "requirements": [
+    "Use one sequential native inspect batch over actual adopted delivery STEP paths.",
+    "Each response must be reviewed: outer batch exit alone is insufficient.",
+    "Record raw package paths and hashes produced by inspection after execution; do not substitute generated-source packages.",
+    "Require expected one solid per file, positive volume and bed Z=0; classify missing/incomplete results as unverified.",
+    "A native validation failure is a failure; a timeout is unverified. No waived or skipped self-intersection request.",
+    "Only native inspection cache may reuse identical BRep evidence; no custom cache or source-wrapper validation substitution."
+  ],
+  "claims": {
+    "inspection_ran": false,
+    "geometry_passed": false,
+    "print_ready": false
+  }
+}

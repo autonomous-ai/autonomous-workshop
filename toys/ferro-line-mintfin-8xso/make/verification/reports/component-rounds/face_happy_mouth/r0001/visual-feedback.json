@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Tongue recess leaves a thin lower smile border",
+      "evidence": "Iso lower edge beside ellipse; wall0.33mm at(0.8,-5.0,1.8), 16mm2 band.",
+      "part": "face_happy_mouth",
+      "repair": "Move same9x5.5 tongue recess1mm upward within mouth, retaining1.2mm floor and broad attachment base."
+    }
+  ],
+  "observation": "Front, top and iso inspected. Rounded smile silhouette and flat base are coherent; iso shows tongue recess too close to lower mouth edge, creating a narrow charcoal rim. Default wall check confirms a 16mm2 thin band at the lower rim.",
+  "packet_sha256": "8be09d486cf021b5fb8bd51ba0e3c0ecffc294ac9aa533d7e9f11bc2cc7c1852",
+  "status": "fail"
+}

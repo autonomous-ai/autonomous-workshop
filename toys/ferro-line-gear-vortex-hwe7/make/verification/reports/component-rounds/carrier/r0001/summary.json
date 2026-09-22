@@ -1,0 +1,62 @@
+{
+ "build": {
+  "carrier": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "carrier"
+ ],
+ "check_motion": true,
+ "checked": [
+  "carrier"
+ ],
+ "checks_ok": true,
+ "entry": "part_carrier.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "carrier"
+ ],
+ "print": {
+  "carrier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0001/overhang-carrier.log": "a306bc49a32cdabee5a63705ea772794f0c42f048d36661b4630b610277df369",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0001/thickness-carrier.log": "43680e9d3fe378435fc1bf5ea2c4134bab5adbe8e92d39d2d61372a652eb65bf"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.35,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:carrier",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top shows two opposed continuous logarithmic arms joined to a centered open bearing ring, six evenly supported journal positions per arm and two opposite bezel supports. Front and iso show flat carrier, raised seats, short threaded journals and two taller grip pillars; no missing or floating visible geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0001/visual-packet.json",
+  "packet_sha256": "54ea392bb088ad68459eac67f395094ce13f0bf8d82e74d62676a291f4b3912c",
+  "status": "pass"
+ }
+}

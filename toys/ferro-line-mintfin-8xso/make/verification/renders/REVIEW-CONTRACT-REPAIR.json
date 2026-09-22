@@ -1,0 +1,27 @@
+{
+  "review_round": 1,
+  "reviewer": "Independent native critic <HOME>/final_critic",
+  "comparison_type": "Metadata schema relocation audit; no new blind visual review claimed",
+  "old_source_path": "artifacts/make/r0001/design/spark-source-before-contract-repair.json",
+  "new_source_path": "artifacts/make/r0001/spark-source.json",
+  "canonical_hash_encoding": "SHA256 of UTF-8 JSON concept with sort_keys=true, separators=[comma,colon], ensure_ascii=false, no trailing newline",
+  "old_concept_sha256": "033ae0ce12a20ca7c482f06e664f436495a51524ce52a63175c2620a95586425",
+  "new_concept_sha256": "a1415eb8715a86d11ba59e386cfe008d810e2c3ba0a3642671b660e835c01d34",
+  "actual_comparison": {
+    "removed_from": "concept.components[15]",
+    "added_to": "concept.coupon_quantity_record",
+    "exact_preserved_values": {
+      "print_quantity": 3,
+      "male_half_quantity": 2,
+      "female_quantity": 1,
+      "dimensions_scope": "Planning bounds; live-derived female exact bbox unverified until final build."
+    },
+    "only_changes_are_these_four_field_relocations": true,
+    "whole_source_equal_after_reversing_relocation": true,
+    "visual_or_functional_design_change": false,
+    "geometry_or_image_change": "Root reports none; this audit compared the two complete source JSON objects and did not regenerate or modify geometry/images."
+  },
+  "conclusion": "Existing round1 visual comparison and its16-group canonical requirement packaging still apply unchanged. This repair only relocates coupon quantity/disclosure metadata; quantities, dimensional limitation, design and all reviewed relationships retain their exact meaning. Root may bind the canonical review to the new concept hash without claiming a new blind observation or new review round.",
+  "limits": "Original blind leg concern and post-reveal supplemental resolution remain preserved. Motion, physical fit, friction, magnetic retention, adhesive strength and print readiness remain unverified; this metadata comparison does not alter those limits.",
+  "canonical_review_modified_by_critic": false
+}

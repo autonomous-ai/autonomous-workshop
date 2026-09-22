@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Top and iso show four separate socket sectors and a clean open throat after the axial-land repair; front shows the cup seated squarely on the shallow barrel half. The continuous convex perimeter and symmetric side reliefs remain. No floating geometry or visible unintended cuts. The stricter wall check now passes; assembled motion remains unverified.",
+  "packet_sha256": "cdf8bc6d57f905fb71dc3b0520905dbce07b1712dd163ecc12d56134c836ff89",
+  "status": "pass"
+}

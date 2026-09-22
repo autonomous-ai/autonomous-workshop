@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_08_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_08_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_08_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_08_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_08_front"
+ ],
+ "print": {
+  "body_08_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0002/overhang-body_08_front.log": "9f683aa16e6787e0940866b82ed7e9103f785d0f9244d40a2fdc4c68f2c502c7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0002/thickness-body_08_front.log": "15eb4fe1ce125dc88f4c3aa388bb0456348058bac001fd989d988e97f01ea2b4"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:body_08_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected once. The replacement front land has uniform full thickness and a clean straight cavity opening. The ball heel visibly meets the flat bed datum without the previous suspended lower cap; the sphere stays intact. No sidewall crescents or floating pieces remain. Standard gates and explicit1.2 mm wall check pass; whole-joint motion remains unverified.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0002/visual-packet.json",
+  "packet_sha256": "0b3cae33bff5f79f445c46cb4adc0cef8ba87bccb2d68691048a00d212132520",
+  "status": "pass"
+ }
+}

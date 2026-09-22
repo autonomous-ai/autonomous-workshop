@@ -1,0 +1,75 @@
+{
+  "status": "PASS_SCOPED_FEATURE_GEOMETRY",
+  "audited_utc": "2026-09-21T08:39:53.154372+00:00",
+  "native_results": {
+    "path": "artifacts/make/r0001/visual-repair-final-features/results.jsonl",
+    "sha256": "ead0375b8de2f213109ab85dffb0a8f40e497ab6fe061bb20009ea0c791ccdf1"
+  },
+  "bindings": {
+    "path": "artifacts/make/r0001/visual-repair-final-features/bindings.json",
+    "sha256": "1dfd43410c9503f522a99373fcd168092f3d0649dc9cf45000ae81481727d89d"
+  },
+  "request_count": 9,
+  "knurl": {
+    "groove_width_mm": 0.6500000000000057,
+    "radial_depth_mm": 0.29999999999999716,
+    "raised_land_arc_width_mm": 1.18258,
+    "nominal_nozzle_diameter_mm": 0.4,
+    "in_plane_width_comparison_pass": true,
+    "interpretation": "Nozzle comparison uses in-plane groove/land widths. Radial depth0.30mm is separately reported and does not exceed0.4mm. No physical print-resolution claim.",
+    "source_parameter": "BEZEL_RELIEF=.45 is radial cutter half-width, not finished depth."
+  },
+  "coupon": {
+    "post_spacing_mm": 21.75,
+    "post_radii_mm": [
+      2.0,
+      2.0
+    ],
+    "seat_radii_mm": [
+      3.6,
+      3.6
+    ],
+    "seat_height_mm": 0.3,
+    "nominal_module_and_teeth": "1.5*(14+15)/2=21.75mm",
+    "production_identity": "All5couponpieces match exactcurrentcoupon,14T,15T,andcapmasters in auditedproductionrecords."
+  },
+  "production": {
+    "status": "PASS",
+    "delivery_files": 49,
+    "native_responses": 98,
+    "raw_packages_verified": 49,
+    "summary": {
+      "path": "artifacts/make/r0001/visual-repair-production/inspection/summary.json",
+      "sha256": "2f19393d21c119e4e391e017c4af553375155b97cbb6dc968fa4d4c708ebab7b"
+    },
+    "manifest": {
+      "path": "artifacts/make/r0001/visual-repair-production/inspection/inspection-manifest.json",
+      "sha256": "f5fb90b190cd1aac463ba618e6a5a4b791e379dffcee9756e98c5d09cc75ca70"
+    },
+    "metadata_changes": [
+      {
+        "path": "artifacts/make/r0001/product/production-parts.json",
+        "inspection_input_sha256": "ac2d850657f6c108b2e4d9a987e4ce46919731396bb9ee8008a63bcff8bc31e8",
+        "current_sha256": "169c560f63d5359b4fc0716e18debd3f28181ad79ddd4d7f3769698432a2fc94",
+        "reconciliation": "Current metadata includes native_geometry_inspection receipt; all delivery paths/master hashes/STEP hashes below match inspected records."
+      },
+      {
+        "path": "artifacts/make/r0001/product/coupon-kit/manifest.json",
+        "inspection_input_sha256": "0b0b82424067f8ab66ae25640dd6d8f99c95d90d9af2ed1d7ea047a9a586dfa1",
+        "current_sha256": "9a2f4d02066d0df2846061822d78beca31cf5024621a3720923e8307c64e0c09",
+        "reconciliation": "Current metadata includes native_geometry_inspection receipt; all delivery paths/master hashes/STEP hashes below match inspected records."
+      }
+    ],
+    "current_metadata": [
+      {
+        "path": "artifacts/make/r0001/product/production-parts.json",
+        "sha256": "169c560f63d5359b4fc0716e18debd3f28181ad79ddd4d7f3769698432a2fc94"
+      },
+      {
+        "path": "artifacts/make/r0001/product/coupon-kit/manifest.json",
+        "sha256": "9a2f4d02066d0df2846061822d78beca31cf5024621a3720923e8307c64e0c09"
+      }
+    ],
+    "scope": "44 sculpture pieces plus5couponkitpieces; exact rawSTEP refs/fullvalidation. No physical print,motion orfinalreadiness claim."
+  }
+}

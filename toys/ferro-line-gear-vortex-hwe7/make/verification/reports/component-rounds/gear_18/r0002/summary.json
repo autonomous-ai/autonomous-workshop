@@ -1,0 +1,62 @@
+{
+ "build": {
+  "gear_18": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gear_18"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gear_18"
+ ],
+ "checks_ok": true,
+ "entry": "part_gear_18.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_18/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_18"
+ ],
+ "print": {
+  "gear_18": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_18/r0002/overhang-gear_18.log": "35b41c5184b0dbaed7f869e947b232614d7a1c81491d2706c033e1ded89a2163",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_18/r0002/thickness-gear_18.log": "48a264bf3856458fa47b98f51b35a4881246ea3e6646731bff05c1748c765542"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:gear_18",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Viewed current front, top and iso: 18 distinct gear teeth, five pierced swept windows and an open circular journal bore. Top and oblique views show intact curved webs and continuous root rim; edge view shows a uniform flat face thickness. No floating or missing geometry observed. Digital form review does not establish printed fit or readiness.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_18/r0002/visual-packet.json",
+  "packet_sha256": "4c148d020f6b2e3d46bd3905240ed9eca3fde8a01f10ace0edaf5280540f78ab",
+  "status": "pass"
+ }
+}

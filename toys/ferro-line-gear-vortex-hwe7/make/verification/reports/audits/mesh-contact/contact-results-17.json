@@ -1,0 +1,1660 @@
+{
+  "source_hashes": {
+    "params.py": "e0c2e5cd82fe2adc2b5ef7f2da99e06d6454f060a1d4790c405006c47e954a1d",
+    "parts/gears.py": "b8b30fff489d10441a755522624af094f241cb3dcf58995fde34ac681f69e480",
+    "features/gearing.py": "6203d0b50468de5dd2d49531f2021ec8b810e5ea5d1836e56fa405e7fef3b077",
+    "features/threads.py": "5fd72857ab8744769df23c27293a5a3eca2f77b0afb8392f24db57220c516cc4"
+  },
+  "phases": [
+    0.0,
+    0.1663495408493623,
+    0.0550555900263265,
+    -0.013866214258804563,
+    0.1879518972769565,
+    -0.06282108851667009,
+    0.3210966651356787
+  ],
+  "original_samples_reused": 54,
+  "new_midpoint_samples": 48,
+  "rows": [
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample": 0,
+      "driver_step_rad": 0.0,
+      "driver_phase_rad": 0.0,
+      "follower_phase_rad": 0.1663495408493623,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 22.32344102859497,
+      "sample17": 0,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample17": 1,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.01090830782496456,
+      "driver_phase_rad": 0.01090830782496456,
+      "follower_phase_rad": 0.14180584824319203,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 22.45595645904541
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample": 1,
+      "driver_step_rad": 0.02181661564992912,
+      "driver_phase_rad": 0.02181661564992912,
+      "follower_phase_rad": 0.11726215563702178,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 18.063038110733032,
+      "sample17": 2,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample17": 3,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.032724923474893676,
+      "driver_phase_rad": 0.032724923474893676,
+      "follower_phase_rad": 0.09271846303085152,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 17.521862745285034
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample": 2,
+      "driver_step_rad": 0.04363323129985824,
+      "driver_phase_rad": 0.04363323129985824,
+      "follower_phase_rad": 0.06817477042468126,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 19.852341651916504,
+      "sample17": 4,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample17": 5,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.0545415391248228,
+      "driver_phase_rad": 0.0545415391248228,
+      "follower_phase_rad": 0.043631077818511,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 20.46774458885193
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample": 3,
+      "driver_step_rad": 0.06544984694978735,
+      "driver_phase_rad": 0.06544984694978735,
+      "follower_phase_rad": 0.01908738521234074,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 17.921892881393433,
+      "sample17": 6,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample17": 7,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.07635815477475191,
+      "driver_phase_rad": 0.07635815477475191,
+      "follower_phase_rad": -0.005456307393829518,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 22.543351411819458
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample": 4,
+      "driver_step_rad": 0.08726646259971647,
+      "driver_phase_rad": 0.08726646259971647,
+      "follower_phase_rad": -0.029999999999999777,
+      "distance_mm": 6.661338147750939e-16,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 17.303354024887085,
+      "sample17": 8,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample17": 9,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.09817477042468103,
+      "driver_phase_rad": 0.09817477042468103,
+      "follower_phase_rad": -0.054543692606170036,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 17.85305881500244
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample": 5,
+      "driver_step_rad": 0.1090830782496456,
+      "driver_phase_rad": 0.1090830782496456,
+      "follower_phase_rad": -0.0790873852123403,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 19.47463369369507,
+      "sample17": 10,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample17": 11,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.11999138607461016,
+      "driver_phase_rad": 0.11999138607461016,
+      "follower_phase_rad": -0.10363107781851058,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 17.176501035690308
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample": 6,
+      "driver_step_rad": 0.1308996938995747,
+      "driver_phase_rad": 0.1308996938995747,
+      "follower_phase_rad": -0.1281747704246808,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 18.749303102493286,
+      "sample17": 12,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample17": 13,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.14180800172453928,
+      "driver_phase_rad": 0.14180800172453928,
+      "follower_phase_rad": -0.1527184630308511,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 18.807101249694824
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample": 7,
+      "driver_step_rad": 0.15271630954950383,
+      "driver_phase_rad": 0.15271630954950383,
+      "follower_phase_rad": -0.17726215563702133,
+      "distance_mm": 1.538221777422125e-07,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 18.77621102333069,
+      "sample17": 14,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample17": 15,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.1636246173744684,
+      "driver_phase_rad": 0.1636246173744684,
+      "follower_phase_rad": -0.20180584824319162,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 18.310189962387085
+    },
+    {
+      "pair": 0,
+      "teeth": [
+        36,
+        16
+      ],
+      "sample": 8,
+      "driver_step_rad": 0.17453292519943295,
+      "driver_phase_rad": 0.17453292519943295,
+      "follower_phase_rad": -0.22634954084936185,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 19.955265760421753,
+      "sample17": 16,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample": 0,
+      "driver_step_rad": 0.0,
+      "driver_phase_rad": 0.1663495408493623,
+      "follower_phase_rad": 0.0550555900263265,
+      "distance_mm": 0.0,
+      "overlap_mm3": 1.4788973047160396e-06,
+      "elapsed_seconds": 13.382136583328247,
+      "sample17": 0,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample17": 1,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.02454369260617026,
+      "driver_phase_rad": 0.19089323345553255,
+      "follower_phase_rad": 0.033238974376397376,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.842042922973633
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample": 1,
+      "driver_step_rad": 0.04908738521234052,
+      "driver_phase_rad": 0.2154369260617028,
+      "follower_phase_rad": 0.011422358726468261,
+      "distance_mm": 1.7763568394002505e-15,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 11.769008874893188,
+      "sample17": 2,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample17": 3,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.07363107781851078,
+      "driver_phase_rad": 0.23998061866787307,
+      "follower_phase_rad": -0.010394256923460854,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 11.600236177444458
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample": 2,
+      "driver_step_rad": 0.09817477042468103,
+      "driver_phase_rad": 0.2645243112740433,
+      "follower_phase_rad": -0.032210872573389976,
+      "distance_mm": 0.0,
+      "overlap_mm3": 3.525453449406288e-07,
+      "elapsed_seconds": 12.172435760498047,
+      "sample17": 4,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample17": 5,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.1227184630308513,
+      "driver_phase_rad": 0.2890680038802136,
+      "follower_phase_rad": -0.0540274882233191,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.1492919921875
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample": 3,
+      "driver_step_rad": 0.14726215563702155,
+      "driver_phase_rad": 0.3136116964863839,
+      "follower_phase_rad": -0.0758441038732482,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 11.878425598144531,
+      "sample17": 6,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample17": 7,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.1718058482431918,
+      "driver_phase_rad": 0.3381553890925541,
+      "follower_phase_rad": -0.09766071952317733,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 10.913933753967285
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample": 4,
+      "driver_step_rad": 0.19634954084936207,
+      "driver_phase_rad": 0.36269908169872433,
+      "follower_phase_rad": -0.11947733517310645,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.257426738739014,
+      "sample17": 8,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample17": 9,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.22089323345553233,
+      "driver_phase_rad": 0.3872427743048946,
+      "follower_phase_rad": -0.14129395082303559,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.7663094997406
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample": 5,
+      "driver_step_rad": 0.2454369260617026,
+      "driver_phase_rad": 0.4117864669110649,
+      "follower_phase_rad": -0.16311056647296468,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.273606300354004,
+      "sample17": 10,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample17": 11,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.2699806186678728,
+      "driver_phase_rad": 0.4363301595172351,
+      "follower_phase_rad": -0.18492718212289377,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 11.30899429321289
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample": 6,
+      "driver_step_rad": 0.2945243112740431,
+      "driver_phase_rad": 0.46087385212340537,
+      "follower_phase_rad": -0.20674379777282292,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.551731586456299,
+      "sample17": 12,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample17": 13,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.3190680038802134,
+      "driver_phase_rad": 0.48541754472957566,
+      "follower_phase_rad": -0.22856041342275207,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.226991415023804
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample": 7,
+      "driver_step_rad": 0.3436116964863836,
+      "driver_phase_rad": 0.5099612373357459,
+      "follower_phase_rad": -0.25037702907268117,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.550243616104126,
+      "sample17": 14,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample17": 15,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.36815538909255385,
+      "driver_phase_rad": 0.5345049299419161,
+      "follower_phase_rad": -0.27219364472261026,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 11.681877374649048
+    },
+    {
+      "pair": 1,
+      "teeth": [
+        16,
+        18
+      ],
+      "sample": 8,
+      "driver_step_rad": 0.39269908169872414,
+      "driver_phase_rad": 0.5590486225480864,
+      "follower_phase_rad": -0.2940102603725394,
+      "distance_mm": 1.7763568394002505e-15,
+      "overlap_mm3": 1.4788973041882506e-06,
+      "elapsed_seconds": 13.09828233718872,
+      "sample17": 16,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample": 0,
+      "driver_step_rad": 0.0,
+      "driver_phase_rad": 0.0550555900263265,
+      "follower_phase_rad": -0.013866214258804563,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.821466445922852,
+      "sample17": 0,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample17": 1,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.02181661564992912,
+      "driver_phase_rad": 0.07687220567625562,
+      "follower_phase_rad": -0.03350116834374077,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.874626636505127
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample": 1,
+      "driver_step_rad": 0.04363323129985824,
+      "driver_phase_rad": 0.09868882132618473,
+      "follower_phase_rad": -0.05313612242867698,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.629002332687378,
+      "sample17": 2,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample17": 3,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.06544984694978735,
+      "driver_phase_rad": 0.12050543697611385,
+      "follower_phase_rad": -0.07277107651361318,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.09009075164795
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample": 2,
+      "driver_step_rad": 0.08726646259971647,
+      "driver_phase_rad": 0.14232205262604297,
+      "follower_phase_rad": -0.09240603059854939,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.346867084503174,
+      "sample17": 4,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample17": 5,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.1090830782496456,
+      "driver_phase_rad": 0.1641386682759721,
+      "follower_phase_rad": -0.1120409846834856,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.450413703918457
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample": 3,
+      "driver_step_rad": 0.1308996938995747,
+      "driver_phase_rad": 0.18595528392590122,
+      "follower_phase_rad": -0.13167593876842182,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 11.859973669052124,
+      "sample17": 6,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample17": 7,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.15271630954950383,
+      "driver_phase_rad": 0.2077718995758303,
+      "follower_phase_rad": -0.15131089285335803,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.140824317932129
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample": 4,
+      "driver_step_rad": 0.17453292519943295,
+      "driver_phase_rad": 0.22958851522575946,
+      "follower_phase_rad": -0.17094584693829423,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.507148027420044,
+      "sample17": 8,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample17": 9,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.19634954084936207,
+      "driver_phase_rad": 0.25140513087568855,
+      "follower_phase_rad": -0.19058080102323044,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.162530422210693
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample": 5,
+      "driver_step_rad": 0.2181661564992912,
+      "driver_phase_rad": 0.2732217465256177,
+      "follower_phase_rad": -0.21021575510816665,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.522679805755615,
+      "sample17": 10,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample17": 11,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.2399827721492203,
+      "driver_phase_rad": 0.2950383621755468,
+      "follower_phase_rad": -0.22985070919310285,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.294829845428467
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample": 6,
+      "driver_step_rad": 0.2617993877991494,
+      "driver_phase_rad": 0.3168549778254759,
+      "follower_phase_rad": -0.24948566327803906,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 11.85731029510498,
+      "sample17": 12,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample17": 13,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.28361600344907856,
+      "driver_phase_rad": 0.33867159347540504,
+      "follower_phase_rad": -0.26912061736297527,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 11.902407169342041
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample": 7,
+      "driver_step_rad": 0.30543261909900765,
+      "driver_phase_rad": 0.36048820912533414,
+      "follower_phase_rad": -0.2887555714479115,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 11.952333450317383,
+      "sample17": 14,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample17": 15,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.3272492347489368,
+      "driver_phase_rad": 0.3823048247752633,
+      "follower_phase_rad": -0.3083905255328477,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 11.676912546157837
+    },
+    {
+      "pair": 2,
+      "teeth": [
+        18,
+        20
+      ],
+      "sample": 8,
+      "driver_step_rad": 0.3490658503988659,
+      "driver_phase_rad": 0.4041214404251924,
+      "follower_phase_rad": -0.3280254796177839,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.061081409454346,
+      "sample17": 16,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample": 0,
+      "driver_step_rad": 0.0,
+      "driver_phase_rad": -0.013866214258804563,
+      "follower_phase_rad": 0.1879518972769565,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 19.139556646347046,
+      "sample17": 0,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample17": 1,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.019634954084936207,
+      "driver_phase_rad": 0.005768739826131644,
+      "follower_phase_rad": 0.1701019390179236,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 17.31192684173584
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample": 1,
+      "driver_step_rad": 0.039269908169872414,
+      "driver_phase_rad": 0.02540369391106785,
+      "follower_phase_rad": 0.15225198075889065,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 15.119722843170166,
+      "sample17": 2,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample17": 3,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.05890486225480862,
+      "driver_phase_rad": 0.04503864799600406,
+      "follower_phase_rad": 0.13440202249985775,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.220882415771484
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample": 2,
+      "driver_step_rad": 0.07853981633974483,
+      "driver_phase_rad": 0.06467360208094027,
+      "follower_phase_rad": 0.11655206424082483,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.854137897491455,
+      "sample17": 4,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample17": 5,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.09817477042468103,
+      "driver_phase_rad": 0.08430855616587647,
+      "follower_phase_rad": 0.09870210598179191,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.364556312561035
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample": 3,
+      "driver_step_rad": 0.11780972450961724,
+      "driver_phase_rad": 0.10394351025081268,
+      "follower_phase_rad": 0.080852147722759,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 15.395572423934937,
+      "sample17": 6,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample17": 7,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.13744467859455345,
+      "driver_phase_rad": 0.12357846433574889,
+      "follower_phase_rad": 0.06300218946372609,
+      "distance_mm": 5.5943666501795884e-08,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.75388479232788
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample": 4,
+      "driver_step_rad": 0.15707963267948966,
+      "driver_phase_rad": 0.14321341842068508,
+      "follower_phase_rad": 0.045152231204693166,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.459606885910034,
+      "sample17": 8,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample17": 9,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.17671458676442586,
+      "driver_phase_rad": 0.16284837250562129,
+      "follower_phase_rad": 0.02730227294566026,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.974380254745483
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample": 5,
+      "driver_step_rad": 0.19634954084936207,
+      "driver_phase_rad": 0.1824833265905575,
+      "follower_phase_rad": 0.009452314686627328,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.752964735031128,
+      "sample17": 10,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample17": 11,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.21598449493429828,
+      "driver_phase_rad": 0.2021182806754937,
+      "follower_phase_rad": -0.00839764357240555,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.187464714050293
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample": 6,
+      "driver_step_rad": 0.23561944901923448,
+      "driver_phase_rad": 0.2217532347604299,
+      "follower_phase_rad": -0.026247601831438483,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.89362907409668,
+      "sample17": 12,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample17": 13,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.2552544031041707,
+      "driver_phase_rad": 0.24138818884536611,
+      "follower_phase_rad": -0.044097560090471416,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.23637080192566
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample": 7,
+      "driver_step_rad": 0.2748893571891069,
+      "driver_phase_rad": 0.2610231429303023,
+      "follower_phase_rad": -0.06194751834950432,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.85619330406189,
+      "sample17": 14,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample17": 15,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.2945243112740431,
+      "driver_phase_rad": 0.28065809701523853,
+      "follower_phase_rad": -0.0797974766085372,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 12.62302565574646
+    },
+    {
+      "pair": 3,
+      "teeth": [
+        20,
+        22
+      ],
+      "sample": 8,
+      "driver_step_rad": 0.3141592653589793,
+      "driver_phase_rad": 0.30029305110017473,
+      "follower_phase_rad": -0.09764743486757016,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.464276313781738,
+      "sample17": 16,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample": 0,
+      "driver_step_rad": 0.0,
+      "driver_phase_rad": 0.1879518972769565,
+      "follower_phase_rad": -0.06282108851667009,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 19.11722421646118,
+      "sample17": 0,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample17": 1,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.017849958259032916,
+      "driver_phase_rad": 0.2058018555359894,
+      "follower_phase_rad": -0.07918355025411693,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 17.405592441558838
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample": 1,
+      "driver_step_rad": 0.03569991651806583,
+      "driver_phase_rad": 0.22365181379502233,
+      "follower_phase_rad": -0.09554601199156376,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 15.23334813117981,
+      "sample17": 2,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample17": 3,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.053549874777098744,
+      "driver_phase_rad": 0.24150177205405524,
+      "follower_phase_rad": -0.11190847372901061,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 15.234524011611938
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample": 2,
+      "driver_step_rad": 0.07139983303613166,
+      "driver_phase_rad": 0.25935173031308817,
+      "follower_phase_rad": -0.12827093546645746,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.735148668289185,
+      "sample17": 4,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample17": 5,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.08924979129516458,
+      "driver_phase_rad": 0.2772016885721211,
+      "follower_phase_rad": -0.14463339720390428,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.55111575126648
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample": 3,
+      "driver_step_rad": 0.10709974955419749,
+      "driver_phase_rad": 0.295051646831154,
+      "follower_phase_rad": -0.16099585894135113,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 17.869941234588623,
+      "sample17": 6,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample17": 7,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.1249497078132304,
+      "driver_phase_rad": 0.3129016050901869,
+      "follower_phase_rad": -0.17735832067879798,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.628918409347534
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample": 4,
+      "driver_step_rad": 0.14279966607226333,
+      "driver_phase_rad": 0.33075156334921985,
+      "follower_phase_rad": -0.1937207824162448,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 15.373395919799805,
+      "sample17": 8,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample17": 9,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.16064962433129623,
+      "driver_phase_rad": 0.34860152160825275,
+      "follower_phase_rad": -0.21008324415369165,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 16.417521953582764
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample": 5,
+      "driver_step_rad": 0.17849958259032916,
+      "driver_phase_rad": 0.36645147986728566,
+      "follower_phase_rad": -0.2264457058911385,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.515284299850464,
+      "sample17": 10,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample17": 11,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.19634954084936207,
+      "driver_phase_rad": 0.38430143812631856,
+      "follower_phase_rad": -0.24280816762858531,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.48460054397583
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample": 6,
+      "driver_step_rad": 0.21419949910839498,
+      "driver_phase_rad": 0.40215139638535147,
+      "follower_phase_rad": -0.2591706293660322,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 15.739184379577637,
+      "sample17": 12,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample17": 13,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.2320494573674279,
+      "driver_phase_rad": 0.4200013546443844,
+      "follower_phase_rad": -0.275533091103479,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.6059410572052
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample": 7,
+      "driver_step_rad": 0.2498994156264608,
+      "driver_phase_rad": 0.4378513129034173,
+      "follower_phase_rad": -0.29189555284092583,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 16.873658895492554,
+      "sample17": 14,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample17": 15,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.26774937388549375,
+      "driver_phase_rad": 0.45570127116245024,
+      "follower_phase_rad": -0.3082580145783727,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 13.738099813461304
+    },
+    {
+      "pair": 4,
+      "teeth": [
+        22,
+        24
+      ],
+      "sample": 8,
+      "driver_step_rad": 0.28559933214452665,
+      "driver_phase_rad": 0.47355122942148314,
+      "follower_phase_rad": -0.3246204763158195,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 16.808576107025146,
+      "sample17": 16,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample": 0,
+      "driver_step_rad": 0.0,
+      "driver_phase_rad": -0.06282108851667009,
+      "follower_phase_rad": 0.3210966651356787,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 18.539337635040283,
+      "sample17": 0,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample17": 1,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.016362461737446838,
+      "driver_phase_rad": -0.04645862677922326,
+      "follower_phase_rad": 0.3059928543011124,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 17.152575492858887
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample": 1,
+      "driver_step_rad": 0.032724923474893676,
+      "driver_phase_rad": -0.030096165041776417,
+      "follower_phase_rad": 0.2908890434665461,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 16.226705312728882,
+      "sample17": 2,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample17": 3,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.04908738521234052,
+      "driver_phase_rad": -0.013733703304329575,
+      "follower_phase_rad": 0.27578523263197974,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.769290924072266
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample": 2,
+      "driver_step_rad": 0.06544984694978735,
+      "driver_phase_rad": 0.002628758433117259,
+      "follower_phase_rad": 0.26068142179741344,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 16.622437238693237,
+      "sample17": 4,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample17": 5,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.08181230868723419,
+      "driver_phase_rad": 0.018991220170564094,
+      "follower_phase_rad": 0.24557761096284714,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 15.282196998596191
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample": 3,
+      "driver_step_rad": 0.09817477042468103,
+      "driver_phase_rad": 0.03535368190801094,
+      "follower_phase_rad": 0.2304738001282808,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 16.069839477539062,
+      "sample17": 6,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample17": 7,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.11453723216212787,
+      "driver_phase_rad": 0.05171614364545778,
+      "follower_phase_rad": 0.2153699892937145,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.473666906356812
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample": 4,
+      "driver_step_rad": 0.1308996938995747,
+      "driver_phase_rad": 0.06807860538290461,
+      "follower_phase_rad": 0.20026617845914818,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 16.26771855354309,
+      "sample17": 8,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample17": 9,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.14726215563702155,
+      "driver_phase_rad": 0.08444106712035146,
+      "follower_phase_rad": 0.18516236762458188,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 16.852165699005127
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample": 5,
+      "driver_step_rad": 0.16362461737446837,
+      "driver_phase_rad": 0.10080352885779828,
+      "follower_phase_rad": 0.17005855679001558,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 18.3045334815979,
+      "sample17": 10,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample17": 11,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.17998707911191522,
+      "driver_phase_rad": 0.11716599059524513,
+      "follower_phase_rad": 0.15495474595544928,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 17.173079252243042
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample": 6,
+      "driver_step_rad": 0.19634954084936207,
+      "driver_phase_rad": 0.13352845233269198,
+      "follower_phase_rad": 0.13985093512088292,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 15.97472596168518,
+      "sample17": 12,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample17": 13,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.2127120025868089,
+      "driver_phase_rad": 0.1498909140701388,
+      "follower_phase_rad": 0.12474712428631665,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 17.154226779937744
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample": 7,
+      "driver_step_rad": 0.22907446432425574,
+      "driver_phase_rad": 0.16625337580758565,
+      "follower_phase_rad": 0.10964331345175032,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 15.765681028366089,
+      "sample17": 14,
+      "provenance": "reused_original"
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample17": 15,
+      "provenance": "new_midpoint",
+      "driver_step_rad": 0.24543692606170256,
+      "driver_phase_rad": 0.18261583754503247,
+      "follower_phase_rad": 0.09453950261718402,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 14.928778886795044
+    },
+    {
+      "pair": 5,
+      "teeth": [
+        24,
+        26
+      ],
+      "sample": 8,
+      "driver_step_rad": 0.2617993877991494,
+      "driver_phase_rad": 0.19897829928247932,
+      "follower_phase_rad": 0.0794356917826177,
+      "distance_mm": 0.0,
+      "overlap_mm3": 0.0,
+      "elapsed_seconds": 15.725244760513306,
+      "sample17": 16,
+      "provenance": "reused_original"
+    }
+  ],
+  "point_travel": [
+    {
+      "teeth": 36,
+      "outer_radius_mm": 28.275,
+      "step_rad": 0.01090830782496456,
+      "point_arc_travel_bound_mm": 0.3084324037508729,
+      "point_chord_displacement_bound_mm": 0.3084308745558328
+    },
+    {
+      "teeth": 16,
+      "outer_radius_mm": 13.275,
+      "step_rad": 0.02454369260617026,
+      "point_arc_travel_bound_mm": 0.32581751934691017,
+      "point_chord_displacement_bound_mm": 0.32580934148586405
+    },
+    {
+      "teeth": 18,
+      "outer_radius_mm": 14.775,
+      "step_rad": 0.02181661564992912,
+      "point_arc_travel_bound_mm": 0.3223404962277027,
+      "point_chord_displacement_bound_mm": 0.3223341036530892
+    },
+    {
+      "teeth": 20,
+      "outer_radius_mm": 16.275,
+      "step_rad": 0.019634954084936207,
+      "point_arc_travel_bound_mm": 0.31955887773233677,
+      "point_chord_displacement_bound_mm": 0.31955374442422
+    },
+    {
+      "teeth": 22,
+      "outer_radius_mm": 17.775,
+      "step_rad": 0.017849958259032916,
+      "point_arc_travel_bound_mm": 0.31728300805431003,
+      "point_chord_displacement_bound_mm": 0.3172787958614015
+    },
+    {
+      "teeth": 24,
+      "outer_radius_mm": 19.275,
+      "step_rad": 0.016362461737446838,
+      "point_arc_travel_bound_mm": 0.3153864499892878,
+      "point_chord_displacement_bound_mm": 0.3153829317317763
+    },
+    {
+      "teeth": 26,
+      "outer_radius_mm": 20.775,
+      "step_rad": 0.015103810834566312,
+      "point_arc_travel_bound_mm": 0.31378167008811514,
+      "point_chord_displacement_bound_mm": 0.3137786875351447
+    }
+  ],
+  "maximum_point_arc_travel_bound_mm": 0.32581751934691017,
+  "maximum_point_chord_displacement_bound_mm": 0.32580934148586405,
+  "maximum_gap_mm": 1.538221777422125e-07,
+  "maximum_overlap_mm3": 1.4788973047160396e-06
+}

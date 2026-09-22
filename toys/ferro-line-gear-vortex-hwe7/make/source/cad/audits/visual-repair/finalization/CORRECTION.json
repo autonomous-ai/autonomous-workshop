@@ -1,0 +1,7 @@
+{
+  "failure": "no-project-fit-audit: existing validation.py was not documented as equivalent in README",
+  "repair": "README now gives exact existing validation.audit command, numerical scope, connector names and assembly/service order",
+  "source_or_geometry_changed": false,
+  "existing_audit_result": "PASS; physical_operation unverified",
+  "prior_report_sha256": "c4703872045b63df9458c901880f9b202ff8042fd068e3760f43695f67d37195"
+}

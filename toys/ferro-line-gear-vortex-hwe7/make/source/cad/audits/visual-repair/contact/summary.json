@@ -1,0 +1,163 @@
+{
+  "status": "PASS",
+  "claim_scope": "Fixed-center exact BRep diagnostic; not coupled operating motion,continuous contact,physical fit or print readiness.",
+  "measured_rows": 238,
+  "per_pair": [
+    {
+      "arm": 1,
+      "pair": 0,
+      "teeth": [
+        36,
+        14
+      ],
+      "samples": 17,
+      "max_distance_mm": 1.896438425482443e-07,
+      "max_absolute_overlap_mm3": 1.4537136232201417e-06
+    },
+    {
+      "arm": 1,
+      "pair": 1,
+      "teeth": [
+        14,
+        15
+      ],
+      "samples": 17,
+      "max_distance_mm": 3.331498904379463e-07,
+      "max_absolute_overlap_mm3": 1.2856955497888372e-06
+    },
+    {
+      "arm": 1,
+      "pair": 2,
+      "teeth": [
+        15,
+        18
+      ],
+      "samples": 17,
+      "max_distance_mm": 7.931688862158729e-08,
+      "max_absolute_overlap_mm3": 1.2715647375719015e-06
+    },
+    {
+      "arm": 1,
+      "pair": 3,
+      "teeth": [
+        18,
+        20
+      ],
+      "samples": 17,
+      "max_distance_mm": 1.3000303292830078e-08,
+      "max_absolute_overlap_mm3": 1.0892034799568378e-06
+    },
+    {
+      "arm": 1,
+      "pair": 4,
+      "teeth": [
+        20,
+        22
+      ],
+      "samples": 17,
+      "max_distance_mm": 0.0,
+      "max_absolute_overlap_mm3": 0.0
+    },
+    {
+      "arm": 1,
+      "pair": 5,
+      "teeth": [
+        22,
+        23
+      ],
+      "samples": 17,
+      "max_distance_mm": 1.5094964524510034e-08,
+      "max_absolute_overlap_mm3": 0.0
+    },
+    {
+      "arm": 1,
+      "pair": 6,
+      "teeth": [
+        23,
+        26
+      ],
+      "samples": 17,
+      "max_distance_mm": 0.0,
+      "max_absolute_overlap_mm3": 0.0
+    },
+    {
+      "arm": 2,
+      "pair": 0,
+      "teeth": [
+        36,
+        14
+      ],
+      "samples": 17,
+      "max_distance_mm": 1.896438393478708e-07,
+      "max_absolute_overlap_mm3": 1.4537120203441604e-06
+    },
+    {
+      "arm": 2,
+      "pair": 1,
+      "teeth": [
+        14,
+        15
+      ],
+      "samples": 17,
+      "max_distance_mm": 3.3314989336525863e-07,
+      "max_absolute_overlap_mm3": 1.2856955496723992e-06
+    },
+    {
+      "arm": 2,
+      "pair": 2,
+      "teeth": [
+        15,
+        18
+      ],
+      "samples": 17,
+      "max_distance_mm": 7.931688990660085e-08,
+      "max_absolute_overlap_mm3": 1.2715647374402584e-06
+    },
+    {
+      "arm": 2,
+      "pair": 3,
+      "teeth": [
+        18,
+        20
+      ],
+      "samples": 17,
+      "max_distance_mm": 1.3000305461135146e-08,
+      "max_absolute_overlap_mm3": 1.0892034799567958e-06
+    },
+    {
+      "arm": 2,
+      "pair": 4,
+      "teeth": [
+        20,
+        22
+      ],
+      "samples": 17,
+      "max_distance_mm": 0.0,
+      "max_absolute_overlap_mm3": 0.0
+    },
+    {
+      "arm": 2,
+      "pair": 5,
+      "teeth": [
+        22,
+        23
+      ],
+      "samples": 17,
+      "max_distance_mm": 1.509496814292624e-08,
+      "max_absolute_overlap_mm3": 0.0
+    },
+    {
+      "arm": 2,
+      "pair": 6,
+      "teeth": [
+        23,
+        26
+      ],
+      "samples": 17,
+      "max_distance_mm": 1.7763568394002505e-15,
+      "max_absolute_overlap_mm3": 0.0
+    }
+  ],
+  "binding_sha256": "60ab99b5f60456cf0363452fb3e5e32d8420e94199247b586157eda70e0abf93",
+  "results_sha256": "58a70bd1d84cd5e6709fc2f2ed4cb0b2b3b9a4381a9feb911e1d07386da3afd3"
+}

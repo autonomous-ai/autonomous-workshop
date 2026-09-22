@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Unsupported roof over shallow incoming-cup clearance",
+      "evidence": "Overhang11.1mm2 at print(0.1,-14.2,0.5); seam clearance spansX+-5.184 and worldZ37.580..40.118, shrinking tozero byYseam+1.2. Exterior views conceal the internal roof.",
+      "part": "body_02_rear",
+      "repair": "Open the closing seam void with a printable converging relief while preserving crown and outgoing socket. Determine a narrow slot/teardrop relief rather than a large round bore that would breach the crown."
+    }
+  ],
+  "observation": "Front, top and iso inspected. Convex barrel, crown, ankle corners and four socket fingers remain coherent. Numeric support check locates a closing clearance crescent beneath the socket-side plate, partly hidden in the supplied views; source sections confirm the void closes over0.9mm while spanning10.4mm. Explicit1.2mm wall passes.",
+  "packet_sha256": "74f20f972af75a92bdeb48ba7f78f9fe92ae4370155ee01a333a9b6667b6c95e",
+  "status": "fail"
+}

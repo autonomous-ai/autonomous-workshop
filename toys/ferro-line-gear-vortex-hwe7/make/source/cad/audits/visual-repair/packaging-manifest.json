@@ -1,0 +1,608 @@
+{
+  "schema_version": 1,
+  "status": "EVIDENCE_PACKAGED_WITH_JSON_ARRAY_TRANSPORT",
+  "copied_file_count": 49,
+  "copied_bytes": 1569987,
+  "package_root": "artifacts/make/r0001/product/gear_vortex/audits/visual-repair",
+  "original_path_base": "Workspace root",
+  "packaged_path_base": "This audit folder",
+  "records": [
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-geometry/CHECKLIST.md",
+      "packaged_path": "geometry/CHECKLIST.md",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/CHECKLIST.md",
+      "sha256": "7e49cc4658321d61d1e294375868d0515c2ff1a876629bd1071f34248fbc9109",
+      "bytes": 3896,
+      "scope": "Static component/assembly validation, interference and refs identity reconciliation",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-geometry/SUMMARY.md",
+      "packaged_path": "geometry/SUMMARY.md",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/SUMMARY.md",
+      "sha256": "e5235e9b17556958ea9a3eec0ee676cba4f3e431cd7de1a08aa119da3fbecd26",
+      "bytes": 2211,
+      "scope": "Static component/assembly validation, interference and refs identity reconciliation",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-geometry/canonical-print-report-bindings.json",
+      "packaged_path": "geometry/canonical-print-report-bindings.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/canonical-print-report-bindings.json",
+      "sha256": "f8c075f397636090a0d7c8bbfc1bf9fe8534be13d2e67dfe4a5c46c50ee18d2f",
+      "bytes": 22583,
+      "scope": "Static component/assembly validation, interference and refs identity reconciliation",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-geometry/execution-manifest.json",
+      "packaged_path": "geometry/execution-manifest.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/execution-manifest.json",
+      "sha256": "21f2d1620d47514ff583bd3339a85c822413f61f591d0978b475e1289967d2fa",
+      "bytes": 10746,
+      "scope": "Static component/assembly validation, interference and refs identity reconciliation",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-geometry/manifest.json",
+      "packaged_path": "geometry/manifest.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/manifest.json",
+      "sha256": "6dba1225f48d77b4136d392e87c82fffc0f25c07175895602218ad154d5e57c6",
+      "bytes": 13530,
+      "scope": "Static component/assembly validation, interference and refs identity reconciliation",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only. Preparation-time status is historical; completed execution summaries control only their stated scopes."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-geometry/requests.jsonl",
+      "packaged_path": "geometry/requests.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/requests.records.json",
+      "sha256": "eacf46ca87a6c7d5cbfcc2fe619f68456c04d648f16c7813e6fd53f980187b57",
+      "bytes": 3588,
+      "scope": "Static component/assembly validation, interference and refs identity reconciliation",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-geometry/requests.jsonl",
+        "packaged_path": "geometry/requests.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/geometry/requests.jsonl",
+        "sha256": "9bbd555d28fe1418909933e9a2739c2619594919c9fc4f1671cda31fb564eb17",
+        "bytes": 2598,
+        "scope": "Static component/assembly validation, interference and refs identity reconciliation",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-geometry/results.jsonl",
+      "packaged_path": "geometry/results.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/results.records.json",
+      "sha256": "7ddf4f6879818dd964f076dc7c7aee7629d3a2b1689c0a2fac74884bb9bba57c",
+      "bytes": 62767,
+      "scope": "Static component/assembly validation, interference and refs identity reconciliation",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-geometry/results.jsonl",
+        "packaged_path": "geometry/results.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/geometry/results.jsonl",
+        "sha256": "eb30b317219f7d31353944024c93aee5f094ae9c7c8e162b02c368823ae4ac41",
+        "bytes": 25018,
+        "scope": "Static component/assembly validation, interference and refs identity reconciliation",
+        "interpretation": "Mixed record: validate/interfere results retained; seven refs rows SUPERSEDED as itemized in refs-supersession.json. Stale facts are not current."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-geometry/summary.json",
+      "packaged_path": "geometry/summary.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/summary.json",
+      "sha256": "496ae9a58eb1eba27a3e4f4866b52418dfef162d0053539c1702f74d33b2d42a",
+      "bytes": 21754,
+      "scope": "Static component/assembly validation, interference and refs identity reconciliation",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-feature-probes/README.md",
+      "packaged_path": "feature-probes/README.md",
+      "product_relative_path": "gear_vortex/audits/visual-repair/feature-probes/README.md",
+      "sha256": "fe2cba6bdef05ed714de793de94fd9aada22257cc56e8fb752296529422ebdaf",
+      "bytes": 2393,
+      "scope": "Measured adjacent-window webs and nominal through-core sightline",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-feature-probes/assembly-execution-binding.json",
+      "packaged_path": "feature-probes/assembly-execution-binding.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/feature-probes/assembly-execution-binding.json",
+      "sha256": "feff972cd5cb42fc3e9be814887fca5f1894aaa0e130f419aa7f03847d3ed88b",
+      "bytes": 7063,
+      "scope": "Measured adjacent-window webs and nominal through-core sightline",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-feature-probes/manifest.json",
+      "packaged_path": "feature-probes/manifest.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/feature-probes/manifest.json",
+      "sha256": "cc863d3c59397cb987240488a11c049e20e615a488f8e3969d8c74bcdf97a338",
+      "bytes": 6233,
+      "scope": "Measured adjacent-window webs and nominal through-core sightline",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only. Preparation-time status is historical; completed execution summaries control only their stated scopes."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-feature-probes/sightline-generation.json",
+      "packaged_path": "feature-probes/sightline-generation.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/feature-probes/sightline-generation.json",
+      "sha256": "a2334812016acf8321e650b0170384e80f07c90a46c07aa736a06b68f9cec3a4",
+      "bytes": 324,
+      "scope": "Measured adjacent-window webs and nominal through-core sightline",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-feature-probes/sightline-requests.jsonl",
+      "packaged_path": "feature-probes/sightline-requests.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/feature-probes/sightline-requests.records.json",
+      "sha256": "3075cb3b922ae54f9cd60a74adb2bf273a8cbc0eae6c4f23dcf7a95479f1f157",
+      "bytes": 436,
+      "scope": "Measured adjacent-window webs and nominal through-core sightline",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-feature-probes/sightline-requests.jsonl",
+        "packaged_path": "feature-probes/sightline-requests.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/feature-probes/sightline-requests.jsonl",
+        "sha256": "074336f31ab4059d4918ed6d93a0d996419e6bad18b36ba59c0b4cbac5bada78",
+        "bytes": 324,
+        "scope": "Measured adjacent-window webs and nominal through-core sightline",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-feature-probes/sightline-results.jsonl",
+      "packaged_path": "feature-probes/sightline-results.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/feature-probes/sightline-results.records.json",
+      "sha256": "f9fe5a02ab49b07579248933d20aedbdf3a522c122fbcfafcc70e8df80421518",
+      "bytes": 14927,
+      "scope": "Measured adjacent-window webs and nominal through-core sightline",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-feature-probes/sightline-results.jsonl",
+        "packaged_path": "feature-probes/sightline-results.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/feature-probes/sightline-results.jsonl",
+        "sha256": "c7aff051f99b1a3b7c8dce2e6654e8ab8d700a1234b4357e18b3fc23602fff06",
+        "bytes": 5602,
+        "scope": "Measured adjacent-window webs and nominal through-core sightline",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-feature-probes/web-generation.json",
+      "packaged_path": "feature-probes/web-generation.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/feature-probes/web-generation.json",
+      "sha256": "5d5a9470aaab96a15365218eb39b4f8b15d101f7ae65d3ad5a77f61c4ab51184",
+      "bytes": 2328,
+      "scope": "Measured adjacent-window webs and nominal through-core sightline",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-feature-probes/web-nearest-results.json",
+      "packaged_path": "feature-probes/web-nearest-results.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/feature-probes/web-nearest-results.json",
+      "sha256": "a233563bfe17b3b96019887f7833a09c9d221c5335bd09da79237178202b3c4d",
+      "bytes": 33748,
+      "scope": "Measured adjacent-window webs and nominal through-core sightline",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-feature-probes/web-summary.json",
+      "packaged_path": "feature-probes/web-summary.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/feature-probes/web-summary.json",
+      "sha256": "00dc3ef262e5ef708d9217387e4f7797ea94044e5d9d8171855b59ab7f02e4bd",
+      "bytes": 1394,
+      "scope": "Measured adjacent-window webs and nominal through-core sightline",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/README.md",
+      "packaged_path": "dimensions/README.md",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/README.md",
+      "sha256": "e8037a0040f007a922ab620d0b386c86dd22930dcaab11c02f1494e143206871",
+      "bytes": 2984,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/SUMMARY.json",
+      "packaged_path": "dimensions/SUMMARY.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/SUMMARY.json",
+      "sha256": "fa7b45f12a6dace14656158cdd79d8bac1d2830dc24cfd630a7a1a34b3d63c4b",
+      "bytes": 4866,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/SUMMARY.md",
+      "packaged_path": "dimensions/SUMMARY.md",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/SUMMARY.md",
+      "sha256": "eb7dd7edb845c05bfca66aea40a622934ddb04e8791f747c74f71873eeb4c8a7",
+      "bytes": 1964,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/actual-step-results.json",
+      "packaged_path": "dimensions/actual-step-results.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/actual-step-results.json",
+      "sha256": "685391d79d92e9f6e9b9ebc5587d0e369b9f051059c82b678de55fd74353f008",
+      "bytes": 38649,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/manifest.json",
+      "packaged_path": "dimensions/manifest.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/manifest.json",
+      "sha256": "1e59a6a21052c006c4c37dbac5c86073d63e295d4d30f28c725cb6757de028d2",
+      "bytes": 8183,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only. Preparation-time status is historical; completed execution summaries control only their stated scopes."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/measurement-requests.jsonl",
+      "packaged_path": "dimensions/measurement-requests.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/measurement-requests.records.json",
+      "sha256": "8dcd6c2adde095f4b01edebb297009addaad367da39e11b77997544d423483d0",
+      "bytes": 16226,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-dimensions/measurement-requests.jsonl",
+        "packaged_path": "dimensions/measurement-requests.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/measurement-requests.jsonl",
+        "sha256": "92365bf81708a8b3fcdb6eb6aac244df31e5dff78bc98bd85dd03f0758b8bb56",
+        "bytes": 11539,
+        "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/measurements.jsonl",
+      "packaged_path": "dimensions/measurements.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/measurements.records.json",
+      "sha256": "7141933be714c4c386605ca2fac2d148a8e28f6fec6f11b9d0e778d478475a3d",
+      "bytes": 296593,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-dimensions/measurements.jsonl",
+        "packaged_path": "dimensions/measurements.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/measurements.jsonl",
+        "sha256": "48a533ad55ef27347ef4860772bb9ff9d3b2e427f093ef31b45e2366c68f57e2",
+        "bytes": 149387,
+        "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/selector-audit.json",
+      "packaged_path": "dimensions/selector-audit.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/selector-audit.json",
+      "sha256": "9ba01c2363c3d802317197e6a4ae6f2171980fdabb6155965d088f524157056e",
+      "bytes": 76304,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/summary.json",
+      "packaged_path": "dimensions/summary.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/summary.json",
+      "sha256": "8753e32cc9a605db076c5d9a2074f1ab52d58003fef240e35f2c381c1acbab90",
+      "bytes": 30621,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/tooth-thinning-bindings.json",
+      "packaged_path": "dimensions/tooth-thinning-bindings.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/tooth-thinning-bindings.json",
+      "sha256": "9be96c4db50f6133a965128cfd930755c8717fb43a5ec15e5addcb3bb76a0b43",
+      "bytes": 2844,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only. Preparation-time status is historical; completed execution summaries control only their stated scopes."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/tooth-thinning-results.json",
+      "packaged_path": "dimensions/tooth-thinning-results.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/tooth-thinning-results.json",
+      "sha256": "6fcda5c6574906ec7b9a9026183ef1e853198453794b8134222e45cad75fec36",
+      "bytes": 129037,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-dimensions/unchanged-intrinsic-bridge.json",
+      "packaged_path": "dimensions/unchanged-intrinsic-bridge.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/dimensions/unchanged-intrinsic-bridge.json",
+      "sha256": "7281fd46629e208c142b92e8e88252c66ea50247523bf7e4ee16e3006a6445f5",
+      "bytes": 6288,
+      "scope": "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-production/inspection/README.md",
+      "packaged_path": "production/inspection/README.md",
+      "product_relative_path": "gear_vortex/audits/visual-repair/production/inspection/README.md",
+      "sha256": "45d14366d4c567e386c581c5da625e41ceac8f4eb3456d6edccabc3032becb7e",
+      "bytes": 2067,
+      "scope": "Raw adopted delivery STEP facts, validation and exact package/output bindings",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-production/inspection/input-bindings.json",
+      "packaged_path": "production/inspection/input-bindings.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/production/inspection/input-bindings.json",
+      "sha256": "b36e384065b048ffbd165fb4f4dff1dcf51d75509a29ab86b8fedcae28e9e1ef",
+      "bytes": 39406,
+      "scope": "Raw adopted delivery STEP facts, validation and exact package/output bindings",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only. Preparation-time status is historical; completed execution summaries control only their stated scopes."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-production/inspection/inspection-manifest.json",
+      "packaged_path": "production/inspection/inspection-manifest.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/production/inspection/inspection-manifest.json",
+      "sha256": "f5fb90b190cd1aac463ba618e6a5a4b791e379dffcee9756e98c5d09cc75ca70",
+      "bytes": 99638,
+      "scope": "Raw adopted delivery STEP facts, validation and exact package/output bindings",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-production/inspection/requests.jsonl",
+      "packaged_path": "production/inspection/requests.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/production/inspection/requests.records.json",
+      "sha256": "9fdcdf8a8470a94fbf21b13c813280511761d75fabd85550a9ddd261672c17ec",
+      "bytes": 18067,
+      "scope": "Raw adopted delivery STEP facts, validation and exact package/output bindings",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-production/inspection/requests.jsonl",
+        "packaged_path": "production/inspection/requests.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/production/inspection/requests.jsonl",
+        "sha256": "358122667dd754d9281c1eac9baa7bef9eb647389360380c15d64e426aa313c5",
+        "bytes": 13948,
+        "scope": "Raw adopted delivery STEP facts, validation and exact package/output bindings",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-production/inspection/results.jsonl",
+      "packaged_path": "production/inspection/results.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/production/inspection/results.records.json",
+      "sha256": "a246fb0df945f4c8bc91d5d686aa80cddfd5e3e13cde99be4017c1f934227dcb",
+      "bytes": 257121,
+      "scope": "Raw adopted delivery STEP facts, validation and exact package/output bindings",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-production/inspection/results.jsonl",
+        "packaged_path": "production/inspection/results.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/production/inspection/results.jsonl",
+        "sha256": "5235c2d48996fc6e30bfd53394f9c812ad1269f99c0325b4996a062e6bfd6033",
+        "bytes": 102163,
+        "scope": "Raw adopted delivery STEP facts, validation and exact package/output bindings",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-production/inspection/summary.json",
+      "packaged_path": "production/inspection/summary.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/production/inspection/summary.json",
+      "sha256": "2f19393d21c119e4e391e017c4af553375155b97cbb6dc968fa4d4c708ebab7b",
+      "bytes": 389,
+      "scope": "Raw adopted delivery STEP facts, validation and exact package/output bindings",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-final-features/SUMMARY.json",
+      "packaged_path": "final-features/SUMMARY.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/final-features/SUMMARY.json",
+      "sha256": "912b1e61b8b3e53c069a346d9afcdc452b30af0c0e488570eaf567cab90b75d9",
+      "bytes": 3337,
+      "scope": "Completed knurl/coupon native measurements and production receipt reconciliation",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-final-features/SUMMARY.md",
+      "packaged_path": "final-features/SUMMARY.md",
+      "product_relative_path": "gear_vortex/audits/visual-repair/final-features/SUMMARY.md",
+      "sha256": "e3c65e861d2420b2b8dffd3aa237a345b076f14a7f3f992f61000292ed784d1a",
+      "bytes": 1390,
+      "scope": "Completed knurl/coupon native measurements and production receipt reconciliation",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-final-features/bindings.json",
+      "packaged_path": "final-features/bindings.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/final-features/bindings.json",
+      "sha256": "1dfd43410c9503f522a99373fcd168092f3d0649dc9cf45000ae81481727d89d",
+      "bytes": 901,
+      "scope": "Completed knurl/coupon native measurements and production receipt reconciliation",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-final-features/production-audit.json",
+      "packaged_path": "final-features/production-audit.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/final-features/production-audit.json",
+      "sha256": "a2d8247ad36b913e12c2590fdbae2b2c8d32db8d6b691c2498710c3f05f55106",
+      "bytes": 1895,
+      "scope": "Completed knurl/coupon native measurements and production receipt reconciliation",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-final-features/requests.jsonl",
+      "packaged_path": "final-features/requests.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/final-features/requests.records.json",
+      "sha256": "83b7545c7ca8fbd960ccb93268a83db459a807b09ba45b4cd68347070a05ce18",
+      "bytes": 1800,
+      "scope": "Completed knurl/coupon native measurements and production receipt reconciliation",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-final-features/requests.jsonl",
+        "packaged_path": "final-features/requests.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/final-features/requests.jsonl",
+        "sha256": "b26e0fbdfd0a745818de69213f53b5396bbdf2de0c6648e27add9a24f8893fe2",
+        "bytes": 1296,
+        "scope": "Completed knurl/coupon native measurements and production receipt reconciliation",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-final-features/results.jsonl",
+      "packaged_path": "final-features/results.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/final-features/results.records.json",
+      "sha256": "c6265f55bb6f8cf25300eec4df9b6cf9b410721482711529ba133eaa0e83c3a0",
+      "bytes": 31165,
+      "scope": "Completed knurl/coupon native measurements and production receipt reconciliation",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-final-features/results.jsonl",
+        "packaged_path": "final-features/results.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/final-features/results.jsonl",
+        "sha256": "ead0375b8de2f213109ab85dffb0a8f40e497ab6fe061bb20009ea0c791ccdf1",
+        "bytes": 14889,
+        "scope": "Completed knurl/coupon native measurements and production receipt reconciliation",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-geometry/raw-components/manifest.json",
+      "packaged_path": "geometry/raw-components/manifest.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/raw-components/manifest.json",
+      "sha256": "610362edd3e73cd6b080e4808c33a03ca51d396236d984a29c578ddf924968d7",
+      "bytes": 2067,
+      "scope": "Raw component refs replacing stale source-entry refs",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only. Preparation-time status is historical; completed execution summaries control only their stated scopes."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-geometry/raw-components/requests.jsonl",
+      "packaged_path": "geometry/raw-components/requests.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/raw-components/requests.records.json",
+      "sha256": "5d686b3e8e18d8e910be6ee8997104065a241cb8bd13c7dfaf700f977d6cf592",
+      "bytes": 1315,
+      "scope": "Raw component refs replacing stale source-entry refs",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-geometry/raw-components/requests.jsonl",
+        "packaged_path": "geometry/raw-components/requests.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/geometry/raw-components/requests.jsonl",
+        "sha256": "d80d299bacf88d33b79abfdd1527f5390211490c29f6f7c2870c2aad61c212f9",
+        "bytes": 964,
+        "scope": "Raw component refs replacing stale source-entry refs",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-geometry/raw-components/results.jsonl",
+      "packaged_path": "geometry/raw-components/results.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/raw-components/results.records.json",
+      "sha256": "d6cbddf90f98da52b268c4eb2d7e5b092b6695238bd36a64e1384a3c03e3acef",
+      "bytes": 30173,
+      "scope": "Raw component refs replacing stale source-entry refs",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-geometry/raw-components/results.jsonl",
+        "packaged_path": "geometry/raw-components/results.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/geometry/raw-components/results.jsonl",
+        "sha256": "63da0cfc8ae12feedc1162ceb5b995d17fa305597d4b56dfdc42ac1441ec3b5b",
+        "bytes": 11578,
+        "scope": "Raw component refs replacing stale source-entry refs",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-delivery/raw-results.jsonl",
+      "packaged_path": "geometry/raw-assembly/raw-results.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/raw-assembly/raw-results.records.json",
+      "sha256": "d679359c159fa04204796c6b081ded77ff5b3fb1488bbae62b54ddf531cdd39b",
+      "bytes": 124226,
+      "scope": "Current raw assembly refs and occurrence/package identity reconciliation",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-delivery/raw-results.jsonl",
+        "packaged_path": "geometry/raw-assembly/raw-results.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/geometry/raw-assembly/raw-results.jsonl",
+        "sha256": "05e0b805319d66604b1a4d4956933040c67cfe4670f16fed0687c5f0e58ce3ac",
+        "bytes": 54703,
+        "scope": "Current raw assembly refs and occurrence/package identity reconciliation",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-delivery/requests.jsonl",
+      "packaged_path": "geometry/raw-assembly/requests.records.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/raw-assembly/requests.records.json",
+      "sha256": "046653389b5be9da947e1439b3360ec0bb4619391cf53484c7a0596bfbd01cec",
+      "bytes": 1150,
+      "scope": "Current raw assembly refs and occurrence/package identity reconciliation",
+      "interpretation": "Lossless JSON-array representation of the original ordered inspection records; exact original stream is preserved outside product and its hash is retained in prior_packaging and ../manifest-policy-repair.json.",
+      "prior_packaging": {
+        "original_path": "artifacts/make/r0001/visual-repair-delivery/requests.jsonl",
+        "packaged_path": "geometry/raw-assembly/requests.jsonl",
+        "product_relative_path": "gear_vortex/audits/visual-repair/geometry/raw-assembly/requests.jsonl",
+        "sha256": "87ba90d667a0cf4e9fb562e5b0310e81168334d3c105764760d97cd1ce3fab5a",
+        "bytes": 793,
+        "scope": "Current raw assembly refs and occurrence/package identity reconciliation",
+        "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+      }
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-delivery/package-reconciliation.json",
+      "packaged_path": "geometry/raw-assembly/package-reconciliation.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/geometry/raw-assembly/package-reconciliation.json",
+      "sha256": "8426346a5adb96104994bca1c9cc7376398b455142189032d72f6e22a21e1ca3",
+      "bytes": 7251,
+      "scope": "Current raw assembly refs and occurrence/package identity reconciliation",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-production/current-assembly-binding.json",
+      "packaged_path": "production/current-assembly-binding.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/production/current-assembly-binding.json",
+      "sha256": "ec6f2aeb76ca5dd1ec6a30da35e4afd99b0c5d5b87aec195944331369b06f5bd",
+      "bytes": 53915,
+      "scope": "Exact 44 occurrence bindings and 49 delivered export identities",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    },
+    {
+      "original_path": "artifacts/make/r0001/visual-repair-production/export-binding-all-r1.json",
+      "packaged_path": "production/export-binding-all-r1.json",
+      "product_relative_path": "gear_vortex/audits/visual-repair/production/export-binding-all-r1.json",
+      "sha256": "44f2fe489b03084e60433541468ea0893a6c11cfd8c61dfad88de00fbd7ebbda",
+      "bytes": 68234,
+      "scope": "Exact 44 occurrence bindings and 49 delivered export identities",
+      "interpretation": "Unmodified evidence snapshot; original paths resolve through this manifest. Excluded helper/cache/STEP/log references remain provenance only."
+    }
+  ],
+  "packaging_notes": [
+    {
+      "path": "refs-supersession.json",
+      "sha256": "578705e60c78b0a50aa0b116d9e090e79d2ade463af6c4256d8c13634bf88812"
+    },
+    {
+      "path": "README.md",
+      "sha256": "e706309e7048e11e5ac4a3ed74804441d52e78ae9a0dd315755f2d2e95a5d2be"
+    }
+  ],
+  "source_path_resolution": {
+    "requested_production_audit": "artifacts/make/r0001/visual-repair-documentation/production-audit.json",
+    "actual_existing_production_audit": "artifacts/make/r0001/visual-repair-final-features/production-audit.json",
+    "packaged_path": "final-features/production-audit.json"
+  },
+  "excluded": [
+    "caches",
+    "STEP copies/witness solids",
+    "generator and measurement helpers",
+    "progress logs",
+    "contact evidence",
+    "presentation evidence"
+  ],
+  "limitations": [
+    "No new CAD checks run by packaging.",
+    "Source bytes and scoped outcomes preserved; no pass invented.",
+    "Motion remains UNVERIFIED in retained static report.",
+    "No product files outside this new folder modified."
+  ],
+  "manifest_policy_repair": "gear_vortex/audits/manifest-policy-repair.json (relative to product root)"
+}

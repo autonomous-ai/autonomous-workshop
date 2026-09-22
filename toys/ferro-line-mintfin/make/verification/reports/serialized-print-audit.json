@@ -1,0 +1,53 @@
+{
+  "Mintfin-chain.stl": {
+    "triangles": 95786,
+    "volume_mm3": 38591.621988324805,
+    "topology": "closed-oriented-manifold"
+  },
+  "Mintfin-face-angry.stl": {
+    "triangles": 5688,
+    "volume_mm3": 1354.5085930340308,
+    "topology": "closed-oriented-manifold"
+  },
+  "Mintfin-face-happy.stl": {
+    "triangles": 4408,
+    "volume_mm3": 1338.9633985634825,
+    "topology": "closed-oriented-manifold"
+  },
+  "Mintfin-face-sleepy.stl": {
+    "triangles": 3376,
+    "volume_mm3": 1266.0871292530758,
+    "topology": "closed-oriented-manifold"
+  },
+  "Mintfin-faces.stl": {
+    "triangles": 13472,
+    "volume_mm3": 3959.559074063042,
+    "topology": "closed-oriented-manifold"
+  },
+  "Mintfin-hinge-coupon.stl": {
+    "triangles": 23524,
+    "volume_mm3": 3891.346277451154,
+    "topology": "closed-oriented-manifold"
+  },
+  "Mintfin-chain.3mf": {
+    "mesh_regions": 46,
+    "volume_mm3": 38589.779127354755,
+    "relative_volume_delta_vs_STL": 4.775287679297436e-05,
+    "zip_xml_references": "pass",
+    "topology": "closed-oriented-manifold"
+  },
+  "Mintfin-faces.3mf": {
+    "mesh_regions": 29,
+    "volume_mm3": 3959.5579552821164,
+    "relative_volume_delta_vs_STL": 2.825518964495857e-07,
+    "zip_xml_references": "pass",
+    "topology": "closed-oriented-manifold"
+  },
+  "Mintfin-hinge-coupon.3mf": {
+    "mesh_regions": 6,
+    "volume_mm3": 3891.3463998382344,
+    "relative_volume_delta_vs_STL": 3.145108959304554e-08,
+    "zip_xml_references": "pass",
+    "topology": "closed-oriented-manifold"
+  }
+}

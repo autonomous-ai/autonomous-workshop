@@ -1,0 +1,11 @@
+{
+  "generated_entry_query": "inspect refs artifacts/make/r0001/product/gear_vortex/gear_vortex.step.py --facts --planes --positioning",
+  "generated_entry_reported_step_hash": "ab495b282869f4d764327c12a795636617f7f1dc77a4903f1ea9dae5be1dff7d",
+  "generated_entry_occurrences": 41,
+  "current_export_hash_at_copy": "b09ea2ab604b26262bea462a682304e0816cd87bb7c3a5fd4807b8d114d19997",
+  "fresh_raw_step_query": "inspect refs artifacts/make/r0001/core-dimensions/current-assembly.step --facts --planes --positioning --topology",
+  "fresh_raw_step_reported_hash": "b09ea2ab604b26262bea462a682304e0816cd87bb7c3a5fd4807b8d114d19997",
+  "fresh_raw_step_occurrences": 45,
+  "live_product_step_hash_at_finish": "b09ea2ab604b26262bea462a682304e0816cd87bb7c3a5fd4807b8d114d19997",
+  "snapshot_matches_live_at_finish": true
+}

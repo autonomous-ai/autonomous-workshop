@@ -1,0 +1,62 @@
+{
+ "build": {
+  "face_eye": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_eye"
+ ],
+ "check_motion": true,
+ "checked": [
+  "face_eye"
+ ],
+ "checks_ok": true,
+ "entry": "part_face_eye.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_eye/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_eye"
+ ],
+ "print": {
+  "face_eye": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_eye/r0002/overhang-face_eye.log": "868188dce6fab84c7a131d4044b84ff2a36a5926350ddcc50545b3a15fe49b58",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_eye/r0002/thickness-face_eye.log": "21cc06db5072d2b3c2e6e03a755cbb558587f8b42632137824e5da1ac84385b0"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:face_eye",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show the rounded dome supported by a short full-width cylindrical foot; top confirms circular outline and offset highlight recess. Overall character and flat adhesive base preserved. Default and1.2mm wall and overhang checks pass; no physical result claimed.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_eye/r0002/visual-packet.json",
+  "packet_sha256": "7193940e1770dcca725239076ed9534222f05bc3cad56805e80c04484d2d1813",
+  "status": "pass"
+ }
+}

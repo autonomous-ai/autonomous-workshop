@@ -1,0 +1,810 @@
+[
+  {
+    "id": "optical_gap",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.8.f2",
+      "--to",
+      "#o1.9.f4",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "orange_thickness",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.8.f2",
+      "--to",
+      "#o1.8.f3",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "sun_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.9.f4",
+      "--to",
+      "#o1.9.f5",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "bezel_thickness",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.2.f2",
+      "--to",
+      "#o1.25.2.f4",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "orange_outer_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.8.f1"
+    ]
+  },
+  {
+    "id": "bezel_outer_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.2.f1"
+    ]
+  },
+  {
+    "id": "bezel_inner_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.2.f484"
+    ]
+  },
+  {
+    "id": "sun_tip_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.9.f7"
+    ]
+  },
+  {
+    "id": "sun_root_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.9.f2"
+    ]
+  },
+  {
+    "id": "stem_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.3.f4"
+    ]
+  },
+  {
+    "id": "pedestal_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.1.f1"
+    ]
+  },
+  {
+    "id": "gear_1_1_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.11.f296",
+      "--to",
+      "#o1.11.f297",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_1_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.11.f295"
+    ]
+  },
+  {
+    "id": "gear_1_1_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f195"
+    ]
+  },
+  {
+    "id": "gear_1_1_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.11.f296",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_1_tip_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.11.f3"
+    ]
+  },
+  {
+    "id": "gear_1_1_root_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.11.f6"
+    ]
+  },
+  {
+    "id": "gear_1_2_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.12.f302",
+      "--to",
+      "#o1.12.f303",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_2_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.12.f301"
+    ]
+  },
+  {
+    "id": "gear_1_2_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f184"
+    ]
+  },
+  {
+    "id": "gear_1_2_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.12.f302",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_2_tip_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.12.f3"
+    ]
+  },
+  {
+    "id": "gear_1_2_root_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.12.f6"
+    ]
+  },
+  {
+    "id": "gear_1_3_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.13.f320",
+      "--to",
+      "#o1.13.f321",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_3_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.13.f319"
+    ]
+  },
+  {
+    "id": "gear_1_3_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f79"
+    ]
+  },
+  {
+    "id": "gear_1_3_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.13.f320",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_3_tip_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.13.f3"
+    ]
+  },
+  {
+    "id": "gear_1_3_root_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.13.f6"
+    ]
+  },
+  {
+    "id": "gear_1_4_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.14.f332",
+      "--to",
+      "#o1.14.f333",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_4_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.14.f331"
+    ]
+  },
+  {
+    "id": "gear_1_4_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f68"
+    ]
+  },
+  {
+    "id": "gear_1_4_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.14.f332",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_4_tip_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.14.f3"
+    ]
+  },
+  {
+    "id": "gear_1_4_root_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.14.f6"
+    ]
+  },
+  {
+    "id": "gear_1_5_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.15.f344",
+      "--to",
+      "#o1.15.f345",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_5_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.15.f343"
+    ]
+  },
+  {
+    "id": "gear_1_5_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f57"
+    ]
+  },
+  {
+    "id": "gear_1_5_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.15.f344",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_5_tip_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.15.f3"
+    ]
+  },
+  {
+    "id": "gear_1_5_root_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.15.f6"
+    ]
+  },
+  {
+    "id": "gear_1_6_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.16.f350",
+      "--to",
+      "#o1.16.f351",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_6_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.16.f349"
+    ]
+  },
+  {
+    "id": "gear_1_6_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f46"
+    ]
+  },
+  {
+    "id": "gear_1_6_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.16.f350",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_6_tip_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.16.f3"
+    ]
+  },
+  {
+    "id": "gear_1_6_root_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.16.f6"
+    ]
+  },
+  {
+    "id": "gear_1_7_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.17.f368",
+      "--to",
+      "#o1.17.f369",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_7_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.17.f367"
+    ]
+  },
+  {
+    "id": "gear_1_7_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f35"
+    ]
+  },
+  {
+    "id": "gear_1_7_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.17.f368",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_7_tip_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.17.f3"
+    ]
+  },
+  {
+    "id": "gear_1_7_root_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.17.f6"
+    ]
+  },
+  {
+    "id": "gear_2_1_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.18.f296",
+      "--to",
+      "#o1.18.f297",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_1_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.18.f295"
+    ]
+  },
+  {
+    "id": "gear_2_1_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f164"
+    ]
+  },
+  {
+    "id": "gear_2_1_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.18.f296",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_2_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.19.f302",
+      "--to",
+      "#o1.19.f303",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_2_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.19.f301"
+    ]
+  },
+  {
+    "id": "gear_2_2_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f153"
+    ]
+  },
+  {
+    "id": "gear_2_2_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.19.f302",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_3_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.20.f320",
+      "--to",
+      "#o1.20.f321",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_3_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.20.f319"
+    ]
+  },
+  {
+    "id": "gear_2_3_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f142"
+    ]
+  },
+  {
+    "id": "gear_2_3_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.20.f320",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_4_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.21.f332",
+      "--to",
+      "#o1.21.f333",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_4_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.21.f331"
+    ]
+  },
+  {
+    "id": "gear_2_4_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f131"
+    ]
+  },
+  {
+    "id": "gear_2_4_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.21.f332",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_5_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.22.f344",
+      "--to",
+      "#o1.22.f345",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_5_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.22.f343"
+    ]
+  },
+  {
+    "id": "gear_2_5_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f120"
+    ]
+  },
+  {
+    "id": "gear_2_5_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.22.f344",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_6_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.23.f350",
+      "--to",
+      "#o1.23.f351",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_6_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.23.f349"
+    ]
+  },
+  {
+    "id": "gear_2_6_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f109"
+    ]
+  },
+  {
+    "id": "gear_2_6_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.23.f350",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_7_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.24.f368",
+      "--to",
+      "#o1.24.f369",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_7_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.24.f367"
+    ]
+  },
+  {
+    "id": "gear_2_7_post",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "#o1.25.1.f98"
+    ]
+  },
+  {
+    "id": "gear_2_7_standoff",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "--from",
+      "#o1.25.1.f1",
+      "--to",
+      "#o1.24.f368",
+      "--axis",
+      "y"
+    ]
+  }
+]

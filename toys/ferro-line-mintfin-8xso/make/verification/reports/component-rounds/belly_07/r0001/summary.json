@@ -1,0 +1,71 @@
+{
+ "build": {
+  "belly_07": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_07"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_07"
+ ],
+ "checks_ok": false,
+ "entry": "part_belly_07.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_07/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_07"
+ ],
+ "print": {
+  "belly_07": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_07/r0001/overhang-belly_07.log": "9f4e96764876a702b6b5b1ad331ce4d8c665cfbf3ff8c77f1231052635a3bb9e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_07/r0001/thickness-belly_07.log": "8fccf3c51915e268eff2b03321e56d462f2579f3d42f51611fb96198671d7443"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 5.6% of surface below (270 of 4843 samples); thinnest "
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:belly_07",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin perimeter needs constant-section stock.",
+    "evidence": "Front and iso show the shallow sloping side rim; minimum wall measured 0.13 mm. Top is intact with no missing material.",
+    "part": "belly_07",
+    "repair": "Use a constant-section ellipse extrusion at least 1.2 mm thick, retaining the flat back and blunt oval profile; rerun thickness."
+   }
+  ],
+  "observation": "Front, top and iso inspected once. Cream oval remains coherent and flat, with a sloping side perimeter that fails the measured thickness requirement.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_07/r0001/visual-packet.json",
+  "packet_sha256": "902311658acaeefc78b491dfffbe591e42f923c7818681ae1776ea81e52c4f5a",
+  "status": "fail"
+ }
+}

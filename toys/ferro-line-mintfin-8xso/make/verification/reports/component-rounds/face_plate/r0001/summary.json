@@ -1,0 +1,62 @@
+{
+ "build": {
+  "face_plate": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_plate"
+ ],
+ "check_motion": true,
+ "checked": [
+  "face_plate"
+ ],
+ "checks_ok": true,
+ "entry": "part_face_plate.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_plate/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_plate"
+ ],
+ "print": {
+  "face_plate": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_plate/r0001/overhang-face_plate.log": "7ba55abf1c3440a7df14a8d68f3fd93b9b3ed772ebe1142cddaa60c0dd59ec4e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_plate/r0001/thickness-face_plate.log": "3aa195a24356d1b69ab768ac7f393a871c0c7609b1ff7ab72ae4f1eb6feea99a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:face_plate",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a flat uniform slab; top shows the broad symmetric cheek outline and central forehead dip in print orientation; iso shows three blind circular pockets with intact floors. No floating or extra geometry. Default and1.2mm wall and overhang gates pass; physical magnet fit remains unverified.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_plate/r0001/visual-packet.json",
+  "packet_sha256": "ebb501a2d12bfccb9a7f8203fb1a6054cc3855df275022499eaeb7d3e36533f4",
+  "status": "pass"
+ }
+}

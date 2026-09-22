@@ -1,0 +1,601 @@
+{
+  "schema_version": 1,
+  "purpose": "Prepare remaining full native geometry checks; no CAD execution; not an integrated final verifier replacement",
+  "request_file": "requests.jsonl",
+  "request_count": 42,
+  "parts": 20,
+  "assembly_leaf_occurrences": 40,
+  "entries": [
+    {
+      "role": "axle",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_axle.step.py",
+      "source_sha256": "6889f8a05dbb47cdc17c2391d1f09533d78bd19d1fa4e7c63271b08bb1ffc035",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_axle.step",
+      "exported_step_sha256": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:axle",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0006/summary.json",
+        "sha256": "690f4b4b36a83b8a865008b54392b3f44c205f0a12ce03ffd603d455ec1c0dfe",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "bezel",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_bezel.step.py",
+      "source_sha256": "bee24533dc6423b68bf3a771f85d506be37b9d7cf33054eec67ff8eb1a199412",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_bezel.step",
+      "exported_step_sha256": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:bezel",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/bezel/r0002/summary.json",
+        "sha256": "64097de3c743f3a76433942a6324d03a27a47f63cb7b2f69336452b9a04db202",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "carrier",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_carrier.step.py",
+      "source_sha256": "41bcc08485d4b108eca38e39445d64a8ed2c7dcdf922f15ba5ccdc3b315c6b67",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_carrier.step",
+      "exported_step_sha256": "31a402dd70e04ded7f1fad56aa8fecb9f67db850e0d272ee0722e9fb6f405b80",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:carrier",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0003/summary.json",
+        "sha256": "3d36b537a4bad1b244f97956bfbf9172df984b51d18b11864c79db7df12f0b77",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "coupon",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_coupon.step.py",
+      "source_sha256": "ce9dc1f1040267780b0fa968cc023c1ec653ff2e3b8ad1d2978682b289ceb2f7",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_coupon.step",
+      "exported_step_sha256": "420ff78b344597b22616949fd8c8a306c6a52a61cf94f4634242b88f3aef139b",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:coupon",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/coupon/r0001/summary.json",
+        "sha256": "f2c4b3b67bd2ddfb98a99f957d02d3533fb6e14ca7cb6c63c9ad981f9ff974ea",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "foot_trim",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_foot_trim.step.py",
+      "source_sha256": "848e457d32c91c342573af269fa7eca70b4622937b31e5558b2ea6b0a11c95e7",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_foot_trim.step",
+      "exported_step_sha256": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:foot_trim",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/foot_trim/r0002/summary.json",
+        "sha256": "c46efaeda97873c1b75695676d471a593825138557b777e4631403116b8ee0d1",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "gear_16",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_gear_16.step.py",
+      "source_sha256": "c46ac045b8f1b82b80c70e8b145ac871b642e8fe9e01398b1da821517b89aff2",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_gear_16.step",
+      "exported_step_sha256": "b5719d6bc598e925f3b7ba85904ee0eba3b1bd7bf7e31349f5483c1526ac3ce5",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:gear_16",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_16/r0002/summary.json",
+        "sha256": "269839c0a61ef736ba9a3f871341dc9c4f46ad71035d0566015b26bd88e688bb",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "gear_18",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_gear_18.step.py",
+      "source_sha256": "48b501e033b04bea312989071a7cae3241fe7cd7c5bed90282b51fb479de39dc",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_gear_18.step",
+      "exported_step_sha256": "b530695efe1753b996944c855171784d8880a4322882d3f9bd9b249d0cc38640",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:gear_18",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_18/r0001/summary.json",
+        "sha256": "818030c44b49dda5862705c1f427fda56c6fb200f6fc30b2563e8093d3e73905",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "gear_20",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_gear_20.step.py",
+      "source_sha256": "f6bfe6055c51623ae1a17c543a58b5fb983aea0252f277558e1e14c28243f8bd",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_gear_20.step",
+      "exported_step_sha256": "f15fdbc63c910fa87d4f4195105b65e43ccae76f23356673e181681992f150f2",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:gear_20",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_20/r0001/summary.json",
+        "sha256": "b0718652089fc52e8e253a1a841d670580080fd38b8237f22199e4769e2bd690",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "gear_22",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_gear_22.step.py",
+      "source_sha256": "f501986540e13ab077c61924420a67f2693d7ff94e074c46127c55d01b3209df",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_gear_22.step",
+      "exported_step_sha256": "3bc0f3d7b56c26681d3dfc4b671e5aaed98ec4e2c762f3ff948f51a406bd1644",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:gear_22",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_22/r0001/summary.json",
+        "sha256": "0366aae5e8ee7865de64b18a3c980a89332f2f3f954f32da957bdcb35b05acd5",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "gear_24",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_gear_24.step.py",
+      "source_sha256": "4a1685cf8a73bfd3e8fe4d9a3ca940de3f0de813f474ff069c99a962a7a6a26c",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_gear_24.step",
+      "exported_step_sha256": "c9081f6b8f847a9a8ad9b0abbef5c984df2080d0e0ad16a1fe4b58a55598f790",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:gear_24",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_24/r0001/summary.json",
+        "sha256": "74189060ff5e133e4cf5539418915fbc0cac97d194eb41bf9bf72e5782b07a8e",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "gear_26",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_gear_26.step.py",
+      "source_sha256": "a468749a3c64bdd6f087d14f2d9fefb565dff7e17b1700c79fe1a276cb49393b",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_gear_26.step",
+      "exported_step_sha256": "8b31f14c74c7958da148d8b489cbacd7bd7688d0b9a9d58b0c53be527dad786d",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:gear_26",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_26/r0001/summary.json",
+        "sha256": "2791c756c2aba8764ee264f74530a3eb88014bcbcfbf0d65ffce64607182592a",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "gear_cap",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_gear_cap.step.py",
+      "source_sha256": "47dcc3c9e272f3db7c1b9d873080f53d20d20f54311724a9d1cb6adb3ac950f2",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_gear_cap.step",
+      "exported_step_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:gear_cap",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0003/summary.json",
+        "sha256": "2637628d1d786ef618eb077998b6304d7fbcb642b21de5d2142df453d459c6da",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "main_cap",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_main_cap.step.py",
+      "source_sha256": "bec4e81856f7f31c6107bd956dd1a4a8d8f12717ecbd7cc693be2a2d89536f77",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_main_cap.step",
+      "exported_step_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:main_cap",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/main_cap/r0001/summary.json",
+        "sha256": "b9a5ce5649fb5f1b25a0f35d0c94a3228ceeaaa7125d5ecc30e210e098739757",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "orange_disc",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_orange_disc.step.py",
+      "source_sha256": "fa63763c654b434adeefeea15af64d04e3ded4fc418ab9683c30f03452f98e29",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_orange_disc.step",
+      "exported_step_sha256": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:orange_disc",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/orange_disc/r0001/summary.json",
+        "sha256": "6a0f6889d59e7147c95ad4fafcff7ad8af69e4bd7e6325a2dc9ed8ea8f9acfd7",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "pedestal",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_pedestal.step.py",
+      "source_sha256": "b294cdc81ea1090ae6971f2da75da45368b4e65601481872b338f1b5d950e2ea",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_pedestal.step",
+      "exported_step_sha256": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:pedestal",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal/r0002/summary.json",
+        "sha256": "3d55cb3338cc801b3209faa4cc9f201e1e5e3ecf5d9693b350dc08ff0f953fc9",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "pedestal_lid",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step.py",
+      "source_sha256": "83fd6fbe967e3057a7b4c4c82657299a7dc21b07f44eed98c91e5d60e62b3fd1",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step",
+      "exported_step_sha256": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:pedestal_lid",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal_lid/r0002/summary.json",
+        "sha256": "fd8f50d1a02f10bcdeaa24592b003c6283f5453d1ddfb59d81173d231f6bc217",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "rim_trim",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_rim_trim.step.py",
+      "source_sha256": "d9ad566f8f0e2ed50efc5ec9989c1e0a4fc9dea2d792b69a38865bf378a590b6",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_rim_trim.step",
+      "exported_step_sha256": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:rim_trim",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/rim_trim/r0002/summary.json",
+        "sha256": "0ae3302e25b34aadd58548be362deb5e32a9d116b4f8403e11801a6881accc71",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "stem",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_stem.step.py",
+      "source_sha256": "d9e1814110d6a627058f2dc1ccacc9d36deda0048da610e3cc4c0c1a36fcc27c",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_stem.step",
+      "exported_step_sha256": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:stem",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/stem/r0002/summary.json",
+        "sha256": "c2196442b0969ccff94ab8d16cf7fd55140f35725fd6b5e2e51a610c4efd2c51",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "sun",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_sun.step.py",
+      "source_sha256": "235b4a8b75887e66a404620147999fba2832e6528dfcde1028d8531410fc4812",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_sun.step",
+      "exported_step_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:sun",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/sun/r0001/summary.json",
+        "sha256": "af5506d8954b41c58629feb40ffa0592652d31aec3589f016f2b76b5a4737fab",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "support_collar",
+      "source": "artifacts/make/r0001/product/gear_vortex/part_support_collar.step.py",
+      "source_sha256": "85ca6ec7d869c507137e27f47cf33f594c40a2fa29ea2a46f09e8289cc4c232b",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/part_support_collar.step",
+      "exported_step_sha256": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:support_collar",
+      "existing_component_round": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds/support_collar/r0002/summary.json",
+        "sha256": "48b8199ee155812b09505928a28641951f2510a0564b70fcaf4096682cbf4da0",
+        "build": "PASS",
+        "print": "PASS",
+        "visual": "pass",
+        "full": null,
+        "refs": []
+      }
+    },
+    {
+      "role": "gear_vortex",
+      "source": "artifacts/make/r0001/product/gear_vortex/gear_vortex.step.py",
+      "source_sha256": "80dd428b4fb1c4beadf48da6fe7fe9a5c3b8014ae8b2c103fdf42e2070d302d7",
+      "exported_step": "artifacts/make/r0001/product/gear_vortex/gear_vortex.step",
+      "exported_step_sha256": "b09ea2ab604b26262bea462a682304e0816cd87bb7c3a5fd4807b8d114d19997",
+      "full_validate_status": "missing_current_hash_bound_report",
+      "request": "validate:assembly"
+    }
+  ],
+  "python_source_bindings": [
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/assemblies/__init__.py",
+      "sha256": "e6582202b40d5bde989f4eeb4e96ded2a9e3aef2f8cc4aa1e07c323d317048e2"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/assemblies/product.py",
+      "sha256": "9746a05f783fbe1a781082a8e10c4bb59428d532f083b8bb41ece99967792800"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/features/__init__.py",
+      "sha256": "b81051b77f4513064945b53cfb27edbfdb0904f0951d9c007c50a94aa52fc473"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/features/gearing.py",
+      "sha256": "6203d0b50468de5dd2d49531f2021ec8b810e5ea5d1836e56fa405e7fef3b077"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/features/threads.py",
+      "sha256": "5fd72857ab8744769df23c27293a5a3eca2f77b0afb8392f24db57220c516cc4"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/gear_vortex.step.py",
+      "sha256": "80dd428b4fb1c4beadf48da6fe7fe9a5c3b8014ae8b2c103fdf42e2070d302d7"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/params.py",
+      "sha256": "35ae4371681b61c47065477101d0fd88565e267876b8c84892cf74a9011b95ad"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_axle.step.py",
+      "sha256": "6889f8a05dbb47cdc17c2391d1f09533d78bd19d1fa4e7c63271b08bb1ffc035"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_bezel.step.py",
+      "sha256": "bee24533dc6423b68bf3a771f85d506be37b9d7cf33054eec67ff8eb1a199412"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_carrier.step.py",
+      "sha256": "41bcc08485d4b108eca38e39445d64a8ed2c7dcdf922f15ba5ccdc3b315c6b67"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_coupon.step.py",
+      "sha256": "ce9dc1f1040267780b0fa968cc023c1ec653ff2e3b8ad1d2978682b289ceb2f7"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_foot_trim.step.py",
+      "sha256": "848e457d32c91c342573af269fa7eca70b4622937b31e5558b2ea6b0a11c95e7"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_16.step.py",
+      "sha256": "c46ac045b8f1b82b80c70e8b145ac871b642e8fe9e01398b1da821517b89aff2"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_18.step.py",
+      "sha256": "48b501e033b04bea312989071a7cae3241fe7cd7c5bed90282b51fb479de39dc"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_20.step.py",
+      "sha256": "f6bfe6055c51623ae1a17c543a58b5fb983aea0252f277558e1e14c28243f8bd"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_22.step.py",
+      "sha256": "f501986540e13ab077c61924420a67f2693d7ff94e074c46127c55d01b3209df"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_24.step.py",
+      "sha256": "4a1685cf8a73bfd3e8fe4d9a3ca940de3f0de813f474ff069c99a962a7a6a26c"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_26.step.py",
+      "sha256": "a468749a3c64bdd6f087d14f2d9fefb565dff7e17b1700c79fe1a276cb49393b"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_cap.step.py",
+      "sha256": "47dcc3c9e272f3db7c1b9d873080f53d20d20f54311724a9d1cb6adb3ac950f2"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_main_cap.step.py",
+      "sha256": "bec4e81856f7f31c6107bd956dd1a4a8d8f12717ecbd7cc693be2a2d89536f77"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_orange_disc.step.py",
+      "sha256": "fa63763c654b434adeefeea15af64d04e3ded4fc418ab9683c30f03452f98e29"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_pedestal.step.py",
+      "sha256": "b294cdc81ea1090ae6971f2da75da45368b4e65601481872b338f1b5d950e2ea"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step.py",
+      "sha256": "83fd6fbe967e3057a7b4c4c82657299a7dc21b07f44eed98c91e5d60e62b3fd1"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_rim_trim.step.py",
+      "sha256": "d9ad566f8f0e2ed50efc5ec9989c1e0a4fc9dea2d792b69a38865bf378a590b6"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_stem.step.py",
+      "sha256": "d9e1814110d6a627058f2dc1ccacc9d36deda0048da610e3cc4c0c1a36fcc27c"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_sun.step.py",
+      "sha256": "235b4a8b75887e66a404620147999fba2832e6528dfcde1028d8531410fc4812"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_support_collar.step.py",
+      "sha256": "85ca6ec7d869c507137e27f47cf33f594c40a2fa29ea2a46f09e8289cc4c232b"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/__init__.py",
+      "sha256": "4d42cb213ca584794ea361191ed15b00a33fdfca4cbf6d3d74e6f8bac366d51b"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/carrier.py",
+      "sha256": "9812fda775ce0f9b574d9e4caf61e52d3e5e0861630e8e113353392e2f2d8a73"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/core.py",
+      "sha256": "86a3a247efc77dec9d60a40bf5b1bdcb82e6b7e308e2df9e5fb47cf0753cb441"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/coupon.py",
+      "sha256": "c255c6d39ffd9d3c1649b9d09646b2e05d9f8089908c3b0f1ab941c177687d96"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/gears.py",
+      "sha256": "b8b30fff489d10441a755522624af094f241cb3dcf58995fde34ac681f69e480"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/retainers.py",
+      "sha256": "7f4391118b7c13907a974d3fe83ba2c7b03bd2df7a944fc3d8283ee74204e132"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/stand.py",
+      "sha256": "03350d598b11060c37cae018d39a3d21fad3f8ff8db8de94d6524ced39c15d5b"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/validation.py",
+      "sha256": "5038b86943460a1234ad2df21db3c3a6101ab9564695867b3f192007ded05afd"
+    }
+  ],
+  "already_verified": [
+    {
+      "scope": "Exact exported current assembly refs/facts/planes/positioning",
+      "path": "artifacts/make/r0001/core-dimensions/current-refs.json",
+      "sha256": "4d92a6bf31bd99d3778db6771b61f2743f51f14115a01fcd8e3229121d2e594b",
+      "step_sha256": "b09ea2ab604b26262bea462a682304e0816cd87bb7c3a5fd4807b8d114d19997",
+      "leaf_occurrence_count": 40
+    },
+    {
+      "scope": "Repaired carrier/sun pair only",
+      "path": "artifacts/make/r0001/repaired-pair-results.jsonl",
+      "sha256": "025954fe9856828725423a85a867fdc41719913e5c9c63406126c9209456bc03",
+      "result": "zero clashes; not full assembly interference"
+    },
+    {
+      "scope": "Historical isolated axle validation",
+      "path": "artifacts/make/r0001/axle-repair-validation.json",
+      "sha256": "c9b096a1eae585ee962ba76dc467b370b1afe89bfe7999012447796ec09ea351",
+      "result": "PASS recorded, but report has no STEP/source hash; exact validation cache decides applicability rather than manually extending it"
+    }
+  ],
+  "formally_unverified_geometry_reports_found": [],
+  "interrupted_no_verdict": [
+    "motion subprocess -9",
+    "official motion presentation 137; neither is repeated by this geometry batch"
+  ],
+  "existing_cache": {
+    "path": "artifacts/make/r0001/product/gear_vortex/__cadgen__/inspection-v2",
+    "policy": "Preserve; native tool alone matches exact B-rep/options/tool keys and reuses completed work. Do not delete, mutate or disable cache.",
+    "records": [
+      {
+        "path": "artifacts/make/r0001/product/gear_vortex/__cadgen__/inspection-v2/06c7f1c5610d429120aa92c44b9c2a0e7b163c44db8f149142826b194e4144b8.json",
+        "sha256": "511b40d4730d4847a451830c7e0f2b7de49fd5dfcb1d55f5aae449e02a7281ac",
+        "result": {
+          "bbox": [
+            -0.5856715548477852,
+            -33.300000100000005,
+            91.7249999,
+            0.5856715548477663,
+            -28.29999989999999,
+            148.27500009999997
+          ],
+          "volume": 2.7840567146234676
+        }
+      },
+      {
+        "path": "artifacts/make/r0001/product/gear_vortex/__cadgen__/inspection-v2/171f80bc8d18bddc458e40e39dc2d6ea1af7ff824315603a9db5fc1ed2b16e13.json",
+        "sha256": "66b618a781e9b1adab00e69ce33e80e77ff1cb1b7b80d10ac620f98b748abfb5",
+        "result": {
+          "bbox": null,
+          "volume": 0.0
+        }
+      },
+      {
+        "path": "artifacts/make/r0001/product/gear_vortex/__cadgen__/inspection-v2/56a6a5abb08137a572e51a8ae4ce83e746530b0347e32b8c8d1c829a028ecdf7.json",
+        "sha256": "735ead05677f61b2f9d830d04432d3a25b51ff23ed81f22f2d2d1120d6f143e4",
+        "result": {
+          "reasons": [
+            "invalidTopology"
+          ],
+          "solidCount": 1,
+          "volumes": [
+            4366.242853932355
+          ]
+        }
+      },
+      {
+        "path": "artifacts/make/r0001/product/gear_vortex/__cadgen__/inspection-v2/a7952b3b4f2338805cf727ea40641043124ef131c72e81bb28a1edef1cdc04f5.json",
+        "sha256": "ce6ac6295f8b4cba378334281a39e30667c4384de538019fe0dc2b937686b371",
+        "result": {
+          "reasons": [],
+          "solidCount": 1,
+          "volumes": [
+            4363.379033212534
+          ]
+        }
+      }
+    ]
+  },
+  "completion_policy": "Inspect every response ok and exitCode. Measured geometry defects require repair. Formal cancelled/exhausted native geometry result is UNVERIFIED; preserve it and do not rerun the identical exhausted check. No print-ready claim."
+}

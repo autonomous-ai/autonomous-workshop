@@ -1,0 +1,63 @@
+{
+ "build": {
+  "body_02_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_02_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_02_rear"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_02_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_02_rear"
+ ],
+ "print": {
+  "body_02_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0001/overhang-body_02_rear.log": "0c6b636d3c20202ab6d1a0b91a545a310741dfa09d3090f32eb5bedd4a7af4f6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0001/thickness-body_02_rear.log": "8634a5bb9465c4fc9b1cfea637d2800e488c99f800be2617102f1ed3767208fb"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.5% of surface below (1263 of 272574 samples); thinne"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:body_02_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0001/visual-packet.json",
+  "packet_sha256": "78689e9b07fac916f6d401c72f92471983fd42498e52fe29b95b14a82ec3a35b",
+  "status": "pending"
+ }
+}

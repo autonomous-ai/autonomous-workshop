@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Rolled retaining ridge has insufficient backing near its outer rear flank",
+      "evidence": "Top and iso show a narrow channel outside the rolled rim;1.2mm wall reports16.7mm2 at(-4.2,-9.7,7.3), band1.21mm.",
+      "part": "body_01_rear",
+      "repair": "Fill the outer valley behind the bead with an integral annular backing land, keeping its inner radius4.55 outside the R4.4 retaining minimum and maintaining existing axial envelope and slits."
+    }
+  ],
+  "observation": "Front, top and iso inspected. Conical heel clears overhang while preserving four rolled retaining sectors. The fine rolled ridge remains visually narrow and explicit1.2mm check finds16.7mm2 thin lip region, despite default wall and support passing.",
+  "packet_sha256": "fbb55a26140980184bd0731602d4992de247c79ab000e583b22621cfa2ad6031",
+  "status": "fail"
+}

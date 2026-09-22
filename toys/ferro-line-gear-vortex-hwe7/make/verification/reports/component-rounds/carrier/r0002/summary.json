@@ -1,0 +1,62 @@
+{
+ "build": {
+  "carrier": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "carrier"
+ ],
+ "check_motion": true,
+ "checked": [
+  "carrier"
+ ],
+ "checks_ok": true,
+ "entry": "part_carrier.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "carrier"
+ ],
+ "print": {
+  "carrier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0002/overhang-carrier.log": "4d6f4dfaa69142a65483ec061d75c3e161ea8e1f32dfebaadf53adb01f249295",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0002/thickness-carrier.log": "d9993f5f91701183eb3a7bb73a5a794d152c0928fd2f11c6a87cc9310c1a992e"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.35,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:carrier",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Two opposite logarithmic ribbons carry twelve upright threaded journals. Two taller central pillars are opposite, the axle bore is open, and front/top/iso show a connected symmetric plate with no detached parts.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0002/visual-packet.json",
+  "packet_sha256": "e68c02a86ea8676d7aa367309438a198c889e978aa3aa4163d42ae5993f3fa8c",
+  "status": "pass"
+ }
+}

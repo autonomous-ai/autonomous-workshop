@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Socket-root stock protrudes beyond the crown and leaves an unsupported seam region.",
+      "evidence": "Top view: rounded mint lobe extends outside the flat upper outline. check_overhang reports 2.9 mm2 at print (-0.1,6.2,0.2), span1.5 mm,1.6 mm air below. Build and explicit1.2mm wall checks pass.",
+      "part": "body_06_front",
+      "repair": "Lower the outgoing joint datum enough to contain its socket housing within the crown, and remove or support the seam overhang in the same source repair; rebuild and inspect."
+    }
+  ],
+  "observation": "Front, top and iso inspected once. The incoming ball and main ellipse are coherent, but top view exposes a dorsal socket-stock lobe beyond the flattened crown. The overhang gate measures an unsupported region near the seam.",
+  "packet_sha256": "648cf9ce3853ebff5ba94c1596acaf4460015317143f50adeb1fe19cb7a635d3",
+  "status": "fail"
+}

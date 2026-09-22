@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Missing open ankle corners",
+      "evidence": "Top and iso show an uninterrupted semicircular lower rim rather than the required two side notches.",
+      "part": "body_01_front",
+      "repair": "Reapply the existing fixed-foot open-corner cuts after constructing this front land."
+    }
+  ],
+  "observation": "Front, top and iso inspected. The constant 1.2 mm land and supported incoming sphere are coherent, and default/wish-wall/overhang checks pass. The rebuilt stock however reinstates the two lower side corners previously removed for the fixed feet.",
+  "packet_sha256": "2c97ac763d0161a78820774305242c388c5dbbb445631c9d3272920ea98188f0",
+  "status": "fail"
+}

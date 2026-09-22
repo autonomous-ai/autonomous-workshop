@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_02_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_02_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_02_rear"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_02_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_02_rear"
+ ],
+ "print": {
+  "body_02_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0003/overhang-body_02_rear.log": "ccf5e830a73c04e8996866d270208f035732e7ec2c6f84ba65dae30aabb227b2",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0003/thickness-body_02_rear.log": "c1d63f45685e82d9887f36781de0b538714ecfc591c58c9469df4616741bb700"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 40.8% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 11.1,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:body_02_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Unsupported roof over shallow incoming-cup clearance",
+    "evidence": "Overhang11.1mm2 at print(0.1,-14.2,0.5); seam clearance spansX+-5.184 and worldZ37.580..40.118, shrinking tozero byYseam+1.2. Exterior views conceal the internal roof.",
+    "part": "body_02_rear",
+    "repair": "Open the closing seam void with a printable converging relief while preserving crown and outgoing socket. Determine a narrow slot/teardrop relief rather than a large round bore that would breach the crown."
+   }
+  ],
+  "observation": "Front, top and iso inspected. Convex barrel, crown, ankle corners and four socket fingers remain coherent. Numeric support check locates a closing clearance crescent beneath the socket-side plate, partly hidden in the supplied views; source sections confirm the void closes over0.9mm while spanning10.4mm. Explicit1.2mm wall passes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0003/visual-packet.json",
+  "packet_sha256": "74f20f972af75a92bdeb48ba7f78f9fe92ae4370155ee01a333a9b6667b6c95e",
+  "status": "fail"
+ }
+}

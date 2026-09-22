@@ -1,0 +1,62 @@
+{
+ "build": {
+  "face_sleepy_mouth": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_sleepy_mouth"
+ ],
+ "check_motion": true,
+ "checked": [
+  "face_sleepy_mouth"
+ ],
+ "checks_ok": true,
+ "entry": "part_face_sleepy_mouth.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_mouth/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_sleepy_mouth"
+ ],
+ "print": {
+  "face_sleepy_mouth": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_mouth/r0001/overhang-face_sleepy_mouth.log": "9f7e104af5640c5406b6c95620a9d266ba6057c9ee74cff935a407ecabbed677",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_mouth/r0001/thickness-face_sleepy_mouth.log": "03b2bb5bc99e293c1a438f52f91b9536f6dff605aab3d83e69ed9d084f911280"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:face_sleepy_mouth",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Small charcoal oval has smooth closed perimeter, flat parallel attachment/top faces and uniform1.2mm extrusion. No thin pointed ends, cuts or detached solids are visible. Default standing-feature wall and support checks pass; installed sleepy face remains for assembly review.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_mouth/r0001/visual-packet.json",
+  "packet_sha256": "737f40b6e2642b7c6b760928a8c8454450c28855e04d436993c984e92e86db46",
+  "status": "pass"
+ }
+}

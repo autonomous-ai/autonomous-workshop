@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_01_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_rear"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_01_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0010",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_rear"
+ ],
+ "print": {
+  "body_01_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0010/overhang-body_01_rear.log": "b366172c727e4b5f13109743fd93c94ef5d78fc6b0fb7553457515db4585acf4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0010/thickness-body_01_rear.log": "5a5a6bb3ee9557b60f1c8647bce21d0589fb8d37cd5b8e08ca093494b0cb499b"
+   },
+   "measured_round": 10,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 40.6% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 1.9,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 10,
+ "scope": "component:body_01_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Backed retaining lip still fails thickness and support",
+    "evidence": "Mouth rim remains fine in top and iso;1.2mm wall21.1mm2 at(0.5,-3.9,7.4), support1.9mm2 at(0.5,-7.5,7.2).",
+    "part": "body_01_rear",
+    "repair": "Replace all fillet/bead/heel/backing additions with a simple0.2mm cylindrical axial mouth land, updating authoritative J01 lip and explicitly retaining the existing child clearance envelope where it contains the new cup."
+   }
+  ],
+  "observation": "Front, top and iso inspected. Backed rolled lip is connected and exterior body proportions remain unchanged. The backed lip still fails both1.2mm wall and support checks:21.1mm2 lip region and1.9mm2 unsupported ring. This rounded microfeature construction is rejected.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0010/visual-packet.json",
+  "packet_sha256": "0f1a186cf13864b1ad5f0518bdce395ebffde77212671f7cffbe71e6e3100f95",
+  "status": "fail"
+ }
+}

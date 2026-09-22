@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_01_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_rear"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_01_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0012",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_rear"
+ ],
+ "print": {
+  "body_01_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0012/overhang-body_01_rear.log": "6d02c00644ac2d43cbcb66080823ce96319ffb96a545149f8d2e360980462443",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0012/thickness-body_01_rear.log": "8ddb5352f7fe208620f0df11437e3b9f3f55294c158484164c059ca1d2cb3ce0"
+   },
+   "measured_round": 12,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.4,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 12,
+ "scope": "component:body_01_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Convex rear shoulder retains open ankle corners, flat split face and four socket sectors. The throat is a continuous straight land with no rolled ridge; root opening is clean without the prior tiny cap wedges. Default and additional1.2mm wall and overhang checks pass; only classified edge tapers remain. Actual retention, motion and bonded-half closure require assembly checks.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0012/visual-packet.json",
+  "packet_sha256": "5682b3b80993df1a269c27d2acfbd8787c673cfb4bed4c8c67310df173426da4",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,129 @@
+{
+  "verdict": "All four fixed legs have positive coplanar adhesive contact on two perpendicular planes; no disconnected leg or assembly gap found. No geometry repair indicated by this audit.",
+  "method": "Direct source exact solid intersection/distance and coplanar source face intersection; no export/native client/motion gate.",
+  "source_unchanged": true,
+  "source_hashes": {
+    "parts/body.py": "d796a764581db8f9534b70d6779112a9b65e1b15debdb55922a8a675301bd172",
+    "parts/decor.py": "557e483cb2966e9cd828dcbc8229873869bf1469645f8a87a76f713dfebbb40e",
+    "params/__init__.py": "5178488740bcbb55910ba851bad3743db5e8c002f3892b3014e71a3c5f71e6fe",
+    "params/decor.py": "bcdb5030279d71de8e7706c9b8fcc326435fb5c6c8f62eff8ae091ad832d254b",
+    "params/body.py": "2610ee3d4d8114b974b2e3810675a0392267eefb2d18400adda10509bbe95c64",
+    "features/joints.py": "140c62f66916a97a6d402c335ef814e51e69e6246126248d3694cf0cd916510a"
+  },
+  "legs": [
+    {
+      "leg": 1,
+      "foot_center": [
+        -32,
+        50,
+        0
+      ],
+      "owner": "body_01",
+      "horizontal_bond_mm2": 32.301734053408474,
+      "vertical_bond_mm2": 12.023244312976182,
+      "total_bond_mm2": 44.324978366384656,
+      "body_halves_gap_mm": {
+        "front": 0.0,
+        "rear": 0.0
+      },
+      "body_halves_overlap_mm3": {
+        "front": 0,
+        "rear": 0
+      },
+      "key_side_face_contact_fraction": 0.6011622156488091,
+      "key_contact_y_interval_mm": [
+        53.5,
+        56.55
+      ]
+    },
+    {
+      "leg": 2,
+      "foot_center": [
+        32,
+        50,
+        0
+      ],
+      "owner": "body_01",
+      "horizontal_bond_mm2": 32.30174537703274,
+      "vertical_bond_mm2": 12.023244306498361,
+      "total_bond_mm2": 44.3249896835311,
+      "body_halves_gap_mm": {
+        "front": 0.0,
+        "rear": 0.0
+      },
+      "body_halves_overlap_mm3": {
+        "front": 0,
+        "rear": 0
+      },
+      "key_side_face_contact_fraction": 0.6011622153249181,
+      "key_contact_y_interval_mm": [
+        53.5,
+        56.55
+      ]
+    },
+    {
+      "leg": 3,
+      "foot_center": [
+        -32,
+        82,
+        0
+      ],
+      "owner": "body_04",
+      "horizontal_bond_mm2": 11.564305676645267,
+      "vertical_bond_mm2": 10.058356939379044,
+      "total_bond_mm2": 21.62266261602431,
+      "body_halves_gap_mm": {
+        "front": 0.0,
+        "rear": 0.0
+      },
+      "body_halves_overlap_mm3": {
+        "front": 0,
+        "rear": 0
+      },
+      "key_side_face_contact_fraction": 0.5029178469689521,
+      "key_contact_y_interval_mm": [
+        85.5,
+        88.24471566
+      ]
+    },
+    {
+      "leg": 4,
+      "foot_center": [
+        32,
+        82,
+        0
+      ],
+      "owner": "body_04",
+      "horizontal_bond_mm2": 11.56430975806529,
+      "vertical_bond_mm2": 10.058356928852474,
+      "total_bond_mm2": 21.622666686917764,
+      "body_halves_gap_mm": {
+        "front": 0.0,
+        "rear": 0.0
+      },
+      "body_halves_overlap_mm3": {
+        "front": 0,
+        "rear": 0
+      },
+      "key_side_face_contact_fraction": 0.5029178464426237,
+      "key_contact_y_interval_mm": [
+        85.5,
+        88.24471566
+      ]
+    }
+  ],
+  "interface": "Open adhesive corner at abs(X)=18.5 and Z=19. The 5x5x4 ankle pad is partially backed by body stock. This is not a closed or mechanically captive pocket. The unused leg_seat helper does not establish current pocket geometry.",
+  "assembly_consistency": "assemblies/product.py build_segment places leg_world(index) and body_half(index,...,False) in the same segment compound; any later chain transform moves them together.",
+  "limitations": [
+    "Exact nominal source-face areas, not printed contact or adhesive strength.",
+    "Zero nominal plastic gap is the designed face-bond datum; cured bond-line thickness and assembly variation are not modelled here.",
+    "No physical print readiness, load, durability or insertion-motion claim.",
+    "Source solid checks supplement, not replace, the existing native STEP validate and zero-clash results."
+  ],
+  "visual_followup": "Isolate body01 plus front legs and body04 plus rear legs without changing transforms, removing head/gills/adjacent segments only for visibility. Use an underside/rear-oblique native view to see the inward bent ankle. If occluded, a section normal Y through Y55 and Y87 shows X=+/-18.5 side contact and Z19 shoulder contact. Do not explode the components for this proof.",
+  "evidence_sha256": {
+    "probe.py": "3456e7c1153602dd3f2e0b7a68092932efed7aa36774a126f43cc82786af6fea",
+    "probe.json": "ea23797f8b4e16a8aa2870119de6debec89acbe0072b379eedde6a9bb125e10c",
+    "probe-console.txt": "43b7a7d38a193a848c7645cc46fd5fdbfbced9bda44236ef7ec6228fa365265a"
+  }
+}

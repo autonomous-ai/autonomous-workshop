@@ -1,0 +1,62 @@
+{
+ "build": {
+  "sun": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "sun"
+ ],
+ "check_motion": true,
+ "checked": [
+  "sun"
+ ],
+ "checks_ok": true,
+ "entry": "part_sun.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/sun/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "sun"
+ ],
+ "print": {
+  "sun": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/sun/r0001/overhang-sun.log": "0b7efce90003d8a7e212d7dedd6e3f12335e2061cd64eb4224f23d323f2fd702",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/sun/r0001/thickness-sun.log": "cae7f13f5558bf07954de92b82d1776c4dc8367019769532f6b3b799f866a22d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:sun",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Five swept spokes surround a wide keyed open center. The larger toothed ring is continuous, face depth is uniform, and all holes remain through-open in top and iso.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/sun/r0001/visual-packet.json",
+  "packet_sha256": "57e0f566f79e6af40bb66b66390ac0fdc9199e78212e2017cc7589460f0cd8df",
+  "status": "pass"
+ }
+}

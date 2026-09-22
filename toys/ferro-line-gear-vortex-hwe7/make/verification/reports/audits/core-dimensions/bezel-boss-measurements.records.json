@@ -1,0 +1,499 @@
+[
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.2.f485",
+      "displaySelector": "o1.23.2.f485",
+      "copyText": "#o1.23.2.f485",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.2",
+        "bbox": {
+          "min": [
+            -34.998491,
+            -43.3,
+            85.001509
+          ],
+          "max": [
+            34.998491,
+            -39.3,
+            154.998491
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            69.996982,
+            4.0,
+            69.996982
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -41.3,
+            120.0
+          ],
+          "diag": 99.07146399552522
+        },
+        "center": [
+          0.0,
+          -41.3,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "bezel_black",
+        "translation": [
+          0.0,
+          -39.3,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -39.3,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.2.f485",
+        "bbox": {
+          "min": [
+            -2.348348,
+            -43.3,
+            91.095238
+          ],
+          "max": [
+            2.348348,
+            -39.3,
+            92.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.696696,
+            4.0,
+            0.9047620000000052
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -41.3,
+            91.547619
+          ],
+          "diag": 6.2351862516736425
+        },
+        "center": [
+          0.0,
+          -41.3,
+          91.676859
+        ],
+        "occurrenceId": "o1.23.2",
+        "shapeId": "o1.23.2.s1",
+        "kind": "cylinder",
+        "area": 20.542411,
+        "origin": [
+          0.0,
+          -39.3,
+          88.5
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "z",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "z",
+        "coordinate": 88.5,
+        "planeOffset": 88.5,
+        "radius": 3.5,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "bezel_lower_boss"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.2.f486",
+      "displaySelector": "o1.23.2.f486",
+      "copyText": "#o1.23.2.f486",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.2",
+        "bbox": {
+          "min": [
+            -34.998491,
+            -43.3,
+            85.001509
+          ],
+          "max": [
+            34.998491,
+            -39.3,
+            154.998491
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            69.996982,
+            4.0,
+            69.996982
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -41.3,
+            120.0
+          ],
+          "diag": 99.07146399552522
+        },
+        "center": [
+          0.0,
+          -41.3,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "bezel_black",
+        "translation": [
+          0.0,
+          -39.3,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -39.3,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.2.f486",
+        "bbox": {
+          "min": [
+            -2.348348,
+            -43.3,
+            148.0
+          ],
+          "max": [
+            2.348348,
+            -39.3,
+            148.904762
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.696696,
+            4.0,
+            0.9047620000000052
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -41.3,
+            148.452381
+          ],
+          "diag": 6.2351862516736425
+        },
+        "center": [
+          -0.0,
+          -41.3,
+          148.323141
+        ],
+        "occurrenceId": "o1.23.2",
+        "shapeId": "o1.23.2.s1",
+        "kind": "cylinder",
+        "area": 20.542411,
+        "origin": [
+          0.0,
+          -39.3,
+          151.5
+        ],
+        "normal": [
+          0.0,
+          -0.0,
+          -1.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "z",
+          "sign": -1,
+          "aligned": true
+        },
+        "axis": "z",
+        "coordinate": 151.5,
+        "planeOffset": -151.5,
+        "radius": 3.5,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "bezel_upper_boss"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "z",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.23.2.f485",
+        "displaySelector": "o1.23.2.f485",
+        "copyText": "#o1.23.2.f485",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.23.2.f485",
+          "bbox": {
+            "min": [
+              -2.348348,
+              -43.3,
+              91.095238
+            ],
+            "max": [
+              2.348348,
+              -39.3,
+              92.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              4.696696,
+              4.0,
+              0.9047620000000052
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -41.3,
+              91.547619
+            ],
+            "diag": 6.2351862516736425
+          },
+          "center": [
+            0.0,
+            -41.3,
+            91.676859
+          ],
+          "occurrenceId": "o1.23.2",
+          "shapeId": "o1.23.2.s1",
+          "kind": "cylinder",
+          "area": 20.542411,
+          "origin": [
+            0.0,
+            -39.3,
+            88.5
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 88.5,
+          "planeOffset": 88.5,
+          "radius": 3.5,
+          "axisVector": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "coordinate": 88.5,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.23.2.f486",
+        "displaySelector": "o1.23.2.f486",
+        "copyText": "#o1.23.2.f486",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.23.2.f486",
+          "bbox": {
+            "min": [
+              -2.348348,
+              -43.3,
+              148.0
+            ],
+            "max": [
+              2.348348,
+              -39.3,
+              148.904762
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              4.696696,
+              4.0,
+              0.9047620000000052
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -41.3,
+              148.452381
+            ],
+            "diag": 6.2351862516736425
+          },
+          "center": [
+            -0.0,
+            -41.3,
+            148.323141
+          ],
+          "occurrenceId": "o1.23.2",
+          "shapeId": "o1.23.2.s1",
+          "kind": "cylinder",
+          "area": 20.542411,
+          "origin": [
+            0.0,
+            -39.3,
+            151.5
+          ],
+          "normal": [
+            0.0,
+            -0.0,
+            -1.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 151.5,
+          "planeOffset": -151.5,
+          "radius": 3.5,
+          "axisVector": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "coordinate": 151.5,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 63.0,
+        "absoluteDistance": 63.0,
+        "euclideanDistance": 63.0,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "bezel_boss_center_separation"
+  }
+]

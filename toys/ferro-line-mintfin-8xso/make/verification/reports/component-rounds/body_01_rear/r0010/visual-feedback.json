@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Backed retaining lip still fails thickness and support",
+      "evidence": "Mouth rim remains fine in top and iso;1.2mm wall21.1mm2 at(0.5,-3.9,7.4), support1.9mm2 at(0.5,-7.5,7.2).",
+      "part": "body_01_rear",
+      "repair": "Replace all fillet/bead/heel/backing additions with a simple0.2mm cylindrical axial mouth land, updating authoritative J01 lip and explicitly retaining the existing child clearance envelope where it contains the new cup."
+    }
+  ],
+  "observation": "Front, top and iso inspected. Backed rolled lip is connected and exterior body proportions remain unchanged. The backed lip still fails both1.2mm wall and support checks:21.1mm2 lip region and1.9mm2 unsupported ring. This rounded microfeature construction is rejected.",
+  "packet_sha256": "0f1a186cf13864b1ad5f0518bdce395ebffde77212671f7cffbe71e6e3100f95",
+  "status": "fail"
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "tail_right": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "tail_right"
+ ],
+ "check_motion": true,
+ "checked": [
+  "tail_right"
+ ],
+ "checks_ok": true,
+ "entry": "part_tail_right.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/tail_right/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "tail_right"
+ ],
+ "print": {
+  "tail_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/tail_right/r0001/overhang-tail_right.log": "fad98fbf43ff4fc9f3610f3ef9d1b4f1841dcfbe1eb41d7daee5aa897271da26",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/tail_right/r0001/thickness-tail_right.log": "b128805908c87e0231a79ae814cfc19d63484dfdab937a58f1d9e70a8a38c6a8"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:tail_right",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front confirms the flat sagittal bed and continuous fan half with attached half-ball and neck. Top shows five blunt lobes, the two millimetre lower leading tip, open clearance below the fan and broad square root collar. Iso confirms the uniform fan thickness and connected root with no floating parts or residual thin feathered root. Small leading relief edge agrees with measured 0.17 percent accepted edge taper; no motion or physical strength is established by these images.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/tail_right/r0001/visual-packet.json",
+  "packet_sha256": "2c5eb6b04ba95e6681a22c38d6f8ce4f2a12db0281d9c5672a71260f7baac75d",
+  "status": "pass"
+ }
+}

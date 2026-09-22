@@ -1,0 +1,127 @@
+{
+  "status": "PASS_SAMPLED_FIXED_CENTER_CONTACT",
+  "audited_utc": "2026-09-21T09:14:33.763626+00:00",
+  "bindings": {
+    "native_summary": {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/runs/all17-r1/summary.json",
+      "sha256": "0c3404ab6effd3a04194309386da9cdf6b5d5f24a55d85a80aeecc2fdea7d7a4"
+    },
+    "results": {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/runs/all17-r1/contact-results.json",
+      "sha256": "58a70bd1d84cd5e6709fc2f2ed4cb0b2b3b9a4381a9feb911e1d07386da3afd3"
+    },
+    "stream": {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/runs/all17-r1/contact-results.jsonl",
+      "sha256": "3fe4e5af2ad7cb25cab104b6a6c8f194c5d603db48a9777bd4398e755d66eb54"
+    },
+    "run_identity": {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/runs/all17-r1/run-identity.json",
+      "sha256": "1035582406758912695fe59761afedc9c8d6c47cf9d72ce57941ab979b0fbb81"
+    },
+    "source_bindings": {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/source-bindings.json",
+      "sha256": "60ab99b5f60456cf0363452fb3e5e32d8420e94199247b586157eda70e0abf93"
+    },
+    "plan": {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/PLAN.json",
+      "sha256": "35368ec4003ac7d4800e6d07b1e4b10230c520e43dad9131c70218f40ac1d989"
+    },
+    "diagnostic": {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/measure_contact.py",
+      "sha256": "e1080be02d7be8abdc4836d4585ac0de88159638eca9b5e6d8af8cdf4d4bdfd2"
+    }
+  },
+  "verified_source_reference_bindings": [
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/params.py",
+      "sha256": "27516d7fca9bf415014586a6ac1217c0ff838bc0e8f47677861d3787c040257c"
+    },
+    {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/snapshot/params.py",
+      "sha256": "27516d7fca9bf415014586a6ac1217c0ff838bc0e8f47677861d3787c040257c"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/__init__.py",
+      "sha256": "4d42cb213ca584794ea361191ed15b00a33fdfca4cbf6d3d74e6f8bac366d51b"
+    },
+    {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/snapshot/parts/__init__.py",
+      "sha256": "4d42cb213ca584794ea361191ed15b00a33fdfca4cbf6d3d74e6f8bac366d51b"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/gears.py",
+      "sha256": "cf1b6860d2b2a2f5e7d3db346593debfb887e6cab79a6b15e356e97b2eaef46a"
+    },
+    {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/snapshot/parts/gears.py",
+      "sha256": "cf1b6860d2b2a2f5e7d3db346593debfb887e6cab79a6b15e356e97b2eaef46a"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/features/__init__.py",
+      "sha256": "b81051b77f4513064945b53cfb27edbfdb0904f0951d9c007c50a94aa52fc473"
+    },
+    {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/snapshot/features/__init__.py",
+      "sha256": "b81051b77f4513064945b53cfb27edbfdb0904f0951d9c007c50a94aa52fc473"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/features/gearing.py",
+      "sha256": "6203d0b50468de5dd2d49531f2021ec8b810e5ea5d1836e56fa405e7fef3b077"
+    },
+    {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/snapshot/features/gearing.py",
+      "sha256": "6203d0b50468de5dd2d49531f2021ec8b810e5ea5d1836e56fa405e7fef3b077"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/features/threads.py",
+      "sha256": "5fd72857ab8744769df23c27293a5a3eca2f77b0afb8392f24db57220c516cc4"
+    },
+    {
+      "path": "artifacts/make/r0001/visual-repair-mesh-contact/snapshot/features/threads.py",
+      "sha256": "5fd72857ab8744769df23c27293a5a3eca2f77b0afb8392f24db57220c516cc4"
+    },
+    {
+      "path": "artifacts/make/r0001/mesh-contact/measure_contact.py",
+      "sha256": "952077e7ea66b3095b5c24b035a6b1a5e041b935c088111aba18ed764551af18"
+    },
+    {
+      "path": "artifacts/make/r0001/mesh-contact/RESULTS-17.md",
+      "sha256": "25cd7f3525f3a9f64c7cb6ef3b95f723f47772ca7f791e165886478f06f03818"
+    },
+    {
+      "path": "artifacts/make/r0001/visual-repair-qualified-candidates.json",
+      "sha256": "e5e04568ba848ab0c8afb7c816380ecc6bc171316e2ab0e0e4dced07d410618e"
+    },
+    {
+      "path": "artifacts/make/r0001/visual-repair-design-supplement.md",
+      "sha256": "7f7fead933a8f237e638dc5c12e2b8911e810ffa7e0af20dc1987d4d81383946"
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/assemblies/product.py",
+      "sha256": "9746a05f783fbe1a781082a8e10c4bb59428d532f083b8bb41ece99967792800"
+    }
+  ],
+  "coverage": {
+    "arms": 2,
+    "meshes_per_arm": 7,
+    "samples_per_mesh": 17,
+    "rows": 238,
+    "unique_complete_sample_keys": true,
+    "loaded_phases_and_halfturns_checked": true,
+    "errors": 0
+  },
+  "max_distance_mm": 3.3314989336525863e-07,
+  "distance_limit_mm": 1e-06,
+  "max_absolute_overlap_mm3": 1.4537136232201417e-06,
+  "overlap_limit_mm3": 0.001,
+  "scope": "Exact BRep geometry generated from the SHA-bound current source snapshots. Every mesh is tested separately at fixed centers across one relative tooth-pitch interval in17states. This is not an importedSTEPassembly sweep.",
+  "not_proven": [
+    "continuous contact between samples",
+    "simultaneous coupled full-assembly motion",
+    "torque transmission or friction",
+    "insertion or retention",
+    "physical fit",
+    "print readiness"
+  ],
+  "formal_motion_status": "Round4 remains UNVERIFIED:exit3,no condition results."
+}

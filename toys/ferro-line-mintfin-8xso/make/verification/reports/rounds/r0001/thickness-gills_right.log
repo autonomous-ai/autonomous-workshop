@@ -1,0 +1,14 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/part_gills_right.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-gills_right.md
+(7.3s, exit 0)
+--- stdout
+part_gills_right.step.py: 1.73 cm3 solid, grid 0.133 mm (286x391x32), 101594 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (1 of 101594 samples); thinnest 0.13 mm at (3.0, 9.7, 2.5) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.00% of surface, budget 2%)
+  PASS  thickness distribution         median 2.40 mm, p95 11.47 mm, max 37.73 mm
+  WARN  hollowable at 1.20 mm wall     0.02 of 1.73 cm3 (1%) in 3 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.13 mm at (3.0, 9.7, 2.5)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.13 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/rounds/r0001/thickness-gills_right.md
+
+--- stderr

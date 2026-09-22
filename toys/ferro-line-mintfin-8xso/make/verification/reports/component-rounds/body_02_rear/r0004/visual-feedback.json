@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Relief offset to wrong side of unsupported roof",
+      "evidence": "Native exterior views conceal underside; deterministic source-face bounds place new ramp atX\u221216.5..\u22125.5, while failed roof remainsX\u00b15.184 at printY\u221214.2.",
+      "part": "body_02_rear",
+      "repair": "Force positive local extrusion direction, centering relief atX\u00b15.5 and removing the unintended side groove by rebuilding from unchanged base stock."
+    }
+  ],
+  "observation": "Front, top and iso inspected; outer crown, flank, ankle corners and socket remain coherent. The unchanged unsupported roof remains hidden under the plate. Source-face inspection located the attempted relief at X\u221216.5..\u22125.5, beside the intended centered roof, due polygon winding reversing extrusion. Explicit1.2mm wall passes but support fails10.9mm2.",
+  "packet_sha256": "adf67b7835425e45e3dd515ac4a83d33eba98bdf428cab63c0adcb4f4ebf9277",
+  "status": "fail"
+}

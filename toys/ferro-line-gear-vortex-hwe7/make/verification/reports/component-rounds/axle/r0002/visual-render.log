@@ -1,0 +1,18 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_axle.step.py --view front --view top --view iso -o <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0002/visual
+(8.2s, exit 1)
+--- stdout
+
+--- stderr
+Traceback (most recent call last):
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 359, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 347, in main
+    occurrences = tessellate_occurrences(shape, args.tolerance)
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/render_review", line 192, in tessellate_occurrences
+    vertices, triangles = child.tessellate(tolerance)
+                          ~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "<HOME>/.local/share/autonomous-workshop-python/lib/python3.13/site-packages/build123d/topology/shape_core.py", line 2280, in tessellate
+    poly.Node(i).Transformed(trsf) for i in range(1, poly.NbNodes() + 1)
+                                                     ^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'NbNodes'
