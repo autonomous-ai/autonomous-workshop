@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Inspected front, top and iso. Constant-section front plate has centered intact incoming sphere with supported heel, symmetric open ankle corners, continuous flat bond seat and no visible disconnected geometry. Default wall, explicit 1.2 mm wall and overhang checks pass; heel motion clearance remains unverified.",
+  "packet_sha256": "5ab008bb276ade2e9faa5f9833a7d06d0f1df9c7a576db9d1b56f6828a25daae",
+  "status": "pass"
+}

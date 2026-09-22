@@ -1,0 +1,62 @@
+{
+ "build": {
+  "belly_08": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_08"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_08"
+ ],
+ "checks_ok": true,
+ "entry": "part_belly_08.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_08"
+ ],
+ "print": {
+  "belly_08": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0003/overhang-belly_08.log": "22fdda389d2886d9ec114780233a0848b09ad0147be1cca35a822b686ea183e4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0003/thickness-belly_08.log": "78fc10359aebdc28acaf8ac4d4e30f9af99074631c500341af15901503ad5a5e"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:belly_08",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Widened cream underside oval has broad continuous faces, smooth rounded perimeter and consistent1.2mm height; narrow end slivers are gone. Default and additional1.2mm wall/support checks pass. Its4.8x2.2 footprint is centered atY125.4 for the planned seat; actual assembled support remains to be checked.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0003/visual-packet.json",
+  "packet_sha256": "3fab5a63fc579beb281858a93e8f94e9ba2096f1010a6b4068da6b6963cd7991",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,17 @@
+{
+  "assembly": {
+    "path": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+    "sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff"
+  },
+  "coupon": {
+    "path": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+    "sha256": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5"
+  },
+  "coupon_current_master": {
+    "path": "artifacts/make/r0001/product/gear_vortex/part_coupon.step",
+    "sha256": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5"
+  },
+  "request_count": 9,
+  "requests_sha256": "b26e0fbdfd0a745818de69213f53b5396bbdf2de0c6648e27add9a24f8893fe2",
+  "history_search": "No exact knurl feature measurement found in archived core-dimensions,stand-assembly-audit,or final-geometry feature reports. Retainedbezel masterhash bridge available; oldcoupon16/18doesnottransfer."
+}

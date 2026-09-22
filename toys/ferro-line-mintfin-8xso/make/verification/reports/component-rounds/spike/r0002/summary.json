@@ -1,0 +1,62 @@
+{
+ "build": {
+  "spike": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "spike"
+ ],
+ "check_motion": true,
+ "checked": [
+  "spike"
+ ],
+ "checks_ok": true,
+ "entry": "part_spike.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "spike"
+ ],
+ "print": {
+  "spike": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike/r0002/overhang-spike.log": "b4796c0f06becad24e2a974d2c50d65f03352856b33d65ecc15c3e23058ddb69",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike/r0002/thickness-spike.log": "078da17278a1548a98ac24a014db31a0aaa30e0a5e99a2a81cf60d1037be4824"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:spike",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The repaired spike has a short vertical circular foot visible in front and iso, followed by a continuous rearward taper and blunt tip. Top retains the posterior tip offset and full round base. No floating geometry, thin skirt or extra projection is visible; adhesive strength and assembly clearance are pending.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike/r0002/visual-packet.json",
+  "packet_sha256": "0a0a78af0be35aed6e80440db49bbcfb7e006abcb8c0cfd981ae8da457173c28",
+  "status": "pass"
+ }
+}

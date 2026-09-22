@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": true,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_body_04_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_04_front"
+ ],
+ "print": {
+  "body_04_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0004/overhang-body_04_front.log": "a72c2d1c8e4ee132138baa568d7a6476cd16adb7bc111657f6aa2fff3f3607ac",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0004/thickness-body_04_front.log": "71fba1e6ac2875c025500f7efd8f25e0733c6b1526042527d3f55ab12a90c78e"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [
+  "body_04_front"
+ ],
+ "round": 5,
+ "scope": "component:body_04_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a constant seam land and attached centered ball; top and iso retain the open crescent and paired ankle notches with no stepped feather edge. The fresh build retained identical geometry after the adjacent socket update. No detached or visibly misplaced geometry; assembled fit remains pending.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0005/visual-packet.json",
+  "packet_sha256": "e277077697f10d927dce41a690004d65813887d88d5827c129c1cf87e1b26efc",
+  "status": "pass"
+ }
+}

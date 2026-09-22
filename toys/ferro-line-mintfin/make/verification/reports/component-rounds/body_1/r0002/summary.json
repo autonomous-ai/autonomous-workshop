@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_1": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_1"
+ ],
+ "check_motion": false,
+ "checked": [
+  "body_1"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_1.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_1/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_1"
+ ],
+ "print": {
+  "body_1": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_1/r0002/overhang-body_1.log": "4f492b988daf8c2ffbefac133b28bc7c5615c84575767fabc9263f4a78c3bacb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_1/r0002/thickness-body_1.log": "1cea9d44e44902bce8250402c47c8a085d81db52b99037bb918106a3fc1ae367"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:body_1",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a tall but rounded body crown and rooted blunt crest. Top and iso show paired feet, a clear C-bearing throat and coaxial rear pin; the rear bearing clearance cut stays open.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_1/r0002/visual-packet.json",
+  "packet_sha256": "734b9ae559257b09729a2545181cf63f6163cd87cdbc72ce39580cac76c77115",
+  "status": "pass"
+ }
+}

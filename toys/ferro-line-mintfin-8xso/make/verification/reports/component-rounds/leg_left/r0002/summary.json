@@ -1,0 +1,71 @@
+{
+ "build": {
+  "leg_left": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "leg_left"
+ ],
+ "check_motion": true,
+ "checked": [
+  "leg_left"
+ ],
+ "checks_ok": false,
+ "entry": "part_leg_left.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "leg_left"
+ ],
+ "print": {
+  "leg_left": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0002/overhang-leg_left.log": "3871d8e3eb80d2749b5d48e238b5823889d65ae72f94da1e7ba7bcd13533708d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0002/thickness-leg_left.log": "259cbeae5081d9e016123bc388b174677f0f670dac07caf3e9d1c31da1aa9bab"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 1.6% of surface below (1624 of 110608 samples); thinne"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:leg_left",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin toe fins and web ends after open slot conversion",
+    "evidence": "Iso at the toe edge; wish thickness reports25.2,14.4 and9.9mm2 wall regions",
+    "part": "leg_left",
+    "repair": "Redesign the claw seats to avoid tapered residual toe membranes while retaining the paw proportions and three claws."
+   }
+  ],
+  "observation": "The ankle buttress now removes the unsupported ledge. Top/iso show the rectangular toe slots leaving sharp thin outer fins and thin curved web ends; the wall gate confirms three remaining regions.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_left/r0002/visual-packet.json",
+  "packet_sha256": "2df46ec597ebfa97d980523a6bb32f3bfe92aff0cad4428c9c9e630b3ca90620",
+  "status": "fail"
+ }
+}

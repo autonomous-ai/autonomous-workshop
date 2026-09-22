@@ -1,0 +1,237 @@
+{
+  "status": "PREPARED_NOT_EXECUTED",
+  "assembly": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+  "assembly_sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+  "topology": "artifacts/make/r0001/visual-repair-delivery/__cadgen__/models/current-assembly.step/topology.glb",
+  "topology_sha256": "ac79cb93148ee0f30f1bfc0f26a550e6b78951fe20d5fe677a4684fc202c2e6a",
+  "requests_sha256": "92365bf81708a8b3fcdb6eb6aac244df31e5dff78bc98bd85dd03f0758b8bb56",
+  "request_count": 81,
+  "expected_measurements_mm": {
+    "optical_gap": 4,
+    "orange_thickness": 1,
+    "sun_face_width": 5,
+    "bezel_thickness": 4,
+    "gear_1_1_face_width": 5,
+    "gear_1_1_standoff": 0.3,
+    "gear_1_2_face_width": 5,
+    "gear_1_2_standoff": 0.3,
+    "gear_1_3_face_width": 5,
+    "gear_1_3_standoff": 0.3,
+    "gear_1_4_face_width": 5,
+    "gear_1_4_standoff": 0.3,
+    "gear_1_5_face_width": 5,
+    "gear_1_5_standoff": 0.3,
+    "gear_1_6_face_width": 5,
+    "gear_1_6_standoff": 0.3,
+    "gear_1_7_face_width": 5,
+    "gear_1_7_standoff": 0.3,
+    "gear_2_1_face_width": 5,
+    "gear_2_1_standoff": 0.3,
+    "gear_2_2_face_width": 5,
+    "gear_2_2_standoff": 0.3,
+    "gear_2_3_face_width": 5,
+    "gear_2_3_standoff": 0.3,
+    "gear_2_4_face_width": 5,
+    "gear_2_4_standoff": 0.3,
+    "gear_2_5_face_width": 5,
+    "gear_2_5_standoff": 0.3,
+    "gear_2_6_face_width": 5,
+    "gear_2_6_standoff": 0.3,
+    "gear_2_7_face_width": 5,
+    "gear_2_7_standoff": 0.3
+  },
+  "gear_occurrences": [
+    {
+      "name": "gear_1_1",
+      "teeth": 14,
+      "occurrence": "o1.11",
+      "bore_selector": "o1.11.f295",
+      "faces": [
+        "o1.11.f296",
+        "o1.11.f297"
+      ],
+      "post_selector": "o1.25.1.f195",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_2",
+      "teeth": 15,
+      "occurrence": "o1.12",
+      "bore_selector": "o1.12.f301",
+      "faces": [
+        "o1.12.f302",
+        "o1.12.f303"
+      ],
+      "post_selector": "o1.25.1.f184",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_3",
+      "teeth": 18,
+      "occurrence": "o1.13",
+      "bore_selector": "o1.13.f319",
+      "faces": [
+        "o1.13.f320",
+        "o1.13.f321"
+      ],
+      "post_selector": "o1.25.1.f79",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_4",
+      "teeth": 20,
+      "occurrence": "o1.14",
+      "bore_selector": "o1.14.f331",
+      "faces": [
+        "o1.14.f332",
+        "o1.14.f333"
+      ],
+      "post_selector": "o1.25.1.f68",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_5",
+      "teeth": 22,
+      "occurrence": "o1.15",
+      "bore_selector": "o1.15.f343",
+      "faces": [
+        "o1.15.f344",
+        "o1.15.f345"
+      ],
+      "post_selector": "o1.25.1.f57",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_6",
+      "teeth": 23,
+      "occurrence": "o1.16",
+      "bore_selector": "o1.16.f349",
+      "faces": [
+        "o1.16.f350",
+        "o1.16.f351"
+      ],
+      "post_selector": "o1.25.1.f46",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_7",
+      "teeth": 26,
+      "occurrence": "o1.17",
+      "bore_selector": "o1.17.f367",
+      "faces": [
+        "o1.17.f368",
+        "o1.17.f369"
+      ],
+      "post_selector": "o1.25.1.f35",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_1",
+      "teeth": 14,
+      "occurrence": "o1.18",
+      "bore_selector": "o1.18.f295",
+      "faces": [
+        "o1.18.f296",
+        "o1.18.f297"
+      ],
+      "post_selector": "o1.25.1.f164",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_2",
+      "teeth": 15,
+      "occurrence": "o1.19",
+      "bore_selector": "o1.19.f301",
+      "faces": [
+        "o1.19.f302",
+        "o1.19.f303"
+      ],
+      "post_selector": "o1.25.1.f153",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_3",
+      "teeth": 18,
+      "occurrence": "o1.20",
+      "bore_selector": "o1.20.f319",
+      "faces": [
+        "o1.20.f320",
+        "o1.20.f321"
+      ],
+      "post_selector": "o1.25.1.f142",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_4",
+      "teeth": 20,
+      "occurrence": "o1.21",
+      "bore_selector": "o1.21.f331",
+      "faces": [
+        "o1.21.f332",
+        "o1.21.f333"
+      ],
+      "post_selector": "o1.25.1.f131",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_5",
+      "teeth": 22,
+      "occurrence": "o1.22",
+      "bore_selector": "o1.22.f343",
+      "faces": [
+        "o1.22.f344",
+        "o1.22.f345"
+      ],
+      "post_selector": "o1.25.1.f120",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_6",
+      "teeth": 23,
+      "occurrence": "o1.23",
+      "bore_selector": "o1.23.f349",
+      "faces": [
+        "o1.23.f350",
+        "o1.23.f351"
+      ],
+      "post_selector": "o1.25.1.f109",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_7",
+      "teeth": 26,
+      "occurrence": "o1.24",
+      "bore_selector": "o1.24.f367",
+      "faces": [
+        "o1.24.f368",
+        "o1.24.f369"
+      ],
+      "post_selector": "o1.25.1.f98",
+      "formula_crosscheck_only": true
+    }
+  ],
+  "master_step_hashes": {
+    "artifacts/make/r0001/product/gear_vortex/part_gear_23.step": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+    "artifacts/make/r0001/product/gear_vortex/part_gear_cap.step": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+    "artifacts/make/r0001/product/gear_vortex/part_orange_disc.step": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+    "artifacts/make/r0001/product/gear_vortex/part_coupon.step": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5",
+    "artifacts/make/r0001/product/gear_vortex/part_gear_15.step": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+    "artifacts/make/r0001/product/gear_vortex/part_sun.step": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+    "artifacts/make/r0001/product/gear_vortex/part_stem.step": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+    "artifacts/make/r0001/product/gear_vortex/part_gear_26.step": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+    "artifacts/make/r0001/product/gear_vortex/part_foot_trim.step": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+    "artifacts/make/r0001/product/gear_vortex/part_pedestal.step": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+    "artifacts/make/r0001/product/gear_vortex/part_bezel.step": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+    "artifacts/make/r0001/product/gear_vortex/part_gear_14.step": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+    "artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+    "artifacts/make/r0001/product/gear_vortex/part_gear_18.step": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+    "artifacts/make/r0001/product/gear_vortex/part_support_collar.step": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8",
+    "artifacts/make/r0001/product/gear_vortex/part_carrier.step": "cb457616187187a1b4b8b553fadf999553489ae53702b4e5999a6b1afc92e198",
+    "artifacts/make/r0001/product/gear_vortex/part_rim_trim.step": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+    "artifacts/make/r0001/product/gear_vortex/part_gear_20.step": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+    "artifacts/make/r0001/product/gear_vortex/part_main_cap.step": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+    "artifacts/make/r0001/product/gear_vortex/part_axle.step": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+    "artifacts/make/r0001/product/gear_vortex/part_gear_22.step": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28"
+  },
+  "tolerance_mm": 2e-05
+}

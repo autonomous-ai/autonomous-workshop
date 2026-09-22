@@ -1,0 +1,61 @@
+{
+ "build": {
+  "carrier": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "carrier"
+ ],
+ "check_motion": true,
+ "checked": [
+  "carrier"
+ ],
+ "checks_ok": true,
+ "entry": "part_carrier.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "carrier"
+ ],
+ "print": {
+  "carrier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0004/overhang-carrier.log": "ed0f477013ad424f693d62b2ba3aeca474ed7f8d77d90389eb6b3ccdf27101e9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0004/thickness-carrier.log": "0b0a57c32b79bab7c7338ad1a5c91fdd1711dae5db2e3751cb9e14e27a6565fc"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.43,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:carrier",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0004/visual-packet.json",
+  "packet_sha256": "0aafd85f9b1b1c28deda84a60f207c1334b0bff608c805d1b5db73d38296143f",
+  "status": "pending"
+ }
+}

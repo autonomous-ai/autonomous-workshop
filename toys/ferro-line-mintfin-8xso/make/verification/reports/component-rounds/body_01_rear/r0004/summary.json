@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_01_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_rear"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_01_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_rear"
+ ],
+ "print": {
+  "body_01_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0004/overhang-body_01_rear.log": "d18c74116074ff44f4bd6846f50af763bb0e2ac58dc13607289792b2f4d77cc4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0004/thickness-body_01_rear.log": "b005e5cb54b9415e16a46b8f945d757f1936186027cc56725a777cae2e0a2ab7"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 40.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 2.7,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:body_01_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Small unsupported crown ledge adjacent to seam",
+    "evidence": "Front shows shallow top-side undercut; overhang report locates2.7mm2 at print(-1.8,-20.9,0.2). Source sections show clearance lower boundary rises3.25mm per axialmm across the first0.25mm.",
+    "part": "body_01_rear",
+    "repair": "Remove a local crown wedge with0.9mm rise per axialmm from seamZ45.8 to restored crownZ46.7, ending after1mm. Keep full rear crown and socket."
+   }
+  ],
+  "observation": "Front, top and iso inspected. Crown and convex barrel are restored; socket fingers, mouth and ankle notches remain coherent. A small seam-side crown ledge remains unsupported, located by the 2.7mm2 overhang measurement. Both default and1.2mm wall checks pass.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0004/visual-packet.json",
+  "packet_sha256": "f33651eb98b9b7ad4934969d5c886728c4b23bbf522f2d145a1d943e8c57224c",
+  "status": "fail"
+ }
+}

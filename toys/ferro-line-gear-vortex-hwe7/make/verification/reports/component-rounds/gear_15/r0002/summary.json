@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": true,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_gear_15.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_15/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_15"
+ ],
+ "print": {
+  "gear_15": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_15/r0001/overhang-gear_15.log": "4189b7a04091974586bf563e383b7fd382c0e0f2e6b40e438c8dac6db78a526f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_15/r0001/thickness-gear_15.log": "f36dfdcf0b801b5bb4d1935cbab080f00b0adb4a02d4dd3e45f53d3f438c6716"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [
+  "gear_15"
+ ],
+ "round": 2,
+ "scope": "component:gear_15",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Fresh front/top/iso inspection: fifteen intact teeth, five swept windows and open central bore. Window hand opposes14T, with a larger aperture. Face thickness is uniform; no detached teeth or closed window is visible. Digital visual inspection does not establish physical fit or print readiness.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_15/r0002/visual-packet.json",
+  "packet_sha256": "9c59ce85209662389e6fc675fb21b658c87a49392c6385edbba6e94797ff6272",
+  "status": "pass"
+ }
+}

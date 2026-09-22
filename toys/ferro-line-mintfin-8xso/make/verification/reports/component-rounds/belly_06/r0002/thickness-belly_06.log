@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/part_belly_06.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_06/r0002/thickness-belly_06.md
+(5.1s, exit 0)
+--- stdout
+part_belly_06.step.py: 0.08 cm3 solid, grid 0.133 mm (164x37x14), 9681 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 9681 samples)
+  PASS  thickness distribution         median 1.20 mm, p95 4.07 mm, max 20.87 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 0.08 cm3 (0%) in 0 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_06/r0002/thickness-belly_06.md
+
+--- stderr

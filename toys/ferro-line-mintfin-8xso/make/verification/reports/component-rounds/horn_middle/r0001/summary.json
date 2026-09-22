@@ -1,0 +1,62 @@
+{
+ "build": {
+  "horn_middle": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "horn_middle"
+ ],
+ "check_motion": true,
+ "checked": [
+  "horn_middle"
+ ],
+ "checks_ok": true,
+ "entry": "part_horn_middle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_middle/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "horn_middle"
+ ],
+ "print": {
+  "horn_middle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_middle/r0001/overhang-horn_middle.log": "b8599860f28946c332186c8e58951d2a7da867f2130347d41f8956b11b8e0a37",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_middle/r0001/thickness-horn_middle.log": "a608218029bd644b2451b765b5f17a3c1cd40316450a7be23571b38f3254d26c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:horn_middle",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Middle charcoal horn has a short cylindrical key, sloped shoulder and continuous tapered shaft ending in a blunt circular tip. The backward lean is visible in top/iso; no missing material or detached regions. Default and additional1.2mm wall plus support checks pass; head key seating awaits assembly fit.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_middle/r0001/visual-packet.json",
+  "packet_sha256": "1f0d76661577a43667bffcf34ea53195cc615d5186abb52bb4af5c30b3081678",
+  "status": "pass"
+ }
+}

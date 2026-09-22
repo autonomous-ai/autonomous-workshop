@@ -1,0 +1,1 @@
+{"files":{"face_angry":"f98a7446649e5351c994c1309393e349b65ba54c997243a127b9c52d7844d08b","face_happy":"ea3f3dff64fedc2d66a30ec8dcb81feecf0885aa7ee8258470063b78e583a906","face_sleepy":"185044e8f419a9349b832effe4005920e25da47c4bfa96783a2849aa2c30981b"},"group":"faces","kind":"autonomous-workshop.make-group","parts":["face_happy","face_sleepy","face_angry"],"schema_version":1}

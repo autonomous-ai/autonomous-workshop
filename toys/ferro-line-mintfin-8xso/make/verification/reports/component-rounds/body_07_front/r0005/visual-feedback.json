@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Clearance leaves thin wedge walls and underside pocket overhang",
+      "evidence": "Top and iso show feathered borders; thickness and support reports locate them at the opening and bottom notch.",
+      "part": "body_07_front",
+      "repair": "Project clearance through the thin front land, retain radial cup shape, and replace the local underside pocket with a flat bottom seat."
+    }
+  ],
+  "observation": "Front, top and iso show broad wedge edges bordering the clearance window and an underside cream-seat notch.",
+  "packet_sha256": "881460fa4308b61d67142e715ab574cbd245ad5c8bec5c242ac4ca4d012c64ef",
+  "status": "fail"
+}

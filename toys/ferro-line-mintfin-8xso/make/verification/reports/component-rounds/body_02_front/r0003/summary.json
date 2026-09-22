@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_02_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_02_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_02_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_02_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_02_front"
+ ],
+ "print": {
+  "body_02_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0003/overhang-body_02_front.log": "dc3a0b99d3a76154646005ce5280e96ee99c38f82b7167b92842629bf8109a83",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0003/thickness-body_02_front.log": "437a99b8199f908bdf7c055c8390a8bea094f90980f9c99e6a287e03d65bd50b"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 1.0% of surface below (2103 of 244738 samples); thinne"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:body_02_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin crescent bordering incoming-cup clearance",
+    "evidence": "Top and iso show several recessed clearance terraces behind the ball;1.2mm check finds50.7mm2 wall band3.44mm at(-5.1,12.2,0.3).",
+    "part": "body_02_front",
+    "repair": "Apply the approved1.2mm constant front land with leading-clearance projection and tangent sphere heel, retaining ankle cuts and rear convex flank."
+   }
+  ],
+  "observation": "Front, top and iso inspected. Centered sphere and broad elliptical flank remain connected, with symmetric ankle corners. Stepped parent-cup clearance leaves a thin crescent beside the ball; measured wall region is50.7mm2, minimum0.20mm. Overhang passes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0003/visual-packet.json",
+  "packet_sha256": "a7cc2aecea36ec2c8fd5629ec881bf618a96f237ea45e5cfc7a7bc73cad8f53d",
+  "status": "fail"
+ }
+}

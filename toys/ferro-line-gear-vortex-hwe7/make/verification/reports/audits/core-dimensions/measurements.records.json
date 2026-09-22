@@ -1,0 +1,6962 @@
+[
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.8.f2",
+        "displaySelector": "o1.8.f2",
+        "copyText": "#o1.8.f2",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.8.f2",
+          "bbox": {
+            "min": [
+              -27.5,
+              -24.3,
+              92.700506
+            ],
+            "max": [
+              27.5,
+              -24.3,
+              147.299494
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              55.0,
+              0.0,
+              54.598988000000006
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -24.3,
+              120.0
+            ],
+            "diag": 77.49870638032705
+          },
+          "center": [
+            0.011971,
+            -24.3,
+            120.0
+          ],
+          "occurrenceId": "o1.8",
+          "shapeId": "o1.8.s1",
+          "kind": "plane",
+          "area": 2103.876664,
+          "origin": [
+            0.0,
+            -24.3,
+            120.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -24.3,
+          "planeOffset": 24.3
+        },
+        "coordinate": -24.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.9.f4",
+        "displaySelector": "o1.9.f4",
+        "copyText": "#o1.9.f4",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.9.f4",
+          "bbox": {
+            "min": [
+              -28.27454,
+              -28.3,
+              91.72546
+            ],
+            "max": [
+              28.27454,
+              -28.3,
+              148.27454
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              56.54908,
+              0.0,
+              56.549080000000004
+            ],
+            "extentAxis": "z",
+            "center": [
+              0.0,
+              -28.3,
+              120.0
+            ],
+            "diag": 79.97247587572114
+          },
+          "center": [
+            0.015855,
+            -28.3,
+            120.0
+          ],
+          "occurrenceId": "o1.9",
+          "shapeId": "o1.9.s1",
+          "kind": "plane",
+          "area": 1239.284864,
+          "origin": [
+            0.0,
+            -28.3,
+            120.0
+          ],
+          "normal": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.0,
+        "absoluteDistance": 4.0,
+        "euclideanDistance": 4.0,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "optical_gap"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.8.f2",
+        "displaySelector": "o1.8.f2",
+        "copyText": "#o1.8.f2",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.8.f2",
+          "bbox": {
+            "min": [
+              -27.5,
+              -24.3,
+              92.700506
+            ],
+            "max": [
+              27.5,
+              -24.3,
+              147.299494
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              55.0,
+              0.0,
+              54.598988000000006
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -24.3,
+              120.0
+            ],
+            "diag": 77.49870638032705
+          },
+          "center": [
+            0.011971,
+            -24.3,
+            120.0
+          ],
+          "occurrenceId": "o1.8",
+          "shapeId": "o1.8.s1",
+          "kind": "plane",
+          "area": 2103.876664,
+          "origin": [
+            0.0,
+            -24.3,
+            120.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -24.3,
+          "planeOffset": 24.3
+        },
+        "coordinate": -24.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.8.f3",
+        "displaySelector": "o1.8.f3",
+        "copyText": "#o1.8.f3",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.8.f3",
+          "bbox": {
+            "min": [
+              -27.5,
+              -23.3,
+              92.700506
+            ],
+            "max": [
+              27.5,
+              -23.3,
+              147.299494
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              55.0,
+              0.0,
+              54.598988000000006
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -23.3,
+              120.0
+            ],
+            "diag": 77.49870638032705
+          },
+          "center": [
+            0.011971,
+            -23.3,
+            120.0
+          ],
+          "occurrenceId": "o1.8",
+          "shapeId": "o1.8.s1",
+          "kind": "plane",
+          "area": 2103.876664,
+          "origin": [
+            0.0,
+            -23.3,
+            120.0
+          ],
+          "normal": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -23.3,
+          "planeOffset": -23.3
+        },
+        "coordinate": -23.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 1.0,
+        "absoluteDistance": 1.0,
+        "euclideanDistance": 1.0,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "orange_thickness"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.9.f4",
+        "displaySelector": "o1.9.f4",
+        "copyText": "#o1.9.f4",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.9.f4",
+          "bbox": {
+            "min": [
+              -28.27454,
+              -28.3,
+              91.72546
+            ],
+            "max": [
+              28.27454,
+              -28.3,
+              148.27454
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              56.54908,
+              0.0,
+              56.549080000000004
+            ],
+            "extentAxis": "z",
+            "center": [
+              0.0,
+              -28.3,
+              120.0
+            ],
+            "diag": 79.97247587572114
+          },
+          "center": [
+            0.015855,
+            -28.3,
+            120.0
+          ],
+          "occurrenceId": "o1.9",
+          "shapeId": "o1.9.s1",
+          "kind": "plane",
+          "area": 1239.284864,
+          "origin": [
+            0.0,
+            -28.3,
+            120.0
+          ],
+          "normal": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.9.f5",
+        "displaySelector": "o1.9.f5",
+        "copyText": "#o1.9.f5",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.9.f5",
+          "bbox": {
+            "min": [
+              -28.27454,
+              -33.3,
+              91.72546
+            ],
+            "max": [
+              28.27454,
+              -33.3,
+              148.27454
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              56.54908,
+              0.0,
+              56.549080000000004
+            ],
+            "extentAxis": "z",
+            "center": [
+              0.0,
+              -33.3,
+              120.0
+            ],
+            "diag": 79.97247587572114
+          },
+          "center": [
+            0.015855,
+            -33.3,
+            120.0
+          ],
+          "occurrenceId": "o1.9",
+          "shapeId": "o1.9.s1",
+          "kind": "plane",
+          "area": 1239.284864,
+          "origin": [
+            0.0,
+            -33.3,
+            120.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "sun_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.23.2.f2",
+        "displaySelector": "o1.23.2.f2",
+        "copyText": "#o1.23.2.f2",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.23.2.f2",
+          "bbox": {
+            "min": [
+              -34.998491,
+              -43.3,
+              85.001509
+            ],
+            "max": [
+              34.998491,
+              -43.3,
+              154.998491
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              69.996982,
+              0.0,
+              69.996982
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -43.3,
+              120.0
+            ],
+            "diag": 98.99068126958542
+          },
+          "center": [
+            0.0,
+            -43.3,
+            120.0
+          ],
+          "occurrenceId": "o1.23.2",
+          "shapeId": "o1.23.2.s1",
+          "kind": "plane",
+          "area": 1184.755996,
+          "origin": [
+            0.0,
+            -43.3,
+            120.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -43.3,
+          "planeOffset": 43.3
+        },
+        "coordinate": -43.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.23.2.f4",
+        "displaySelector": "o1.23.2.f4",
+        "copyText": "#o1.23.2.f4",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.23.2.f4",
+          "bbox": {
+            "min": [
+              -34.998491,
+              -39.3,
+              85.001509
+            ],
+            "max": [
+              34.998491,
+              -39.3,
+              154.998491
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              69.996982,
+              0.0,
+              69.996982
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -39.3,
+              120.0
+            ],
+            "diag": 98.99068126958542
+          },
+          "center": [
+            0.0,
+            -39.3,
+            120.0
+          ],
+          "occurrenceId": "o1.23.2",
+          "shapeId": "o1.23.2.s1",
+          "kind": "plane",
+          "area": 1184.755996,
+          "origin": [
+            0.0,
+            -39.3,
+            120.0
+          ],
+          "normal": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -39.3,
+          "planeOffset": -39.3
+        },
+        "coordinate": -39.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 4.0,
+        "absoluteDistance": 4.0,
+        "euclideanDistance": 4.0,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "bezel_thickness"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.8.f1",
+      "displaySelector": "o1.8.f1",
+      "copyText": "#o1.8.f1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.8",
+        "bbox": {
+          "min": [
+            -27.5,
+            -24.3,
+            92.700506
+          ],
+          "max": [
+            27.5,
+            -23.3,
+            147.299494
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            55.0,
+            1.0,
+            54.598988000000006
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -23.8,
+            120.0
+          ],
+          "diag": 77.50515783239297
+        },
+        "center": [
+          0.0,
+          -23.8,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "orange_disc_orange",
+        "translation": [
+          0.0,
+          -23.3,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -23.3,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.8.f1",
+        "bbox": {
+          "min": [
+            -27.5,
+            -24.3,
+            92.700506
+          ],
+          "max": [
+            27.5,
+            -23.3,
+            147.299494
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            55.0,
+            1.0,
+            54.598988000000006
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -23.8,
+            120.0
+          ],
+          "diag": 77.50515783239297
+        },
+        "center": [
+          0.0,
+          -23.8,
+          120.0
+        ],
+        "occurrenceId": "o1.8",
+        "shapeId": "o1.8.s1",
+        "kind": "cylinder",
+        "area": 172.367453,
+        "origin": [
+          0.0,
+          -23.3,
+          120.0
+        ],
+        "normal": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -23.3,
+        "planeOffset": 23.3,
+        "radius": 27.5,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "orange_outer_radius"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.2.f1",
+      "displaySelector": "o1.23.2.f1",
+      "copyText": "#o1.23.2.f1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.2",
+        "bbox": {
+          "min": [
+            -34.998491,
+            -43.3,
+            85.001509
+          ],
+          "max": [
+            34.998491,
+            -39.3,
+            154.998491
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            69.996982,
+            4.0,
+            69.996982
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -41.3,
+            120.0
+          ],
+          "diag": 99.07146399552522
+        },
+        "center": [
+          0.0,
+          -41.3,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "bezel_black",
+        "translation": [
+          0.0,
+          -39.3,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -39.3,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.2.f1",
+        "bbox": {
+          "min": [
+            34.967536,
+            -43.3,
+            120.325
+          ],
+          "max": [
+            34.998491,
+            -39.3,
+            121.507125
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            0.030954999999998734,
+            4.0,
+            1.1821249999999992
+          ],
+          "extentAxis": "y",
+          "center": [
+            34.9830135,
+            -41.3,
+            120.91606250000001
+          ],
+          "diag": 4.171136263375963
+        },
+        "center": [
+          34.985972,
+          -41.3,
+          120.91614
+        ],
+        "occurrenceId": "o1.23.2",
+        "shapeId": "o1.23.2.s1",
+        "kind": "cylinder",
+        "area": 4.73032,
+        "origin": [
+          0.0,
+          -39.3,
+          120.0
+        ],
+        "normal": [
+          0.9996573234001926,
+          -0.0,
+          0.026177008468551553
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "x",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "x",
+        "coordinate": 0.0,
+        "planeOffset": 3.1412410162261866,
+        "radius": 35.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "bezel_outer_radius"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.2.f484",
+      "displaySelector": "o1.23.2.f484",
+      "copyText": "#o1.23.2.f484",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.2",
+        "bbox": {
+          "min": [
+            -34.998491,
+            -43.3,
+            85.001509
+          ],
+          "max": [
+            34.998491,
+            -39.3,
+            154.998491
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            69.996982,
+            4.0,
+            69.996982
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -41.3,
+            120.0
+          ],
+          "diag": 99.07146399552522
+        },
+        "center": [
+          0.0,
+          -41.3,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "bezel_black",
+        "translation": [
+          0.0,
+          -39.3,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -39.3,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.2.f484",
+        "bbox": {
+          "min": [
+            -29.0,
+            -43.3,
+            91.095238
+          ],
+          "max": [
+            -2.348348,
+            -39.3,
+            148.904762
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            26.651652,
+            4.0,
+            57.80952400000001
+          ],
+          "extentAxis": "z",
+          "center": [
+            -15.674174,
+            -41.3,
+            120.0
+          ],
+          "diag": 63.78284737635724
+        },
+        "center": [
+          -19.302905,
+          -41.3,
+          120.0
+        ],
+        "occurrenceId": "o1.23.2",
+        "shapeId": "o1.23.2.s1",
+        "kind": "cylinder",
+        "area": 344.730291,
+        "origin": [
+          0.0,
+          -38.3,
+          120.0
+        ],
+        "normal": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "x",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "x",
+        "coordinate": 0.0,
+        "planeOffset": 0.0,
+        "radius": 29.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "bezel_inner_radius"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.11.f308",
+        "displaySelector": "o1.11.f308",
+        "copyText": "#o1.11.f308",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.11.f308",
+          "bbox": {
+            "min": [
+              23.711042,
+              -28.3,
+              104.711042
+            ],
+            "max": [
+              54.288958,
+              -28.3,
+              135.288958
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              30.577916000000002,
+              0.0,
+              30.577916000000002
+            ],
+            "extentAxis": "x",
+            "center": [
+              39.0,
+              -28.3,
+              120.0
+            ],
+            "diag": 43.24370351630526
+          },
+          "center": [
+            39.0,
+            -28.3,
+            120.0
+          ],
+          "occurrenceId": "o1.11",
+          "shapeId": "o1.11.s1",
+          "kind": "plane",
+          "area": 349.8875,
+          "origin": [
+            39.0,
+            -28.3,
+            120.0
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.11.f309",
+        "displaySelector": "o1.11.f309",
+        "copyText": "#o1.11.f309",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.11.f309",
+          "bbox": {
+            "min": [
+              23.711042,
+              -33.3,
+              104.711042
+            ],
+            "max": [
+              54.288958,
+              -33.3,
+              135.288958
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              30.577916000000002,
+              0.0,
+              30.577916000000002
+            ],
+            "extentAxis": "x",
+            "center": [
+              39.0,
+              -33.3,
+              120.0
+            ],
+            "diag": 43.24370351630526
+          },
+          "center": [
+            39.0,
+            -33.3,
+            120.0
+          ],
+          "occurrenceId": "o1.11",
+          "shapeId": "o1.11.s1",
+          "kind": "plane",
+          "area": 349.8875,
+          "origin": [
+            39.0,
+            -33.3,
+            120.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_1_1_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.11.f307",
+      "displaySelector": "o1.11.f307",
+      "copyText": "#o1.11.f307",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.11",
+        "bbox": {
+          "min": [
+            23.711042,
+            -33.3,
+            104.711042
+          ],
+          "max": [
+            54.288958,
+            -28.3,
+            135.288958
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            30.577916000000002,
+            4.9999999999999964,
+            30.577916000000002
+          ],
+          "extentAxis": "x",
+          "center": [
+            39.0,
+            -30.799999999999997,
+            120.0
+          ],
+          "diag": 43.53180324551364
+        },
+        "center": [
+          39.0,
+          -30.799999999999997,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "gear_1_1_yellow",
+        "translation": [
+          39.0,
+          -28.3,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            0.9861958617821942,
+            0.0,
+            0.1655829767931335
+          ],
+          "y": [
+            -0.1655829767931335,
+            0.0,
+            0.9861958617821942
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          0.986196,
+          -0.165583,
+          0.0,
+          39.0,
+          0.0,
+          0.0,
+          -1.0,
+          -28.3,
+          0.165583,
+          0.986196,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.11.f307",
+        "bbox": {
+          "min": [
+            36.296156,
+            -33.3,
+            117.310217
+          ],
+          "max": [
+            41.703844,
+            -28.3,
+            122.689783
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            5.407687999999993,
+            4.9999999999999964,
+            5.379566000000011
+          ],
+          "extentAxis": "x",
+          "center": [
+            39.0,
+            -30.799999999999997,
+            120.0
+          ],
+          "diag": 9.120461603104308
+        },
+        "center": [
+          39.0,
+          -30.8,
+          120.0
+        ],
+        "occurrenceId": "o1.11",
+        "shapeId": "o1.11.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          39.0,
+          -28.3,
+          120.0
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_1_1_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.12.f320",
+        "displaySelector": "o1.12.f320",
+        "copyText": "#o1.12.f320",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.12.f320",
+          "bbox": {
+            "min": [
+              21.067571,
+              -28.3,
+              129.977213
+            ],
+            "max": [
+              52.180442,
+              -28.3,
+              160.800918
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              31.112871,
+              0.0,
+              30.82370499999999
+            ],
+            "extentAxis": "x",
+            "center": [
+              36.6240065,
+              -28.3,
+              145.38906550000002
+            ],
+            "diag": 43.796250202382225
+          },
+          "center": [
+            36.624007,
+            -28.3,
+            145.389066
+          ],
+          "occurrenceId": "o1.12",
+          "shapeId": "o1.12.s1",
+          "kind": "plane",
+          "area": 423.86032,
+          "origin": [
+            36.624007,
+            -28.3,
+            145.389066
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.12.f321",
+        "displaySelector": "o1.12.f321",
+        "copyText": "#o1.12.f321",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.12.f321",
+          "bbox": {
+            "min": [
+              21.067571,
+              -33.3,
+              129.977213
+            ],
+            "max": [
+              52.180442,
+              -33.3,
+              160.800918
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              31.112871,
+              0.0,
+              30.82370499999999
+            ],
+            "extentAxis": "x",
+            "center": [
+              36.6240065,
+              -33.3,
+              145.38906550000002
+            ],
+            "diag": 43.796250202382225
+          },
+          "center": [
+            36.624007,
+            -33.3,
+            145.389066
+          ],
+          "occurrenceId": "o1.12",
+          "shapeId": "o1.12.s1",
+          "kind": "plane",
+          "area": 423.86032,
+          "origin": [
+            36.624007,
+            -33.3,
+            145.389066
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_1_2_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.12.f319",
+      "displaySelector": "o1.12.f319",
+      "copyText": "#o1.12.f319",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.12",
+        "bbox": {
+          "min": [
+            21.067571,
+            -33.3,
+            129.977213
+          ],
+          "max": [
+            52.180442,
+            -28.3,
+            160.800918
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            31.112871,
+            4.9999999999999964,
+            30.82370499999999
+          ],
+          "extentAxis": "x",
+          "center": [
+            36.6240065,
+            -30.799999999999997,
+            145.38906550000002
+          ],
+          "diag": 44.080738784526574
+        },
+        "center": [
+          36.6240065,
+          -30.799999999999997,
+          145.38906550000002
+        ],
+        "kind": "frame",
+        "name": "gear_1_2_yellow",
+        "translation": [
+          36.624007,
+          -28.3,
+          145.389066
+        ],
+        "localAxes": {
+          "x": [
+            0.9984848122803799,
+            0.0,
+            0.0550279896544913
+          ],
+          "y": [
+            -0.0550279896544913,
+            0.0,
+            0.9984848122803799
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          0.998485,
+          -0.055028,
+          0.0,
+          36.624007,
+          0.0,
+          0.0,
+          -1.0,
+          -28.3,
+          0.055028,
+          0.998485,
+          0.0,
+          145.389066,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.12.f319",
+        "bbox": {
+          "min": [
+            34.149195,
+            -33.3,
+            142.930419
+          ],
+          "max": [
+            39.098818,
+            -28.3,
+            147.847712
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.9496230000000025,
+            4.9999999999999964,
+            4.917293000000001
+          ],
+          "extentAxis": "y",
+          "center": [
+            36.6240065,
+            -30.799999999999997,
+            145.38906550000002
+          ],
+          "diag": 8.583620348662794
+        },
+        "center": [
+          36.624007,
+          -30.8,
+          145.389066
+        ],
+        "occurrenceId": "o1.12",
+        "shapeId": "o1.12.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          36.624007,
+          -28.3,
+          145.389066
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_1_2_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.13.f332",
+        "displaySelector": "o1.13.f332",
+        "copyText": "#o1.13.f332",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.13.f332",
+          "bbox": {
+            "min": [
+              1.922816,
+              -28.3,
+              150.820291
+            ],
+            "max": [
+              34.919609,
+              -28.3,
+              183.817083
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              32.996793000000004,
+              0.0,
+              32.996792
+            ],
+            "extentAxis": "x",
+            "center": [
+              18.4212125,
+              -28.3,
+              167.318687
+            ],
+            "diag": 46.66451146831083
+          },
+          "center": [
+            18.421212,
+            -28.3,
+            167.318687
+          ],
+          "occurrenceId": "o1.13",
+          "shapeId": "o1.13.s1",
+          "kind": "plane",
+          "area": 501.35587,
+          "origin": [
+            18.421212,
+            -28.3,
+            167.318687
+          ],
+          "normal": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.13.f333",
+        "displaySelector": "o1.13.f333",
+        "copyText": "#o1.13.f333",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.13.f333",
+          "bbox": {
+            "min": [
+              1.922816,
+              -33.3,
+              150.820291
+            ],
+            "max": [
+              34.919609,
+              -33.3,
+              183.817083
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              32.996793000000004,
+              0.0,
+              32.996792
+            ],
+            "extentAxis": "x",
+            "center": [
+              18.4212125,
+              -33.3,
+              167.318687
+            ],
+            "diag": 46.66451146831083
+          },
+          "center": [
+            18.421212,
+            -33.3,
+            167.318687
+          ],
+          "occurrenceId": "o1.13",
+          "shapeId": "o1.13.s1",
+          "kind": "plane",
+          "area": 501.35587,
+          "origin": [
+            18.421212,
+            -33.3,
+            167.318687
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_1_3_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.13.f331",
+      "displaySelector": "o1.13.f331",
+      "copyText": "#o1.13.f331",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.13",
+        "bbox": {
+          "min": [
+            1.922816,
+            -33.3,
+            150.820291
+          ],
+          "max": [
+            34.919609,
+            -28.3,
+            183.817083
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            32.996793000000004,
+            4.9999999999999964,
+            32.996792
+          ],
+          "extentAxis": "x",
+          "center": [
+            18.4212125,
+            -30.799999999999997,
+            167.318687
+          ],
+          "diag": 46.931616534870315
+        },
+        "center": [
+          18.4212125,
+          -30.799999999999997,
+          167.318687
+        ],
+        "kind": "frame",
+        "name": "gear_1_3_yellow",
+        "translation": [
+          18.421212,
+          -28.3,
+          167.318687
+        ],
+        "localAxes": {
+          "x": [
+            0.9999038624272366,
+            -0.0,
+            -0.013865998092232917
+          ],
+          "y": [
+            0.013865998092232917,
+            0.0,
+            0.9999038624272366
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          0.999904,
+          0.013866,
+          0.0,
+          18.421212,
+          -0.0,
+          0.0,
+          -1.0,
+          -28.3,
+          -0.013866,
+          0.999904,
+          0.0,
+          167.318687,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.13.f331",
+        "bbox": {
+          "min": [
+            16.039091,
+            -33.3,
+            164.953461
+          ],
+          "max": [
+            20.803334,
+            -28.3,
+            169.683913
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.7642430000000004,
+            4.9999999999999964,
+            4.7304519999999854
+          ],
+          "extentAxis": "y",
+          "center": [
+            18.4212125,
+            -30.799999999999997,
+            167.318687
+          ],
+          "diag": 8.371092371211349
+        },
+        "center": [
+          18.421212,
+          -30.8,
+          167.318687
+        ],
+        "occurrenceId": "o1.13",
+        "shapeId": "o1.13.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          18.421212,
+          -28.3,
+          167.318687
+        ],
+        "normal": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          -0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_1_3_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.14.f344",
+        "displaySelector": "o1.14.f344",
+        "copyText": "#o1.14.f344",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.14.f344",
+          "bbox": {
+            "min": [
+              -32.490836,
+              -28.3,
+              155.770619
+            ],
+            "max": [
+              9.028771,
+              -28.3,
+              197.097731
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              41.519607,
+              0.0,
+              41.327112
+            ],
+            "extentAxis": "x",
+            "center": [
+              -11.731032500000001,
+              -28.3,
+              176.434175
+            ],
+            "diag": 58.581634935319045
+          },
+          "center": [
+            -11.731033,
+            -28.3,
+            176.434175
+          ],
+          "occurrenceId": "o1.14",
+          "shapeId": "o1.14.s1",
+          "kind": "plane",
+          "area": 582.601158,
+          "origin": [
+            -11.731033,
+            -28.3,
+            176.434175
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.14.f345",
+        "displaySelector": "o1.14.f345",
+        "copyText": "#o1.14.f345",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.14.f345",
+          "bbox": {
+            "min": [
+              -32.490836,
+              -33.3,
+              155.770619
+            ],
+            "max": [
+              9.028771,
+              -33.3,
+              197.097731
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              41.519607,
+              0.0,
+              41.327112
+            ],
+            "extentAxis": "x",
+            "center": [
+              -11.731032500000001,
+              -33.3,
+              176.434175
+            ],
+            "diag": 58.581634935319045
+          },
+          "center": [
+            -11.731033,
+            -33.3,
+            176.434175
+          ],
+          "occurrenceId": "o1.14",
+          "shapeId": "o1.14.s1",
+          "kind": "plane",
+          "area": 582.601158,
+          "origin": [
+            -11.731033,
+            -33.3,
+            176.434175
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_1_4_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.14.f343",
+      "displaySelector": "o1.14.f343",
+      "copyText": "#o1.14.f343",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.14",
+        "bbox": {
+          "min": [
+            -32.490836,
+            -33.3,
+            155.770619
+          ],
+          "max": [
+            9.028771,
+            -28.3,
+            197.097731
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            41.519607,
+            4.9999999999999964,
+            41.327112
+          ],
+          "extentAxis": "x",
+          "center": [
+            -11.731032500000001,
+            -30.799999999999997,
+            176.434175
+          ],
+          "diag": 58.79462519393242
+        },
+        "center": [
+          -11.731032500000001,
+          -30.799999999999997,
+          176.434175
+        ],
+        "kind": "frame",
+        "name": "gear_1_4_yellow",
+        "translation": [
+          -11.731033,
+          -28.3,
+          176.434175
+        ],
+        "localAxes": {
+          "x": [
+            0.982389025183543,
+            0.0,
+            0.18684700478982305
+          ],
+          "y": [
+            -0.18684700478982305,
+            0.0,
+            0.982389025183543
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          0.982389,
+          -0.186847,
+          0.0,
+          -11.731033,
+          0.0,
+          0.0,
+          -1.0,
+          -28.3,
+          0.186847,
+          0.982389,
+          0.0,
+          176.434175,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.14.f343",
+        "bbox": {
+          "min": [
+            -14.475536,
+            -33.3,
+            173.703302
+          ],
+          "max": [
+            -8.986529,
+            -28.3,
+            179.165048
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            5.489006999999999,
+            4.9999999999999964,
+            5.461746000000005
+          ],
+          "extentAxis": "x",
+          "center": [
+            -11.731032500000001,
+            -30.799999999999997,
+            176.434175
+          ],
+          "diag": 9.217367694443192
+        },
+        "center": [
+          -11.731033,
+          -30.8,
+          176.434175
+        ],
+        "occurrenceId": "o1.14",
+        "shapeId": "o1.14.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          -11.731033,
+          -28.3,
+          176.434175
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_1_4_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.15.f356",
+        "displaySelector": "o1.15.f356",
+        "copyText": "#o1.15.f356",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.15.f356",
+          "bbox": {
+            "min": [
+              -65.405025,
+              -28.3,
+              146.704598
+            ],
+            "max": [
+              -24.512219,
+              -28.3,
+              187.597404
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              40.89280599999999,
+              0.0,
+              40.89280600000001
+            ],
+            "extentAxis": "z",
+            "center": [
+              -44.958622,
+              -28.3,
+              167.151001
+            ],
+            "diag": 57.83116084869187
+          },
+          "center": [
+            -44.958622,
+            -28.3,
+            167.151001
+          ],
+          "occurrenceId": "o1.15",
+          "shapeId": "o1.15.s1",
+          "kind": "plane",
+          "area": 667.313182,
+          "origin": [
+            -44.958622,
+            -28.3,
+            167.151001
+          ],
+          "normal": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.15.f357",
+        "displaySelector": "o1.15.f357",
+        "copyText": "#o1.15.f357",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.15.f357",
+          "bbox": {
+            "min": [
+              -65.405025,
+              -33.3,
+              146.704598
+            ],
+            "max": [
+              -24.512219,
+              -33.3,
+              187.597404
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              40.89280599999999,
+              0.0,
+              40.89280600000001
+            ],
+            "extentAxis": "z",
+            "center": [
+              -44.958622,
+              -33.3,
+              167.151001
+            ],
+            "diag": 57.83116084869187
+          },
+          "center": [
+            -44.958622,
+            -33.3,
+            167.151001
+          ],
+          "occurrenceId": "o1.15",
+          "shapeId": "o1.15.s1",
+          "kind": "plane",
+          "area": 667.313182,
+          "origin": [
+            -44.958622,
+            -33.3,
+            167.151001
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_1_5_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.15.f355",
+      "displaySelector": "o1.15.f355",
+      "copyText": "#o1.15.f355",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.15",
+        "bbox": {
+          "min": [
+            -65.405025,
+            -33.3,
+            146.704598
+          ],
+          "max": [
+            -24.512219,
+            -28.3,
+            187.597404
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            40.89280599999999,
+            4.9999999999999964,
+            40.89280600000001
+          ],
+          "extentAxis": "z",
+          "center": [
+            -44.958622,
+            -30.799999999999997,
+            167.151001
+          ],
+          "diag": 58.046904871037455
+        },
+        "center": [
+          -44.958622,
+          -30.799999999999997,
+          167.151001
+        ],
+        "kind": "frame",
+        "name": "gear_1_5_yellow",
+        "translation": [
+          -44.958622,
+          -28.3,
+          167.151001
+        ],
+        "localAxes": {
+          "x": [
+            0.9980273886673707,
+            -0.0,
+            -0.06278002444877497
+          ],
+          "y": [
+            0.06278002444877497,
+            0.0,
+            0.9980273886673707
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          0.998027,
+          0.06278,
+          0.0,
+          -44.958622,
+          -0.0,
+          0.0,
+          -1.0,
+          -28.3,
+          -0.06278,
+          0.998027,
+          0.0,
+          167.151001,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.15.f355",
+        "bbox": {
+          "min": [
+            -47.450443,
+            -33.3,
+            164.675205
+          ],
+          "max": [
+            -42.466801,
+            -28.3,
+            169.626798
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.983642000000003,
+            4.9999999999999964,
+            4.951593000000003
+          ],
+          "extentAxis": "y",
+          "center": [
+            -44.958622,
+            -30.799999999999997,
+            167.1510015
+          ],
+          "diag": 8.622932263552407
+        },
+        "center": [
+          -44.958622,
+          -30.8,
+          167.151001
+        ],
+        "occurrenceId": "o1.15",
+        "shapeId": "o1.15.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          -44.958622,
+          -28.3,
+          167.151001
+        ],
+        "normal": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          -0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_1_5_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.16.f368",
+        "displaySelector": "o1.16.f368",
+        "copyText": "#o1.16.f368",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.16.f368",
+          "bbox": {
+            "min": [
+              -96.82438,
+              -28.3,
+              113.600314
+            ],
+            "max": [
+              -44.348959,
+              -28.3,
+              165.949403
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              52.475421000000004,
+              0.0,
+              52.34908899999999
+            ],
+            "extentAxis": "x",
+            "center": [
+              -70.5866695,
+              -28.3,
+              139.7748585
+            ],
+            "diag": 74.1221756848594
+          },
+          "center": [
+            -70.586669,
+            -28.3,
+            139.774859
+          ],
+          "occurrenceId": "o1.16",
+          "shapeId": "o1.16.s1",
+          "kind": "plane",
+          "area": 755.606461,
+          "origin": [
+            -70.586669,
+            -28.3,
+            139.774859
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.16.f369",
+        "displaySelector": "o1.16.f369",
+        "copyText": "#o1.16.f369",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.16.f369",
+          "bbox": {
+            "min": [
+              -96.82438,
+              -33.3,
+              113.600314
+            ],
+            "max": [
+              -44.348959,
+              -33.3,
+              165.949403
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              52.475421000000004,
+              0.0,
+              52.34908899999999
+            ],
+            "extentAxis": "x",
+            "center": [
+              -70.5866695,
+              -33.3,
+              139.7748585
+            ],
+            "diag": 74.1221756848594
+          },
+          "center": [
+            -70.586669,
+            -33.3,
+            139.774859
+          ],
+          "occurrenceId": "o1.16",
+          "shapeId": "o1.16.s1",
+          "kind": "plane",
+          "area": 755.606461,
+          "origin": [
+            -70.586669,
+            -33.3,
+            139.774859
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_1_6_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.16.f367",
+      "displaySelector": "o1.16.f367",
+      "copyText": "#o1.16.f367",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.16",
+        "bbox": {
+          "min": [
+            -96.82438,
+            -33.3,
+            113.600314
+          ],
+          "max": [
+            -44.348959,
+            -28.3,
+            165.949403
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            52.475421000000004,
+            4.9999999999999964,
+            52.34908899999999
+          ],
+          "extentAxis": "x",
+          "center": [
+            -70.5866695,
+            -30.799999999999997,
+            139.7748585
+          ],
+          "diag": 74.29062476690555
+        },
+        "center": [
+          -70.5866695,
+          -30.799999999999997,
+          139.7748585
+        ],
+        "kind": "frame",
+        "name": "gear_1_6_yellow",
+        "translation": [
+          -70.586669,
+          -28.3,
+          139.774859
+        ],
+        "localAxes": {
+          "x": [
+            0.9488899949950798,
+            0.0,
+            0.31560699833533096
+          ],
+          "y": [
+            -0.31560699833533096,
+            0.0,
+            0.9488899949950798
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          0.94889,
+          -0.315607,
+          0.0,
+          -70.586669,
+          0.0,
+          0.0,
+          -1.0,
+          -28.3,
+          0.315607,
+          0.94889,
+          0.0,
+          139.774859,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.16.f367",
+        "bbox": {
+          "min": [
+            -73.55283,
+            -33.3,
+            136.819549
+          ],
+          "max": [
+            -67.620508,
+            -28.3,
+            142.730169
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            5.932321999999999,
+            4.9999999999999964,
+            5.910619999999994
+          ],
+          "extentAxis": "x",
+          "center": [
+            -70.586669,
+            -30.799999999999997,
+            139.774859
+          ],
+          "diag": 9.753351890303348
+        },
+        "center": [
+          -70.586669,
+          -30.8,
+          139.774859
+        ],
+        "occurrenceId": "o1.16",
+        "shapeId": "o1.16.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          -70.586669,
+          -28.3,
+          139.774859
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_1_6_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.17.f308",
+        "displaySelector": "o1.17.f308",
+        "copyText": "#o1.17.f308",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.17.f308",
+          "bbox": {
+            "min": [
+              -54.288958,
+              -28.3,
+              104.711042
+            ],
+            "max": [
+              -23.711042,
+              -28.3,
+              135.288958
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              30.577916000000002,
+              0.0,
+              30.577916000000002
+            ],
+            "extentAxis": "x",
+            "center": [
+              -39.0,
+              -28.3,
+              120.0
+            ],
+            "diag": 43.24370351630526
+          },
+          "center": [
+            -39.0,
+            -28.3,
+            120.0
+          ],
+          "occurrenceId": "o1.17",
+          "shapeId": "o1.17.s1",
+          "kind": "plane",
+          "area": 349.8875,
+          "origin": [
+            -39.0,
+            -28.3,
+            120.0
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.17.f309",
+        "displaySelector": "o1.17.f309",
+        "copyText": "#o1.17.f309",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.17.f309",
+          "bbox": {
+            "min": [
+              -54.288958,
+              -33.3,
+              104.711042
+            ],
+            "max": [
+              -23.711042,
+              -33.3,
+              135.288958
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              30.577916000000002,
+              0.0,
+              30.577916000000002
+            ],
+            "extentAxis": "x",
+            "center": [
+              -39.0,
+              -33.3,
+              120.0
+            ],
+            "diag": 43.24370351630526
+          },
+          "center": [
+            -39.0,
+            -33.3,
+            120.0
+          ],
+          "occurrenceId": "o1.17",
+          "shapeId": "o1.17.s1",
+          "kind": "plane",
+          "area": 349.8875,
+          "origin": [
+            -39.0,
+            -33.3,
+            120.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_2_1_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.17.f307",
+      "displaySelector": "o1.17.f307",
+      "copyText": "#o1.17.f307",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.17",
+        "bbox": {
+          "min": [
+            -54.288958,
+            -33.3,
+            104.711042
+          ],
+          "max": [
+            -23.711042,
+            -28.3,
+            135.288958
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            30.577916000000002,
+            4.9999999999999964,
+            30.577916000000002
+          ],
+          "extentAxis": "x",
+          "center": [
+            -39.0,
+            -30.799999999999997,
+            120.0
+          ],
+          "diag": 43.53180324551364
+        },
+        "center": [
+          -39.0,
+          -30.799999999999997,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "gear_2_1_yellow",
+        "translation": [
+          -39.0,
+          -28.3,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            -0.9861958617821942,
+            -0.0,
+            -0.1655829767931335
+          ],
+          "y": [
+            0.1655829767931335,
+            -0.0,
+            -0.9861958617821942
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          -0.986196,
+          0.165583,
+          0.0,
+          -39.0,
+          -0.0,
+          -0.0,
+          -1.0,
+          -28.3,
+          -0.165583,
+          -0.986196,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.17.f307",
+        "bbox": {
+          "min": [
+            -41.703844,
+            -33.3,
+            117.310217
+          ],
+          "max": [
+            -36.296156,
+            -28.3,
+            122.689783
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            5.407687999999993,
+            4.9999999999999964,
+            5.379566000000011
+          ],
+          "extentAxis": "x",
+          "center": [
+            -39.0,
+            -30.799999999999997,
+            120.0
+          ],
+          "diag": 9.120461603104308
+        },
+        "center": [
+          -39.0,
+          -30.8,
+          120.0
+        ],
+        "occurrenceId": "o1.17",
+        "shapeId": "o1.17.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          -39.0,
+          -28.3,
+          120.0
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_2_1_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.18.f320",
+        "displaySelector": "o1.18.f320",
+        "copyText": "#o1.18.f320",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.18.f320",
+          "bbox": {
+            "min": [
+              -52.180442,
+              -28.3,
+              79.199082
+            ],
+            "max": [
+              -21.067571,
+              -28.3,
+              110.022787
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              31.112871,
+              0.0,
+              30.82370499999999
+            ],
+            "extentAxis": "x",
+            "center": [
+              -36.6240065,
+              -28.3,
+              94.6109345
+            ],
+            "diag": 43.796250202382225
+          },
+          "center": [
+            -36.624007,
+            -28.3,
+            94.610934
+          ],
+          "occurrenceId": "o1.18",
+          "shapeId": "o1.18.s1",
+          "kind": "plane",
+          "area": 423.86032,
+          "origin": [
+            -36.624007,
+            -28.3,
+            94.610934
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.18.f321",
+        "displaySelector": "o1.18.f321",
+        "copyText": "#o1.18.f321",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.18.f321",
+          "bbox": {
+            "min": [
+              -52.180442,
+              -33.3,
+              79.199082
+            ],
+            "max": [
+              -21.067571,
+              -33.3,
+              110.022787
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              31.112871,
+              0.0,
+              30.82370499999999
+            ],
+            "extentAxis": "x",
+            "center": [
+              -36.6240065,
+              -33.3,
+              94.6109345
+            ],
+            "diag": 43.796250202382225
+          },
+          "center": [
+            -36.624007,
+            -33.3,
+            94.610934
+          ],
+          "occurrenceId": "o1.18",
+          "shapeId": "o1.18.s1",
+          "kind": "plane",
+          "area": 423.86032,
+          "origin": [
+            -36.624007,
+            -33.3,
+            94.610934
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_2_2_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.18.f319",
+      "displaySelector": "o1.18.f319",
+      "copyText": "#o1.18.f319",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.18",
+        "bbox": {
+          "min": [
+            -52.180442,
+            -33.3,
+            79.199082
+          ],
+          "max": [
+            -21.067571,
+            -28.3,
+            110.022787
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            31.112871,
+            4.9999999999999964,
+            30.82370499999999
+          ],
+          "extentAxis": "x",
+          "center": [
+            -36.6240065,
+            -30.799999999999997,
+            94.6109345
+          ],
+          "diag": 44.080738784526574
+        },
+        "center": [
+          -36.6240065,
+          -30.799999999999997,
+          94.6109345
+        ],
+        "kind": "frame",
+        "name": "gear_2_2_yellow",
+        "translation": [
+          -36.624007,
+          -28.3,
+          94.610934
+        ],
+        "localAxes": {
+          "x": [
+            -0.9984848122803799,
+            -0.0,
+            -0.0550279896544913
+          ],
+          "y": [
+            0.0550279896544913,
+            -0.0,
+            -0.9984848122803799
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          -0.998485,
+          0.055028,
+          0.0,
+          -36.624007,
+          -0.0,
+          -0.0,
+          -1.0,
+          -28.3,
+          -0.055028,
+          -0.998485,
+          0.0,
+          94.610934,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.18.f319",
+        "bbox": {
+          "min": [
+            -39.098818,
+            -33.3,
+            92.152288
+          ],
+          "max": [
+            -34.149195,
+            -28.3,
+            97.069581
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.9496230000000025,
+            4.9999999999999964,
+            4.917293000000001
+          ],
+          "extentAxis": "y",
+          "center": [
+            -36.6240065,
+            -30.799999999999997,
+            94.6109345
+          ],
+          "diag": 8.583620348662794
+        },
+        "center": [
+          -36.624007,
+          -30.8,
+          94.610934
+        ],
+        "occurrenceId": "o1.18",
+        "shapeId": "o1.18.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          -36.624007,
+          -28.3,
+          94.610934
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_2_2_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.19.f332",
+        "displaySelector": "o1.19.f332",
+        "copyText": "#o1.19.f332",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.19.f332",
+          "bbox": {
+            "min": [
+              -34.919609,
+              -28.3,
+              56.182917
+            ],
+            "max": [
+              -1.922816,
+              -28.3,
+              89.179709
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              32.996793000000004,
+              0.0,
+              32.996792
+            ],
+            "extentAxis": "x",
+            "center": [
+              -18.4212125,
+              -28.3,
+              72.681313
+            ],
+            "diag": 46.66451146831083
+          },
+          "center": [
+            -18.421212,
+            -28.3,
+            72.681313
+          ],
+          "occurrenceId": "o1.19",
+          "shapeId": "o1.19.s1",
+          "kind": "plane",
+          "area": 501.35587,
+          "origin": [
+            -18.421212,
+            -28.3,
+            72.681313
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.19.f333",
+        "displaySelector": "o1.19.f333",
+        "copyText": "#o1.19.f333",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.19.f333",
+          "bbox": {
+            "min": [
+              -34.919609,
+              -33.3,
+              56.182917
+            ],
+            "max": [
+              -1.922816,
+              -33.3,
+              89.179709
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              32.996793000000004,
+              0.0,
+              32.996792
+            ],
+            "extentAxis": "x",
+            "center": [
+              -18.4212125,
+              -33.3,
+              72.681313
+            ],
+            "diag": 46.66451146831083
+          },
+          "center": [
+            -18.421212,
+            -33.3,
+            72.681313
+          ],
+          "occurrenceId": "o1.19",
+          "shapeId": "o1.19.s1",
+          "kind": "plane",
+          "area": 501.35587,
+          "origin": [
+            -18.421212,
+            -33.3,
+            72.681313
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_2_3_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.19.f331",
+      "displaySelector": "o1.19.f331",
+      "copyText": "#o1.19.f331",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.19",
+        "bbox": {
+          "min": [
+            -34.919609,
+            -33.3,
+            56.182917
+          ],
+          "max": [
+            -1.922816,
+            -28.3,
+            89.179709
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            32.996793000000004,
+            4.9999999999999964,
+            32.996792
+          ],
+          "extentAxis": "x",
+          "center": [
+            -18.4212125,
+            -30.799999999999997,
+            72.681313
+          ],
+          "diag": 46.931616534870315
+        },
+        "center": [
+          -18.4212125,
+          -30.799999999999997,
+          72.681313
+        ],
+        "kind": "frame",
+        "name": "gear_2_3_yellow",
+        "translation": [
+          -18.421212,
+          -28.3,
+          72.681313
+        ],
+        "localAxes": {
+          "x": [
+            -0.9999038624272366,
+            0.0,
+            0.013865998092232917
+          ],
+          "y": [
+            -0.013865998092232917,
+            -0.0,
+            -0.9999038624272366
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          -0.999904,
+          -0.013866,
+          0.0,
+          -18.421212,
+          0.0,
+          -0.0,
+          -1.0,
+          -28.3,
+          0.013866,
+          -0.999904,
+          0.0,
+          72.681313,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.19.f331",
+        "bbox": {
+          "min": [
+            -20.803334,
+            -33.3,
+            70.316087
+          ],
+          "max": [
+            -16.039091,
+            -28.3,
+            75.046539
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.7642430000000004,
+            4.9999999999999964,
+            4.730452
+          ],
+          "extentAxis": "y",
+          "center": [
+            -18.4212125,
+            -30.799999999999997,
+            72.68131299999999
+          ],
+          "diag": 8.371092371211356
+        },
+        "center": [
+          -18.421212,
+          -30.8,
+          72.681313
+        ],
+        "occurrenceId": "o1.19",
+        "shapeId": "o1.19.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          -18.421212,
+          -28.3,
+          72.681313
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_2_3_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.20.f344",
+        "displaySelector": "o1.20.f344",
+        "copyText": "#o1.20.f344",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.20.f344",
+          "bbox": {
+            "min": [
+              -9.028771,
+              -28.3,
+              42.902269
+            ],
+            "max": [
+              32.490836,
+              -28.3,
+              84.229381
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              41.519607,
+              0.0,
+              41.32711200000001
+            ],
+            "extentAxis": "x",
+            "center": [
+              11.731032500000001,
+              -28.3,
+              63.565825000000004
+            ],
+            "diag": 58.58163493531905
+          },
+          "center": [
+            11.731033,
+            -28.3,
+            63.565825
+          ],
+          "occurrenceId": "o1.20",
+          "shapeId": "o1.20.s1",
+          "kind": "plane",
+          "area": 582.601158,
+          "origin": [
+            11.731033,
+            -28.3,
+            63.565825
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.20.f345",
+        "displaySelector": "o1.20.f345",
+        "copyText": "#o1.20.f345",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.20.f345",
+          "bbox": {
+            "min": [
+              -9.028771,
+              -33.3,
+              42.902269
+            ],
+            "max": [
+              32.490836,
+              -33.3,
+              84.229381
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              41.519607,
+              0.0,
+              41.32711200000001
+            ],
+            "extentAxis": "x",
+            "center": [
+              11.731032500000001,
+              -33.3,
+              63.565825000000004
+            ],
+            "diag": 58.58163493531905
+          },
+          "center": [
+            11.731033,
+            -33.3,
+            63.565825
+          ],
+          "occurrenceId": "o1.20",
+          "shapeId": "o1.20.s1",
+          "kind": "plane",
+          "area": 582.601158,
+          "origin": [
+            11.731033,
+            -33.3,
+            63.565825
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_2_4_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.20.f343",
+      "displaySelector": "o1.20.f343",
+      "copyText": "#o1.20.f343",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.20",
+        "bbox": {
+          "min": [
+            -9.028771,
+            -33.3,
+            42.902269
+          ],
+          "max": [
+            32.490836,
+            -28.3,
+            84.229381
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            41.519607,
+            4.9999999999999964,
+            41.32711200000001
+          ],
+          "extentAxis": "x",
+          "center": [
+            11.731032500000001,
+            -30.799999999999997,
+            63.565825000000004
+          ],
+          "diag": 58.794625193932426
+        },
+        "center": [
+          11.731032500000001,
+          -30.799999999999997,
+          63.565825000000004
+        ],
+        "kind": "frame",
+        "name": "gear_2_4_yellow",
+        "translation": [
+          11.731033,
+          -28.3,
+          63.565825
+        ],
+        "localAxes": {
+          "x": [
+            -0.982389025183543,
+            -0.0,
+            -0.18684700478982305
+          ],
+          "y": [
+            0.18684700478982305,
+            -0.0,
+            -0.982389025183543
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          -0.982389,
+          0.186847,
+          0.0,
+          11.731033,
+          -0.0,
+          -0.0,
+          -1.0,
+          -28.3,
+          -0.186847,
+          -0.982389,
+          0.0,
+          63.565825,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.20.f343",
+        "bbox": {
+          "min": [
+            8.986529,
+            -33.3,
+            60.834952
+          ],
+          "max": [
+            14.475536,
+            -28.3,
+            66.296698
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            5.489006999999999,
+            4.9999999999999964,
+            5.461746000000005
+          ],
+          "extentAxis": "x",
+          "center": [
+            11.731032500000001,
+            -30.799999999999997,
+            63.565825000000004
+          ],
+          "diag": 9.217367694443192
+        },
+        "center": [
+          11.731033,
+          -30.8,
+          63.565825
+        ],
+        "occurrenceId": "o1.20",
+        "shapeId": "o1.20.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          11.731033,
+          -28.3,
+          63.565825
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_2_4_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.21.f356",
+        "displaySelector": "o1.21.f356",
+        "copyText": "#o1.21.f356",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.21.f356",
+          "bbox": {
+            "min": [
+              24.512219,
+              -28.3,
+              52.402596
+            ],
+            "max": [
+              65.405025,
+              -28.3,
+              93.295402
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              40.89280599999999,
+              0.0,
+              40.89280599999999
+            ],
+            "extentAxis": "x",
+            "center": [
+              44.958622,
+              -28.3,
+              72.84899899999999
+            ],
+            "diag": 57.831160848691866
+          },
+          "center": [
+            44.958622,
+            -28.3,
+            72.848999
+          ],
+          "occurrenceId": "o1.21",
+          "shapeId": "o1.21.s1",
+          "kind": "plane",
+          "area": 667.313182,
+          "origin": [
+            44.958622,
+            -28.3,
+            72.848999
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.21.f357",
+        "displaySelector": "o1.21.f357",
+        "copyText": "#o1.21.f357",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.21.f357",
+          "bbox": {
+            "min": [
+              24.512219,
+              -33.3,
+              52.402596
+            ],
+            "max": [
+              65.405025,
+              -33.3,
+              93.295402
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              40.89280599999999,
+              0.0,
+              40.89280599999999
+            ],
+            "extentAxis": "x",
+            "center": [
+              44.958622,
+              -33.3,
+              72.84899899999999
+            ],
+            "diag": 57.831160848691866
+          },
+          "center": [
+            44.958622,
+            -33.3,
+            72.848999
+          ],
+          "occurrenceId": "o1.21",
+          "shapeId": "o1.21.s1",
+          "kind": "plane",
+          "area": 667.313182,
+          "origin": [
+            44.958622,
+            -33.3,
+            72.848999
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_2_5_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.21.f355",
+      "displaySelector": "o1.21.f355",
+      "copyText": "#o1.21.f355",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.21",
+        "bbox": {
+          "min": [
+            24.512219,
+            -33.3,
+            52.402596
+          ],
+          "max": [
+            65.405025,
+            -28.3,
+            93.295402
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            40.89280599999999,
+            4.9999999999999964,
+            40.89280599999999
+          ],
+          "extentAxis": "x",
+          "center": [
+            44.958622,
+            -30.799999999999997,
+            72.84899899999999
+          ],
+          "diag": 58.04690487103745
+        },
+        "center": [
+          44.958622,
+          -30.799999999999997,
+          72.84899899999999
+        ],
+        "kind": "frame",
+        "name": "gear_2_5_yellow",
+        "translation": [
+          44.958622,
+          -28.3,
+          72.848999
+        ],
+        "localAxes": {
+          "x": [
+            -0.9980273886673707,
+            0.0,
+            0.06278002444877497
+          ],
+          "y": [
+            -0.06278002444877497,
+            -0.0,
+            -0.9980273886673707
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          -0.998027,
+          -0.06278,
+          0.0,
+          44.958622,
+          0.0,
+          -0.0,
+          -1.0,
+          -28.3,
+          0.06278,
+          -0.998027,
+          0.0,
+          72.848999,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.21.f355",
+        "bbox": {
+          "min": [
+            42.466801,
+            -33.3,
+            70.373202
+          ],
+          "max": [
+            47.450443,
+            -28.3,
+            75.324795
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.983642000000003,
+            4.9999999999999964,
+            4.951592999999988
+          ],
+          "extentAxis": "y",
+          "center": [
+            44.958622,
+            -30.799999999999997,
+            72.8489985
+          ],
+          "diag": 8.622932263552398
+        },
+        "center": [
+          44.958622,
+          -30.8,
+          72.848999
+        ],
+        "occurrenceId": "o1.21",
+        "shapeId": "o1.21.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          44.958622,
+          -28.3,
+          72.848999
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_2_5_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.22.f368",
+        "displaySelector": "o1.22.f368",
+        "copyText": "#o1.22.f368",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.22.f368",
+          "bbox": {
+            "min": [
+              44.348959,
+              -28.3,
+              74.050597
+            ],
+            "max": [
+              96.82438,
+              -28.3,
+              126.399686
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              52.475421000000004,
+              0.0,
+              52.349089000000006
+            ],
+            "extentAxis": "x",
+            "center": [
+              70.5866695,
+              -28.3,
+              100.2251415
+            ],
+            "diag": 74.12217568485941
+          },
+          "center": [
+            70.586669,
+            -28.3,
+            100.225141
+          ],
+          "occurrenceId": "o1.22",
+          "shapeId": "o1.22.s1",
+          "kind": "plane",
+          "area": 755.606461,
+          "origin": [
+            70.586669,
+            -28.3,
+            100.225141
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -28.3,
+          "planeOffset": -28.3
+        },
+        "coordinate": -28.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+        "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.22.f369",
+        "displaySelector": "o1.22.f369",
+        "copyText": "#o1.22.f369",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.22.f369",
+          "bbox": {
+            "min": [
+              44.348959,
+              -33.3,
+              74.050597
+            ],
+            "max": [
+              96.82438,
+              -33.3,
+              126.399686
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              52.475421000000004,
+              0.0,
+              52.349089000000006
+            ],
+            "extentAxis": "x",
+            "center": [
+              70.5866695,
+              -33.3,
+              100.2251415
+            ],
+            "diag": 74.12217568485941
+          },
+          "center": [
+            70.586669,
+            -33.3,
+            100.225141
+          ],
+          "occurrenceId": "o1.22",
+          "shapeId": "o1.22.s1",
+          "kind": "plane",
+          "area": 755.606461,
+          "origin": [
+            70.586669,
+            -33.3,
+            100.225141
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -33.3,
+          "planeOffset": 33.3
+        },
+        "coordinate": -33.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -4.9999999999999964,
+        "absoluteDistance": 4.9999999999999964,
+        "euclideanDistance": 4.9999999999999964,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "gear_2_6_yellow_face_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.22.f367",
+      "displaySelector": "o1.22.f367",
+      "copyText": "#o1.22.f367",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.22",
+        "bbox": {
+          "min": [
+            44.348959,
+            -33.3,
+            74.050597
+          ],
+          "max": [
+            96.82438,
+            -28.3,
+            126.399686
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            52.475421000000004,
+            4.9999999999999964,
+            52.349089000000006
+          ],
+          "extentAxis": "x",
+          "center": [
+            70.5866695,
+            -30.799999999999997,
+            100.2251415
+          ],
+          "diag": 74.29062476690557
+        },
+        "center": [
+          70.5866695,
+          -30.799999999999997,
+          100.2251415
+        ],
+        "kind": "frame",
+        "name": "gear_2_6_yellow",
+        "translation": [
+          70.586669,
+          -28.3,
+          100.225141
+        ],
+        "localAxes": {
+          "x": [
+            -0.9488899949950798,
+            -0.0,
+            -0.31560699833533096
+          ],
+          "y": [
+            0.31560699833533096,
+            -0.0,
+            -0.9488899949950798
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          -0.94889,
+          0.315607,
+          0.0,
+          70.586669,
+          -0.0,
+          -0.0,
+          -1.0,
+          -28.3,
+          -0.315607,
+          -0.94889,
+          0.0,
+          100.225141,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.22.f367",
+        "bbox": {
+          "min": [
+            67.620508,
+            -33.3,
+            97.269831
+          ],
+          "max": [
+            73.55283,
+            -28.3,
+            103.180451
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            5.932321999999999,
+            4.9999999999999964,
+            5.910620000000009
+          ],
+          "extentAxis": "x",
+          "center": [
+            70.586669,
+            -30.799999999999997,
+            100.22514100000001
+          ],
+          "diag": 9.753351890303357
+        },
+        "center": [
+          70.586669,
+          -30.8,
+          100.225141
+        ],
+        "occurrenceId": "o1.22",
+        "shapeId": "o1.22.s1",
+        "kind": "cylinder",
+        "area": 73.647912,
+        "origin": [
+          70.586669,
+          -28.3,
+          100.225141
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.3,
+        "planeOffset": -28.3,
+        "radius": 2.35,
+        "axisVector": [
+          0.0,
+          1.0,
+          -0.0
+        ]
+      }
+    },
+    "id": "gear_2_6_yellow_bore"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f28",
+      "displaySelector": "o1.23.1.f28",
+      "copyText": "#o1.23.1.f28",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f28",
+        "bbox": {
+          "min": [
+            34.624007,
+            -33.7,
+            143.38929
+          ],
+          "max": [
+            38.624007,
+            -28.3,
+            147.388842
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995520000000226
+          ],
+          "extentAxis": "y",
+          "center": [
+            36.624007,
+            -31.0,
+            145.389066
+          ],
+          "diag": 7.8202567861103
+        },
+        "center": [
+          36.624094,
+          -31.000071,
+          145.389066
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          36.624007,
+          -28.0,
+          145.389066
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f28"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f41",
+      "displaySelector": "o1.23.1.f41",
+      "copyText": "#o1.23.1.f41",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f41",
+        "bbox": {
+          "min": [
+            16.421212,
+            -33.7,
+            165.318911
+          ],
+          "max": [
+            20.421212,
+            -28.3,
+            169.318463
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995519999999942
+          ],
+          "extentAxis": "y",
+          "center": [
+            18.421212,
+            -31.0,
+            167.318687
+          ],
+          "diag": 7.820256786110286
+        },
+        "center": [
+          18.4213,
+          -31.000071,
+          167.318687
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          18.421212,
+          -28.0,
+          167.318687
+        ],
+        "normal": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f41"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f54",
+      "displaySelector": "o1.23.1.f54",
+      "copyText": "#o1.23.1.f54",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f54",
+        "bbox": {
+          "min": [
+            -13.731033,
+            -33.7,
+            174.434399
+          ],
+          "max": [
+            -9.731033,
+            -28.3,
+            178.433951
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995519999999942
+          ],
+          "extentAxis": "y",
+          "center": [
+            -11.731033,
+            -31.0,
+            176.434175
+          ],
+          "diag": 7.820256786110286
+        },
+        "center": [
+          -11.730945,
+          -31.000071,
+          176.434175
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          -11.731033,
+          -28.0,
+          176.434175
+        ],
+        "normal": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f54"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f67",
+      "displaySelector": "o1.23.1.f67",
+      "copyText": "#o1.23.1.f67",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f67",
+        "bbox": {
+          "min": [
+            -46.958622,
+            -33.7,
+            165.151225
+          ],
+          "max": [
+            -42.958622,
+            -28.3,
+            169.150777
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995519999999942
+          ],
+          "extentAxis": "y",
+          "center": [
+            -44.958622,
+            -31.0,
+            167.151001
+          ],
+          "diag": 7.820256786110286
+        },
+        "center": [
+          -44.958535,
+          -31.000071,
+          167.151001
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          -44.958622,
+          -28.0,
+          167.151001
+        ],
+        "normal": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f67"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f80",
+      "displaySelector": "o1.23.1.f80",
+      "copyText": "#o1.23.1.f80",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f80",
+        "bbox": {
+          "min": [
+            -72.586669,
+            -33.7,
+            137.775083
+          ],
+          "max": [
+            -68.586669,
+            -28.3,
+            141.774635
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995519999999942
+          ],
+          "extentAxis": "y",
+          "center": [
+            -70.586669,
+            -31.0,
+            139.774859
+          ],
+          "diag": 7.820256786110286
+        },
+        "center": [
+          -70.586582,
+          -31.000071,
+          139.774859
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          -70.586669,
+          -28.0,
+          139.774859
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f80"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f99",
+      "displaySelector": "o1.23.1.f99",
+      "copyText": "#o1.23.1.f99",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f99",
+        "bbox": {
+          "min": [
+            -41.0,
+            -33.7,
+            118.000224
+          ],
+          "max": [
+            -37.0,
+            -28.3,
+            121.999776
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995519999999942
+          ],
+          "extentAxis": "y",
+          "center": [
+            -39.0,
+            -31.0,
+            120.0
+          ],
+          "diag": 7.820256786110286
+        },
+        "center": [
+          -39.000087,
+          -31.000071,
+          120.0
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          -39.0,
+          -28.0,
+          120.0
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f99"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f110",
+      "displaySelector": "o1.23.1.f110",
+      "copyText": "#o1.23.1.f110",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f110",
+        "bbox": {
+          "min": [
+            -38.624007,
+            -33.7,
+            92.611158
+          ],
+          "max": [
+            -34.624007,
+            -28.3,
+            96.61071
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995519999999942
+          ],
+          "extentAxis": "y",
+          "center": [
+            -36.624007,
+            -31.0,
+            94.610934
+          ],
+          "diag": 7.820256786110286
+        },
+        "center": [
+          -36.624094,
+          -31.000071,
+          94.610934
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          -36.624007,
+          -28.0,
+          94.610934
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f110"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f123",
+      "displaySelector": "o1.23.1.f123",
+      "copyText": "#o1.23.1.f123",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f123",
+        "bbox": {
+          "min": [
+            -20.421212,
+            -33.7,
+            70.681537
+          ],
+          "max": [
+            -16.421212,
+            -28.3,
+            74.681089
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995519999999942
+          ],
+          "extentAxis": "y",
+          "center": [
+            -18.421212,
+            -31.0,
+            72.681313
+          ],
+          "diag": 7.820256786110286
+        },
+        "center": [
+          -18.4213,
+          -31.000071,
+          72.681313
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          -18.421212,
+          -28.0,
+          72.681313
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f123"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f136",
+      "displaySelector": "o1.23.1.f136",
+      "copyText": "#o1.23.1.f136",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f136",
+        "bbox": {
+          "min": [
+            9.731033,
+            -33.7,
+            61.566049
+          ],
+          "max": [
+            13.731033,
+            -28.3,
+            65.565601
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995520000000013
+          ],
+          "extentAxis": "y",
+          "center": [
+            11.731033,
+            -31.0,
+            63.565825000000004
+          ],
+          "diag": 7.820256786110289
+        },
+        "center": [
+          11.730945,
+          -31.000071,
+          63.565825
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          11.731033,
+          -28.0,
+          63.565825
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f136"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f149",
+      "displaySelector": "o1.23.1.f149",
+      "copyText": "#o1.23.1.f149",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f149",
+        "bbox": {
+          "min": [
+            42.958622,
+            -33.7,
+            70.849223
+          ],
+          "max": [
+            46.958622,
+            -28.3,
+            74.848775
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995520000000084
+          ],
+          "extentAxis": "y",
+          "center": [
+            44.958622,
+            -31.0,
+            72.84899899999999
+          ],
+          "diag": 7.820256786110293
+        },
+        "center": [
+          44.958535,
+          -31.000071,
+          72.848999
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          44.958622,
+          -28.0,
+          72.848999
+        ],
+        "normal": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f149"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f162",
+      "displaySelector": "o1.23.1.f162",
+      "copyText": "#o1.23.1.f162",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f162",
+        "bbox": {
+          "min": [
+            68.586669,
+            -33.7,
+            98.225365
+          ],
+          "max": [
+            72.586669,
+            -28.3,
+            102.224917
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995520000000084
+          ],
+          "extentAxis": "y",
+          "center": [
+            70.586669,
+            -31.0,
+            100.22514100000001
+          ],
+          "diag": 7.820256786110293
+        },
+        "center": [
+          70.586582,
+          -31.000071,
+          100.225141
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          70.586669,
+          -28.0,
+          100.225141
+        ],
+        "normal": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f162"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/core-dimensions/current-assembly",
+      "stepPath": "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.23.1.f181",
+      "displaySelector": "o1.23.1.f181",
+      "copyText": "#o1.23.1.f181",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.23.1",
+        "bbox": {
+          "min": [
+            -74.186669,
+            -48.5,
+            59.974536
+          ],
+          "max": [
+            74.186669,
+            -25.0,
+            180.025464
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            148.373338,
+            23.5,
+            120.050928
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -36.75,
+            120.0
+          ],
+          "diag": 192.29956511371373
+        },
+        "center": [
+          0.0,
+          -36.75,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "carrier_black",
+        "translation": [
+          0.0,
+          -25.0,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -25.0,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.23.1.f181",
+        "bbox": {
+          "min": [
+            37.0,
+            -33.7,
+            118.000224
+          ],
+          "max": [
+            41.0,
+            -28.3,
+            121.999776
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            4.0,
+            5.400000000000002,
+            3.9995519999999942
+          ],
+          "extentAxis": "y",
+          "center": [
+            39.0,
+            -31.0,
+            120.0
+          ],
+          "diag": 7.820256786110286
+        },
+        "center": [
+          39.000087,
+          -31.000071,
+          120.0
+        ],
+        "occurrenceId": "o1.23.1",
+        "shapeId": "o1.23.1.s1",
+        "kind": "cylinder",
+        "area": 67.698965,
+        "origin": [
+          39.0,
+          -28.0,
+          120.0
+        ],
+        "normal": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "y",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "y",
+        "coordinate": -28.0,
+        "planeOffset": -28.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "planet_post_o1_23_1_f181"
+  }
+]

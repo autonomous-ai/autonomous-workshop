@@ -1,0 +1,53 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": true,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_body_05_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_05_rear/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_05_rear"
+ ],
+ "print": {
+  "body_05_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_05_rear/r0003/overhang-body_05_rear.log": "ad49d2c6fa9dc38cb4b7c08ef5581695d66ed71d26c162ca527c9bb29339f9e7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_05_rear/r0003/thickness-body_05_rear.log": "34093f729276c2247b83f5abac7f878db6c89cfdfc1f80b2f26d7e3b1883d8b3"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:body_05_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows the short cup rising from the shallow barrel. Top and iso show an open central passage and four slots, with the complete rounded outer rim and flat crown edge retained. The cup is connected to the stock without detached pieces or visible unintended cuts. Component checks pass; assembled motion remains pending.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_05_rear/r0003/visual-packet.json",
+  "packet_sha256": "23ba6d3bf333b5b6447e24e72a51cf61b89c7595f4554049cd53e654b76fdb0e",
+  "status": "pass"
+ }
+}

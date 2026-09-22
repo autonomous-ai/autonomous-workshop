@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso show a continuous barrel half, four correctly separated socket sectors and an open central passage. The outer rim and side reliefs are coherent without floating geometry. The stricter1.2mm thickness check nevertheless fails at the socket lip; visual appearance does not override that measured defect.",
+  "packet_sha256": "8b319794f16bb0b40fccadbaa34780897cf871e291dc219469e072832f85aa13",
+  "status": "pass"
+}

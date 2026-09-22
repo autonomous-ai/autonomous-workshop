@@ -1,0 +1,14 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_rim_trim.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/rim_trim/r0001/thickness-rim_trim.md
+(6.9s, exit 1)
+--- stdout
+part_rim_trim.step.py: 0.29 cm3 solid, grid 0.133 mm (747x747x11), 52201 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      30.0% of surface below (16451 of 52201 samples); thinnest 0.73 mm at (-36.2, -33.1, 0.8) in 1 region(s); 1 wall(s) (widest band 2.63 mm); 16346 more within measurement error of the limit
+  PASS  thickness distribution         median 0.80 mm, p95 1.20 mm, max 1.27 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 0.29 cm3 (0%) in 0 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.73 mm at (-36.2, -33.1, 0.8)  16451 samples, 367.8 mm2, runs 139.7 mm, band 2.63 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/rim_trim/r0001/thickness-rim_trim.md
+
+--- stderr

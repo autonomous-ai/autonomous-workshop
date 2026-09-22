@@ -1,0 +1,69 @@
+{
+ "build": {
+  "foot_trim": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "foot_trim"
+ ],
+ "check_motion": true,
+ "checked": [
+  "foot_trim"
+ ],
+ "checks_ok": true,
+ "entry": "part_foot_trim.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/foot_trim/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "foot_trim"
+ ],
+ "print": {
+  "foot_trim": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/foot_trim/r0001/overhang-foot_trim.log": "20a7775e09b3bccd8b63b36db21e631a899577e007da94e33625bd8e2ca29cfd",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/foot_trim/r0001/thickness-foot_trim.log": "2eb420d72abd5e4a8178fa073bbcfb9c84e97fcada4132f50faf67a6a7efc2f3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:foot_trim",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Missing brass surface color",
+    "evidence": "Top and isometric views show a dark neutral ring instead of brass.",
+    "part": "foot_trim",
+    "repair": "Assign the shared brass sRGB color to the printable solid."
+   }
+  ],
+  "observation": "The ring is open and uniformly thick, but its rendered finish is dark blue-gray.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/foot_trim/r0001/visual-packet.json",
+  "packet_sha256": "040bb825740852247a5ffcbb1eb01898f2d8c88a29277bc2fc6331f1db03189f",
+  "status": "fail"
+ }
+}

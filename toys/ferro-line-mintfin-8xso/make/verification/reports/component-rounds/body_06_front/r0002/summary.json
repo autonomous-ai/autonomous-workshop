@@ -1,0 +1,64 @@
+{
+ "build": {
+  "body_06_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_06_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_06_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_06_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_06_front"
+ ],
+ "print": {
+  "body_06_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0002/overhang-body_06_front.log": "83f8ef62970c3378ead5e2906c449a4f1c645fe734a4088842ffaa6ebd02539b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0002/thickness-body_06_front.log": "cda9a3ceb16e2be0520d8aa5e07ef522134bc95068f3321e51828c1fb7979552"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 36.2% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 2.5,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:body_06_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected once. The previous dorsal lobe is gone; the flat crown and elliptical perimeter now contain the socket stock. Incoming ball and root relief remain coherent with no detached or misplaced visible shape. Visual form passes, but the independent overhang measurement still FAILS at print (-0.1,4.1,0.2):2.5 mm2,1.5 mm span,1.6 mm air below. Explicit1.2 mm wall measurement passes; overall component remains failed.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0002/visual-packet.json",
+  "packet_sha256": "eda55181bdae0fbb8e5244ad7f3f525845d08f553c0028a25bf610189989780c",
+  "status": "pass"
+ }
+}

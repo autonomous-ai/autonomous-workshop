@@ -1,0 +1,62 @@
+[
+  {
+    "id": "refs:raw:carrier",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/visual-repair-geometry/raw-components/current-carrier.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "refs:raw:coupon",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "refs:raw:gear_18",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/visual-repair-geometry/raw-components/current-gear_18.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "refs:raw:gear_20",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/visual-repair-geometry/raw-components/current-gear_20.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "refs:raw:gear_22",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/visual-repair-geometry/raw-components/current-gear_22.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "refs:raw:gear_26",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/visual-repair-geometry/raw-components/current-gear_26.step",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  }
+]

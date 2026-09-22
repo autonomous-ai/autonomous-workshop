@@ -1,0 +1,62 @@
+{
+ "build": {
+  "belly_01": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_01"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_01"
+ ],
+ "checks_ok": true,
+ "entry": "part_belly_01.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_01/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_01"
+ ],
+ "print": {
+  "belly_01": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_01/r0002/overhang-belly_01.log": "427040c9aea8d5563ec8641dd045f87e82a1bcf257e732e3df1b0a02d3113458",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_01/r0002/thickness-belly_01.log": "9cd735ceeff94ba77278ed9c7c723711f117bd70d576c0a1e5babd71433ac2ae"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:belly_01",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Thin cream elliptical scallop is continuous, broad and symmetric, with smooth rounded ends and flat parallel faces. No taper-to-zero thickness, cutouts or detached material. Default and additional1.2mm wall plus support checks pass. World mounting remains subject to assembly fit review.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_01/r0002/visual-packet.json",
+  "packet_sha256": "b696e289ef7fa8ec4162204c5d7cafb61cf61601380deeed6ac0c649540c1d99",
+  "status": "pass"
+ }
+}

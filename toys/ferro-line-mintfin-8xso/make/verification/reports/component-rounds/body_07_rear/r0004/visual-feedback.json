@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Top shows the paired root openings extending into the horizontal slit, with broad material remaining around the barrel perimeter. Front and iso retain the four socket fingers, internal pads and flat bed. The former ledge is removed without a visible loose sliver; the numeric support and 1.2 mm checks pass. Physical compliance and bonding are unverified.",
+  "packet_sha256": "338576b8e82a069e273598c724754408c420e961894bf330fd491b33dea09a19",
+  "status": "pass"
+}

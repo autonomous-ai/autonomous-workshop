@@ -1,0 +1,20 @@
+{
+  "status": "EXACT_EVIDENCE_COPIES_PACKAGED",
+  "copied_files": 49,
+  "copied_bytes": 1105235,
+  "hash_mismatches": 0,
+  "superseded_refs": 7,
+  "scopes": [
+    "Static component/assembly validation, interference and refs identity reconciliation",
+    "Measured adjacent-window webs and nominal through-core sightline",
+    "Current STEP/native dimensions, thinning, profiles and analytic continuous bounds",
+    "Raw adopted delivery STEP facts, validation and exact package/output bindings",
+    "Completed knurl/coupon native measurements and production receipt reconciliation"
+  ],
+  "manifest": {
+    "path": "packaging-manifest.json",
+    "sha256": "e8edf69acf28daf0592d6f52688ac6c92d20a319fd2ae8decec7afd78702f3a3"
+  },
+  "print_ready_claim": false,
+  "motion_pass_claim": false
+}

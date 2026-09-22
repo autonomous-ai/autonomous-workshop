@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Base perimeter edge taper exceeds1.2mm wall gate allowance",
+      "evidence": "Wish thickness report2.38percent taper area,11mm2 in the base rim; top/iso show highlight seat intact.",
+      "part": "face_eye",
+      "repair": "Give the eye a short full-width vertical foot and retain overall15mm diameter and6.7mm height."
+    }
+  ],
+  "observation": "All three views show a domed charcoal eye with flat base and offset highlight recess. The silhouette is coherent, but the additional1.2mm measurement exceeds the allowed edge-taper area at the very thin spherical base perimeter.",
+  "packet_sha256": "7f50db1a4abbd7357b58ef89ce6f2957754d020423834ac55ecd45f62e807ff3",
+  "status": "fail"
+}

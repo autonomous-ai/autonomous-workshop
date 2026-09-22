@@ -1,0 +1,1171 @@
+{
+  "units": "mm",
+  "tessellation_tolerance_mm": 0.04,
+  "angular_tolerance_rad": 0.08,
+  "motion": "unverified",
+  "production_parts": {
+    "head_coral_01": {
+      "color": "#EF857E",
+      "volume_mm3": 453.26441524509744,
+      "solids": 1
+    },
+    "head_coral_02": {
+      "color": "#EF857E",
+      "volume_mm3": 571.7975100379064,
+      "solids": 1
+    },
+    "head_coral_03": {
+      "color": "#EF857E",
+      "volume_mm3": 453.2644152450979,
+      "solids": 1
+    },
+    "head_coral_04": {
+      "color": "#EF857E",
+      "volume_mm3": 453.264415246465,
+      "solids": 1
+    },
+    "head_coral_05": {
+      "color": "#EF857E",
+      "volume_mm3": 571.7975100433536,
+      "solids": 1
+    },
+    "head_coral_06": {
+      "color": "#EF857E",
+      "volume_mm3": 453.26441524646543,
+      "solids": 1
+    },
+    "head_charcoal_07": {
+      "color": "#303844",
+      "volume_mm3": 30.650795177084213,
+      "solids": 1
+    },
+    "head_charcoal_08": {
+      "color": "#303844",
+      "volume_mm3": 30.650795177084213,
+      "solids": 1
+    },
+    "head_cream_09": {
+      "color": "#FFF0CF",
+      "volume_mm3": 1070.500240955362,
+      "solids": 1
+    },
+    "head_mint_10": {
+      "color": "#83D5BB",
+      "volume_mm3": 15668.344450815834,
+      "solids": 1
+    },
+    "installed_happy_cream_01": {
+      "color": "#FFF0CF",
+      "volume_mm3": 1.6084954386379742,
+      "solids": 1
+    },
+    "installed_happy_cream_02": {
+      "color": "#FFF0CF",
+      "volume_mm3": 1.6084954386379742,
+      "solids": 1
+    },
+    "installed_happy_charcoal_03": {
+      "color": "#303844",
+      "volume_mm3": 51.65249561399661,
+      "solids": 1
+    },
+    "installed_happy_charcoal_04": {
+      "color": "#303844",
+      "volume_mm3": 51.65249561399661,
+      "solids": 1
+    },
+    "installed_happy_charcoal_05": {
+      "color": "#303844",
+      "volume_mm3": 4.45052792868785,
+      "solids": 1
+    },
+    "installed_happy_charcoal_06": {
+      "color": "#303844",
+      "volume_mm3": 2.7901026358934184,
+      "solids": 1
+    },
+    "installed_happy_charcoal_07": {
+      "color": "#303844",
+      "volume_mm3": 2.7904177197399527,
+      "solids": 1
+    },
+    "installed_happy_charcoal_08": {
+      "color": "#303844",
+      "volume_mm3": 3.1491339245654757,
+      "solids": 1
+    },
+    "installed_happy_cream_09": {
+      "color": "#FFF0CF",
+      "volume_mm3": 1219.2967467170681,
+      "solids": 1
+    },
+    "body_1_charcoal_01": {
+      "color": "#303844",
+      "volume_mm3": 8.092777564725617,
+      "solids": 1
+    },
+    "body_1_charcoal_02": {
+      "color": "#303844",
+      "volume_mm3": 8.892000000000003,
+      "solids": 1
+    },
+    "body_1_charcoal_03": {
+      "color": "#303844",
+      "volume_mm3": 8.092777559170447,
+      "solids": 1
+    },
+    "body_1_charcoal_04": {
+      "color": "#303844",
+      "volume_mm3": 8.0927774139989,
+      "solids": 1
+    },
+    "body_1_charcoal_05": {
+      "color": "#303844",
+      "volume_mm3": 8.891999999999996,
+      "solids": 1
+    },
+    "body_1_charcoal_06": {
+      "color": "#303844",
+      "volume_mm3": 8.092777559170454,
+      "solids": 1
+    },
+    "body_1_coral_07": {
+      "color": "#EF857E",
+      "volume_mm3": 43.737960430501076,
+      "solids": 1
+    },
+    "body_1_cream_08": {
+      "color": "#FFF0CF",
+      "volume_mm3": 134.39905483775567,
+      "solids": 1
+    },
+    "body_1_mint_09": {
+      "color": "#83D5BB",
+      "volume_mm3": 2848.037415148671,
+      "solids": 1
+    },
+    "body_2_coral_01": {
+      "color": "#EF857E",
+      "volume_mm3": 43.73796043050108,
+      "solids": 1
+    },
+    "body_2_cream_02": {
+      "color": "#FFF0CF",
+      "volume_mm3": 107.8729259548018,
+      "solids": 1
+    },
+    "body_2_mint_03": {
+      "color": "#83D5BB",
+      "volume_mm3": 2629.2298384949895,
+      "solids": 1
+    },
+    "body_3_coral_01": {
+      "color": "#EF857E",
+      "volume_mm3": 43.3836323598604,
+      "solids": 1
+    },
+    "body_3_cream_02": {
+      "color": "#FFF0CF",
+      "volume_mm3": 104.15684401520224,
+      "solids": 1
+    },
+    "body_3_mint_03": {
+      "color": "#83D5BB",
+      "volume_mm3": 2414.2626937965088,
+      "solids": 1
+    },
+    "body_4_charcoal_01": {
+      "color": "#303844",
+      "volume_mm3": 8.092777564725614,
+      "solids": 1
+    },
+    "body_4_charcoal_02": {
+      "color": "#303844",
+      "volume_mm3": 8.892000000000003,
+      "solids": 1
+    },
+    "body_4_charcoal_03": {
+      "color": "#303844",
+      "volume_mm3": 8.092777559170454,
+      "solids": 1
+    },
+    "body_4_charcoal_04": {
+      "color": "#303844",
+      "volume_mm3": 8.092777413998897,
+      "solids": 1
+    },
+    "body_4_charcoal_05": {
+      "color": "#303844",
+      "volume_mm3": 8.891999999999996,
+      "solids": 1
+    },
+    "body_4_charcoal_06": {
+      "color": "#303844",
+      "volume_mm3": 8.09277755917046,
+      "solids": 1
+    },
+    "body_4_coral_07": {
+      "color": "#EF857E",
+      "volume_mm3": 43.026022936736894,
+      "solids": 1
+    },
+    "body_4_cream_08": {
+      "color": "#FFF0CF",
+      "volume_mm3": 134.3920585184185,
+      "solids": 1
+    },
+    "body_4_mint_09": {
+      "color": "#83D5BB",
+      "volume_mm3": 2582.104878488868,
+      "solids": 1
+    },
+    "body_5_coral_01": {
+      "color": "#EF857E",
+      "volume_mm3": 42.67324573324592,
+      "solids": 1
+    },
+    "body_5_cream_02": {
+      "color": "#FFF0CF",
+      "volume_mm3": 95.09964659801389,
+      "solids": 1
+    },
+    "body_5_mint_03": {
+      "color": "#83D5BB",
+      "volume_mm3": 2135.27193390224,
+      "solids": 1
+    },
+    "body_6_coral_01": {
+      "color": "#EF857E",
+      "volume_mm3": 41.96651290918942,
+      "solids": 1
+    },
+    "body_6_cream_02": {
+      "color": "#FFF0CF",
+      "volume_mm3": 86.04244689282118,
+      "solids": 1
+    },
+    "body_6_mint_03": {
+      "color": "#83D5BB",
+      "volume_mm3": 1883.92394588001,
+      "solids": 1
+    },
+    "body_7_coral_01": {
+      "color": "#EF857E",
+      "volume_mm3": 41.264297912404956,
+      "solids": 1
+    },
+    "body_7_cream_02": {
+      "color": "#FFF0CF",
+      "volume_mm3": 76.98524874718741,
+      "solids": 1
+    },
+    "body_7_mint_03": {
+      "color": "#83D5BB",
+      "volume_mm3": 1660.8185399258493,
+      "solids": 1
+    },
+    "tail_coral_01": {
+      "color": "#EF857E",
+      "volume_mm3": 64.45714285714286,
+      "solids": 1
+    },
+    "tail_cream_02": {
+      "color": "#FFF0CF",
+      "volume_mm3": 118.2,
+      "solids": 1
+    },
+    "tail_mint_03": {
+      "color": "#83D5BB",
+      "volume_mm3": 1370.9645538561435,
+      "solids": 1
+    },
+    "spare_sleepy_charcoal_01": {
+      "color": "#303844",
+      "volume_mm3": 7.244287460297842,
+      "solids": 1
+    },
+    "spare_sleepy_charcoal_02": {
+      "color": "#303844",
+      "volume_mm3": 5.449557620010646,
+      "solids": 1
+    },
+    "spare_sleepy_charcoal_03": {
+      "color": "#303844",
+      "volume_mm3": 7.244287460297845,
+      "solids": 1
+    },
+    "spare_sleepy_charcoal_04": {
+      "color": "#303844",
+      "volume_mm3": 5.449557620010641,
+      "solids": 1
+    },
+    "spare_sleepy_charcoal_05": {
+      "color": "#303844",
+      "volume_mm3": 4.450527928687853,
+      "solids": 1
+    },
+    "spare_sleepy_charcoal_06": {
+      "color": "#303844",
+      "volume_mm3": 2.790102635893419,
+      "solids": 1
+    },
+    "spare_sleepy_charcoal_07": {
+      "color": "#303844",
+      "volume_mm3": 2.790417719739952,
+      "solids": 1
+    },
+    "spare_sleepy_charcoal_08": {
+      "color": "#303844",
+      "volume_mm3": 3.1491339245654766,
+      "solids": 1
+    },
+    "spare_sleepy_cream_09": {
+      "color": "#FFF0CF",
+      "volume_mm3": 1227.530661871782,
+      "solids": 1
+    },
+    "spare_angry_cream_01": {
+      "color": "#FFF0CF",
+      "volume_mm3": 1.6084954386379724,
+      "solids": 1
+    },
+    "spare_angry_cream_02": {
+      "color": "#FFF0CF",
+      "volume_mm3": 1.6084954386379724,
+      "solids": 1
+    },
+    "spare_angry_charcoal_03": {
+      "color": "#303844",
+      "volume_mm3": 51.65249561399659,
+      "solids": 1
+    },
+    "spare_angry_charcoal_04": {
+      "color": "#303844",
+      "volume_mm3": 8.935693181395566,
+      "solids": 1
+    },
+    "spare_angry_charcoal_05": {
+      "color": "#303844",
+      "volume_mm3": 51.65249561399659,
+      "solids": 1
+    },
+    "spare_angry_charcoal_06": {
+      "color": "#303844",
+      "volume_mm3": 8.935693181395571,
+      "solids": 1
+    },
+    "spare_angry_charcoal_07": {
+      "color": "#303844",
+      "volume_mm3": 4.450527928687849,
+      "solids": 1
+    },
+    "spare_angry_charcoal_08": {
+      "color": "#303844",
+      "volume_mm3": 2.7901026358934184,
+      "solids": 1
+    },
+    "spare_angry_charcoal_09": {
+      "color": "#303844",
+      "volume_mm3": 2.790417719739948,
+      "solids": 1
+    },
+    "spare_angry_charcoal_10": {
+      "color": "#303844",
+      "volume_mm3": 3.1491339245654753,
+      "solids": 1
+    },
+    "spare_angry_cream_11": {
+      "color": "#FFF0CF",
+      "volume_mm3": 1216.965696320606,
+      "solids": 1
+    },
+    "coupon_35_pin_mint_01": {
+      "color": "#83D5BB",
+      "volume_mm3": 480.80353983358106,
+      "solids": 1
+    },
+    "coupon_35_receiver_coral_01": {
+      "color": "#EF857E",
+      "volume_mm3": 840.1587084938909,
+      "solids": 1
+    },
+    "coupon_45_pin_mint_01": {
+      "color": "#83D5BB",
+      "volume_mm3": 480.803539833581,
+      "solids": 1
+    },
+    "coupon_45_receiver_coral_01": {
+      "color": "#EF857E",
+      "volume_mm3": 816.7435833939456,
+      "solids": 1
+    },
+    "coupon_55_pin_mint_01": {
+      "color": "#83D5BB",
+      "volume_mm3": 480.80353983358094,
+      "solids": 1
+    },
+    "coupon_55_receiver_coral_01": {
+      "color": "#EF857E",
+      "volume_mm3": 792.6534114814432,
+      "solids": 1
+    }
+  },
+  "print_meshes": {
+    "head_coral_01": {
+      "vertices": 492,
+      "triangles": 980,
+      "shells": 1,
+      "volume_mm3": 453.2398633451605,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "head_coral_02": {
+      "vertices": 492,
+      "triangles": 980,
+      "shells": 1,
+      "volume_mm3": 571.7667231247793,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "head_coral_03": {
+      "vertices": 492,
+      "triangles": 980,
+      "shells": 1,
+      "volume_mm3": 453.2398633451633,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "head_coral_04": {
+      "vertices": 492,
+      "triangles": 980,
+      "shells": 1,
+      "volume_mm3": 453.2398633647905,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "head_coral_05": {
+      "vertices": 492,
+      "triangles": 980,
+      "shells": 1,
+      "volume_mm3": 571.766723124779,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "head_coral_06": {
+      "vertices": 492,
+      "triangles": 980,
+      "shells": 1,
+      "volume_mm3": 453.2398633781123,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "head_charcoal_07": {
+      "vertices": 1343,
+      "triangles": 2682,
+      "shells": 1,
+      "volume_mm3": 30.620977410004688,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "head_charcoal_08": {
+      "vertices": 1343,
+      "triangles": 2682,
+      "shells": 1,
+      "volume_mm3": 30.6209774100064,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "head_cream_09": {
+      "vertices": 1336,
+      "triangles": 2668,
+      "shells": 1,
+      "volume_mm3": 1070.485445089805,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "head_mint_10": {
+      "vertices": 5652,
+      "triangles": 11300,
+      "shells": 1,
+      "volume_mm3": 15667.923035050077,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_1_charcoal_01": {
+      "vertices": 42,
+      "triangles": 80,
+      "shells": 1,
+      "volume_mm3": 8.091418314805278,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_1_charcoal_02": {
+      "vertices": 8,
+      "triangles": 12,
+      "shells": 1,
+      "volume_mm3": 8.891999999999808,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_1_charcoal_03": {
+      "vertices": 42,
+      "triangles": 80,
+      "shells": 1,
+      "volume_mm3": 8.091418314805146,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_1_charcoal_04": {
+      "vertices": 42,
+      "triangles": 80,
+      "shells": 1,
+      "volume_mm3": 8.091418314805036,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_1_charcoal_05": {
+      "vertices": 8,
+      "triangles": 12,
+      "shells": 1,
+      "volume_mm3": 8.891999999999745,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_1_charcoal_06": {
+      "vertices": 42,
+      "triangles": 80,
+      "shells": 1,
+      "volume_mm3": 8.091418314805743,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_1_coral_07": {
+      "vertices": 448,
+      "triangles": 892,
+      "shells": 1,
+      "volume_mm3": 43.74168040559026,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_1_cream_08": {
+      "vertices": 24,
+      "triangles": 44,
+      "shells": 1,
+      "volume_mm3": 134.3990760939287,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_1_mint_09": {
+      "vertices": 6088,
+      "triangles": 12172,
+      "shells": 1,
+      "volume_mm3": 2844.651057203897,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_2_coral_01": {
+      "vertices": 448,
+      "triangles": 892,
+      "shells": 1,
+      "volume_mm3": 43.74168040558885,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_2_cream_02": {
+      "vertices": 308,
+      "triangles": 612,
+      "shells": 1,
+      "volume_mm3": 107.86912013496637,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_2_mint_03": {
+      "vertices": 5992,
+      "triangles": 11980,
+      "shells": 1,
+      "volume_mm3": 2626.35770244041,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_3_coral_01": {
+      "vertices": 443,
+      "triangles": 882,
+      "shells": 1,
+      "volume_mm3": 43.38741408045472,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_3_cream_02": {
+      "vertices": 299,
+      "triangles": 594,
+      "shells": 1,
+      "volume_mm3": 104.15314757993713,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_3_mint_03": {
+      "vertices": 5704,
+      "triangles": 11404,
+      "shells": 1,
+      "volume_mm3": 2412.019930155181,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_4_charcoal_01": {
+      "vertices": 42,
+      "triangles": 80,
+      "shells": 1,
+      "volume_mm3": 8.091418314804878,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_4_charcoal_02": {
+      "vertices": 8,
+      "triangles": 12,
+      "shells": 1,
+      "volume_mm3": 8.892000000000527,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_4_charcoal_03": {
+      "vertices": 42,
+      "triangles": 80,
+      "shells": 1,
+      "volume_mm3": 8.091418314804821,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_4_charcoal_04": {
+      "vertices": 42,
+      "triangles": 80,
+      "shells": 1,
+      "volume_mm3": 8.091418314806688,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_4_charcoal_05": {
+      "vertices": 8,
+      "triangles": 12,
+      "shells": 1,
+      "volume_mm3": 8.892000000000271,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_4_charcoal_06": {
+      "vertices": 42,
+      "triangles": 80,
+      "shells": 1,
+      "volume_mm3": 8.091418314805875,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_4_coral_07": {
+      "vertices": 441,
+      "triangles": 878,
+      "shells": 1,
+      "volume_mm3": 43.03046142990505,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_4_cream_08": {
+      "vertices": 46,
+      "triangles": 88,
+      "shells": 1,
+      "volume_mm3": 134.39203110561687,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_4_mint_09": {
+      "vertices": 5786,
+      "triangles": 11568,
+      "shells": 1,
+      "volume_mm3": 2580.45930857955,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_5_coral_01": {
+      "vertices": 436,
+      "triangles": 868,
+      "shells": 1,
+      "volume_mm3": 42.677761840304484,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_5_cream_02": {
+      "vertices": 282,
+      "triangles": 560,
+      "shells": 1,
+      "volume_mm3": 95.09613501664708,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_5_mint_03": {
+      "vertices": 5612,
+      "triangles": 11220,
+      "shells": 1,
+      "volume_mm3": 2133.8491940765457,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_6_coral_01": {
+      "vertices": 426,
+      "triangles": 848,
+      "shells": 1,
+      "volume_mm3": 41.971007712180295,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_6_cream_02": {
+      "vertices": 266,
+      "triangles": 528,
+      "shells": 1,
+      "volume_mm3": 86.03904377173276,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_6_mint_03": {
+      "vertices": 5465,
+      "triangles": 10926,
+      "shells": 1,
+      "volume_mm3": 1882.791175481798,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_7_coral_01": {
+      "vertices": 414,
+      "triangles": 824,
+      "shells": 1,
+      "volume_mm3": 41.26932768546157,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_7_cream_02": {
+      "vertices": 249,
+      "triangles": 494,
+      "shells": 1,
+      "volume_mm3": 76.98186710077603,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "body_7_mint_03": {
+      "vertices": 5253,
+      "triangles": 10502,
+      "shells": 1,
+      "volume_mm3": 1660.110739449391,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "tail_coral_01": {
+      "vertices": 8,
+      "triangles": 12,
+      "shells": 1,
+      "volume_mm3": 64.45714080000008,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "tail_cream_02": {
+      "vertices": 12,
+      "triangles": 20,
+      "shells": 1,
+      "volume_mm3": 118.2000000000001,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "tail_mint_03": {
+      "vertices": 1490,
+      "triangles": 2976,
+      "shells": 1,
+      "volume_mm3": 1371.6904436437756,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "Mintfin-chain": {
+      "vertices": 47911,
+      "triangles": 95786,
+      "shells": 9,
+      "volume_mm3": 38591.62157011655,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_happy_cream_01": {
+      "vertices": 316,
+      "triangles": 628,
+      "shells": 1,
+      "volume_mm3": 1.6080717376382538,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_happy_cream_02": {
+      "vertices": 316,
+      "triangles": 628,
+      "shells": 1,
+      "volume_mm3": 1.6080717376383973,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_happy_charcoal_03": {
+      "vertices": 632,
+      "triangles": 1260,
+      "shells": 1,
+      "volume_mm3": 51.6388821949834,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_happy_charcoal_04": {
+      "vertices": 632,
+      "triangles": 1260,
+      "shells": 1,
+      "volume_mm3": 51.63888219498327,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_happy_charcoal_05": {
+      "vertices": 320,
+      "triangles": 636,
+      "shells": 1,
+      "volume_mm3": 4.450186452417202,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_happy_charcoal_06": {
+      "vertices": 304,
+      "triangles": 604,
+      "shells": 1,
+      "volume_mm3": 2.7900848818838284,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_happy_charcoal_07": {
+      "vertices": 308,
+      "triangles": 612,
+      "shells": 1,
+      "volume_mm3": 2.7903994788381903,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_happy_charcoal_08": {
+      "vertices": 304,
+      "triangles": 604,
+      "shells": 1,
+      "volume_mm3": 3.1491167322665605,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_happy_cream_09": {
+      "vertices": 1574,
+      "triangles": 3144,
+      "shells": 1,
+      "volume_mm3": 1219.2896731390567,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_sleepy_charcoal_01": {
+      "vertices": 320,
+      "triangles": 636,
+      "shells": 1,
+      "volume_mm3": 7.243821400401291,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_sleepy_charcoal_02": {
+      "vertices": 274,
+      "triangles": 544,
+      "shells": 1,
+      "volume_mm3": 5.449480944663638,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_sleepy_charcoal_03": {
+      "vertices": 320,
+      "triangles": 636,
+      "shells": 1,
+      "volume_mm3": 7.243821400401542,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_sleepy_charcoal_04": {
+      "vertices": 274,
+      "triangles": 544,
+      "shells": 1,
+      "volume_mm3": 5.449480944663708,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_sleepy_charcoal_05": {
+      "vertices": 320,
+      "triangles": 636,
+      "shells": 1,
+      "volume_mm3": 4.45018645241741,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_sleepy_charcoal_06": {
+      "vertices": 304,
+      "triangles": 604,
+      "shells": 1,
+      "volume_mm3": 2.790084881883881,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_sleepy_charcoal_07": {
+      "vertices": 308,
+      "triangles": 612,
+      "shells": 1,
+      "volume_mm3": 2.7903994788380797,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_sleepy_charcoal_08": {
+      "vertices": 304,
+      "triangles": 604,
+      "shells": 1,
+      "volume_mm3": 3.149116732266475,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_sleepy_cream_09": {
+      "vertices": 1690,
+      "triangles": 3376,
+      "shells": 1,
+      "volume_mm3": 1227.5206856697287,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_angry_cream_01": {
+      "vertices": 316,
+      "triangles": 628,
+      "shells": 1,
+      "volume_mm3": 1.6080717376382032,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_angry_cream_02": {
+      "vertices": 316,
+      "triangles": 628,
+      "shells": 1,
+      "volume_mm3": 1.6080717376376483,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_angry_charcoal_03": {
+      "vertices": 632,
+      "triangles": 1260,
+      "shells": 1,
+      "volume_mm3": 51.63888219498337,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_angry_charcoal_04": {
+      "vertices": 396,
+      "triangles": 788,
+      "shells": 1,
+      "volume_mm3": 8.93788068184759,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_angry_charcoal_05": {
+      "vertices": 632,
+      "triangles": 1260,
+      "shells": 1,
+      "volume_mm3": 51.63888219498346,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_angry_charcoal_06": {
+      "vertices": 396,
+      "triangles": 788,
+      "shells": 1,
+      "volume_mm3": 8.93788068184822,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_angry_charcoal_07": {
+      "vertices": 320,
+      "triangles": 636,
+      "shells": 1,
+      "volume_mm3": 4.450186452417326,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_angry_charcoal_08": {
+      "vertices": 304,
+      "triangles": 604,
+      "shells": 1,
+      "volume_mm3": 2.79008488188391,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_angry_charcoal_09": {
+      "vertices": 308,
+      "triangles": 612,
+      "shells": 1,
+      "volume_mm3": 2.7903994788384057,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_angry_charcoal_10": {
+      "vertices": 304,
+      "triangles": 604,
+      "shells": 1,
+      "volume_mm3": 3.1491167322667093,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "face_angry_cream_11": {
+      "vertices": 2062,
+      "triangles": 4120,
+      "shells": 1,
+      "volume_mm3": 1216.9580520528007,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "Mintfin-faces": {
+      "vertices": 6742,
+      "triangles": 13472,
+      "shells": 3,
+      "volume_mm3": 3959.5590299664573,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "coupon_35_pin_mint_01": {
+      "vertices": 2172,
+      "triangles": 4340,
+      "shells": 1,
+      "volume_mm3": 480.6334214380835,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "coupon_35_receiver_coral_01": {
+      "vertices": 1819,
+      "triangles": 3634,
+      "shells": 1,
+      "volume_mm3": 840.1151793809726,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "coupon_45_pin_mint_01": {
+      "vertices": 2172,
+      "triangles": 4340,
+      "shells": 1,
+      "volume_mm3": 480.63342142532656,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "coupon_45_receiver_coral_01": {
+      "vertices": 1827,
+      "triangles": 3650,
+      "shells": 1,
+      "volume_mm3": 816.7095173329367,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "coupon_55_pin_mint_01": {
+      "vertices": 2172,
+      "triangles": 4340,
+      "shells": 1,
+      "volume_mm3": 480.6334214253308,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "coupon_55_receiver_coral_01": {
+      "vertices": 1612,
+      "triangles": 3220,
+      "shells": 1,
+      "volume_mm3": 792.6214388355855,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    },
+    "Mintfin-hinge-coupon": {
+      "vertices": 11774,
+      "triangles": 23524,
+      "shells": 6,
+      "volume_mm3": 3891.346399838236,
+      "watertight": true,
+      "manifold": true,
+      "consistent_winding": true
+    }
+  }
+}

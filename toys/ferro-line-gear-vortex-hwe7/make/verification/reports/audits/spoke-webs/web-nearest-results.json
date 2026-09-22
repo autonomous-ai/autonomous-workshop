@@ -1,0 +1,967 @@
+{
+  "measurement_api": "build123d.Shape.distance_to_with_closest_points",
+  "measurement_semantics": "BREP minimum distance and closest points, not selected-origin projection",
+  "grading_performed": false,
+  "measurement_count": 35,
+  "rows": [
+    {
+      "teeth": 16,
+      "master": "part_gear_16.step",
+      "master_sha256": "b5719d6bc598e925f3b7ba85904ee0eba3b1bd7bf7e31349f5483c1526ac3ce5",
+      "void_step": "web_16.step",
+      "void_step_sha256": "df7f7ec5374d1c9cae7c7c70ac5d785c3ec9027e84c96413ffd82516b3def083",
+      "cyclic_adjacent_pairs": [
+        {
+          "first_window_index": 0,
+          "second_window_index": 1,
+          "nearest_distance_mm": 2.627508317003239,
+          "closest_point_first_mm": [
+            -5.220567553029229,
+            -4.2766475912654744,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            -2.652777829655,
+            -4.833653778354,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.627508317003239
+        },
+        {
+          "first_window_index": 1,
+          "second_window_index": 2,
+          "nearest_distance_mm": 2.6275083170030995,
+          "closest_point_first_mm": [
+            2.4540894654023537,
+            -6.286611574720629,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            3.777324491753,
+            -4.016622803612,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6275083170030995
+        },
+        {
+          "first_window_index": 2,
+          "second_window_index": 3,
+          "nearest_distance_mm": 2.627508317002691,
+          "closest_point_first_mm": [
+            6.7372782540816045,
+            0.3913079640203058,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            4.987292752096,
+            2.351244365733,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.627508317002691
+        },
+        {
+          "first_window_index": 3,
+          "second_window_index": 4,
+          "nearest_distance_mm": 2.62750831700259,
+          "closest_point_first_mm": [
+            1.7097774872840164,
+            6.528453196554449,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            -0.695008059112,
+            5.469771737492,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.62750831700259
+        },
+        {
+          "first_window_index": 4,
+          "second_window_index": 0,
+          "nearest_distance_mm": 2.6275083170027957,
+          "closest_point_first_mm": [
+            -5.680577653740123,
+            3.6434980054135484,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            -5.416831355082,
+            1.029260478741,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6275083170027957
+        }
+      ],
+      "original_top_plane_z_mm": 5.0000001,
+      "all_five_exported_window_descriptors": [
+        {
+          "area_mm2": 9.674481403696548,
+          "centroid_xy_mm": [
+            -5.141116641660206,
+            -0.8456330739376742
+          ],
+          "centroid_radius_mm": 5.210199191863282,
+          "centroid_angle_deg": -170.65938050285487
+        },
+        {
+          "area_mm2": 9.67448140369981,
+          "centroid_xy_mm": [
+            -0.7844475669731298,
+            -5.150807473936836
+          ],
+          "centroid_radius_mm": 5.210199191863362,
+          "centroid_angle_deg": -98.65938050284802
+        },
+        {
+          "area_mm2": 9.674481403707992,
+          "centroid_xy_mm": [
+            4.656301382880131,
+            -2.3377410144613004
+          ],
+          "centroid_radius_mm": 5.210199191864547,
+          "centroid_angle_deg": -26.65938050283717
+        },
+        {
+          "area_mm2": 9.674481403697511,
+          "centroid_xy_mm": [
+            3.662200083455236,
+            3.7060040701053563
+          ],
+          "centroid_radius_mm": 5.210199191863686,
+          "centroid_angle_deg": 45.34061949715589
+        },
+        {
+          "area_mm2": 9.67448140369588,
+          "centroid_xy_mm": [
+            -2.3929372577010484,
+            4.628177492232862
+          ],
+          "centroid_radius_mm": 5.2101991918644215,
+          "centroid_angle_deg": 117.34061949715179
+        }
+      ]
+    },
+    {
+      "teeth": 18,
+      "master": "part_gear_18.step",
+      "master_sha256": "b530695efe1753b996944c855171784d8880a4322882d3f9bd9b249d0cc38640",
+      "void_step": "web_18.step",
+      "void_step_sha256": "70c5fe98445e64430333faca57b72572a24fec5e85bbc366d15d270eaa45dbbb",
+      "cyclic_adjacent_pairs": [
+        {
+          "first_window_index": 0,
+          "second_window_index": 1,
+          "nearest_distance_mm": 2.6138191910410318,
+          "closest_point_first_mm": [
+            -0.672346860399,
+            -6.75788622735,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            1.789586553767741,
+            -7.635915058120203,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.6138191910410318
+        },
+        {
+          "first_window_index": 1,
+          "second_window_index": 2,
+          "nearest_distance_mm": 2.6138191910407316,
+          "closest_point_first_mm": [
+            6.219365126925,
+            -2.727741553097,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            7.815199431920319,
+            -0.6576295671279002,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.6138191910407316
+        },
+        {
+          "first_window_index": 2,
+          "second_window_index": 3,
+          "nearest_distance_mm": 2.6138191910408444,
+          "closest_point_first_mm": [
+            4.516125897284,
+            5.072049235011,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            3.040472324017562,
+            7.229477633628068,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.6138191910408444
+        },
+        {
+          "first_window_index": 3,
+          "second_window_index": 4,
+          "nearest_distance_mm": 2.6138191910403767,
+          "closest_point_first_mm": [
+            -3.42824582493,
+            5.862440372946,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            -5.9360841938235716,
+            5.125692465615276,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.6138191910403767
+        },
+        {
+          "first_window_index": 4,
+          "second_window_index": 0,
+          "nearest_distance_mm": 2.6138191910405992,
+          "closest_point_first_mm": [
+            -6.634898338881,
+            -1.448861827511,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            -6.709174115881999,
+            -4.061625473997806,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.6138191910405992
+        }
+      ],
+      "original_top_plane_z_mm": 5.0000001,
+      "all_five_exported_window_descriptors": [
+        {
+          "area_mm2": 18.039806214905884,
+          "centroid_xy_mm": [
+            -2.773628907116085,
+            -5.282095295865788
+          ],
+          "centroid_radius_mm": 5.966032855172476,
+          "centroid_angle_deg": -117.70396988156314
+        },
+        {
+          "area_mm2": 18.039806214911977,
+          "centroid_xy_mm": [
+            4.166472682436718,
+            -4.2701350582282185
+          ],
+          "centroid_radius_mm": 5.966032855172785,
+          "centroid_angle_deg": -45.703969881565136
+        },
+        {
+          "area_mm2": 18.03980621491573,
+          "centroid_xy_mm": [
+            5.348650638059879,
+            2.643006693327868
+          ],
+          "centroid_radius_mm": 5.966032855172209,
+          "centroid_angle_deg": 26.29603011843175
+        },
+        {
+          "area_mm2": 18.039806214897872,
+          "centroid_xy_mm": [
+            -0.8608247941672027,
+            5.903603027197872
+          ],
+          "centroid_radius_mm": 5.966032855172093,
+          "centroid_angle_deg": 98.296030118441
+        },
+        {
+          "area_mm2": 18.03980621490282,
+          "centroid_xy_mm": [
+            -5.880669619212639,
+            1.0056206335662996
+          ],
+          "centroid_radius_mm": 5.966032855171417,
+          "centroid_angle_deg": 170.29603011844063
+        }
+      ]
+    },
+    {
+      "teeth": 20,
+      "master": "part_gear_20.step",
+      "master_sha256": "f15fdbc63c910fa87d4f4195105b65e43ccae76f23356673e181681992f150f2",
+      "void_step": "web_20.step",
+      "void_step_sha256": "df05692210e15478986cb778ff75e38c7e33a68f74157eb4f3e62080fa7cb70a",
+      "cyclic_adjacent_pairs": [
+        {
+          "first_window_index": 0,
+          "second_window_index": 1,
+          "nearest_distance_mm": 2.60758665029725,
+          "closest_point_first_mm": [
+            -6.91002796579277,
+            -6.831743486721366,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            -4.384251705883,
+            -7.479788565157,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.60758665029725
+        },
+        {
+          "first_window_index": 1,
+          "second_window_index": 2,
+          "nearest_distance_mm": 2.607586650296876,
+          "closest_point_first_mm": [
+            4.362058087667761,
+            -8.682951963256617,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            5.758893370668,
+            -6.481052934924,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.607586650296876
+        },
+        {
+          "first_window_index": 2,
+          "second_window_index": 3,
+          "nearest_distance_mm": 2.6075866502970433,
+          "closest_point_first_mm": [
+            9.605928124871975,
+            1.4653840507458624,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            7.943443546542,
+            3.474277568487,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6075866502970433
+        },
+        {
+          "first_window_index": 3,
+          "second_window_index": 4,
+          "nearest_distance_mm": 2.6075866502973413,
+          "closest_point_first_mm": [
+            1.5747319869929304,
+            9.588609113190309,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            -0.849575271188,
+            8.6282745586,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6075866502973413
+        },
+        {
+          "first_window_index": 4,
+          "second_window_index": 0,
+          "nearest_distance_mm": 2.6075866502971436,
+          "closest_point_first_mm": [
+            -8.632690233739893,
+            4.460702286042326,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            -8.468509940138,
+            1.858289372994,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6075866502971436
+        }
+      ],
+      "original_top_plane_z_mm": 5.0000001,
+      "all_five_exported_window_descriptors": [
+        {
+          "area_mm2": 28.524217668625084,
+          "centroid_xy_mm": [
+            -6.6396916197208515,
+            -1.1673919711284895
+          ],
+          "centroid_radius_mm": 6.74153608751348,
+          "centroid_angle_deg": -170.02816275567517
+        },
+        {
+          "area_mm2": 28.524217668602212,
+          "centroid_xy_mm": [
+            -0.9415218066927837,
+            -6.675465939300362
+          ],
+          "centroid_radius_mm": 6.741536087512793,
+          "centroid_angle_deg": -98.02816275569756
+        },
+        {
+          "area_mm2": 28.524217668609484,
+          "centroid_xy_mm": [
+            6.057799142035628,
+            -2.958272870103023
+          ],
+          "centroid_radius_mm": 6.741536087512635,
+          "centroid_angle_deg": -26.02816275568811
+        },
+        {
+          "area_mm2": 28.52421766859927,
+          "centroid_xy_mm": [
+            4.685447573489959,
+            4.847152757579132
+          ],
+          "centroid_radius_mm": 6.741536087512247,
+          "centroid_angle_deg": 45.97183724430482
+        },
+        {
+          "area_mm2": 28.52421766858929,
+          "centroid_xy_mm": [
+            -3.1620332891130025,
+            5.953978022952532
+          ],
+          "centroid_radius_mm": 6.7415360875145165,
+          "centroid_angle_deg": 117.97183724430039
+        }
+      ]
+    },
+    {
+      "teeth": 22,
+      "master": "part_gear_22.step",
+      "master_sha256": "3bc0f3d7b56c26681d3dfc4b671e5aaed98ec4e2c762f3ff948f51a406bd1644",
+      "void_step": "web_22.step",
+      "void_step_sha256": "7b907439fc7690a25ce10728f256d9ff5893e6783786fb6f3fa9c11870c8b88e",
+      "cyclic_adjacent_pairs": [
+        {
+          "first_window_index": 0,
+          "second_window_index": 1,
+          "nearest_distance_mm": 2.604530235027525,
+          "closest_point_first_mm": [
+            -0.767923309056,
+            -9.840080985003,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            1.6883028432241283,
+            -10.706412811745901,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.604530235027525
+        },
+        {
+          "first_window_index": 1,
+          "second_window_index": 2,
+          "nearest_distance_mm": 2.6045302350297033,
+          "closest_point_first_mm": [
+            9.121171788784,
+            -3.771090717484,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            10.704117940965505,
+            -1.7027920870929114,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.6045302350297033
+        },
+        {
+          "first_window_index": 2,
+          "second_window_index": 3,
+          "nearest_distance_mm": 2.6045302350301593,
+          "closest_point_first_mm": [
+            6.405117491751,
+            7.509418746938,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            4.9272058638790215,
+            9.654029426149277,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.6045302350301593
+        },
+        {
+          "first_window_index": 3,
+          "second_window_index": 4,
+          "nearest_distance_mm": 2.604530235029015,
+          "closest_point_first_mm": [
+            -5.162591476946,
+            8.412166738847,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            -7.658937247521423,
+            7.669310400844494,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.604530235029015
+        },
+        {
+          "first_window_index": 4,
+          "second_window_index": 0,
+          "nearest_distance_mm": 2.6045302350303956,
+          "closest_point_first_mm": [
+            -9.595774494534,
+            -2.310413783299,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            -9.660689400549098,
+            -4.9141349281539055,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.6045302350303956
+        }
+      ],
+      "original_top_plane_z_mm": 5.0000001,
+      "all_five_exported_window_descriptors": [
+        {
+          "area_mm2": 41.14000164237696,
+          "centroid_xy_mm": [
+            -3.553516171360317,
+            -6.635562940925515
+          ],
+          "centroid_radius_mm": 7.527162328733408,
+          "centroid_angle_deg": -118.1702050525077
+        },
+        {
+          "area_mm2": 41.14000164238334,
+          "centroid_xy_mm": [
+            5.2126984875164,
+            -5.430096426523535
+          ],
+          "centroid_radius_mm": 7.527162328733149,
+          "centroid_angle_deg": -46.170205052515385
+        },
+        {
+          "area_mm2": 41.14000164239892,
+          "centroid_xy_mm": [
+            6.775141009752794,
+            3.2795787871433832
+          ],
+          "centroid_radius_mm": 7.527162328734181,
+          "centroid_angle_deg": 25.829794947476294
+        },
+        {
+          "area_mm2": 41.140001642401515,
+          "centroid_xy_mm": [
+            -1.0254310649163938,
+            7.456987585763369
+          ],
+          "centroid_radius_mm": 7.527162328734818,
+          "centroid_angle_deg": 97.82979494748005
+        },
+        {
+          "area_mm2": 41.1400016424084,
+          "centroid_xy_mm": [
+            -7.408892260992406,
+            1.3290929945451568
+          ],
+          "centroid_radius_mm": 7.527162328735988,
+          "centroid_angle_deg": 169.82979494747022
+        }
+      ]
+    },
+    {
+      "teeth": 24,
+      "master": "part_gear_24.step",
+      "master_sha256": "c9081f6b8f847a9a8ad9b0abbef5c984df2080d0e0ad16a1fe4b58a55598f790",
+      "void_step": "web_24.step",
+      "void_step_sha256": "f79183c9eca5e36df6e6488683b2321b6646b3f581579aa103110689633adc57",
+      "cyclic_adjacent_pairs": [
+        {
+          "first_window_index": 0,
+          "second_window_index": 1,
+          "nearest_distance_mm": 2.602817807127807,
+          "closest_point_first_mm": [
+            -7.15291219197098,
+            -5.571202946518441,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            -4.8609022019,
+            -6.804633423893,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.602817807127807
+        },
+        {
+          "first_window_index": 1,
+          "second_window_index": 2,
+          "nearest_distance_mm": 2.6028178071273156,
+          "closest_point_first_mm": [
+            3.0881574392963347,
+            -8.524420140245613,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            4.969489570411,
+            -6.725740082666,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6028178071273156
+        },
+        {
+          "first_window_index": 2,
+          "second_window_index": 3,
+          "nearest_distance_mm": 2.6028178071275794,
+          "closest_point_first_mm": [
+            9.06149845206804,
+            0.30282156546115074,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            7.932215663153,
+            2.647897453308,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6028178071275794
+        },
+        {
+          "first_window_index": 3,
+          "second_window_index": 4,
+          "nearest_distance_mm": 2.6028178071271073,
+          "closest_point_first_mm": [
+            2.5121565930844967,
+            8.71157416022617,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            -0.06711068448855,
+            8.362230707534,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6028178071271073
+        },
+        {
+          "first_window_index": 4,
+          "second_window_index": 0,
+          "nearest_distance_mm": 2.6028178071274137,
+          "closest_point_first_mm": [
+            -7.508900292478382,
+            5.08122736107465,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            -7.973692347175,
+            2.520245345716,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6028178071274137
+        }
+      ],
+      "original_top_plane_z_mm": 5.0000001,
+      "all_five_exported_window_descriptors": [
+        {
+          "area_mm2": 55.89165289860284,
+          "centroid_xy_mm": [
+            -8.18418865261307,
+            -1.4904488830917737
+          ],
+          "centroid_radius_mm": 8.318796894663919,
+          "centroid_angle_deg": -169.67879132487593
+        },
+        {
+          "area_mm2": 55.8916528986731,
+          "centroid_xy_mm": [
+            -1.1115522563545535,
+            -8.244199982782707
+          ],
+          "centroid_radius_mm": 8.318796894666997,
+          "centroid_angle_deg": -97.67879132484373
+        },
+        {
+          "area_mm2": 55.8916528986998,
+          "centroid_xy_mm": [
+            7.497211577917657,
+            -3.604746916313809
+          ],
+          "centroid_radius_mm": 8.31879689466791,
+          "centroid_angle_deg": -25.678791324838603
+        },
+        {
+          "area_mm2": 55.89165289873182,
+          "centroid_xy_mm": [
+            5.7450838323575555,
+            6.016343867664893
+          ],
+          "centroid_radius_mm": 8.318796894672039,
+          "centroid_angle_deg": 46.3212086751764
+        },
+        {
+          "area_mm2": 55.89165289873575,
+          "centroid_xy_mm": [
+            -3.9465545013038397,
+            7.323051914533984
+          ],
+          "centroid_radius_mm": 8.318796894667008,
+          "centroid_angle_deg": 118.3212086751637
+        }
+      ]
+    },
+    {
+      "teeth": 26,
+      "master": "part_gear_26.step",
+      "master_sha256": "8b31f14c74c7958da148d8b489cbacd7bd7688d0b9a9d58b0c53be527dad786d",
+      "void_step": "web_26.step",
+      "void_step_sha256": "86fc199885aca0c3ec0afc5c2d63d0f398d158c8b1cb6e08203c094d2d288a30",
+      "cyclic_adjacent_pairs": [
+        {
+          "first_window_index": 0,
+          "second_window_index": 1,
+          "nearest_distance_mm": 2.601259296595373,
+          "closest_point_first_mm": [
+            -0.153047027238,
+            -3.846956798231,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            2.396339331528983,
+            -3.3300630742831503,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.601259296595373
+        },
+        {
+          "first_window_index": 1,
+          "second_window_index": 2,
+          "nearest_distance_mm": 2.6012592965958303,
+          "closest_point_first_mm": [
+            3.611379198508,
+            -1.334331399834,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            3.9075877642015575,
+            1.2500080542114622,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.6012592965958303
+        },
+        {
+          "first_window_index": 2,
+          "second_window_index": 3,
+          "nearest_distance_mm": 2.601259296595407,
+          "closest_point_first_mm": [
+            2.38500211818,
+            3.022294640877,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            0.018682720769943775,
+            4.10261053799457,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.601259296595407
+        },
+        {
+          "first_window_index": 3,
+          "second_window_index": 4,
+          "nearest_distance_mm": 2.6012592965966164,
+          "closest_point_first_mm": [
+            -2.137366826232,
+            3.202212211913,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            -3.8960412077634277,
+            1.2855447008732335,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.6012592965966164
+        },
+        {
+          "first_window_index": 4,
+          "second_window_index": 0,
+          "nearest_distance_mm": 2.6012592965957433,
+          "closest_point_first_mm": [
+            -3.705967463218,
+            -1.043218654725,
+            -1.000000002804e-07
+          ],
+          "closest_point_second_mm": [
+            -2.4265686087387897,
+            -3.3081002187991713,
+            -1.000000002804e-07
+          ],
+          "witness_point_separation_mm": 2.6012592965957433
+        }
+      ],
+      "original_top_plane_z_mm": 5.0000001,
+      "all_five_exported_window_descriptors": [
+        {
+          "area_mm2": 72.781091640377,
+          "centroid_xy_mm": [
+            -4.340497826764408,
+            -8.014425427152865
+          ],
+          "centroid_radius_mm": 9.114325883549531,
+          "centroid_angle_deg": -118.43933971120461
+        },
+        {
+          "area_mm2": 72.78109164034689,
+          "centroid_xy_mm": [
+            6.280883934335474,
+            -6.604652399248417
+          ],
+          "centroid_radius_mm": 9.11432588354681,
+          "centroid_angle_deg": -46.439339711206564
+        },
+        {
+          "area_mm2": 72.78109164039085,
+          "centroid_xy_mm": [
+            8.222297577577743,
+            3.9325257605368464
+          ],
+          "centroid_radius_mm": 9.114325883548752,
+          "centroid_angle_deg": 25.560660288791667
+        },
+        {
+          "area_mm2": 72.78109164039516,
+          "centroid_xy_mm": [
+            -1.1992245657780956,
+            9.035086980897912
+          ],
+          "centroid_radius_mm": 9.114325883550391,
+          "centroid_angle_deg": 97.56066028879322
+        },
+        {
+          "area_mm2": 72.78109164036519,
+          "centroid_xy_mm": [
+            -8.963459119372292,
+            1.651465084970033
+          ],
+          "centroid_radius_mm": 9.114325883549116,
+          "centroid_angle_deg": 169.5606602887839
+        }
+      ]
+    },
+    {
+      "teeth": 36,
+      "master": "part_sun.step",
+      "master_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "void_step": "web_36.step",
+      "void_step_sha256": "71299e0596d1f7be7c79cc7d4a6bb2324ff45fdf8c6b14e106b58d24f906e12e",
+      "cyclic_adjacent_pairs": [
+        {
+          "first_window_index": 0,
+          "second_window_index": 1,
+          "nearest_distance_mm": 2.60080546471098,
+          "closest_point_first_mm": [
+            -13.912721325743936,
+            -15.200400798604866,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            -11.34383355888,
+            -15.60660851213,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.60080546471098
+        },
+        {
+          "first_window_index": 1,
+          "second_window_index": 2,
+          "nearest_distance_mm": 2.6008054647114207,
+          "closest_point_first_mm": [
+            10.157172902154175,
+            -17.92896644432264,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            11.337329371673,
+            -15.61133408074,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6008054647114207
+        },
+        {
+          "first_window_index": 2,
+          "second_window_index": 3,
+          "nearest_distance_mm": 2.600805464710891,
+          "closest_point_first_mm": [
+            20.19019940888639,
+            4.119690152853012,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            18.350688452229,
+            5.958273440498,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.600805464710891
+        },
+        {
+          "first_window_index": 3,
+          "second_window_index": 4,
+          "nearest_distance_mm": 2.6008054647104633,
+          "closest_point_first_mm": [
+            2.3210565721765817,
+            20.475074981909852,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            0.004019808764663,
+            19.293749581241,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6008054647104633
+        },
+        {
+          "first_window_index": 4,
+          "second_window_index": 0,
+          "nearest_distance_mm": 2.6008054647108185,
+          "closest_point_first_mm": [
+            -18.755707557467225,
+            8.53460210816986,
+            4.9999999
+          ],
+          "closest_point_second_mm": [
+            -18.34820407378,
+            5.965919571138,
+            4.9999999
+          ],
+          "witness_point_separation_mm": 2.6008054647108185
+        }
+      ],
+      "original_top_plane_z_mm": 5.0000001,
+      "all_five_exported_window_descriptors": [
+        {
+          "area_mm2": 145.98844586049404,
+          "centroid_xy_mm": [
+            -14.694729766015476,
+            -1.842007711270112
+          ],
+          "centroid_radius_mm": 14.8097290760027,
+          "centroid_angle_deg": -172.85514991763358
+        },
+        {
+          "area_mm2": 145.98844586013644,
+          "centroid_xy_mm": [
+            -2.789067788590071,
+            -14.54473018572367
+          ],
+          "centroid_radius_mm": 14.809729076011216,
+          "centroid_angle_deg": -100.85514991767948
+        },
+        {
+          "area_mm2": 145.9884458603031,
+          "centroid_xy_mm": [
+            12.970991075745712,
+            -7.147129900705423
+          ],
+          "centroid_radius_mm": 14.809729076003801,
+          "centroid_angle_deg": -28.85514991765563
+        },
+        {
+          "area_mm2": 145.98844586041108,
+          "centroid_xy_mm": [
+            10.805581141165693,
+            10.1275609850647
+          ],
+          "centroid_radius_mm": 14.809729076000018,
+          "centroid_angle_deg": 43.14485008232502
+        },
+        {
+          "area_mm2": 145.98844586031817,
+          "centroid_xy_mm": [
+            -6.29277466231059,
+            13.40630681262329
+          ],
+          "centroid_radius_mm": 14.809729076009724,
+          "centroid_angle_deg": 115.14485008233252
+        }
+      ]
+    }
+  ]
+}

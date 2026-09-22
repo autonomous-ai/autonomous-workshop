@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Rounded lip loses required radial retaining undercut",
+      "evidence": "Exact nearest distance from each cropped retention sector to its central axial edge is4.60017463mm; top and iso show widened rounded opening.",
+      "part": "body_01_rear",
+      "repair": "Restore a genuine4.4mm minimum aperture with a rounded retaining bead inside the existing axial lip envelope, measuring ball clearance and retained socket wall, or coordinate an axial land extension."
+    }
+  ],
+  "observation": "Front, top and iso inspected. Rounded mouth is visible and all print checks including1.2mm walls pass. Exact minimum aperture measurement across the final0.8mm lip finds radius4.600175, leaving only0.399825mm radial retention undercut instead of required0.6mm; reject this candidate.",
+  "packet_sha256": "2a490c503720783b4c30c22f90961dc8ce937aef190fd76089923cb64396b773",
+  "status": "fail"
+}

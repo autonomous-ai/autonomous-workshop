@@ -1,0 +1,62 @@
+{
+ "build": {
+  "face_sleepy_lid": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_sleepy_lid"
+ ],
+ "check_motion": true,
+ "checked": [
+  "face_sleepy_lid"
+ ],
+ "checks_ok": true,
+ "entry": "part_face_sleepy_lid.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_lid/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_sleepy_lid"
+ ],
+ "print": {
+  "face_sleepy_lid": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_lid/r0002/overhang-face_sleepy_lid.log": "fe02eb25f2d1d9ecdbb8ad2c092e0d32273cbbb8c7cac2786615fc35b53ea5d7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_lid/r0002/thickness-face_sleepy_lid.log": "d576f381610064cba84b3913a0a08df9bec5c8b0533c478cd5315b16d7b5df18"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:face_sleepy_lid",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Continuous curved charcoal ribbon now has rounded end corners on both sides, uniform raised depth and broad flat attachment face. Curve remains visibly closed-eye shaped; no pointed slivers, breaks or detached pieces. Default standing-feature wall and overhang checks pass; final installed expression awaits assembly review.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_lid/r0002/visual-packet.json",
+  "packet_sha256": "daa90ce21e2c325863c7598097af8c9afa7797e68598e203ab4a0cd5b8ee1c67",
+  "status": "pass"
+ }
+}

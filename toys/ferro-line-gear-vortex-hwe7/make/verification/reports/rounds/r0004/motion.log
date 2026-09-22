@@ -1,0 +1,35 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex --manifest <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/motion.json --json
+(410.2s, exit 3)
+--- stdout
+
+--- stderr
+check_motion: building gear_vortex.step.py ...
+check_motion: building gear_vortex.step.py done in 38s
+check_motion: 60 condition(s), up to ~89,102 sampled Boolean/distance operations before any stops early
+check_motion condition: 60 to go
+check_motion condition 1/60: sun-withdraws [linear_motion_collision] (0s elapsed)
+[sun-withdraws] sweep: 32 to go
+[sun-withdraws] sweep: 1/32 (3%), 11s elapsed, ~5m40s left
+[sun-withdraws] sweep: 3/32 (9%), 30s elapsed, ~4m47s left
+[sun-withdraws] sweep: 5/32 (15%), 47s elapsed, ~4m14s left
+[sun-withdraws] sweep: 6/32 (18%), 58s elapsed, ~4m09s left
+[sun-withdraws] sweep: 7/32 (21%), 1m09s elapsed, ~4m07s left
+[sun-withdraws] sweep: 8/32 (25%), 1m21s elapsed, ~4m04s left
+[sun-withdraws] sweep: 9/32 (28%), 1m34s elapsed, ~4m01s left
+[sun-withdraws] sweep: 10/32 (31%), 1m49s elapsed, ~3m59s left
+[sun-withdraws] sweep: 11/32 (34%), 2m03s elapsed, ~3m55s left
+[sun-withdraws] sweep: 12/32 (37%), 2m19s elapsed, ~3m52s left
+[sun-withdraws] sweep: 13/32 (40%), 2m36s elapsed, ~3m48s left
+[sun-withdraws] sweep: 14/32 (43%), 2m53s elapsed, ~3m43s left
+[sun-withdraws] sweep: 15/32 (46%), 3m08s elapsed, ~3m33s left
+[sun-withdraws] sweep: 16/32 (50%), 3m22s elapsed, ~3m22s left
+[sun-withdraws] sweep: 17/32 (53%), 3m35s elapsed, ~3m10s left
+[sun-withdraws] sweep: 18/32 (56%), 3m51s elapsed, ~2m59s left
+[sun-withdraws] sweep: 19/32 (59%), 4m07s elapsed, ~2m49s left
+[sun-withdraws] sweep: 20/32 (62%), 4m18s elapsed, ~2m35s left
+[sun-withdraws] sweep: 22/32 (68%), 4m35s elapsed, ~2m05s left
+[sun-withdraws] sweep: 24/32 (75%), 4m54s elapsed, ~1m38s left
+[sun-withdraws] sweep: 26/32 (81%), 5m05s elapsed, ~1m10s left
+[sun-withdraws] sweep: 32/32 (100%), 5m11s elapsed, ~0s left
+check_motion condition 2/60: operating-full-revolution [coupled_motion_collision] (5m11s elapsed)
+[operating-full-revolution] coupled sweep: 129 to go

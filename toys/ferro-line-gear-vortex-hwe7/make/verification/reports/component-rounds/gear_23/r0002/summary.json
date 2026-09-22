@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": true,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_gear_23.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_23/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_23"
+ ],
+ "print": {
+  "gear_23": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_23/r0001/overhang-gear_23.log": "921359294319341ed11c739044b62cd26dcf556b4e24f3e3e799224533865db1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_23/r0001/thickness-gear_23.log": "84ac60bde7180fa88f4d9d43c2bda75dfd032cc95516d76a8582b8da0a57c7e2"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.27,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [
+  "gear_23"
+ ],
+ "round": 2,
+ "scope": "component:gear_23",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Fresh front/top/iso inspection: twenty-three distinct teeth, five broad swept spokes with large through windows, a round bore and continuous root rim. No visible misplaced feature or extra body. Digital visual inspection does not establish physical fit or print readiness.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_23/r0002/visual-packet.json",
+  "packet_sha256": "5d93c6fb5df708390947e7e5ec34c862b08882edbabd6236b17c6ef14a7b83e2",
+  "status": "pass"
+ }
+}

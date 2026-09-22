@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Support bodies occupy the sun tooth-tip envelope.",
+      "evidence": "Front view at12 and6oclock on the central sun; exact carrier-sun interference report confirms2.7840567mm3 overlap.",
+      "part": "carrier bezel support pillars",
+      "repair": "Reduce carrier pillar body diameter to5.6mm while retaining7mm bezel bosses and4mm threaded posts."
+    }
+  ],
+  "observation": "Front view shows two opposing shrinking gear spirals around the orange core and genuine open center; top and isometric views show the slim rear stem, round base and two trim rings. The sun approaches the bezel supports at12 and6oclock with no readable clearance. Targeted inspection confirms a2.784mm3 overlap there. A separate path check also found front-thread obstruction of sun withdrawal.",
+  "packet_sha256": "efa0963aff5075f5104814e4365829080883a87428fbadbd1abfa0b4c12d8e4e",
+  "status": "fail"
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_01_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_01_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0008",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_front"
+ ],
+ "print": {
+  "body_01_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0008/overhang-body_01_front.log": "2213e46c082d8106dfdc0a7c801229a8e9b04604de3bb103f6932a056f7f3e25",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0008/thickness-body_01_front.log": "66f13dba92ac9c059660aa07f13ad0512a2decc66d89816dbc8170c3868bd6dc"
+   },
+   "measured_round": 8,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 8,
+ "scope": "component:body_01_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected after J00 lip extension. Centered sphere, open clearance crescent, broad crown bridge and symmetric ankle notches remain coherent on uniform flat land. Default and1.2mm wall and support checks pass; motion remains unverified.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0008/visual-packet.json",
+  "packet_sha256": "56ab62753edb818d2bedab375092522f7e17c78598c82eaa1477d76de056eeca",
+  "status": "pass"
+ }
+}

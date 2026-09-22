@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Sharp leading lobe and feathered root/clearance edges",
+      "evidence": "Top left edge and lower root beside ball; iso shows thin lip along clearance cut. Wall report locates regions near Y118.3 Z76.6, Y119.6 Z63.3 and Y131.8 Z50.5.",
+      "part": "tail_left",
+      "repair": "Blunt leading lobe and trim or reinforce clearance<HOME> boundaries to minimum1.2 while preserving ball and clearance envelope."
+    }
+  ],
+  "observation": "Top and iso show five fan lobes, but the leading lowest lobe ends in a sharp point and the fan-to-ball root has a narrow feathered tongue. The front shows the intended sagittal bed and hemispherical ball. The thin root and pointed edge agree with the measured wall failures.",
+  "packet_sha256": "46903a109215759452f4afc264486a8437d8393e1073cf84fc3b4d1264752aca",
+  "status": "fail"
+}

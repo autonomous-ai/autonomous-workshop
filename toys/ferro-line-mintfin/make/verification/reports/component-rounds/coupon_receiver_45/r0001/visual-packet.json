@@ -1,0 +1,27 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_receiver_45/r0001/visual/front.png": "35c47f0f6a6d844648160eea72ee125bcb91f643582ba9cd4950dd3f5ab0c91f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_receiver_45/r0001/visual/iso.png": "b5951f39933a6bdec48d301bbe5f46cbb3a80c20e097ab17cc285f6610c0db1d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_receiver_45/r0001/visual/top.png": "f796c733ab3b0331aeb9b901613122313c7dec54a7a6edae82de4c8fbf65c714"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "mintfin_lib.py": "b958f1a7d90212736b5410022a736fdedeb576cb2b1274915a79d769ef085c59",
+    "params.py": "515bef76a6b4b02e14308dc45f54d395a7b823aa4a43379cecd096023522fe41",
+    "part_body_1.step.py": "5554a97b3604d5ecd585ca102a4ec1a4b024245b3d146057ea8dfccbe6a26617",
+    "part_body_2.step.py": "66807d164f3aa867927d52f0969d85fc1c960885433b874a65dda460857b814f",
+    "part_body_3.step.py": "10dc324555c0842386c221738a5bceb87a1b2c15f8c81061259ce31cee2e701c",
+    "part_body_4.step.py": "8019ce711936aa59bf5dfcc7db6f6eda98648b1a39c772d68deb9778051cec38",
+    "part_body_5.step.py": "cef5e93578b3943d255e98a12e395ae626cd90cfda6d25a44fe2e14f63e49635",
+    "part_body_6.step.py": "91fb9bdc94c098620446dee0389216c978e2bc50bfa3412c756d24f974c0d8f5",
+    "part_body_7.step.py": "df8e93fc5d2a0b4f694522954902c28c3694d4bc0a13dce2f908d535e6831a4b",
+    "part_coupon_pin.step": "5e26bdbe841ab20c14e3f367c18d87041da4b22e0e478cafbe75c325041ab4b7",
+    "part_coupon_pin.step.py": "a2672f8d9ad797bb9b77aa1784462d754be3c339d8071b3a76a8326eef8fa100",
+    "part_coupon_receiver_35.step.py": "c227914e629f14c583bee5c82ad8be6d269330385097aca8bd19fb072ed2063a",
+    "part_coupon_receiver_45.step": "9a2f746b3b4c2efb1dd7824b915f4e6f0773c2864cb1bf2873560c9236dcb303",
+    "part_coupon_receiver_45.step.py": "dd616af64a74751c4818c4c6593ac4122c1bd66b220e5ec84046488e9cd3c894",
+    "part_coupon_receiver_55.step.py": "95563f94699a0a24548ffab18e49472c8277e4b90a1ba0e351f184c18e2c0b8a",
+    "part_tail.step.py": "f47143b19fbca96e8693ccd23f4db57b7a51c8166827296d97da56cb528c132d"
+  }
+}

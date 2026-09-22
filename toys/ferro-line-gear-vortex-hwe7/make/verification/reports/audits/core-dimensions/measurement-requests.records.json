@@ -1,0 +1,426 @@
+[
+  {
+    "id": "optical_gap",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.8.f2",
+      "--to",
+      "#o1.9.f4",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "orange_thickness",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.8.f2",
+      "--to",
+      "#o1.8.f3",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "sun_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.9.f4",
+      "--to",
+      "#o1.9.f5",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "bezel_thickness",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.23.2.f2",
+      "--to",
+      "#o1.23.2.f4",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "orange_outer_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.8.f1"
+    ]
+  },
+  {
+    "id": "bezel_outer_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.2.f1"
+    ]
+  },
+  {
+    "id": "bezel_inner_radius",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.2.f484"
+    ]
+  },
+  {
+    "id": "gear_1_1_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.11.f308",
+      "--to",
+      "#o1.11.f309",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_1_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.11.f307"
+    ]
+  },
+  {
+    "id": "gear_1_2_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.12.f320",
+      "--to",
+      "#o1.12.f321",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_2_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.12.f319"
+    ]
+  },
+  {
+    "id": "gear_1_3_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.13.f332",
+      "--to",
+      "#o1.13.f333",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_3_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.13.f331"
+    ]
+  },
+  {
+    "id": "gear_1_4_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.14.f344",
+      "--to",
+      "#o1.14.f345",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_4_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.14.f343"
+    ]
+  },
+  {
+    "id": "gear_1_5_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.15.f356",
+      "--to",
+      "#o1.15.f357",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_5_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.15.f355"
+    ]
+  },
+  {
+    "id": "gear_1_6_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.16.f368",
+      "--to",
+      "#o1.16.f369",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_1_6_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.16.f367"
+    ]
+  },
+  {
+    "id": "gear_2_1_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.17.f308",
+      "--to",
+      "#o1.17.f309",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_1_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.17.f307"
+    ]
+  },
+  {
+    "id": "gear_2_2_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.18.f320",
+      "--to",
+      "#o1.18.f321",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_2_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.18.f319"
+    ]
+  },
+  {
+    "id": "gear_2_3_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.19.f332",
+      "--to",
+      "#o1.19.f333",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_3_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.19.f331"
+    ]
+  },
+  {
+    "id": "gear_2_4_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.20.f344",
+      "--to",
+      "#o1.20.f345",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_4_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.20.f343"
+    ]
+  },
+  {
+    "id": "gear_2_5_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.21.f356",
+      "--to",
+      "#o1.21.f357",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_5_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.21.f355"
+    ]
+  },
+  {
+    "id": "gear_2_6_yellow_face_width",
+    "argv": [
+      "measure",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "--from",
+      "#o1.22.f368",
+      "--to",
+      "#o1.22.f369",
+      "--axis",
+      "y"
+    ]
+  },
+  {
+    "id": "gear_2_6_yellow_bore",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.22.f367"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f28",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f28"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f41",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f41"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f54",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f54"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f67",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f67"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f80",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f80"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f99",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f99"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f110",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f110"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f123",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f123"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f136",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f136"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f149",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f149"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f162",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f162"
+    ]
+  },
+  {
+    "id": "planet_post_o1_23_1_f181",
+    "argv": [
+      "frame",
+      "artifacts/make/r0001/core-dimensions/current-assembly.step",
+      "#o1.23.1.f181"
+    ]
+  }
+]

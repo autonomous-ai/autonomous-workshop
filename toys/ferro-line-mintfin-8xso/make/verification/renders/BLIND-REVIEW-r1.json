@@ -1,0 +1,34 @@
+{
+  "review_round": 1,
+  "phase": "combined canonical images blind observations",
+  "source_images": ["artifacts/make/r0001/product/mintfin/snap/iso.png", "artifacts/make/r0001/product/mintfin/snap/signature.png"],
+  "intent_revealed": false,
+  "unprompted_read": {
+    "object": "A cute mint-green aquatic dragon or axolotl toy character with an expressive oversized face and segmented tapering body.",
+    "volumetric_form": "Rounded bulbous head, broad pale flat face, separate rib-like mint body sections tapering to an upright pink branching tail. Dark conical dorsal and head spikes and pink fern-like external gills create the silhouette. Visible legs are chunky tapered mint shells with three dark claws apiece.",
+    "subjects": "A single creature shown with awake cheerful and sleeping peaceful expressions.",
+    "apparent_action_or_interaction": "Signature sheet shows the same resting body in two facial states: large open eyes and open smile on the left, curved closed eyes and small round mouth on the right. This clearly communicates an awake-to-sleep expression change, probably through alternative face pieces. It does not show the transition process or prove a mechanism.",
+    "spatial_relationships": "Head forward at lower left, body and dorsal cones receding to upper right, gills extending sideways near the head, and large branching tail at the rear. Two visible feet sit along the near side. Their upper flat caps remain visibly separate-looking and lack an obvious continuous connection to the body in this view; opposite side is occluded.",
+    "distinctive_experience": "A friendly pet-like aquatic dragon with two moods, combining axolotl gills and a segmented spiny dragon body. The switch from smiling awake to asleep is the strongest visible interaction in the signature sheet."
+  },
+  "signature_sheet_additions": [
+    "The awake and sleeping faces are visually distinct and readable without explanatory labels.",
+    "Removing the spare plate and small fittings from the signature images makes the product concept easier to read than the hero layout.",
+    "The body pose and segmentation appear unchanged between the two static states, so no articulation action is visible.",
+    "The signature sheet strengthens the reading of the foot shells as intended legs but still does not establish how they meet the torso."
+  ],
+  "visible_problems_or_uncertainties": [
+    "Visible near-side legs appear unattached or separated from the torso at their flat upper ends; these connections need additional evidence or repair.",
+    "Gills overlap the front leg in projection, obscuring the intended boundaries and limb connection.",
+    "The tail has a thick flat branching coral or leaf silhouette, less immediately fin-like than the head's amphibian features.",
+    "The head-to-body transition is abrupt, with a large smooth bulb followed by a strongly ribbed body; this is a recognizable stylization rather than an organic animal surface.",
+    "The pale and mint colors plus faceted surfaces can make some same-color connections difficult to read."
+  ],
+  "visual_strengths": [
+    "Coherent mint, pink, pale cream, and dark-green palette.",
+    "Strong readable cheerful face with broad rounded silhouette.",
+    "Distinctive external gills and dorsal spikes distinguish the creature.",
+    "Readable awake and sleeping mood options."
+  ],
+  "limits": "Blind still-image review only. No inference of functional motion, retention, fit, printability, durability, physical testing, or human response."
+}

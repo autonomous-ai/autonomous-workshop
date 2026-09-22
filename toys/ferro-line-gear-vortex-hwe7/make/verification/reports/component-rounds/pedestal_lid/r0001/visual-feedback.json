@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin sharp tab tips and missing black finish",
+      "evidence": "Front right tab ends at a sharp apex; thickness report flags subminimum bands.",
+      "part": "pedestal_lid",
+      "repair": "Use sloped trapezoid tabs with finite outer tip thickness and matched base groove; assign black."
+    }
+  ],
+  "observation": "Three radial tabs are present, but front and iso show their sharp wedge ends. Finish is blue-gray.",
+  "packet_sha256": "5bb58e27eb5b6ac7a6b2eed6ada3b78a8385b91482892018e6f2351ce6f7fb18",
+  "status": "fail"
+}

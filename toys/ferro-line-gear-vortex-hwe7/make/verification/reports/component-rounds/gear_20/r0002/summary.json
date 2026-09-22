@@ -1,0 +1,62 @@
+{
+ "build": {
+  "gear_20": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gear_20"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gear_20"
+ ],
+ "checks_ok": true,
+ "entry": "part_gear_20.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_20/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_20"
+ ],
+ "print": {
+  "gear_20": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_20/r0002/overhang-gear_20.log": "a7e4d15c8ff7ae8c532eb214b4977c53e08f8433bdd154d192a50e050f813845",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_20/r0002/thickness-gear_20.log": "87f8e829b269e5745f50fd7b1c6b70530385b39e43481b78ec3fb158a7b9cefe"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:gear_20",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Viewed current front, top and iso: 20 distinct gear teeth, five pierced swept windows and an open circular journal bore. Top and oblique views show intact curved webs and continuous root rim; edge view shows a uniform flat face thickness. No floating or missing geometry observed. Digital form review does not establish printed fit or readiness.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_20/r0002/visual-packet.json",
+  "packet_sha256": "6deb2e37b0ae3b624a73fb31c48d79bf47b9a8165d87ffdd2b3400e669426270",
+  "status": "pass"
+ }
+}

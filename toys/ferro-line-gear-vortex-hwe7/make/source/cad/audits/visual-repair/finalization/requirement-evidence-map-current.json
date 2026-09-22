@@ -1,0 +1,4101 @@
+{
+  "schema_version": 1,
+  "status": "FINAL_DISCLOSED_GEOMETRY_UNVERIFIED",
+  "prepared_utc": "2026-09-21T07:48:41.429666+00:00",
+  "scope": "All 99 neutral requirements retained. Draft reconciliation records audited current static validation/interference, raw assembly identity, print checks and 40 web measurements; other requirements remain explicitly limited or pending. No final acceptance or physical-test claim.",
+  "requirements_source": "artifacts/make/r0001/critical-requirements.json",
+  "requirements_source_sha256": "ea376ad6a15c64845777b6257850f6a4ab2818096015366a3eabe9c0a6bb885b",
+  "historical_map": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+  "current_inventory": {
+    "planets_per_arm": 7,
+    "tooth_counts": [
+      14,
+      15,
+      18,
+      20,
+      22,
+      23,
+      26
+    ],
+    "moving_planets": 14,
+    "sculpture_leaf_occurrences": 44,
+    "printable_roles": 21,
+    "coupon_kit_pieces": 5,
+    "printed_pieces_total": 49,
+    "sculpture_small_caps": 16,
+    "total_small_caps_including_coupon": 18,
+    "coupon_tooth_pair": [
+      14,
+      15
+    ],
+    "coupon_pitch_centers_mm": 21.75,
+    "counts_evidence": "Current source/spec inventory and21part-entry filenames; not export/reconciled production PASS."
+  },
+  "sources": {
+    "params": {
+      "path": "artifacts/make/r0001/product/gear_vortex/params.py",
+      "sha256": "27516d7fca9bf415014586a6ac1217c0ff838bc0e8f47677861d3787c040257c",
+      "kind": "current source or declaration, not gate evidence"
+    },
+    "spec": {
+      "path": "artifacts/make/r0001/product/gear_vortex/gear_vortex_spec.md",
+      "sha256": "2bf990f94249f875ea142fc9523d5f16556e31376bbf4c15ba13efd89f0b7143",
+      "kind": "current source or declaration, not gate evidence"
+    },
+    "assembly": {
+      "path": "artifacts/make/r0001/product/gear_vortex/assemblies/product.py",
+      "sha256": "9746a05f783fbe1a781082a8e10c4bb59428d532f083b8bb41ece99967792800",
+      "kind": "current source or declaration, not gate evidence"
+    },
+    "gearing": {
+      "path": "artifacts/make/r0001/product/gear_vortex/features/gearing.py",
+      "sha256": "6203d0b50468de5dd2d49531f2021ec8b810e5ea5d1836e56fa405e7fef3b077",
+      "kind": "current source or declaration, not gate evidence"
+    },
+    "gears": {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/gears.py",
+      "sha256": "cf1b6860d2b2a2f5e7d3db346593debfb887e6cab79a6b15e356e97b2eaef46a",
+      "kind": "current source or declaration, not gate evidence"
+    },
+    "carrier": {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/carrier.py",
+      "sha256": "87010474540aadd3a32ee944bcee4b5b422720c5529e2700356ad3fd52a0c796",
+      "kind": "current source or declaration, not gate evidence"
+    },
+    "coupon": {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/coupon.py",
+      "sha256": "a86dd0e2cd49c913dd599987fde9f0dac0010f17da661480143fdb7b83a5a4f4",
+      "kind": "current source or declaration, not gate evidence"
+    },
+    "core": {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/core.py",
+      "sha256": "86a3a247efc77dec9d60a40bf5b1bdcb82e6b7e308e2df9e5fb47cf0753cb441",
+      "kind": "current source or declaration, not gate evidence"
+    },
+    "stand": {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/stand.py",
+      "sha256": "03350d598b11060c37cae018d39a3d21fad3f8ff8db8de94d6524ced39c15d5b",
+      "kind": "current source or declaration, not gate evidence"
+    },
+    "readme": {
+      "path": "artifacts/make/r0001/product/gear_vortex/README.md",
+      "sha256": "90fba55f747fed06cc8f008c6126ad47cc1485e86c2320df3ad1c7f9030e8fa3",
+      "kind": "current source or declaration, not gate evidence",
+      "prior_binding_sha256": "600a0c0b0e180bd66106c23e0e197abe4cc1f284273664c7063c579d8846fff1",
+      "binding_reconciliation": "Refreshed current documentation binding after Manager adoption; preserved prior digest. Review and animation independently bind geometry source bytes."
+    },
+    "qualified": {
+      "path": "artifacts/make/r0001/visual-repair-qualified-candidates.json",
+      "sha256": "e5e04568ba848ab0c8afb7c816380ecc6bc171316e2ab0e0e4dced07d410618e",
+      "kind": "current source or declaration, not gate evidence"
+    },
+    "handoff": {
+      "path": "artifacts/make/r0001/visual-repair-design-supplement.md",
+      "sha256": "7f7fead933a8f237e638dc5c12e2b8911e810ffa7e0af20dc1987d4d81383946",
+      "kind": "current source or declaration, not gate evidence"
+    },
+    "motion_declarations": {
+      "path": "artifacts/make/r0001/product/gear_vortex/measure/motion.json",
+      "sha256": "719b3b7a8c0f0e95fa7fa67e21bf14525c1f890789f6f13b1e34367914c81260",
+      "kind": "current source or declaration, not gate evidence"
+    }
+  },
+  "pending_evidence": {
+    "geometry": {
+      "preparation_paths": [
+        "artifacts/make/r0001/visual-repair-geometry/manifest.json",
+        "artifacts/make/r0001/visual-repair-geometry/requests.jsonl"
+      ],
+      "expected_result_paths": [
+        "artifacts/make/r0001/visual-repair-geometry/execution-manifest.json",
+        "artifacts/make/r0001/visual-repair-geometry/results.jsonl",
+        "artifacts/make/r0001/visual-repair-geometry/raw-components/results.jsonl"
+      ],
+      "scope": "Nine changed/re-exported component refs/validate plus full current 44-leaf assembly refs/validate/interference; reconcile exact bytes and no truncated pairs.",
+      "status": "current_static_dimensional_and_feature_geometry_complete",
+      "result_files_inspected": true,
+      "dimension_result": {
+        "path": "artifacts/make/r0001/visual-repair-dimensions/SUMMARY.json",
+        "sha256": "fa7b45f12a6dace14656158cdd79d8bac1d2830dc24cfd630a7a1a34b3d63c4b"
+      }
+    },
+    "webs": {
+      "preparation_paths": [
+        "artifacts/make/r0001/visual-repair-feature-probes/manifest.json"
+      ],
+      "expected_result_paths": [
+        "artifacts/make/r0001/visual-repair-feature-probes/web-nearest-results.json"
+      ],
+      "scope": "All40 cyclic adjacent-window distances across14/15/18/20/22/23/26/36T current masters; actual nearest boundaries >=2.4 mm.",
+      "status": "complete_current_40_measurements_pass",
+      "result_files_inspected": true
+    },
+    "sightline": {
+      "preparation_paths": [
+        "artifacts/make/r0001/visual-repair-feature-probes/sightline-requests.jsonl"
+      ],
+      "expected_result_paths": [
+        "artifacts/make/r0001/visual-repair-feature-probes/assembly-execution-binding.json",
+        "artifacts/make/r0001/visual-repair-feature-probes/sightline-results.jsonl"
+      ],
+      "scope": "Exact nominal14mm witness against all44 original solids at1e-6 mm3; assembly binding must be current.",
+      "status": "complete_nominal14mm_all44solids_pass",
+      "result_files_inspected": true,
+      "current_result": {
+        "path": "artifacts/make/r0001/visual-repair-feature-probes/sightline-results.jsonl",
+        "sha256": "c7aff051f99b1a3b7c8dce2e6654e8ab8d700a1234b4357e18b3fc23602fff06"
+      }
+    },
+    "contact": {
+      "preparation_paths": [
+        "artifacts/make/r0001/visual-repair-mesh-contact/PLAN.json",
+        "artifacts/make/r0001/visual-repair-mesh-contact/source-bindings.json"
+      ],
+      "expected_result_paths": [],
+      "result_location": "artifacts/make/r0001/visual-repair-mesh-contact",
+      "scope": "Two arms × seven meshes ×17states. This resolves sampled fixed-center diagnostic evidence only; continuous and coupled operating contact remain unverified under motion.",
+      "status": "complete238sampled_fixed_center_contact_pass",
+      "result_files_inspected": true,
+      "current_result": {
+        "path": "artifacts/make/r0001/visual-repair-mesh-contact/runs/all17-r1/summary.json",
+        "sha256": "0c3404ab6effd3a04194309386da9cdf6b5d5f24a55d85a80aeecc2fdea7d7a4"
+      },
+      "audit": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/contact-audit.json",
+        "sha256": "220e9160ac2add3487386bf98414492ee8123aad3ac749e66d938745de939a76"
+      }
+    },
+    "motion": {
+      "preparation_paths": [
+        "artifacts/make/r0001/product/gear_vortex/measure/motion.json",
+        "artifacts/make/r0001/visual-repair-motion-reconciliation.md"
+      ],
+      "expected_result_paths": [
+        "artifacts/make/r0001/product/gear_vortex/snap/MOTION-EVIDENCE.json",
+        "artifacts/make/r0001/product/gear_vortex/snap/motion.gif"
+      ],
+      "numeric_result_location": "artifacts/make/r0001/product/gear_vortex/measure/rounds",
+      "scope": "Current formal numeric result remains UNVERIFIED, exit 3 and no condition results. Current animation and independent presented-action review are separately completed; neither promotes the operating, insertion or retention checks to PASS.",
+      "status": "FINAL_FORMAL_UNVERIFIED",
+      "result_files_inspected": true,
+      "current_result": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/geometry-inspection.json",
+        "sha256": "025cd911ce36a22d6ff099e818b74b31f5be30776f74cd85222dbbea63cbc505"
+      },
+      "returncode": 3,
+      "condition_results": 0,
+      "detail": "Final integrated check_motion is unverified: geometry analysis cancelled or its time allowance exhausted. No completed condition result recorded.",
+      "presentation_status": "complete_scoped_independent_PASS_0_to_64.6875_degrees"
+    },
+    "independent_review": {
+      "preparation_paths": [
+        "artifacts/make/r0001/visual-repair-presentation/render_current.py"
+      ],
+      "expected_result_paths": [],
+      "scope": "Independent informed round 2 modeled-form and presented-action review; 40 held-form IDs in 16 canonical rows, with full 40-row archive and exact hash bridge.",
+      "status": "complete_current_round2_scoped_visual_PASS",
+      "result_files_inspected": true,
+      "current_result": {
+        "path": "artifacts/make/r0001/product/gear_vortex/snap/SIGNATURE-REVIEW.json",
+        "sha256": "3b13fbce07d71577151da15ff1fa9f4a5465ec44e290594547172e1e7cc90908"
+      },
+      "motion_result": {
+        "path": "artifacts/make/r0001/product/gear_vortex/snap/MOTION-REVIEW.json",
+        "sha256": "b2b7e75583671ffb0a9628491efb4e41202d83c66f2bb297c65e7d8f8bd131fe"
+      },
+      "audit": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/review-provenance-audit.json",
+        "sha256": "ec6b32d946170bc437903032b0d0974922d54d7cd54f319eee018483a9b02c99"
+      }
+    },
+    "print": {
+      "preparation_paths": [],
+      "expected_result_paths": [],
+      "report_location": "artifacts/make/r0001/product/gear_vortex/measure/component-rounds",
+      "scope": "Reconcile current isolated build/visual/thickness/overhang records for all21roles, including changed14/15/23/carrier/coupon and re-exported retained gears. Prior40wall/overhang reports are revision-specific.",
+      "status": "complete_native_21_roles_42_log_hashes_verified",
+      "result_files_inspected": true
+    },
+    "exports": {
+      "preparation_paths": [
+        "artifacts/make/r0001/visual-repair-production/production-plan.json",
+        "artifacts/make/r0001/visual-repair-production/coupon-kit.json"
+      ],
+      "expected_result_paths": [],
+      "report_location": "artifacts/make/r0001/visual-repair-production",
+      "scope": "All 49 current delivery STEP files and 49 raw packages are hash-audited, with 98 passing native refs/validation responses. Current metadata annotations are reconciled to unchanged inspected delivery records.",
+      "status": "complete49deliveryfiles98nativeinspectionsPASS",
+      "result_files_inspected": true,
+      "audit": {
+        "path": "artifacts/make/r0001/visual-repair-final-features/production-audit.json",
+        "sha256": "a2d8247ad36b913e12c2590fdbae2b2c8d32db8d6b691c2498710c3f05f55106"
+      }
+    },
+    "integrated": {
+      "preparation_paths": [],
+      "expected_result_paths": [
+        "artifacts/make/r0001/product/gear_vortex/measure/verification-pipeline.md"
+      ],
+      "scope": "Final current-source integrated verifier; no final PASS follows from declarations or this draft.",
+      "status": "FINAL_UNVERIFIED_NO_UNCHANGED_RETRY",
+      "result_files_inspected": true,
+      "result": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/verification-pipeline.md",
+        "sha256": "7c582ae6aa0db178d8f9b7ca239e45effd3a7a2c8cbc3094d95494b3de7f6d81"
+      },
+      "inspection": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/geometry-inspection.json",
+        "sha256": "025cd911ce36a22d6ff099e818b74b31f5be30776f74cd85222dbbea63cbc505"
+      },
+      "incomplete_checks": 46
+    }
+  },
+  "requirements": [
+    {
+      "id": "R001",
+      "section": "Subject",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Read instantly from across the room as a black hole seen face on, built entirely out of gears.",
+      "assessment_status": "visual_scope_pass_other_claims_unverified",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: Round 2 informed fresh read: a round dark field, dark central void and orange inner core are surrounded by two shrinking gold gear spirals. The face-on sheet now presents a coherent stylized black-hole composition. Across-room recognition is a design judgment, not a physical user test. Across-room human recognition is untested.",
+      "current_source_ids": [
+        "handoff",
+        "spec",
+        "carrier"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R001",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "The revised design uses fourteen actual planets in two188.075640-degree arms and an integral matte-black188/58x3mm field. A field supplies dark roundness, not additional gear density. Black-hole recognition and exclusion of clock/Ferris-wheel/open-arc readings require fresh independent current-image review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 1,
+        "archive_requirement_id": "R001",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "unverified_scope": "Across-room human recognition is untested."
+    },
+    {
+      "id": "R002",
+      "section": "Subject",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "A dark round event horizon at the centre, deep orange glow just inside it, and a swirling disc of infalling matter made of gears around it.",
+      "assessment_status": "visual_scope_pass_other_claims_unverified",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The frontal sheet presents a dark central opening with an orange core region and two surrounding gear spirals. The oblique hero reveals that the orange is behind the swept spokes and the opening is deep. Optical emission or actual filament transmission is not claimed. Actual emitted or transmitted orange glow is unverified.",
+      "current_source_ids": [
+        "handoff",
+        "spec",
+        "carrier"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R002",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "The revised design uses fourteen actual planets in two188.075640-degree arms and an integral matte-black188/58x3mm field. A field supplies dark roundness, not additional gear density. Black-hole recognition and exclusion of clock/Ferris-wheel/open-arc readings require fresh independent current-image review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 1,
+        "archive_requirement_id": "R002",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "unverified_scope": "Actual emitted or transmitted orange glow is unverified."
+    },
+    {
+      "id": "R003",
+      "section": "Subject",
+      "category": "visual",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "Must not read as a clock.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: There are no hands, hour marks or numerals; the opposed spiral matter pattern reads as mechanical vortex rather than a timepiece.",
+      "current_source_ids": [
+        "handoff",
+        "spec",
+        "carrier"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R003",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "The revised design uses fourteen actual planets in two188.075640-degree arms and an integral matte-black188/58x3mm field. A field supplies dark roundness, not additional gear density. Black-hole recognition and exclusion of clock/Ferris-wheel/open-arc readings require fresh independent current-image review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 1,
+        "archive_requirement_id": "R003",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R004",
+      "section": "Subject",
+      "category": "visual",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "Must not read as a Ferris wheel of gears.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The wheels form graduated inward spirals rather than carriages on a Ferris-wheel rim.",
+      "current_source_ids": [
+        "handoff",
+        "spec",
+        "carrier"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R004",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "The revised design uses fourteen actual planets in two188.075640-degree arms and an integral matte-black188/58x3mm field. A field supplies dark roundness, not additional gear density. Black-hole recognition and exclusion of clock/Ferris-wheel/open-arc readings require fresh independent current-image review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 1,
+        "archive_requirement_id": "R004",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R005",
+      "section": "Subject",
+      "category": "visual",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "Must not read as a scorpion tail of gears on a stick.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The circular dark field and opposed gear chains do not form the prohibited single tail on a stick.",
+      "current_source_ids": [
+        "handoff",
+        "spec",
+        "carrier"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R005",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "The revised design uses fourteen actual planets in two188.075640-degree arms and an integral matte-black188/58x3mm field. A field supplies dark roundness, not additional gear density. Black-hole recognition and exclusion of clock/Ferris-wheel/open-arc readings require fresh independent current-image review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 1,
+        "archive_requirement_id": "R005",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R006",
+      "section": "Subject",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Matte black is the field and void; brass is the infalling matter; translucent orange is the only light in the object.",
+      "assessment_status": "visual_scope_pass_other_claims_unverified",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The carrier field and central void are dark, every visible matter wheel is gold, and orange is confined to the central rear layer. This matches the specified visual roles; actual translucent-material optics remain unverified. Physical matte/metallic finish and orange transmission are unverified.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R006",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Source colors assign matte-black structure/field, brass/gold sun/planets/two trims and orange core only. Render colors do not establish printed metallic finish or translucency.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 1,
+        "archive_requirement_id": "R006",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "unverified_scope": "Physical matte/metallic finish and orange transmission are unverified."
+    },
+    {
+      "id": "R007",
+      "section": "Subject",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Gears shrink as they approach the hole so the eye reads acceleration inward.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The large terminal wheels diminish toward the two innermost wheels, making the inward size gradient clear.",
+      "current_source_ids": [
+        "params",
+        "gears"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R007",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Current inner-to-outer tooth sequence14/15/18/20/22/23/26 strictly increases; sizes shrink inward. The perceived inward acceleration/readability remains unjudged.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 2,
+        "archive_requirement_id": "R007",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R008",
+      "section": "Subject",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Darkness dominates; the brass swirl and orange core are the only bright things.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: Black occupies the dominant wheel field; the only bright product elements are gold gear matter and trim plus orange in the center.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R008",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Source colors assign matte-black structure/field, brass/gold sun/planets/two trims and orange core only. Render colors do not establish printed metallic finish or translucency.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 3,
+        "archive_requirement_id": "R008",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R009",
+      "section": "Swirl",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Use a matte-black logarithmic spiral carrier.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The black carrier visibly supports two smoothly curling gear-center paths; the revealed concept identifies their logarithmic law. The complete carrier also supplies a black annular field.",
+      "current_source_ids": [
+        "params",
+        "carrier"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R009",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly"
+      ],
+      "pre_review_finding": "Carrier source fuses logarithmic ribs r=37.5exp(0.2049theta), theta0..3.2825391564912385, with an integral black annular field. Current manufactured geometry and visual reading need current evidence. Current full static validation/interference and raw44leaf identity are established; these general checks do not alone establish this particular dimension, motion or contact requirement. Currenttargeteddimensions,profilecounts,rims,centerrelationsandcontinuousenvelopesareaudited. Remainingappearance/contact/functionclaimsarenotansweredbythesedimensionalpasses.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 4,
+        "archive_requirement_id": "R009",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R010",
+      "section": "Swirl",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Carrier holds a continuous chain of meshing brass-coloured spur gears winding inward toward the hub.",
+      "assessment_status": "sampled_contact_established_other_scoped_requirements_pending",
+      "current_finding": "The current two-arm train has seven planets per arm (14/15/18/20/22/23/26 teeth) beginning at the 36-tooth sun. All 14 mesh pairs pass 17 fixed-center BRep contact states each, for 238 total samples. Source snapshots, pair identity, loaded phases and opposite-arm transforms match current exact bindings. Maximum separation is 3.3314989336525863e-7 mm against 1e-6 mm; maximum absolute overlap is 1.4537136232201417e-6 mm³ against 0.001 mm³. This establishes the sampled pairwise contact condition only. Continuous contact, simultaneous coupled operation, torque transmission and physical fit remain unverified; formal round-4 motion is UNVERIFIED.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "gearing",
+        "qualified"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R010",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "design",
+          "mesh",
+          "mesh_rows",
+          "mesh_continuity"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly",
+        "sampled_contact"
+      ],
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R011",
+      "section": "Swirl",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Largest gear is at the outer tail; gears shrink steadily toward the core.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: Both chains end in a large outer wheel and progress to visibly smaller wheels toward the central wheel.",
+      "current_source_ids": [
+        "params",
+        "gears"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R011",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Current inner-to-outer tooth sequence14/15/18/20/22/23/26 strictly increases; sizes shrink inward. The perceived inward acceleration/readability remains unjudged.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 2,
+        "archive_requirement_id": "R011",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R012",
+      "section": "Swirl",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "preferred",
+      "requirement": "Two mirrored spiral arms are preferred, giving a spiral galaxy/accretion-disc reading.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: Two opposed spiral arms are visible through the state sheet and orbit together in the movie, giving a balanced two-arm swirl.",
+      "current_source_ids": [
+        "assembly",
+        "handoff"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R012",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly"
+      ],
+      "pre_review_finding": "Assembly source duplicates every complete arm solid through180degrees, including odd-tooth spoke phases; this is source placement evidence, not a new measured assembly result. Current full static validation/interference and raw44leaf identity are established; these general checks do not alone establish this particular dimension, motion or contact requirement. Currenttargeteddimensions,profilecounts,rims,centerrelationsandcontinuousenvelopesareaudited. Remainingappearance/contact/functionclaimsarenotansweredbythesedimensionalpasses.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 4,
+        "archive_requirement_id": "R012",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R013",
+      "section": "Swirl",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "conditional: two arms",
+      "requirement": "For the two-arm option, each arm is its own chain and both chains start on the fixed central sun gear.",
+      "assessment_status": "sampled_contact_established_other_scoped_requirements_pending",
+      "current_finding": "The current two-arm train has seven planets per arm (14/15/18/20/22/23/26 teeth) beginning at the 36-tooth sun. All 14 mesh pairs pass 17 fixed-center BRep contact states each, for 238 total samples. Source snapshots, pair identity, loaded phases and opposite-arm transforms match current exact bindings. Maximum separation is 3.3314989336525863e-7 mm against 1e-6 mm; maximum absolute overlap is 1.4537136232201417e-6 mm³ against 0.001 mm³. This establishes the sampled pairwise contact condition only. Continuous contact, simultaneous coupled operation, torque transmission and physical fit remain unverified; formal round-4 motion is UNVERIFIED.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "gearing",
+        "qualified"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R013",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "design",
+          "mesh",
+          "mesh_rows",
+          "mesh_continuity"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly",
+        "sampled_contact"
+      ],
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R014",
+      "section": "Swirl",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "conditional: two arms",
+      "requirement": "For the two-arm option, arms rotate 180 degrees apart.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Current14boreaxes and measuredcorrespondence prove both arms are180degreesapart within2e-5mmroundednativecoordinate reconciliation; sourcepitchassert1e-8unchanged.",
+      "current_source_ids": [
+        "assembly",
+        "handoff"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R014",
+        "row_present": true,
+        "evidence_ids": [
+          "carrier",
+          "assembly"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R015",
+      "section": "Swirl",
+      "category": "physical-only",
+      "polarity": "positive",
+      "qualifier": "conditional: two arms",
+      "requirement": "For the two-arm option, the two arms balance the wheel against each other.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Actual32moving BRep solids have ideal COM radialoffset1.217e-8mm. Gold14gear andblack18partgroups separately lie onhubaxis within3.02e-12mm/1.706e-8mm, so ideal digital balance does not require equalmaterialdensities. Physicalprintedbalance remainsuntested.",
+      "current_source_ids": [
+        "assembly",
+        "carrier",
+        "qualified"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R015",
+        "row_present": true,
+        "evidence_ids": [
+          "carrier",
+          "assembly",
+          "design",
+          "math"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "dimensions"
+      ]
+    },
+    {
+      "id": "R016",
+      "section": "Swirl",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "conditional alternative: single arm",
+      "requirement": "A single arm is acceptable only if it winds at least 1.25 full turns (450 degrees) around the hub.",
+      "assessment_status": "not_applicable_two_arm_design",
+      "current_finding": "Single-arm conditional alternative is not selected; current design has two opposite arms.",
+      "current_source_ids": [
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R016",
+        "row_present": true,
+        "evidence_ids": [
+          "design"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": []
+    },
+    {
+      "id": "R017",
+      "section": "Swirl",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Whichever arm option is chosen, the finished silhouette must be roughly round and dense with gears around the core.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The revised actual gear coverage occupies all angular sectors around the core, on a circular dark field. The two terminal wheels no longer dominate as isolated dangling ends; the overall face is round and filled by the gear swirl.",
+      "current_source_ids": [
+        "handoff",
+        "spec",
+        "carrier"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R017",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "The revised design uses fourteen actual planets in two188.075640-degree arms and an integral matte-black188/58x3mm field. A field supplies dark roundness, not additional gear density. Black-hole recognition and exclusion of clock/Ferris-wheel/open-arc readings require fresh independent current-image review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 4,
+        "archive_requirement_id": "R017",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R018",
+      "section": "Swirl",
+      "category": "visual",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "A single open arc is not an acceptable outcome; it is the identified run-1 failure.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The object visibly has two opposed inward chains, never the prohibited single open arc.",
+      "current_source_ids": [
+        "handoff",
+        "spec",
+        "carrier"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R018",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "The revised design uses fourteen actual planets in two188.075640-degree arms and an integral matte-black188/58x3mm field. A field supplies dark roundness, not additional gear density. Black-hole recognition and exclusion of clock/Ferris-wheel/open-arc readings require fresh independent current-image review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 4,
+        "archive_requirement_id": "R018",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R019",
+      "section": "Swirl",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Wheel outer diameter is 150–190 mm.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Measuredcenter/tip continuousenvelope gives sweptOD188.4982359768mmnominal,189.8982359768mm including stated0.35mmmain+0.35mmplanetplay; within150–190mm.",
+      "current_source_ids": [
+        "qualified",
+        "params"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R019",
+        "row_present": true,
+        "evidence_ids": [
+          "math",
+          "design",
+          "validation"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R020",
+      "section": "Event horizon",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "At the centre is a larger spiral-spoked wheel.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: A larger gold swept-spoke wheel is centered within the black bezel.",
+      "current_source_ids": [
+        "gearing",
+        "gears",
+        "params"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R020",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly",
+        "webs"
+      ],
+      "pre_review_finding": "Each source gear, including stationary36T sun, has five pierced swept windows/spokes. Core source tipOD56.55mm; actual appearance and readability require current review. Current full static validation/interference and raw44leaf identity are established; these general checks do not alone establish this particular dimension, motion or contact requirement. All40 adjacent-window webs were freshly measured from exact current masters; minimum2.6008054647104633mm exceeds2.4mm. Currenttargeteddimensions,profilecounts,rims,centerrelationsandcontinuousenvelopesareaudited. Remainingappearance/contact/functionclaimsarenotansweredbythesedimensionalpasses.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 5,
+        "archive_requirement_id": "R020",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R021",
+      "section": "Event horizon",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Central spiral-spoked wheel diameter is 50–70 mm.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Currentnative sun-tip cylinder radius28.275mm establishes56.55mmOD, inside50–70mm.",
+      "current_source_ids": [
+        "params",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R021",
+        "row_present": true,
+        "evidence_ids": [
+          "params",
+          "gearing"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R022",
+      "section": "Event horizon",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Its curved spokes are backlit by a translucent orange disc, with light pooling between the spokes like superheated gas.",
+      "assessment_status": "visual_scope_pass_other_claims_unverified",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: Fresh oblique and top views establish the orange disc as a separate rear layer behind the curved spokes, with orange visible in the spoke openings. The required modeled layering and orange-core visual motif match. These native solid-color renders do not simulate translucent backlighting; real light pooling is an expressly unverified optical property, not a certified render or physical result. Actual translucent backlighting and light pooling are unverified.",
+      "current_source_ids": [
+        "core",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R022",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "independent_review",
+        "sightline"
+      ],
+      "pre_review_finding": "Current exactSHA-bound44solidassembly has a clear nominal14mm diameter axial corridor: all44originalsolids plus radius7.00mm witness,1testedpair,0skipped,0truncated,0clashes at1e-6mm³. This proves geometric see-through clearance; visual darkness and material translucency are separate appearance claims.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 5,
+        "archive_requirement_id": "R022",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "unverified_scope": "Actual translucent backlighting and light pooling are unverified."
+    },
+    {
+      "id": "R023",
+      "section": "Event horizon",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Orange disc is set 3–5 mm behind the curved spokes.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Currentnative planar measurement establishes4.0mmorangefront-to-spokereargap, inside3–5mm.",
+      "current_source_ids": [
+        "params",
+        "assembly"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R023",
+        "row_present": true,
+        "evidence_ids": [
+          "dimensions",
+          "dimension_rows"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R024",
+      "section": "Event horizon",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "At the exact centre is a real dark through-hole, straight through the orange disc and out the back, through which one can see into darkness.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Round 2 fresh visual read with revealed concept comparison: The central bore is visibly deep in the hero and shows a background crescent in the off-front movie; it is not an orange plug. Exact diameter and unrestricted sightline are separate geometry measurements.",
+      "current_source_ids": [
+        "params",
+        "core",
+        "assembly"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R024",
+        "row_present": true,
+        "evidence_ids": [
+          "sightline",
+          "sightline_refs",
+          "sightline_source",
+          "static_geometry_manifest"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review",
+        "sightline"
+      ],
+      "pre_review_finding": "Current exactSHA-bound44solidassembly has a clear nominal14mm diameter axial corridor: all44originalsolids plus radius7.00mm witness,1testedpair,0skipped,0truncated,0clashes at1e-6mm³. This proves geometric see-through clearance; visual darkness and material translucency are separate appearance claims.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 6,
+        "archive_requirement_id": "R024",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R025",
+      "section": "Event horizon",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Central through-hole is 12–18 mm across.",
+      "assessment_status": "current_sightline_geometry_pass",
+      "current_finding": "Current exactSHA-bound44solidassembly has a clear nominal14mm diameter axial corridor: all44originalsolids plus radius7.00mm witness,1testedpair,0skipped,0truncated,0clashes at1e-6mm³. This proves geometric see-through clearance; visual darkness and material translucency are separate appearance claims.",
+      "current_source_ids": [
+        "params",
+        "core",
+        "assembly"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R025",
+        "row_present": true,
+        "evidence_ids": [
+          "sightline",
+          "sightline_refs",
+          "sightline_source",
+          "static_geometry_manifest"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "sightline"
+      ]
+    },
+    {
+      "id": "R026",
+      "section": "Event horizon",
+      "category": "visual",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "The event horizon must never be a flat red or orange button on the front face.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The exact center is a deep dark opening, not an orange or red front button. In the oblique movie a pale background crescent is visible through the bore.",
+      "current_source_ids": [
+        "core",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R026",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review",
+        "sightline"
+      ],
+      "pre_review_finding": "Current exactSHA-bound44solidassembly has a clear nominal14mm diameter axial corridor: all44originalsolids plus radius7.00mm witness,1testedpair,0skipped,0truncated,0clashes at1e-6mm³. This proves geometric see-through clearance; visual darkness and material translucency are separate appearance claims.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 6,
+        "archive_requirement_id": "R026",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R027",
+      "section": "Event horizon",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "A wide, finely knurled matte-black bezel ring frames the whole core like the shadow rim around a black hole.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The hero shows a wide raised black bezel around the core with fine axial edge texture; its two mounting caps distinguish it from the sun.",
+      "current_source_ids": [
+        "params",
+        "core",
+        "assembly"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R027",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly"
+      ],
+      "pre_review_finding": "Source bezel has OD70/ID58, six-mm nominal radial rim and120fine knurl features, attached to the rotating carrier as the input grip. Current grip appearance and torque/capture behavior need review/checks. Current full static validation/interference and raw44leaf identity are established; these general checks do not alone establish this particular dimension, motion or contact requirement. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Currenttargeteddimensions,profilecounts,rims,centerrelationsandcontinuousenvelopesareaudited. Remainingappearance/contact/functionclaimsarenotansweredbythesedimensionalpasses.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 7,
+        "archive_requirement_id": "R027",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R028",
+      "section": "Event horizon",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Bezel ring width is 5–8 mm.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Currentnative bezel outer/innercylinder radii35/29mm establish6mmnominalradialrim, inside5–8mm; localmountingbosses remain separate.",
+      "current_source_ids": [
+        "params",
+        "core"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R028",
+        "row_present": true,
+        "evidence_ids": [
+          "dimensions",
+          "boss_rows"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R029",
+      "section": "Event horizon",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "The bezel is also the finger grip.",
+      "assessment_status": "source_defined_pending_current_verification",
+      "current_finding": "Source bezel has OD70/ID58, six-mm nominal radial rim and120fine knurl features, attached to the rotating carrier as the input grip. Current grip appearance and torque/capture behavior need review/checks. Current full static validation/interference and raw44leaf identity are established; these general checks do not alone establish this particular dimension, motion or contact requirement. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Currenttargeteddimensions,profilecounts,rims,centerrelationsandcontinuousenvelopesareaudited. Remainingappearance/contact/functionclaimsarenotansweredbythesedimensionalpasses.",
+      "current_source_ids": [
+        "params",
+        "core",
+        "assembly"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R029",
+        "row_present": true,
+        "evidence_ids": [
+          "core",
+          "assembly",
+          "readme"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ],
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R030",
+      "section": "Gears",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "The gears must be real spur gears with teeth that actually mesh.",
+      "assessment_status": "sampled_contact_established_other_scoped_requirements_pending",
+      "current_finding": "The current two-arm train has seven planets per arm (14/15/18/20/22/23/26 teeth) beginning at the 36-tooth sun. All 14 mesh pairs pass 17 fixed-center BRep contact states each, for 238 total samples. Source snapshots, pair identity, loaded phases and opposite-arm transforms match current exact bindings. Maximum separation is 3.3314989336525863e-7 mm against 1e-6 mm; maximum absolute overlap is 1.4537136232201417e-6 mm³ against 0.001 mm³. This establishes the sampled pairwise contact condition only. Continuous contact, simultaneous coupled operation, torque transmission and physical fit remain unverified; formal round-4 motion is UNVERIFIED.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "gearing",
+        "qualified"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R030",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "design",
+          "mesh",
+          "mesh_rows",
+          "mesh_continuity"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly",
+        "sampled_contact"
+      ],
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R031",
+      "section": "Gears",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Tooth module is at least 1.5 mm.",
+      "assessment_status": "sampled_contact_established_other_scoped_requirements_pending",
+      "current_finding": "Current module is1.5mm, meeting the stated lower bound in source. Current full static validation/interference and raw44leaf identity are established; these general checks do not alone establish this particular dimension, motion or contact requirement. Currenttargeteddimensions,profilecounts,rims,centerrelationsandcontinuousenvelopesareaudited. Remainingappearance/contact/functionclaimsarenotansweredbythesedimensionalpasses. Current fixed-center contact diagnostic passes all 238 samples across both arms and all seven meshes per arm, with 17 states per mesh. Maximum separation is 3.3314989336525863e-7 mm and maximum absolute overlap is 1.4537136232201417e-6 mm³. Continuous contact, coupled assembly motion and physical drive are not proved.",
+      "current_source_ids": [
+        "params",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R031",
+        "row_present": true,
+        "evidence_ids": [
+          "params",
+          "gearing",
+          "math",
+          "mesh"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "current_static",
+        "dimensions",
+        "raw_assembly",
+        "sampled_contact"
+      ]
+    },
+    {
+      "id": "R032",
+      "section": "Gears",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "preferred",
+      "requirement": "Tooth module 2.0 mm is preferred.",
+      "assessment_status": "preference_not_selected",
+      "current_finding": "Module2.0mm preference is not selected; current design uses1.5mm. Keep the preference qualification explicit.",
+      "current_source_ids": [
+        "params",
+        "handoff"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R032",
+        "row_present": true,
+        "evidence_ids": [
+          "params"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": []
+    },
+    {
+      "id": "R033",
+      "section": "Gears",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Smallest gear has at least 12 teeth and at least 20 mm outside diameter; both conditions apply.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Actualsmallestgear has14tiparcs/teeth and23.550000000012mmOD, satisfying>=12teeth and>=20mm.",
+      "current_source_ids": [
+        "params",
+        "qualified",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R033",
+        "row_present": true,
+        "evidence_ids": [
+          "params",
+          "gearing",
+          "math"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R034",
+      "section": "Gears",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "approximate target",
+      "requirement": "Largest gear has about 26–34 teeth.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Actualoutermostcarriedgear has26tiparcs/teeth; stationary36Tsun is separatelyidentified.",
+      "current_source_ids": [
+        "params",
+        "gears"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R034",
+        "row_present": true,
+        "evidence_ids": [
+          "params",
+          "design"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R035",
+      "section": "Gears",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Gear face thickness is 4–6 mm.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "All14planet/nativefaces andsun have5mmfacewidth; actual8master BRepbounds report5.0000002mm includingkerneltolerance, inside4–6mm.",
+      "current_source_ids": [
+        "params",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R035",
+        "row_present": true,
+        "evidence_ids": [
+          "dimensions",
+          "dimension_rows"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R036",
+      "section": "Gears",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Teeth must be plainly readable from one metre away.",
+      "assessment_status": "visual_scope_pass_other_claims_unverified",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: Individual teeth remain legible in the 900px hero and the reduced animation sheets. This supports the requested bold tooth read; no physical one-metre observation is claimed. No physical one-metre viewing test has been performed.",
+      "current_source_ids": [
+        "qualified",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R036",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Current source involutes use module1.5, smallest tipOD23.55 and minimum analytical tip chord0.8463804119mm. Readable teeth at one metre and exclusion of barely serrated discs require fresh current-image review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 8,
+        "archive_requirement_id": "R036",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "unverified_scope": "No physical one-metre viewing test has been performed."
+    },
+    {
+      "id": "R037",
+      "section": "Gears",
+      "category": "visual",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "A smooth disc with only a hint of serration at the rim is a failure.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: Every gear has distinct projecting teeth, not a smooth rim with faint serration.",
+      "current_source_ids": [
+        "qualified",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R037",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Current source involutes use module1.5, smallest tipOD23.55 and minimum analytical tip chord0.8463804119mm. Readable teeth at one metre and exclusion of barely serrated discs require fresh current-image review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 8,
+        "archive_requirement_id": "R037",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R038",
+      "section": "Gears",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Every adjacent gear centre distance equals module × (z1 + z2) / 2.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "All14currentassembledbore distances agree withm*(za+zb)/2 fornominalm1.5:37.5,21.75,24.75,28.5,31.5,33.75,36.75mm perarm. Nativecoordinate reconciliation tolerance2e-5mm doesnotrelax unchangedsourcepitchassert1e-8mm. Contactisaseparateclaim.",
+      "current_source_ids": [
+        "params",
+        "qualified",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R038",
+        "row_present": true,
+        "evidence_ids": [
+          "math",
+          "design",
+          "dimensions",
+          "dimension_rows"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R039",
+      "section": "Gears",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Backlash is taken out of tooth thickness, 0.15–0.25 mm per flank.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "All174actual toothpitch-circle arcs yield perflankremoval0.179999980841–0.179999999989mm, strictlyinside0.15–0.25mm, matchingnominal0.18. Measuredonnominalmodule1.5pitchcircle; notindependentpitchdiameterproof.",
+      "current_source_ids": [
+        "params",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R039",
+        "row_present": true,
+        "evidence_ids": [
+          "params",
+          "gearing",
+          "math",
+          "mesh"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "dimensions",
+        "tooth_thinning"
+      ]
+    },
+    {
+      "id": "R040",
+      "section": "Gears",
+      "category": "functional",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "Never obtain backlash by pushing pitch circles apart.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Current14measuredpitchcenters remainnominalm*(za+zb)/2 and all174teethshow0.18mmperflankthinning; backlashwasnotobtainedbyenlargingcenterdistances.",
+      "current_source_ids": [
+        "params",
+        "qualified",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R040",
+        "row_present": true,
+        "evidence_ids": [
+          "params",
+          "gearing",
+          "math",
+          "mesh"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly",
+        "tooth_thinning"
+      ]
+    },
+    {
+      "id": "R041",
+      "section": "Gears",
+      "category": "functional",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "Do not leave a static air gap between meshing gears; a chain that does not touch does not drive.",
+      "assessment_status": "sampled_contact_established_other_scoped_requirements_pending",
+      "current_finding": "The current two-arm train has seven planets per arm (14/15/18/20/22/23/26 teeth) beginning at the 36-tooth sun. All 14 mesh pairs pass 17 fixed-center BRep contact states each, for 238 total samples. Source snapshots, pair identity, loaded phases and opposite-arm transforms match current exact bindings. Maximum separation is 3.3314989336525863e-7 mm against 1e-6 mm; maximum absolute overlap is 1.4537136232201417e-6 mm³ against 0.001 mm³. This establishes the sampled pairwise contact condition only. Continuous contact, simultaneous coupled operation, torque transmission and physical fit remain unverified; formal round-4 motion is UNVERIFIED.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "gearing",
+        "qualified"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R041",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "design",
+          "mesh",
+          "mesh_rows",
+          "mesh_continuity"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly",
+        "sampled_contact"
+      ],
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R042",
+      "section": "Gears",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "stated range with explicit geometry-forced fallback",
+      "requirement": "Gear count follows the tooth and size rules: 11–21 gears per arm’s chain.",
+      "assessment_status": "qualified_fallback_not_literal_count_compliance",
+      "current_finding": "Seven planets per arm is below11–21 and invokes the explicit fewer/larger fallback. The accepted bounded qualification supports this engineering choice but is not a global impossibility proof or a waiver of the dense-disc visual requirement.",
+      "current_source_ids": [
+        "handoff",
+        "qualified",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R042",
+        "row_present": true,
+        "evidence_ids": [
+          "layout",
+          "design",
+          "spec"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": []
+    },
+    {
+      "id": "R043",
+      "section": "Gears",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "explicit fallback; conditional on geometry forcing the choice",
+      "requirement": "If geometry forces the choice, fewer and bigger honest gears beat many tiny ones.",
+      "assessment_status": "qualified_fallback_not_literal_count_compliance",
+      "current_finding": "Seven planets per arm is below11–21 and invokes the explicit fewer/larger fallback. The accepted bounded qualification supports this engineering choice but is not a global impossibility proof or a waiver of the dense-disc visual requirement.",
+      "current_source_ids": [
+        "handoff",
+        "qualified",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R043",
+        "row_present": true,
+        "evidence_ids": [
+          "layout",
+          "design",
+          "spec"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": []
+    },
+    {
+      "id": "R044",
+      "section": "Spokes",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Every gear is pierced by curved, swept spiral spokes.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The center wheel and all chain wheels display open, curved swept spokes.",
+      "current_source_ids": [
+        "gearing",
+        "gears",
+        "params"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R044",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly",
+        "webs"
+      ],
+      "pre_review_finding": "Each source gear, including stationary36T sun, has five pierced swept windows/spokes. Core source tipOD56.55mm; actual appearance and readability require current review. Current full static validation/interference and raw44leaf identity are established; these general checks do not alone establish this particular dimension, motion or contact requirement. All40 adjacent-window webs were freshly measured from exact current masters; minimum2.6008054647104633mm exceeds2.4mm. Currenttargeteddimensions,profilecounts,rims,centerrelationsandcontinuousenvelopesareaudited. Remainingappearance/contact/functionclaimsarenotansweredbythesedimensionalpasses.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 9,
+        "archive_requirement_id": "R044",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R045",
+      "section": "Spokes",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Every gear has 5–7 spokes.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Actualtopplanarface extraction findsfivecurvedwindowopeningsaroundtheboreoneachof8forms, correspondingtofivespokes.",
+      "current_source_ids": [
+        "params",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R045",
+        "row_present": true,
+        "evidence_ids": [
+          "gearing",
+          "params"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly",
+        "webs"
+      ]
+    },
+    {
+      "id": "R046",
+      "section": "Spokes",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Spoke handedness alternates from gear to gear so the whole field reads as sweeping inward despite neighbouring gears counter-rotating.",
+      "assessment_status": "visual_scope_pass_other_claims_unverified",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: Adjacent gears show alternating spoke curvature. In the new operating segment their distinct spoke rotations combine with the inward size progression to communicate a swirling field around the core. The alternating form and presented inward sweep pass visually; complete numerical coupled motion remains UNVERIFIED.",
+      "current_source_ids": [
+        "gears",
+        "assembly",
+        "handoff"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R046",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Source planet hands alternate -/+/-/+/-/+/- from inner14T outward; complete ArmB solids rotate180degrees. Intended common inward visual sweep remains subject to fresh review. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 9,
+        "archive_requirement_id": "R046",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "unverified_scope": "The alternating form and presented inward sweep pass visually; complete numerical coupled motion remains UNVERIFIED.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R047",
+      "section": "Spokes",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Spoke webs are at least 2.4 mm wide.",
+      "assessment_status": "current_brep_measurement_pass",
+      "current_finding": "All40cyclic adjacent-window distances across seven planet forms plus36T sun measured using public BRep nearest-distance API. Exactcurrentmaster and witness hashes verified; minimum2.6008054647104633mm>=2.4mm.",
+      "current_source_ids": [
+        "params",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R047",
+        "row_present": true,
+        "evidence_ids": [
+          "spoke_webs",
+          "gearing",
+          "gears"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "webs"
+      ]
+    },
+    {
+      "id": "R048",
+      "section": "Spokes",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Rim behind the tooth root is at least two modules thick.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Actualexported straightwindowedge radialenvelopes andouterwireclosestdistances bothestablishrootrim≈3.25mmacross8forms, exceedingtwonominalmodules=3.0mm.",
+      "current_source_ids": [
+        "params",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R048",
+        "row_present": true,
+        "evidence_ids": [
+          "gearing",
+          "params"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R049",
+      "section": "Mechanism",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Central gear is fixed to the horizontal stem axle as a stationary sun gear.",
+      "assessment_status": "source_defined_pending_current_verification",
+      "current_finding": "Source keyed sun/axle/collar chain fixes the sun on the single horizontal axle at the hub. Current capture, withdrawal and key-hold evidence is not inferred from old assembly results. Current full static validation/interference and raw44leaf identity are established; these general checks do not alone establish this particular dimension, motion or contact requirement. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Currenttargeteddimensions,profilecounts,rims,centerrelationsandcontinuousenvelopesareaudited. Remainingappearance/contact/functionclaimsarenotansweredbythesedimensionalpasses.",
+      "current_source_ids": [
+        "assembly",
+        "core",
+        "stand",
+        "motion_declarations"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R049",
+        "row_present": true,
+        "evidence_ids": [
+          "core",
+          "gears",
+          "assembly",
+          "historical_stand"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly"
+      ],
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R050",
+      "section": "Mechanism",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Spiral carrier turns freely on the same axle.",
+      "assessment_status": "sampled_contact_established_other_scoped_requirements_pending",
+      "current_finding": "Declared positive-carrier kinematics use world factor1+(-1)^i*36/z_i with14drivenplanets,128operatingintervals and exact orbit tables. Inward speed magnitudes increase relative to the carrier; absolute world speeds alternate and are not claimed monotonically increasing inward. Declarations are not simultaneous motion/torque proof. Current motion is UNVERIFIED. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Current fixed-center contact diagnostic passes all 238 samples across both arms and all seven meshes per arm, with 17 states per mesh. Maximum separation is 3.3314989336525863e-7 mm and maximum absolute overlap is 1.4537136232201417e-6 mm³. Continuous contact, coupled assembly motion and physical drive are not proved.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "motion_declarations"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R050",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "design",
+          "spec",
+          "mesh"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "independent_review",
+        "sampled_contact"
+      ],
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R051",
+      "section": "Mechanism",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Pushing the knurled bezel rolls the gear chain around the fixed sun gear.",
+      "assessment_status": "sampled_contact_established_other_scoped_requirements_pending",
+      "current_finding": "Declared positive-carrier kinematics use world factor1+(-1)^i*36/z_i with14drivenplanets,128operatingintervals and exact orbit tables. Inward speed magnitudes increase relative to the carrier; absolute world speeds alternate and are not claimed monotonically increasing inward. Declarations are not simultaneous motion/torque proof. Current motion is UNVERIFIED. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Current fixed-center contact diagnostic passes all 238 samples across both arms and all seven meshes per arm, with 17 states per mesh. Maximum separation is 3.3314989336525863e-7 mm and maximum absolute overlap is 1.4537136232201417e-6 mm³. Continuous contact, coupled assembly motion and physical drive are not proved.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "motion_declarations"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R051",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "design",
+          "spec",
+          "mesh"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "independent_review",
+        "sampled_contact"
+      ],
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R052",
+      "section": "Mechanism",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Every gear spins at once, faster and faster toward the core.",
+      "assessment_status": "sampled_contact_established_other_scoped_requirements_pending",
+      "current_finding": "Declared positive-carrier kinematics use world factor1+(-1)^i*36/z_i with14drivenplanets,128operatingintervals and exact orbit tables. Inward speed magnitudes increase relative to the carrier; absolute world speeds alternate and are not claimed monotonically increasing inward. Declarations are not simultaneous motion/torque proof. Current motion is UNVERIFIED. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Current fixed-center contact diagnostic passes all 238 samples across both arms and all seven meshes per arm, with 17 states per mesh. Maximum separation is 3.3314989336525863e-7 mm and maximum absolute overlap is 1.4537136232201417e-6 mm³. Continuous contact, coupled assembly motion and physical drive are not proved.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "motion_declarations"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R052",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "design",
+          "spec",
+          "mesh"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "independent_review",
+        "sampled_contact"
+      ],
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R053",
+      "section": "Mechanism",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "One gesture produces two motions: the galaxy turns and its gears whirl inward.",
+      "assessment_status": "visual_scope_pass_other_claims_unverified",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: In display frames 0-23, wheel centers orbit while their spokes rotate at the same time; the central sun and stand remain fixed. Bezel attachment points move with the gear carrier. This is the intended one-input visual action, shown as prescribed digital states rather than verified physical drive. Simultaneous prescribed orbital and spoke motion is visible; physical one-input torque transmission and complete numerical motion remain unverified.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "motion_declarations"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R053",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "independent_review",
+        "sampled_contact"
+      ],
+      "pre_review_finding": "Declared positive-carrier kinematics use world factor1+(-1)^i*36/z_i with14drivenplanets,128operatingintervals and exact orbit tables. Inward speed magnitudes increase relative to the carrier; absolute world speeds alternate and are not claimed monotonically increasing inward. Declarations are not simultaneous motion/torque proof. Current motion is UNVERIFIED. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Current fixed-center contact diagnostic passes all 238 samples across both arms and all seven meshes per arm, with 17 states per mesh. Maximum separation is 3.3314989336525863e-7 mm and maximum absolute overlap is 1.4537136232201417e-6 mm³. Continuous contact, coupled assembly motion and physical drive are not proved.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 10,
+        "archive_requirement_id": "R053",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "unverified_scope": "Simultaneous prescribed orbital and spoke motion is visible; physical one-input torque transmission and complete numerical motion remain unverified.",
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R054",
+      "section": "Mechanism",
+      "category": "functional",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "No crank.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Round 2 fresh visual read with revealed concept comparison: No crank is present in the inspected views; input is the textured bezel.",
+      "current_source_ids": [
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R054",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "readme",
+          "production"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Current source inventory contains no crank, handle, motor, electronics or magnets; hand input is at the bezel.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 14,
+        "archive_requirement_id": "R054",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R055",
+      "section": "Mechanism",
+      "category": "functional",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "No handle.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Round 2 fresh visual read with revealed concept comparison: No separate handle is present in the inspected views.",
+      "current_source_ids": [
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R055",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "readme",
+          "production"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Current source inventory contains no crank, handle, motor, electronics or magnets; hand input is at the bezel.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 14,
+        "archive_requirement_id": "R055",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R056",
+      "section": "Mechanism",
+      "category": "functional",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "No motor.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Round 2 fresh visual read with revealed concept comparison: No motor is visible; revealed concept is manual and its parts inventory contains no motor. Hidden absence is supported by that inventory, not pixels alone.",
+      "current_source_ids": [
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R056",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "readme",
+          "production"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Current source inventory contains no crank, handle, motor, electronics or magnets; hand input is at the bezel.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 14,
+        "archive_requirement_id": "R056",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R057",
+      "section": "Mechanism",
+      "category": "functional",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "No electronics.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Round 2 fresh visual read with revealed concept comparison: No electronics or wiring are visible; revealed inventory is entirely passive printed parts.",
+      "current_source_ids": [
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R057",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "readme",
+          "production"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Current source inventory contains no crank, handle, motor, electronics or magnets; hand input is at the bezel.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 14,
+        "archive_requirement_id": "R057",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R058",
+      "section": "Mechanism",
+      "category": "functional",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "No magnets.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Round 2 fresh visual read with revealed concept comparison: No magnets are visible or listed in the revealed concept; images alone cannot establish hidden composition.",
+      "current_source_ids": [
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R058",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "readme",
+          "production"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Current source inventory contains no crank, handle, motor, electronics or magnets; hand input is at the bezel.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 14,
+        "archive_requirement_id": "R058",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R059",
+      "section": "Mechanism",
+      "category": "functional",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "No isolated gear.",
+      "assessment_status": "visual_scope_pass_other_claims_unverified",
+      "current_finding": "Round 2 fresh visual read with revealed concept comparison: Every visible wheel belongs to one of the connected chains or is the central sun; no spatially isolated decorative gear is visible. No isolated gear is visible and 238 fixed-center contact samples pass; continuous drive contact remains unverified.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "gearing",
+        "qualified"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R059",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "design",
+          "mesh",
+          "mesh_rows",
+          "mesh_continuity"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly",
+        "sampled_contact"
+      ],
+      "pre_review_finding": "The current two-arm train has seven planets per arm (14/15/18/20/22/23/26 teeth) beginning at the 36-tooth sun. All 14 mesh pairs pass 17 fixed-center BRep contact states each, for 238 total samples. Source snapshots, pair identity, loaded phases and opposite-arm transforms match current exact bindings. Maximum separation is 3.3314989336525863e-7 mm against 1e-6 mm; maximum absolute overlap is 1.4537136232201417e-6 mm³ against 0.001 mm³. This establishes the sampled pairwise contact condition only. Continuous contact, simultaneous coupled operation, torque transmission and physical fit remain unverified; formal round-4 motion is UNVERIFIED.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 15,
+        "archive_requirement_id": "R059",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "unverified_scope": "No isolated gear is visible and 238 fixed-center contact samples pass; continuous drive contact remains unverified.",
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R060",
+      "section": "Mechanism",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Each chain starts on the sun gear and every gear meshes with its neighbours.",
+      "assessment_status": "visual_scope_pass_other_claims_unverified",
+      "current_finding": "Round 2 fresh visual read with revealed concept comparison: Both innermost wheels lie against the central sun and each following wheel lies against its neighbors in a continuous spiral chain. The movie presents coordinated rotations. Separately, 238 fixed-center BRep contact samples passed; continuous/full-coupled drive contact and physical transmission remain unverified. That numeric distinction does not change the visual finding. Visible chains and 238 fixed-center contact samples pass; continuous and full coupled drive contact remain unverified.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "gearing",
+        "qualified"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R060",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "design",
+          "mesh",
+          "mesh_rows",
+          "mesh_continuity"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "current_static",
+        "dimensions",
+        "independent_review",
+        "raw_assembly",
+        "sampled_contact"
+      ],
+      "pre_review_finding": "The current two-arm train has seven planets per arm (14/15/18/20/22/23/26 teeth) beginning at the 36-tooth sun. All 14 mesh pairs pass 17 fixed-center BRep contact states each, for 238 total samples. Source snapshots, pair identity, loaded phases and opposite-arm transforms match current exact bindings. Maximum separation is 3.3314989336525863e-7 mm against 1e-6 mm; maximum absolute overlap is 1.4537136232201417e-6 mm³ against 0.001 mm³. This establishes the sampled pairwise contact condition only. Continuous contact, simultaneous coupled operation, torque transmission and physical fit remain unverified; formal round-4 motion is UNVERIFIED.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 15,
+        "archive_requirement_id": "R060",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "unverified_scope": "Visible chains and 238 fixed-center contact samples pass; continuous and full coupled drive contact remain unverified.",
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R061",
+      "section": "Balance",
+      "category": "physical-only",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Wheel must rest at any angle and coast smoothly.",
+      "assessment_status": "physical_performance_unverified",
+      "current_finding": "Complete half-turn source symmetry supports ideal equal-density mass cancellation. Printed balance, rest at arbitrary angle, friction and coasting remain unverified physical behavior. No new blanket physical-test gate is introduced.",
+      "current_source_ids": [
+        "assembly",
+        "carrier",
+        "qualified"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R061",
+        "row_present": true,
+        "evidence_ids": [
+          "carrier",
+          "assembly",
+          "design",
+          "math"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": []
+    },
+    {
+      "id": "R062",
+      "section": "Balance",
+      "category": "physical-only",
+      "polarity": "positive",
+      "qualifier": "conditional: two arms",
+      "requirement": "With two mirrored arms, balance comes from the arms themselves.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Actualopposed14gear andblackrotatingpartmaterialgroups separatelybalanceabouthubaxis. Noexternalcounterweightorassumptionofequalblack/golddensityisneeded foridealdigitalbalance.",
+      "current_source_ids": [
+        "assembly",
+        "carrier",
+        "qualified"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R062",
+        "row_present": true,
+        "evidence_ids": [
+          "carrier",
+          "assembly",
+          "design",
+          "math"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "dimensions"
+      ]
+    },
+    {
+      "id": "R063",
+      "section": "Balance",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "conditional: single arm",
+      "requirement": "With one arm, hide the counterweight behind the carrier, inside the wheel silhouette.",
+      "assessment_status": "not_applicable_two_arm_design",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: Conditional single-arm counterweight clause is not applicable: two opposed arms are visibly used.",
+      "current_source_ids": [
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R063",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Single-arm conditional alternative is not selected; current design has two opposite arms.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 11,
+        "archive_requirement_id": "R063",
+        "informed_rereview": true,
+        "matches": true
+      }
+    },
+    {
+      "id": "R064",
+      "section": "Balance",
+      "category": "visual",
+      "polarity": "negative",
+      "qualifier": "required",
+      "requirement": "A counterweight box or lump projecting past the wheel outline is a defect.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: No counterweight box or lump projects beyond the circular wheel outline in the hero or state views.",
+      "current_source_ids": [
+        "assembly",
+        "carrier"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R064",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Two-arm source design has no separate counterweight box or projected lump; actual silhouette remains subject to review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 11,
+        "archive_requirement_id": "R064",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R065",
+      "section": "Stand",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Use one very slim round stem rising from a low, heavy, round pedestal.",
+      "assessment_status": "visual_scope_pass_other_claims_unverified",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The oblique hero and supplemental top view show a single slim round stem and a low circular pedestal; the base is visually substantial without competing with the wheel. Physical ballast weight is not inferred. The slim support form passes visually; physical ballast weight remains untested.",
+      "current_source_ids": [
+        "stand",
+        "params"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R065",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Source uses one12mm round stem and a105mm low pedestal with a ballast cavity. Slim/quiet support appearance and relative visual dominance need current review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 12,
+        "archive_requirement_id": "R065",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "unverified_scope": "The slim support form passes visually; physical ballast weight remains untested."
+    },
+    {
+      "id": "R066",
+      "section": "Stand",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Stem diameter is 10–14 mm.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Currentnative stemcylinderradius6mm establishes12mmstemOD within10–14mm.",
+      "current_source_ids": [
+        "params",
+        "stand"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R066",
+        "row_present": true,
+        "evidence_ids": [
+          "params",
+          "stand"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R067",
+      "section": "Stand",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Pedestal diameter is 95–115 mm.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Currentnative pedestalradius52.5mm establishes105mmOD within95–115mm.",
+      "current_source_ids": [
+        "params",
+        "stand"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R067",
+        "row_present": true,
+        "evidence_ids": [
+          "params",
+          "stand"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R068",
+      "section": "Stand",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Pedestal has one thin brass-coloured inlay line near its rim.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The canonical oblique hero clearly shows one thin gold inlay line near the circular pedestal rim.",
+      "current_source_ids": [
+        "stand",
+        "assembly",
+        "params"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R068",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Source includes a brass-colored rim inlay and a separate brass foot trim ring. Current appearance remains unjudged.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 13,
+        "archive_requirement_id": "R068",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R069",
+      "section": "Stand",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "A small brass-coloured ring sits at the foot of the stem.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The canonical oblique hero shows the small gold ring at the stem foot.",
+      "current_source_ids": [
+        "stand",
+        "assembly",
+        "params"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R069",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Source includes a brass-colored rim inlay and a separate brass foot trim ring. Current appearance remains unjudged.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 13,
+        "archive_requirement_id": "R069",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R070",
+      "section": "Stand",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Stem and pedestal remain visually quiet: they hold the black hole up and nothing more.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The black stem and low base remain visually subordinate, with only restrained gold trim.",
+      "current_source_ids": [
+        "stand",
+        "params"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R070",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Source uses one12mm round stem and a105mm low pedestal with a ballast cavity. Slim/quiet support appearance and relative visual dominance need current review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 12,
+        "archive_requirement_id": "R070",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R071",
+      "section": "Stand",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Wheel hangs on the single horizontal axle at its hub.",
+      "assessment_status": "source_defined_pending_current_verification",
+      "current_finding": "Source keyed sun/axle/collar chain fixes the sun on the single horizontal axle at the hub. Current capture, withdrawal and key-hold evidence is not inferred from old assembly results. Current full static validation/interference and raw44leaf identity are established; these general checks do not alone establish this particular dimension, motion or contact requirement. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Currenttargeteddimensions,profilecounts,rims,centerrelationsandcontinuousenvelopesareaudited. Remainingappearance/contact/functionclaimsarenotansweredbythesedimensionalpasses.",
+      "current_source_ids": [
+        "assembly",
+        "core",
+        "stand",
+        "motion_declarations"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R071",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "core",
+          "historical_stand"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ],
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R072",
+      "section": "Stand",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Wheel clears both pedestal and stem by at least 8 mm through a full revolution, at every angle, measured at the wheel’s widest point.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Continuousmeasuredcenter/tip envelopewithstatedjournalplay establishes11.0508820116mmpedestalclearance. All32moving actualSTEPsolids haveYmax=-25mm andstemYmin=-6mm:19mmaxialseparation invariantthroughY-axisrotation. Bothbounds>=8mm; nofunctional-motionpassclaimed.",
+      "current_source_ids": [
+        "qualified",
+        "params",
+        "assembly"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R072",
+        "row_present": true,
+        "evidence_ids": [
+          "math",
+          "design",
+          "validation",
+          "assembly"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R073",
+      "section": "Size",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Whole object is 190–230 mm tall.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Currentmeasuredcontinuousenvelopeheight214.9491179884mm includingstatedjournalplay iswithin190–230mm.",
+      "current_source_ids": [
+        "qualified",
+        "params"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R073",
+        "row_present": true,
+        "evidence_ids": [
+          "math",
+          "design",
+          "validation"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R074",
+      "section": "Size",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Every printed part fits a 220 × 220 mm bed.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "All21exactcurrentmasterSTEPprint-pose BRep XYbounds fit220x220mm. Complete49productionoccurrencebinding/nativeinspection isaseparatedeliverycheck. Complete49pieceproductiondelivery has98nativeinspectionresponsesPASS with exact rawSTEP identity.",
+      "current_source_ids": [
+        "params",
+        "carrier",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R074",
+        "row_present": true,
+        "evidence_ids": [
+          "print_provenance",
+          "production_exports"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "print",
+        "production",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R075",
+      "section": "Size",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "explicit precedence",
+      "requirement": "Bed fit is the hard rule whenever it conflicts with the height target.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "All21exactmasterprintposes complywith220x220mm hardbedlimit; heighttargetalsocomplies, sonoexceptionisneeded. Complete49pieceproductiondelivery has98nativeinspectionresponsesPASS with exact rawSTEP identity.",
+      "current_source_ids": [
+        "params",
+        "carrier",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R075",
+        "row_present": true,
+        "evidence_ids": [
+          "print_provenance",
+          "production_exports"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "print",
+        "production",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R076",
+      "section": "FDM and colour",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Use FDM printing in three colours, without paint.",
+      "assessment_status": "source_defined_pending_current_verification",
+      "current_finding": "Source and instructions specify separate FDM parts in matte black, brass/gold and translucent orange without paint. Material finish/availability and physical manufacture remain unverified. All49deliveryexports and98nativeinspectionresponses are now hash-audited PASS.",
+      "current_source_ids": [
+        "params",
+        "readme",
+        "assembly"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R076",
+        "row_present": true,
+        "evidence_ids": [
+          "params",
+          "assembly",
+          "readme",
+          "production_exports"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "production"
+      ]
+    },
+    {
+      "id": "R077",
+      "section": "FDM and colour",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Carrier, bezel, pedestal, stem and axle are matte black.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The visible carrier, bezel, stem, pedestal and axial hardware are matte black in the canonical and supplemental exact-CAD views.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R077",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Source colors assign matte-black structure/field, brass/gold sun/planets/two trims and orange core only. Render colors do not establish printed metallic finish or translucency.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 3,
+        "archive_requirement_id": "R077",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R078",
+      "section": "FDM and colour",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Every gear and both trim rings are brass/gold.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: All visible gears, the thin pedestal-rim ring and the stem-foot ring are gold.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R078",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Source colors assign matte-black structure/field, brass/gold sun/planets/two trims and orange core only. Render colors do not establish printed metallic finish or translucency.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 3,
+        "archive_requirement_id": "R078",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R079",
+      "section": "FDM and colour",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Translucent orange is used for the core disc only.",
+      "assessment_status": "visual_scope_pass_other_claims_unverified",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: Orange is used only for the separate core disc. The concept specifies translucent material; the visual review confirms color placement and layered form, not material transmission. Orange is confined to the core in the presentation; actual material translucency remains unverified.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "spec"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R079",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "Source colors assign matte-black structure/field, brass/gold sun/planets/two trims and orange core only. Render colors do not establish printed metallic finish or translucency.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 3,
+        "archive_requirement_id": "R079",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "unverified_scope": "Orange is confined to the core in the presentation; actual material translucency remains unverified."
+    },
+    {
+      "id": "R080",
+      "section": "FDM and colour",
+      "category": "physical-only",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Print support-free.",
+      "assessment_status": "physical_outcome_unverified_digital_reports_pending",
+      "current_finding": "Native round4 overhang PASS for21roles at45degrees; all42wall/overhangloghashes verified. Physical support-free printing remains untested.",
+      "current_source_ids": [
+        "readme",
+        "spec"
+      ],
+      "pending_evidence_ids": [
+        "print"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R080",
+        "row_present": true,
+        "evidence_ids": [
+          "print_provenance",
+          "readme"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "print"
+      ]
+    },
+    {
+      "id": "R081",
+      "section": "FDM and colour",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Gears and carrier lie flat on the print bed.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Currentmastergearsandcarrier haveflatZbaseandfitdeclaredprintpose; native21rolewall/overhangchecksPASS. Final49exportposeinspectionispendingseparately. Complete49pieceproductiondelivery has98nativeinspectionresponsesPASS with exact rawSTEP identity.",
+      "current_source_ids": [
+        "gearing",
+        "carrier",
+        "readme"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R081",
+        "row_present": true,
+        "evidence_ids": [
+          "readme",
+          "gearing",
+          "carrier",
+          "print_provenance"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "print",
+        "production",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R082",
+      "section": "FDM and colour",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Spokes and knurl are above nozzle resolution at a 0.4 mm nozzle.",
+      "assessment_status": "current_geometric_feature_width_pass",
+      "current_finding": "All 40 spoke webs measure at least 2.600805465 mm. Native knurl groove width is 0.65 mm and raised land arc width is 1.18258 mm; both exceed the nominal 0.4 mm nozzle width. Finished radial depth is 0.30 mm, not 0.45 mm. It is reported separately and does not exceed 0.4 mm. Physical printer resolution remains untested.",
+      "current_source_ids": [
+        "params",
+        "gearing",
+        "core"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R082",
+        "row_present": true,
+        "evidence_ids": [
+          "params",
+          "core",
+          "gearing",
+          "print_provenance",
+          "spoke_webs"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "webs",
+        "print",
+        "knurl_coupon"
+      ]
+    },
+    {
+      "id": "R083",
+      "section": "Journals",
+      "category": "physical-only",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Journals are generous and low-friction; gear faces do not rub the carrier.",
+      "assessment_status": "physical_performance_unverified",
+      "current_finding": "Current14journalsmeasure0.35mmradialplay andall14facestandoffsmeasure0.3mm. Lowfriction,printvariationandloadedrubbehavior remainuntested; formalinsertion/retention/operatingmotion remainsUNVERIFIED.",
+      "current_source_ids": [
+        "params",
+        "carrier"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R083",
+        "row_present": true,
+        "evidence_ids": [
+          "dimensions",
+          "carrier",
+          "readme"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [],
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R084",
+      "section": "Journals",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Each gear drops over a short captive axle post on the carrier and is retained by a small cap or head.",
+      "assessment_status": "source_defined_pending_current_verification",
+      "current_finding": "Carrier has14posts with production seats/threads and14planet caps, plus two separate bezel caps. Current manifest includes each planet withdrawal/capture and grouped cap retention; no current motion verdict is claimed. Current full static validation/interference and raw44leaf identity are established; these general checks do not alone establish this particular dimension, motion or contact requirement. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Currenttargeteddimensions,profilecounts,rims,centerrelationsandcontinuousenvelopesareaudited. Remainingappearance/contact/functionclaimsarenotansweredbythesedimensionalpasses.",
+      "current_source_ids": [
+        "carrier",
+        "assembly",
+        "motion_declarations"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R084",
+        "row_present": true,
+        "evidence_ids": [
+          "carrier",
+          "readme",
+          "assembly"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ],
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R085",
+      "section": "Journals",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "approximate target",
+      "requirement": "Gear journals have about 0.35 mm radial clearance.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "All14nativegearboresradius2.35mm andmatchingpostsradius2.0mm establish0.35mmradialclearance.",
+      "current_source_ids": [
+        "params",
+        "gearing",
+        "carrier"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R085",
+        "row_present": true,
+        "evidence_ids": [
+          "dimensions",
+          "dimension_rows"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R086",
+      "section": "Journals",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Provide a 0.3 mm raised face standoff.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "All14currentnativegearface/carrierplanarmeasurements establish0.3mmraisedfacestandoff.",
+      "current_source_ids": [
+        "params",
+        "carrier",
+        "assembly"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R086",
+        "row_present": true,
+        "evidence_ids": [
+          "params",
+          "carrier",
+          "assembly"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R087",
+      "section": "Ballast",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Pedestal carries a closed pocket for added ballast.",
+      "assessment_status": "source_defined_pending_current_verification",
+      "current_finding": "Source pedestal has a ballast cavity closed by a three-tab lid; current lid lock/unlock/capture declarations remain, with no anti-rotation detent claimed. Current full static validation/interference and raw44leaf identity are established; these general checks do not alone establish this particular dimension, motion or contact requirement. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Currenttargeteddimensions,profilecounts,rims,centerrelationsandcontinuousenvelopesareaudited. Remainingappearance/contact/functionclaimsarenotansweredbythesedimensionalpasses.",
+      "current_source_ids": [
+        "stand",
+        "spec",
+        "motion_declarations"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R087",
+        "row_present": true,
+        "evidence_ids": [
+          "stand",
+          "assembly",
+          "spec"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ],
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R088",
+      "section": "Tolerance coupon",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Include one small tolerance-test coupon part containing one journal post plus one meshing gear pair at the real module.",
+      "assessment_status": "current_coupon_geometry_and_delivery_pass",
+      "current_finding": "Native current coupon post centers measure 21.75 mm, matching 1.5 × (14 + 15) / 2. The 2 mm journal radii, 3.6 mm seat radii and 0.3 mm standoff match production geometry. All five coupon exports bind the current plate, 14-tooth gear, 15-tooth gear and two cap masters; raw native validation passes. Physical coupon fit and mesh remain untested.",
+      "current_source_ids": [
+        "coupon",
+        "params",
+        "readme"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R088",
+        "row_present": true,
+        "evidence_ids": [
+          "coupon",
+          "readme",
+          "production",
+          "production_exports"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "knurl_coupon",
+        "production",
+        "actual_profiles_balance_bed",
+        "tooth_thinning"
+      ]
+    },
+    {
+      "id": "R089",
+      "section": "Tolerance coupon",
+      "category": "physical-only",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "The coupon allows fit and mesh to be proved on the printer before printing the whole set.",
+      "assessment_status": "physical_performance_unverified",
+      "current_finding": "Current14/15 coupon is intended for printer-specific fit/mesh qualification before the full set. No physical coupon result is claimed and no new physical-test requirement is added by this map.",
+      "current_source_ids": [
+        "coupon",
+        "readme"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R089",
+        "row_present": true,
+        "evidence_ids": [
+          "readme",
+          "coupon"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": []
+    },
+    {
+      "id": "R090",
+      "section": "Quality bar",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Write the complete quality bar into the specification with numbers.",
+      "assessment_status": "documentation_present_not_final_acceptance",
+      "current_finding": "Current specification records numerical design/quality obligations and source limitations for the revised inventory and kinematics. This draft cross-indexes all99 neutral requirements; final documentation completeness and acceptance are not established by its presence.",
+      "current_source_ids": [
+        "spec",
+        "handoff"
+      ],
+      "pending_evidence_ids": [
+        "integrated"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R090",
+        "row_present": true,
+        "evidence_ids": [
+          "spec",
+          "design",
+          "readme"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": []
+    },
+    {
+      "id": "R091",
+      "section": "Quality bar",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Prove the chosen spiral growth rate gives at least 2 mm clearance at every radius between consecutive wraps, including the gears riding on them.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Complete nonneighborplanet tipcircleenvelopes fromactualmeasuredaxes/radii give3.1941619435mmminimumgapaftertwoplanet0.35mmexcursions. Rigidcarrierrotationpreservesthese separations. Sun-to-nonneighborgap isaseparatelowerclearanceandisnotclaimed>=2mm.",
+      "current_source_ids": [
+        "qualified",
+        "params"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R091",
+        "row_present": true,
+        "evidence_ids": [
+          "math",
+          "design",
+          "validation"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R092",
+      "section": "Quality bar",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Prove every mesh centre distance against module and tooth counts.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Current14assembledpitchcenters measuredagainstnominalmodule1.5andactualtoothcounts allPASS2e-5mmrounded-reportreconciliation; exactsourceassert1e-8mmunchanged.",
+      "current_source_ids": [
+        "params",
+        "qualified",
+        "gearing"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R092",
+        "row_present": true,
+        "evidence_ids": [
+          "math",
+          "design",
+          "dimensions",
+          "dimension_rows"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R093",
+      "section": "Quality bar",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Prove the see-through event horizon.",
+      "assessment_status": "current_sightline_geometry_pass",
+      "current_finding": "Current exactSHA-bound44solidassembly has a clear nominal14mm diameter axial corridor: all44originalsolids plus radius7.00mm witness,1testedpair,0skipped,0truncated,0clashes at1e-6mm³. This proves geometric see-through clearance; visual darkness and material translucency are separate appearance claims.",
+      "current_source_ids": [
+        "params",
+        "core",
+        "assembly"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R093",
+        "row_present": true,
+        "evidence_ids": [
+          "sightline",
+          "sightline_refs",
+          "sightline_source",
+          "static_geometry_manifest"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "sightline"
+      ]
+    },
+    {
+      "id": "R094",
+      "section": "Quality bar",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Prove full-revolution clearance over the pedestal.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "Continuousmeasuredtip/borecenter sweptboundwithstatedjournalplay gives11.0508820116mmpedestalclearanceforfullrotation, exceeding8mm. FormalmotionremainsUNVERIFIED.",
+      "current_source_ids": [
+        "qualified",
+        "params",
+        "assembly"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R094",
+        "row_present": true,
+        "evidence_ids": [
+          "math",
+          "design",
+          "validation",
+          "assembly"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "current_static",
+        "dimensions",
+        "raw_assembly"
+      ]
+    },
+    {
+      "id": "R095",
+      "section": "Quality bar",
+      "category": "physical-only",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Prove balance.",
+      "assessment_status": "current_scoped_digital_measurement_pass",
+      "current_finding": "ActualBRep32movingCOM radialoffset1.217082794964159e-8mm; separate14goldgear/18blackpartgroups also balanceabouthubaxis. Thisisideal digitalbalance; printedbalance/friction/coastingremainuntested.",
+      "current_source_ids": [
+        "assembly",
+        "carrier",
+        "qualified"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R095",
+        "row_present": true,
+        "evidence_ids": [
+          "carrier",
+          "assembly",
+          "design",
+          "math"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "actual_profiles_balance_bed",
+        "dimensions"
+      ]
+    },
+    {
+      "id": "R096",
+      "section": "Quality bar",
+      "category": "numeric",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Prove per-part wall thickness and overhang.",
+      "assessment_status": "current_native_print_checks_pass",
+      "current_finding": "Native round4 records wall thickness and overhang PASS for all21 current roles: nine freshly measured and12retained exactSTEPmatches. All42referenced log hashes verified. This proves the digital per-part check requirement, not physical print readiness.",
+      "current_source_ids": [
+        "spec",
+        "params"
+      ],
+      "pending_evidence_ids": [
+        "integrated"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R096",
+        "row_present": true,
+        "evidence_ids": [
+          "print_provenance",
+          "static_geometry",
+          "static_geometry_rows"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "print"
+      ]
+    },
+    {
+      "id": "R097",
+      "section": "Quality bar",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "The Wish explicitly enables motion verification: the gear train must actually turn in the motion check, not merely look right in a still.",
+      "assessment_status": "sampled_contact_established_other_scoped_requirements_pending",
+      "current_finding": "Declared positive-carrier kinematics use world factor1+(-1)^i*36/z_i with14drivenplanets,128operatingintervals and exact orbit tables. Inward speed magnitudes increase relative to the carrier; absolute world speeds alternate and are not claimed monotonically increasing inward. Declarations are not simultaneous motion/torque proof. Current motion is UNVERIFIED. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Current fixed-center contact diagnostic passes all 238 samples across both arms and all seven meshes per arm, with 17 states per mesh. Maximum separation is 3.3314989336525863e-7 mm and maximum absolute overlap is 1.4537136232201417e-6 mm³. Continuous contact, coupled assembly motion and physical drive are not proved.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "motion_declarations"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R097",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "design",
+          "spec",
+          "mesh"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "independent_review",
+        "sampled_contact"
+      ],
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    },
+    {
+      "id": "R098",
+      "section": "Quality bar",
+      "category": "visual",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Before calling the build done, inspect rendered views and ask whether it reads as a black hole made of gears.",
+      "assessment_status": "current_scoped_digital_visual_pass",
+      "current_finding": "Rereview with Wish already known, based on fresh round 2 evidence: The required black-hole question was reapplied after fresh round 2 observations. The darker round field, denser actual gear coverage, dark opening and recessed orange core now communicate the intended stylized black hole made of gears.",
+      "current_source_ids": [
+        "handoff",
+        "spec",
+        "carrier"
+      ],
+      "pending_evidence_ids": [],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R098",
+        "row_present": false,
+        "evidence_ids": [],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": true,
+      "current_evidence_ids": [
+        "independent_review"
+      ],
+      "pre_review_finding": "The revised design uses fourteen actual planets in two188.075640-degree arms and an integral matte-black188/58x3mm field. A field supplies dark roundness, not additional gear density. Black-hole recognition and exclusion of clock/Ferris-wheel/open-arc readings require fresh independent current-image review.",
+      "visual_assessment_status": "PASS_MODELED_FORM_OR_PRESENTED_ACTION",
+      "visual_review_scope": {
+        "review_round": 2,
+        "canonical_grouped_row": 16,
+        "archive_requirement_id": "R098",
+        "informed_rereview": true,
+        "matches": true
+      },
+      "satisfied_claim_scope": "Current modeled form, source inventory and/or presented appearance; no manufactured or physical performance claim."
+    },
+    {
+      "id": "R099",
+      "section": "Subject",
+      "category": "functional",
+      "polarity": "positive",
+      "qualifier": "required",
+      "requirement": "Gear Vortex is a hand-spun kinetic desk sculpture.",
+      "assessment_status": "sampled_contact_established_other_scoped_requirements_pending",
+      "current_finding": "Declared positive-carrier kinematics use world factor1+(-1)^i*36/z_i with14drivenplanets,128operatingintervals and exact orbit tables. Inward speed magnitudes increase relative to the carrier; absolute world speeds alternate and are not claimed monotonically increasing inward. Declarations are not simultaneous motion/torque proof. Current motion is UNVERIFIED. Current round4 formal motion verdict is UNVERIFIED (exit3, no condition results); no operating, insertion or retention pass is asserted. Current fixed-center contact diagnostic passes all 238 samples across both arms and all seven meshes per arm, with 17 states per mesh. Maximum separation is 3.3314989336525863e-7 mm and maximum absolute overlap is 1.4537136232201417e-6 mm³. Continuous contact, coupled assembly motion and physical drive are not proved.",
+      "current_source_ids": [
+        "params",
+        "assembly",
+        "motion_declarations"
+      ],
+      "pending_evidence_ids": [
+        "motion"
+      ],
+      "historical_map_reference": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/map-before-round2-review-adoption.json",
+        "requirement_id": "R099",
+        "row_present": true,
+        "evidence_ids": [
+          "assembly",
+          "design",
+          "spec",
+          "mesh"
+        ],
+        "status": "historical_revision_only_no_pass_promoted"
+      },
+      "satisfied_claim": false,
+      "current_evidence_ids": [
+        "animation",
+        "independent_review",
+        "sampled_contact"
+      ],
+      "presentation_finding": "The current independent review passes the presented orbital and gear-spin action over 0–64.6875 degrees. Formal numerical motion remains UNVERIFIED; this is not continuous contact or physical torque evidence.",
+      "final_verifier_finding": "UNVERIFIED; no completed condition result in final report. No unchanged retry; disclose prototype."
+    }
+  ],
+  "coverage": {
+    "count": 99,
+    "unique_ids": 99,
+    "visual_rows": 32,
+    "nonvisual_rows": 67,
+    "missing_ids": [],
+    "satisfied_claim_count": 62,
+    "independent_visual_review_ids": 40,
+    "independent_visual_review_grouped_rows": 16,
+    "satisfaction_count_scope": "Counts scoped digital measurement and modeled-form claims only; partial physical/functional requirements remain false."
+  },
+  "physical_policy": "Unverified physical behavior remains disclosed; no new blanket physical-test requirement.",
+  "motion_status": "UNVERIFIED: current round 4 exit 3, missing or invalid motion condition evidence, no condition results. The completed 238-row fixed-center contact diagnostic does not change this verdict. Prior round 3 and earlier failures remain historical.",
+  "updated_utc": "2026-09-21T09:40:38.230946+00:00",
+  "established_evidence": {
+    "current_static": {
+      "summary": {
+        "path": "artifacts/make/r0001/visual-repair-geometry/summary.json",
+        "sha256": "496ae9a58eb1eba27a3e4f4866b52418dfef162d0053539c1702f74d33b2d42a"
+      },
+      "status": "PASS_SCOPED",
+      "scope": "Nine current component validates,44leafassemblyvalidate,staticinterference at1mm3,no truncatedpairs. Allstale refs resolved by exact rawSTEPinspection."
+    },
+    "raw_assembly": {
+      "result": {
+        "path": "artifacts/make/r0001/visual-repair-delivery/raw-results.jsonl",
+        "sha256": "05e0b805319d66604b1a4d4956933040c67cfe4670f16fed0687c5f0e58ce3ac"
+      },
+      "status": "CURRENT_IDENTITY_VERIFIED",
+      "leaf_count": 44
+    },
+    "print": {
+      "result": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/summary.json",
+        "sha256": "c8de9bdf39f1da52fd6727e56b91360dd7f0ba567b4197ade83d25ddc3b9dfcc"
+      },
+      "status": "PASS",
+      "roles": 21,
+      "new": 9,
+      "exact_retained": 12,
+      "log_hashes_verified": 42,
+      "scope": "Native digital wall/overhang verdicts, not physical print readiness."
+    },
+    "webs": {
+      "result": {
+        "path": "artifacts/make/r0001/visual-repair-feature-probes/web-nearest-results.json",
+        "sha256": "a233563bfe17b3b96019887f7833a09c9d221c5335bd09da79237178202b3c4d"
+      },
+      "status": "PASS",
+      "count": 40,
+      "minimum_mm": 2.6008054647104633,
+      "required_mm": 2.4
+    },
+    "manager_visual": {
+      "result": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/summary.json",
+        "sha256": "c8de9bdf39f1da52fd6727e56b91360dd7f0ba567b4197ade83d25ddc3b9dfcc"
+      },
+      "status": "PASS",
+      "scope": "Manager round 4 visual observations. Independent round 2 is a separate completed evidence record."
+    },
+    "raw_component_refs": {
+      "result": {
+        "path": "artifacts/make/r0001/visual-repair-geometry/raw-components/results.jsonl",
+        "sha256": "63da0cfc8ae12feedc1162ceb5b995d17fa305597d4b56dfdc42ac1441ec3b5b"
+      },
+      "status": "CURRENT_IDENTITIES_VERIFIED",
+      "count": 6
+    },
+    "sightline": {
+      "status": "PASS",
+      "result": {
+        "path": "artifacts/make/r0001/visual-repair-feature-probes/sightline-results.jsonl",
+        "sha256": "c7aff051f99b1a3b7c8dce2e6654e8ab8d700a1234b4357e18b3fc23602fff06"
+      },
+      "assembly_binding": {
+        "path": "artifacts/make/r0001/visual-repair-feature-probes/assembly-execution-binding.json",
+        "sha256": "feff972cd5cb42fc3e9be814887fca5f1894aaa0e130f419aa7f03847d3ed88b"
+      },
+      "helper": {
+        "path": "artifacts/make/r0001/visual-repair-feature-probes/probe_geometry.py",
+        "sha256": "7e76ca4e7102222bfe750de9a256a15b12091feaad29385e05c60d0ceaecc28c"
+      },
+      "witness_step": {
+        "path": "artifacts/make/r0001/visual-repair-feature-probes/nominal_sightline.step",
+        "sha256": "9038a17c964d828f8dce01ae7b7999a04ad8588a8ab0bb6f2e49f8dfafd35e1b"
+      },
+      "radius_mm": 7.0,
+      "diameter_mm": 14.0,
+      "original_product_solids": 44,
+      "witness_shapes_total": 45,
+      "native_interference": {
+        "ok": true,
+        "entry": "artifacts/make/r0001/visual-repair-feature-probes/nominal_sightline",
+        "tolerance": 1e-06,
+        "stats": {
+          "occurrences": 2,
+          "pairs_total": 1,
+          "pairs_tested": 1,
+          "pairs_skipped_bbox": 0,
+          "pairs_truncated": 0
+        },
+        "clashCount": 0,
+        "clashes": [],
+        "errors": []
+      },
+      "scope": "Nominal14mm clear axial corridor through all44currentproductsolids at the declared resting pose. Geometry only; darkness/translucency/ambient appearance is not established."
+    },
+    "dimensions": {
+      "audit": {
+        "path": "artifacts/make/r0001/visual-repair-dimensions/SUMMARY.json",
+        "sha256": "fa7b45f12a6dace14656158cdd79d8bac1d2830dc24cfd630a7a1a34b3d63c4b"
+      },
+      "status": "PASS_SCOPED",
+      "native_requests": 81,
+      "numeric_checks": 117
+    },
+    "actual_profiles_balance_bed": {
+      "result": {
+        "path": "artifacts/make/r0001/visual-repair-dimensions/actual-step-results.json",
+        "sha256": "685391d79d92e9f6e9b9ebc5587d0e369b9f051059c82b678de55fd74353f008"
+      },
+      "status": "MEASURED_AND_AUDITED",
+      "scope": "44leaves,32movingCOM,separateblack/goldgroups,21masterbedbounds,8actualprofiles"
+    },
+    "tooth_thinning": {
+      "result": {
+        "path": "artifacts/make/r0001/visual-repair-dimensions/tooth-thinning-results.json",
+        "sha256": "6fcda5c6574906ec7b9a9026183ef1e853198453794b8134222e45cad75fec36"
+      },
+      "status": "PASS",
+      "tooth_count": 174,
+      "scope": "Measuredon specifiednominalmodule1.5pitchcircles;noindependent pitchdiameter claim."
+    },
+    "knurl_coupon": {
+      "result": {
+        "path": "artifacts/make/r0001/visual-repair-final-features/SUMMARY.json",
+        "sha256": "912b1e61b8b3e53c069a346d9afcdc452b30af0c0e488570eaf567cab90b75d9"
+      },
+      "status": "PASS_SCOPED"
+    },
+    "production": {
+      "status": "PASS",
+      "delivery_files": 49,
+      "native_responses": 98,
+      "raw_packages_verified": 49,
+      "summary": {
+        "path": "artifacts/make/r0001/visual-repair-production/inspection/summary.json",
+        "sha256": "2f19393d21c119e4e391e017c4af553375155b97cbb6dc968fa4d4c708ebab7b"
+      },
+      "manifest": {
+        "path": "artifacts/make/r0001/visual-repair-production/inspection/inspection-manifest.json",
+        "sha256": "f5fb90b190cd1aac463ba618e6a5a4b791e379dffcee9756e98c5d09cc75ca70"
+      },
+      "metadata_changes": [
+        {
+          "path": "artifacts/make/r0001/product/production-parts.json",
+          "inspection_input_sha256": "ac2d850657f6c108b2e4d9a987e4ce46919731396bb9ee8008a63bcff8bc31e8",
+          "current_sha256": "169c560f63d5359b4fc0716e18debd3f28181ad79ddd4d7f3769698432a2fc94",
+          "reconciliation": "Current metadata includes native_geometry_inspection receipt; all delivery paths/master hashes/STEP hashes below match inspected records."
+        },
+        {
+          "path": "artifacts/make/r0001/product/coupon-kit/manifest.json",
+          "inspection_input_sha256": "0b0b82424067f8ab66ae25640dd6d8f99c95d90d9af2ed1d7ea047a9a586dfa1",
+          "current_sha256": "9a2f4d02066d0df2846061822d78beca31cf5024621a3720923e8307c64e0c09",
+          "reconciliation": "Current metadata includes native_geometry_inspection receipt; all delivery paths/master hashes/STEP hashes below match inspected records."
+        }
+      ],
+      "current_metadata": [
+        {
+          "path": "artifacts/make/r0001/product/production-parts.json",
+          "sha256": "890e4dd57b9dad6cbb78308256bdbf4284062739123fa3b08892334763c536a6"
+        },
+        {
+          "path": "artifacts/make/r0001/product/coupon-kit/manifest.json",
+          "sha256": "9a2f4d02066d0df2846061822d78beca31cf5024621a3720923e8307c64e0c09"
+        }
+      ],
+      "scope": "44 sculpture pieces plus5couponkitpieces; exact rawSTEP refs/fullvalidation. No physical print,motion orfinalreadiness claim.",
+      "final_metadata_bridge": {
+        "path": "artifacts/make/r0001/product/gear_vortex/audits/visual-repair/finalization/final-delivery-export-bridge.json",
+        "sha256": "9e88d3c76ca232d267af20a960afc8146c979512dc0e5cb1e1464b31de7688a9"
+      }
+    },
+    "sampled_contact": {
+      "audit": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/contact-audit.json",
+        "sha256": "220e9160ac2add3487386bf98414492ee8123aad3ac749e66d938745de939a76"
+      },
+      "status": "PASS_SAMPLED_FIXED_CENTER_CONTACT",
+      "rows": 238,
+      "scope": "Exact BRep geometry generated from the SHA-bound current source snapshots. Every mesh is tested separately at fixed centers across one relative tooth-pitch interval in17states. This is not an importedSTEPassembly sweep.",
+      "limitations": [
+        "continuous contact between samples",
+        "simultaneous coupled full-assembly motion",
+        "torque transmission or friction",
+        "insertion or retention",
+        "physical fit",
+        "print readiness"
+      ]
+    },
+    "independent_review": {
+      "status": "PASS_MODELED_FORM_AND_PRESENTED_ACTION",
+      "audit": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/review-provenance-audit.json",
+        "sha256": "ec6b32d946170bc437903032b0d0974922d54d7cd54f319eee018483a9b02c99"
+      },
+      "signature_review": {
+        "path": "artifacts/make/r0001/product/gear_vortex/snap/SIGNATURE-REVIEW.json",
+        "sha256": "5a96ece7de81be2a7628457737e3a03dcefb86873bfb4dc16418d8c68bd2f3cf"
+      },
+      "motion_review": {
+        "path": "artifacts/make/r0001/product/gear_vortex/snap/MOTION-REVIEW.json",
+        "sha256": "b2b7e75583671ffb0a9628491efb4e41202d83c66f2bb297c65e7d8f8bd131fe"
+      },
+      "full_40_row_archive": {
+        "path": "artifacts/make/r0001/blind-review/round2/signature-full40-before-encoding-adaptation.json",
+        "sha256": "c8f45a5ae5ec3bafb44be74c1c3635a0c24bcce803a3d4d24c0232a197221fec"
+      },
+      "coverage": {
+        "held_form_ids": 40,
+        "canonical_grouped_rows": 16,
+        "original_rows": 40
+      },
+      "scope": [
+        "Round 2 is an informed rereview; original failed naive observations remain historical.",
+        "The operating excerpt is not a full revolution. Later samples show cap and lid service paths.",
+        "Presented action PASS does not establish complete numerical motion, continuous contact, retention, torque transmission or physical fit.",
+        "Physical optical transmission, real backlighting, print finish, coasting and human viewing-distance recognition remain untested.",
+        "Final verifier outcome is not assessed here."
+      ],
+      "research_snapshot_bridge": {
+        "path": "artifacts/make/r0001/visual-repair-documentation/research-snapshot-review-bridge.json",
+        "sha256": "3d1980e018896c006cf1c0d24dd179554f0e26005b0d9fe26c5a35cc5afdbbef"
+      },
+      "final_canonical_signature_review": {
+        "path": "artifacts/make/r0001/product/gear_vortex/snap/SIGNATURE-REVIEW.json",
+        "sha256": "3b13fbce07d71577151da15ff1fa9f4a5465ec44e290594547172e1e7cc90908"
+      },
+      "length_correction_bridge": {
+        "path": "artifacts/make/r0001/blind-review/round2/action-length-correction-bridge.json",
+        "sha256": "30c84d3a6901dc39944b9bdfa51f3b93b4833f704051ae6a95e1c5d29383cf44",
+        "scope": "Only blind_action_read shortened; no judgment, source or imagery change. Prior review hash remains the actual final-verifier input."
+      }
+    },
+    "animation": {
+      "status": "CURRENT_DECLARED_PRESENTATION_GENERATED_AND_REVIEWED",
+      "evidence": {
+        "path": "artifacts/make/r0001/product/gear_vortex/snap/MOTION-EVIDENCE.json",
+        "sha256": "34fc40dadf395cdcdcb5a8bab07e84bde9bf40236c5ade93cfcf2fe653cc8822"
+      },
+      "animation": {
+        "path": "artifacts/make/r0001/product/gear_vortex/snap/motion.gif",
+        "sha256": "006668c43d65e79c3c768edb06ccd92f0e1e9121ea8ab6abced3f4c5d288669a"
+      },
+      "declared_states": 48,
+      "display_frames": 45,
+      "operating_degrees": [
+        0,
+        64.6875
+      ],
+      "complete_operating_revolution": false,
+      "formal_numeric_motion_status": "UNVERIFIED"
+    },
+    "integrated": {
+      "status": "UNVERIFIED",
+      "report": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/verification-pipeline.md",
+        "sha256": "7c582ae6aa0db178d8f9b7ca239e45effd3a7a2c8cbc3094d95494b3de7f6d81"
+      },
+      "geometry_inspection": {
+        "path": "artifacts/make/r0001/product/gear_vortex/measure/geometry-inspection.json",
+        "sha256": "025cd911ce36a22d6ff099e818b74b31f5be30776f74cd85222dbbea63cbc505"
+      },
+      "incomplete_checks": 46,
+      "print_ready_claim": false
+    },
+    "final_delivery_equivalence": {
+      "path": "artifacts/make/r0001/product/gear_vortex/audits/visual-repair/finalization/final-delivery-export-bridge.json",
+      "sha256": "9e88d3c76ca232d267af20a960afc8146c979512dc0e5cb1e1464b31de7688a9",
+      "scope": "Final STEP serialization differs; exact geometry/context prefix and all native semantic records are unchanged."
+    }
+  },
+  "remaining_numerical_checklist": "artifacts/make/r0001/visual-repair-documentation/remaining-numerical-evidence.md",
+  "precision_policy": {
+    "native_report_coordinate_reconciliation_mm": 2e-05,
+    "source_pitch_distance_assertion_mm": 1e-08,
+    "distinction": "The2e-5allowance reconciles rounded native output only. It does not replace or relax the unchanged1e-8source pitch-center assertion.",
+    "tooth_required_interval": "Strict0.15..0.25mm without widened threshold;0.001mmnominal comparison is diagnostic only."
+  }
+}

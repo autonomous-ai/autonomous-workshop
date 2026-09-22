@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front and iso show symmetric sloped openings behind the gill seats, intact horn recesses and rounded headstock. Top and iso show four separate socket fingers and clear central cavity. No stray geometry; default and1.2mm wall and overhang checks pass after roof ramps and0.2mm lip extension. Snap compliance and assembled motion remain unverified.",
+  "packet_sha256": "aeae55f548f0389e18bb778bb328b7046b79b6b4a0c37f2eb33a2b73b5e3cc30",
+  "status": "pass"
+}

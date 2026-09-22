@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "status": "prepared_not_executed",
+  "scope": "Actual exported window boundaries for eight current gear forms and exact nominal whole-assembly sightline. No old measurement transferred.",
+  "historical_40_leaf_assembly_sha256": "b09ea2ab604b26262bea462a682304e0816cd87bb7c3a5fd4807b8d114d19997",
+  "webs": [
+    {
+      "teeth": 14,
+      "master": "part_gear_14.step",
+      "master_sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "entry": "web_14.step.py",
+      "exported_void_step": "web_14.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 15,
+      "master": "part_gear_15.step",
+      "master_sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "entry": "web_15.step.py",
+      "exported_void_step": "web_15.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 18,
+      "master": "part_gear_18.step",
+      "master_sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+      "entry": "web_18.step.py",
+      "exported_void_step": "web_18.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 20,
+      "master": "part_gear_20.step",
+      "master_sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+      "entry": "web_20.step.py",
+      "exported_void_step": "web_20.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 22,
+      "master": "part_gear_22.step",
+      "master_sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+      "entry": "web_22.step.py",
+      "exported_void_step": "web_22.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 23,
+      "master": "part_gear_23.step",
+      "master_sha256": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+      "entry": "web_23.step.py",
+      "exported_void_step": "web_23.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 26,
+      "master": "part_gear_26.step",
+      "master_sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+      "entry": "web_26.step.py",
+      "exported_void_step": "web_26.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 36,
+      "master": "part_sun.step",
+      "master_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "entry": "web_36.step.py",
+      "exported_void_step": "web_36.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    }
+  ],
+  "web_requested_minimum_mm": 2.4,
+  "web_measurement_count": 40,
+  "web_query": "build123d.Shape.distance_to_with_closest_points on every one of five cyclic adjacent exported window voids per eight forms; all raw nearest points retained",
+  "sightline": {
+    "assembly_binding": "assembly-execution-binding.json, created only at execution",
+    "entry": "nominal_sightline.step.py",
+    "radius_mm": 7.0,
+    "diameter_mm": 14.0,
+    "axis_point": [
+      0,
+      0,
+      120
+    ],
+    "axis_direction": [
+      0,
+      1,
+      0
+    ],
+    "y_extent_mm": [
+      -200,
+      200
+    ],
+    "all_product_leaf_count": 44,
+    "inspection_tolerance_mm3": 1e-06,
+    "intended_pair": [
+      "all_44_product_solids",
+      "sightline_radius_7_00"
+    ],
+    "scope": "Preserve all original solids and placements in a grouped compound, no boolean union; does not replace product-to-product interference."
+  },
+  "provenance": {
+    "old_probe_geometry_path": "artifacts/make/r0001/final-feature-probes/probe_geometry.py",
+    "old_probe_geometry_sha256": "43419d11bddb1e9fc1d1707edeed40dfb1bcfe12c7f36fdd4577aa53fa9c0ca4",
+    "old_nearest_query_path": "artifacts/make/r0001/final-feature-probes/query-web-nearest.py",
+    "old_nearest_query_sha256": "e0001695861e39729244d65dd685baca025b3413048f8aec73eb77923b8166b8",
+    "adaptation": "Only sightline original-solid count 40\u219244 and witness radius 6.99\u21927.00 change in shared geometry helper; actual exported-window extraction and nearest query unchanged."
+  },
+  "geometry_execution_performed": false,
+  "product_edited": false
+}

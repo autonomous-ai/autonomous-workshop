@@ -1,0 +1,285 @@
+{
+  "scope": "Existing component-round measurements only; no final print readiness claim.",
+  "reports": [
+    {
+      "role": "axle",
+      "step_sha256": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+      "source_report": "measure/rounds/r0002/overhang-axle.md",
+      "delivery_report": "measure/overhang-axle.md",
+      "sha256": "c5531d680b15459d73cf2e401cbecc1898e31d2bc26245dfc34a2fc8230b26de"
+    },
+    {
+      "role": "axle",
+      "step_sha256": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+      "source_report": "measure/rounds/r0002/thickness-axle.md",
+      "delivery_report": "measure/thickness-axle.md",
+      "sha256": "f2a38268676fbfe814f52728f4a7f9e0052b0bd0428ab6a9d85d82c2189cf7c6"
+    },
+    {
+      "role": "bezel",
+      "step_sha256": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+      "source_report": "measure/rounds/r0001/overhang-bezel.md",
+      "delivery_report": "measure/overhang-bezel.md",
+      "sha256": "ed57e0a9983a262284c7f16ee2aa267de9c7de9c17275fa90e54840910cafece"
+    },
+    {
+      "role": "bezel",
+      "step_sha256": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+      "source_report": "measure/rounds/r0001/thickness-bezel.md",
+      "delivery_report": "measure/thickness-bezel.md",
+      "sha256": "5bdc51adbf08cd66680b97e8cce0909dc5accf97c96fd060df2050cb9a7fbdc0"
+    },
+    {
+      "role": "carrier",
+      "step_sha256": "31a402dd70e04ded7f1fad56aa8fecb9f67db850e0d272ee0722e9fb6f405b80",
+      "source_report": "measure/rounds/r0002/overhang-carrier.md",
+      "delivery_report": "measure/overhang-carrier.md",
+      "sha256": "28076d6a82ec3a2ac00e947a1888df4eda97871688843be0108832262243ce1e"
+    },
+    {
+      "role": "carrier",
+      "step_sha256": "31a402dd70e04ded7f1fad56aa8fecb9f67db850e0d272ee0722e9fb6f405b80",
+      "source_report": "measure/rounds/r0002/thickness-carrier.md",
+      "delivery_report": "measure/thickness-carrier.md",
+      "sha256": "37c742fa9b3038e8ec4595e930cf5acd6acc4aa3aa69ecd3785c95af259af3e3"
+    },
+    {
+      "role": "coupon",
+      "step_sha256": "420ff78b344597b22616949fd8c8a306c6a52a61cf94f4634242b88f3aef139b",
+      "source_report": "measure/rounds/r0001/overhang-coupon.md",
+      "delivery_report": "measure/overhang-coupon.md",
+      "sha256": "c67bd93eb4fb9755ebd980ab440c649824257c1da1680389e7b91602d424727c"
+    },
+    {
+      "role": "coupon",
+      "step_sha256": "420ff78b344597b22616949fd8c8a306c6a52a61cf94f4634242b88f3aef139b",
+      "source_report": "measure/rounds/r0001/thickness-coupon.md",
+      "delivery_report": "measure/thickness-coupon.md",
+      "sha256": "a16fe95ca38f6d7f99455b7ada2aace384b36822aa24c0337f892156b53bc5c9"
+    },
+    {
+      "role": "foot_trim",
+      "step_sha256": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+      "source_report": "measure/rounds/r0001/overhang-foot_trim.md",
+      "delivery_report": "measure/overhang-foot_trim.md",
+      "sha256": "feafce5055fd4859cba09ef4d41bf229dc5fe1b44bbd5d63f001a6bcf6d3b3d0"
+    },
+    {
+      "role": "foot_trim",
+      "step_sha256": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+      "source_report": "measure/rounds/r0001/thickness-foot_trim.md",
+      "delivery_report": "measure/thickness-foot_trim.md",
+      "sha256": "cdf92e7ac741ded77c136d912e18fecb75998bde483482638916269821aa336e"
+    },
+    {
+      "role": "gear_16",
+      "step_sha256": "b5719d6bc598e925f3b7ba85904ee0eba3b1bd7bf7e31349f5483c1526ac3ce5",
+      "source_report": "measure/rounds/r0001/overhang-gear_16.md",
+      "delivery_report": "measure/overhang-gear_16.md",
+      "sha256": "7171723d4f9670eea33b53d55c1e6343aaf51247224000c4180aee93316c19ad"
+    },
+    {
+      "role": "gear_16",
+      "step_sha256": "b5719d6bc598e925f3b7ba85904ee0eba3b1bd7bf7e31349f5483c1526ac3ce5",
+      "source_report": "measure/rounds/r0001/thickness-gear_16.md",
+      "delivery_report": "measure/thickness-gear_16.md",
+      "sha256": "79c27c212e5537ca98c462e782b9cc67a246213bec0ff2b6ef400a09fc470cd8"
+    },
+    {
+      "role": "gear_18",
+      "step_sha256": "b530695efe1753b996944c855171784d8880a4322882d3f9bd9b249d0cc38640",
+      "source_report": "measure/rounds/r0001/overhang-gear_18.md",
+      "delivery_report": "measure/overhang-gear_18.md",
+      "sha256": "87e0afc8bbede9e2f7e1abdc3c2fcd98d0ff20e0feab47483654f65670ceeadf"
+    },
+    {
+      "role": "gear_18",
+      "step_sha256": "b530695efe1753b996944c855171784d8880a4322882d3f9bd9b249d0cc38640",
+      "source_report": "measure/rounds/r0001/thickness-gear_18.md",
+      "delivery_report": "measure/thickness-gear_18.md",
+      "sha256": "bb888bd4186d62e0554fef26bc71d419fd3b046ee8b5c6c63d464e1828deaab5"
+    },
+    {
+      "role": "gear_20",
+      "step_sha256": "f15fdbc63c910fa87d4f4195105b65e43ccae76f23356673e181681992f150f2",
+      "source_report": "measure/rounds/r0001/overhang-gear_20.md",
+      "delivery_report": "measure/overhang-gear_20.md",
+      "sha256": "57e2679c4a532a3179f10e775e9f2a91738245f57bf961788e3be26b672dfea4"
+    },
+    {
+      "role": "gear_20",
+      "step_sha256": "f15fdbc63c910fa87d4f4195105b65e43ccae76f23356673e181681992f150f2",
+      "source_report": "measure/rounds/r0001/thickness-gear_20.md",
+      "delivery_report": "measure/thickness-gear_20.md",
+      "sha256": "4793209c8e2dcd8d9f55e52b232c7d63ce35db7b1240033ee8af8b46b127197f"
+    },
+    {
+      "role": "gear_22",
+      "step_sha256": "3bc0f3d7b56c26681d3dfc4b671e5aaed98ec4e2c762f3ff948f51a406bd1644",
+      "source_report": "measure/rounds/r0001/overhang-gear_22.md",
+      "delivery_report": "measure/overhang-gear_22.md",
+      "sha256": "3ff69e6984a3ac8ad8d877b66c94486867d28be42e9efc0bc707d86e9636bd23"
+    },
+    {
+      "role": "gear_22",
+      "step_sha256": "3bc0f3d7b56c26681d3dfc4b671e5aaed98ec4e2c762f3ff948f51a406bd1644",
+      "source_report": "measure/rounds/r0001/thickness-gear_22.md",
+      "delivery_report": "measure/thickness-gear_22.md",
+      "sha256": "151f8c3e5fc7a0ee72e6e56982e85ffd90d925d0ccddf3ac44002aed1d38a672"
+    },
+    {
+      "role": "gear_24",
+      "step_sha256": "c9081f6b8f847a9a8ad9b0abbef5c984df2080d0e0ad16a1fe4b58a55598f790",
+      "source_report": "measure/rounds/r0001/overhang-gear_24.md",
+      "delivery_report": "measure/overhang-gear_24.md",
+      "sha256": "b73e09652c2a6d3ec9e406b912b2fc3d9a4865f94d67515c242060bb2678de0e"
+    },
+    {
+      "role": "gear_24",
+      "step_sha256": "c9081f6b8f847a9a8ad9b0abbef5c984df2080d0e0ad16a1fe4b58a55598f790",
+      "source_report": "measure/rounds/r0001/thickness-gear_24.md",
+      "delivery_report": "measure/thickness-gear_24.md",
+      "sha256": "d8b15d33f161da70eff8e769325a39e01c142bac5f1973ae46d7959f1b8b795e"
+    },
+    {
+      "role": "gear_26",
+      "step_sha256": "8b31f14c74c7958da148d8b489cbacd7bd7688d0b9a9d58b0c53be527dad786d",
+      "source_report": "measure/rounds/r0001/overhang-gear_26.md",
+      "delivery_report": "measure/overhang-gear_26.md",
+      "sha256": "4a368909ed9b861807170961db5ccb508a476e45985384b40f26300ce53c4473"
+    },
+    {
+      "role": "gear_26",
+      "step_sha256": "8b31f14c74c7958da148d8b489cbacd7bd7688d0b9a9d58b0c53be527dad786d",
+      "source_report": "measure/rounds/r0001/thickness-gear_26.md",
+      "delivery_report": "measure/thickness-gear_26.md",
+      "sha256": "b1b0a0e0e1de99120ac64c5b6cd3cb453f72cf74324d038174e2f90855e67938"
+    },
+    {
+      "role": "gear_cap",
+      "step_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "source_report": "measure/rounds/r0001/overhang-gear_cap.md",
+      "delivery_report": "measure/overhang-gear_cap.md",
+      "sha256": "09fa86ca1af0e9dc71bd0ef543b30c9bca51cf5d09235aab48d8b2d1d60282c7"
+    },
+    {
+      "role": "gear_cap",
+      "step_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "source_report": "measure/rounds/r0001/thickness-gear_cap.md",
+      "delivery_report": "measure/thickness-gear_cap.md",
+      "sha256": "e9001fc089e64c9fac0b2644f80434ed6a04e20accee16aba21ee6312a9254ca"
+    },
+    {
+      "role": "main_cap",
+      "step_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "source_report": "measure/rounds/r0001/overhang-main_cap.md",
+      "delivery_report": "measure/overhang-main_cap.md",
+      "sha256": "6850353d6509348f602cd49b32b4b16c7744083ef985888663434a168b2e892a"
+    },
+    {
+      "role": "main_cap",
+      "step_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "source_report": "measure/rounds/r0001/thickness-main_cap.md",
+      "delivery_report": "measure/thickness-main_cap.md",
+      "sha256": "880c4d21b5658755d2d5fc0d1bb729327a3780e0e5717a9cf94d24f1d46c2f36"
+    },
+    {
+      "role": "orange_disc",
+      "step_sha256": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+      "source_report": "measure/rounds/r0001/overhang-orange_disc.md",
+      "delivery_report": "measure/overhang-orange_disc.md",
+      "sha256": "b4f6f548037b478c287ddf87cb3350fccb262572b0a03966ca3493368753fef2"
+    },
+    {
+      "role": "orange_disc",
+      "step_sha256": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+      "source_report": "measure/rounds/r0001/thickness-orange_disc.md",
+      "delivery_report": "measure/thickness-orange_disc.md",
+      "sha256": "3925a50c25a29b9268eb87e9e42fa561fef947f3333dd22293a3d427d484dbe5"
+    },
+    {
+      "role": "pedestal",
+      "step_sha256": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+      "source_report": "measure/rounds/r0001/overhang-pedestal.md",
+      "delivery_report": "measure/overhang-pedestal.md",
+      "sha256": "864a93716c4182c24b09754040a0522b358b8fc98e2f9b3d1b0b125c93aaa212"
+    },
+    {
+      "role": "pedestal",
+      "step_sha256": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+      "source_report": "measure/rounds/r0001/thickness-pedestal.md",
+      "delivery_report": "measure/thickness-pedestal.md",
+      "sha256": "b55c623060215b14d8318138f3f7cee4a357eac851b8637e7fa372a6e9adb94f"
+    },
+    {
+      "role": "pedestal_lid",
+      "step_sha256": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+      "source_report": "measure/rounds/r0001/overhang-pedestal_lid.md",
+      "delivery_report": "measure/overhang-pedestal_lid.md",
+      "sha256": "b8e126223bb9b7c3fa0f3aab2a75c57fa066ddd56edd6c023769ef24d1251234"
+    },
+    {
+      "role": "pedestal_lid",
+      "step_sha256": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+      "source_report": "measure/rounds/r0001/thickness-pedestal_lid.md",
+      "delivery_report": "measure/thickness-pedestal_lid.md",
+      "sha256": "7331426438bed042f6657a497125e65473104a94045adec436331173d2e24087"
+    },
+    {
+      "role": "rim_trim",
+      "step_sha256": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+      "source_report": "measure/rounds/r0001/overhang-rim_trim.md",
+      "delivery_report": "measure/overhang-rim_trim.md",
+      "sha256": "9f5f83cf77e3930587fcd29376c83206d22e901bfe6e560fcf4aa5ac459b27b1"
+    },
+    {
+      "role": "rim_trim",
+      "step_sha256": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+      "source_report": "measure/rounds/r0001/thickness-rim_trim.md",
+      "delivery_report": "measure/thickness-rim_trim.md",
+      "sha256": "a573201da5104e0f1ffdd218987247e00f0acf3e4f68386b93fabc537f09f589"
+    },
+    {
+      "role": "stem",
+      "step_sha256": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+      "source_report": "measure/rounds/r0001/overhang-stem.md",
+      "delivery_report": "measure/overhang-stem.md",
+      "sha256": "62eba982cb26a5cc43b79c1eaba6cca4e994419ac3d0c3708b0286a4cc599a20"
+    },
+    {
+      "role": "stem",
+      "step_sha256": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+      "source_report": "measure/rounds/r0001/thickness-stem.md",
+      "delivery_report": "measure/thickness-stem.md",
+      "sha256": "458e2adc5fe68318f0d1fb958aada2090fe478bb1925d88fac1737b890921baa"
+    },
+    {
+      "role": "sun",
+      "step_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "source_report": "measure/rounds/r0001/overhang-sun.md",
+      "delivery_report": "measure/overhang-sun.md",
+      "sha256": "c51d57e40349be4f58459a1647591765e005f3de8df77e95f241d19dc3075c51"
+    },
+    {
+      "role": "sun",
+      "step_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "source_report": "measure/rounds/r0001/thickness-sun.md",
+      "delivery_report": "measure/thickness-sun.md",
+      "sha256": "720de60baf00acfbb85ab4102c5d9ae3a176dbc57618d6dbf1420d19ffc5da2f"
+    },
+    {
+      "role": "support_collar",
+      "step_sha256": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8",
+      "source_report": "measure/rounds/r0001/overhang-support_collar.md",
+      "delivery_report": "measure/overhang-support_collar.md",
+      "sha256": "33d875fa488a547587299ab2de15e07221f81ab37a521f7c489430b7267f8b65"
+    },
+    {
+      "role": "support_collar",
+      "step_sha256": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8",
+      "source_report": "measure/rounds/r0001/thickness-support_collar.md",
+      "delivery_report": "measure/thickness-support_collar.md",
+      "sha256": "0d6e349422f04201dff3d51653f3b8604ebcf471c5682e8857afa9ff5f7981cf"
+    }
+  ]
+}

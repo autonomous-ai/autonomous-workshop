@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": true,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_gear_14.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_14/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_14"
+ ],
+ "print": {
+  "gear_14": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_14/r0001/overhang-gear_14.log": "84a109f0c939613938cda7f7ef8017e7ba335b68f7056e322c61fc730ffab13f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_14/r0001/thickness-gear_14.log": "f1b08dd3785d8889032f6de0d573e3d36153806600542acbfd93928b02347080"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [
+  "gear_14"
+ ],
+ "round": 2,
+ "scope": "component:gear_14",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Fresh front/top/iso inspection: fourteen intact teeth surround five small pierced swept windows and an open circular bore. The webs are visibly broad; the extruded face is uniform and no separate body or obstruction appears. Digital visual inspection does not establish physical fit or print readiness.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_14/r0002/visual-packet.json",
+  "packet_sha256": "e186441bdbe1aa07993e8625a42b377a463e6d9e883601a9820e4c85fe4bd49a",
+  "status": "pass"
+ }
+}

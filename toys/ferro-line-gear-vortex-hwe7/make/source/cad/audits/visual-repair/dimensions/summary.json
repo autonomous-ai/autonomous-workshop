@@ -1,0 +1,1310 @@
+{
+  "status": "PASS",
+  "assembly_sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+  "native_results_sha256": "48a533ad55ef27347ef4860772bb9ff9d3b2e427f093ef31b45e2366c68f57e2",
+  "native_request_count": 81,
+  "checks": [
+    {
+      "id": "optical_gap",
+      "value": 4.0,
+      "target": 4,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "orange_thickness",
+      "value": 1.0,
+      "target": 1,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "sun_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "bezel_thickness",
+      "value": 4.0,
+      "target": 4,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_1_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_1_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_2_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_2_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_3_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_3_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_4_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_4_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_5_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_5_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_6_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_6_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_7_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_7_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_1_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_1_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_2_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_2_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_3_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_3_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_4_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_4_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_5_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_5_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_6_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_6_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_7_face_width",
+      "value": 4.9999999999999964,
+      "target": 5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_7_standoff",
+      "value": 0.3000000000000007,
+      "target": 0.3,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "bezel_radial_width",
+      "value": 6.0,
+      "target": 6,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "sun_diameter",
+      "value": 56.55,
+      "target": 56.55,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "stem_diameter",
+      "value": 12.0,
+      "target": 12,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "pedestal_diameter",
+      "value": 105.0,
+      "target": 105,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_1_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_1_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_1_outside_diameter",
+      "value": 23.55,
+      "target": 23.55,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_1_root_diameter",
+      "value": 17.25,
+      "target": 17.25,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_2_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_2_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_2_outside_diameter",
+      "value": 25.05,
+      "target": 25.05,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_2_root_diameter",
+      "value": 18.75,
+      "target": 18.75,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_3_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_3_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_3_outside_diameter",
+      "value": 29.55,
+      "target": 29.55,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_3_root_diameter",
+      "value": 23.25,
+      "target": 23.25,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_4_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_4_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_4_outside_diameter",
+      "value": 32.55,
+      "target": 32.55,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_4_root_diameter",
+      "value": 26.25,
+      "target": 26.25,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_5_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_5_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_5_outside_diameter",
+      "value": 35.55,
+      "target": 35.55,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_5_root_diameter",
+      "value": 29.25,
+      "target": 29.25,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_6_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_6_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_6_outside_diameter",
+      "value": 37.05,
+      "target": 37.05,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_6_root_diameter",
+      "value": 30.75,
+      "target": 30.75,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_7_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_7_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_7_outside_diameter",
+      "value": 41.55,
+      "target": 41.55,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_1_7_root_diameter",
+      "value": 35.25,
+      "target": 35.25,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_1_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_1_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_2_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_2_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_3_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_3_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_4_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_4_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_5_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_5_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_6_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_6_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_7_radial_clearance",
+      "value": 0.3500000000000001,
+      "target": 0.35,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "gear_2_7_coaxial_xz",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_1_mesh_1",
+      "value": 37.5,
+      "target": 37.5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_1_mesh_2",
+      "value": 21.749999933224657,
+      "target": 21.75,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_1_mesh_3",
+      "value": 24.749999497192018,
+      "target": 24.75,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_1_mesh_4",
+      "value": 28.500000343079186,
+      "target": 28.5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_1_mesh_5",
+      "value": 31.500000082805983,
+      "target": 31.5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_1_mesh_6",
+      "value": 33.749999593118254,
+      "target": 33.75,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_1_mesh_7",
+      "value": 36.75000040955624,
+      "target": 36.75,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_2_mesh_1",
+      "value": 37.5,
+      "target": 37.5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_2_mesh_2",
+      "value": 21.74999993322467,
+      "target": 21.75,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_2_mesh_3",
+      "value": 24.749999497192007,
+      "target": 24.75,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_2_mesh_4",
+      "value": 28.500000343079193,
+      "target": 28.5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_2_mesh_5",
+      "value": 31.500000082805983,
+      "target": 31.5,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_2_mesh_6",
+      "value": 33.749999593118254,
+      "target": 33.75,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "arm_2_mesh_7",
+      "value": 36.75000040955624,
+      "target": 36.75,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_1_x",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_1_z",
+      "value": 240.0,
+      "target": 240,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_1_y",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_2_x",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_2_z",
+      "value": 240.0,
+      "target": 240,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_2_y",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_3_x",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_3_z",
+      "value": 240.0,
+      "target": 240,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_3_y",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_4_x",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_4_z",
+      "value": 240.0,
+      "target": 240,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_4_y",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_5_x",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_5_z",
+      "value": 240.0,
+      "target": 240,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_5_y",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_6_x",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_6_z",
+      "value": 240.0,
+      "target": 240,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_6_y",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_7_x",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_7_z",
+      "value": 240.0,
+      "target": 240,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "half_turn_7_y",
+      "value": 0.0,
+      "target": 0,
+      "tolerance": 2e-05,
+      "pass": true
+    },
+    {
+      "id": "wheel_OD_with_play_in_range",
+      "value": 189.89823597683173,
+      "pass": true
+    },
+    {
+      "id": "height_with_play_in_range",
+      "value": 214.94911798841588,
+      "pass": true
+    },
+    {
+      "id": "pedestal_clearance_with_play_at_least8",
+      "value": 11.050882011584136,
+      "pass": true
+    },
+    {
+      "id": "nonneighbor_planet_clearance_at_least2",
+      "value": 3.1941619435047537,
+      "pass": true
+    }
+  ],
+  "continuous_envelope": {
+    "method": "Continuous circles enclosing measured planet tooth-tip cylinders and94mmcarrier radius;0.35mm main plus0.35mmplanet radial allowances. Not a motion sweep.",
+    "nominal_radius_mm": 94.24911798841586,
+    "nominal_diameter_mm": 188.49823597683172,
+    "diameter_with_play_mm": 189.89823597683173,
+    "height_with_play_mm": 214.94911798841588,
+    "pedestal_clearance_with_play_mm": 11.050882011584136,
+    "minimum_nonneighbor_planet_gap_with_play_mm": 3.1941619435047537,
+    "all_nonneighbor_pairs": [
+      {
+        "a": "gear_1_1",
+        "b": "gear_1_3",
+        "nominal_gap_mm": 18.218319969852637,
+        "gap_after_planet_play_mm": 17.518319969852637
+      },
+      {
+        "a": "gear_1_1",
+        "b": "gear_1_4",
+        "nominal_gap_mm": 39.49576948585511,
+        "gap_after_planet_play_mm": 38.795769485855104
+      },
+      {
+        "a": "gear_1_1",
+        "b": "gear_1_5",
+        "nominal_gap_mm": 57.654904344085175,
+        "gap_after_planet_play_mm": 56.95490434408517
+      },
+      {
+        "a": "gear_1_1",
+        "b": "gear_1_6",
+        "nominal_gap_mm": 71.4773047443222,
+        "gap_after_planet_play_mm": 70.7773047443222
+      },
+      {
+        "a": "gear_1_1",
+        "b": "gear_1_7",
+        "nominal_gap_mm": 78.17763550340834,
+        "gap_after_planet_play_mm": 77.47763550340834
+      },
+      {
+        "a": "gear_1_1",
+        "b": "gear_2_1",
+        "nominal_gap_mm": 51.45,
+        "gap_after_planet_play_mm": 50.75
+      },
+      {
+        "a": "gear_1_1",
+        "b": "gear_2_2",
+        "nominal_gap_mm": 52.21160988435201,
+        "gap_after_planet_play_mm": 51.511609884352005
+      },
+      {
+        "a": "gear_1_1",
+        "b": "gear_2_3",
+        "nominal_gap_mm": 45.680785146799465,
+        "gap_after_planet_play_mm": 44.98078514679946
+      },
+      {
+        "a": "gear_1_1",
+        "b": "gear_2_4",
+        "nominal_gap_mm": 33.71811374355118,
+        "gap_after_planet_play_mm": 33.018113743551176
+      },
+      {
+        "a": "gear_1_1",
+        "b": "gear_2_5",
+        "nominal_gap_mm": 17.426767041390207,
+        "gap_after_planet_play_mm": 16.726767041390207
+      },
+      {
+        "a": "gear_1_1",
+        "b": "gear_2_6",
+        "nominal_gap_mm": 3.8941619435047556,
+        "gap_after_planet_play_mm": 3.1941619435047555
+      },
+      {
+        "a": "gear_1_1",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 4.1757779247173445,
+        "gap_after_planet_play_mm": 3.4757779247173444
+      },
+      {
+        "a": "gear_1_2",
+        "b": "gear_1_4",
+        "nominal_gap_mm": 22.378839435870297,
+        "gap_after_planet_play_mm": 21.678839435870298
+      },
+      {
+        "a": "gear_1_2",
+        "b": "gear_1_5",
+        "nominal_gap_mm": 45.87048451317007,
+        "gap_after_planet_play_mm": 45.17048451317007
+      },
+      {
+        "a": "gear_1_2",
+        "b": "gear_1_6",
+        "nominal_gap_mm": 66.12887653714259,
+        "gap_after_planet_play_mm": 65.42887653714259
+      },
+      {
+        "a": "gear_1_2",
+        "b": "gear_1_7",
+        "nominal_gap_mm": 79.93730837886585,
+        "gap_after_planet_play_mm": 79.23730837886585
+      },
+      {
+        "a": "gear_1_2",
+        "b": "gear_2_1",
+        "nominal_gap_mm": 52.211609884352015,
+        "gap_after_planet_play_mm": 51.51160988435201
+      },
+      {
+        "a": "gear_1_2",
+        "b": "gear_2_2",
+        "nominal_gap_mm": 58.7901925593035,
+        "gap_after_planet_play_mm": 58.090192559303496
+      },
+      {
+        "a": "gear_1_2",
+        "b": "gear_2_3",
+        "nominal_gap_mm": 58.20447511636892,
+        "gap_after_planet_play_mm": 57.504475116368916
+      },
+      {
+        "a": "gear_1_2",
+        "b": "gear_2_4",
+        "nominal_gap_mm": 51.57752290945836,
+        "gap_after_planet_play_mm": 50.87752290945836
+      },
+      {
+        "a": "gear_1_2",
+        "b": "gear_2_5",
+        "nominal_gap_mm": 38.341519625817966,
+        "gap_after_planet_play_mm": 37.64151962581796
+      },
+      {
+        "a": "gear_1_2",
+        "b": "gear_2_6",
+        "nominal_gap_mm": 21.73461301559953,
+        "gap_after_planet_play_mm": 21.03461301559953
+      },
+      {
+        "a": "gear_1_2",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 5.284879987522224,
+        "gap_after_planet_play_mm": 4.584879987522224
+      },
+      {
+        "a": "gear_1_3",
+        "b": "gear_1_5",
+        "nominal_gap_mm": 25.08887063533988,
+        "gap_after_planet_play_mm": 24.38887063533988
+      },
+      {
+        "a": "gear_1_3",
+        "b": "gear_1_6",
+        "nominal_gap_mm": 51.15166389700928,
+        "gap_after_planet_play_mm": 50.451663897009276
+      },
+      {
+        "a": "gear_1_3",
+        "b": "gear_1_7",
+        "nominal_gap_mm": 72.06941720876506,
+        "gap_after_planet_play_mm": 71.36941720876506
+      },
+      {
+        "a": "gear_1_3",
+        "b": "gear_2_1",
+        "nominal_gap_mm": 45.680785146799465,
+        "gap_after_planet_play_mm": 44.98078514679946
+      },
+      {
+        "a": "gear_1_3",
+        "b": "gear_2_2",
+        "nominal_gap_mm": 58.20447511636892,
+        "gap_after_planet_play_mm": 57.504475116368916
+      },
+      {
+        "a": "gear_1_3",
+        "b": "gear_2_3",
+        "nominal_gap_mm": 64.35408719375543,
+        "gap_after_planet_play_mm": 63.65408719375543
+      },
+      {
+        "a": "gear_1_3",
+        "b": "gear_2_4",
+        "nominal_gap_mm": 64.66817814377396,
+        "gap_after_planet_play_mm": 63.968178143773955
+      },
+      {
+        "a": "gear_1_3",
+        "b": "gear_2_5",
+        "nominal_gap_mm": 57.370861712123606,
+        "gap_after_planet_play_mm": 56.6708617121236
+      },
+      {
+        "a": "gear_1_3",
+        "b": "gear_2_6",
+        "nominal_gap_mm": 44.10972634566052,
+        "gap_after_planet_play_mm": 43.409726345660516
+      },
+      {
+        "a": "gear_1_3",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 24.649184910123843,
+        "gap_after_planet_play_mm": 23.949184910123844
+      },
+      {
+        "a": "gear_1_4",
+        "b": "gear_1_6",
+        "nominal_gap_mm": 28.029265946013638,
+        "gap_after_planet_play_mm": 27.32926594601364
+      },
+      {
+        "a": "gear_1_4",
+        "b": "gear_1_7",
+        "nominal_gap_mm": 55.364662608488096,
+        "gap_after_planet_play_mm": 54.664662608488094
+      },
+      {
+        "a": "gear_1_4",
+        "b": "gear_2_1",
+        "nominal_gap_mm": 33.71811374355117,
+        "gap_after_planet_play_mm": 33.01811374355117
+      },
+      {
+        "a": "gear_1_4",
+        "b": "gear_2_2",
+        "nominal_gap_mm": 51.577522909458374,
+        "gap_after_planet_play_mm": 50.87752290945837
+      },
+      {
+        "a": "gear_1_4",
+        "b": "gear_2_3",
+        "nominal_gap_mm": 64.66817814377396,
+        "gap_after_planet_play_mm": 63.968178143773955
+      },
+      {
+        "a": "gear_1_4",
+        "b": "gear_2_4",
+        "nominal_gap_mm": 72.9510033210353,
+        "gap_after_planet_play_mm": 72.2510033210353
+      },
+      {
+        "a": "gear_1_4",
+        "b": "gear_2_5",
+        "nominal_gap_mm": 73.52319753999069,
+        "gap_after_planet_play_mm": 72.82319753999069
+      },
+      {
+        "a": "gear_1_4",
+        "b": "gear_2_6",
+        "nominal_gap_mm": 66.85173222131976,
+        "gap_after_planet_play_mm": 66.15173222131976
+      },
+      {
+        "a": "gear_1_4",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 51.3901097589955,
+        "gap_after_planet_play_mm": 50.6901097589955
+      },
+      {
+        "a": "gear_1_5",
+        "b": "gear_1_7",
+        "nominal_gap_mm": 29.505756221364024,
+        "gap_after_planet_play_mm": 28.805756221364025
+      },
+      {
+        "a": "gear_1_5",
+        "b": "gear_2_1",
+        "nominal_gap_mm": 17.426767041390207,
+        "gap_after_planet_play_mm": 16.726767041390207
+      },
+      {
+        "a": "gear_1_5",
+        "b": "gear_2_2",
+        "nominal_gap_mm": 38.34151962581798,
+        "gap_after_planet_play_mm": 37.64151962581798
+      },
+      {
+        "a": "gear_1_5",
+        "b": "gear_2_3",
+        "nominal_gap_mm": 57.370861712123606,
+        "gap_after_planet_play_mm": 56.6708617121236
+      },
+      {
+        "a": "gear_1_5",
+        "b": "gear_2_4",
+        "nominal_gap_mm": 73.52319753999072,
+        "gap_after_planet_play_mm": 72.82319753999072
+      },
+      {
+        "a": "gear_1_5",
+        "b": "gear_2_5",
+        "nominal_gap_mm": 82.7632451023307,
+        "gap_after_planet_play_mm": 82.0632451023307
+      },
+      {
+        "a": "gear_1_5",
+        "b": "gear_2_6",
+        "nominal_gap_mm": 84.42824848735222,
+        "gap_after_planet_play_mm": 83.72824848735222
+      },
+      {
+        "a": "gear_1_5",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 76.18586212170837,
+        "gap_after_planet_play_mm": 75.48586212170837
+      },
+      {
+        "a": "gear_1_6",
+        "b": "gear_2_1",
+        "nominal_gap_mm": 3.894161943504754,
+        "gap_after_planet_play_mm": 3.1941619435047537
+      },
+      {
+        "a": "gear_1_6",
+        "b": "gear_2_2",
+        "nominal_gap_mm": 21.734613015599543,
+        "gap_after_planet_play_mm": 21.034613015599543
+      },
+      {
+        "a": "gear_1_6",
+        "b": "gear_2_3",
+        "nominal_gap_mm": 44.10972634566052,
+        "gap_after_planet_play_mm": 43.409726345660516
+      },
+      {
+        "a": "gear_1_6",
+        "b": "gear_2_4",
+        "nominal_gap_mm": 66.85173222131976,
+        "gap_after_planet_play_mm": 66.15173222131976
+      },
+      {
+        "a": "gear_1_6",
+        "b": "gear_2_5",
+        "nominal_gap_mm": 84.42824848735222,
+        "gap_after_planet_play_mm": 83.72824848735222
+      },
+      {
+        "a": "gear_1_6",
+        "b": "gear_2_6",
+        "nominal_gap_mm": 94.97545566698307,
+        "gap_after_planet_play_mm": 94.27545566698306
+      },
+      {
+        "a": "gear_1_6",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 95.46531441838505,
+        "gap_after_planet_play_mm": 94.76531441838505
+      },
+      {
+        "a": "gear_1_7",
+        "b": "gear_2_1",
+        "nominal_gap_mm": 4.175777924717343,
+        "gap_after_planet_play_mm": 3.4757779247173426
+      },
+      {
+        "a": "gear_1_7",
+        "b": "gear_2_2",
+        "nominal_gap_mm": 5.284879987522229,
+        "gap_after_planet_play_mm": 4.584879987522229
+      },
+      {
+        "a": "gear_1_7",
+        "b": "gear_2_3",
+        "nominal_gap_mm": 24.649184910123843,
+        "gap_after_planet_play_mm": 23.949184910123844
+      },
+      {
+        "a": "gear_1_7",
+        "b": "gear_2_4",
+        "nominal_gap_mm": 51.3901097589955,
+        "gap_after_planet_play_mm": 50.6901097589955
+      },
+      {
+        "a": "gear_1_7",
+        "b": "gear_2_5",
+        "nominal_gap_mm": 76.18586212170837,
+        "gap_after_planet_play_mm": 75.48586212170837
+      },
+      {
+        "a": "gear_1_7",
+        "b": "gear_2_6",
+        "nominal_gap_mm": 95.46531441838505,
+        "gap_after_planet_play_mm": 94.76531441838505
+      },
+      {
+        "a": "gear_1_7",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 105.3982359768317,
+        "gap_after_planet_play_mm": 104.6982359768317
+      },
+      {
+        "a": "gear_2_1",
+        "b": "gear_2_3",
+        "nominal_gap_mm": 18.218319969852637,
+        "gap_after_planet_play_mm": 17.518319969852637
+      },
+      {
+        "a": "gear_2_1",
+        "b": "gear_2_4",
+        "nominal_gap_mm": 39.49576948585512,
+        "gap_after_planet_play_mm": 38.79576948585512
+      },
+      {
+        "a": "gear_2_1",
+        "b": "gear_2_5",
+        "nominal_gap_mm": 57.654904344085175,
+        "gap_after_planet_play_mm": 56.95490434408517
+      },
+      {
+        "a": "gear_2_1",
+        "b": "gear_2_6",
+        "nominal_gap_mm": 71.4773047443222,
+        "gap_after_planet_play_mm": 70.7773047443222
+      },
+      {
+        "a": "gear_2_1",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 78.17763550340834,
+        "gap_after_planet_play_mm": 77.47763550340834
+      },
+      {
+        "a": "gear_2_2",
+        "b": "gear_2_4",
+        "nominal_gap_mm": 22.378839435870297,
+        "gap_after_planet_play_mm": 21.678839435870298
+      },
+      {
+        "a": "gear_2_2",
+        "b": "gear_2_5",
+        "nominal_gap_mm": 45.87048451317007,
+        "gap_after_planet_play_mm": 45.17048451317007
+      },
+      {
+        "a": "gear_2_2",
+        "b": "gear_2_6",
+        "nominal_gap_mm": 66.12887653714259,
+        "gap_after_planet_play_mm": 65.42887653714259
+      },
+      {
+        "a": "gear_2_2",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 79.93730837886585,
+        "gap_after_planet_play_mm": 79.23730837886585
+      },
+      {
+        "a": "gear_2_3",
+        "b": "gear_2_5",
+        "nominal_gap_mm": 25.08887063533988,
+        "gap_after_planet_play_mm": 24.38887063533988
+      },
+      {
+        "a": "gear_2_3",
+        "b": "gear_2_6",
+        "nominal_gap_mm": 51.15166389700928,
+        "gap_after_planet_play_mm": 50.451663897009276
+      },
+      {
+        "a": "gear_2_3",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 72.06941720876506,
+        "gap_after_planet_play_mm": 71.36941720876506
+      },
+      {
+        "a": "gear_2_4",
+        "b": "gear_2_6",
+        "nominal_gap_mm": 28.029265946013645,
+        "gap_after_planet_play_mm": 27.329265946013646
+      },
+      {
+        "a": "gear_2_4",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 55.364662608488125,
+        "gap_after_planet_play_mm": 54.66466260848812
+      },
+      {
+        "a": "gear_2_5",
+        "b": "gear_2_7",
+        "nominal_gap_mm": 29.505756221364024,
+        "gap_after_planet_play_mm": 28.805756221364025
+      }
+    ],
+    "stem_clearance": "Not graded here: reconcile actual moving-part axial extrema and stationary stem radius separately."
+  },
+  "limits": [
+    "No motion/retention or physical behavior claim.",
+    "Tooth root/module/radii facts do not by themselves prove involute contact or backlash.",
+    "Native table coordinates are rounded;2e-5mm arithmetic tolerance is explicit."
+  ]
+}

@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_support_collar.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/support_collar/r0002/thickness-support_collar.md
+(7.1s, exit 0)
+--- stdout
+part_support_collar.step.py: 2.76 cm3 solid, grid 0.133 mm (192x192x95), 115686 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 115686 samples)
+  PASS  thickness distribution         median 3.47 mm, p95 12.00 mm, max 12.00 mm
+  WARN  hollowable at 1.20 mm wall     0.60 of 2.76 cm3 (22%) in 1 pocket(s)
+  PASS  filament that would save       0.09 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/support_collar/r0002/thickness-support_collar.md
+
+--- stderr

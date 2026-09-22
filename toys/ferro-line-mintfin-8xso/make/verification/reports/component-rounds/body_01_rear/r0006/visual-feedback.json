@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Measured thin region at outgoing socket mouth lip",
+      "evidence": "Top and iso show the sharp mouth edge;1.2mm wall region20.9mm2 at print(-1.0,-3.9,7.3), band1.53mm, minimum0.20mm.",
+      "part": "body_01_rear",
+      "repair": "Round the internal mouth edge locally while retaining minimum throat and2mm radial socket wall; inspect feasibility before a new gate."
+    }
+  ],
+  "observation": "Front, top and iso inspected after J00 lip change. Crown ramp, barrel flank, ankle corners and four socket fingers remain visually coherent. The outgoing mouth retains a sharp internal lip, and the explicit1.2mm measurement now groups a20.9mm2 thin region at that lip. Default wall and overhang pass; extra Wish wall fails.",
+  "packet_sha256": "a719ab944e181a11049d81e3e233dfcf3b0a39375850e094734d26d6ee979b06",
+  "status": "fail"
+}

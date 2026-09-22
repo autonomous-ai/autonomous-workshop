@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Top and isometric views now show the front thread clipped to the same D-flat as the shaft. The bore remains open, the shoulder is continuous and both thread sections remain present. The views show no new disconnected or misplaced geometry; the repaired insertion path still needs its separate sweep.",
+  "packet_sha256": "3ec84a4880a59806366f22bddc7996e7fb049b3303edc5350502900121f3dcdc",
+  "status": "pass"
+}

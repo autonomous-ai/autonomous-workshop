@@ -1,0 +1,62 @@
+{
+ "build": {
+  "rim_trim": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "rim_trim"
+ ],
+ "check_motion": true,
+ "checked": [
+  "rim_trim"
+ ],
+ "checks_ok": true,
+ "entry": "part_rim_trim.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/rim_trim/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "rim_trim"
+ ],
+ "print": {
+  "rim_trim": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/rim_trim/r0002/overhang-rim_trim.log": "a30161bfc6c3a7e4045f895c56e3ffcacf1334c8a9132ce1b435fb5ade741fa3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/rim_trim/r0002/thickness-rim_trim.log": "fb4968712b40229dc24c724ec1db00ff8c5452643b8459dc5851373c15341c4c"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:rim_trim",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front view shows a thin level strip; top and isometric views show a continuous narrow brass ring with an open center and no breaks.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/rim_trim/r0002/visual-packet.json",
+  "packet_sha256": "517446310260f1cef7c5fcf4f0234d8775db73d1c5f1363963d9eb598352e52b",
+  "status": "pass"
+ }
+}

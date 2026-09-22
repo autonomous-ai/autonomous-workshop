@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_face_angry.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-face_angry.md
+(7.7s, exit 0)
+--- stdout
+part_face_angry.step.py: 1.35 cm3 solid, grid 0.133 mm (155x220x37), 75676 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 75676 samples)
+  PASS  thickness distribution         median 2.40 mm, p95 23.93 mm, max 31.40 mm
+  WARN  hollowable at 1.20 mm wall     0.06 of 1.35 cm3 (4%) in 2 pocket(s), 1 too small to shell
+  PASS  filament that would save       0.01 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-face_angry.md
+
+--- stderr

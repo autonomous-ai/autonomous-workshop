@@ -215,6 +215,37 @@ def build_assembly(entry: Path):
     return shape
 
 
+_ANYTREE_PARENT = "_NodeMixin__parent"
+
+
+def _placed_without_ancestry(node, pose):
+    """Place one node's geometry without copying the tree that owns it.
+
+    `Shape.located` deep-copies, and build123d's `__deepcopy__` carries every
+    `__dict__` member except `topo_parent` -- including anytree's parent
+    backlink. Copying one leaf therefore climbs into the root compound and back
+    down through every sibling, so indexing an N-node assembly costs N
+    whole-tree copies and every one of them stays reachable in `parts`. A
+    40-occurrence product ran the motion presentation out of memory here.
+
+    Only the parent link is hidden, and only for the duration of the copy: a
+    named subassembly still copies with its own children, so the gate sees the
+    same solids, and the source assembly is handed back exactly as it was
+    found. The write goes through `__dict__` deliberately -- anytree's `parent`
+    setter runs detach/attach hooks and would edit the real tree.
+    """
+
+    missing = object()
+    saved = node.__dict__.get(_ANYTREE_PARENT, missing)
+    if saved is missing or saved is None:
+        return node.located(pose)
+    node.__dict__[_ANYTREE_PARENT] = None
+    try:
+        return node.located(pose)
+    finally:
+        node.__dict__[_ANYTREE_PARENT] = saved
+
+
 def index_parts(shape) -> dict[str, object]:
     """Index placed nodes and leaves using their exact assembly ancestry.
 
@@ -230,7 +261,7 @@ def index_parts(shape) -> dict[str, object]:
         label = getattr(node, "label", "") or ""
         path = trail + ([label] if label else [])
         pose = parent_pose * node.location
-        placed = node.located(pose)
+        placed = _placed_without_ancestry(node, pose)
         colour = getattr(node, "color", None)
         if colour is None:
             colour = inherited_colour

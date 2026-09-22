@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_07_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_07_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_07_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_07_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_07_front"
+ ],
+ "print": {
+  "body_07_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0001/overhang-body_07_front.log": "482c38678a79c950e1d1b5ac85585d1ef8875b9e27cd97249135e81744f05907",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0001/thickness-body_07_front.log": "610d21a6db36e04ab85caac312c546f2ae2669bcf3ad5912fa63d19c95908291"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 2.9% of surface below (1368 of 50539 samples); thinnes"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:body_07_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Incoming clearance and seam relief leave broad thin stock in the small barrel half.",
+    "evidence": "Iso shows the deep circular recess nearly reaching the outer rim; top shows a small opening behind the ball. Explicit1.2 mm test reports two WALL regions:13.0 mm2 at(1.2,1.9,1.4),band2.57 mm;9.3 mm2 at(5.9,-6.5,2.3),band1.21 mm. Minimum0.20 mm; default0.8 mm wall gate also fails.",
+    "part": "body_07_front",
+    "repair": "Rework the small-half relief/floor or increase its local stock while preserving parent socket clearance and open support-free seam; rerun both wall gates."
+   }
+  ],
+  "observation": "Front, top and iso inspected once. Ball and outer ellipse remain connected, but the deep root clearance approaches the rim and the seam relief opens a small hole visible behind the ball. Measured broad thin walls require repair.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0001/visual-packet.json",
+  "packet_sha256": "f9e15ee6fdeb0e206ed6d1b1e483d32f25c1f13cc189a6ab7af829777dc0f0d8",
+  "status": "fail"
+ }
+}

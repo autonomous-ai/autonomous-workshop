@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin toe fins and web ends after open slot conversion",
+      "evidence": "Iso at the toe edge; wish thickness reports25.2,14.4 and9.9mm2 wall regions",
+      "part": "leg_left",
+      "repair": "Redesign the claw seats to avoid tapered residual toe membranes while retaining the paw proportions and three claws."
+    }
+  ],
+  "observation": "The ankle buttress now removes the unsupported ledge. Top/iso show the rectangular toe slots leaving sharp thin outer fins and thin curved web ends; the wall gate confirms three remaining regions.",
+  "packet_sha256": "2df46ec597ebfa97d980523a6bb32f3bfe92aff0cad4428c9c9e630b3ca90620",
+  "status": "fail"
+}

@@ -1,0 +1,64 @@
+{
+ "build": {
+  "spike_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "spike_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "spike_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_spike_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike_front/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "spike_front"
+ ],
+ "print": {
+  "spike_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike_front/r0001/overhang-spike_front.log": "f4ef2762affdef0745d3509bb4733b97afca18938d793eb860909dabe05d7ef8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike_front/r0001/thickness-spike_front.log": "619701fe0270a1521feb9608f40bfe96aefd27a43584d347058b0754769918c1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 2.9% of surface below (308 of 11098 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:spike_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The narrow oval base and strongly swept rearward tip are visible in top and iso, with a centered blunt end in front. The bottom edge has no vertical land and is the location of the measured thin taper failure. Add a 1.2 mm straight foot while retaining the existing upper stations and overall height.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/spike_front/r0001/visual-packet.json",
+  "packet_sha256": "adf24c2d0c752f2dd3057b82f3bbe634b467a43874380b683595e70d8f8db585",
+  "status": "pass"
+ }
+}

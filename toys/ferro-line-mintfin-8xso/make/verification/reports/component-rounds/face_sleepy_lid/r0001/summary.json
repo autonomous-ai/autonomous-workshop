@@ -1,0 +1,71 @@
+{
+ "build": {
+  "face_sleepy_lid": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_sleepy_lid"
+ ],
+ "check_motion": true,
+ "checked": [
+  "face_sleepy_lid"
+ ],
+ "checks_ok": false,
+ "entry": "part_face_sleepy_lid.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_lid/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_sleepy_lid"
+ ],
+ "print": {
+  "face_sleepy_lid": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_lid/r0001/overhang-face_sleepy_lid.log": "bf2172fdf8c8c6c2a03fe835aad6d811d0bc41b1b658825e8d916aa18137ca2d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_lid/r0001/thickness-face_sleepy_lid.log": "8ac75d7755d13c01dfcbbdc723c083c240aa76129d4c30db69b3fab2a7a8712a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 3.9% of surface below (103 of 3419 samples); thinnest "
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:face_sleepy_lid",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Acute ribbon end corners too thin",
+    "evidence": "Top/iso pointed ends at x\u00b17; thickness0.13/0.20mm in1.7/1.3mm2 regions, combined3.87% over2% allowance.",
+    "part": "face_sleepy_lid",
+    "repair": "Round the four vertical end edges while keeping the continuous closed-lid curve and flat attachment face."
+   }
+  ],
+  "observation": "All three views inspected. Curved closed-lid ribbon is coherent and flat, but its two outer ends finish in acute corners. Default wall gate identifies two thin end spots above its small-feature allowance.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_sleepy_lid/r0001/visual-packet.json",
+  "packet_sha256": "c7eb09b3f5416b0c4b1d0b589517a6ed8d26eb702560842a3b25b4d2fa7f662b",
+  "status": "fail"
+ }
+}

@@ -1,0 +1,13 @@
+{
+  "packet_sha256": "191615dab0dacbd43a80878c7adb09365fc50755e1c2523c426858c08d74ee33",
+  "status": "fail",
+  "observation": "Inspected front/top/iso. Tapered skirt now supports the cheek perimeter and default wall/support checks pass. The upper forehead joins the concave cheek rim in a thin taper; explicit1.2mm check fails12.5mm2 at that transition.",
+  "findings": [
+    {
+      "part": "head_front",
+      "defect": "Thin residual original-loft rim above the intended1.4mm indexing lip",
+      "evidence": "Top/iso central forehead crescent;1.2mm wall report at print(11.2,17.5,22.2),beyond face-normal1.4 lip height.",
+      "repair": "Trim original headstock at the intended face-normal1.4 rim plane before adding the constant-offset lip."
+    }
+  ]
+}

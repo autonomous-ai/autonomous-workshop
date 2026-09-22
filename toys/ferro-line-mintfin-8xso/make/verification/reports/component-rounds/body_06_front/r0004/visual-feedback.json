@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin parent-clearance crescent",
+      "evidence": "Top/iso stepped clearance;1.2mm check reports3.52mm band at print(1.1,4.1,.5)",
+      "part": "body_06_front",
+      "repair": "Use a constant1.2mm front land and projected clearance; make the small outgoing cavity opening straight through the land, preserving the sphere and heel."
+    }
+  ],
+  "observation": "Front shows the attached ball and coherent oval barrel. Top/iso show a feathered stepped crescent behind the ball and the small outgoing cavity opening; measured thin wall remains42.0mm2.",
+  "packet_sha256": "c5721cd9f1cd44a5ee925bfde81049c631e29593fc3a712dc105963794ccd922",
+  "status": "fail"
+}

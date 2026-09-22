@@ -1,0 +1,22 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_axle.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0001/overhang-axle.md
+(9.0s, exit 1)
+--- stdout
+
+--- stderr
+Traceback (most recent call last):
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang", line 379, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang", line 207, in main
+    verts, faces = weld(entry_mesh(entry, entry_role(entry)))
+                        ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/printlib.py", line 238, in entry_mesh
+    return tessellate(build_entry(path, namespace), deviation=deviation,
+                      angular=angular)
+  File "<WORKSHOP_RUN>/.agents/skills/cad/scripts/printlib.py", line 225, in tessellate
+    vectors, triangles = shape.tessellate(deviation, angular)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "<HOME>/.local/share/autonomous-workshop-python/lib/python3.13/site-packages/build123d/topology/shape_core.py", line 2280, in tessellate
+    poly.Node(i).Transformed(trsf) for i in range(1, poly.NbNodes() + 1)
+                                                     ^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'NbNodes'

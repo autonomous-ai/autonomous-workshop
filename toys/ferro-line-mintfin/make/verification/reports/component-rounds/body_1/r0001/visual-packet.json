@@ -1,0 +1,33 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_1/r0001/visual/front.png": "8f8c903e7b211539c9513f9472628fa2a3285d5bc3b6e0e6d37f52c650e25709",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_1/r0001/visual/iso.png": "4b3fc0f7b2b4594787a61a3692bf1cdd65b7182cc2c1cd91f8dc8a23ab32d227",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_1/r0001/visual/top.png": "a6f1552b9dfb4d37047c41023f0419676522e7303937a26e9921aa2203985062"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "head_faces.py": "f1c0848c7640f7c43e6e8003bfcc2cc757ca45558cb5e320b22011cda1cb1101",
+    "mintfin_lib.py": "b958f1a7d90212736b5410022a736fdedeb576cb2b1274915a79d769ef085c59",
+    "params.py": "515bef76a6b4b02e14308dc45f54d395a7b823aa4a43379cecd096023522fe41",
+    "part_body_1.step": "10599f678a803a15dd280e40dd035b4db63beab2241722a47e355b0ca0ac0b3a",
+    "part_body_1.step.py": "5554a97b3604d5ecd585ca102a4ec1a4b024245b3d146057ea8dfccbe6a26617",
+    "part_body_2.step.py": "66807d164f3aa867927d52f0969d85fc1c960885433b874a65dda460857b814f",
+    "part_body_3.step.py": "10dc324555c0842386c221738a5bceb87a1b2c15f8c81061259ce31cee2e701c",
+    "part_body_4.step.py": "8019ce711936aa59bf5dfcc7db6f6eda98648b1a39c772d68deb9778051cec38",
+    "part_body_5.step.py": "cef5e93578b3943d255e98a12e395ae626cd90cfda6d25a44fe2e14f63e49635",
+    "part_body_6.step.py": "91fb9bdc94c098620446dee0389216c978e2bc50bfa3412c756d24f974c0d8f5",
+    "part_body_7.step.py": "df8e93fc5d2a0b4f694522954902c28c3694d4bc0a13dce2f908d535e6831a4b",
+    "part_coupon_pin.step": "5e26bdbe841ab20c14e3f367c18d87041da4b22e0e478cafbe75c325041ab4b7",
+    "part_coupon_pin.step.py": "a2672f8d9ad797bb9b77aa1784462d754be3c339d8071b3a76a8326eef8fa100",
+    "part_coupon_receiver_35.step.py": "c227914e629f14c583bee5c82ad8be6d269330385097aca8bd19fb072ed2063a",
+    "part_coupon_receiver_45.step": "9a2f746b3b4c2efb1dd7824b915f4e6f0773c2864cb1bf2873560c9236dcb303",
+    "part_coupon_receiver_45.step.py": "dd616af64a74751c4818c4c6593ac4122c1bd66b220e5ec84046488e9cd3c894",
+    "part_coupon_receiver_55.step.py": "95563f94699a0a24548ffab18e49472c8277e4b90a1ba0e351f184c18e2c0b8a",
+    "part_face_angry.step.py": "88abe5658660593283ee8b589b8405955bb4c7c498cc0c36e61b38fb8411c560",
+    "part_face_happy.step.py": "9a4d7e7f8c5ed6e7f1b0fba6dce049ba1f3a97e567519243f942e362e2599279",
+    "part_face_sleepy.step.py": "2b327d0b49f6c11754a0f7108fd76940b405e96803dd54f41b80980231f7fcd8",
+    "part_head.step.py": "a43c189bae6329fd66affb30d06232bfa2ecaa3f7e836639a4b074bac6e847e3",
+    "part_tail.step.py": "f47143b19fbca96e8693ccd23f4db57b7a51c8166827296d97da56cb528c132d"
+  }
+}

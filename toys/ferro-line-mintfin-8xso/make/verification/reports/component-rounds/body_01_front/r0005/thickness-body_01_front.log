@@ -1,0 +1,14 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/part_body_01_front.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0005/thickness-body_01_front.md
+(12.2s, exit 0)
+--- stdout
+part_body_01_front.step.py: 2.11 cm3 solid, grid 0.133 mm (436x241x82), 170790 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (1 of 170790 samples); thinnest 0.60 mm at (-12.8, -19.9, 0.0) in 1 region(s); no region is a wall, 1 taper(s) at feature edges (0.00% of surface, budget 2%)
+  PASS  thickness distribution         median 1.20 mm, p95 10.73 mm, max 57.47 mm
+  WARN  hollowable at 1.20 mm wall     0.22 of 2.11 cm3 (11%) in 1 pocket(s)
+  PASS  filament that would save       0.03 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.60 mm at (-12.8, -19.9, 0.0)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.19 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0005/thickness-body_01_front.md
+
+--- stderr

@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_03_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_03_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_03_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_03_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_03_front"
+ ],
+ "print": {
+  "body_03_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0003/overhang-body_03_front.log": "6dc81e4103051f3d26a2b944144fd3bbc830508d7d48ef979070d453d08a19bc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0003/thickness-body_03_front.log": "e381e1cfbd3d7712e7e27964112fbd9d2be285c6041da12f57a3a756a680123c"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.7% of surface below (1475 of 211051 samples); thinne"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:body_03_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Feathered clearance margin lacks the specified wall",
+    "evidence": "Top/iso crescent behind ball; wish-thickness-body_03_front reports 4.04 mm wide wall band at print(-2.4,13.4,0.3)",
+    "part": "body_03_front",
+    "repair": "Replace the feathered front half with a 1.2mm axial land and projected clearance, retaining the ball and printable rear heel."
+   }
+  ],
+  "observation": "The spherical ball and barrel perimeter are coherent, but top and iso show the parent clearance feathering into a narrow stepped crescent behind the ball. Wall measurement confirms a 45.6 mm2 thin region there.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0003/visual-packet.json",
+  "packet_sha256": "d45b927a7e874611b70717273ae9fe68cc085e0f4ca7ceb554436cf544d55946",
+  "status": "fail"
+ }
+}

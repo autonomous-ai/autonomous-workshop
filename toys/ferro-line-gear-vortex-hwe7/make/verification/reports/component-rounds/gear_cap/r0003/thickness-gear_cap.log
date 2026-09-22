@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_gear_cap.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0003/thickness-gear_cap.md
+(5.9s, exit 0)
+--- stdout
+part_gear_cap.step.py: 0.13 cm3 solid, grid 0.133 mm (59x59x41), 10910 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 10910 samples)
+  PASS  thickness distribution         median 1.73 mm, p95 4.80 mm, max 4.80 mm
+  PASS  hollowable at 1.20 mm wall     0.00 of 0.13 cm3 (0%) in 0 pocket(s)
+  PASS  filament that would save       0.00 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0003/thickness-gear_cap.md
+
+--- stderr
