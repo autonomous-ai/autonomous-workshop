@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "status": "prepared_not_executed",
+  "sightline": {
+    "master": "artifacts/make/r0001/product/gear_vortex/gear_vortex.step",
+    "sha256": "b09ea2ab604b26262bea462a682304e0816cd87bb7c3a5fd4807b8d114d19997",
+    "entry": "sightline.step.py",
+    "radius_mm": 6.99,
+    "diameter_mm": 13.98,
+    "nominal_bore_mm": 14,
+    "radial_skin_not_tested_mm": 0.01,
+    "axis_point": [
+      0,
+      0,
+      120
+    ],
+    "axis_direction": [
+      0,
+      1,
+      0
+    ],
+    "y_extent_mm": [
+      -200,
+      200
+    ],
+    "all_product_leaf_count": 40,
+    "inspection_tolerance_mm3": 1e-06,
+    "intended_pair": [
+      "all_40_product_solids",
+      "sightline_radius_6_99"
+    ],
+    "scope": "Supplemental single obstruction pair, not final per-part assembly interference"
+  },
+  "webs": [
+    {
+      "teeth": 16,
+      "master": "part_gear_16.step",
+      "master_sha256": "b5719d6bc598e925f3b7ba85904ee0eba3b1bd7bf7e31349f5483c1526ac3ce5",
+      "entry": "web_16.step.py",
+      "exported_void_step": "web_16.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 18,
+      "master": "part_gear_18.step",
+      "master_sha256": "b530695efe1753b996944c855171784d8880a4322882d3f9bd9b249d0cc38640",
+      "entry": "web_18.step.py",
+      "exported_void_step": "web_18.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 20,
+      "master": "part_gear_20.step",
+      "master_sha256": "f15fdbc63c910fa87d4f4195105b65e43ccae76f23356673e181681992f150f2",
+      "entry": "web_20.step.py",
+      "exported_void_step": "web_20.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 22,
+      "master": "part_gear_22.step",
+      "master_sha256": "3bc0f3d7b56c26681d3dfc4b671e5aaed98ec4e2c762f3ff948f51a406bd1644",
+      "entry": "web_22.step.py",
+      "exported_void_step": "web_22.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 24,
+      "master": "part_gear_24.step",
+      "master_sha256": "c9081f6b8f847a9a8ad9b0abbef5c984df2080d0e0ad16a1fe4b58a55598f790",
+      "entry": "web_24.step.py",
+      "exported_void_step": "web_24.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 26,
+      "master": "part_gear_26.step",
+      "master_sha256": "8b31f14c74c7958da148d8b489cbacd7bd7688d0b9a9d58b0c53be527dad786d",
+      "entry": "web_26.step.py",
+      "exported_void_step": "web_26.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "teeth": 36,
+      "master": "part_sun.step",
+      "master_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "entry": "web_36.step.py",
+      "exported_void_step": "web_36.step",
+      "exported_void_count": 5,
+      "cyclic_adjacent_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    }
+  ],
+  "web_requested_minimum_mm": 2.4,
+  "web_query": "build123d Shape.distance_to_with_closest_points on all five cyclic adjacent pairs from each exported five-void STEP; 35 raw measurements, no grading",
+  "geometry_execution_performed": false,
+  "product_edited": false,
+  "web_coverage": "All five actual windows per form, ordered by imported solid centroid angle; all five cyclic adjacent pairs including last-to-first measured directly. No assumption of equal web widths or rotational congruence is needed.",
+  "web_measurement_count": 35
+}

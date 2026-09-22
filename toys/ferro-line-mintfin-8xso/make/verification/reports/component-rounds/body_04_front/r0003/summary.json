@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_04_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_04_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_04_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_04_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_04_front"
+ ],
+ "print": {
+  "body_04_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0003/overhang-body_04_front.log": "92c658687b71778f2d1e3dfc35a5127b350f639969a9022d978793a08cf9291e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0003/thickness-body_04_front.log": "036ad872235c98139d4264f867c4f9d901609c170fadcd1520f28a2b61679e74"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 1.1% of surface below (1807 of 182576 samples); thinne"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:body_04_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin crescent around parent clearance",
+    "evidence": "Visible stepped margin behind ball; measured wall49.6mm2 with4.15mm band at print(2.1,12.1,.3)",
+    "part": "body_04_front",
+    "repair": "Use a projected clearance through a constant1.2mm front land and preserve the ball/heel."
+   }
+  ],
+  "observation": "Top and iso show a stepped crescent feathering into the seam stock behind the centered ball. Outer silhouette and ankle reliefs are coherent; wall check identifies the clearance margin as too thin.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0003/visual-packet.json",
+  "packet_sha256": "2aa29f0e2f443f999c14619b7ee1ad7edb0f272ca31fd01df2541f8f450937fc",
+  "status": "fail"
+ }
+}

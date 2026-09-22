@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Missing black finish",
+      "evidence": "Top and iso show a dark blue-gray surface.",
+      "part": "support_collar",
+      "repair": "Assign shared black sRGB color."
+    }
+  ],
+  "observation": "The D-shaped central bore and lower rectangular saddle socket are open and coherent. The surface is unassigned blue-gray.",
+  "packet_sha256": "2c488cd6c493820f18aa173d0ae3669289435a365b6482476bca252ac9886013",
+  "status": "fail"
+}

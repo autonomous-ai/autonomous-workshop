@@ -1,0 +1,233 @@
+{
+  "status": "Completed diagnostic and unapplied assembly-placement candidate",
+  "exact_failure": {
+    "name": "mintfin.figure.active_face",
+    "solid_count": 6,
+    "input_volumes": [
+      4757.46128752807,
+      2.0106192982974673,
+      2.0106192982974673,
+      21.45826926854746,
+      21.45826926854746,
+      14.476458947741769
+    ],
+    "sum": 4818.875523609501,
+    "maximum": 4757.46128752807,
+    "tolerance": 0.04818875523609502,
+    "union_solid_count": 1,
+    "union_each_volume": [
+      4820.908521982122
+    ],
+    "union_volume": 4820.908521982122,
+    "status": "error",
+    "error": "ValueError: motion group union has inconsistent volume",
+    "seconds": 0.5542920595034957
+  },
+  "other_groups": [
+    {
+      "name": "mintfin.figure.head",
+      "status": "consistent",
+      "sum": 108185.09104518507,
+      "union_volume": 107799.7017487484
+    },
+    {
+      "name": "mintfin.figure.chain_01",
+      "status": "consistent",
+      "sum": 73028.66016127559,
+      "union_volume": 73021.97319398224
+    }
+  ],
+  "cause_evidence": {
+    "finding": "Coincident plate-front and insert-bottom contact faces trigger nonconservative native Fuse volume on this spline-bounded plate. This is a reproducible Boolean result; source pair common volumes are0. No specific single insert alone explains it: each plate/insert pair changes its union volume inconsistently, with both positive and negative errors.",
+    "evidence": "face-pairs.json",
+    "example_positive_error": 8.51364899881537,
+    "example_negative_error": -6.129304111544116,
+    "interpretation": "Numerical/topological coincidence is the supported diagnosis; no gate tolerance or tool code is changed and no baseline motion PASS is inferred."
+  },
+  "proposal": {
+    "patch": "candidate.patch",
+    "changed_files": {
+      "assemblies/product.py": {
+        "base_sha256": "4fc43dfd98a18d6f4daa14da7490feef3b4254574a2ea4271453a7aedf499d2f",
+        "candidate_sha256": "d5032a53a7f27b21562df52967848ab0c4b18fba247d5b002356b7295cb4309c"
+      },
+      "params/assembly.py": {
+        "base_sha256": "a588be66876bc9084cc7b1431861356e43dd22781636ed85d390b4e229547f1f",
+        "candidate_sha256": "dfcaad5a22762f1288a598326ff72bfa0f490a3bb099865fe22cb5366adccac4"
+      }
+    },
+    "film_thickness_mm": 0.05,
+    "applies_to": "Both active and spare face expressions; all insert occurrences except plate receive the same local normal translation. Separate printable shapes and physical occurrence hierarchy preserved.",
+    "physical_interface": "Thin cured adhesive film occupies the measured0.05mm gap over each plate-facing footprint. Glue is a required assembly consumable. The printed parts are not claimed to bond across empty air.",
+    "unchanged": "All separately printed component geometry, magnet datums, face plate location, and nested eye/highlight and mouth/tongue relative placement."
+  },
+  "candidate_exact_tool_result": {
+    "adhesive_film_mm": 0.05,
+    "method": "Uniform local+normal offset of all bonded expression inserts as a group; highlights/tongue retain their existing relative offsets to parent eye/mouth. Same _material implementation and tolerances. Film is a physical adhesive interface assumption, not a separately printed part or a hidden union.",
+    "expressions": {
+      "sleepy": {
+        "input_volumes": [
+          4757.46128752807,
+          2.0106192982974673,
+          2.0106192982974673,
+          21.458269268547465,
+          21.458269268547465,
+          14.476458947741767
+        ],
+        "sum": 4818.875523609501,
+        "tolerance": 0.04818875523609502,
+        "status": "consistent",
+        "returned_volume": 4818.875523609501,
+        "excess": 0.0,
+        "union_solids": 6,
+        "adhesive_bonds": [
+          {
+            "role": "nostril_-1",
+            "base_area": 2.0106192982974678,
+            "projected_plate_contact_area": 2.0106192982974678,
+            "bond_fraction": 1.0,
+            "adhesive_film_volume": 0.1005309649148734,
+            "minimum_plate_distance": 0.04999999999999982,
+            "plastic_overlap": 0
+          },
+          {
+            "role": "nostril_1",
+            "base_area": 2.0106192982974678,
+            "projected_plate_contact_area": 2.0106192982974678,
+            "bond_fraction": 1.0,
+            "adhesive_film_volume": 0.1005309649148734,
+            "minimum_plate_distance": 0.04999999999999982,
+            "plastic_overlap": 0
+          },
+          {
+            "role": "lid_-1",
+            "base_area": 17.88192850310758,
+            "projected_plate_contact_area": 17.86363404704752,
+            "bond_fraction": 0.9989769304772199,
+            "adhesive_film_volume": 0.893181702352376,
+            "minimum_plate_distance": 0.04999999999999982,
+            "plastic_overlap": 0
+          },
+          {
+            "role": "lid_1",
+            "base_area": 17.88192850310758,
+            "projected_plate_contact_area": 17.863634047047526,
+            "bond_fraction": 0.9989769304772204,
+            "adhesive_film_volume": 0.8931817023523764,
+            "minimum_plate_distance": 0.04999999999999982,
+            "plastic_overlap": 0
+          },
+          {
+            "role": "sleepy_mouth",
+            "base_area": 12.063715789784803,
+            "projected_plate_contact_area": 12.063715789784803,
+            "bond_fraction": 1.0,
+            "adhesive_film_volume": 0.6031857894892402,
+            "minimum_plate_distance": 0.04999999999999982,
+            "plastic_overlap": 0
+          }
+        ]
+      },
+      "happy": {
+        "input_volumes": [
+          4757.46128752807,
+          2.0106192982974673,
+          2.0106192982974673,
+          779.3297153914193,
+          7.38902592124319,
+          779.3297153914193,
+          7.389025921243192,
+          191.54953654170953,
+          38.877209088173686
+        ],
+        "sum": 6565.346754379873,
+        "tolerance": 0.06565346754379874,
+        "status": "consistent",
+        "returned_volume": 6565.34671201289,
+        "excess": -4.2366983507236e-05,
+        "union_solids": 6,
+        "adhesive_bonds": [
+          {
+            "role": "nostril_-1",
+            "base_area": 2.0106192982974678,
+            "projected_plate_contact_area": 2.0106192982974678,
+            "bond_fraction": 1.0,
+            "adhesive_film_volume": 0.1005309649148734,
+            "minimum_plate_distance": 0.04999999999999982,
+            "plastic_overlap": 0
+          },
+          {
+            "role": "nostril_1",
+            "base_area": 2.0106192982974678,
+            "projected_plate_contact_area": 2.0106192982974678,
+            "bond_fraction": 1.0,
+            "adhesive_film_volume": 0.1005309649148734,
+            "minimum_plate_distance": 0.04999999999999982,
+            "plastic_overlap": 0
+          },
+          {
+            "role": "eye_-1",
+            "base_area": 176.7145867644259,
+            "projected_plate_contact_area": 176.7145867644259,
+            "bond_fraction": 1.0,
+            "adhesive_film_volume": 8.835729338221295,
+            "minimum_plate_distance": 0.04999999999999982,
+            "plastic_overlap": 0
+          },
+          {
+            "role": "eye_1",
+            "base_area": 176.7145867644259,
+            "projected_plate_contact_area": 176.7145867644259,
+            "bond_fraction": 1.0,
+            "adhesive_film_volume": 8.835729338221295,
+            "minimum_plate_distance": 0.04999999999999982,
+            "plastic_overlap": 0
+          },
+          {
+            "role": "happy_mouth",
+            "base_area": 111.5108632784926,
+            "projected_plate_contact_area": 111.5108632784926,
+            "bond_fraction": 1.0,
+            "adhesive_film_volume": 5.57554316392463,
+            "minimum_plate_distance": 0.04999999999999982,
+            "plastic_overlap": 0
+          }
+        ]
+      }
+    }
+  },
+  "tool_and_source_bindings": {
+    "tool_sha256": "4a8ac023fb0913bbc0b153002b80346b625ebd1318a50894de4c3f84e1923549",
+    "source_hashes": {
+      "parts/head.py": "d1d425d1b610e218e7d0431f31f90ca2f04febc1a4f5733bda3a48dfce5771f1",
+      "parts/coupon.py": "63cf5cedab7ce335bde03f888349b1e3bfac68d20cb70feed988abe8a002ea69",
+      "parts/decor.py": "557e483cb2966e9cd828dcbc8229873869bf1469645f8a87a76f713dfebbb40e",
+      "parts/face.py": "64140bed21bb75397b4a0bd77ba8f7fa6ff60681dd295ec39db5acd096449a3e",
+      "parts/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "parts/body.py": "d796a764581db8f9534b70d6779112a9b65e1b15debdb55922a8a675301bd172",
+      "params/joint_design.py": "2b79c1aedf691ea3a4b81bf3436457f88030e4d0a447c87a70f0568daf05fc21",
+      "params/decor.py": "bcdb5030279d71de8e7706c9b8fcc326435fb5c6c8f62eff8ae091ad832d254b",
+      "params/face.py": "e8eeb2fd077269fd6cdc2127602498b1d2245dc991f98b9f235c91286427cd56",
+      "params/__init__.py": "5178488740bcbb55910ba851bad3743db5e8c002f3892b3014e71a3c5f71e6fe",
+      "params/body.py": "2610ee3d4d8114b974b2e3810675a0392267eefb2d18400adda10509bbe95c64",
+      "params/assembly.py": "a588be66876bc9084cc7b1431861356e43dd22781636ed85d390b4e229547f1f",
+      "features/joints.py": "140c62f66916a97a6d402c335ef814e51e69e6246126248d3694cf0cd916510a",
+      "features/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assemblies/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "assemblies/product.py": "4fc43dfd98a18d6f4daa14da7490feef3b4254574a2ea4271453a7aedf499d2f"
+    }
+  },
+  "required_root_checks": [
+    "Apply candidate only after current review packet is sealed.",
+    "Regenerate complete neutral/alternate assemblies and refresh affected signature/visual evidence.",
+    "Rerun unchanged full motion gate and sleepy withdrawal check on applied source; consistent union is necessary but not a collision/motion PASS.",
+    "Refresh native assembled interference and documentation. Document0.05mm cured adhesive film and physical curing/adhesion unverified."
+  ],
+  "limits": [
+    "No product source writes or exports performed by this task.",
+    "No tool tolerance or gate change; no separately printed material is hidden through a manufactured union.",
+    "This diagnostic reuses exact _material but is not the full48-step withdrawal test.",
+    "Adhesive film thickness is a modeled assembly assumption, not a demonstrated achievable bond thickness, adhesive strength, physical fit or print-readiness result.",
+    "Native warm client was not used."
+  ]
+}

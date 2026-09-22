@@ -1,0 +1,69 @@
+{
+ "build": {
+  "support_collar": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "support_collar"
+ ],
+ "check_motion": true,
+ "checked": [
+  "support_collar"
+ ],
+ "checks_ok": true,
+ "entry": "part_support_collar.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/support_collar/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "support_collar"
+ ],
+ "print": {
+  "support_collar": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/support_collar/r0001/overhang-support_collar.log": "99a98d623591fd7fa6349ccb8a719b52ff0c8825a89e58876646a9926b44646e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/support_collar/r0001/thickness-support_collar.log": "a5abdd55bccb1c7089b3ad55ada636cb75dd7dac294b9d03c01ad532d850d0cc"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:support_collar",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Missing black finish",
+    "evidence": "Top and iso show a dark blue-gray surface.",
+    "part": "support_collar",
+    "repair": "Assign shared black sRGB color."
+   }
+  ],
+  "observation": "The D-shaped central bore and lower rectangular saddle socket are open and coherent. The surface is unassigned blue-gray.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/support_collar/r0001/visual-packet.json",
+  "packet_sha256": "2c488cd6c493820f18aa173d0ae3669289435a365b6482476bca252ac9886013",
+  "status": "fail"
+ }
+}

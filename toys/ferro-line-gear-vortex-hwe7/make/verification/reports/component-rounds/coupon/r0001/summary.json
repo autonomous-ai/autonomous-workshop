@@ -1,0 +1,62 @@
+{
+ "build": {
+  "coupon": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "coupon"
+ ],
+ "check_motion": true,
+ "checked": [
+  "coupon"
+ ],
+ "checks_ok": true,
+ "entry": "part_coupon.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/coupon/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "coupon"
+ ],
+ "print": {
+  "coupon": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/coupon/r0001/overhang-coupon.log": "349b883da6887d6309082af43630fab46a4656235bf11fcfa49c0d141c10e087",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/coupon/r0001/thickness-coupon.log": "a52f1b00d6ebb0ba664bc354175ee34029ad4d8be33b6d785b48dcb901819be6"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:coupon",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "All three views show two equal upright journals with raised seats and complete thread ends on one flat rectangular base; no missing or disconnected features.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/coupon/r0001/visual-packet.json",
+  "packet_sha256": "8ad75217e5216a72d76c465dc927840bd99e91bb23b708b1c9930f99902ad4f5",
+  "status": "pass"
+ }
+}

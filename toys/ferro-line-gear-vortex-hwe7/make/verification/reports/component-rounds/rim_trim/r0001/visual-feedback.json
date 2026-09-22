@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Wrong surface finish; thin height confirmed by numeric check",
+      "evidence": "All views show dark neutral color; side view is extremely thin and thickness report fails.",
+      "part": "rim_trim",
+      "repair": "Assign brass and increase section height to at least1.2mm with a matching supportfree recess."
+    }
+  ],
+  "observation": "The concentric trim ring is uniformly slender but is dark blue-gray instead of brass.",
+  "packet_sha256": "cdf61bd37e5c33c4dbdab884cbfceb5aeb1caeeae58f00b69db20d90c95abaad",
+  "status": "fail"
+}

@@ -1,0 +1,73 @@
+{
+ "build": {
+  "body_07_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_07_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_07_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_07_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_07_front"
+ ],
+ "print": {
+  "body_07_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0005/overhang-body_07_front.log": "b0c681ea19763e6e9effac50a6285ea672648c571806a450fd74139a97021177",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0005/thickness-body_07_front.log": "d93ae777481377b208a91643e11fecdee1c27fdb1cb6245e09563a970091de41"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 30.2% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 6.2,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 12.1% of surface below (4623 of 38983 samples); thinne"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:body_07_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Clearance leaves thin wedge walls and underside pocket overhang",
+    "evidence": "Top and iso show feathered borders; thickness and support reports locate them at the opening and bottom notch.",
+    "part": "body_07_front",
+    "repair": "Project clearance through the thin front land, retain radial cup shape, and replace the local underside pocket with a flat bottom seat."
+   }
+  ],
+  "observation": "Front, top and iso show broad wedge edges bordering the clearance window and an underside cream-seat notch.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0005/visual-packet.json",
+  "packet_sha256": "881460fa4308b61d67142e715ab574cbd245ad5c8bec5c242ac4ca4d012c64ef",
+  "status": "fail"
+ }
+}

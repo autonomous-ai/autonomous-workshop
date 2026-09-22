@@ -1,0 +1,16 @@
+{
+  "title": "Mintfin",
+  "summary": "A chunky mint axolotl-dragon with coral gills, an articulated tail and three interchangeable expressions.",
+  "status": "full-with-thickness",
+  "print_ready_claim": true,
+  "nozzle_mm": 0.4,
+  "motion_verification": "unverified",
+  "physical_testing": "not-run",
+  "colors": {
+    "mint": "#83D5BB",
+    "coral": "#EF857E",
+    "cream": "#FFF0CF",
+    "charcoal": "#303844"
+  },
+  "instructions": "README.md"
+}

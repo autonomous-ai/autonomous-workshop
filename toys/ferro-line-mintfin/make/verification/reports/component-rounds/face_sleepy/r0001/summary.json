@@ -1,0 +1,62 @@
+{
+ "build": {
+  "face_sleepy": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_sleepy"
+ ],
+ "check_motion": false,
+ "checked": [
+  "face_sleepy"
+ ],
+ "checks_ok": true,
+ "entry": "part_face_sleepy.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_sleepy/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_sleepy"
+ ],
+ "print": {
+  "face_sleepy": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_sleepy/r0001/overhang-face_sleepy.log": "df25bd146086edef634f9e05773799e8899368ae5bc0185bcde3561b300fbd5e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_sleepy/r0001/thickness-face_sleepy.log": "2014cfa270fc83bf4a3d599a17fe0272937b30bffd4674442bcb41095e8adf0c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:face_sleepy",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows low closed-eye marks on a grounded plate. Top exposes continuous side arms with open slots; isometric shows two symmetric closed lids and a small smile. Slot roots and latches remain joined and correctly mirrored.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_sleepy/r0001/visual-packet.json",
+  "packet_sha256": "26d8df62b5d475cb163d2c4bdb0e6f4f75f88bfa9101398cd9656b471d04ac8a",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,71 @@
+{
+ "build": {
+  "face_happy_mouth": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_happy_mouth"
+ ],
+ "check_motion": true,
+ "checked": [
+  "face_happy_mouth"
+ ],
+ "checks_ok": false,
+ "entry": "part_face_happy_mouth.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_happy_mouth/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_happy_mouth"
+ ],
+ "print": {
+  "face_happy_mouth": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_happy_mouth/r0001/overhang-face_happy_mouth.log": "8bc2f61ddc7b7410a6a2764d3f205408724e1858b64046d0e2c3aaee5ff2787d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_happy_mouth/r0001/thickness-face_happy_mouth.log": "20535caa3f8983260bee8860d0cf9f3d1e39fd924dd29425b6491797a267c989"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 5.0% of surface below (772 of 16972 samples); thinnest"
+    ],
+    "thinnest_mm": 0.33,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:face_happy_mouth",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Tongue recess leaves a thin lower smile border",
+    "evidence": "Iso lower edge beside ellipse; wall0.33mm at(0.8,-5.0,1.8), 16mm2 band.",
+    "part": "face_happy_mouth",
+    "repair": "Move same9x5.5 tongue recess1mm upward within mouth, retaining1.2mm floor and broad attachment base."
+   }
+  ],
+  "observation": "Front, top and iso inspected. Rounded smile silhouette and flat base are coherent; iso shows tongue recess too close to lower mouth edge, creating a narrow charcoal rim. Default wall check confirms a 16mm2 thin band at the lower rim.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_happy_mouth/r0001/visual-packet.json",
+  "packet_sha256": "8be09d486cf021b5fb8bd51ba0e3c0ecffc294ac9aa533d7e9f11bc2cc7c1852",
+  "status": "fail"
+ }
+}

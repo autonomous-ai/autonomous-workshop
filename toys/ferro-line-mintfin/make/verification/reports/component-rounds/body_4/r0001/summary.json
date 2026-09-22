@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_4": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_4"
+ ],
+ "check_motion": false,
+ "checked": [
+  "body_4"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_4.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_4/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_4"
+ ],
+ "print": {
+  "body_4": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_4/r0001/overhang-body_4.log": "28f6c937b03946a48f681559386c9fa21428e4edbef0da1edc071e52567f055f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_4/r0001/thickness-body_4.log": "d4d3105d3c3a3f2958a2672ddb84acc044e86e7e57a348608626d1eab263db69"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:body_4",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a lower rounded crown with a blunt fin. Top and iso show two symmetric broad feet, the open bearing and outgoing pin joined by a stem; receiver clearance remains exposed.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_4/r0001/visual-packet.json",
+  "packet_sha256": "f8572aa1d822921b3c4a5aec47548df6c09d858e87558f1a488df808abcd612e",
+  "status": "pass"
+ }
+}

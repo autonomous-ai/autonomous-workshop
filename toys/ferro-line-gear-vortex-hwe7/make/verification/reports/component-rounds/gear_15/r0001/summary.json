@@ -1,0 +1,61 @@
+{
+ "build": {
+  "gear_15": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gear_15"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gear_15"
+ ],
+ "checks_ok": true,
+ "entry": "part_gear_15.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_15/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_15"
+ ],
+ "print": {
+  "gear_15": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_15/r0001/overhang-gear_15.log": "4189b7a04091974586bf563e383b7fd382c0e0f2e6b40e438c8dac6db78a526f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_15/r0001/thickness-gear_15.log": "f36dfdcf0b801b5bb4d1935cbab080f00b0adb4a02d4dd3e45f53d3f438c6716"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:gear_15",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_15/r0001/visual-packet.json",
+  "packet_sha256": "ded49ca835f2c0fd5209f69e0c946d8b3dc3fc60666f8828dc59692836cad280",
+  "status": "pending"
+ }
+}

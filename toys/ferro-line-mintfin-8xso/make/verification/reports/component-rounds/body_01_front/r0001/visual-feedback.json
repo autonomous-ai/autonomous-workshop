@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Broad thin rim tapers to zero thickness",
+      "evidence": "Front shows a knife edge at the bed; top and iso show wide taper band around full perimeter.",
+      "part": "body_01_front",
+      "repair": "Add a 1.2 mm constant-section perimeter land before the shrinking profile."
+    }
+  ],
+  "observation": "All three views inspected. Ball is centered laterally and attached to the plate, but the wide elliptical rim tapers to a knife edge, consistent with the measured thickness failure.",
+  "packet_sha256": "5ad9fb7cb4085d9aff393760b9d7bda23203620b4cb24e4f59fb7bfa81efc688",
+  "status": "fail"
+}

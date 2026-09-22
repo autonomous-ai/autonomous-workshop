@@ -1,0 +1,64 @@
+{
+ "build": {
+  "body_2": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_2"
+ ],
+ "check_motion": false,
+ "checked": [
+  "body_2"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_2.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_2/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_2"
+ ],
+ "print": {
+  "body_2": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_2/r0001/overhang-body_2.log": "cdee8210843f3b9f268095beaca6db6e6bdc546425b50f8eea358718ab891f51",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_2/r0001/thickness-body_2.log": "2b1757264277db2765874ce8fcbb26cc08aeb2b5da0d8ac84aa97340db142d54"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 16.2% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 1.1,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:body_2",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso show a footless rounded body with a rooted blunt crest, open incoming bearing and centered outgoing pin. The body skirt is coherent; the numeric first-layer overhang finding requires increasing relief rise.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_2/r0001/visual-packet.json",
+  "packet_sha256": "24b59614c48f7068e57a71d77c148be29e76689e6c5df39aa293347661f8fc5f",
+  "status": "pass"
+ }
+}

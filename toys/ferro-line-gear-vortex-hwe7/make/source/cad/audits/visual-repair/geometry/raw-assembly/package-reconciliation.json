@@ -1,0 +1,297 @@
+{
+  "scope": "Raw STEP package geometry and transforms preserved. Unique names corroborated by detailed native occurrence refs and generated source package. No geometry or tool changes.",
+  "step_sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+  "raw_package_sha256": "1940229b2848d58ee6a7c00c8f7ed2398f097301cf6c275362efb7c8dc95fbdf",
+  "raw_refs_sha256": "05e0b805319d66604b1a4d4956933040c67cfe4670f16fed0687c5f0e58ce3ac",
+  "generated_package_sha256": "1e8d1f124c8170db53bddb88112dc72885a6e6eb1db7a8a9d67871bba0560611",
+  "delivery_package_sha256": "d2cc8fc5756f052d35a92a71b4591901969046121e847c40300cbd2262551efe",
+  "leaf_count": 44,
+  "names": {
+    "o1.1": "pedestal_black",
+    "o1.2": "pedestal_lid_black",
+    "o1.3": "stem_black",
+    "o1.4": "support_collar_black",
+    "o1.5": "rim_trim_yellow",
+    "o1.6": "foot_trim_yellow",
+    "o1.7": "rear_main_cap_black",
+    "o1.8": "orange_disc_orange",
+    "o1.9": "sun_yellow",
+    "o1.10": "front_main_cap_black",
+    "o1.11": "gear_1_1_yellow",
+    "o1.12": "gear_1_2_yellow",
+    "o1.13": "gear_1_3_yellow",
+    "o1.14": "gear_1_4_yellow",
+    "o1.15": "gear_1_5_yellow",
+    "o1.16": "gear_1_6_yellow",
+    "o1.17": "gear_1_7_yellow",
+    "o1.18": "gear_2_1_yellow",
+    "o1.19": "gear_2_2_yellow",
+    "o1.20": "gear_2_3_yellow",
+    "o1.21": "gear_2_4_yellow",
+    "o1.22": "gear_2_5_yellow",
+    "o1.23": "gear_2_6_yellow",
+    "o1.24": "gear_2_7_yellow",
+    "o1.25.1": "carrier_black",
+    "o1.25.2": "bezel_black",
+    "o1.25.3.1": "cap_1_1_black",
+    "o1.25.3.2": "cap_1_2_black",
+    "o1.25.3.3": "cap_1_3_black",
+    "o1.25.3.4": "cap_1_4_black",
+    "o1.25.3.5": "cap_1_5_black",
+    "o1.25.3.6": "cap_1_6_black",
+    "o1.25.3.7": "cap_1_7_black",
+    "o1.25.3.8": "cap_2_1_black",
+    "o1.25.3.9": "cap_2_2_black",
+    "o1.25.3.10": "cap_2_3_black",
+    "o1.25.3.11": "cap_2_4_black",
+    "o1.25.3.12": "cap_2_5_black",
+    "o1.25.3.13": "cap_2_6_black",
+    "o1.25.3.14": "cap_2_7_black",
+    "o1.25.4.1": "bezel_cap_1_black",
+    "o1.25.4.2": "bezel_cap_2_black",
+    "o1.26.1": "axle_black",
+    "o1.26.2": "support_main_cap_black"
+  },
+  "name_corrections": [
+    {
+      "id": "o1.7",
+      "before": "support_main_cap_black",
+      "after": "rear_main_cap_black"
+    },
+    {
+      "id": "o1.10",
+      "before": "support_main_cap_black",
+      "after": "front_main_cap_black"
+    },
+    {
+      "id": "o1.11",
+      "before": "gear_2_1_yellow",
+      "after": "gear_1_1_yellow"
+    },
+    {
+      "id": "o1.12",
+      "before": "gear_2_2_yellow",
+      "after": "gear_1_2_yellow"
+    },
+    {
+      "id": "o1.13",
+      "before": "gear_2_3_yellow",
+      "after": "gear_1_3_yellow"
+    },
+    {
+      "id": "o1.14",
+      "before": "gear_2_4_yellow",
+      "after": "gear_1_4_yellow"
+    },
+    {
+      "id": "o1.15",
+      "before": "gear_2_5_yellow",
+      "after": "gear_1_5_yellow"
+    },
+    {
+      "id": "o1.16",
+      "before": "gear_2_6_yellow",
+      "after": "gear_1_6_yellow"
+    },
+    {
+      "id": "o1.17",
+      "before": "gear_2_7_yellow",
+      "after": "gear_1_7_yellow"
+    },
+    {
+      "id": "o1.25.3.1",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_1_black"
+    },
+    {
+      "id": "o1.25.3.2",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_2_black"
+    },
+    {
+      "id": "o1.25.3.3",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_3_black"
+    },
+    {
+      "id": "o1.25.3.4",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_4_black"
+    },
+    {
+      "id": "o1.25.3.5",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_5_black"
+    },
+    {
+      "id": "o1.25.3.6",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_6_black"
+    },
+    {
+      "id": "o1.25.3.7",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_7_black"
+    },
+    {
+      "id": "o1.25.3.8",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_1_black"
+    },
+    {
+      "id": "o1.25.3.9",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_2_black"
+    },
+    {
+      "id": "o1.25.3.10",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_3_black"
+    },
+    {
+      "id": "o1.25.3.11",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_4_black"
+    },
+    {
+      "id": "o1.25.3.12",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_5_black"
+    },
+    {
+      "id": "o1.25.3.13",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_6_black"
+    },
+    {
+      "id": "o1.25.3.14",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_7_black"
+    },
+    {
+      "id": "o1.25.4.1",
+      "before": "bezel_cap_2_black",
+      "after": "bezel_cap_1_black"
+    },
+    {
+      "id": "o1.7",
+      "before": "support_main_cap_black",
+      "after": "rear_main_cap_black"
+    },
+    {
+      "id": "o1.10",
+      "before": "support_main_cap_black",
+      "after": "front_main_cap_black"
+    },
+    {
+      "id": "o1.11",
+      "before": "gear_2_1_yellow",
+      "after": "gear_1_1_yellow"
+    },
+    {
+      "id": "o1.12",
+      "before": "gear_2_2_yellow",
+      "after": "gear_1_2_yellow"
+    },
+    {
+      "id": "o1.13",
+      "before": "gear_2_3_yellow",
+      "after": "gear_1_3_yellow"
+    },
+    {
+      "id": "o1.14",
+      "before": "gear_2_4_yellow",
+      "after": "gear_1_4_yellow"
+    },
+    {
+      "id": "o1.15",
+      "before": "gear_2_5_yellow",
+      "after": "gear_1_5_yellow"
+    },
+    {
+      "id": "o1.16",
+      "before": "gear_2_6_yellow",
+      "after": "gear_1_6_yellow"
+    },
+    {
+      "id": "o1.17",
+      "before": "gear_2_7_yellow",
+      "after": "gear_1_7_yellow"
+    },
+    {
+      "id": "o1.25.3.1",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_1_black"
+    },
+    {
+      "id": "o1.25.3.2",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_2_black"
+    },
+    {
+      "id": "o1.25.3.3",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_3_black"
+    },
+    {
+      "id": "o1.25.3.4",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_4_black"
+    },
+    {
+      "id": "o1.25.3.5",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_5_black"
+    },
+    {
+      "id": "o1.25.3.6",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_6_black"
+    },
+    {
+      "id": "o1.25.3.7",
+      "before": "bezel_cap_2_black",
+      "after": "cap_1_7_black"
+    },
+    {
+      "id": "o1.25.3.8",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_1_black"
+    },
+    {
+      "id": "o1.25.3.9",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_2_black"
+    },
+    {
+      "id": "o1.25.3.10",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_3_black"
+    },
+    {
+      "id": "o1.25.3.11",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_4_black"
+    },
+    {
+      "id": "o1.25.3.12",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_5_black"
+    },
+    {
+      "id": "o1.25.3.13",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_6_black"
+    },
+    {
+      "id": "o1.25.3.14",
+      "before": "bezel_cap_2_black",
+      "after": "cap_2_7_black"
+    },
+    {
+      "id": "o1.25.4.1",
+      "before": "bezel_cap_2_black",
+      "after": "bezel_cap_1_black"
+    }
+  ]
+}

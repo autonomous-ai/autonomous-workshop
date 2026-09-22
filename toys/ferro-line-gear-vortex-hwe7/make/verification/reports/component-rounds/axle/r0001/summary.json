@@ -1,0 +1,63 @@
+{
+ "build": {
+  "axle": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "axle"
+ ],
+ "check_motion": true,
+ "checked": [
+  "axle"
+ ],
+ "checks_ok": false,
+ "entry": "part_axle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "axle"
+ ],
+ "print": {
+  "axle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0001/overhang-axle.log": "9fb53f4fc91c0e7a5e165477d54c7025f471627998b725fa3bf3960ac62bb1f7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0001/thickness-axle.log": "d4977e18e133708cbfccf95ae5afdb84d84f0dcdce646e3240d30f36ec2fcb3a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no overhang result"
+    ],
+    "overhang_mm2": null,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "no passing wall result"
+    ],
+    "thinnest_mm": null,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:axle",
+ "visual": {
+  "detail": "Visual render failed or source changed; inspect visual-render.log",
+  "findings": [],
+  "status": "error"
+ }
+}

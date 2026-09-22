@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_01_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_01_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0009",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_front"
+ ],
+ "print": {
+  "body_01_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0009/overhang-body_01_front.log": "6ae6a08c35ecc5e62af88191e29110e0d26dc15b3702fc67d7902595e528b573",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0009/thickness-body_01_front.log": "d7791e82308ed1e11bb8e54782dfc349084605fefd539e97e638c66d80cafe11"
+   },
+   "measured_round": 9,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 9,
+ "scope": "component:body_01_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a continuous flat seam plate and centered spherical ball; top shows paired ankle reliefs and the crescent socket clearance; iso shows the ball joined to the plate with no detached pieces or visible unintended cuts. This isolated view does not establish assembled motion or physical fit.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0009/visual-packet.json",
+  "packet_sha256": "641796583f1978cc5e7a38ef220cae57bafde7f0ad9e05c0c07f217ef6e59b5b",
+  "status": "pass"
+ }
+}

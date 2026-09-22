@@ -1,0 +1,356 @@
+[
+  {
+    "id": "refs:axle",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_axle.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:axle",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_axle.step.py"
+    ]
+  },
+  {
+    "id": "refs:bezel",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_bezel.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:bezel",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_bezel.step.py"
+    ]
+  },
+  {
+    "id": "refs:carrier",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_carrier.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:carrier",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_carrier.step.py"
+    ]
+  },
+  {
+    "id": "refs:coupon",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_coupon.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:coupon",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_coupon.step.py"
+    ]
+  },
+  {
+    "id": "refs:foot_trim",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_foot_trim.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:foot_trim",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_foot_trim.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_16",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_16.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_16",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_16.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_18",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_18.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_18",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_18.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_20",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_20.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_20",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_20.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_22",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_22.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_22",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_22.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_24",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_24.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_24",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_24.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_26",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_26.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_26",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_26.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_cap",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_cap.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_cap",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_cap.step.py"
+    ]
+  },
+  {
+    "id": "refs:main_cap",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_main_cap.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:main_cap",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_main_cap.step.py"
+    ]
+  },
+  {
+    "id": "refs:orange_disc",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_orange_disc.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:orange_disc",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_orange_disc.step.py"
+    ]
+  },
+  {
+    "id": "refs:pedestal",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_pedestal.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:pedestal",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_pedestal.step.py"
+    ]
+  },
+  {
+    "id": "refs:pedestal_lid",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:pedestal_lid",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step.py"
+    ]
+  },
+  {
+    "id": "refs:rim_trim",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_rim_trim.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:rim_trim",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_rim_trim.step.py"
+    ]
+  },
+  {
+    "id": "refs:stem",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_stem.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:stem",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_stem.step.py"
+    ]
+  },
+  {
+    "id": "refs:sun",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_sun.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:sun",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_sun.step.py"
+    ]
+  },
+  {
+    "id": "refs:support_collar",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_support_collar.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:support_collar",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_support_collar.step.py"
+    ]
+  },
+  {
+    "id": "validate:assembly",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/gear_vortex.step.py"
+    ]
+  },
+  {
+    "id": "interfere:assembly",
+    "argv": [
+      "interfere",
+      "artifacts/make/r0001/product/gear_vortex/gear_vortex.step.py"
+    ]
+  }
+]

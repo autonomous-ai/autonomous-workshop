@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front and iso show four upright socket fingers and a continuous flat bond base. Top confirms an open central bore and four radial slits; internal preload pads remain attached. No detached geometry is visible, but the measured mouth-edge taper exceeds the thickness allowance and must be repaired.",
+  "packet_sha256": "5857ba19abc8891222671d6bdbc627cb1de720a691601823d461ef80d61a7c0c",
+  "status": "pass"
+}

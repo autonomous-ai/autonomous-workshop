@@ -1,0 +1,62 @@
+{
+ "build": {
+  "orange_disc": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "orange_disc"
+ ],
+ "check_motion": true,
+ "checked": [
+  "orange_disc"
+ ],
+ "checks_ok": true,
+ "entry": "part_orange_disc.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/orange_disc/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "orange_disc"
+ ],
+ "print": {
+  "orange_disc": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/orange_disc/r0001/overhang-orange_disc.log": "f1592a7cd7859fc96c24f9db122763a3f468238711e954224ca5fa858c00f392",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/orange_disc/r0001/thickness-orange_disc.log": "af0d861ed414612a449d0159a05f803e238f650491453cfd4405ce558c3d78be"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:orange_disc",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Thin uniform orange annulus with a real open D-shaped center; front edge stays planar and iso shows no plugs or added geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/orange_disc/r0001/visual-packet.json",
+  "packet_sha256": "aa96830d0ace01b683c6288ba0f8b80a73f79742f0095d8bcf57fc4f4ca06024",
+  "status": "pass"
+ }
+}

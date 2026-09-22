@@ -1,0 +1,179 @@
+[
+  {
+    "id": "refs:gear_14",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_14.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_14",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_14.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_15",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_15.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_15",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_15.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_23",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_23.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_23",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_23.step.py"
+    ]
+  },
+  {
+    "id": "refs:carrier",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_carrier.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:carrier",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_carrier.step.py"
+    ]
+  },
+  {
+    "id": "refs:coupon",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_coupon.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:coupon",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_coupon.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_18",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_18.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_18",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_18.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_20",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_20.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_20",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_20.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_22",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_22.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_22",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_22.step.py"
+    ]
+  },
+  {
+    "id": "refs:gear_26",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_26.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:gear_26",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/part_gear_26.step.py"
+    ]
+  },
+  {
+    "id": "refs:assembly",
+    "argv": [
+      "refs",
+      "artifacts/make/r0001/product/gear_vortex/gear_vortex.step.py",
+      "--facts",
+      "--planes",
+      "--positioning"
+    ]
+  },
+  {
+    "id": "validate:assembly",
+    "argv": [
+      "validate",
+      "artifacts/make/r0001/product/gear_vortex/gear_vortex.step.py"
+    ]
+  },
+  {
+    "id": "interfere:assembly",
+    "argv": [
+      "interfere",
+      "artifacts/make/r0001/product/gear_vortex/gear_vortex.step.py"
+    ]
+  }
+]

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_3": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_3"
+ ],
+ "check_motion": false,
+ "checked": [
+  "body_3"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_3.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_3/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_3"
+ ],
+ "print": {
+  "body_3": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_3/r0001/overhang-body_3.log": "626eb4f7ec7131b8aa393ea03aebd4825656b008b98a8cf5e6abd592e35473cf",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_3/r0001/thickness-body_3.log": "d2f6b2235e1842acc8b5e63a50e65bf81b92f29ea0009c665fd58ffc8dbcc265"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:body_3",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a lower rounded crown and broad rooted crest. Top and iso show the narrow waist, clear C-bearing and rear pin with continuous stem; no detached or missing geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_3/r0001/visual-packet.json",
+  "packet_sha256": "6e8ddf0983be62d425cc2d5ffe6673a4b5a31501a23d1f33923d316133e89d82",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_06_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_06_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_06_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_06_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_06_front"
+ ],
+ "print": {
+  "body_06_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0004/overhang-body_06_front.log": "18dbeee6c7a2c6a91c6cff86131af24a4c47a5cffd3df199586c632a1fc585e9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0004/thickness-body_06_front.log": "9da859eeda94c94e4a6d2d9b6701fa5216efa19c7c3fcc8a6da9fcfab51f6171"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 2.0% of surface below (1418 of 77210 samples); thinnes"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:body_06_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin parent-clearance crescent",
+    "evidence": "Top/iso stepped clearance;1.2mm check reports3.52mm band at print(1.1,4.1,.5)",
+    "part": "body_06_front",
+    "repair": "Use a constant1.2mm front land and projected clearance; make the small outgoing cavity opening straight through the land, preserving the sphere and heel."
+   }
+  ],
+  "observation": "Front shows the attached ball and coherent oval barrel. Top/iso show a feathered stepped crescent behind the ball and the small outgoing cavity opening; measured thin wall remains42.0mm2.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0004/visual-packet.json",
+  "packet_sha256": "c5721cd9f1cd44a5ee925bfde81049c631e29593fc3a712dc105963794ccd922",
+  "status": "fail"
+ }
+}

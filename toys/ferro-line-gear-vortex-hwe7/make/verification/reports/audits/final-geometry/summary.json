@@ -1,0 +1,27 @@
+{
+  "status": "pass",
+  "scope": "Static geometry at current nominal pose; no full motion or print-readiness claim",
+  "request_count": 42,
+  "component_refs_count": 20,
+  "component_validation_count": 20,
+  "assembly_occurrences": 40,
+  "assembly_validation_failures": 0,
+  "interference": {
+    "ok": true,
+    "entry": "artifacts/make/r0001/product/gear_vortex/gear_vortex",
+    "tolerance": 1.0,
+    "stats": {
+      "occurrences": 40,
+      "pairs_total": 780,
+      "pairs_tested": 86,
+      "pairs_skipped_bbox": 694,
+      "pairs_truncated": 0
+    },
+    "clashCount": 0,
+    "clashes": [],
+    "errors": []
+  },
+  "source_manifest_sha256": "9135ee56050396734efa8a4d116e4de3fea74b95f42183a45603a2e4fa27fa98",
+  "results_sha256": "2b2a451629232ec6d2bf54c3a76acdef4dc3cddb8fd07e0ad3de91ec2a64e3a4",
+  "component_refs_hash_mismatches": []
+}

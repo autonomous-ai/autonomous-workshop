@@ -1,0 +1,637 @@
+{
+  "status": "CURRENT_STATIC_GEOMETRY_PASS",
+  "audited_utc": "2026-09-21T08:08:22.988754+00:00",
+  "bindings": {
+    "batch": {
+      "path": "artifacts/make/r0001/visual-repair-geometry/results.jsonl",
+      "sha256": "eb30b317219f7d31353944024c93aee5f094ae9c7c8e162b02c368823ae4ac41"
+    },
+    "execution_manifest": {
+      "path": "artifacts/make/r0001/visual-repair-geometry/execution-manifest.json",
+      "sha256": "21f2d1620d47514ff583bd3339a85c822413f61f591d0978b475e1289967d2fa"
+    },
+    "requests": {
+      "path": "artifacts/make/r0001/visual-repair-geometry/requests.jsonl",
+      "sha256": "9bbd555d28fe1418909933e9a2739c2619594919c9fc4f1671cda31fb564eb17"
+    },
+    "raw_assembly_refs": {
+      "path": "artifacts/make/r0001/visual-repair-delivery/raw-results.jsonl",
+      "sha256": "05e0b805319d66604b1a4d4956933040c67cfe4670f16fed0687c5f0e58ce3ac"
+    },
+    "package_reconciliation": {
+      "path": "artifacts/make/r0001/visual-repair-delivery/package-reconciliation.json",
+      "sha256": "8426346a5adb96104994bca1c9cc7376398b455142189032d72f6e22a21e1ca3"
+    },
+    "round4": {
+      "path": "artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/summary.json",
+      "sha256": "c8de9bdf39f1da52fd6727e56b91360dd7f0ba567b4197ade83d25ddc3b9dfcc"
+    },
+    "webs": {
+      "path": "artifacts/make/r0001/visual-repair-feature-probes/web-nearest-results.json",
+      "sha256": "a233563bfe17b3b96019887f7833a09c9d221c5335bd09da79237178202b3c4d"
+    },
+    "raw_component_refs": {
+      "path": "artifacts/make/r0001/visual-repair-geometry/raw-components/results.jsonl",
+      "sha256": "63da0cfc8ae12feedc1162ceb5b995d17fa305597d4b56dfdc42ac1441ec3b5b"
+    }
+  },
+  "hash_audit": {
+    "source_and_export_bindings_checked": 58,
+    "mismatches": 0,
+    "retained_component_exact_matches": 12,
+    "print_log_bindings_checked": 42,
+    "web_master_and_witness_bindings_checked": 16
+  },
+  "native_batch": {
+    "responses": 21,
+    "all_response_success": true,
+    "nine_component_validations_pass": true,
+    "assembly_validation": {
+      "ok": true,
+      "entry": "artifacts/make/r0001/product/gear_vortex/gear_vortex",
+      "occurrenceCount": 44,
+      "failureCount": 0,
+      "parts": [],
+      "errors": []
+    },
+    "assembly_interference": {
+      "ok": true,
+      "entry": "artifacts/make/r0001/product/gear_vortex/gear_vortex",
+      "tolerance": 1.0,
+      "stats": {
+        "occurrences": 44,
+        "pairs_total": 946,
+        "pairs_tested": 96,
+        "pairs_skipped_bbox": 850,
+        "pairs_truncated": 0
+      },
+      "clashCount": 0,
+      "clashes": [],
+      "errors": []
+    },
+    "scope": "Static validation and interference only; interference tolerance is 1 mm3, not zero-intersection or contact proof."
+  },
+  "refs_identity_audit": [
+    {
+      "role": "gear_14",
+      "reported_sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "current_sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "matches_current": true,
+      "resolution": "current"
+    },
+    {
+      "role": "gear_15",
+      "reported_sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "current_sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "matches_current": true,
+      "resolution": "current"
+    },
+    {
+      "role": "gear_23",
+      "reported_sha256": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+      "current_sha256": "58808dc38a7a039191b4653f5f17670ce60034557d20b6d1d086590a9d29fcb8",
+      "matches_current": true,
+      "resolution": "current"
+    },
+    {
+      "role": "carrier",
+      "reported_sha256": "31a402dd70e04ded7f1fad56aa8fecb9f67db850e0d272ee0722e9fb6f405b80",
+      "current_sha256": "cb457616187187a1b4b8b553fadf999553489ae53702b4e5999a6b1afc92e198",
+      "matches_current": false,
+      "resolution": "fresh raw component refs verified",
+      "resolved_current_sha256": "cb457616187187a1b4b8b553fadf999553489ae53702b4e5999a6b1afc92e198"
+    },
+    {
+      "role": "coupon",
+      "reported_sha256": "420ff78b344597b22616949fd8c8a306c6a52a61cf94f4634242b88f3aef139b",
+      "current_sha256": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5",
+      "matches_current": false,
+      "resolution": "fresh raw component refs verified",
+      "resolved_current_sha256": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5"
+    },
+    {
+      "role": "gear_18",
+      "reported_sha256": "b530695efe1753b996944c855171784d8880a4322882d3f9bd9b249d0cc38640",
+      "current_sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+      "matches_current": false,
+      "resolution": "fresh raw component refs verified",
+      "resolved_current_sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3"
+    },
+    {
+      "role": "gear_20",
+      "reported_sha256": "f15fdbc63c910fa87d4f4195105b65e43ccae76f23356673e181681992f150f2",
+      "current_sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+      "matches_current": false,
+      "resolution": "fresh raw component refs verified",
+      "resolved_current_sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af"
+    },
+    {
+      "role": "gear_22",
+      "reported_sha256": "3bc0f3d7b56c26681d3dfc4b671e5aaed98ec4e2c762f3ff948f51a406bd1644",
+      "current_sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+      "matches_current": false,
+      "resolution": "fresh raw component refs verified",
+      "resolved_current_sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28"
+    },
+    {
+      "role": "gear_26",
+      "reported_sha256": "8b31f14c74c7958da148d8b489cbacd7bd7688d0b9a9d58b0c53be527dad786d",
+      "current_sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+      "matches_current": false,
+      "resolution": "fresh raw component refs verified",
+      "resolved_current_sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582"
+    },
+    {
+      "role": "assembly",
+      "reported_sha256": "ab495b282869f4d764327c12a795636617f7f1dc77a4903f1ea9dae5be1dff7d",
+      "current_sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+      "matches_current": false,
+      "resolution": "raw assembly refs verified"
+    }
+  ],
+  "current_raw_assembly": {
+    "step_sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+    "summary": {
+      "kind": "assembly",
+      "occurrenceCount": 49,
+      "leafOccurrenceCount": 44,
+      "shapeCount": 44,
+      "faceCount": 6187,
+      "edgeCount": 18094,
+      "vertexCount": 0,
+      "bounds": {
+        "min": [
+          -94.0,
+          -66.965772,
+          -0.0
+        ],
+        "max": [
+          94.0,
+          67.750284,
+          213.314634
+        ]
+      }
+    },
+    "entry_facts": {
+      "size": [
+        188.0,
+        134.71605599999998,
+        213.314634
+      ],
+      "extentAxis": "z",
+      "center": [
+        0.0,
+        0.39225599999999616,
+        106.657317
+      ],
+      "diag": 314.6355809865583,
+      "kind": "assembly"
+    },
+    "scope": "Current resting-pose raw STEP facts; occurrenceCount49 includes assembly containers, leafOccurrenceCount44 is physical leaves. Not a swept envelope."
+  },
+  "retained_exact_components": [
+    {
+      "role": "axle",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_axle.step",
+      "observed_current_sha256": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+      "historical_step_sha256": "833d13f941a14867e4aa41f5ae6d0ba72e04c0175e0eda7b9ab22cf51eb2b232",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:axle",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "bezel",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_bezel.step",
+      "observed_current_sha256": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+      "historical_step_sha256": "5c349620bf660e77679e56164f3bee4f60fdc9c44f41788e7bd3ec96fd5e16a5",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:bezel",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "foot_trim",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_foot_trim.step",
+      "observed_current_sha256": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+      "historical_step_sha256": "b41c45895e341b99dd61451b8965ee093ef42d5d67495473ad4d5e211e8afb62",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:foot_trim",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "gear_cap",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_gear_cap.step",
+      "observed_current_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "historical_step_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:gear_cap",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "main_cap",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_main_cap.step",
+      "observed_current_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "historical_step_sha256": "7df89eaa53fe8c58b61ee768693260fcb99ff4d7ce410995b34b02c5904bdeb3",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:main_cap",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "orange_disc",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_orange_disc.step",
+      "observed_current_sha256": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+      "historical_step_sha256": "5a2bcc254a08f7e006e30cc91bd7b193d828d9e6d74a7ff480334ec9b4ec81c9",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:orange_disc",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "pedestal",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_pedestal.step",
+      "observed_current_sha256": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+      "historical_step_sha256": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:pedestal",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "pedestal_lid",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step",
+      "observed_current_sha256": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+      "historical_step_sha256": "3037790bccd0cf23d73a6e729d8ce91dfa500b3d814d782908b7472a8c967900",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:pedestal_lid",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "rim_trim",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_rim_trim.step",
+      "observed_current_sha256": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+      "historical_step_sha256": "32f6c3a27311b8668de33db5b81c67aa90f360bbd64a10a7b77f12d3d4fc3777",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:rim_trim",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "stem",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_stem.step",
+      "observed_current_sha256": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+      "historical_step_sha256": "0f992888363d5f6b2e473aa82184398ea326077a98e4d4e34319c425067e94d9",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:stem",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "sun",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_sun.step",
+      "observed_current_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "historical_step_sha256": "60f2cc51fa86e024e1100e0c0076b60706f8878ff5c1b60f9fff2e638d7b942d",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:sun",
+      "historical_validation_response_ok": true
+    },
+    {
+      "role": "support_collar",
+      "current_export": "artifacts/make/r0001/product/gear_vortex/part_support_collar.step",
+      "observed_current_sha256": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8",
+      "historical_step_sha256": "6888e5b5c24d7f71204d6839a1cb7f3c8c1717d5331120a3123dd42feacc82f8",
+      "exact_step_bytes_match": true,
+      "historical_validation_request": "validate:support_collar",
+      "historical_validation_response_ok": true
+    }
+  ],
+  "round4": {
+    "changed_roles": [
+      "carrier",
+      "coupon",
+      "gear_14",
+      "gear_15",
+      "gear_18",
+      "gear_20",
+      "gear_22",
+      "gear_23",
+      "gear_26"
+    ],
+    "retained_roles": [
+      "axle",
+      "bezel",
+      "foot_trim",
+      "gear_cap",
+      "main_cap",
+      "orange_disc",
+      "pedestal",
+      "pedestal_lid",
+      "rim_trim",
+      "stem",
+      "sun",
+      "support_collar"
+    ],
+    "print_roles": 21,
+    "wall_and_overhang": "PASS",
+    "manager_visual_status": "pass",
+    "independent_review_status": "pending",
+    "motion": {
+      "conditions": [],
+      "detail": "check_motion exit 3: missing or invalid motion condition evidence; 3m10s left [sun-withdraws] sweep: 18/32 (56%), 3m51s elapsed, ~2m59s left [sun-withdraws] sweep: 19/32 (59%), 4m07s elap",
+      "returncode": 3,
+      "verdict": "unverified"
+    },
+    "motion_elapsed_seconds_manager_reported": 410.2,
+    "motion_scope": "Formal UNVERIFIED exit3 with no condition results. Do not infer precise timeout cause or claim insertion/retention/operating pass. No retry performed here."
+  },
+  "webs": {
+    "status": "PASS",
+    "required_minimum_mm": 2.4,
+    "minimum_mm": 2.6008054647104633,
+    "measurement_count": 40,
+    "forms": 8,
+    "method": "build123d.Shape.distance_to_with_closest_points",
+    "scope": "Fresh actual exported adjacent-window BRep nearest distances; all eight master and witness hashes checked."
+  },
+  "remaining": [
+    "Gear contact and formal motion are not passed in this audited snapshot.",
+    "Independent review, production exports and integrated final verification remain pending.",
+    "Requirement-specific numerical reconciliation is listed in visual-repair-documentation/remaining-numerical-evidence.md."
+  ],
+  "claims_not_made": [
+    "physical test",
+    "print readiness",
+    "full revolution collision freedom",
+    "all99requirements satisfied"
+  ],
+  "raw_component_facts": {
+    "carrier": {
+      "step_sha256": "cb457616187187a1b4b8b553fadf999553489ae53702b4e5999a6b1afc92e198",
+      "summary": {
+        "kind": "assembly",
+        "occurrenceCount": 2,
+        "leafOccurrenceCount": 1,
+        "shapeCount": 1,
+        "faceCount": 203,
+        "edgeCount": 475,
+        "vertexCount": 0,
+        "bounds": {
+          "min": [
+            -94.0,
+            -93.737157,
+            0.0
+          ],
+          "max": [
+            94.0,
+            93.737157,
+            23.5
+          ]
+        }
+      },
+      "entry_facts": {
+        "size": [
+          188.0,
+          187.474314,
+          23.5
+        ],
+        "extentAxis": "x",
+        "center": [
+          0.0,
+          0.0,
+          11.75
+        ],
+        "diag": 266.5386808884793,
+        "kind": "assembly"
+      }
+    },
+    "coupon": {
+      "step_sha256": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5",
+      "summary": {
+        "kind": "assembly",
+        "occurrenceCount": 2,
+        "leafOccurrenceCount": 1,
+        "shapeCount": 1,
+        "faceCount": 28,
+        "edgeCount": 62,
+        "vertexCount": 0,
+        "bounds": {
+          "min": [
+            -23.0,
+            -9.0,
+            0.0
+          ],
+          "max": [
+            23.0,
+            9.0,
+            13.5
+          ]
+        }
+      },
+      "entry_facts": {
+        "size": [
+          46.0,
+          18.0,
+          13.5
+        ],
+        "extentAxis": "x",
+        "center": [
+          0.0,
+          0.0,
+          6.75
+        ],
+        "diag": 51.20790954530364,
+        "kind": "assembly"
+      }
+    },
+    "gear_18": {
+      "step_sha256": "f5b2f18d6e6de88849ec591e94745f7f68965e731042e10b48fcf8a81c062bf3",
+      "summary": {
+        "kind": "assembly",
+        "occurrenceCount": 2,
+        "leafOccurrenceCount": 1,
+        "shapeCount": 1,
+        "faceCount": 321,
+        "edgeCount": 957,
+        "vertexCount": 0,
+        "bounds": {
+          "min": [
+            -14.77426,
+            -14.621011,
+            0.0
+          ],
+          "max": [
+            14.77426,
+            14.621011,
+            5.0
+          ]
+        }
+      },
+      "entry_facts": {
+        "size": [
+          29.54852,
+          29.242022,
+          5.0
+        ],
+        "extentAxis": "x",
+        "center": [
+          0.0,
+          0.0,
+          2.5
+        ],
+        "diag": 41.871361153405125,
+        "kind": "assembly"
+      }
+    },
+    "gear_20": {
+      "step_sha256": "9d1bfd75bfaab381ba285974b0cbc4acd5085971dd3a4230beabc041faa551af",
+      "summary": {
+        "kind": "assembly",
+        "occurrenceCount": 2,
+        "leafOccurrenceCount": 1,
+        "shapeCount": 1,
+        "faceCount": 333,
+        "edgeCount": 993,
+        "vertexCount": 0,
+        "bounds": {
+          "min": [
+            -16.274305,
+            -16.274305,
+            0.0
+          ],
+          "max": [
+            16.274305,
+            16.274305,
+            5.0
+          ]
+        }
+      },
+      "entry_facts": {
+        "size": [
+          32.54861,
+          32.54861,
+          5.0
+        ],
+        "extentAxis": "x",
+        "center": [
+          0.0,
+          0.0,
+          2.5
+        ],
+        "diag": 46.30144734092229,
+        "kind": "assembly"
+      }
+    },
+    "gear_22": {
+      "step_sha256": "e31362888001ac3045d25b588d8f799fd7a800e894319e5f9a9beaf420a4ad28",
+      "summary": {
+        "kind": "assembly",
+        "occurrenceCount": 2,
+        "leafOccurrenceCount": 1,
+        "shapeCount": 1,
+        "faceCount": 345,
+        "edgeCount": 1029,
+        "vertexCount": 0,
+        "bounds": {
+          "min": [
+            -17.774346,
+            -17.653362,
+            0.0
+          ],
+          "max": [
+            17.774346,
+            17.653362,
+            5.0
+          ]
+        }
+      },
+      "entry_facts": {
+        "size": [
+          35.548692,
+          35.306724,
+          5.0
+        ],
+        "extentAxis": "x",
+        "center": [
+          0.0,
+          0.0,
+          2.5
+        ],
+        "diag": 50.351507053146285,
+        "kind": "assembly"
+      }
+    },
+    "gear_26": {
+      "step_sha256": "f667b17764c31640c56a75f9745e399e1f8628bfb11dad7448158694d9983582",
+      "summary": {
+        "kind": "assembly",
+        "occurrenceCount": 2,
+        "leafOccurrenceCount": 1,
+        "shapeCount": 1,
+        "faceCount": 369,
+        "edgeCount": 1101,
+        "vertexCount": 0,
+        "bounds": {
+          "min": [
+            -20.774415,
+            -20.674671,
+            0.0
+          ],
+          "max": [
+            20.774415,
+            20.674671,
+            5.0
+          ]
+        }
+      },
+      "entry_facts": {
+        "size": [
+          41.54883,
+          41.349342,
+          5.0
+        ],
+        "extentAxis": "x",
+        "center": [
+          0.0,
+          0.0,
+          2.5
+        ],
+        "diag": 58.83088779035945,
+        "kind": "assembly"
+      }
+    }
+  },
+  "refs_identity_reconciliation": "All seven originally stale refs identities resolved by exact raw STEP copies without cache changes; original rows preserved.",
+  "sightline": {
+    "status": "PASS",
+    "result": {
+      "path": "artifacts/make/r0001/visual-repair-feature-probes/sightline-results.jsonl",
+      "sha256": "c7aff051f99b1a3b7c8dce2e6654e8ab8d700a1234b4357e18b3fc23602fff06"
+    },
+    "assembly_binding": {
+      "path": "artifacts/make/r0001/visual-repair-feature-probes/assembly-execution-binding.json",
+      "sha256": "feff972cd5cb42fc3e9be814887fca5f1894aaa0e130f419aa7f03847d3ed88b"
+    },
+    "helper": {
+      "path": "artifacts/make/r0001/visual-repair-feature-probes/probe_geometry.py",
+      "sha256": "7e76ca4e7102222bfe750de9a256a15b12091feaad29385e05c60d0ceaecc28c"
+    },
+    "witness_step": {
+      "path": "artifacts/make/r0001/visual-repair-feature-probes/nominal_sightline.step",
+      "sha256": "9038a17c964d828f8dce01ae7b7999a04ad8588a8ab0bb6f2e49f8dfafd35e1b"
+    },
+    "radius_mm": 7.0,
+    "diameter_mm": 14.0,
+    "original_product_solids": 44,
+    "witness_shapes_total": 45,
+    "native_interference": {
+      "ok": true,
+      "entry": "artifacts/make/r0001/visual-repair-feature-probes/nominal_sightline",
+      "tolerance": 1e-06,
+      "stats": {
+        "occurrences": 2,
+        "pairs_total": 1,
+        "pairs_tested": 1,
+        "pairs_skipped_bbox": 0,
+        "pairs_truncated": 0
+      },
+      "clashCount": 0,
+      "clashes": [],
+      "errors": []
+    },
+    "scope": "Nominal14mm clear axial corridor through all44currentproductsolids at the declared resting pose. Geometry only; darkness/translucency/ambient appearance is not established."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "dimensions_mm": {
+    "figure": [
+      133,
+      168.59378431591392,
+      93
+    ]
+  },
+  "distinct_geometry_count": 48,
+  "geometry_status": "unverified",
+  "limitations": [
+    "Motion inspection exhausted its allowance; corrected sleepy-face withdrawal was cancelled without a verdict.",
+    "No physical print, snap compliance, friction pose-holding, magnet retention, adhesive strength or durability test.",
+    "Exhaustive actual minimum socket wall around relieved edges remains unverified; nominal housing wall is2mm.",
+    "Final integrated inspection exhausted its shared geometry allowance during motion; its subsequent 99 native inspection requests remained unverified. Earlier static inspection evidence is preserved separately.",
+    "Geometry inspection is incomplete. This prototype is unverified and is not print-ready; see GEOMETRY-NOTES.md."
+  ],
+  "motion_status": "unverified",
+  "physical_piece_count": 75,
+  "print_ready_claim": false,
+  "status": "geometry-unverified",
+  "summary": "A mint axolotl-dragon prototype with a segmented body, coral gills and fan tail, and happy and sleepy face plates. Includes a joint and magnet fit coupon.",
+  "title": "Mintfin"
+}

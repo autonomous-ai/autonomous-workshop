@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front, top and iso inspected once. The previous dorsal lobe is gone; the flat crown and elliptical perimeter now contain the socket stock. Incoming ball and root relief remain coherent with no detached or misplaced visible shape. Visual form passes, but the independent overhang measurement still FAILS at print (-0.1,4.1,0.2):2.5 mm2,1.5 mm span,1.6 mm air below. Explicit1.2 mm wall measurement passes; overall component remains failed.",
+  "packet_sha256": "eda55181bdae0fbb8e5244ad7f3f525845d08f553c0028a25bf610189989780c",
+  "status": "pass"
+}

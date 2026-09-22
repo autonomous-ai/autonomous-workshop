@@ -1,0 +1,22 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_motion <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin --manifest <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/motion.json --json
+(437.6s, exit 3)
+--- stdout
+
+--- stderr
+check_motion: building mintfin.step.py ...
+check_motion: building mintfin.step.py done in 1m07s
+check_motion: 46 condition(s), up to ~13,437 sampled Boolean/distance operations before any stops early
+check_motion condition: 46 to go
+check_motion condition 1/46: j00-pitch-up-25 [rotation_motion_collision] (0s elapsed)
+[j00-pitch-up-25] sweep: 158 to go
+check_motion condition 2/46: j00-twist-positive-20 [rotation_motion_collision] (54s elapsed)
+[j00-twist-positive-20] sweep: 79 to go
+check_motion condition 3/46: j00-twist-negative-20 [rotation_motion_collision] (1m47s elapsed)
+[j00-twist-negative-20] sweep: 79 to go
+check_motion condition 4/46: j00-rigid-axial-capture [linear_motion_collision] (2m44s elapsed)
+[j00-rigid-axial-capture] sweep: 67 to go
+check_motion condition 5/46: j00-sphere-approach-only [clear_path_proxy] (2m50s elapsed)
+check_motion condition 6/46: j01-pitch-up-25 [rotation_motion_collision] (2m59s elapsed)
+[j01-pitch-up-25] sweep: 145 to go
+[j01-pitch-up-25] sweep: 1/145 (0%), 1m21s elapsed, ~3h14m left
+[j01-pitch-up-25] sweep: 2/145 (1%), 2m43s elapsed, ~3h13m left

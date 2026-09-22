@@ -1,0 +1,62 @@
+{
+ "build": {
+  "face_happy": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_happy"
+ ],
+ "check_motion": false,
+ "checked": [
+  "face_happy"
+ ],
+ "checks_ok": true,
+ "entry": "part_face_happy.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_happy/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_happy"
+ ],
+ "print": {
+  "face_happy": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_happy/r0001/overhang-face_happy.log": "22fa3f12e506c2b4dfda2e3e43116ca691b1c20cf8eb0b4191afcf87df3c1298",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_happy/r0001/thickness-face_happy.log": "bf27a4c79c9b81b519013c8a150e3c1413159cd2fc8dd2214786c4024c3b5bd7"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:face_happy",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Isometric clearly shows two large raised circular eyes with integrated sparkles and a smile. Front shows a flat back and raised face marks; top silhouette exposes the two open-ended side arm slots and the broad roots. No isolated geometry or reversed latch.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/face_happy/r0001/visual-packet.json",
+  "packet_sha256": "24242d1ef047f64cdf445cd270c7a20667f65e7d011174e0cc4f016a04a574a8",
+  "status": "pass"
+ }
+}

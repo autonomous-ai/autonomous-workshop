@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Feathered clearance margin lacks the specified wall",
+      "evidence": "Top/iso crescent behind ball; wish-thickness-body_03_front reports 4.04 mm wide wall band at print(-2.4,13.4,0.3)",
+      "part": "body_03_front",
+      "repair": "Replace the feathered front half with a 1.2mm axial land and projected clearance, retaining the ball and printable rear heel."
+    }
+  ],
+  "observation": "The spherical ball and barrel perimeter are coherent, but top and iso show the parent clearance feathering into a narrow stepped crescent behind the ball. Wall measurement confirms a 45.6 mm2 thin region there.",
+  "packet_sha256": "d45b927a7e874611b70717273ae9fe68cc085e0f4ca7ceb554436cf544d55946",
+  "status": "fail"
+}

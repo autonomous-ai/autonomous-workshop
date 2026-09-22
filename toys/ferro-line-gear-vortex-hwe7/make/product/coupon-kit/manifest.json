@@ -1,0 +1,52 @@
+{
+  "count": 5,
+  "records": [
+    {
+      "name": "coupon_plate_black",
+      "occurrence_id": null,
+      "master_sha256": "a40effde413139f86c738ef67130a8c108fbe38cb4c120af4864c5839c04a7b5",
+      "production_step_sha256": "18b84c9bc4fcfc6b21a3106007c6f9d7cef3dfae676dc14b417730d1b423a101",
+      "relative_path": "coupon-kit/coupon_plate_black.step"
+    },
+    {
+      "name": "coupon_gear_14_yellow",
+      "occurrence_id": null,
+      "master_sha256": "c9085f2f8690edfcdfa6c9a0732f43f170ff49ec7d337e151468fd4d2bfd3178",
+      "production_step_sha256": "318a375abffcae5383c3ce348004c9f41959fa7e13f724753189c881147a9911",
+      "relative_path": "coupon-kit/coupon_gear_14_yellow.step"
+    },
+    {
+      "name": "coupon_gear_15_yellow",
+      "occurrence_id": null,
+      "master_sha256": "4845106c2e5256866010e04579459a5f2d5bde39e227d5659afad5f323bb6543",
+      "production_step_sha256": "5abc07fa870e3da9556a3e2afcf9202af5b5b385d1aabc0f16118173ef00208b",
+      "relative_path": "coupon-kit/coupon_gear_15_yellow.step"
+    },
+    {
+      "name": "coupon_cap_1_black",
+      "occurrence_id": null,
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "616b8974ad8887aadce4606ce9d678364629f392d7964c3ff4b6a6193f224fc9",
+      "relative_path": "coupon-kit/coupon_cap_1_black.step"
+    },
+    {
+      "name": "coupon_cap_2_black",
+      "occurrence_id": null,
+      "master_sha256": "ec5f448518bd02e43ea6d16b1526691c96cd495a071b8b96146f63514cba739b",
+      "production_step_sha256": "d1c6648b4bf0dd5a8054be792bb8a467bf54d7973b576763005a7ec0dd7be36f",
+      "relative_path": "coupon-kit/coupon_cap_2_black.step"
+    }
+  ],
+  "assembly_occurrences": false,
+  "scope": "Separate tolerance-test kit: one14/15journal plate, two mating gears and two caps. Physical fit remains untested.",
+  "native_geometry_inspection": {
+    "summary_path": "artifacts/make/r0001/visual-repair-production/inspection/summary.json",
+    "summary_sha256": "2f19393d21c119e4e391e017c4af553375155b97cbb6dc968fa4d4c708ebab7b",
+    "manifest": {
+      "path": "artifacts/make/r0001/visual-repair-production/inspection/inspection-manifest.json",
+      "sha256": "f5fb90b190cd1aac463ba618e6a5a4b791e379dffcee9756e98c5d09cc75ca70"
+    },
+    "status": "PASS",
+    "scope": "Native raw STEP refs and validity; one solid per export. No motion, physical fit or print-readiness claim."
+  }
+}

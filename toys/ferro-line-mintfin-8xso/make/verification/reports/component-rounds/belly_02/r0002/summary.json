@@ -1,0 +1,62 @@
+{
+ "build": {
+  "belly_02": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_02"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_02"
+ ],
+ "checks_ok": true,
+ "entry": "part_belly_02.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_02/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_02"
+ ],
+ "print": {
+  "belly_02": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_02/r0002/overhang-belly_02.log": "c8bb092bfd26341e423564508a41e7ad39475ff4a135f66b660ac247ce5b3b9a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_02/r0002/thickness-belly_02.log": "148c55a70a7f29a3374d07c88d711a31e4fdd10afbe1eb4ea255a6d5bf340dac"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:belly_02",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "All three views inspected. Broad cream ellipse has smooth rounded ends, flat broad adhesive face and uniform1.2mm extrusion. No holes, separated regions or pointed edge slivers visible. Default and additional1.2 wall plus support checks pass; mounting clearance remains an assembly check.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_02/r0002/visual-packet.json",
+  "packet_sha256": "fb65796af8fbd887362d9a93deac33b8fac8d26577ae8b8dfb8d81ce14f9f460",
+  "status": "pass"
+ }
+}

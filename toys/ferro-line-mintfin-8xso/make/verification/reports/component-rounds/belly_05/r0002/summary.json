@@ -1,0 +1,62 @@
+{
+ "build": {
+  "belly_05": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_05"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_05"
+ ],
+ "checks_ok": true,
+ "entry": "part_belly_05.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_05/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_05"
+ ],
+ "print": {
+  "belly_05": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_05/r0002/overhang-belly_05.log": "2870b979c164263120ec6cb7f26394bcc970c4d20c13fb859ee905eb8545114c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_05/r0002/thickness-belly_05.log": "ccdf0860d7cac423de4a55334bea4cb749d64cc5a8afe91a4b7ce56dd2dd0423"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:belly_05",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "All three views inspected. Fifth cream scallop remains a single shallow ellipse with broad flat faces, smooth ends and consistent edge depth. No missing or disconnected material is visible. Default and additional1.2mm wall and support checks pass; final mounted overlap awaits assembly.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_05/r0002/visual-packet.json",
+  "packet_sha256": "a7b5ed5bcfb0b67e0313132e46a41a8756249a2865c4cb4ffff18e0b6c744abc",
+  "status": "pass"
+ }
+}

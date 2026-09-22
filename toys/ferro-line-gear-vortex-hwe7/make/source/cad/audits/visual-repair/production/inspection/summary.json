@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "requested": 98,
+  "responses": 98,
+  "delivery_file_count": 49,
+  "pass_files": 49,
+  "native_raw_package_count": 49,
+  "issues": [],
+  "print_ready_claim": false,
+  "manifest": {
+    "path": "artifacts/make/r0001/visual-repair-production/inspection/inspection-manifest.json",
+    "sha256": "f5fb90b190cd1aac463ba618e6a5a4b791e379dffcee9756e98c5d09cc75ca70"
+  }
+}

@@ -1,0 +1,69 @@
+{
+ "build": {
+  "body_01_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_rear"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_01_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0007",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_rear"
+ ],
+ "print": {
+  "body_01_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0007/overhang-body_01_rear.log": "17943bca3c17a64a09a7b2612f73a8877bcfbe00cfd23703f82da58ad693208a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0007/thickness-body_01_rear.log": "3b31762162064b20fa1efb1e18639ac6fbdfe85841bc9d94b3fb310b8ea4d286"
+   },
+   "measured_round": 7,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.27,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 7,
+ "scope": "component:body_01_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Rounded lip loses required radial retaining undercut",
+    "evidence": "Exact nearest distance from each cropped retention sector to its central axial edge is4.60017463mm; top and iso show widened rounded opening.",
+    "part": "body_01_rear",
+    "repair": "Restore a genuine4.4mm minimum aperture with a rounded retaining bead inside the existing axial lip envelope, measuring ball clearance and retained socket wall, or coordinate an axial land extension."
+   }
+  ],
+  "observation": "Front, top and iso inspected. Rounded mouth is visible and all print checks including1.2mm walls pass. Exact minimum aperture measurement across the final0.8mm lip finds radius4.600175, leaving only0.399825mm radial retention undercut instead of required0.6mm; reject this candidate.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0007/visual-packet.json",
+  "packet_sha256": "2a490c503720783b4c30c22f90961dc8ce937aef190fd76089923cb64396b773",
+  "status": "fail"
+ }
+}

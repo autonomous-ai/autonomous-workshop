@@ -1,0 +1,73 @@
+{
+ "build": {
+  "head_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "head_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "head_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_head_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "head_front"
+ ],
+ "print": {
+  "head_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0001/overhang-head_front.log": "21f4e34e48ebceda1e96c4d23d0566f2d7f8a6b6cfbccb53a908155c00832f41",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0001/thickness-head_front.log": "e53fb0366b287f636de5ac963ad6cb0f78ca44c2345a04fee0690bd2ed5b89a6"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 28.4% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 327.0,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.10) 0.5% of surface below (867 of 217901 samples); thinnes"
+    ],
+    "thinnest_mm": 0.21,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:head_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Unsupported cheek-rim ledge and locally thin indexing rim",
+    "evidence": "Front/iso show an overhanging cheek shelf. Overhang report327mm2; two thin wallbands around upper cheeks22.1/20.6mm2.",
+    "part": "head_front",
+    "repair": "Use constant outward offset for >=1.2 rim stock and taper the rear of the cheek lip into the rounded head with a self-supporting skirt."
+   }
+  ],
+  "observation": "Inspected front, top and iso. Rounded head and three upward-open magnet pockets are coherent; cheek indexing rim visibly projects as a ledge beyond the underlying head. Numeric checks locate broad unsupported underside and two thin rim walls.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0001/visual-packet.json",
+  "packet_sha256": "840e952196510a3f944371eb3d77270ef8c72b32a33288d031ef58c9ada02457",
+  "status": "fail"
+ }
+}

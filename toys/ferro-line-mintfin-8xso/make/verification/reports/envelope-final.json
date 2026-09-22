@@ -1,0 +1,609 @@
+{
+  "kind": "Exact existing-STEP BRep bounds and datum distances; not native inspect gate",
+  "step_sha256": "6fde0e671f9897a6483302304cd82d9dcdb6b17f02f48221d3dbd5da3a8bc6d4",
+  "step_path": "artifacts/make/r0001/product/mintfin/mintfin.step",
+  "hierarchy": [
+    {
+      "path": "mintfin",
+      "child_count": 5
+    },
+    {
+      "path": "mintfin.figure",
+      "child_count": 3
+    },
+    {
+      "path": "mintfin.figure.head",
+      "child_count": 6
+    },
+    {
+      "path": "mintfin.figure.head.structural",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.head.structural.head_front_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.head.structural.head_rear_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.head.gills_left_orange",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.head.horn_left_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.head.gills_right_orange",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.head.horn_right_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.head.horn_middle_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.active_face",
+      "child_count": 9
+    },
+    {
+      "path": "mintfin.figure.active_face.happy_face_plate_beige",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.active_face.happy_nostril_left_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.active_face.happy_nostril_right_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.active_face.happy_eye_left_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.active_face.happy_highlight_left_white",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.active_face.happy_eye_right_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.active_face.happy_highlight_right_white",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.active_face.happy_happy_mouth_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.active_face.happy_tongue_orange",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01",
+      "child_count": 5
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.structural",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.structural.body_01_front_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.structural.body_01_rear_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.belly_01_beige",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.spike_01_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.foot_01",
+      "child_count": 4
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.foot_01.leg_01_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.foot_01.claw_01_1_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.foot_01.claw_01_2_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.foot_01.claw_01_3_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.foot_02",
+      "child_count": 4
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.foot_02.leg_02_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.foot_02.claw_02_1_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.foot_02.claw_02_2_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.segment_01.foot_02.claw_02_3_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.segment_02",
+      "child_count": 3
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.segment_02.structural",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.segment_02.structural.body_02_front_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.segment_02.structural.body_02_rear_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.segment_02.belly_02_beige",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.segment_02.spike_02_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.segment_03",
+      "child_count": 3
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.segment_03.structural",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.segment_03.structural.body_03_front_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.segment_03.structural.body_03_rear_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.segment_03.belly_03_beige",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.segment_03.spike_03_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04",
+      "child_count": 5
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.structural",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.structural.body_04_front_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.structural.body_04_rear_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.belly_04_beige",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.spike_04_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.foot_03",
+      "child_count": 4
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.foot_03.leg_03_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.foot_03.claw_03_1_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.foot_03.claw_03_2_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.foot_03.claw_03_3_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.foot_04",
+      "child_count": 4
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.foot_04.leg_04_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.foot_04.claw_04_1_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.foot_04.claw_04_2_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.segment_04.foot_04.claw_04_3_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05",
+      "child_count": 3
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05.structural",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05.structural.body_05_front_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05.structural.body_05_rear_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05.belly_05_beige",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.segment_05.spike_05_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06",
+      "child_count": 3
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06.structural",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06.structural.body_06_front_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06.structural.body_06_rear_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06.belly_06_beige",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.segment_06.spike_06_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07",
+      "child_count": 3
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07.structural",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07.structural.body_07_front_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07.structural.body_07_rear_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07.belly_07_beige",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.segment_07.spike_07_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08",
+      "child_count": 3
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08.structural",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08.structural.body_08_front_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08.structural.body_08_rear_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08.belly_08_beige",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.segment_08.spike_08_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.chain_09",
+      "child_count": 1
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.chain_09.tail",
+      "child_count": 2
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.chain_09.tail.tail_left_orange",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.figure.chain_01.chain_02.chain_03.chain_04.chain_05.chain_06.chain_07.chain_08.chain_09.tail.tail_right_orange",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.spare_face",
+      "child_count": 6
+    },
+    {
+      "path": "mintfin.spare_face.sleepy_face_plate_beige",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.spare_face.sleepy_nostril_left_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.spare_face.sleepy_nostril_right_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.spare_face.sleepy_lid_left_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.spare_face.sleepy_lid_right_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.spare_face.sleepy_sleepy_mouth_dark_gray",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.coupon_socket_green",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.coupon_ball_half_1_orange",
+      "child_count": 0
+    },
+    {
+      "path": "mintfin.coupon_ball_half_2_orange",
+      "child_count": 0
+    }
+  ],
+  "figure_only": true,
+  "bounds": {
+    "True": {
+      "min": [
+        -66.5,
+        -11.593784315909883,
+        -1e-07
+      ],
+      "max": [
+        66.5,
+        157.00000000000404,
+        93.0
+      ],
+      "size": [
+        133.0,
+        168.59378431591392,
+        93.0000001
+      ]
+    },
+    "False": {
+      "min": [
+        -66.50000334288893,
+        -11.593787658798812,
+        -5.53724412860693
+      ],
+      "max": [
+        66.50000334288893,
+        157.00000334289297,
+        93.00000334288893
+      ],
+      "size": [
+        133.00000668577786,
+        168.59379100169178,
+        98.53724747149586
+      ]
+    }
+  },
+  "datum_distances": {
+    "nose_y_minus12": 0.4062156840901139,
+    "tail_y157": 0.0,
+    "left_x_minus66_5": 0.0,
+    "right_x66_5": 0.0,
+    "bottom_z0": 0.0,
+    "top_z93": 0.0
+  },
+  "leaf_count": 66,
+  "anterior_leaves": [
+    {
+      "path": "figure.active_face.happy_eye_left_dark_gray",
+      "bbox_min": [
+        -21.500000002364374,
+        -11.593784315909883,
+        32.14930177736476
+      ],
+      "bbox_max": [
+        -6.499999997635628,
+        -3.309018388356374,
+        47.07100981810548
+      ]
+    },
+    {
+      "path": "figure.active_face.happy_eye_right_dark_gray",
+      "bbox_min": [
+        6.499999997635628,
+        -11.593784315909883,
+        32.14930177736476
+      ],
+      "bbox_max": [
+        21.500000002364374,
+        -3.309018388356374,
+        47.07100981810548
+      ]
+    },
+    {
+      "path": "figure.active_face.happy_highlight_left_white",
+      "bbox_min": [
+        -17.4,
+        -10.704168334141649,
+        41.60092959776473
+      ],
+      "bbox_max": [
+        -14.6,
+        -8.94823847897087,
+        44.58923690880081
+      ]
+    },
+    {
+      "path": "figure.active_face.happy_highlight_right_white",
+      "bbox_min": [
+        10.6,
+        -10.704168334141649,
+        41.60092959776473
+      ],
+      "bbox_max": [
+        13.4,
+        -8.94823847897087,
+        44.58923690880081
+      ]
+    },
+    {
+      "path": "figure.active_face.happy_happy_mouth_dark_gray",
+      "bbox_min": [
+        -8.60573344045144,
+        -10.359150871752117,
+        22.856895909502754
+      ],
+      "bbox_max": [
+        8.250834232552362,
+        -6.530851909087314,
+        32.079803810189794
+      ]
+    },
+    {
+      "path": "figure.active_face.happy_tongue_orange",
+      "bbox_min": [
+        -4.5,
+        -10.253307583322128,
+        24.524707620439145
+      ],
+      "bbox_max": [
+        4.5,
+        -8.131645683089637,
+        30.112431115292807
+      ]
+    },
+    {
+      "path": "figure.active_face.happy_face_plate_beige",
+      "bbox_min": [
+        -30.0055428864845,
+        -9.393951838041932,
+        17.41309792393388
+      ],
+      "bbox_max": [
+        30.00095433652685,
+        1.0944913774861342,
+        55.333174432218975
+      ]
+    },
+    {
+      "path": "figure.head.structural.head_front_green",
+      "bbox_min": [
+        -33.30017004632446,
+        -8.552831739196858,
+        12.956269285666522
+      ],
+      "bbox_max": [
+        33.32072449073859,
+        20.00000010000005,
+        59.043730714333435
+      ]
+    }
+  ],
+  "analytic_eye": {
+    "radius_mm": 7.863636363636363,
+    "world_y_min_mm": -11.59378431591015,
+    "extremum_eye_local_v_mm": -1.634941932339654,
+    "nose_plane_clearance_mm": 0.4062156840898492
+  }
+}

@@ -1,0 +1,69 @@
+{
+ "build": {
+  "body_01_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_rear"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_01_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_rear"
+ ],
+ "print": {
+  "body_01_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0006/overhang-body_01_rear.log": "91ae477cf78ca0a2798ca6a8840f4d27c11f72147fd44f0879271ad99c56c4c3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0006/thickness-body_01_rear.log": "a3f5205196d24ee12e59baa644c4a5054265f506826e4bb06f25a67df67db87b"
+   },
+   "measured_round": 6,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 6,
+ "scope": "component:body_01_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Measured thin region at outgoing socket mouth lip",
+    "evidence": "Top and iso show the sharp mouth edge;1.2mm wall region20.9mm2 at print(-1.0,-3.9,7.3), band1.53mm, minimum0.20mm.",
+    "part": "body_01_rear",
+    "repair": "Round the internal mouth edge locally while retaining minimum throat and2mm radial socket wall; inspect feasibility before a new gate."
+   }
+  ],
+  "observation": "Front, top and iso inspected after J00 lip change. Crown ramp, barrel flank, ankle corners and four socket fingers remain visually coherent. The outgoing mouth retains a sharp internal lip, and the explicit1.2mm measurement now groups a20.9mm2 thin region at that lip. Default wall and overhang pass; extra Wish wall fails.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0006/visual-packet.json",
+  "packet_sha256": "a719ab944e181a11049d81e3e233dfcf3b0a39375850e094734d26d6ee979b06",
+  "status": "fail"
+ }
+}

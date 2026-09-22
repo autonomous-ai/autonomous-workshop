@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/part_horn_middle.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_middle/r0001/thickness-horn_middle.md
+(5.3s, exit 0)
+--- stdout
+part_horn_middle.step.py: 0.31 cm3 solid, grid 0.133 mm (65x65x117), 14366 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 14366 samples)
+  PASS  thickness distribution         median 7.00 mm, p95 9.07 mm, max 14.93 mm
+  WARN  hollowable at 1.20 mm wall     0.09 of 0.31 cm3 (27%) in 1 pocket(s)
+  PASS  filament that would save       0.01 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_middle/r0001/thickness-horn_middle.md
+
+--- stderr

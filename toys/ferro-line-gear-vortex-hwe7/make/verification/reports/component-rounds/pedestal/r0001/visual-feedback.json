@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Unintended central boss notches and missing black finish",
+      "evidence": "Iso shows three radial cuts into the central boss, plus dark blue-gray surface.",
+      "part": "pedestal",
+      "repair": "Restrict bayonet-slot cuts to the outer annulus; assign black. Repair overhangs identified in numeric report."
+    }
+  ],
+  "observation": "Round low cavity is coherent, but three slot cutters also notch the central socket boss. The current surface is blue-gray.",
+  "packet_sha256": "97d30e41a8ecf78fca3ad5ced8a9175ecb02b0e2affb91febc75d3533545fe1d",
+  "status": "fail"
+}

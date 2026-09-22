@@ -1,0 +1,62 @@
+{
+ "build": {
+  "belly_04": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_04"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_04"
+ ],
+ "checks_ok": true,
+ "entry": "part_belly_04.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_04/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_04"
+ ],
+ "print": {
+  "belly_04": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_04/r0002/overhang-belly_04.log": "ad6f6b9941956944fccede9b31dff7a60d0aa7634ca32229985ed5c0dfba0bf9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_04/r0002/thickness-belly_04.log": "50389a92dacf87b82b3b70d4ff43d53d86f049d73c855b259651a50b86144437"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:belly_04",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Cream elliptical fourth scallop has consistent shallow thickness, broad flat face and smooth symmetric perimeter without holes or detached fragments. Default and additional1.2 wall plus support checks pass. Neutral body placement remains an assembly-level check.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_04/r0002/visual-packet.json",
+  "packet_sha256": "cc4347c04c5f5bc602ff4547c0d57d5b7d82fa2104c4cccb09750dc3ab8f35cc",
+  "status": "pass"
+ }
+}

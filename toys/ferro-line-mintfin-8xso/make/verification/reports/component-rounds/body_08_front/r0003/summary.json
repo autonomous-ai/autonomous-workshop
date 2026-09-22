@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_08_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_08_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_08_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_08_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_08_front"
+ ],
+ "print": {
+  "body_08_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0003/overhang-body_08_front.log": "dc84e03bfe393c62310a2b7a40cfc8859856f0f0b2c4f39c8ce51fa8471d36c3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0003/thickness-body_08_front.log": "7ddc276d8c2d8b1e8db65e301b467c4f01cdb84f7b4996eb83948b27d820b985"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:body_08_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show the intact incoming ball, supported rear heel and flat thick bond land. Top shows the offset open bore with continuous surrounding material and clipped crown edge. No isolated pieces or feathered land are visible. Mating, retention and articulation remain assembly checks.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0003/visual-packet.json",
+  "packet_sha256": "82d9666670b10f3e9f4c51cf8aa27e5d1c2164c6968264ae411334eb98ef5c96",
+  "status": "pass"
+ }
+}

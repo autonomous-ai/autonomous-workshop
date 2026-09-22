@@ -1,0 +1,62 @@
+{
+ "build": {
+  "pedestal_lid": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "pedestal_lid"
+ ],
+ "check_motion": true,
+ "checked": [
+  "pedestal_lid"
+ ],
+ "checks_ok": true,
+ "entry": "part_pedestal_lid.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal_lid/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pedestal_lid"
+ ],
+ "print": {
+  "pedestal_lid": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal_lid/r0002/overhang-pedestal_lid.log": "fdc220408f7d18acb402384caf04dc14a2d91304b44258d9bd25bf05d53280c1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal_lid/r0002/thickness-pedestal_lid.log": "a456145acac587fed0631ef000debcdea42aa68afdb186d0eb6b512bc113a634"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.62,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:pedestal_lid",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The inspected views show the round closure with three evenly spaced sloping locking tabs and an underside finger recess. The raised inner baffle is continuous and each tab connects to the plate.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal_lid/r0002/visual-packet.json",
+  "packet_sha256": "38d6d039fbdc801fff90f5b1adee4d185884cd8b11396a0e0c4fb2338305d617",
+  "status": "pass"
+ }
+}

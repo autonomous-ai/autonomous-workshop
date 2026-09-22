@@ -1,0 +1,77 @@
+{
+ "build": {
+  "head_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "head_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "head_rear"
+ ],
+ "checks_ok": false,
+ "entry": "part_head_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_rear/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "head_rear"
+ ],
+ "print": {
+  "head_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_rear/r0001/overhang-head_rear.log": "0d0376a26c8b3a279650acdb22ce5c30950a04782db0497b0eedf5f1d2696522",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_rear/r0001/thickness-head_rear.log": "653317fabddf0f6ee4e6a1c2a768a507a1626bd74a89415fa87441dfdce95da3"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 28.3% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 33.9,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.21,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:head_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Gill seat roofs unsupported in seam-down print orientation",
+    "evidence": "Both side recesses visible in top and iso; report locates31.2/33.9mm2 overhang at print X\u00b130,Z10.",
+    "part": "head_rear",
+    "repair": "Open or slope the lateral seat roofs while preserving gill seating and head envelope."
+   },
+   {
+    "defect": "Measured1.2mm wall failure near mouth",
+    "evidence": "Extra Wish wall report18.0mm2 band at print(3.4,3.2,30.6), band1.32mm.",
+    "part": "J00 socket lip",
+    "repair": "Provide a supported retaining lip section while preserving ball clearance, undercut and25degree bend."
+   }
+  ],
+  "observation": "Front, top and iso show the rounded posterior head, four split socket fingers, three horn recesses and symmetric lateral gill recesses. Lateral recess roofs are visibly unsupported; the numeric overhang report locates both. The retaining mouth has an additional measured thin band requiring repair.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_rear/r0001/visual-packet.json",
+  "packet_sha256": "7020c8ec54c4e5374ab2550b95103b977f66e0f35dfcaf1ab0f196861e78a531",
+  "status": "fail"
+ }
+}

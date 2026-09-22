@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_04_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_04_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_04_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_04_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_04_front"
+ ],
+ "print": {
+  "body_04_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0002/overhang-body_04_front.log": "83a9d276904b2ade0cf564eefcb4ea57a1196984bd02e9f12d6c5edef8e6a488",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0002/thickness-body_04_front.log": "9c14d0532e17d0d09521c3a2ff1229ff63a5046321143761b1bef97a4f13098b"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:body_04_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected once. Ball is centered above the flat front half with a shallow root-clearance crescent. Elliptical stepped taper and planar crown are intact; paired lower-flank cutouts are symmetric. No floating fragment, missing section or visible placement defect is present.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0002/visual-packet.json",
+  "packet_sha256": "c4ab0484ff6ae32f3cc2fbcf8f7d0dfee5047d4a79d3268befda9515652ae6e3",
+  "status": "pass"
+ }
+}

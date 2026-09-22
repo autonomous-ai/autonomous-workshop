@@ -1,0 +1,914 @@
+{
+  "source_sha256": "390ff691337a71594037e2ab6e91e9c6b12a9003e41ab05820e683e900bad215",
+  "format_note": "Exact JSONL records preserved as an ordered JSON array; original log archived outside product.",
+  "records": [
+    {
+      "ok": true,
+      "exitCode": 0,
+      "result": {
+        "ok": true,
+        "tokens": [
+          {
+            "line": 1,
+            "token": "artifacts/make/r0001/product/parts/head_mint_10#",
+            "cadPath": "artifacts/make/r0001/product/parts/head_mint_10",
+            "stepPath": "artifacts/make/r0001/product/parts/head_mint_10.step",
+            "stepHash": "b1c14521a34ee816d60f8b399eba484e2d4929657dccb3d6b2db99b380d3f8f1",
+            "summary": {
+              "kind": "assembly",
+              "occurrenceCount": 2,
+              "leafOccurrenceCount": 1,
+              "shapeCount": 1,
+              "faceCount": 126,
+              "edgeCount": 327,
+              "vertexCount": 0,
+              "bounds": {
+                "min": [
+                  0.0,
+                  -19.0,
+                  0.0
+                ],
+                "max": [
+                  38.2,
+                  19.0,
+                  20.4
+                ]
+              }
+            },
+            "selections": [],
+            "warnings": [],
+            "entryFacts": {
+              "size": [
+                38.2,
+                38.0,
+                20.4
+              ],
+              "extentAxis": "x",
+              "center": [
+                19.1,
+                0.0,
+                10.2
+              ],
+              "diag": 57.61423435228485,
+              "kind": "assembly"
+            },
+            "planes": [
+              {
+                "axis": "z",
+                "coordinate": 1.1999999999999997,
+                "normalSign": -1,
+                "faceCount": 2,
+                "totalArea": 1784.077984,
+                "bbox": {
+                  "min": [
+                    0.0,
+                    -19.0,
+                    1.2
+                  ],
+                  "max": [
+                    26.0,
+                    19.0,
+                    1.2
+                  ]
+                },
+                "selectors": [
+                  "f2"
+                ]
+              },
+              {
+                "axis": "z",
+                "coordinate": 17.600000000000005,
+                "normalSign": 1,
+                "faceCount": 2,
+                "totalArea": 1354.7427699999998,
+                "bbox": {
+                  "min": [
+                    0.0,
+                    -17.636364,
+                    17.6
+                  ],
+                  "max": [
+                    22.25,
+                    17.636364,
+                    17.6
+                  ]
+                },
+                "selectors": [
+                  "f6"
+                ]
+              },
+              {
+                "axis": "x",
+                "coordinate": 26.000000000000004,
+                "normalSign": 1,
+                "faceCount": 4,
+                "totalArea": 1025.36,
+                "bbox": {
+                  "min": [
+                    26.0,
+                    -14.0,
+                    0.0
+                  ],
+                  "max": [
+                    26.0,
+                    14.0,
+                    20.4
+                  ]
+                },
+                "selectors": [
+                  "f10",
+                  "f11"
+                ]
+              },
+              {
+                "axis": "x",
+                "coordinate": 0.0,
+                "normalSign": -1,
+                "faceCount": 2,
+                "totalArea": 884.836364,
+                "bbox": {
+                  "min": [
+                    0.0,
+                    -14.0,
+                    1.2
+                  ],
+                  "max": [
+                    0.0,
+                    14.0,
+                    17.6
+                  ]
+                },
+                "selectors": [
+                  "f1"
+                ]
+              },
+              {
+                "axis": "z",
+                "coordinate": 20.4,
+                "normalSign": 1,
+                "faceCount": 2,
+                "totalArea": 363.186556,
+                "bbox": {
+                  "min": [
+                    9.0,
+                    -17.0,
+                    20.4
+                  ],
+                  "max": [
+                    26.0,
+                    17.0,
+                    20.4
+                  ]
+                },
+                "selectors": [
+                  "f65"
+                ]
+              }
+            ],
+            "entryPositioning": {
+              "kind": "assembly",
+              "bbox": {
+                "min": [
+                  0.0,
+                  -19.0,
+                  0.0
+                ],
+                "max": [
+                  38.2,
+                  19.0,
+                  20.4
+                ]
+              },
+              "bboxFacts": {
+                "size": [
+                  38.2,
+                  38.0,
+                  20.4
+                ],
+                "extentAxis": "x",
+                "center": [
+                  19.1,
+                  0.0,
+                  10.2
+                ],
+                "diag": 57.61423435228485
+              },
+              "majorPlanes": [
+                {
+                  "axis": "z",
+                  "coordinate": 1.1999999999999997,
+                  "normalSign": -1,
+                  "faceCount": 2,
+                  "totalArea": 1784.077984,
+                  "bbox": {
+                    "min": [
+                      0.0,
+                      -19.0,
+                      1.2
+                    ],
+                    "max": [
+                      26.0,
+                      19.0,
+                      1.2
+                    ]
+                  },
+                  "selectors": [
+                    "f2"
+                  ]
+                },
+                {
+                  "axis": "z",
+                  "coordinate": 17.600000000000005,
+                  "normalSign": 1,
+                  "faceCount": 2,
+                  "totalArea": 1354.7427699999998,
+                  "bbox": {
+                    "min": [
+                      0.0,
+                      -17.636364,
+                      17.6
+                    ],
+                    "max": [
+                      22.25,
+                      17.636364,
+                      17.6
+                    ]
+                  },
+                  "selectors": [
+                    "f6"
+                  ]
+                },
+                {
+                  "axis": "x",
+                  "coordinate": 26.000000000000004,
+                  "normalSign": 1,
+                  "faceCount": 4,
+                  "totalArea": 1025.36,
+                  "bbox": {
+                    "min": [
+                      26.0,
+                      -14.0,
+                      0.0
+                    ],
+                    "max": [
+                      26.0,
+                      14.0,
+                      20.4
+                    ]
+                  },
+                  "selectors": [
+                    "f10",
+                    "f11"
+                  ]
+                },
+                {
+                  "axis": "x",
+                  "coordinate": 0.0,
+                  "normalSign": -1,
+                  "faceCount": 2,
+                  "totalArea": 884.836364,
+                  "bbox": {
+                    "min": [
+                      0.0,
+                      -14.0,
+                      1.2
+                    ],
+                    "max": [
+                      0.0,
+                      14.0,
+                      17.6
+                    ]
+                  },
+                  "selectors": [
+                    "f1"
+                  ]
+                },
+                {
+                  "axis": "z",
+                  "coordinate": 20.4,
+                  "normalSign": 1,
+                  "faceCount": 2,
+                  "totalArea": 363.186556,
+                  "bbox": {
+                    "min": [
+                      9.0,
+                      -17.0,
+                      20.4
+                    ],
+                    "max": [
+                      26.0,
+                      17.0,
+                      20.4
+                    ]
+                  },
+                  "selectors": [
+                    "f65"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "errors": []
+      },
+      "id": "repaired-refs-head_mint_10"
+    },
+    {
+      "ok": true,
+      "exitCode": 0,
+      "result": {
+        "ok": true,
+        "entry": "artifacts/make/r0001/product/parts/head_mint_10",
+        "occurrenceCount": 1,
+        "failureCount": 0,
+        "parts": [],
+        "errors": []
+      },
+      "id": "repaired-validate-head_mint_10"
+    },
+    {
+      "ok": true,
+      "exitCode": 0,
+      "result": {
+        "ok": true,
+        "tokens": [
+          {
+            "line": 1,
+            "token": "artifacts/make/r0001/product/parts/head_charcoal_07#",
+            "cadPath": "artifacts/make/r0001/product/parts/head_charcoal_07",
+            "stepPath": "artifacts/make/r0001/product/parts/head_charcoal_07.step",
+            "stepHash": "84ac688585a1933a70537692d563556fbf3a97c425530ff77f0f0be26c34ed80",
+            "summary": {
+              "kind": "assembly",
+              "occurrenceCount": 2,
+              "leafOccurrenceCount": 1,
+              "shapeCount": 1,
+              "faceCount": 3,
+              "edgeCount": 3,
+              "vertexCount": 0,
+              "bounds": {
+                "min": [
+                  22.2523,
+                  -11.849425,
+                  18.5
+                ],
+                "max": [
+                  25.95,
+                  -8.150575,
+                  25.0
+                ]
+              }
+            },
+            "selections": [],
+            "warnings": [],
+            "entryFacts": {
+              "size": [
+                3.6976999999999975,
+                3.69885,
+                6.5
+              ],
+              "extentAxis": "z",
+              "center": [
+                24.10115,
+                -10.0,
+                21.75
+              ],
+              "diag": 8.342929737957762,
+              "kind": "assembly"
+            },
+            "planes": [
+              {
+                "axis": "z",
+                "coordinate": 18.5,
+                "normalSign": -1,
+                "faceCount": 2,
+                "totalArea": 21.46857,
+                "bbox": {
+                  "min": [
+                    22.2523,
+                    -11.849425,
+                    18.5
+                  ],
+                  "max": [
+                    25.95,
+                    -8.150575,
+                    18.5
+                  ]
+                },
+                "selectors": [
+                  "f2"
+                ]
+              },
+              {
+                "axis": "z",
+                "coordinate": 25.0,
+                "normalSign": 1,
+                "faceCount": 2,
+                "totalArea": 4.014576,
+                "bbox": {
+                  "min": [
+                    23.300994,
+                    -10.799751,
+                    25.0
+                  ],
+                  "max": [
+                    24.9,
+                    -9.200249,
+                    25.0
+                  ]
+                },
+                "selectors": [
+                  "f3"
+                ]
+              }
+            ],
+            "entryPositioning": {
+              "kind": "assembly",
+              "bbox": {
+                "min": [
+                  22.2523,
+                  -11.849425,
+                  18.5
+                ],
+                "max": [
+                  25.95,
+                  -8.150575,
+                  25.0
+                ]
+              },
+              "bboxFacts": {
+                "size": [
+                  3.6976999999999975,
+                  3.69885,
+                  6.5
+                ],
+                "extentAxis": "z",
+                "center": [
+                  24.10115,
+                  -10.0,
+                  21.75
+                ],
+                "diag": 8.342929737957762
+              },
+              "majorPlanes": [
+                {
+                  "axis": "z",
+                  "coordinate": 18.5,
+                  "normalSign": -1,
+                  "faceCount": 2,
+                  "totalArea": 21.46857,
+                  "bbox": {
+                    "min": [
+                      22.2523,
+                      -11.849425,
+                      18.5
+                    ],
+                    "max": [
+                      25.95,
+                      -8.150575,
+                      18.5
+                    ]
+                  },
+                  "selectors": [
+                    "f2"
+                  ]
+                },
+                {
+                  "axis": "z",
+                  "coordinate": 25.0,
+                  "normalSign": 1,
+                  "faceCount": 2,
+                  "totalArea": 4.014576,
+                  "bbox": {
+                    "min": [
+                      23.300994,
+                      -10.799751,
+                      25.0
+                    ],
+                    "max": [
+                      24.9,
+                      -9.200249,
+                      25.0
+                    ]
+                  },
+                  "selectors": [
+                    "f3"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "errors": []
+      },
+      "id": "repaired-refs-head_charcoal_07"
+    },
+    {
+      "ok": true,
+      "exitCode": 0,
+      "result": {
+        "ok": true,
+        "entry": "artifacts/make/r0001/product/parts/head_charcoal_07",
+        "occurrenceCount": 1,
+        "failureCount": 0,
+        "parts": [],
+        "errors": []
+      },
+      "id": "repaired-validate-head_charcoal_07"
+    },
+    {
+      "ok": true,
+      "exitCode": 0,
+      "result": {
+        "ok": true,
+        "tokens": [
+          {
+            "line": 1,
+            "token": "artifacts/make/r0001/product/parts/head_charcoal_08#",
+            "cadPath": "artifacts/make/r0001/product/parts/head_charcoal_08",
+            "stepPath": "artifacts/make/r0001/product/parts/head_charcoal_08.step",
+            "stepHash": "3b515b0ab5daa4844f3e61ecacea0b18db8069bc4835b74af3987d537640186a",
+            "summary": {
+              "kind": "assembly",
+              "occurrenceCount": 2,
+              "leafOccurrenceCount": 1,
+              "shapeCount": 1,
+              "faceCount": 3,
+              "edgeCount": 3,
+              "vertexCount": 0,
+              "bounds": {
+                "min": [
+                  22.2523,
+                  8.150575,
+                  18.5
+                ],
+                "max": [
+                  25.95,
+                  11.849425,
+                  25.0
+                ]
+              }
+            },
+            "selections": [],
+            "warnings": [],
+            "entryFacts": {
+              "size": [
+                3.6976999999999975,
+                3.69885,
+                6.5
+              ],
+              "extentAxis": "z",
+              "center": [
+                24.10115,
+                10.0,
+                21.75
+              ],
+              "diag": 8.342929737957762,
+              "kind": "assembly"
+            },
+            "planes": [
+              {
+                "axis": "z",
+                "coordinate": 18.5,
+                "normalSign": -1,
+                "faceCount": 2,
+                "totalArea": 21.46857,
+                "bbox": {
+                  "min": [
+                    22.2523,
+                    8.150575,
+                    18.5
+                  ],
+                  "max": [
+                    25.95,
+                    11.849425,
+                    18.5
+                  ]
+                },
+                "selectors": [
+                  "f2"
+                ]
+              },
+              {
+                "axis": "z",
+                "coordinate": 25.0,
+                "normalSign": 1,
+                "faceCount": 2,
+                "totalArea": 4.014576,
+                "bbox": {
+                  "min": [
+                    23.300994,
+                    9.200249,
+                    25.0
+                  ],
+                  "max": [
+                    24.9,
+                    10.799751,
+                    25.0
+                  ]
+                },
+                "selectors": [
+                  "f3"
+                ]
+              }
+            ],
+            "entryPositioning": {
+              "kind": "assembly",
+              "bbox": {
+                "min": [
+                  22.2523,
+                  8.150575,
+                  18.5
+                ],
+                "max": [
+                  25.95,
+                  11.849425,
+                  25.0
+                ]
+              },
+              "bboxFacts": {
+                "size": [
+                  3.6976999999999975,
+                  3.69885,
+                  6.5
+                ],
+                "extentAxis": "z",
+                "center": [
+                  24.10115,
+                  10.0,
+                  21.75
+                ],
+                "diag": 8.342929737957762
+              },
+              "majorPlanes": [
+                {
+                  "axis": "z",
+                  "coordinate": 18.5,
+                  "normalSign": -1,
+                  "faceCount": 2,
+                  "totalArea": 21.46857,
+                  "bbox": {
+                    "min": [
+                      22.2523,
+                      8.150575,
+                      18.5
+                    ],
+                    "max": [
+                      25.95,
+                      11.849425,
+                      18.5
+                    ]
+                  },
+                  "selectors": [
+                    "f2"
+                  ]
+                },
+                {
+                  "axis": "z",
+                  "coordinate": 25.0,
+                  "normalSign": 1,
+                  "faceCount": 2,
+                  "totalArea": 4.014576,
+                  "bbox": {
+                    "min": [
+                      23.300994,
+                      9.200249,
+                      25.0
+                    ],
+                    "max": [
+                      24.9,
+                      10.799751,
+                      25.0
+                    ]
+                  },
+                  "selectors": [
+                    "f3"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "errors": []
+      },
+      "id": "repaired-refs-head_charcoal_08"
+    },
+    {
+      "ok": true,
+      "exitCode": 0,
+      "result": {
+        "ok": true,
+        "entry": "artifacts/make/r0001/product/parts/head_charcoal_08",
+        "occurrenceCount": 1,
+        "failureCount": 0,
+        "parts": [],
+        "errors": []
+      },
+      "id": "repaired-validate-head_charcoal_08"
+    },
+    {
+      "ok": true,
+      "exitCode": 0,
+      "result": {
+        "ok": true,
+        "entry": "artifacts/make/r0001/product/cad/snap/states/happy",
+        "occurrenceCount": 3,
+        "failureCount": 0,
+        "parts": [],
+        "errors": []
+      },
+      "id": "repaired-state-happy"
+    },
+    {
+      "ok": true,
+      "exitCode": 0,
+      "result": {
+        "ok": true,
+        "entry": "artifacts/make/r0001/product/cad/snap/states/sleepy",
+        "occurrenceCount": 3,
+        "failureCount": 0,
+        "parts": [],
+        "errors": []
+      },
+      "id": "repaired-state-sleepy"
+    },
+    {
+      "ok": true,
+      "exitCode": 0,
+      "result": {
+        "ok": true,
+        "entry": "artifacts/make/r0001/product/cad/snap/states/angry",
+        "occurrenceCount": 3,
+        "failureCount": 0,
+        "parts": [],
+        "errors": []
+      },
+      "id": "repaired-state-angry"
+    },
+    {
+      "ok": true,
+      "exitCode": 0,
+      "result": {
+        "ok": true,
+        "axis": "x",
+        "from": {
+          "cadPath": "artifacts/make/r0001/product/cad/mintfin",
+          "stepPath": "artifacts/make/r0001/product/cad/mintfin.step",
+          "selectorType": "face",
+          "normalizedSelector": "o1.9.f1",
+          "displaySelector": "o1.9.f1",
+          "copyText": "#o1.9.f1",
+          "positioning": {
+            "selectorType": "face",
+            "selector": "o1.9.f1",
+            "bbox": {
+              "min": [
+                0.0,
+                -14.0,
+                0.0
+              ],
+              "max": [
+                0.0,
+                14.0,
+                1.2
+              ]
+            },
+            "bboxFacts": {
+              "size": [
+                0.0,
+                28.0,
+                1.2
+              ],
+              "extentAxis": "y",
+              "center": [
+                0.0,
+                0.0,
+                0.6
+              ],
+              "diag": 28.025702488965376
+            },
+            "center": [
+              0.0,
+              0.0,
+              0.6
+            ],
+            "occurrenceId": "o1.9",
+            "shapeId": "o1.9.s1",
+            "kind": "plane",
+            "area": 33.6,
+            "origin": [
+              0.0,
+              0.0,
+              3.0
+            ],
+            "normal": [
+              -1.0,
+              0.0,
+              0.0
+            ],
+            "axisAlignment": {
+              "axis": "x",
+              "sign": -1,
+              "aligned": true,
+              "magnitude": 1.0
+            },
+            "normalAxis": {
+              "axis": "x",
+              "sign": -1,
+              "aligned": true
+            },
+            "axis": "x",
+            "coordinate": 0.0,
+            "planeOffset": 0.0
+          },
+          "coordinate": 0.0,
+          "coordinateSource": "coordinate"
+        },
+        "to": {
+          "cadPath": "artifacts/make/r0001/product/cad/mintfin",
+          "stepPath": "artifacts/make/r0001/product/cad/mintfin.step",
+          "selectorType": "face",
+          "normalizedSelector": "o1.55.f18",
+          "displaySelector": "o1.55.f18",
+          "copyText": "#o1.55.f18",
+          "positioning": {
+            "selectorType": "face",
+            "selector": "o1.55.f18",
+            "bbox": {
+              "min": [
+                180.0,
+                -2.0,
+                0.0
+              ],
+              "max": [
+                180.0,
+                2.0,
+                3.0
+              ]
+            },
+            "bboxFacts": {
+              "size": [
+                0.0,
+                4.0,
+                3.0
+              ],
+              "extentAxis": "y",
+              "center": [
+                180.0,
+                0.0,
+                1.5
+              ],
+              "diag": 5.0
+            },
+            "center": [
+              180.0,
+              0.0,
+              1.5
+            ],
+            "occurrenceId": "o1.55",
+            "shapeId": "o1.55.s1",
+            "kind": "plane",
+            "area": 12.0,
+            "origin": [
+              180.0,
+              -2.0,
+              0.0
+            ],
+            "normal": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "axisAlignment": {
+              "axis": "x",
+              "sign": 1,
+              "aligned": true,
+              "magnitude": 1.0
+            },
+            "normalAxis": {
+              "axis": "x",
+              "sign": 1,
+              "aligned": true
+            },
+            "axis": "x",
+            "coordinate": 180.0,
+            "planeOffset": 180.0
+          },
+          "coordinate": 180.0,
+          "coordinateSource": "coordinate"
+        },
+        "measurement": {
+          "signedDistance": 180.0,
+          "absoluteDistance": 180.0,
+          "euclideanDistance": 180.0361074895811,
+          "vectorRelationship": {
+            "relation": "opposed",
+            "dot": -1.0,
+            "aligned": true
+          }
+        }
+      },
+      "id": "length180"
+    }
+  ]
+}

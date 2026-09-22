@@ -1,0 +1,62 @@
+{
+ "build": {
+  "belly_06": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_06"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_06"
+ ],
+ "checks_ok": true,
+ "entry": "part_belly_06.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_06/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_06"
+ ],
+ "print": {
+  "belly_06": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_06/r0002/overhang-belly_06.log": "a1bc5401bb484d170505dc3ce15c2379a6dbe8f1ffa9c8bf765ebd68d1c8707d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_06/r0002/thickness-belly_06.log": "56553e9327ced88cf5509d93b562c50d5b003265de1bb4ed633df0c780ad83d4"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:belly_06",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Sixth scallop is a small cream elliptical plate with smooth symmetric ends, uninterrupted flat faces and consistent shallow thickness. No isolated slivers or missing material. Default/additional1.2 wall and support checks pass; adhesive seating remains an assembly check.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_06/r0002/visual-packet.json",
+  "packet_sha256": "fcaa5a09a0d1e1a1613d5a04dfaddffa38c9048334090262c5691f8261669946",
+  "status": "pass"
+ }
+}

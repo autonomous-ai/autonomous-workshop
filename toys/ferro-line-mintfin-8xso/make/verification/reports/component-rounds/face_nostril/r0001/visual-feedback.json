@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Standing-feature thickness fails0.8mm gate",
+      "evidence": "Default wall report0.73mm minimum over2mm2 broad region.",
+      "part": "face_nostril",
+      "repair": "Increase cylinder height from0.8 to1.0mm, keeping diameter1.6mm and face-local position."
+    }
+  ],
+  "observation": "Front, top and iso show one regular charcoal cylinder with flat adhesive underside, correct round profile and no stray material. Numeric standing-feature minimum check fails across the thin slab.",
+  "packet_sha256": "d9287a343c1d73be52a65fb279ec7543d552b608c01bef571c9fbb6f69bccc22",
+  "status": "fail"
+}

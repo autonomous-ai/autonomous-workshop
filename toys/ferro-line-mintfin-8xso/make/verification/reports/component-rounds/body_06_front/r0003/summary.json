@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_06_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_06_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_06_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_06_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_06_front"
+ ],
+ "print": {
+  "body_06_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0003/overhang-body_06_front.log": "a75b32bc10a7924cb24fd0898983bb64e76a81ef66b5879c08422e7ce96c6b1c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0003/thickness-body_06_front.log": "49d9b7cdd863723c3c130e99ec0638f719726d63b27f2e4ba3f5e387771dd300"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:body_06_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a continuous bed land and rooted ball. Top and iso show a contained ellipse with flat crown and symmetric socket clearance, without the former dorsal lobe; the repaired cavity relief adds no exposed lip or stray geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_06_front/r0003/visual-packet.json",
+  "packet_sha256": "2469fc774f8cbc81bfe23e10951d00c523f46c45c8265921e8ac88f8588cffec",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "axle": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "axle"
+ ],
+ "check_motion": true,
+ "checked": [
+  "axle"
+ ],
+ "checks_ok": true,
+ "entry": "part_axle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "axle"
+ ],
+ "print": {
+  "axle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0006/overhang-axle.log": "be4f1f5847099981a2e3d1aa748ba76275212c055095b054fd7bb500033985e5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0006/thickness-axle.log": "0bf799e66fbb2dfdca0ade620920428b4fd32612537c7bc56bbf169f1c587914"
+   },
+   "measured_round": 6,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.28,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 6,
+ "scope": "component:axle",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top and isometric views now show the front thread clipped to the same D-flat as the shaft. The bore remains open, the shoulder is continuous and both thread sections remain present. The views show no new disconnected or misplaced geometry; the repaired insertion path still needs its separate sweep.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0006/visual-packet.json",
+  "packet_sha256": "3ec84a4880a59806366f22bddc7996e7fb049b3303edc5350502900121f3dcdc",
+  "status": "pass"
+ }
+}

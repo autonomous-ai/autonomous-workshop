@@ -1,0 +1,4192 @@
+{
+  "method": "Read existing native STEP_topology selector table only; no CAD execution. Every selector selected by actual surface type/axis/radius/plane predicates. Historical ordinal formula is checked after discovery, not assumed.",
+  "target": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+  "target_sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+  "topology_glb_sha256": "ac79cb93148ee0f30f1bfc0f26a550e6b78951fe20d5fe677a4684fc202c2e6a",
+  "request_count": 81,
+  "gear_occurrences": [
+    {
+      "name": "gear_1_1",
+      "teeth": 14,
+      "occurrence": "o1.11",
+      "bore_selector": "o1.11.f295",
+      "faces": [
+        "o1.11.f296",
+        "o1.11.f297"
+      ],
+      "post_selector": "o1.25.1.f195",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_2",
+      "teeth": 15,
+      "occurrence": "o1.12",
+      "bore_selector": "o1.12.f301",
+      "faces": [
+        "o1.12.f302",
+        "o1.12.f303"
+      ],
+      "post_selector": "o1.25.1.f184",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_3",
+      "teeth": 18,
+      "occurrence": "o1.13",
+      "bore_selector": "o1.13.f319",
+      "faces": [
+        "o1.13.f320",
+        "o1.13.f321"
+      ],
+      "post_selector": "o1.25.1.f79",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_4",
+      "teeth": 20,
+      "occurrence": "o1.14",
+      "bore_selector": "o1.14.f331",
+      "faces": [
+        "o1.14.f332",
+        "o1.14.f333"
+      ],
+      "post_selector": "o1.25.1.f68",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_5",
+      "teeth": 22,
+      "occurrence": "o1.15",
+      "bore_selector": "o1.15.f343",
+      "faces": [
+        "o1.15.f344",
+        "o1.15.f345"
+      ],
+      "post_selector": "o1.25.1.f57",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_6",
+      "teeth": 23,
+      "occurrence": "o1.16",
+      "bore_selector": "o1.16.f349",
+      "faces": [
+        "o1.16.f350",
+        "o1.16.f351"
+      ],
+      "post_selector": "o1.25.1.f46",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_1_7",
+      "teeth": 26,
+      "occurrence": "o1.17",
+      "bore_selector": "o1.17.f367",
+      "faces": [
+        "o1.17.f368",
+        "o1.17.f369"
+      ],
+      "post_selector": "o1.25.1.f35",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_1",
+      "teeth": 14,
+      "occurrence": "o1.18",
+      "bore_selector": "o1.18.f295",
+      "faces": [
+        "o1.18.f296",
+        "o1.18.f297"
+      ],
+      "post_selector": "o1.25.1.f164",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_2",
+      "teeth": 15,
+      "occurrence": "o1.19",
+      "bore_selector": "o1.19.f301",
+      "faces": [
+        "o1.19.f302",
+        "o1.19.f303"
+      ],
+      "post_selector": "o1.25.1.f153",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_3",
+      "teeth": 18,
+      "occurrence": "o1.20",
+      "bore_selector": "o1.20.f319",
+      "faces": [
+        "o1.20.f320",
+        "o1.20.f321"
+      ],
+      "post_selector": "o1.25.1.f142",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_4",
+      "teeth": 20,
+      "occurrence": "o1.21",
+      "bore_selector": "o1.21.f331",
+      "faces": [
+        "o1.21.f332",
+        "o1.21.f333"
+      ],
+      "post_selector": "o1.25.1.f131",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_5",
+      "teeth": 22,
+      "occurrence": "o1.22",
+      "bore_selector": "o1.22.f343",
+      "faces": [
+        "o1.22.f344",
+        "o1.22.f345"
+      ],
+      "post_selector": "o1.25.1.f120",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_6",
+      "teeth": 23,
+      "occurrence": "o1.23",
+      "bore_selector": "o1.23.f349",
+      "faces": [
+        "o1.23.f350",
+        "o1.23.f351"
+      ],
+      "post_selector": "o1.25.1.f109",
+      "formula_crosscheck_only": true
+    },
+    {
+      "name": "gear_2_7",
+      "teeth": 26,
+      "occurrence": "o1.24",
+      "bore_selector": "o1.24.f367",
+      "faces": [
+        "o1.24.f368",
+        "o1.24.f369"
+      ],
+      "post_selector": "o1.25.1.f98",
+      "formula_crosscheck_only": true
+    }
+  ],
+  "faces": [
+    {
+      "id": "o1.8.f2",
+      "occurrenceId": "o1.8",
+      "shapeId": "o1.8.s1",
+      "ordinal": 2,
+      "surfaceType": "plane",
+      "area": 2103.876664,
+      "center": [
+        0.011971,
+        -24.3,
+        120.0
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -27.5,
+          -24.3,
+          92.700506
+        ],
+        "max": [
+          27.5,
+          -24.3,
+          147.299494
+        ]
+      },
+      "edgeStart": 475,
+      "edgeCount": 3,
+      "relevance": 77,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -24.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 52,
+      "triangleCount": 49
+    },
+    {
+      "id": "o1.9.f4",
+      "occurrenceId": "o1.9",
+      "shapeId": "o1.9.s1",
+      "ordinal": 4,
+      "surfaceType": "plane",
+      "area": 1239.284864,
+      "center": [
+        0.015855,
+        -28.3,
+        120.0
+      ],
+      "normal": [
+        -0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -28.27454,
+          -28.3,
+          91.72546
+        ],
+        "max": [
+          28.27454,
+          -28.3,
+          148.27454
+        ]
+      },
+      "edgeStart": 501,
+      "edgeCount": 428,
+      "relevance": 54,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -28.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 366,
+      "triangleCount": 748
+    },
+    {
+      "id": "o1.8.f3",
+      "occurrenceId": "o1.8",
+      "shapeId": "o1.8.s1",
+      "ordinal": 3,
+      "surfaceType": "plane",
+      "area": 2103.876664,
+      "center": [
+        0.011971,
+        -23.3,
+        120.0
+      ],
+      "normal": [
+        -0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -27.5,
+          -23.3,
+          92.700506
+        ],
+        "max": [
+          27.5,
+          -23.3,
+          147.299494
+        ]
+      },
+      "edgeStart": 478,
+      "edgeCount": 3,
+      "relevance": 77,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -23.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 101,
+      "triangleCount": 49
+    },
+    {
+      "id": "o1.9.f5",
+      "occurrenceId": "o1.9",
+      "shapeId": "o1.9.s1",
+      "ordinal": 5,
+      "surfaceType": "plane",
+      "area": 1239.284864,
+      "center": [
+        0.015855,
+        -33.3,
+        120.0
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -28.27454,
+          -33.3,
+          91.72546
+        ],
+        "max": [
+          28.27454,
+          -33.3,
+          148.27454
+        ]
+      },
+      "edgeStart": 929,
+      "edgeCount": 428,
+      "relevance": 54,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -33.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 1114,
+      "triangleCount": 748
+    },
+    {
+      "id": "o1.25.2.f2",
+      "occurrenceId": "o1.25.2",
+      "shapeId": "o1.25.2.s1",
+      "ordinal": 2,
+      "surfaceType": "plane",
+      "area": 1184.755996,
+      "center": [
+        0.0,
+        -43.3,
+        120.0
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -34.998491,
+          -43.3,
+          85.001509
+        ],
+        "max": [
+          34.998491,
+          -43.3,
+          154.998491
+        ]
+      },
+      "edgeStart": 31665,
+      "edgeCount": 486,
+      "relevance": 60,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -43.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 6,
+      "triangleCount": 812
+    },
+    {
+      "id": "o1.25.2.f4",
+      "occurrenceId": "o1.25.2",
+      "shapeId": "o1.25.2.s1",
+      "ordinal": 4,
+      "surfaceType": "plane",
+      "area": 1184.755996,
+      "center": [
+        0.0,
+        -39.3,
+        120.0
+      ],
+      "normal": [
+        -0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -34.998491,
+          -39.3,
+          85.001509
+        ],
+        "max": [
+          34.998491,
+          -39.3,
+          154.998491
+        ]
+      },
+      "edgeStart": 32155,
+      "edgeCount": 486,
+      "relevance": 60,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -39.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 820,
+      "triangleCount": 812
+    },
+    {
+      "id": "o1.8.f1",
+      "occurrenceId": "o1.8",
+      "shapeId": "o1.8.s1",
+      "ordinal": 1,
+      "surfaceType": "cylinder",
+      "area": 172.367453,
+      "center": [
+        0.0,
+        -23.8,
+        120.0
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          -27.5,
+          -24.3,
+          92.700506
+        ],
+        "max": [
+          27.5,
+          -23.3,
+          147.299494
+        ]
+      },
+      "edgeStart": 472,
+      "edgeCount": 3,
+      "relevance": 28,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -23.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 27.5
+      },
+      "triangleStart": 0,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.2.f1",
+      "occurrenceId": "o1.25.2",
+      "shapeId": "o1.25.2.s1",
+      "ordinal": 1,
+      "surfaceType": "cylinder",
+      "area": 4.73032,
+      "center": [
+        34.985972,
+        -41.3,
+        120.91614
+      ],
+      "normal": [
+        0.999657,
+        -0.0,
+        0.026177
+      ],
+      "bbox": {
+        "min": [
+          34.967536,
+          -43.3,
+          120.325
+        ],
+        "max": [
+          34.998491,
+          -39.3,
+          121.507125
+        ]
+      },
+      "edgeStart": 31661,
+      "edgeCount": 4,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -39.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 35.0
+      },
+      "triangleStart": 0,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.25.2.f484",
+      "occurrenceId": "o1.25.2",
+      "shapeId": "o1.25.2.s1",
+      "ordinal": 484,
+      "surfaceType": "cylinder",
+      "area": 344.730291,
+      "center": [
+        -19.302905,
+        -41.3,
+        120.0
+      ],
+      "normal": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -29.0,
+          -43.3,
+          91.095238
+        ],
+        "max": [
+          -2.348348,
+          -39.3,
+          148.904762
+        ]
+      },
+      "edgeStart": 34556,
+      "edgeCount": 4,
+      "relevance": 36,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -38.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 29.0
+      },
+      "triangleStart": 3116,
+      "triangleCount": 24
+    },
+    {
+      "id": "o1.9.f7",
+      "occurrenceId": "o1.9",
+      "shapeId": "o1.9.s1",
+      "ordinal": 7,
+      "surfaceType": "cylinder",
+      "area": 4.840532,
+      "center": [
+        28.273312,
+        -30.8,
+        120.0
+      ],
+      "normal": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          28.270857,
+          -33.3,
+          119.515968
+        ],
+        "max": [
+          28.27454,
+          -28.3,
+          120.484032
+        ]
+      },
+      "edgeStart": 1361,
+      "edgeCount": 4,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -28.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 28.275
+      },
+      "triangleStart": 1864,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.9.f2",
+      "occurrenceId": "o1.9",
+      "shapeId": "o1.9.s1",
+      "ordinal": 2,
+      "surfaceType": "cylinder",
+      "area": 8.892917,
+      "center": [
+        25.023005,
+        -30.8,
+        117.810771
+      ],
+      "normal": [
+        0.996195,
+        -0.0,
+        -0.087156
+      ],
+      "bbox": {
+        "min": [
+          24.936222,
+          -33.3,
+          116.92584
+        ],
+        "max": [
+          25.091207,
+          -28.3,
+          118.697327
+        ]
+      },
+      "edgeStart": 493,
+      "edgeCount": 4,
+      "relevance": 12,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -28.3,
+          120.0
+        ],
+        "axis": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 25.125
+      },
+      "triangleStart": 2,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.3.f4",
+      "occurrenceId": "o1.3",
+      "shapeId": "o1.3.s1",
+      "ordinal": 4,
+      "surfaceType": "cylinder",
+      "area": 3553.903481,
+      "center": [
+        -0.0,
+        0.0,
+        60.25
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          -6.0,
+          -5.956253,
+          13.0
+        ],
+        "max": [
+          6.0,
+          5.956253,
+          107.5
+        ]
+      },
+      "edgeStart": 317,
+      "edgeCount": 3,
+      "relevance": 100,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          0.0,
+          13.0
+        ],
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "radius": 6.0
+      },
+      "triangleStart": 125,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.1.f1",
+      "occurrenceId": "o1.1",
+      "shapeId": "o1.1.s1",
+      "ordinal": 1,
+      "surfaceType": "cylinder",
+      "area": 4606.911919,
+      "center": [
+        -0.0,
+        0.0,
+        7.0
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          -52.5,
+          -52.117216,
+          -0.0
+        ],
+        "max": [
+          52.5,
+          52.117216,
+          14.0
+        ]
+      },
+      "edgeStart": 0,
+      "edgeCount": 3,
+      "relevance": 49,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -0.0,
+          0.0
+        ],
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "radius": 52.5
+      },
+      "triangleStart": 0,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.11.f296",
+      "occurrenceId": "o1.11",
+      "shapeId": "o1.11.s1",
+      "ordinal": 296,
+      "surfaceType": "plane",
+      "area": 279.804651,
+      "center": [
+        37.5,
+        -28.3,
+        120.0
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          23.752249,
+          -28.3,
+          106.416899
+        ],
+        "max": [
+          51.247751,
+          -28.3,
+          133.583101
+        ]
+      },
+      "edgeStart": 4277,
+      "edgeCount": 295,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          37.5,
+          -28.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 7136,
+      "triangleCount": 470
+    },
+    {
+      "id": "o1.11.f297",
+      "occurrenceId": "o1.11",
+      "shapeId": "o1.11.s1",
+      "ordinal": 297,
+      "surfaceType": "plane",
+      "area": 279.804651,
+      "center": [
+        37.5,
+        -33.3,
+        120.0
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          23.752249,
+          -33.3,
+          106.416899
+        ],
+        "max": [
+          51.247751,
+          -33.3,
+          133.583101
+        ]
+      },
+      "edgeStart": 4572,
+      "edgeCount": 295,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          37.5,
+          -33.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 7606,
+      "triangleCount": 470
+    },
+    {
+      "id": "o1.11.f295",
+      "occurrenceId": "o1.11",
+      "shapeId": "o1.11.s1",
+      "ordinal": 295,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        37.5,
+        -30.8,
+        120.0
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          34.751497,
+          -33.3,
+          117.265085
+        ],
+        "max": [
+          40.248503,
+          -28.3,
+          122.734915
+        ]
+      },
+      "edgeStart": 4274,
+      "edgeCount": 3,
+      "relevance": 30,
+      "flags": 0,
+      "params": {
+        "origin": [
+          37.5,
+          -28.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 7084,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f195",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 195,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        37.500087,
+        -31.000071,
+        120.0
+      ],
+      "normal": [
+        -0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          35.5,
+          -33.7,
+          118.000224
+        ],
+        "max": [
+          39.5,
+          -28.3,
+          121.999776
+        ]
+      },
+      "edgeStart": 31619,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          37.5,
+          -28.0,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 12766,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.25.1.f1",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 1,
+      "surfaceType": "plane",
+      "area": 24971.835755,
+      "center": [
+        -0.0,
+        -28.0,
+        120.0
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -94.0,
+          -28.0,
+          26.685366
+        ],
+        "max": [
+          94.0,
+          -28.0,
+          213.314634
+        ]
+      },
+      "edgeStart": 30744,
+      "edgeCount": 41,
+      "relevance": 74,
+      "flags": 0,
+      "params": {
+        "origin": [
+          0.0,
+          -28.0,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 0,
+      "triangleCount": 558
+    },
+    {
+      "id": "o1.11.f3",
+      "occurrenceId": "o1.11",
+      "shapeId": "o1.11.s1",
+      "ordinal": 3,
+      "surfaceType": "cylinder",
+      "area": 4.232712,
+      "center": [
+        49.059803,
+        -30.8,
+        122.224543
+      ],
+      "normal": [
+        0.981983,
+        0.0,
+        0.188971
+      ],
+      "bbox": {
+        "min": [
+          48.975406,
+          -33.3,
+          121.808126
+        ],
+        "max": [
+          49.141987,
+          -28.3,
+          122.640535
+        ]
+      },
+      "edgeStart": 3106,
+      "edgeCount": 4,
+      "relevance": 13,
+      "flags": 0,
+      "params": {
+        "origin": [
+          37.5,
+          -28.3,
+          120.0
+        ],
+        "axis": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 11.775
+      },
+      "triangleStart": 234,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.11.f6",
+      "occurrenceId": "o1.11",
+      "shapeId": "o1.11.s1",
+      "ordinal": 6,
+      "surfaceType": "cylinder",
+      "area": 9.867902,
+      "center": [
+        45.373529,
+        -30.8,
+        123.464412
+      ],
+      "normal": [
+        0.915312,
+        0.0,
+        0.402744
+      ],
+      "bbox": {
+        "min": [
+          44.946279,
+          -33.3,
+          122.466652
+        ],
+        "max": [
+          45.739586,
+          -28.3,
+          124.435248
+        ]
+      },
+      "edgeStart": 3118,
+      "edgeCount": 4,
+      "relevance": 16,
+      "flags": 0,
+      "params": {
+        "origin": [
+          37.5,
+          -28.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 8.625
+      },
+      "triangleStart": 470,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.12.f302",
+      "occurrenceId": "o1.12",
+      "shapeId": "o1.12.s1",
+      "ordinal": 302,
+      "surfaceType": "plane",
+      "area": 314.332499,
+      "center": [
+        35.873092,
+        -28.3,
+        141.689065
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          22.309044,
+          -28.3,
+          127.981964
+        ],
+        "max": [
+          49.626961,
+          -28.3,
+          155.41599
+        ]
+      },
+      "edgeStart": 6070,
+      "edgeCount": 301,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          35.873093,
+          -28.3,
+          141.689068
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 7612,
+      "triangleCount": 486
+    },
+    {
+      "id": "o1.12.f303",
+      "occurrenceId": "o1.12",
+      "shapeId": "o1.12.s1",
+      "ordinal": 303,
+      "surfaceType": "plane",
+      "area": 314.332499,
+      "center": [
+        35.873092,
+        -33.3,
+        141.689065
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          22.309044,
+          -33.3,
+          127.981964
+        ],
+        "max": [
+          49.626961,
+          -33.3,
+          155.41599
+        ]
+      },
+      "edgeStart": 6371,
+      "edgeCount": 301,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          35.873093,
+          -33.3,
+          141.689068
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 8098,
+      "triangleCount": 486
+    },
+    {
+      "id": "o1.12.f301",
+      "occurrenceId": "o1.12",
+      "shapeId": "o1.12.s1",
+      "ordinal": 301,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        35.873093,
+        -30.8,
+        141.689068
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          33.293549,
+          -33.3,
+          139.124786
+        ],
+        "max": [
+          38.452638,
+          -28.3,
+          144.25335
+        ]
+      },
+      "edgeStart": 6067,
+      "edgeCount": 3,
+      "relevance": 29,
+      "flags": 0,
+      "params": {
+        "origin": [
+          35.873093,
+          -28.3,
+          141.689068
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 7560,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f184",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 184,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        35.873181,
+        -31.000071,
+        141.689068
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          33.873093,
+          -33.7,
+          139.689292
+        ],
+        "max": [
+          37.873093,
+          -28.3,
+          143.688844
+        ]
+      },
+      "edgeStart": 31572,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          35.873093,
+          -28.0,
+          141.689068
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 11980,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.12.f3",
+      "occurrenceId": "o1.12",
+      "shapeId": "o1.12.s1",
+      "ordinal": 3,
+      "surfaceType": "cylinder",
+      "area": 4.292399,
+      "center": [
+        48.327401,
+        -30.8,
+        142.989376
+      ],
+      "normal": [
+        0.994594,
+        0.0,
+        0.103842
+      ],
+      "bbox": {
+        "min": [
+          48.278501,
+          -33.3,
+          142.562078
+        ],
+        "max": [
+          48.374133,
+          -28.3,
+          143.416447
+        ]
+      },
+      "edgeStart": 4875,
+      "edgeCount": 4,
+      "relevance": 13,
+      "flags": 0,
+      "params": {
+        "origin": [
+          35.873093,
+          -28.3,
+          141.689068
+        ],
+        "axis": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 12.525
+      },
+      "triangleStart": 234,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.12.f6",
+      "occurrenceId": "o1.12",
+      "shapeId": "o1.12.s1",
+      "ordinal": 6,
+      "surfaceType": "cylinder",
+      "area": 9.918134,
+      "center": [
+        44.770921,
+        -30.8,
+        144.573358
+      ],
+      "normal": [
+        0.95127,
+        0.0,
+        0.30836
+      ],
+      "bbox": {
+        "min": [
+          44.436036,
+          -33.3,
+          143.579104
+        ],
+        "max": [
+          45.046694,
+          -28.3,
+          145.54845
+        ]
+      },
+      "edgeStart": 4887,
+      "edgeCount": 4,
+      "relevance": 16,
+      "flags": 0,
+      "params": {
+        "origin": [
+          35.873093,
+          -28.3,
+          141.689068
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 9.375
+      },
+      "triangleStart": 470,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.13.f320",
+      "occurrenceId": "o1.13",
+      "shapeId": "o1.13.s1",
+      "ordinal": 320,
+      "surfaceType": "plane",
+      "area": 423.86032,
+      "center": [
+        21.420559,
+        -28.3,
+        161.781025
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          3.546761,
+          -28.3,
+          144.018828
+        ],
+        "max": [
+          39.294357,
+          -28.3,
+          179.543223
+        ]
+      },
+      "edgeStart": 7947,
+      "edgeCount": 319,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          21.420559,
+          -28.3,
+          161.781025
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 9108,
+      "triangleCount": 532
+    },
+    {
+      "id": "o1.13.f321",
+      "occurrenceId": "o1.13",
+      "shapeId": "o1.13.s1",
+      "ordinal": 321,
+      "surfaceType": "plane",
+      "area": 423.86032,
+      "center": [
+        21.420559,
+        -33.3,
+        161.781025
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          3.546761,
+          -33.3,
+          144.018828
+        ],
+        "max": [
+          39.294357,
+          -33.3,
+          179.543223
+        ]
+      },
+      "edgeStart": 8266,
+      "edgeCount": 319,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          21.420559,
+          -33.3,
+          161.781025
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 9640,
+      "triangleCount": 532
+    },
+    {
+      "id": "o1.13.f319",
+      "occurrenceId": "o1.13",
+      "shapeId": "o1.13.s1",
+      "ordinal": 319,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        21.420559,
+        -30.8,
+        161.781025
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          18.575792,
+          -33.3,
+          158.948736
+        ],
+        "max": [
+          24.265325,
+          -28.3,
+          164.613314
+        ]
+      },
+      "edgeStart": 7944,
+      "edgeCount": 3,
+      "relevance": 26,
+      "flags": 0,
+      "params": {
+        "origin": [
+          21.420559,
+          -28.3,
+          161.781025
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 9056,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f79",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 79,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        21.420646,
+        -31.000071,
+        161.781025
+      ],
+      "normal": [
+        -0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          19.420559,
+          -33.7,
+          159.781249
+        ],
+        "max": [
+          23.420559,
+          -28.3,
+          163.780802
+        ]
+      },
+      "edgeStart": 31129,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          21.420559,
+          -28.0,
+          161.781025
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 5536,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.13.f3",
+      "occurrenceId": "o1.13",
+      "shapeId": "o1.13.s1",
+      "ordinal": 3,
+      "surfaceType": "cylinder",
+      "area": 4.436995,
+      "center": [
+        35.753622,
+        -30.8,
+        165.356458
+      ],
+      "normal": [
+        0.970267,
+        0.0,
+        0.242037
+      ],
+      "bbox": {
+        "min": [
+          35.642415,
+          -33.3,
+          164.925053
+        ],
+        "max": [
+          35.862915,
+          -28.3,
+          165.787386
+        ]
+      },
+      "edgeStart": 6680,
+      "edgeCount": 4,
+      "relevance": 12,
+      "flags": 0,
+      "params": {
+        "origin": [
+          21.420559,
+          -28.3,
+          161.781025
+        ],
+        "axis": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 14.775
+      },
+      "triangleStart": 234,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.13.f6",
+      "occurrenceId": "o1.13",
+      "shapeId": "o1.13.s1",
+      "ordinal": 6,
+      "surfaceType": "cylinder",
+      "area": 9.960737,
+      "center": [
+        32.024088,
+        -30.8,
+        166.503522
+      ],
+      "normal": [
+        0.913497,
+        0.0,
+        0.406845
+      ],
+      "bbox": {
+        "min": [
+          31.596191,
+          -33.3,
+          165.50068
+        ],
+        "max": [
+          32.405803,
+          -28.3,
+          167.485796
+        ]
+      },
+      "edgeStart": 6692,
+      "edgeCount": 4,
+      "relevance": 15,
+      "flags": 0,
+      "params": {
+        "origin": [
+          21.420559,
+          -28.3,
+          161.781025
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 11.625
+      },
+      "triangleStart": 470,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.14.f332",
+      "occurrenceId": "o1.14",
+      "shapeId": "o1.14.s1",
+      "ordinal": 332,
+      "surfaceType": "plane",
+      "area": 501.35587,
+      "center": [
+        -4.980874,
+        -28.3,
+        172.51482
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -23.771983,
+          -28.3,
+          153.723712
+        ],
+        "max": [
+          13.810235,
+          -28.3,
+          191.305929
+        ]
+      },
+      "edgeStart": 9908,
+      "edgeCount": 331,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -4.980874,
+          -28.3,
+          172.51482
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 10064,
+      "triangleCount": 538
+    },
+    {
+      "id": "o1.14.f333",
+      "occurrenceId": "o1.14",
+      "shapeId": "o1.14.s1",
+      "ordinal": 333,
+      "surfaceType": "plane",
+      "area": 501.35587,
+      "center": [
+        -4.980874,
+        -33.3,
+        172.51482
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -23.771983,
+          -33.3,
+          153.723712
+        ],
+        "max": [
+          13.810235,
+          -33.3,
+          191.305929
+        ]
+      },
+      "edgeStart": 10239,
+      "edgeCount": 331,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -4.980874,
+          -33.3,
+          172.51482
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 10602,
+      "triangleCount": 538
+    },
+    {
+      "id": "o1.14.f331",
+      "occurrenceId": "o1.14",
+      "shapeId": "o1.14.s1",
+      "ordinal": 331,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        -4.980874,
+        -30.8,
+        172.51482
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          -7.691402,
+          -33.3,
+          169.818283
+        ],
+        "max": [
+          -2.270345,
+          -28.3,
+          175.211358
+        ]
+      },
+      "edgeStart": 9905,
+      "edgeCount": 3,
+      "relevance": 25,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -4.980874,
+          -28.3,
+          172.51482
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 10012,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f68",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 68,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        -4.980787,
+        -31.000071,
+        172.51482
+      ],
+      "normal": [
+        -0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -6.980874,
+          -33.7,
+          170.515044
+        ],
+        "max": [
+          -2.980874,
+          -28.3,
+          174.514597
+        ]
+      },
+      "edgeStart": 31082,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -4.980874,
+          -28.0,
+          172.51482
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 4750,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.14.f3",
+      "occurrenceId": "o1.14",
+      "shapeId": "o1.14.s1",
+      "ordinal": 3,
+      "surfaceType": "cylinder",
+      "area": 4.512429,
+      "center": [
+        11.057405,
+        -30.8,
+        175.265511
+      ],
+      "normal": [
+        0.985609,
+        0.0,
+        0.16904
+      ],
+      "bbox": {
+        "min": [
+          10.977482,
+          -33.3,
+          174.820185
+        ],
+        "max": [
+          11.135501,
+          -28.3,
+          175.710522
+        ]
+      },
+      "edgeStart": 8593,
+      "edgeCount": 4,
+      "relevance": 12,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -4.980874,
+          -28.3,
+          172.51482
+        ],
+        "axis": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 16.275
+      },
+      "triangleStart": 234,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.14.f6",
+      "occurrenceId": "o1.14",
+      "shapeId": "o1.14.s1",
+      "ordinal": 6,
+      "surfaceType": "cylinder",
+      "area": 9.926099,
+      "center": [
+        7.434431,
+        -30.8,
+        176.724896
+      ],
+      "normal": [
+        0.947031,
+        0.0,
+        0.321142
+      ],
+      "bbox": {
+        "min": [
+          7.094875,
+          -33.3,
+          175.726068
+        ],
+        "max": [
+          7.731872,
+          -28.3,
+          177.709444
+        ]
+      },
+      "edgeStart": 8605,
+      "edgeCount": 4,
+      "relevance": 14,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -4.980874,
+          -28.3,
+          172.51482
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 13.125
+      },
+      "triangleStart": 468,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.15.f344",
+      "occurrenceId": "o1.15",
+      "shapeId": "o1.15.s1",
+      "ordinal": 344,
+      "surfaceType": "plane",
+      "area": 582.601158,
+      "center": [
+        -35.985858,
+        -28.3,
+        166.952359
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -54.107344,
+          -28.3,
+          148.94943
+        ],
+        "max": [
+          -17.864371,
+          -28.3,
+          184.955289
+        ]
+      },
+      "edgeStart": 11941,
+      "edgeCount": 343,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -35.985858,
+          -28.3,
+          166.952359
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 11944,
+      "triangleCount": 564
+    },
+    {
+      "id": "o1.15.f345",
+      "occurrenceId": "o1.15",
+      "shapeId": "o1.15.s1",
+      "ordinal": 345,
+      "surfaceType": "plane",
+      "area": 582.601158,
+      "center": [
+        -35.985858,
+        -33.3,
+        166.952359
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -54.107344,
+          -33.3,
+          148.94943
+        ],
+        "max": [
+          -17.864371,
+          -33.3,
+          184.955289
+        ]
+      },
+      "edgeStart": 12284,
+      "edgeCount": 343,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -35.985858,
+          -33.3,
+          166.952359
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 12508,
+      "triangleCount": 564
+    },
+    {
+      "id": "o1.15.f343",
+      "occurrenceId": "o1.15",
+      "shapeId": "o1.15.s1",
+      "ordinal": 343,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        -35.985858,
+        -30.8,
+        166.952359
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          -38.381732,
+          -33.3,
+          164.573276
+        ],
+        "max": [
+          -33.589984,
+          -28.3,
+          169.331443
+        ]
+      },
+      "edgeStart": 11938,
+      "edgeCount": 3,
+      "relevance": 24,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -35.985858,
+          -28.3,
+          166.952359
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 11892,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f57",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 57,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        -35.98577,
+        -31.000071,
+        166.952359
+      ],
+      "normal": [
+        -0.0,
+        1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -37.985858,
+          -33.7,
+          164.952583
+        ],
+        "max": [
+          -33.985858,
+          -28.3,
+          168.952136
+        ]
+      },
+      "edgeStart": 31035,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -35.985858,
+          -28.0,
+          166.952359
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 3964,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.15.f3",
+      "occurrenceId": "o1.15",
+      "shapeId": "o1.15.s1",
+      "ordinal": 3,
+      "surfaceType": "cylinder",
+      "area": 4.575896,
+      "center": [
+        -18.216764,
+        -30.8,
+        167.305375
+      ],
+      "normal": [
+        0.999803,
+        0.0,
+        0.019863
+      ],
+      "bbox": {
+        "min": [
+          -18.229341,
+          -33.3,
+          166.847851
+        ],
+        "max": [
+          -18.205931,
+          -28.3,
+          167.762864
+        ]
+      },
+      "edgeStart": 10578,
+      "edgeCount": 4,
+      "relevance": 12,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -35.985858,
+          -28.3,
+          166.952359
+        ],
+        "axis": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 17.775
+      },
+      "triangleStart": 234,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.15.f6",
+      "occurrenceId": "o1.15",
+      "shapeId": "o1.15.s1",
+      "ordinal": 6,
+      "surfaceType": "cylinder",
+      "area": 9.857085,
+      "center": [
+        -21.567269,
+        -30.8,
+        169.31865
+      ],
+      "normal": [
+        0.986799,
+        0.0,
+        0.161948
+      ],
+      "bbox": {
+        "min": [
+          -21.746215,
+          -33.3,
+          168.337852
+        ],
+        "max": [
+          -21.427164,
+          -28.3,
+          170.293074
+        ]
+      },
+      "edgeStart": 10590,
+      "edgeCount": 4,
+      "relevance": 14,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -35.985858,
+          -28.3,
+          166.952359
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 14.625
+      },
+      "triangleStart": 466,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.16.f350",
+      "occurrenceId": "o1.16",
+      "shapeId": "o1.16.s1",
+      "ordinal": 350,
+      "surfaceType": "plane",
+      "area": 624.54233,
+      "center": [
+        -61.262755,
+        -28.3,
+        144.588303
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -82.832093,
+          -28.3,
+          122.940907
+        ],
+        "max": [
+          -39.580133,
+          -28.3,
+          166.2573
+        ]
+      },
+      "edgeStart": 14022,
+      "edgeCount": 349,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -61.262527,
+          -28.3,
+          144.58827
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 13020,
+      "triangleCount": 575
+    },
+    {
+      "id": "o1.16.f351",
+      "occurrenceId": "o1.16",
+      "shapeId": "o1.16.s1",
+      "ordinal": 351,
+      "surfaceType": "plane",
+      "area": 624.54233,
+      "center": [
+        -61.262755,
+        -33.3,
+        144.588303
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -82.832093,
+          -33.3,
+          122.940907
+        ],
+        "max": [
+          -39.580133,
+          -33.3,
+          166.2573
+        ]
+      },
+      "edgeStart": 14371,
+      "edgeCount": 349,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -61.262527,
+          -33.3,
+          144.58827
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 13595,
+      "triangleCount": 575
+    },
+    {
+      "id": "o1.16.f349",
+      "occurrenceId": "o1.16",
+      "shapeId": "o1.16.s1",
+      "ordinal": 349,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        -61.262527,
+        -30.8,
+        144.58827
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          -64.010326,
+          -33.3,
+          141.854066
+        ],
+        "max": [
+          -58.514728,
+          -28.3,
+          147.322474
+        ]
+      },
+      "edgeStart": 14019,
+      "edgeCount": 3,
+      "relevance": 23,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -61.262527,
+          -28.3,
+          144.58827
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 12968,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f46",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 46,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        -61.262439,
+        -31.000071,
+        144.58827
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -63.262527,
+          -33.7,
+          142.588494
+        ],
+        "max": [
+          -59.262527,
+          -28.3,
+          146.588046
+        ]
+      },
+      "edgeStart": 30988,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -61.262527,
+          -28.0,
+          144.58827
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 3178,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.16.f3",
+      "occurrenceId": "o1.16",
+      "shapeId": "o1.16.s1",
+      "ordinal": 3,
+      "surfaceType": "cylinder",
+      "area": 4.604018,
+      "center": [
+        -43.072253,
+        -30.8,
+        148.081583
+      ],
+      "normal": [
+        0.982055,
+        0.0,
+        0.188597
+      ],
+      "bbox": {
+        "min": [
+          -43.162405,
+          -33.3,
+          147.628845
+        ],
+        "max": [
+          -42.983766,
+          -28.3,
+          148.534001
+        ]
+      },
+      "edgeStart": 12635,
+      "edgeCount": 4,
+      "relevance": 12,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -61.262527,
+          -28.3,
+          144.58827
+        ],
+        "axis": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 18.525
+      },
+      "triangleStart": 228,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.16.f6",
+      "occurrenceId": "o1.16",
+      "shapeId": "o1.16.s1",
+      "ordinal": 6,
+      "surfaceType": "cylinder",
+      "area": 9.81249,
+      "center": [
+        -46.710991,
+        -30.8,
+        149.512839
+      ],
+      "normal": [
+        0.947227,
+        0.0,
+        0.320563
+      ],
+      "bbox": {
+        "min": [
+          -47.042926,
+          -33.3,
+          148.527619
+        ],
+        "max": [
+          -46.414201,
+          -28.3,
+          150.486164
+        ]
+      },
+      "edgeStart": 12647,
+      "edgeCount": 4,
+      "relevance": 14,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -61.262527,
+          -28.3,
+          144.58827
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 15.375
+      },
+      "triangleStart": 460,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.17.f368",
+      "occurrenceId": "o1.17",
+      "shapeId": "o1.17.s1",
+      "ordinal": 368,
+      "surfaceType": "plane",
+      "area": 755.606461,
+      "center": [
+        -72.74551,
+        -28.3,
+        109.678334
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -93.52397,
+          -28.3,
+          88.999599
+        ],
+        "max": [
+          -51.96705,
+          -28.3,
+          130.357069
+        ]
+      },
+      "edgeStart": 16187,
+      "edgeCount": 367,
+      "relevance": 53,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -72.74551,
+          -28.3,
+          109.678334
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 16636,
+      "triangleCount": 610
+    },
+    {
+      "id": "o1.17.f369",
+      "occurrenceId": "o1.17",
+      "shapeId": "o1.17.s1",
+      "ordinal": 369,
+      "surfaceType": "plane",
+      "area": 755.606461,
+      "center": [
+        -72.74551,
+        -33.3,
+        109.678334
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -93.52397,
+          -33.3,
+          88.999599
+        ],
+        "max": [
+          -51.96705,
+          -33.3,
+          130.357069
+        ]
+      },
+      "edgeStart": 16554,
+      "edgeCount": 367,
+      "relevance": 53,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -72.74551,
+          -33.3,
+          109.678334
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 17246,
+      "triangleCount": 610
+    },
+    {
+      "id": "o1.17.f367",
+      "occurrenceId": "o1.17",
+      "shapeId": "o1.17.s1",
+      "ordinal": 367,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        -72.74551,
+        -30.8,
+        109.678334
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          -75.095966,
+          -33.3,
+          107.345009
+        ],
+        "max": [
+          -70.395054,
+          -28.3,
+          112.01166
+        ]
+      },
+      "edgeStart": 16184,
+      "edgeCount": 3,
+      "relevance": 22,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -72.74551,
+          -28.3,
+          109.678334
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 16584,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f35",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 35,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        -72.745423,
+        -31.000071,
+        109.678334
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -74.74551,
+          -33.7,
+          107.678558
+        ],
+        "max": [
+          -70.74551,
+          -28.3,
+          111.67811
+        ]
+      },
+      "edgeStart": 30941,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -72.74551,
+          -28.0,
+          109.678334
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 2392,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.17.f3",
+      "occurrenceId": "o1.17",
+      "shapeId": "o1.17.s1",
+      "ordinal": 3,
+      "surfaceType": "cylinder",
+      "area": 4.676945,
+      "center": [
+        -51.972655,
+        -30.8,
+        109.682399
+      ],
+      "normal": [
+        1.0,
+        0.0,
+        0.000196
+      ],
+      "bbox": {
+        "min": [
+          -51.975866,
+          -33.3,
+          109.214739
+        ],
+        "max": [
+          -51.971004,
+          -28.3,
+          110.150058
+        ]
+      },
+      "edgeStart": 14728,
+      "edgeCount": 4,
+      "relevance": 12,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -72.74551,
+          -28.3,
+          109.678334
+        ],
+        "axis": [
+          -0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 20.775
+      },
+      "triangleStart": 226,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.17.f6",
+      "occurrenceId": "o1.17",
+      "shapeId": "o1.17.s1",
+      "ordinal": 6,
+      "surfaceType": "cylinder",
+      "area": 9.647677,
+      "center": [
+        -55.26011,
+        -30.8,
+        111.804918
+      ],
+      "normal": [
+        0.992685,
+        0.0,
+        0.120731
+      ],
+      "bbox": {
+        "min": [
+          -55.392066,
+          -33.3,
+          110.845698
+        ],
+        "max": [
+          -55.159215,
+          -28.3,
+          112.76036
+        ]
+      },
+      "edgeStart": 14740,
+      "edgeCount": 4,
+      "relevance": 13,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -72.74551,
+          -28.3,
+          109.678334
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 17.625
+      },
+      "triangleStart": 458,
+      "triangleCount": 6
+    },
+    {
+      "id": "o1.18.f296",
+      "occurrenceId": "o1.18",
+      "shapeId": "o1.18.s1",
+      "ordinal": 296,
+      "surfaceType": "plane",
+      "area": 279.804651,
+      "center": [
+        -37.5,
+        -28.3,
+        120.0
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -51.247751,
+          -28.3,
+          106.416899
+        ],
+        "max": [
+          -23.752249,
+          -28.3,
+          133.583101
+        ]
+      },
+      "edgeStart": 18100,
+      "edgeCount": 295,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -37.5,
+          -28.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 7136,
+      "triangleCount": 470
+    },
+    {
+      "id": "o1.18.f297",
+      "occurrenceId": "o1.18",
+      "shapeId": "o1.18.s1",
+      "ordinal": 297,
+      "surfaceType": "plane",
+      "area": 279.804651,
+      "center": [
+        -37.5,
+        -33.3,
+        120.0
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -51.247751,
+          -33.3,
+          106.416899
+        ],
+        "max": [
+          -23.752249,
+          -33.3,
+          133.583101
+        ]
+      },
+      "edgeStart": 18395,
+      "edgeCount": 295,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -37.5,
+          -33.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 7606,
+      "triangleCount": 470
+    },
+    {
+      "id": "o1.18.f295",
+      "occurrenceId": "o1.18",
+      "shapeId": "o1.18.s1",
+      "ordinal": 295,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        -37.5,
+        -30.8,
+        120.0
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          -40.248503,
+          -33.3,
+          117.265085
+        ],
+        "max": [
+          -34.751497,
+          -28.3,
+          122.734915
+        ]
+      },
+      "edgeStart": 18097,
+      "edgeCount": 3,
+      "relevance": 30,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -37.5,
+          -28.3,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 7084,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f164",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 164,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        -37.500087,
+        -31.000071,
+        120.0
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -39.5,
+          -33.7,
+          118.000224
+        ],
+        "max": [
+          -35.5,
+          -28.3,
+          121.999776
+        ]
+      },
+      "edgeStart": 31490,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -37.5,
+          -28.0,
+          120.0
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 11090,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.19.f302",
+      "occurrenceId": "o1.19",
+      "shapeId": "o1.19.s1",
+      "ordinal": 302,
+      "surfaceType": "plane",
+      "area": 314.332499,
+      "center": [
+        -35.873092,
+        -28.3,
+        98.310935
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -49.626961,
+          -28.3,
+          84.58401
+        ],
+        "max": [
+          -22.309044,
+          -28.3,
+          112.018036
+        ]
+      },
+      "edgeStart": 19893,
+      "edgeCount": 301,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -35.873093,
+          -28.3,
+          98.310932
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 7612,
+      "triangleCount": 486
+    },
+    {
+      "id": "o1.19.f303",
+      "occurrenceId": "o1.19",
+      "shapeId": "o1.19.s1",
+      "ordinal": 303,
+      "surfaceType": "plane",
+      "area": 314.332499,
+      "center": [
+        -35.873092,
+        -33.3,
+        98.310935
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -49.626961,
+          -33.3,
+          84.58401
+        ],
+        "max": [
+          -22.309044,
+          -33.3,
+          112.018036
+        ]
+      },
+      "edgeStart": 20194,
+      "edgeCount": 301,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -35.873093,
+          -33.3,
+          98.310932
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 8098,
+      "triangleCount": 486
+    },
+    {
+      "id": "o1.19.f301",
+      "occurrenceId": "o1.19",
+      "shapeId": "o1.19.s1",
+      "ordinal": 301,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        -35.873093,
+        -30.8,
+        98.310932
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          -38.452638,
+          -33.3,
+          95.74665
+        ],
+        "max": [
+          -33.293549,
+          -28.3,
+          100.875214
+        ]
+      },
+      "edgeStart": 19890,
+      "edgeCount": 3,
+      "relevance": 29,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -35.873093,
+          -28.3,
+          98.310932
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 7560,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f153",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 153,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        -35.873181,
+        -31.000071,
+        98.310932
+      ],
+      "normal": [
+        -0.0,
+        1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -37.873093,
+          -33.7,
+          96.311156
+        ],
+        "max": [
+          -33.873093,
+          -28.3,
+          100.310708
+        ]
+      },
+      "edgeStart": 31443,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -35.873093,
+          -28.0,
+          98.310932
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 10304,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.20.f320",
+      "occurrenceId": "o1.20",
+      "shapeId": "o1.20.s1",
+      "ordinal": 320,
+      "surfaceType": "plane",
+      "area": 423.86032,
+      "center": [
+        -21.420559,
+        -28.3,
+        78.218975
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -39.294357,
+          -28.3,
+          60.456777
+        ],
+        "max": [
+          -3.546761,
+          -28.3,
+          95.981172
+        ]
+      },
+      "edgeStart": 21770,
+      "edgeCount": 319,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -21.420559,
+          -28.3,
+          78.218975
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 9108,
+      "triangleCount": 532
+    },
+    {
+      "id": "o1.20.f321",
+      "occurrenceId": "o1.20",
+      "shapeId": "o1.20.s1",
+      "ordinal": 321,
+      "surfaceType": "plane",
+      "area": 423.86032,
+      "center": [
+        -21.420559,
+        -33.3,
+        78.218975
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -39.294357,
+          -33.3,
+          60.456777
+        ],
+        "max": [
+          -3.546761,
+          -33.3,
+          95.981172
+        ]
+      },
+      "edgeStart": 22089,
+      "edgeCount": 319,
+      "relevance": 51,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -21.420559,
+          -33.3,
+          78.218975
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 9640,
+      "triangleCount": 532
+    },
+    {
+      "id": "o1.20.f319",
+      "occurrenceId": "o1.20",
+      "shapeId": "o1.20.s1",
+      "ordinal": 319,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        -21.420559,
+        -30.8,
+        78.218975
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          -24.265325,
+          -33.3,
+          75.386686
+        ],
+        "max": [
+          -18.575792,
+          -28.3,
+          81.051264
+        ]
+      },
+      "edgeStart": 21767,
+      "edgeCount": 3,
+      "relevance": 26,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -21.420559,
+          -28.3,
+          78.218975
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 9056,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f142",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 142,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        -21.420646,
+        -31.000071,
+        78.218975
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -23.420559,
+          -33.7,
+          76.219198
+        ],
+        "max": [
+          -19.420559,
+          -28.3,
+          80.218751
+        ]
+      },
+      "edgeStart": 31396,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          -21.420559,
+          -28.0,
+          78.218975
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 9518,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.21.f332",
+      "occurrenceId": "o1.21",
+      "shapeId": "o1.21.s1",
+      "ordinal": 332,
+      "surfaceType": "plane",
+      "area": 501.35587,
+      "center": [
+        4.980874,
+        -28.3,
+        67.48518
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          -13.810235,
+          -28.3,
+          48.694071
+        ],
+        "max": [
+          23.771983,
+          -28.3,
+          86.276288
+        ]
+      },
+      "edgeStart": 23731,
+      "edgeCount": 331,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          4.980874,
+          -28.3,
+          67.48518
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 10064,
+      "triangleCount": 538
+    },
+    {
+      "id": "o1.21.f333",
+      "occurrenceId": "o1.21",
+      "shapeId": "o1.21.s1",
+      "ordinal": 333,
+      "surfaceType": "plane",
+      "area": 501.35587,
+      "center": [
+        4.980874,
+        -33.3,
+        67.48518
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          -13.810235,
+          -33.3,
+          48.694071
+        ],
+        "max": [
+          23.771983,
+          -33.3,
+          86.276288
+        ]
+      },
+      "edgeStart": 24062,
+      "edgeCount": 331,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          4.980874,
+          -33.3,
+          67.48518
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 10602,
+      "triangleCount": 538
+    },
+    {
+      "id": "o1.21.f331",
+      "occurrenceId": "o1.21",
+      "shapeId": "o1.21.s1",
+      "ordinal": 331,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        4.980874,
+        -30.8,
+        67.48518
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          2.270345,
+          -33.3,
+          64.788642
+        ],
+        "max": [
+          7.691402,
+          -28.3,
+          70.181717
+        ]
+      },
+      "edgeStart": 23728,
+      "edgeCount": 3,
+      "relevance": 25,
+      "flags": 0,
+      "params": {
+        "origin": [
+          4.980874,
+          -28.3,
+          67.48518
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 10012,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f131",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 131,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        4.980787,
+        -31.000071,
+        67.48518
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          2.980874,
+          -33.7,
+          65.485403
+        ],
+        "max": [
+          6.980874,
+          -28.3,
+          69.484956
+        ]
+      },
+      "edgeStart": 31349,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          4.980874,
+          -28.0,
+          67.48518
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 8732,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.22.f344",
+      "occurrenceId": "o1.22",
+      "shapeId": "o1.22.s1",
+      "ordinal": 344,
+      "surfaceType": "plane",
+      "area": 582.601158,
+      "center": [
+        35.985858,
+        -28.3,
+        73.047641
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          17.864371,
+          -28.3,
+          55.044711
+        ],
+        "max": [
+          54.107344,
+          -28.3,
+          91.05057
+        ]
+      },
+      "edgeStart": 25764,
+      "edgeCount": 343,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          35.985858,
+          -28.3,
+          73.047641
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 11944,
+      "triangleCount": 564
+    },
+    {
+      "id": "o1.22.f345",
+      "occurrenceId": "o1.22",
+      "shapeId": "o1.22.s1",
+      "ordinal": 345,
+      "surfaceType": "plane",
+      "area": 582.601158,
+      "center": [
+        35.985858,
+        -33.3,
+        73.047641
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          17.864371,
+          -33.3,
+          55.044711
+        ],
+        "max": [
+          54.107344,
+          -33.3,
+          91.05057
+        ]
+      },
+      "edgeStart": 26107,
+      "edgeCount": 343,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          35.985858,
+          -33.3,
+          73.047641
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 12508,
+      "triangleCount": 564
+    },
+    {
+      "id": "o1.22.f343",
+      "occurrenceId": "o1.22",
+      "shapeId": "o1.22.s1",
+      "ordinal": 343,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        35.985858,
+        -30.8,
+        73.047641
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          33.589984,
+          -33.3,
+          70.668557
+        ],
+        "max": [
+          38.381732,
+          -28.3,
+          75.426724
+        ]
+      },
+      "edgeStart": 25761,
+      "edgeCount": 3,
+      "relevance": 24,
+      "flags": 0,
+      "params": {
+        "origin": [
+          35.985858,
+          -28.3,
+          73.047641
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 11892,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f120",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 120,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        35.98577,
+        -31.000071,
+        73.047641
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          33.985858,
+          -33.7,
+          71.047864
+        ],
+        "max": [
+          37.985858,
+          -28.3,
+          75.047417
+        ]
+      },
+      "edgeStart": 31302,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          35.985858,
+          -28.0,
+          73.047641
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 7946,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.23.f350",
+      "occurrenceId": "o1.23",
+      "shapeId": "o1.23.s1",
+      "ordinal": 350,
+      "surfaceType": "plane",
+      "area": 624.54233,
+      "center": [
+        61.262755,
+        -28.3,
+        95.411697
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          39.580133,
+          -28.3,
+          73.7427
+        ],
+        "max": [
+          82.832093,
+          -28.3,
+          117.059093
+        ]
+      },
+      "edgeStart": 27845,
+      "edgeCount": 349,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          61.262527,
+          -28.3,
+          95.41173
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 13020,
+      "triangleCount": 575
+    },
+    {
+      "id": "o1.23.f351",
+      "occurrenceId": "o1.23",
+      "shapeId": "o1.23.s1",
+      "ordinal": 351,
+      "surfaceType": "plane",
+      "area": 624.54233,
+      "center": [
+        61.262755,
+        -33.3,
+        95.411697
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          39.580133,
+          -33.3,
+          73.7427
+        ],
+        "max": [
+          82.832093,
+          -33.3,
+          117.059093
+        ]
+      },
+      "edgeStart": 28194,
+      "edgeCount": 349,
+      "relevance": 52,
+      "flags": 0,
+      "params": {
+        "origin": [
+          61.262527,
+          -33.3,
+          95.41173
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 13595,
+      "triangleCount": 575
+    },
+    {
+      "id": "o1.23.f349",
+      "occurrenceId": "o1.23",
+      "shapeId": "o1.23.s1",
+      "ordinal": 349,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        61.262527,
+        -30.8,
+        95.41173
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          58.514728,
+          -33.3,
+          92.677526
+        ],
+        "max": [
+          64.010326,
+          -28.3,
+          98.145934
+        ]
+      },
+      "edgeStart": 27842,
+      "edgeCount": 3,
+      "relevance": 23,
+      "flags": 0,
+      "params": {
+        "origin": [
+          61.262527,
+          -28.3,
+          95.41173
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 12968,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f109",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 109,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        61.262439,
+        -31.000071,
+        95.41173
+      ],
+      "normal": [
+        -0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          59.262527,
+          -33.7,
+          93.411954
+        ],
+        "max": [
+          63.262527,
+          -28.3,
+          97.411506
+        ]
+      },
+      "edgeStart": 31255,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          61.262527,
+          -28.0,
+          95.41173
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 7160,
+      "triangleCount": 53
+    },
+    {
+      "id": "o1.24.f368",
+      "occurrenceId": "o1.24",
+      "shapeId": "o1.24.s1",
+      "ordinal": 368,
+      "surfaceType": "plane",
+      "area": 755.606461,
+      "center": [
+        72.74551,
+        -28.3,
+        130.321666
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        -0.0
+      ],
+      "bbox": {
+        "min": [
+          51.96705,
+          -28.3,
+          109.642931
+        ],
+        "max": [
+          93.52397,
+          -28.3,
+          151.000401
+        ]
+      },
+      "edgeStart": 30010,
+      "edgeCount": 367,
+      "relevance": 53,
+      "flags": 0,
+      "params": {
+        "origin": [
+          72.74551,
+          -28.3,
+          130.321666
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 16636,
+      "triangleCount": 610
+    },
+    {
+      "id": "o1.24.f369",
+      "occurrenceId": "o1.24",
+      "shapeId": "o1.24.s1",
+      "ordinal": 369,
+      "surfaceType": "plane",
+      "area": 755.606461,
+      "center": [
+        72.74551,
+        -33.3,
+        130.321666
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          51.96705,
+          -33.3,
+          109.642931
+        ],
+        "max": [
+          93.52397,
+          -33.3,
+          151.000401
+        ]
+      },
+      "edgeStart": 30377,
+      "edgeCount": 367,
+      "relevance": 53,
+      "flags": 0,
+      "params": {
+        "origin": [
+          72.74551,
+          -33.3,
+          130.321666
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "triangleStart": 17246,
+      "triangleCount": 610
+    },
+    {
+      "id": "o1.24.f367",
+      "occurrenceId": "o1.24",
+      "shapeId": "o1.24.s1",
+      "ordinal": 367,
+      "surfaceType": "cylinder",
+      "area": 73.647912,
+      "center": [
+        72.74551,
+        -30.8,
+        130.321666
+      ],
+      "normal": null,
+      "bbox": {
+        "min": [
+          70.395054,
+          -33.3,
+          127.98834
+        ],
+        "max": [
+          75.095966,
+          -28.3,
+          132.654991
+        ]
+      },
+      "edgeStart": 30007,
+      "edgeCount": 3,
+      "relevance": 22,
+      "flags": 0,
+      "params": {
+        "origin": [
+          72.74551,
+          -28.3,
+          130.321666
+        ],
+        "axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "radius": 2.35
+      },
+      "triangleStart": 16584,
+      "triangleCount": 52
+    },
+    {
+      "id": "o1.25.1.f98",
+      "occurrenceId": "o1.25.1",
+      "shapeId": "o1.25.1.s1",
+      "ordinal": 98,
+      "surfaceType": "cylinder",
+      "area": 67.698965,
+      "center": [
+        72.745423,
+        -31.000071,
+        130.321666
+      ],
+      "normal": [
+        -0.0,
+        1.0,
+        0.0
+      ],
+      "bbox": {
+        "min": [
+          70.74551,
+          -33.7,
+          128.32189
+        ],
+        "max": [
+          74.74551,
+          -28.3,
+          132.321442
+        ]
+      },
+      "edgeStart": 31208,
+      "edgeCount": 5,
+      "relevance": 11,
+      "flags": 0,
+      "params": {
+        "origin": [
+          72.74551,
+          -28.0,
+          130.321666
+        ],
+        "axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "radius": 2.0
+      },
+      "triangleStart": 6374,
+      "triangleCount": 53
+    }
+  ]
+}

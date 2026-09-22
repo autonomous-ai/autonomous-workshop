@@ -1,0 +1,62 @@
+{
+ "build": {
+  "coupon_ball": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "coupon_ball"
+ ],
+ "check_motion": true,
+ "checked": [
+  "coupon_ball"
+ ],
+ "checks_ok": true,
+ "entry": "part_coupon_ball.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/coupon_ball/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "coupon_ball"
+ ],
+ "print": {
+  "coupon_ball": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/coupon_ball/r0001/overhang-coupon_ball.log": "c3a7fd19099a973eea053f8cf0f4c98f5cb5bd38d43d346bf245643d5683ec8c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/coupon_ball/r0001/thickness-coupon_ball.log": "1d44f5b6d33a23062cccdcdab0696b2a1df12b39c3929a8a848d85f665775559"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:coupon_ball",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows the hemisphere and half-neck continuously resting on the same sagittal bed as the grip. Top and iso show a straight centered neck joining the ball and remote rectangular grip, without extra cone or suspended geometry. Two identical halves are required for the complete test male; this view makes no fit or force claim.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/coupon_ball/r0001/visual-packet.json",
+  "packet_sha256": "5598797a39825a4e1253bf7582195fb4ccb8544045ee0e5cbd1b371c51e62821",
+  "status": "pass"
+ }
+}

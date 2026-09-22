@@ -1,0 +1,62 @@
+{
+ "build": {
+  "horn_right": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "horn_right"
+ ],
+ "check_motion": true,
+ "checked": [
+  "horn_right"
+ ],
+ "checks_ok": true,
+ "entry": "part_horn_right.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_right/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "horn_right"
+ ],
+ "print": {
+  "horn_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_right/r0001/overhang-horn_right.log": "afc2c7dfd9e91b91a994834b11629242965863547910a666feadc9f364f035ab",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_right/r0001/thickness-horn_right.log": "5bb79cee593582802f30561d9a5dce19e04fc178bf85593c84769b1dc884dedf"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:horn_right",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show a tapered leaning horn with a blunt tip, broad elliptical shoulder and sloped flare into the mounting key. Top confirms the tip offset within the continuous elliptical base. No missing, detached or self-crossing form is visible. Head seating and physical bond strength are not established here.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_right/r0001/visual-packet.json",
+  "packet_sha256": "999793cbda2fd6139859f4ec5250bd4c6565e45a2c09ec4e5bea1ab2504c9560",
+  "status": "pass"
+ }
+}

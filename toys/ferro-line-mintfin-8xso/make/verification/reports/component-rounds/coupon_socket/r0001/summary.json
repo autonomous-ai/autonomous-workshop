@@ -1,0 +1,62 @@
+{
+ "build": {
+  "coupon_socket": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "coupon_socket"
+ ],
+ "check_motion": true,
+ "checked": [
+  "coupon_socket"
+ ],
+ "checks_ok": true,
+ "entry": "part_coupon_socket.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/coupon_socket/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "coupon_socket"
+ ],
+ "print": {
+  "coupon_socket": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/coupon_socket/r0001/overhang-coupon_socket.log": "6381ba9926a950247b38522be35144edbf7b5352ba74e54a3205604ca4f824d8",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/coupon_socket/r0001/thickness-coupon_socket.log": "d3e2221baf015daf12e837f327626600ecffaea6c36b395c6b6e9a675d23a8e5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:coupon_socket",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows the socket seated continuously on the flat coupon base. Iso reveals four slotted fingers, attached preload pads, a concave cavity floor and a separate blind magnet recess clear of the socket. Top retains the unobstructed mouth. No detached or intersecting feature is visible; physical fit and force still require the printed coupon.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/coupon_socket/r0001/visual-packet.json",
+  "packet_sha256": "8562366c0fcff0ee0d66bf7080600f64d06530591608dd7e0e486c894cd81857",
+  "status": "pass"
+ }
+}

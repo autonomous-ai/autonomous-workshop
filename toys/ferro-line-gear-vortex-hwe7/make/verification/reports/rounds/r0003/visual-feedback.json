@@ -1,0 +1,19 @@
+{
+  "findings": [
+    {
+      "defect": "Open branch silhouette and dominant brass/pale gaps fail the required dense dark accretion-disc identity.",
+      "evidence": "Front image: broad empty sectors between core and terminal wheels; iso: long exposed upper/lower branches.",
+      "part": "carrier and gear field",
+      "repair": "Complete inventor-qualified denser paired layout and matte black field, preserve true optical aperture, then regenerate and independently review."
+    },
+    {
+      "defect": "The actual through-hole inherits a pale background; core is not read as a dark event horizon.",
+      "evidence": "Front exact center is pale scene background; top confirms separate orange rear layer.",
+      "part": "core presentation",
+      "repair": "Retain real through-hole and document material limits; render an honest dark neutral environment plus diagnostic views."
+    }
+  ],
+  "observation": "Front shows two open sweeping gear chains with conspicuous pale sectors, a pale sightline through the core, and orange behind five spokes. Top shows a shallow planar mechanism in front of the stem; the thin orange rear layer and separated front bezel are visible. Isometric image is byte-identical to hero already inspected this turn: no gross detached parts, but two branches dominate identity. No physical or numeric motion pass inferred.",
+  "packet_sha256": "db2c48912ef492188043e7f398cd714c4cbd18933385de5e8a74ab09165d82cc",
+  "status": "fail"
+}

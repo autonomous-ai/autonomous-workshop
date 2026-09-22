@@ -1,0 +1,384 @@
+{
+  "schema_version": 1,
+  "audited_utc": "2026-09-21T09:40:38.230946+00:00",
+  "status": "PASS_EXACT_REVIEW_AND_PRESENTATION_BINDINGS",
+  "scope": "Read-only provenance reconciliation, not another visual judgment or final verifier result.",
+  "review_round": 2,
+  "reviewer": "<HOME>/final_critic",
+  "signature_review": {
+    "path": "artifacts/make/r0001/product/gear_vortex/snap/SIGNATURE-REVIEW.json",
+    "sha256": "5a96ece7de81be2a7628457737e3a03dcefb86873bfb4dc16418d8c68bd2f3cf"
+  },
+  "motion_review": {
+    "path": "artifacts/make/r0001/product/gear_vortex/snap/MOTION-REVIEW.json",
+    "sha256": "b2b7e75583671ffb0a9628491efb4e41202d83c66f2bb297c65e7d8f8bd131fe"
+  },
+  "full_40_row_archive": {
+    "path": "artifacts/make/r0001/blind-review/round2/signature-full40-before-encoding-adaptation.json",
+    "sha256": "c8f45a5ae5ec3bafb44be74c1c3635a0c24bcce803a3d4d24c0232a197221fec"
+  },
+  "pre_encoding_motion_archive": {
+    "path": "artifacts/make/r0001/blind-review/round2/motion-before-encoding-adaptation.json",
+    "sha256": "bffaf45a55396817dedbf5d15e1ea26fb7bacbec0ce60567b6b96006fc0e2060"
+  },
+  "encoding_bridge": {
+    "path": "artifacts/make/r0001/blind-review/round2/encoding-adaptation-record.json",
+    "sha256": "fa4e5cb03903543348d3a3f7933f2981942d8639960650cdcec1a46645939175"
+  },
+  "review_accounting": {
+    "path": "artifacts/make/r0001/blind-review/round2/final-review-accounting.json",
+    "sha256": "aa47d40962b1fd2e56949ad4b74a53f6036bcefeb61ac6069c1dfa4f3d87f047"
+  },
+  "scope_correction": {
+    "path": "artifacts/make/r0001/blind-review/round2/verification-scope-correction.json",
+    "sha256": "8beec3fb1040dc1239de02385789c3a25dacdce91692831da55e8a077f8d1e28"
+  },
+  "concept_source": {
+    "path": "artifacts/make/r0001/spark-source.json",
+    "sha256": "211fc8bf5f00d30365bcb09d42845074b342e8a0376cc510b6b36eed2735d724"
+  },
+  "canonical_concept_sha256": "a611ef1801208772e434885d85ec0ad861c7c136fd0d3bf3dbff5ce6a48244b7",
+  "concept_serialization": "UTF-8 JSON, ensure_ascii=False, sorted keys, compact separators; digest of concept object only.",
+  "iso": {
+    "path": "artifacts/make/r0001/product/gear_vortex/snap/iso.png",
+    "sha256": "f5b299a1503ca1700a1f414b2acfe3390f9fde20dedeb99d0b4875f5d269516b"
+  },
+  "signature_image": {
+    "path": "artifacts/make/r0001/product/gear_vortex/snap/signature.png",
+    "sha256": "6f14632c54644bd6dffc501c616fbd293ed8e80392929b7cf13746fd92bc0ad4"
+  },
+  "motion_evidence": {
+    "path": "artifacts/make/r0001/product/gear_vortex/snap/MOTION-EVIDENCE.json",
+    "sha256": "34fc40dadf395cdcdcb5a8bab07e84bde9bf40236c5ade93cfcf2fe653cc8822"
+  },
+  "animation": {
+    "path": "artifacts/make/r0001/product/gear_vortex/snap/motion.gif",
+    "sha256": "006668c43d65e79c3c768edb06ccd92f0e1e9121ea8ab6abced3f4c5d288669a"
+  },
+  "motion_manifest": {
+    "path": "artifacts/make/r0001/product/gear_vortex/measure/motion.json",
+    "sha256": "719b3b7a8c0f0e95fa7fa67e21bf14525c1f890789f6f13b1e34367914c81260"
+  },
+  "python_source_checks": [
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/assemblies/__init__.py",
+      "expected_sha256": "e6582202b40d5bde989f4eeb4e96ded2a9e3aef2f8cc4aa1e07c323d317048e2",
+      "actual_sha256": "e6582202b40d5bde989f4eeb4e96ded2a9e3aef2f8cc4aa1e07c323d317048e2",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/assemblies/product.py",
+      "expected_sha256": "9746a05f783fbe1a781082a8e10c4bb59428d532f083b8bb41ece99967792800",
+      "actual_sha256": "9746a05f783fbe1a781082a8e10c4bb59428d532f083b8bb41ece99967792800",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/features/__init__.py",
+      "expected_sha256": "b81051b77f4513064945b53cfb27edbfdb0904f0951d9c007c50a94aa52fc473",
+      "actual_sha256": "b81051b77f4513064945b53cfb27edbfdb0904f0951d9c007c50a94aa52fc473",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/features/gearing.py",
+      "expected_sha256": "6203d0b50468de5dd2d49531f2021ec8b810e5ea5d1836e56fa405e7fef3b077",
+      "actual_sha256": "6203d0b50468de5dd2d49531f2021ec8b810e5ea5d1836e56fa405e7fef3b077",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/features/threads.py",
+      "expected_sha256": "5fd72857ab8744769df23c27293a5a3eca2f77b0afb8392f24db57220c516cc4",
+      "actual_sha256": "5fd72857ab8744769df23c27293a5a3eca2f77b0afb8392f24db57220c516cc4",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/gear_vortex.step.py",
+      "expected_sha256": "80dd428b4fb1c4beadf48da6fe7fe9a5c3b8014ae8b2c103fdf42e2070d302d7",
+      "actual_sha256": "80dd428b4fb1c4beadf48da6fe7fe9a5c3b8014ae8b2c103fdf42e2070d302d7",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/measure/audits/sightline/nominal_sightline.step.py",
+      "expected_sha256": "f07197b04d5afb74f8eced08e4b37d7c23cdd22d217ffc1dc8f79d936ebef75e",
+      "actual_sha256": "f07197b04d5afb74f8eced08e4b37d7c23cdd22d217ffc1dc8f79d936ebef75e",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/measure/audits/sightline/nominal_sightline_geometry.py",
+      "expected_sha256": "c2220c91e0fc2b99931a17df9db08cd379d9df906f8cd69f0645da48800879f3",
+      "actual_sha256": "c2220c91e0fc2b99931a17df9db08cd379d9df906f8cd69f0645da48800879f3",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/params.py",
+      "expected_sha256": "27516d7fca9bf415014586a6ac1217c0ff838bc0e8f47677861d3787c040257c",
+      "actual_sha256": "27516d7fca9bf415014586a6ac1217c0ff838bc0e8f47677861d3787c040257c",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_axle.step.py",
+      "expected_sha256": "6889f8a05dbb47cdc17c2391d1f09533d78bd19d1fa4e7c63271b08bb1ffc035",
+      "actual_sha256": "6889f8a05dbb47cdc17c2391d1f09533d78bd19d1fa4e7c63271b08bb1ffc035",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_bezel.step.py",
+      "expected_sha256": "bee24533dc6423b68bf3a771f85d506be37b9d7cf33054eec67ff8eb1a199412",
+      "actual_sha256": "bee24533dc6423b68bf3a771f85d506be37b9d7cf33054eec67ff8eb1a199412",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_carrier.step.py",
+      "expected_sha256": "41bcc08485d4b108eca38e39445d64a8ed2c7dcdf922f15ba5ccdc3b315c6b67",
+      "actual_sha256": "41bcc08485d4b108eca38e39445d64a8ed2c7dcdf922f15ba5ccdc3b315c6b67",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_coupon.step.py",
+      "expected_sha256": "ce9dc1f1040267780b0fa968cc023c1ec653ff2e3b8ad1d2978682b289ceb2f7",
+      "actual_sha256": "ce9dc1f1040267780b0fa968cc023c1ec653ff2e3b8ad1d2978682b289ceb2f7",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_foot_trim.step.py",
+      "expected_sha256": "848e457d32c91c342573af269fa7eca70b4622937b31e5558b2ea6b0a11c95e7",
+      "actual_sha256": "848e457d32c91c342573af269fa7eca70b4622937b31e5558b2ea6b0a11c95e7",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_14.step.py",
+      "expected_sha256": "eb4ef8d88034393c9086b87f8a326ca0f104a509f04ee72753b45b59ff0a6a2d",
+      "actual_sha256": "eb4ef8d88034393c9086b87f8a326ca0f104a509f04ee72753b45b59ff0a6a2d",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_15.step.py",
+      "expected_sha256": "6a068286478cb97cd68b6f6edff3e915d779420c976b4b39a157273c7750bb4f",
+      "actual_sha256": "6a068286478cb97cd68b6f6edff3e915d779420c976b4b39a157273c7750bb4f",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_18.step.py",
+      "expected_sha256": "04c712332981f9d6717e7f8fd574fdc40bf08592c79345656afea8f478166022",
+      "actual_sha256": "04c712332981f9d6717e7f8fd574fdc40bf08592c79345656afea8f478166022",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_20.step.py",
+      "expected_sha256": "6a87e2ecea883c63e3058a7c75065b5f97647ff87f3c1e0ca940bea9313905db",
+      "actual_sha256": "6a87e2ecea883c63e3058a7c75065b5f97647ff87f3c1e0ca940bea9313905db",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_22.step.py",
+      "expected_sha256": "a56bd013a29ca0ce5c3dd68ef702c8a8f53511d693c5c22685af9a4bfb76d904",
+      "actual_sha256": "a56bd013a29ca0ce5c3dd68ef702c8a8f53511d693c5c22685af9a4bfb76d904",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_23.step.py",
+      "expected_sha256": "ebcd29d7ebc1195bd5c03bdf79ccbe90a0806910409a976db7693059a47cabfc",
+      "actual_sha256": "ebcd29d7ebc1195bd5c03bdf79ccbe90a0806910409a976db7693059a47cabfc",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_26.step.py",
+      "expected_sha256": "354b8903dd6ce5edd667dfd51cba0ef0befb0fe25fec7e59da86afdc6281a5fa",
+      "actual_sha256": "354b8903dd6ce5edd667dfd51cba0ef0befb0fe25fec7e59da86afdc6281a5fa",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_gear_cap.step.py",
+      "expected_sha256": "47dcc3c9e272f3db7c1b9d873080f53d20d20f54311724a9d1cb6adb3ac950f2",
+      "actual_sha256": "47dcc3c9e272f3db7c1b9d873080f53d20d20f54311724a9d1cb6adb3ac950f2",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_main_cap.step.py",
+      "expected_sha256": "bec4e81856f7f31c6107bd956dd1a4a8d8f12717ecbd7cc693be2a2d89536f77",
+      "actual_sha256": "bec4e81856f7f31c6107bd956dd1a4a8d8f12717ecbd7cc693be2a2d89536f77",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_orange_disc.step.py",
+      "expected_sha256": "fa63763c654b434adeefeea15af64d04e3ded4fc418ab9683c30f03452f98e29",
+      "actual_sha256": "fa63763c654b434adeefeea15af64d04e3ded4fc418ab9683c30f03452f98e29",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_pedestal.step.py",
+      "expected_sha256": "b294cdc81ea1090ae6971f2da75da45368b4e65601481872b338f1b5d950e2ea",
+      "actual_sha256": "b294cdc81ea1090ae6971f2da75da45368b4e65601481872b338f1b5d950e2ea",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step.py",
+      "expected_sha256": "83fd6fbe967e3057a7b4c4c82657299a7dc21b07f44eed98c91e5d60e62b3fd1",
+      "actual_sha256": "83fd6fbe967e3057a7b4c4c82657299a7dc21b07f44eed98c91e5d60e62b3fd1",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_rim_trim.step.py",
+      "expected_sha256": "d9ad566f8f0e2ed50efc5ec9989c1e0a4fc9dea2d792b69a38865bf378a590b6",
+      "actual_sha256": "d9ad566f8f0e2ed50efc5ec9989c1e0a4fc9dea2d792b69a38865bf378a590b6",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_stem.step.py",
+      "expected_sha256": "d9e1814110d6a627058f2dc1ccacc9d36deda0048da610e3cc4c0c1a36fcc27c",
+      "actual_sha256": "d9e1814110d6a627058f2dc1ccacc9d36deda0048da610e3cc4c0c1a36fcc27c",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_sun.step.py",
+      "expected_sha256": "235b4a8b75887e66a404620147999fba2832e6528dfcde1028d8531410fc4812",
+      "actual_sha256": "235b4a8b75887e66a404620147999fba2832e6528dfcde1028d8531410fc4812",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/part_support_collar.step.py",
+      "expected_sha256": "85ca6ec7d869c507137e27f47cf33f594c40a2fa29ea2a46f09e8289cc4c232b",
+      "actual_sha256": "85ca6ec7d869c507137e27f47cf33f594c40a2fa29ea2a46f09e8289cc4c232b",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/__init__.py",
+      "expected_sha256": "4d42cb213ca584794ea361191ed15b00a33fdfca4cbf6d3d74e6f8bac366d51b",
+      "actual_sha256": "4d42cb213ca584794ea361191ed15b00a33fdfca4cbf6d3d74e6f8bac366d51b",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/carrier.py",
+      "expected_sha256": "87010474540aadd3a32ee944bcee4b5b422720c5529e2700356ad3fd52a0c796",
+      "actual_sha256": "87010474540aadd3a32ee944bcee4b5b422720c5529e2700356ad3fd52a0c796",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/core.py",
+      "expected_sha256": "86a3a247efc77dec9d60a40bf5b1bdcb82e6b7e308e2df9e5fb47cf0753cb441",
+      "actual_sha256": "86a3a247efc77dec9d60a40bf5b1bdcb82e6b7e308e2df9e5fb47cf0753cb441",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/coupon.py",
+      "expected_sha256": "a86dd0e2cd49c913dd599987fde9f0dac0010f17da661480143fdb7b83a5a4f4",
+      "actual_sha256": "a86dd0e2cd49c913dd599987fde9f0dac0010f17da661480143fdb7b83a5a4f4",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/gears.py",
+      "expected_sha256": "cf1b6860d2b2a2f5e7d3db346593debfb887e6cab79a6b15e356e97b2eaef46a",
+      "actual_sha256": "cf1b6860d2b2a2f5e7d3db346593debfb887e6cab79a6b15e356e97b2eaef46a",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/retainers.py",
+      "expected_sha256": "7f4391118b7c13907a974d3fe83ba2c7b03bd2df7a944fc3d8283ee74204e132",
+      "actual_sha256": "7f4391118b7c13907a974d3fe83ba2c7b03bd2df7a944fc3d8283ee74204e132",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/parts/stand.py",
+      "expected_sha256": "03350d598b11060c37cae018d39a3d21fad3f8ff8db8de94d6524ced39c15d5b",
+      "actual_sha256": "03350d598b11060c37cae018d39a3d21fad3f8ff8db8de94d6524ced39c15d5b",
+      "matches": true
+    },
+    {
+      "path": "artifacts/make/r0001/product/gear_vortex/validation.py",
+      "expected_sha256": "09bc5efcee77b3b94a8c0d12eff577e1cff5d3fdedb1d08654ecd38e4dbdb29c",
+      "actual_sha256": "09bc5efcee77b3b94a8c0d12eff577e1cff5d3fdedb1d08654ecd38e4dbdb29c",
+      "matches": true
+    }
+  ],
+  "held_form_requirement_ids": [
+    "R001",
+    "R002",
+    "R003",
+    "R004",
+    "R005",
+    "R006",
+    "R007",
+    "R008",
+    "R009",
+    "R011",
+    "R012",
+    "R017",
+    "R018",
+    "R020",
+    "R022",
+    "R024",
+    "R026",
+    "R027",
+    "R036",
+    "R037",
+    "R044",
+    "R046",
+    "R053",
+    "R054",
+    "R055",
+    "R056",
+    "R057",
+    "R058",
+    "R059",
+    "R060",
+    "R063",
+    "R064",
+    "R065",
+    "R068",
+    "R069",
+    "R070",
+    "R077",
+    "R078",
+    "R079",
+    "R098"
+  ],
+  "held_form_ids": 40,
+  "canonical_review_rows": 16,
+  "archive_review_rows": 40,
+  "declared_states": 48,
+  "display_frames": 45,
+  "operating_sample_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23
+  ],
+  "operating_degrees": [
+    0,
+    64.6875
+  ],
+  "operating_degrees_per_interval": 2.8125,
+  "state_counts": {
+    "operating-full-revolution": 24,
+    "representative-small-cap-unscrews": 8,
+    "front-main-cap-unscrews": 8,
+    "lid-unlocks-and-withdraws": 8
+  },
+  "limitations": [
+    "Round 2 is an informed rereview; original failed naive observations remain historical.",
+    "The operating excerpt is not a full revolution. Later samples show cap and lid service paths.",
+    "Presented action PASS does not establish complete numerical motion, continuous contact, retention, torque transmission or physical fit.",
+    "Physical optical transmission, real backlighting, print finish, coasting and human viewing-distance recognition remain untested.",
+    "Final verifier outcome is not assessed here."
+  ],
+  "accounting_note": "canonical_signature_sha256 in final-review-accounting.json binds signature.png, not SIGNATURE-REVIEW.json. The encoding bridge binds the final review JSON bytes."
+}

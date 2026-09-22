@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_01_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_rear"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_01_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0008",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_rear"
+ ],
+ "print": {
+  "body_01_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0008/overhang-body_01_rear.log": "08536e08179dd26ea573d7c8fda58283df062ca0dc0810bc9e884a67f27c2de7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0008/thickness-body_01_rear.log": "9ba65a8b88ada6b24eb826aefafa2b0bfff6c362b6491a80505f34cd39b73b60"
+   },
+   "measured_round": 8,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 40.6% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 3.2,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 8,
+ "scope": "component:body_01_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Unsupported underside of rounded retaining bead",
+    "evidence": "Top and iso show the narrow rolled inner rim; overhang ring3.2mm2 at print(0.5,-7.6,7.2).",
+    "part": "body_01_rear",
+    "repair": "Back the bead with an integral45degree conical annular heel tangent to its lower inner quarter, retaining all four finger slits and the R4.4 aperture."
+   }
+  ],
+  "observation": "Front, top and iso inspected. Integral rolled mouth retains four separate slit sectors and the intended aperture. Walls pass, but its lower rounded surface produces a3.2mm2 unsupported ring. Exact source apertureR4.4 and neutral sphere clearance0.030953mm were measured; local clearance differs from nominal cavity clearance.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0008/visual-packet.json",
+  "packet_sha256": "de9733ea242d473ad9c52474edc24397cba158f6c108e24c8521a4a7e6f01254",
+  "status": "fail"
+ }
+}

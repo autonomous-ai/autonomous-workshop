@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_2": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_2"
+ ],
+ "check_motion": false,
+ "checked": [
+  "body_2"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_2.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_2/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_2"
+ ],
+ "print": {
+  "body_2": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_2/r0002/overhang-body_2.log": "1ce557bc00c028794dead14ac9c392119eda5a30a455e675c11db9d1a7560a99",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_2/r0002/thickness-body_2.log": "fada0aa5a2066e5138d72b9fef5629dbb6165f77c77b49962d0eeb4757d7b7ee"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:body_2",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows the revised gentler underside rise while retaining the body height and broad crown. Top and iso retain the open bearing, neck, rear pin and rooted crest with no disconnected or misplaced geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_2/r0002/visual-packet.json",
+  "packet_sha256": "be4cebb0f13cc198c5756415c181599cdbf3002099086d6810f40274096a6c70",
+  "status": "pass"
+ }
+}

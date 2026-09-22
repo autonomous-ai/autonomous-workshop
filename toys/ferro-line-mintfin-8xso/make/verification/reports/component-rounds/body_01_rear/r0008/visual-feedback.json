@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Unsupported underside of rounded retaining bead",
+      "evidence": "Top and iso show the narrow rolled inner rim; overhang ring3.2mm2 at print(0.5,-7.6,7.2).",
+      "part": "body_01_rear",
+      "repair": "Back the bead with an integral45degree conical annular heel tangent to its lower inner quarter, retaining all four finger slits and the R4.4 aperture."
+    }
+  ],
+  "observation": "Front, top and iso inspected. Integral rolled mouth retains four separate slit sectors and the intended aperture. Walls pass, but its lower rounded surface produces a3.2mm2 unsupported ring. Exact source apertureR4.4 and neutral sphere clearance0.030953mm were measured; local clearance differs from nominal cavity clearance.",
+  "packet_sha256": "de9733ea242d473ad9c52474edc24397cba158f6c108e24c8521a4a7e6f01254",
+  "status": "fail"
+}

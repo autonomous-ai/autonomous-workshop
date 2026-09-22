@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin toe skirts and unsupported ankle pad",
+      "evidence": "Front/iso recess edges at sole; thickness reports three walls7.9..16.5mm2; support report2.8mm2 at print(13.1,6.6,15)",
+      "part": "leg_left",
+      "repair": "Open the claw recesses forward as full-width toe slots and add a45-degree buttress beneath the ankle pad."
+    }
+  ],
+  "observation": "The bent paw silhouette and upper mounting pad are coherent. Front/iso show claw recesses cutting scalloped thin skirts through the toe edge; the mounting pad also projects beyond its lower support.",
+  "packet_sha256": "0757395f49236e071f0f867545a3bc02b41d680d63371932908134de37b6726a",
+  "status": "fail"
+}

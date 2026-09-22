@@ -1,0 +1,62 @@
+{
+ "build": {
+  "horn_left": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "horn_left"
+ ],
+ "check_motion": true,
+ "checked": [
+  "horn_left"
+ ],
+ "checks_ok": true,
+ "entry": "part_horn_left.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_left/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "horn_left"
+ ],
+ "print": {
+  "horn_left": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_left/r0001/overhang-horn_left.log": "92c368621574f1c9bd40bd12cc43dbde1db0072fd165548e42268c633c1baa85",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_left/r0001/thickness-horn_left.log": "1dd889a7d9f32cbbb4008641a24171864cd1f5d9c163efc6c11bd28b2b0a4bdf"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:horn_left",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Tall charcoal horn has a broad tapered elliptical shaft, slight lateral/backward lean, blunt tip and intact cylindrical key joined by a sloped flare. No breaks or reverse ledges visible. Default/additional1.2mm wall and support checks pass; final horn height and seating are assembly checks.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/horn_left/r0001/visual-packet.json",
+  "packet_sha256": "c3157ca55425bd6bc43324e93b203df192c91c53f1f7b2eb5df9d07e63adcf31",
+  "status": "pass"
+ }
+}

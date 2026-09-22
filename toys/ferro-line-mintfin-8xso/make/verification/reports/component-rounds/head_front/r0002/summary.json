@@ -1,0 +1,69 @@
+{
+ "build": {
+  "head_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "head_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "head_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_head_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "head_front"
+ ],
+ "print": {
+  "head_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0002/overhang-head_front.log": "76bf19732e43d78534e9b62cb495e1140c3b8dee1bdf75b936683c76fb8b2c19",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0002/thickness-head_front.log": "af9854c43ee4e257a5f311d3e7746d6add2a604e3f47577b869908ae4d89036c"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.21,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:head_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin residual original-loft rim above the intended1.4mm indexing lip",
+    "evidence": "Top/iso central forehead crescent;1.2mm wall report at print(11.2,17.5,22.2),beyond face-normal1.4 lip height.",
+    "part": "head_front",
+    "repair": "Trim original headstock at the intended face-normal1.4 rim plane before adding the constant-offset lip."
+   }
+  ],
+  "observation": "Inspected front/top/iso. Tapered skirt now supports the cheek perimeter and default wall/support checks pass. The upper forehead joins the concave cheek rim in a thin taper; explicit1.2mm check fails12.5mm2 at that transition.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0002/visual-packet.json",
+  "packet_sha256": "191615dab0dacbd43a80878c7adb09365fc50755e1c2523c426858c08d74ee33",
+  "status": "fail"
+ }
+}
