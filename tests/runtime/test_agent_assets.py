@@ -252,6 +252,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "yield_time_ms: 30000",
             "`1000` is not a waiting value",
             "Never sleep between polls",
+            "one `wait_agent` at a long timeout",
         ):
             with self.subTest(constitution=required):
                 self.assertIn(required, constitution)
