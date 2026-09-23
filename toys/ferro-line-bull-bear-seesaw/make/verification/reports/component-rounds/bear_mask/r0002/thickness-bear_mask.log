@@ -1,0 +1,15 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_bear_mask.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0002/thickness-bear_mask.md
+(6.0s, exit 1)
+--- stdout
+part_bear_mask.step.py: 1.11 cm3 solid, grid 0.133 mm (267x95x27), 57694 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      2.2% of surface below (1155 of 57694 samples); thinnest 0.60 mm at (-2.7, 6.0, 0.2) in 2 region(s); 2 wall(s) (widest band 3.60 mm)
+  PASS  thickness distribution         median 2.93 mm, p95 14.53 mm, max 34.93 mm
+  WARN  hollowable at 1.20 mm wall     0.14 of 1.11 cm3 (12%) in 1 pocket(s)
+  PASS  filament that would save       0.02 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.60 mm at (6.0, 6.0, 2.6)    584 samples, 12.2 mm2, runs 3.4 mm, band 3.60 mm
+        2. [wall ] 0.60 mm at (-2.7, 6.0, 0.2)    571 samples, 11.9 mm2, runs 3.4 mm, band 3.46 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0002/thickness-bear_mask.md
+
+--- stderr

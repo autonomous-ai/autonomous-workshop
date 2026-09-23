@@ -1,0 +1,31 @@
+{
+  "method": "Exact STEP materialized render_review; lossless horizontal concatenation; no retouching. render_product palette substitution documented in prior provenance.",
+  "states": [
+    {
+      "pose": "bull_up",
+      "step": "design/state_bull_up.step",
+      "sha256": "964faf48dc3a44ff913d5fd67a839173bb91b131c6639a61e26c6b9eef50d921"
+    },
+    {
+      "pose": "neutral",
+      "step": "artifacts/make/r0001/product/cad/seesaw.step",
+      "sha256": "800a31328d23a5f88178f77a586642afcc629d8c9af753f3d1c4b4937ad678db"
+    },
+    {
+      "pose": "bear_up",
+      "step": "design/state_bear_up.step",
+      "sha256": "b3f91564859cc1d7bcf1dc71e9c5a314fe437dfdcd5ac747879ecedc684caf3d"
+    }
+  ],
+  "images": {
+    "artifacts/make/r0001/product/cad/snap/iso.png": "8ff79ae08ebe057fe2e44a4cd9db7d00170e7ab42177994781ce334f53f39d37",
+    "artifacts/make/r0001/product/cad/snap/signature.png": "40cebe14843d93feba568d371f1976ceeb3430d88834797fa5a0a93003700403"
+  },
+  "final_export": {
+    "step": "assembled.step",
+    "sha256": "2fdb7f852169455c665226e9a2b95c1b0f013fb4d2f021bdf4e86217700e1acd",
+    "iso_rerender_sha256": "8ff79ae08ebe057fe2e44a4cd9db7d00170e7ab42177994781ce334f53f39d37",
+    "front_rerender_sha256": "4a5aebcf02ccdb8d7b45dd6d7deb68e0d0b7ca84a0e220a75d96fa0e0ccffbd4",
+    "result": "Final verifier export rerenders byte-identical canonical iso and neutral front. STEP serialization changed during integrated multi-entry generation; source geometry unchanged."
+  }
+}

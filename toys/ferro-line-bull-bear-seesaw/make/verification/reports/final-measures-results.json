@@ -1,0 +1,1430 @@
+[
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "x",
+      "from": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.1.f1",
+        "displaySelector": "o1.1.f1",
+        "copyText": "#o1.1.f1",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.1.f1",
+          "bbox": {
+            "min": [
+              -55.0,
+              -27.0,
+              0.0
+            ],
+            "max": [
+              -55.0,
+              27.0,
+              6.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              0.0,
+              54.0,
+              6.0
+            ],
+            "extentAxis": "y",
+            "center": [
+              -55.0,
+              0.0,
+              3.0
+            ],
+            "diag": 54.3323108288245
+          },
+          "center": [
+            -55.0,
+            -0.0,
+            3.0
+          ],
+          "occurrenceId": "o1.1",
+          "shapeId": "o1.1.s1",
+          "kind": "plane",
+          "area": 324.0,
+          "origin": [
+            -55.0,
+            -27.0,
+            0.0
+          ],
+          "normal": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "x",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "x",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "x",
+          "coordinate": -55.0,
+          "planeOffset": 55.0
+        },
+        "coordinate": -55.0,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.1.f9",
+        "displaySelector": "o1.1.f9",
+        "copyText": "#o1.1.f9",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.1.f9",
+          "bbox": {
+            "min": [
+              55.0,
+              -27.0,
+              0.0
+            ],
+            "max": [
+              55.0,
+              27.0,
+              6.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              0.0,
+              54.0,
+              6.0
+            ],
+            "extentAxis": "y",
+            "center": [
+              55.0,
+              0.0,
+              3.0
+            ],
+            "diag": 54.3323108288245
+          },
+          "center": [
+            55.0,
+            -0.0,
+            3.0
+          ],
+          "occurrenceId": "o1.1",
+          "shapeId": "o1.1.s1",
+          "kind": "plane",
+          "area": 324.0,
+          "origin": [
+            55.0,
+            -27.0,
+            0.0
+          ],
+          "normal": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "x",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "x",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "x",
+          "coordinate": 55.0,
+          "planeOffset": 55.0
+        },
+        "coordinate": 55.0,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 110.0,
+        "absoluteDistance": 110.0,
+        "euclideanDistance": 110.0,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "base-width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.1.f6",
+        "displaySelector": "o1.1.f6",
+        "copyText": "#o1.1.f6",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.1.f6",
+          "bbox": {
+            "min": [
+              -47.0,
+              -35.0,
+              0.0
+            ],
+            "max": [
+              47.0,
+              -35.0,
+              6.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              94.0,
+              0.0,
+              6.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -35.0,
+              3.0
+            ],
+            "diag": 94.19129471453293
+          },
+          "center": [
+            0.0,
+            -35.0,
+            3.0
+          ],
+          "occurrenceId": "o1.1",
+          "shapeId": "o1.1.s1",
+          "kind": "plane",
+          "area": 564.0,
+          "origin": [
+            -47.0,
+            -35.0,
+            0.0
+          ],
+          "normal": [
+            -0.0,
+            -1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -35.0,
+          "planeOffset": 35.0
+        },
+        "coordinate": -35.0,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.1.f7",
+        "displaySelector": "o1.1.f7",
+        "copyText": "#o1.1.f7",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.1.f7",
+          "bbox": {
+            "min": [
+              -47.0,
+              35.0,
+              0.0
+            ],
+            "max": [
+              47.0,
+              35.0,
+              6.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              94.0,
+              0.0,
+              6.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              35.0,
+              3.0
+            ],
+            "diag": 94.19129471453293
+          },
+          "center": [
+            0.0,
+            35.0,
+            3.0
+          ],
+          "occurrenceId": "o1.1",
+          "shapeId": "o1.1.s1",
+          "kind": "plane",
+          "area": 564.0,
+          "origin": [
+            -47.0,
+            35.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": 35.0,
+          "planeOffset": 35.0
+        },
+        "coordinate": 35.0,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 70.0,
+        "absoluteDistance": 70.0,
+        "euclideanDistance": 70.0,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "base-depth"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "x",
+      "from": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.7.f1",
+        "displaySelector": "o1.7.f1",
+        "copyText": "#o1.7.f1",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.7.f1",
+          "bbox": {
+            "min": [
+              -94.0,
+              0.0,
+              52.0
+            ],
+            "max": [
+              -94.0,
+              10.0,
+              64.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              0.0,
+              10.0,
+              12.0
+            ],
+            "extentAxis": "z",
+            "center": [
+              -94.0,
+              5.0,
+              58.0
+            ],
+            "diag": 15.620499351813308
+          },
+          "center": [
+            -94.0,
+            5.0,
+            58.0
+          ],
+          "occurrenceId": "o1.7",
+          "shapeId": "o1.7.s1",
+          "kind": "plane",
+          "area": 120.0,
+          "origin": [
+            -94.0,
+            0.0,
+            52.0
+          ],
+          "normal": [
+            -1.0,
+            -0.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "x",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "x",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "x",
+          "coordinate": -94.0,
+          "planeOffset": 94.0
+        },
+        "coordinate": -94.0,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.7.f10",
+        "displaySelector": "o1.7.f10",
+        "copyText": "#o1.7.f10",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.7.f10",
+          "bbox": {
+            "min": [
+              94.0,
+              0.0,
+              52.0
+            ],
+            "max": [
+              94.0,
+              10.0,
+              64.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              0.0,
+              10.0,
+              12.0
+            ],
+            "extentAxis": "z",
+            "center": [
+              94.0,
+              5.0,
+              58.0
+            ],
+            "diag": 15.620499351813308
+          },
+          "center": [
+            94.0,
+            5.0,
+            58.0
+          ],
+          "occurrenceId": "o1.7",
+          "shapeId": "o1.7.s1",
+          "kind": "plane",
+          "area": 120.0,
+          "origin": [
+            94.0,
+            0.0,
+            52.0
+          ],
+          "normal": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "x",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "x",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "x",
+          "coordinate": 94.0,
+          "planeOffset": 94.0
+        },
+        "coordinate": 94.0,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 188.0,
+        "absoluteDistance": 188.0,
+        "euclideanDistance": 188.0,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "beam-span"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.8.f42",
+        "displaySelector": "o1.8.f42",
+        "copyText": "#o1.8.f42",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.8.f42",
+          "bbox": {
+            "min": [
+              -91.0,
+              -10.0,
+              114.280626
+            ],
+            "max": [
+              -89.956165,
+              -10.0,
+              115.5
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              1.0438350000000014,
+              0.0,
+              1.219374000000002
+            ],
+            "extentAxis": "z",
+            "center": [
+              -90.4780825,
+              -10.0,
+              114.89031299999999
+            ],
+            "diag": 1.605136897308453
+          },
+          "center": [
+            -90.652055,
+            -10.0,
+            114.919569
+          ],
+          "occurrenceId": "o1.8",
+          "shapeId": "o1.8.s1",
+          "kind": "plane",
+          "area": 0.636413,
+          "origin": [
+            -87.0,
+            -10.0,
+            113.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -10.0,
+          "planeOffset": 10.0
+        },
+        "coordinate": -10.0,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.14.f1",
+        "displaySelector": "o1.14.f1",
+        "copyText": "#o1.14.f1",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.14.f1",
+          "bbox": {
+            "min": [
+              -78.0,
+              -9.6,
+              75.0
+            ],
+            "max": [
+              78.0,
+              -9.6,
+              116.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              156.0,
+              0.0,
+              41.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -9.6,
+              95.5
+            ],
+            "diag": 161.29786111415117
+          },
+          "center": [
+            -11.59038,
+            -9.6,
+            85.936313
+          ],
+          "occurrenceId": "o1.14",
+          "shapeId": "o1.14.s1",
+          "kind": "plane",
+          "area": 1888.225376,
+          "origin": [
+            0.0,
+            -9.6,
+            78.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -9.6,
+          "planeOffset": 9.6
+        },
+        "coordinate": -9.6,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 0.40000000000000036,
+        "absoluteDistance": 0.40000000000000036,
+        "euclideanDistance": 93.77718272586354,
+        "vectorRelationship": {
+          "relation": "parallel",
+          "dot": 1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "front-slide-gap"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.14.f30",
+        "displaySelector": "o1.14.f30",
+        "copyText": "#o1.14.f30",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.14.f30",
+          "bbox": {
+            "min": [
+              -78.0,
+              -6.6,
+              75.0
+            ],
+            "max": [
+              78.0,
+              -6.6,
+              116.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              156.0,
+              0.0,
+              41.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -6.6,
+              95.5
+            ],
+            "diag": 161.29786111415117
+          },
+          "center": [
+            -11.59038,
+            -6.6,
+            85.936313
+          ],
+          "occurrenceId": "o1.14",
+          "shapeId": "o1.14.s1",
+          "kind": "plane",
+          "area": 1888.225376,
+          "origin": [
+            0.0,
+            -6.6,
+            78.0
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -6.6,
+          "planeOffset": -6.6
+        },
+        "coordinate": -6.6,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.10.f2",
+        "displaySelector": "o1.10.f2",
+        "copyText": "#o1.10.f2",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.10.f2",
+          "bbox": {
+            "min": [
+              -94.6,
+              -6.2,
+              68.8
+            ],
+            "max": [
+              -25.4,
+              -6.2,
+              109.6
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              69.19999999999999,
+              0.0,
+              40.8
+            ],
+            "extentAxis": "x",
+            "center": [
+              -60.0,
+              -6.2,
+              89.19999999999999
+            ],
+            "diag": 80.33230981367335
+          },
+          "center": [
+            -60.0,
+            -6.2,
+            91.173424
+          ],
+          "occurrenceId": "o1.10",
+          "shapeId": "o1.10.s1",
+          "kind": "plane",
+          "area": 2387.44,
+          "origin": [
+            -60.0,
+            -6.2,
+            97.5
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -6.2,
+          "planeOffset": 6.2
+        },
+        "coordinate": -6.2,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 0.39999999999999947,
+        "absoluteDistance": 0.39999999999999947,
+        "euclideanDistance": 63.09049056712113,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "rear-slide-gap"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.12.f5",
+        "displaySelector": "o1.12.f5",
+        "copyText": "#o1.12.f5",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.12.f5",
+          "bbox": {
+            "min": [
+              39.0,
+              -10.4,
+              102.8
+            ],
+            "max": [
+              59.0,
+              -10.4,
+              119.8
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              20.0,
+              0.0,
+              17.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              49.0,
+              -10.4,
+              111.3
+            ],
+            "diag": 26.248809496813376
+          },
+          "center": [
+            49.0,
+            -10.4,
+            111.110631
+          ],
+          "occurrenceId": "o1.12",
+          "shapeId": "o1.12.s1",
+          "kind": "plane",
+          "area": 253.187664,
+          "origin": [
+            49.0,
+            -10.4,
+            111.3
+          ],
+          "normal": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -10.4,
+          "planeOffset": -10.4
+        },
+        "coordinate": -10.4,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.14.f1",
+        "displaySelector": "o1.14.f1",
+        "copyText": "#o1.14.f1",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.14.f1",
+          "bbox": {
+            "min": [
+              -78.0,
+              -9.6,
+              75.0
+            ],
+            "max": [
+              78.0,
+              -9.6,
+              116.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              156.0,
+              0.0,
+              41.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -9.6,
+              95.5
+            ],
+            "diag": 161.29786111415117
+          },
+          "center": [
+            -11.59038,
+            -9.6,
+            85.936313
+          ],
+          "occurrenceId": "o1.14",
+          "shapeId": "o1.14.s1",
+          "kind": "plane",
+          "area": 1888.225376,
+          "origin": [
+            0.0,
+            -9.6,
+            78.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -9.6,
+          "planeOffset": 9.6
+        },
+        "coordinate": -9.6,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 0.8000000000000007,
+        "absoluteDistance": 0.8000000000000007,
+        "euclideanDistance": 59.24972573776186,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "black-insert-slide-gap"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "z",
+      "from": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.1.f4",
+        "displaySelector": "o1.1.f4",
+        "copyText": "#o1.1.f4",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.1.f4",
+          "bbox": {
+            "min": [
+              -55.0,
+              -35.0,
+              0.0
+            ],
+            "max": [
+              55.0,
+              35.0,
+              0.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              110.0,
+              70.0,
+              0.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "diag": 130.38404810405297
+          },
+          "center": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "occurrenceId": "o1.1",
+          "shapeId": "o1.1.s1",
+          "kind": "plane",
+          "area": 7644.379292,
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "normal": [
+            -0.0,
+            -0.0,
+            -1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 0.0,
+          "planeOffset": -0.0
+        },
+        "coordinate": 0.0,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/product/assembled",
+        "stepPath": "artifacts/make/r0001/product/assembled.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.1.f5",
+        "displaySelector": "o1.1.f5",
+        "copyText": "#o1.1.f5",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.1.f5",
+          "bbox": {
+            "min": [
+              -55.0,
+              -35.0,
+              6.0
+            ],
+            "max": [
+              55.0,
+              35.0,
+              6.0
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              110.0,
+              70.0,
+              0.0
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              0.0,
+              6.0
+            ],
+            "diag": 130.38404810405297
+          },
+          "center": [
+            -0.0,
+            -0.323026,
+            6.0
+          ],
+          "occurrenceId": "o1.1",
+          "shapeId": "o1.1.s1",
+          "kind": "plane",
+          "area": 7478.779292,
+          "origin": [
+            0.0,
+            0.0,
+            6.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 6.0,
+          "planeOffset": 6.0
+        },
+        "coordinate": 6.0,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 6.0,
+        "absoluteDistance": 6.0,
+        "euclideanDistance": 6.0,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "base-thickness"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/assembled",
+      "stepPath": "artifacts/make/r0001/product/assembled.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.5",
+      "displaySelector": "o1.5",
+      "copyText": "#o1.5",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.5",
+        "bbox": {
+          "min": [
+            -6.0,
+            -3.0,
+            52.016777
+          ],
+          "max": [
+            6.0,
+            25.6,
+            63.983223
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            12.0,
+            28.6,
+            11.966446000000005
+          ],
+          "extentAxis": "y",
+          "center": [
+            0.0,
+            11.3,
+            58.0
+          ],
+          "diag": 33.243884097242855
+        },
+        "center": [
+          0.0,
+          11.3,
+          58.0
+        ],
+        "kind": "frame",
+        "name": "main_pin_gray",
+        "translation": [
+          0.0,
+          0.0,
+          58.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          58.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "frame-o1.5"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/assembled",
+      "stepPath": "artifacts/make/r0001/product/assembled.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.7",
+      "displaySelector": "o1.7",
+      "copyText": "#o1.7",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.7",
+        "bbox": {
+          "min": [
+            -94.0,
+            0.0,
+            47.0
+          ],
+          "max": [
+            94.0,
+            10.0,
+            69.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            188.0,
+            10.0,
+            22.0
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            5.0,
+            58.0
+          ],
+          "diag": 189.54682798717576
+        },
+        "center": [
+          0.0,
+          5.0,
+          58.0
+        ],
+        "kind": "frame",
+        "name": "beam_gray",
+        "translation": [
+          0.0,
+          0.0,
+          58.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          58.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "frame-o1.7"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/product/assembled",
+      "stepPath": "artifacts/make/r0001/product/assembled.step",
+      "selectorType": "occurrence",
+      "normalizedSelector": "o1.14",
+      "displaySelector": "o1.14",
+      "copyText": "#o1.14",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.14",
+        "bbox": {
+          "min": [
+            -78.0,
+            -9.6,
+            75.0
+          ],
+          "max": [
+            78.0,
+            -6.6,
+            116.0
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            156.0,
+            3.0,
+            41.0
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -8.1,
+            95.5
+          ],
+          "diag": 161.32575739788115
+        },
+        "center": [
+          0.0,
+          -8.1,
+          95.5
+        ],
+        "kind": "frame",
+        "name": "shuttle_beige",
+        "translation": [
+          0.0,
+          0.0,
+          58.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          58.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "frame-o1.14"
+  }
+]

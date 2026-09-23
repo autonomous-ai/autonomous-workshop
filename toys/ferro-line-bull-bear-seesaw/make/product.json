@@ -1,0 +1,11 @@
+{
+  "title": "Bull Bear Seesaw",
+  "summary": "A mechanical desk seesaw with a warm brown bull and a charcoal bear. Tilting the beam is designed to reveal a bull's smile on the rising bull side and blue tears on the rising bear side.",
+  "limitations": [
+    "Digital prototype; physical printing, assembly, fit, durability and operation have not been tested.",
+    "Motion verification was disabled. Expression changes are design intent until tested on a physical prototype.",
+    "No print readiness claim."
+  ],
+  "status": "digitally-verified-not-print-ready",
+  "print_ready_claim": false
+}

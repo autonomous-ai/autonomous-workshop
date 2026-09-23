@@ -1,0 +1,63 @@
+{
+ "build": {
+  "main_pin": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "main_pin"
+ ],
+ "check_motion": false,
+ "checked": [
+  "main_pin"
+ ],
+ "checks_ok": false,
+ "entry": "part_main_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/main_pin/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "main_pin"
+ ],
+ "print": {
+  "main_pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/main_pin/r0001/overhang-main_pin.log": "5b22cd2c6370b22f9ec42fe517695f5e74f2b860ffe95eddabc3a6e3e1d73382",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/main_pin/r0001/thickness-main_pin.log": "488fa0f9a6d3ec2745ee1f2eb789bcf87cff74d537a423b3c0b0c7fb6c962e59"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 1.7% of surface below (692 of 42031 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:main_pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/main_pin/r0001/visual-packet.json",
+  "packet_sha256": "679dd76158a0ba83fe60dbcd0216f3cdbf761aa82a1b95dca252c37cce6e08d1",
+  "status": "pending"
+ }
+}

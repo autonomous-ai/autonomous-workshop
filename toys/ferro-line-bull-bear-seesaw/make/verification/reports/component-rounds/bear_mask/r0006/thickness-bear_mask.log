@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_bear_mask.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0006/thickness-bear_mask.md
+(7.2s, exit 0)
+--- stdout
+part_bear_mask.step.py: 2.87 cm3 solid, grid 0.133 mm (267x226x27), 130586 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (0 of 130586 samples)
+  PASS  thickness distribution         median 2.93 mm, p95 34.93 mm, max 34.93 mm
+  WARN  hollowable at 1.20 mm wall     0.43 of 2.87 cm3 (15%) in 1 pocket(s)
+  PASS  filament that would save       0.06 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0006/thickness-bear_mask.md
+
+--- stderr

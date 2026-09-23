@@ -1,0 +1,63 @@
+{
+ "build": {
+  "stand": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "stand"
+ ],
+ "check_motion": false,
+ "checked": [
+  "stand"
+ ],
+ "checks_ok": false,
+ "entry": "part_stand.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "stand"
+ ],
+ "print": {
+  "stand": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0001/overhang-stand.log": "281de78e0abcb652a5a063b012e81f12100eaf4b5a423583e54e02ef57f7e17b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0001/thickness-stand.log": "c16af081ea6aeac3368e42d8bddfd906b14e0d25f14389ff3119a58ecd9d2a0e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 26.6% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 181.3,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:stand",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0001/visual-packet.json",
+  "packet_sha256": "a3662858a57d83136a2ac88f88894f5546f17a44771c0d4319f8dac766a52f32",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "build": {
+  "bull_body": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bull_body"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bull_body"
+ ],
+ "checks_ok": true,
+ "entry": "part_bull_body.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0007",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bull_body"
+ ],
+ "print": {
+  "bull_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0007/overhang-bull_body.log": "14d1c02908acecda1279513cdce7b13349f9b82db33448a3f1986f748e76298d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0007/thickness-bull_body.log": "877819f1dc9d1475034596270ee704f5f00d69ad9448039d3c0ccd2ea98210eb"
+   },
+   "measured_round": 7,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.25,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 7,
+ "scope": "component:bull_body",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0007/visual-packet.json",
+  "packet_sha256": "ed8c1061d709186df187acbd147679c22e00cfb2f90a85dabe862707404ea63e",
+  "status": "pending"
+ }
+}

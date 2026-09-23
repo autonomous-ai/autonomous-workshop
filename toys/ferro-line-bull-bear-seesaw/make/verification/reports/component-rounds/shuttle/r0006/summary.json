@@ -1,0 +1,62 @@
+{
+ "build": {
+  "shuttle": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "shuttle"
+ ],
+ "check_motion": false,
+ "checked": [
+  "shuttle"
+ ],
+ "checks_ok": true,
+ "entry": "part_shuttle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "shuttle"
+ ],
+ "print": {
+  "shuttle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0006/overhang-shuttle.log": "57fb4dbd31c6ec99229bc888c133b36cdb1ccc3c341032ce2141618fb2ef3229",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0006/thickness-shuttle.log": "1da52c38f6e14ecabd34a28a3cfa7fc673264a3eac800f1bf6cee6f7d01fd02a"
+   },
+   "measured_round": 6,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 6,
+ "scope": "component:shuttle",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "All three views show one planar connected carrier, intact oval drive slot, left mask and low right T-neck. Beige colour matches the new muzzle.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0006/visual-packet.json",
+  "packet_sha256": "3ec8fee2874d63c5b9aa41bc4dddb588e81d8ea9f75264b5b26bc334a0d14c7e",
+  "status": "pass"
+ }
+}

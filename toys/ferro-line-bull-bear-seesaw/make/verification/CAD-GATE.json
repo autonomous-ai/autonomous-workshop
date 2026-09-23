@@ -1,0 +1,21 @@
+# Verification pipeline record
+
+- Recorded: 2026-09-23T05:50:37+00:00
+- Mode: `final`
+- Result: **PASS** (exit 0)
+- Elapsed: 90.62 s
+- Bed: 220 x 220 x 220 mm
+
+| # | command | result | seconds |
+|---:|---|---:|---:|
+| 1 | `signature review  # NOTE: schema=6 sha256=1d90304f52a02014710323d6919f2035a291a0089e907926bd4d81b718122d3c` | note | 0.00 |
+| 2 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_layout artifacts/make/r0001/product/cad` | rc=0 | 0.15 |
+| 3 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen artifacts/make/r0001/product/cad/seesaw.step.py artifacts/make/r0001/product/cad/part_base.step.py artifacts/make/r0001/product/cad/part_beam.step.py artifacts/make/r0001/product/cad/part_bear_body.step.py artifacts/make/r0001/product/cad/part_bear_face.step.py artifacts/make/r0001/product/cad/part_bear_mask.step.py artifacts/make/r0001/product/cad/part_bull_body.step.py artifacts/make/r0001/product/cad/part_bull_muzzle.step.py artifacts/make/r0001/product/cad/part_main_pin.step.py artifacts/make/r0001/product/cad/part_mount_pin.step.py artifacts/make/r0001/product/cad/part_mouth_back.step.py artifacts/make/r0001/product/cad/part_retainer.step.py artifacts/make/r0001/product/cad/part_shuttle.step.py artifacts/make/r0001/product/cad/part_stand.step.py artifacts/make/r0001/product/cad/part_tear_back.step.py --write --json` | rc=0 | 21.78 |
+| 4 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_fit artifacts/make/r0001/product/cad --bed 220.0 220.0 --entry artifacts/make/r0001/product/cad/part_base.step.py --entry artifacts/make/r0001/product/cad/part_beam.step.py --entry artifacts/make/r0001/product/cad/part_bear_body.step.py --entry artifacts/make/r0001/product/cad/part_bear_face.step.py --entry artifacts/make/r0001/product/cad/part_bear_mask.step.py --entry artifacts/make/r0001/product/cad/part_bull_body.step.py --entry artifacts/make/r0001/product/cad/part_bull_muzzle.step.py --entry artifacts/make/r0001/product/cad/part_main_pin.step.py --entry artifacts/make/r0001/product/cad/part_mount_pin.step.py --entry artifacts/make/r0001/product/cad/part_mouth_back.step.py --entry artifacts/make/r0001/product/cad/part_retainer.step.py --entry artifacts/make/r0001/product/cad/part_shuttle.step.py --entry artifacts/make/r0001/product/cad/part_stand.step.py --entry artifacts/make/r0001/product/cad/part_tear_back.step.py --strict` | rc=0 | 12.05 |
+| 5 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 artifacts/make/r0001/product/cad/measure/check_fit.py` | rc=0 | 5.29 |
+| 6 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_numbers artifacts/make/r0001/product/cad` | rc=0 | 5.42 |
+| 7 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_spec_format artifacts/make/r0001/product/cad` | rc=0 | 0.06 |
+| 8 | `check_mount  # NOT RUN: no measure/mounts.json; no bought part is declared seated` | skipped | 0.00 |
+| 9 | `check_power  # NOT RUN: no measure/power.json; no functional powered system is declared` | skipped | 0.00 |
+| 10 | `check_motion  # NOT RUN: disabled by Make motion policy; motion is unverified` | skipped | 0.00 |
+| 11 | `<HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/inspect batch (31 JSONL requests)` | rc=0 | 45.86 |

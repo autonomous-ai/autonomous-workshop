@@ -1,0 +1,11 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/gen <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_bull_body.step.py --write --json
+(5.6s, exit 1)
+--- stdout
+
+--- stderr
+[scripts/gen] FAILED: AssertionError: ('bull_body', 2)
+[scripts/gen]   part_bull_body.step.py:5 in gen_step
+[scripts/gen]       return print_part("bull_body")
+[scripts/gen]   seesaw_lib.py:190 in print_part
+[scripts/gen]       assert len(part.solids())==1, (role,len(part.solids()))
+[scripts/gen] re-run with --verbose for the full traceback

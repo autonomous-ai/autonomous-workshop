@@ -1,0 +1,61 @@
+{
+ "build": {
+  "retainer": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "retainer"
+ ],
+ "check_motion": false,
+ "checked": [
+  "retainer"
+ ],
+ "checks_ok": true,
+ "entry": "part_retainer.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/retainer/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "retainer"
+ ],
+ "print": {
+  "retainer": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/retainer/r0001/overhang-retainer.log": "e810467067bd528b3aa6d418890da0c02c98d66bf7e53adb4ca10be7e17322a3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/retainer/r0001/thickness-retainer.log": "fdb8a113f7d4acfecbbafa5f8bbe9927f0b9030c7e460c27baa438a685e35730"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:retainer",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/retainer/r0001/visual-packet.json",
+  "packet_sha256": "8ca0916c214fc9fe633615596f06fe526b15d6ac5e6a90b7d4ef4d83b38c1d21",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "build": {
+  "tear_back": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "tear_back"
+ ],
+ "check_motion": false,
+ "checked": [
+  "tear_back"
+ ],
+ "checks_ok": true,
+ "entry": "part_tear_back.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "tear_back"
+ ],
+ "print": {
+  "tear_back": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0001/overhang-tear_back.log": "d9ddb4389c2280c161717aab57ade76514cb9a30ad20fd6e1f9085c4dfd7201f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0001/thickness-tear_back.log": "aa9917bbcdb1d65737962b5e7ed6ed6b39979d94fae0e4476287ef4d4830f90d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:tear_back",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0001/visual-packet.json",
+  "packet_sha256": "c68be53cc572c99dbc14242d15042e7bff679b1d42bd49d76376cb6d3ccb50b6",
+  "status": "pending"
+ }
+}

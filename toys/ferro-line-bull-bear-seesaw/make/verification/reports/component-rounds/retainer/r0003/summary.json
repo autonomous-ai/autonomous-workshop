@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_retainer.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/retainer/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "retainer"
+ ],
+ "print": {
+  "retainer": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/retainer/r0002/overhang-retainer.log": "46ca614b415ed0ec14669c5d3016f79ac26fa22f9572ab4a4e1ef7027b59edca",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/retainer/r0002/thickness-retainer.log": "6733b6041200121e10208eee0ebe4d4b08525c0e40c4907abba49ab21458d964"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "retainer"
+ ],
+ "round": 3,
+ "scope": "component:retainer",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show a flat T key with joined wide head and straight stem, even thickness and no loose feature.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/retainer/r0003/visual-packet.json",
+  "packet_sha256": "504ea904217d0dbef8d2586fab067328c43616c19d075a7861d456735c0094c0",
+  "status": "pass"
+ }
+}

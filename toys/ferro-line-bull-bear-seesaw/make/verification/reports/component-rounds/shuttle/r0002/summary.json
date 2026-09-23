@@ -1,0 +1,63 @@
+{
+ "build": {
+  "shuttle": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "shuttle"
+ ],
+ "check_motion": false,
+ "checked": [
+  "shuttle"
+ ],
+ "checks_ok": false,
+ "entry": "part_shuttle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "shuttle"
+ ],
+ "print": {
+  "shuttle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0002/overhang-shuttle.log": "6a58369860a91e42cc508c27d57270797bdc9dfc3ac394b63f846c02b3aa0b5d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0002/thickness-shuttle.log": "b9553066932b60cfef02bedd5fb31e25fd97d06b34a2933aa31229ccd14f224b"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.4% of surface below (1210 of 286534 samples); thinne"
+    ],
+    "thinnest_mm": 0.2,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:shuttle",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0002/visual-packet.json",
+  "packet_sha256": "402c2c4d683795fb73f46e9f035d21bb1ae0ba083f89ea3bf5a9846ea1a4c464",
+  "status": "pending"
+ }
+}

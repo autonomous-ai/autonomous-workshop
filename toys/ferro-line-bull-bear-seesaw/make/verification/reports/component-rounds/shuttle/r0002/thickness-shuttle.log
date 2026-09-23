@@ -1,0 +1,14 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_shuttle.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0002/thickness-shuttle.md
+(12.1s, exit 1)
+--- stdout
+part_shuttle.step.py: 5.48 cm3 solid, grid 0.133 mm (1175x290x27), 286534 surface samples, thickness resolved to 0.067 mm
+  FAIL  wall >= 0.80 mm (+/-0.07)      0.4% of surface below (1210 of 286534 samples); thinnest 0.20 mm at (-0.1, -18.7, 0.3) in 1 region(s); 1 wall(s) (widest band 4.88 mm); 120 more within measurement error of the limit
+  PASS  thickness distribution         median 2.93 mm, p95 16.00 mm, max 156.00 mm
+  WARN  hollowable at 1.20 mm wall     0.65 of 5.48 cm3 (12%) in 1 pocket(s)
+  PASS  filament that would save       0.10 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.20 mm at (-0.1, -18.7, 0.3)   1210 samples, 23.5 mm2, runs 4.8 mm, band 4.88 mm
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0002/thickness-shuttle.md
+
+--- stderr

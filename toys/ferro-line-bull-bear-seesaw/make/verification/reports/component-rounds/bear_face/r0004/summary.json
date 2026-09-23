@@ -1,0 +1,71 @@
+{
+ "build": {
+  "bear_face": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bear_face"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bear_face"
+ ],
+ "checks_ok": false,
+ "entry": "part_bear_face.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_face/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bear_face"
+ ],
+ "print": {
+  "bear_face": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_face/r0004/overhang-bear_face.log": "f8c4900977e41d19d73b3333b4ec1948e79988479a825ef4c0b0b8773cfe0c0b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_face/r0004/thickness-bear_face.log": "650be5a8738c12d249f0f4d9ffe80e3a95517c03366fb7df1815e90410791371"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 2.3% of surface below (1019 of 46408 samples); thinnes"
+    ],
+    "thinnest_mm": 0.33,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:bear_face",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin lower rim beside rounded tear holes",
+    "evidence": "Top and iso show narrow material below each bulb; thickness gate fails.",
+    "part": "bear_face",
+    "repair": "Extend the plate and matching body pocket downward by 1.6 mm."
+   }
+  ],
+  "observation": "Fixed plate and upper key are connected; rounded tear clearances leave a visibly narrow lower rim.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_face/r0004/visual-packet.json",
+  "packet_sha256": "9d580014f242ebde2b386cf83b3182efb0ce479e2a2983a171619da3964525c5",
+  "status": "fail"
+ }
+}

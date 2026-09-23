@@ -1,0 +1,62 @@
+{
+ "build": {
+  "mouth_back": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "mouth_back"
+ ],
+ "check_motion": false,
+ "checked": [
+  "mouth_back"
+ ],
+ "checks_ok": true,
+ "entry": "part_mouth_back.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mouth_back/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "mouth_back"
+ ],
+ "print": {
+  "mouth_back": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mouth_back/r0006/overhang-mouth_back.log": "d1150b8b269be405b6f80f3e1c0441fa5d15332d3700a4cd194b940f4712eda6",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mouth_back/r0006/thickness-mouth_back.log": "dc0476bd1da28df735f30c7e42bc1040c83bd0f5a9398e3c1713659ec8d25f51"
+   },
+   "measured_round": 6,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 6,
+ "scope": "component:mouth_back",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Broad dark panel, supporting stem and paired square post sockets are connected and evenly placed in front, top and iso views.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mouth_back/r0006/visual-packet.json",
+  "packet_sha256": "7c4055f69c379fda0fe62ac3c08e5887a23386baba2febc21038b991eca155a3",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,64 @@
+{
+ "build": {
+  "bull_body": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bull_body"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bull_body"
+ ],
+ "checks_ok": false,
+ "entry": "part_bull_body.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0009",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bull_body"
+ ],
+ "print": {
+  "bull_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0009/overhang-bull_body.log": "2fe2b310d7c93675270776f3deeaf6de5c1c12ccdd62279d467921c9b1ebde10",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0009/thickness-bull_body.log": "e7f2434af4e5f72e11d54e91bd31fb3b450aab026f7f884d88fa43a18ee732d7"
+   },
+   "measured_round": 9,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.15) 0.1% of surface below (190 of 165652 samples); thinnes"
+    ],
+    "thinnest_mm": 0.29,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 9,
+ "scope": "component:bull_body",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso show connected wide swept horns, two eye apertures and a large rear-loaded muzzle seat; cavity and keyed shafts remain coherent. Numeric thin pin-edge finding requires repair.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0009/visual-packet.json",
+  "packet_sha256": "b5e0d731bf0da5a3fab6672539e67eef1d25141a7055149f9c47042a33f18e48",
+  "status": "pass"
+ }
+}

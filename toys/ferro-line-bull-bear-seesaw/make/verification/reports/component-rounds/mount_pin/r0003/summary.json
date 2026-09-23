@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_mount_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mount_pin/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "mount_pin"
+ ],
+ "print": {
+  "mount_pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mount_pin/r0002/overhang-mount_pin.log": "dd58b8388c00629774f71762e7c8cc099935bf7c689ef734eae71950740ca71a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mount_pin/r0002/thickness-mount_pin.log": "f4cb3e9070573b0aec5f9d766e9e3a6b92aba68522797b4b66cd02437915fac2"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "mount_pin"
+ ],
+ "round": 3,
+ "scope": "component:mount_pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show the shorter concentric headed shaft with cross-slot near the tip, preserving head and slot shoulders.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mount_pin/r0003/visual-packet.json",
+  "packet_sha256": "cb7f5162c5e664cefcbcef3c59d828c1932a66645deb65b5429782e51bcb6adb",
+  "status": "pass"
+ }
+}

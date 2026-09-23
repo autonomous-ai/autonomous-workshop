@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_main_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/main_pin/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "main_pin"
+ ],
+ "print": {
+  "main_pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/main_pin/r0002/overhang-main_pin.log": "11d6aae5e9b4bda3b0b777f76dfb5371bfe867595d7d541dc999c4dac5de3e16",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/main_pin/r0002/thickness-main_pin.log": "c704e17b4016fe758f02332832380a05de06651c092dc56217c3e51eaf643d56"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "main_pin"
+ ],
+ "round": 4,
+ "scope": "component:main_pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show a concentric headed shaft with a clean transverse key opening near its free end and continuous surrounding material.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/main_pin/r0004/visual-packet.json",
+  "packet_sha256": "68c207335888adadbd42a162f5a00d909aab79a3c0e3fbdff9dd70f5d0af4711",
+  "status": "pass"
+ }
+}

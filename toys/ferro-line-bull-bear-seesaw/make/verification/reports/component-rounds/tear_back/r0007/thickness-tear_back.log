@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_tear_back.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0007/thickness-tear_back.md
+(18.9s, exit 1)
+--- stdout
+part_tear_back.step.py: 24.80 cm3 solid, grid 0.154 mm (453x378x67), 339109 surface samples, thickness resolved to 0.077 mm
+  FAIL  wall >= 0.80 mm (+/-0.08)      0.6% of surface below (1863 of 339109 samples); thinnest 0.15 mm at (-20.4, 26.9, 0.7) in 8 region(s); 8 wall(s) (widest band 2.47 mm); 320 more within measurement error of the limit
+  PASS  thickness distribution         median 9.57 mm, p95 69.07 mm, max 69.15 mm
+  WARN  hollowable at 1.20 mm wall     15.92 of 24.80 cm3 (64%) in 1 pocket(s)
+  PASS  filament that would save       2.39 cm3, 3.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.15 mm at (-29.6, 17.9, 0.7)    311 samples, 8.2 mm2, runs 3.3 mm, band 2.47 mm
+        2. [wall ] 0.15 mm at (20.5, 27.0, 2.1)    293 samples, 7.9 mm2, runs 3.2 mm, band 2.45 mm
+        3. [wall ] 0.15 mm at (-29.5, 27.0, 0.5)    283 samples, 7.6 mm2, runs 3.2 mm, band 2.38 mm
+        4. [wall ] 0.15 mm at (29.6, 17.9, 0.3)    280 samples, 7.5 mm2, runs 3.3 mm, band 2.27 mm
+        5. [wall ] 0.15 mm at (-20.4, 26.9, 0.7)    269 samples, 7.3 mm2, runs 3.2 mm, band 2.25 mm
+        6. [wall ] 0.15 mm at (29.5, 26.9, 1.6)    245 samples, 6.7 mm2, runs 3.2 mm, band 2.10 mm
+        ... and 2 smaller region(s)
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0007/thickness-tear_back.md
+
+--- stderr

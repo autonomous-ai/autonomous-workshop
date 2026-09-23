@@ -1,0 +1,61 @@
+{
+ "build": {
+  "shuttle": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "shuttle"
+ ],
+ "check_motion": false,
+ "checked": [
+  "shuttle"
+ ],
+ "checks_ok": true,
+ "entry": "part_shuttle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "shuttle"
+ ],
+ "print": {
+  "shuttle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0001/overhang-shuttle.log": "56def936c7339a9570839ce299516a9ab758dbac14640f14e1428d62082c461c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0001/thickness-shuttle.log": "a4ee21ce09afe5ba9117ad6bdcdd553bdf77598ba3977ce6c67df3140548f61b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:shuttle",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0001/visual-packet.json",
+  "packet_sha256": "4159ac16cc60a6507c8f63297ceb79645d2ff30860c135a2e6ebec2c622a2b98",
+  "status": "pending"
+ }
+}

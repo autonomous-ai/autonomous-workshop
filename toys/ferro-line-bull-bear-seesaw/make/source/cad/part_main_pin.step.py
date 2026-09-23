@@ -1,0 +1,5 @@
+"""Isolated printable main_pin, bed datum Z=0."""
+from seesaw_lib import print_part
+PRINTABLE = True
+def gen_step():
+    return print_part("main_pin")

@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front/top/iso show a straight span, central round boss and three bores on one centreline. End bores are symmetric; no misplaced geometry.",
+  "packet_sha256": "1f205d50ec85f64793f4a24da7bf5c862d33922666808542cfa150fdd6594790",
+  "status": "pass"
+}

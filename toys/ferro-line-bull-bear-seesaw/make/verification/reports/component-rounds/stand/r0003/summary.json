@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_stand.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "stand"
+ ],
+ "print": {
+  "stand": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0002/overhang-stand.log": "eafb74f831f4952a0ae37893780578db68e13891569f0bf623c5c4429faaf890",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0002/thickness-stand.log": "26d5f3e0bef42892f9c18b8fa7a5adad51d71c5bf035b57bd7580e4fd909e79e"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "stand"
+ ],
+ "round": 3,
+ "scope": "component:stand",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show the long mast, lower locating tongue, two aligned bores, transverse stop bar and projecting driver peg; proportions and orientation agree with the support design.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0003/visual-packet.json",
+  "packet_sha256": "2fead8e0e7a5a09796df8677536df13a17d361a6488026549f27c67c1fbcc48f",
+  "status": "pass"
+ }
+}

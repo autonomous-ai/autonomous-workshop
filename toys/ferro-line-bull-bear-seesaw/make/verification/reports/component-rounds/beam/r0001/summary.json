@@ -1,0 +1,61 @@
+{
+ "build": {
+  "beam": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "beam"
+ ],
+ "check_motion": false,
+ "checked": [
+  "beam"
+ ],
+ "checks_ok": true,
+ "entry": "part_beam.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/beam/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "beam"
+ ],
+ "print": {
+  "beam": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/beam/r0001/overhang-beam.log": "c5d4bdaa50bba9f6c353f5730319707409511df9c68e301c2030ad9bd79011f4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/beam/r0001/thickness-beam.log": "1dcb6a4c8bd9a4af9fffbf37bfd1710c314d23afdad1ce931d8d33cf4038b998"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:beam",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/beam/r0001/visual-packet.json",
+  "packet_sha256": "85f8bd080f259452b47d69de4b9544006e42e0e90a1ac3911f3a320f9b6cddaf",
+  "status": "pending"
+ }
+}
