@@ -1,0 +1,27 @@
+{
+  "old_path": "artifacts/make/r0001/product/parts/pedestal.step",
+  "old_sha256": "4f1b64365d4eb204a8b24f8bd006775ee1ccb30b04b0f5f8c948701396641643",
+  "new_path": "artifacts/make/r0001/visual-repair-preflight-fit-documentation/regenerated-pedestal.step",
+  "new_sha256": "1db3830a7f4401ab3628f5d4a7715a528f8d50769feb2c28e9311ddd90478fed",
+  "exact_text_changes": [
+    {
+      "line": 3286,
+      "old": "#2710 = NEXT_ASSEMBLY_USAGE_OCCURRENCE('1','=>[0:1:1:2]','',#5,#27,$);",
+      "new": "#2710 = NEXT_ASSEMBLY_USAGE_OCCURRENCE('49','=>[0:1:1:2]','',#5,#27,$);"
+    }
+  ],
+  "scope": "Only occurrence usage identifier changed; native comparison recorded separately.",
+  "native_diff_result": {
+    "topologyChanged": false,
+    "geometryChanged": false,
+    "bboxChanged": false,
+    "countDelta": {
+      "faceCount": 0,
+      "edgeCount": 0,
+      "vertexCount": 0,
+      "shapeCount": 0
+    }
+  },
+  "native_diff_sha256": "4eb4631813ffe0db7ff3f49b7f5b8f6983b12229922007a49b41341ef6aabe6f",
+  "status": "PASS_UNCHANGED_GEOMETRY"
+}

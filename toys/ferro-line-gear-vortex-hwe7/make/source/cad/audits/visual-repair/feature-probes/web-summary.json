@@ -1,0 +1,65 @@
+{
+  "status": "PASS",
+  "required_mm": 2.4,
+  "measurement_count": 40,
+  "results_sha256": "a233563bfe17b3b96019887f7833a09c9d221c5335bd09da79237178202b3c4d",
+  "forms": [
+    {
+      "teeth": 14,
+      "min_mm": 2.6738863861358837,
+      "max_mm": 2.673886386136658,
+      "count": 5,
+      "pass": true
+    },
+    {
+      "teeth": 15,
+      "min_mm": 2.6420758125988693,
+      "max_mm": 2.6420758125998405,
+      "count": 5,
+      "pass": true
+    },
+    {
+      "teeth": 18,
+      "min_mm": 2.6138191910403767,
+      "max_mm": 2.6138191910410318,
+      "count": 5,
+      "pass": true
+    },
+    {
+      "teeth": 20,
+      "min_mm": 2.607586650296876,
+      "max_mm": 2.6075866502973413,
+      "count": 5,
+      "pass": true
+    },
+    {
+      "teeth": 22,
+      "min_mm": 2.604530235027525,
+      "max_mm": 2.6045302350303956,
+      "count": 5,
+      "pass": true
+    },
+    {
+      "teeth": 23,
+      "min_mm": 2.603451593752404,
+      "max_mm": 2.603451593753192,
+      "count": 5,
+      "pass": true
+    },
+    {
+      "teeth": 26,
+      "min_mm": 2.601259296595373,
+      "max_mm": 2.6012592965966164,
+      "count": 5,
+      "pass": true
+    },
+    {
+      "teeth": 36,
+      "min_mm": 2.6008054647104633,
+      "max_mm": 2.6008054647114207,
+      "count": 5,
+      "pass": true
+    }
+  ],
+  "scope": "Actual exported adjacent-window boundary nearest distances; not print readiness."
+}

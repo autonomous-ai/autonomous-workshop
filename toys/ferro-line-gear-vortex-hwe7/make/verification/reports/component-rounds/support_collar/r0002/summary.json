@@ -1,0 +1,62 @@
+{
+ "build": {
+  "support_collar": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "support_collar"
+ ],
+ "check_motion": true,
+ "checked": [
+  "support_collar"
+ ],
+ "checks_ok": true,
+ "entry": "part_support_collar.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/support_collar/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "support_collar"
+ ],
+ "print": {
+  "support_collar": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/support_collar/r0002/overhang-support_collar.log": "321494aa7945f786e7ff0d85932c43dddc918957346379080ee2646c285e7f71",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/support_collar/r0002/thickness-support_collar.log": "bf6e45f892cbba4e94cf4caecc40baf7bf924146405a2dda2933b3ee1e0cc70e"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:support_collar",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The three views show a continuous black collar with its D-shaped through-bore and a rectangular saddle socket opening into it. The saddle joins the ring without visible gaps.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/support_collar/r0002/visual-packet.json",
+  "packet_sha256": "d322b2289860fd4191776242edf27e351582cb2e8edf6274b3f6e716dbe8afa9",
+  "status": "pass"
+ }
+}

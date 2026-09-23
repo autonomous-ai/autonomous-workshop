@@ -1,0 +1,71 @@
+{
+ "build": {
+  "belly_08": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_08"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_08"
+ ],
+ "checks_ok": false,
+ "entry": "part_belly_08.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_08"
+ ],
+ "print": {
+  "belly_08": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0002/overhang-belly_08.log": "61b3cdd76792db32e5d2f2c52474792f52f69d62ac89427e26dfe192cc353eca",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0002/thickness-belly_08.log": "01ff93564ee1d856f21fab7603e74b973414d4ee64e2e46fe2de698f3db2756a"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 21.9% of surface below (228 of 919 samples); thinnest "
+    ],
+    "thinnest_mm": 0.4,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:belly_08",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "One-millimeter minor-axis footprint leaves extensive thin material",
+    "evidence": "Top/iso very narrow oval; default21.9% thin surface, extra1.2 wall62.5% with11.4mm2 region.",
+    "part": "belly_08",
+    "repair": "Widen minor axis to2.2mm and move centerY126 to125.4 so rear edge126.5 stays within flat section126.6 and before slitroot127."
+   }
+  ],
+  "observation": "Front, top and iso inspected. Small cream ellipse is coherent but too narrow along its minor axis; thin ends occupy a substantial fraction of the part. Default and1.2mm wall checks both fail.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0002/visual-packet.json",
+  "packet_sha256": "165c753516760074b95bb14bd2963d1341bde9a46d5d4c933813d218410d29e9",
+  "status": "fail"
+ }
+}

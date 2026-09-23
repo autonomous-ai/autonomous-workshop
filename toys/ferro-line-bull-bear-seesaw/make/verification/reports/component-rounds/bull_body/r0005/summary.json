@@ -1,0 +1,62 @@
+{
+ "build": {
+  "bull_body": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bull_body"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bull_body"
+ ],
+ "checks_ok": true,
+ "entry": "part_bull_body.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bull_body"
+ ],
+ "print": {
+  "bull_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0005/overhang-bull_body.log": "29de087386ba8bbc34fcd9f1cce6dd0ccd6dc08eb9a406500a257e7a622a49ea",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0005/thickness-bull_body.log": "00676ebb744da41842187751d477812e48ef279a4194b390997b878b1f0dd461"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.25,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:bull_body",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows supported toe shelf and three integral pins; top shows intact blunt horns and mouth window; iso confirms one coherent body with open rear cavity, tower-side notch and no former roof. Face engraving is on the bed side and will be checked in the assembled front view.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0005/visual-packet.json",
+  "packet_sha256": "6858ce02e21675c9dfac708666dbbea82a6c4592f67952a22982b28e4b6aa3db",
+  "status": "pass"
+ }
+}

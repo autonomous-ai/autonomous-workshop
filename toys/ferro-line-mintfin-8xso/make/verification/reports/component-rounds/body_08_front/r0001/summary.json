@@ -1,0 +1,73 @@
+{
+ "build": {
+  "body_08_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_08_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_08_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_08_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_08_front"
+ ],
+ "print": {
+  "body_08_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0001/overhang-body_08_front.log": "89d20aa0c7d6437ec9e950547b4709472e7fe198a862bae3fd87abe7eedc3714",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0001/thickness-body_08_front.log": "4951b76fff10cde4701eadd1efcf3553c76f084b3ce9dbb5b832a4aa0025fa76"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 28.0% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 6.8,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 3.3% of surface below (982 of 34799 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:body_08_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin crescent walls and unsupported ball lower cap.",
+    "evidence": "Front and iso show the sphere beyond the lower barrel profile with thin side rails. Explicit1.2mm check finds two walls near print X+/-6.1,Y-3.3,Z0.8..1.2, areas10.3/10.1mm2, minimum0.2mm; overhang region6.8mm2 at(0,-8.4,.5),span4.2mm and2mm air below.",
+    "part": "body_08_front",
+    "repair": "Revise the final front-half seam/land to retain >=1.2mm after J07 parent relief, and give the ball lower cap a45degree conical support base or change its construction split while preserving functional mouth clearance."
+   }
+  ],
+  "observation": "Front, top and iso inspected once. Incoming sphere projects below the narrow barrel outline and leaves unsupported lower cap stock in this seam-down print pose. The circular parent-socket relief feathers both sidewalls.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_08_front/r0001/visual-packet.json",
+  "packet_sha256": "cbb584e32bcb7a0efc14493995c97163f596452eb6a252d3986e6699fdf41b6c",
+  "status": "fail"
+ }
+}

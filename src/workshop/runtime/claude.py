@@ -80,6 +80,13 @@ CLAUDE_SUBPROCESS_ENVIRONMENT_ALLOWLIST = (
     "LOGNAME",
     "XDG_CONFIG_HOME",
     "XDG_CACHE_HOME",
+    # Supported non-interactive Claude Code authentication inputs.  Without
+    # these a sandbox that has no interactive ``claude /login`` session under
+    # HOME reports "Not logged in" and every turn fails before it starts.
+    # They authenticate the model runtime only; they carry no Factory,
+    # payment, or other external-effect authority.
+    "CLAUDE_CODE_OAUTH_TOKEN",
+    "ANTHROPIC_API_KEY",
     "LANG",
     "LC_ALL",
     "LC_CTYPE",

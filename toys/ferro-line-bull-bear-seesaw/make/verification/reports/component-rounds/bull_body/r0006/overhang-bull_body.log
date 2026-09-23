@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_bull_body.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0006/overhang-bull_body.md
+(6.0s, exit 1)
+--- stdout
+part_bull_body.step.py: 161.6 cm2 of surface, grid 0.400 mm, 926 unsupported samples over 9 region(s)
+  FAIL  no face under 45 deg needs support     25.0% of the surface faces down that steeply; 2 region(s) need support, 5 bridge, 2 below 1 mm2; worst 23.3 mm2 spanning 3.6 mm
+  PASS  bridges within 12 mm                   5 region(s), longest span 3.4 mm
+        every unsupported region, largest first:
+        1. [overhang]    23.3 mm2 at (-27.0, -23.6, 13.0)  span   3.6 mm of 8x4, 8.8 mm of air below
+        2. [overhang]    22.9 mm2 at (27.0, -23.6, 13.0)  span   3.6 mm of 8x4, 8.8 mm of air below
+        3. [bridge  ]    21.7 mm2 at (0.2, 29.4, 27.2)  span   2.7 mm of 3x9, 20.0 mm of air below
+        4. [bridge  ]    21.3 mm2 at (-26.9, -25.6, 20.6)  span   2.6 mm of 3x8, 20.0 mm of air below
+        5. [bridge  ]    20.7 mm2 at (27.0, -25.6, 20.6)  span   2.6 mm of 3x8, 20.0 mm of air below
+        6. [bridge  ]    13.0 mm2 at (-4.9, -23.3, 1.3)  span   2.9 mm of 8x3, 2.4 mm of air below
+        7. [bridge  ]    12.6 mm2 at (19.0, -23.4, 1.3)  span   3.4 mm of 8x3, 2.4 mm of air below
+        8. [trace   ]     0.2 mm2 at (-26.9, -29.4, 13.0)  span   0.1 mm of 1x0, 14.0 mm of air below
+        ... and 1 smaller region(s)
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0006/overhang-bull_body.md
+
+--- stderr

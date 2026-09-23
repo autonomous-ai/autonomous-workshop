@@ -1,0 +1,17 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_axle.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0004/thickness-axle.md
+(17.9s, exit 0)
+--- stdout
+part_axle.step.py: 4.54 cm3 solid, grid 0.140 mm (169x169x394), 273899 surface samples, thickness resolved to 0.070 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (42 of 273899 samples); thinnest 0.35 mm at (4.6, -6.9, 0.3) in 4 region(s); no region is a wall, 4 taper(s) at feature edges (0.04% of surface, budget 2%); 16 more within measurement error of the limit
+  PASS  thickness distribution         median 1.75 mm, p95 4.41 mm, max 54.46 mm
+  WARN  hollowable at 1.20 mm wall     0.09 of 4.54 cm3 (2%) in 1 pocket(s)
+  PASS  filament that would save       0.01 cm3, 0.0 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.35 mm at (4.6, -6.9, 0.3)     22 samples, 1.1 mm2, runs 3.9 mm, band 0.28 mm
+        2. [taper] 0.42 mm at (3.7, 7.5, 54.2)     18 samples, 1.0 mm2, runs 4.2 mm, band 0.23 mm
+        3. [taper] 0.63 mm at (7.7, -3.4, 0.5)      1 samples, 0.1 mm2, runs 0.0 mm, band 0.39 mm
+        4. [taper] 0.70 mm at (7.0, 4.7, 54.0)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.21 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0004/thickness-axle.md
+
+--- stderr

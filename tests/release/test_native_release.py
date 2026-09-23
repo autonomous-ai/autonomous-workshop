@@ -128,6 +128,33 @@ def _token_summary():
     }
 
 
+def _stage_timing_record():
+    return {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.wish-run-timing-record",
+        "product_id": "wish-moon-nook",
+        "started_at": "2026-08-25T23:59:59Z",
+        "last_observed_at": "2026-08-26T00:00:00Z",
+        "measured_ms": 700,
+        "total_ms": 1_000,
+        "unmeasured_ms": 300,
+        "stages": {
+            "make": {
+                "gate.evaluate": {
+                    "count": 1,
+                    "elapsed_ms": 500,
+                    "states": {"completed": 1},
+                },
+                "stage.prepare": {
+                    "count": 1,
+                    "elapsed_ms": 200,
+                    "states": {"completed": 1},
+                },
+            },
+        },
+    }
+
+
 def _legacy_token_summary():
     current = _token_summary()
     return {
@@ -283,6 +310,61 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertEqual(legacy["output_tokens"], 25)
         self.assertNotIn("economics", legacy)
         self.assertNotIn("economics", legacy["stages"]["make"])
+
+    def test_public_timing_summary_publishes_stage_breakdown_at_schema_2(self):
+        from workshop.release.public_example import _public_timing_summary
+
+        published = _public_timing_summary(
+            "wish-20260825-235959-deadbeef",
+            "2026-08-26T00:00:01Z",
+            _stage_timing_record(),
+        )
+        self.assertEqual(published["schema_version"], 2)
+        self.assertEqual(published["status"], "measured")
+        self.assertEqual(published["started_at"], "2026-08-25T23:59:59Z")
+        self.assertEqual(published["completed_at"], "2026-08-26T00:00:01Z")
+        self.assertEqual(published["elapsed_seconds"], 2)
+        self.assertEqual(
+            published["completion_boundary"],
+            "authenticated Factory public readback",
+        )
+        breakdown = published["breakdown"]
+        self.assertEqual(breakdown["measured_ms"], 700)
+        self.assertEqual(breakdown["total_ms"], 1_000)
+        self.assertEqual(breakdown["unmeasured_ms"], 300)
+        self.assertEqual(breakdown["measured_ms"] + breakdown["unmeasured_ms"], breakdown["total_ms"])
+        self.assertEqual(
+            breakdown["stages"]["make"]["gate.evaluate"],
+            {"count": 1, "elapsed_ms": 500, "states": {"completed": 1}},
+        )
+        # No absolute wall-clock instants leak into the breakdown itself.
+        for stage in breakdown["stages"].values():
+            for aggregate in stage.values():
+                self.assertEqual(set(aggregate), {"count", "elapsed_ms", "states"})
+
+    def test_public_timing_summary_unavailable_still_publishes_zero_breakdown(self):
+        from workshop.release.public_example import _public_timing_summary
+
+        published = _public_timing_summary("wish-programmatic-id", "2026-08-26T00:00:01Z", None)
+        self.assertEqual(published["schema_version"], 2)
+        self.assertEqual(published["status"], "unavailable")
+        self.assertEqual(
+            published["breakdown"],
+            {"measured_ms": 0, "total_ms": 0, "unmeasured_ms": 0, "stages": {}},
+        )
+
+    def test_public_timing_summary_no_observed_spans_reconciles_as_fully_unmeasured(self):
+        from workshop.release.public_example import _public_timing_summary
+
+        empty_record = {**_stage_timing_record(), "measured_ms": 0, "total_ms": 0, "unmeasured_ms": 0, "stages": {}}
+        published = _public_timing_summary(
+            "wish-20260825-235959-deadbeef", "2026-08-26T00:00:01Z", empty_record
+        )
+        breakdown = published["breakdown"]
+        self.assertEqual(breakdown["measured_ms"], 0)
+        self.assertEqual(breakdown["total_ms"], 0)
+        self.assertEqual(breakdown["unmeasured_ms"], 0)
+        self.assertEqual(breakdown["stages"], {})
 
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -1540,6 +1622,7 @@ class NativeReleaseTest(unittest.TestCase):
             receipt=receipt,
             token_summary=_token_summary(),
             wish_id="wish-20260825-235959-deadbeef",
+            stage_timing_record=_stage_timing_record(),
         )
         self.assertEqual(target, repository / "toys/eve-moon-nook")
         self.assertEqual(
@@ -1585,9 +1668,17 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertEqual(tokens["stages"]["make"]["input_tokens"], 100)
         self.assertEqual(tokens["stages"]["make"]["output_tokens"], 25)
         timing = json.loads((target / "TIMING.json").read_text(encoding="utf-8"))
+        self.assertEqual(timing["schema_version"], 2)
         self.assertEqual(timing["status"], "measured")
         self.assertEqual(timing["elapsed_seconds"], 1)
         self.assertEqual(timing["completion_boundary"], "authenticated Factory public readback")
+        self.assertEqual(timing["breakdown"]["measured_ms"], 700)
+        self.assertEqual(timing["breakdown"]["total_ms"], 1_000)
+        self.assertEqual(timing["breakdown"]["unmeasured_ms"], 300)
+        self.assertEqual(
+            timing["breakdown"]["stages"]["make"]["gate.evaluate"]["elapsed_ms"], 500
+        )
+        self.assertEqual(set(timing["breakdown"]["stages"]) - {"make"}, set())
         readme = (target / "README.md").read_text(encoding="utf-8")
         self.assertIn("## How this toy was created", readme)
         self.assertIn(
@@ -1645,6 +1736,7 @@ class NativeReleaseTest(unittest.TestCase):
                 receipt=receipt,
                 token_summary=_token_summary(),
                 wish_id="wish-20260825-235959-deadbeef",
+                stage_timing_record=_stage_timing_record(),
             ),
             target,
         )

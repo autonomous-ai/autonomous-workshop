@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_bear_mask.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bear_mask"
+ ],
+ "print": {
+  "bear_mask": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0003/overhang-bear_mask.log": "331e1cdeef52a4109872477af0535a97ef561f3a1d8ddf8e3e9680500fa882c4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0003/thickness-bear_mask.log": "c3f07e063c061048aec398b9cf2d6371638fd6bc3f66f4c06b7ea97de8492efa"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "bear_mask"
+ ],
+ "round": 4,
+ "scope": "component:bear_mask",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show a single rectangular plate with open-bottom T pocket and substantial material around the pocket. The keyed notch is centered at its designed offset.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0004/visual-packet.json",
+  "packet_sha256": "1213dc5d2a163da036a114ff71345efe0e215631d9d375b5b134fa68a1fd4f6b",
+  "status": "pass"
+ }
+}

@@ -79,8 +79,13 @@ calls were reassembling by hand.
   Manager's findings using `--record-visual` without rebuilding. Read its summary; open a full report only
   when the summary names a failure you cannot place.
 - A round can take minutes. Start `make_round` with `yield_time_ms: 30000` and,
-  while it runs, continue it with `write_stdin` at the same yield. Never put a
-  `sleep` between polls: each poll re-sends the whole session.
+  while it runs, continue it with an empty `write_stdin` poll at
+  `yield_time_ms: 30000` or more, and continue a yielded `exec` cell with
+  `wait` at the same large yield. The poll returns as soon as the round exits,
+  so the long yield never costs waiting the round did not need. Do not copy the `1000` from the `exec` pragma example
+  into a poll: it is an output budget there, and as a yield it is worse than
+  the 10000 ms default. Omit `yield_time_ms` before writing a small one. Never
+  put a `sleep` between polls: each poll re-sends the whole session.
 - Do not read the cad or image-to-cad scripts to learn their flags. The
   exact invocations are below; they are the same programs the host gates
   run, unchanged.

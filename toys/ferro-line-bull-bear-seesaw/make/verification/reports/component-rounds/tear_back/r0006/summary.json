@@ -1,0 +1,62 @@
+{
+ "build": {
+  "tear_back": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "tear_back"
+ ],
+ "check_motion": false,
+ "checked": [
+  "tear_back"
+ ],
+ "checks_ok": true,
+ "entry": "part_tear_back.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "tear_back"
+ ],
+ "print": {
+  "tear_back": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0006/overhang-tear_back.log": "642d6c6cc4341f5449e62712982c5b1b9ab26a9bd37f08660e2c9ed750313e63",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0006/thickness-tear_back.log": "2bdf5d85364de28bd3ebf65cde38ec2b60618e5d79b15b42ab2bd26e46b6058d"
+   },
+   "measured_round": 6,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 6,
+ "scope": "component:tear_back",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Three views show connected blue panel, raised eye-window pad, upper black-key socket and two ear-centred rings; no detached or visibly misplaced element.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0006/visual-packet.json",
+  "packet_sha256": "e28c4e7c8286ac464da32f05a19759cdfef3585807f4f2b78b8423d6043df26b",
+  "status": "pass"
+ }
+}

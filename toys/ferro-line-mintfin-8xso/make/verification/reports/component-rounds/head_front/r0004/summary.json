@@ -1,0 +1,62 @@
+{
+ "build": {
+  "head_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "head_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "head_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_head_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "head_front"
+ ],
+ "print": {
+  "head_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0004/overhang-head_front.log": "d0fe5bdd982bec1ae67f338e77bbeef5a9d3b9b38bb52e01dd972994b6ccf06c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0004/thickness-head_front.log": "4e78593d5ea307eaf0acde695a96a3a9213d9ee5a5002a03bd4e86f1a249f257"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.21,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:head_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso show a coherent rounded head, supported cheek skirt, continuous narrow rim and three recessed magnet pockets. Explicit spline rim fixes STEP transfer: written export reopens as one valid solid with 35 faces. Default wall, additional 1.2 mm wall and overhang checks pass. No physical print claim.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0004/visual-packet.json",
+  "packet_sha256": "72e450a06a4a0127c853741086924b1c4f5441fdea346b614ec75ef21d15cb18",
+  "status": "pass"
+ }
+}

@@ -276,7 +276,7 @@ workshop wish
     |
     v
 host persists the canonical Wish and creates
-$WORKSHOP_HOME/runs/<wish-id>/workspace/
+$WORKSHOP_HOME/runs/<product-id>/workspace/
     |
     +-- .workshop-product-run-root    immutable Codex project-root marker
     +-- AGENTS.md                     product-run constitution
@@ -312,7 +312,7 @@ performs no Factory effect, credential read or ledger write at all. A resume
 can neither add nor drop it. That makes a chain of single-change corrections
 possible where only the last run publishes.
 
-`workshop resume <wish-id>` resumes the recorded session UUID in the same toy
+`workshop resume <product-id>` resumes the recorded session UUID in the same toy
 project. Session memory is useful continuity, but the durable checkpoint,
 sealed manifests, and reconciled receipts remain authoritative. If memory and
 files disagree, the files win.
@@ -330,7 +330,7 @@ platforms, and additional policy drift retain the normal refusal.
 A Wish command is a finite job, not a daemon. The host rejects new Wish
 creation when macOS reports that it is running beneath a `grid.serve.*`
 keepalive service, because every clean command exit would otherwise relaunch
-the caller and allocate a different Wish id. Long-running foreground Wishes
+the caller and allocate a different product id. Long-running foreground Wishes
 must use Grid's bounded one-shot runner. Read-only status and explicit resume
 retain their normal behavior.
 
@@ -429,7 +429,7 @@ whole-run native-turn budget remain the surrounding resource bounds.
 
 ### Privacy-safe progress status
 
-`workshop status <wish-id>` is read-only and never opens or resumes Codex. While
+`workshop status <product-id>` is read-only and never opens or resumes Codex. While
 a native turn runs, the host reduces Codex JSONL events to one of eight coarse
 classes: `starting`, `running`, `reasoning`, `tool`, `subagent`, `finalizing`,
 `completed`, or `failed`. `running` is a five-second host heartbeat that means
@@ -646,7 +646,7 @@ already checkpointed exact session is resumed automatically with the unchanged
 stage subject and receives a fixed instruction that its finalizer has not yet
 written the required proposal. Three consecutive normally returned turns
 without a proposal stop the invocation early, mark progress failed, and report
-the exact `workshop resume <wish-id>` command while preserving the checkpoint.
+the exact `workshop resume <product-id>` command while preserving the checkpoint.
 An explicit resume starts a fresh three-turn unfinished-work window in that
 same root session. The independent 32-turn invocation budget still bounds all
 native turns, including gate repairs and provider-transport continuations.
@@ -946,8 +946,8 @@ second hand-edited copy.
 ## Repository ownership
 
 ```text
-$WORKSHOP_HOME/runs/<wish-id>/workspace/    private product run / Codex CWD
-$WORKSHOP_HOME/state/<wish-id>/             trusted checkpoints and effects
+$WORKSHOP_HOME/runs/<product-id>/workspace/    private product run / Codex CWD
+$WORKSHOP_HOME/state/<product-id>/             trusted checkpoints and effects
 toys/<inventor>-<slug>/                     sanitized public examples only
 .agents/product-run/                        complete toy-project template source
   AGENTS.md                                 product-run constitution

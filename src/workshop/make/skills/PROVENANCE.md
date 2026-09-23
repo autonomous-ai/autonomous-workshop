@@ -354,6 +354,22 @@ part was printed.
   contract; no measurements, thresholds or exit codes change.
   Geometry, measurement, inspection, validation, export, and `cadgen`
   algorithms are otherwise the reviewed upstream bytes.
+- Adapted locally on 2026-09-21 so `render_review` rasterises whole batches of
+  triangles instead of one at a time. A whole-set review frame carries over a
+  million triangles, most of them smaller than a pixel, and the per-face pass
+  cost a flat ~50 us each: about two hours of one measured correction run was
+  software rasterisation. Face normals, flat shading and bounding boxes are now
+  one array call each, and faces are drawn in batches padded to a power-of-two
+  box. The depth test keeps its hysteresis exactly -- each pixel's candidates
+  are applied in draw order, one layer at a time -- so which of two
+  near-coincident faces is kept does not change. A differential test draws
+  every scene twice, through the renderer and through the per-face pass it
+  replaced, and requires identical pixels; on 1.44 M triangles at 900 px the
+  frame falls from 83 s to 2.2 s with identical output. `tessellate_occurrences`
+  also accepts the angular deflection (`--angular-tolerance`), which build123d
+  defaults to 0.1 rad; runs that render curved form previously had to
+  reimplement the routine to pass it. No view, colour, framing or verdict
+  changes.
 - Adapted locally on 2026-08-27 in the canonical `cadgen` STEP writer to apply
   the STEP header only after Open CASCADE transfer and to set its `FILE_NAME`
   timestamp to the fixed ISO-8601 value `1970-01-01T00:00:00`. This preserves

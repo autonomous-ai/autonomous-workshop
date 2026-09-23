@@ -48,6 +48,10 @@ from workshop.runtime.managers import (
     manager_runtime_selection,
     manager_spec,
 )
+from workshop.runtime.progress import (
+    WISH_RUN_TIMING_OPERATIONS,
+    WISH_RUN_TIMING_STAGES,
+)
 
 
 _PUBLIC_SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -922,20 +926,90 @@ def _public_token_summary(value: Any) -> dict[str, Any]:
     return result
 
 
-def _public_timing_summary(wish_id: Optional[str], completed_at: str) -> dict[str, Any]:
+def _public_stage_timing_breakdown(
+    record: Optional[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Reshape the private per-Run timing aggregate into durations only.
+
+    Absolute wall-clock instants (``started_at``/``last_observed_at``) never
+    leave host state; only the honesty-preserving measured/total/unmeasured
+    durations and the per-stage, per-operation breakdown are published. A
+    missing or span-free record still publishes a valid, zeroed envelope
+    rather than an absent breakdown, so a reader can never mistake "no data"
+    for "nothing happened".
+    """
+
+    if record is None:
+        return {"measured_ms": 0, "total_ms": 0, "unmeasured_ms": 0, "stages": {}}
+    if (
+        not isinstance(record, Mapping)
+        or any(
+            type(record.get(name)) is not int or record[name] < 0
+            for name in ("measured_ms", "total_ms", "unmeasured_ms")
+        )
+        or record["measured_ms"] + record["unmeasured_ms"] != record["total_ms"]
+        or not isinstance(record.get("stages"), Mapping)
+    ):
+        raise ContractError("public stage timing breakdown is invalid")
+    stages: dict[str, Any] = {}
+    for stage_name, operations in record["stages"].items():
+        if (
+            stage_name not in WISH_RUN_TIMING_STAGES
+            or not isinstance(operations, Mapping)
+        ):
+            raise ContractError("public stage timing breakdown stage is invalid")
+        rebuilt_operations = {}
+        for operation_name, aggregate in operations.items():
+            if (
+                operation_name not in WISH_RUN_TIMING_OPERATIONS
+                or not isinstance(aggregate, Mapping)
+                or type(aggregate.get("count")) is not int
+                or aggregate["count"] < 1
+                or type(aggregate.get("elapsed_ms")) is not int
+                or aggregate["elapsed_ms"] < 0
+                or not isinstance(aggregate.get("states"), Mapping)
+            ):
+                raise ContractError(
+                    "public stage timing breakdown operation is invalid"
+                )
+            rebuilt_operations[operation_name] = {
+                "count": aggregate["count"],
+                "elapsed_ms": aggregate["elapsed_ms"],
+                "states": dict(aggregate["states"]),
+            }
+        stages[stage_name] = rebuilt_operations
+    return {
+        "measured_ms": record["measured_ms"],
+        "total_ms": record["total_ms"],
+        "unmeasured_ms": record["unmeasured_ms"],
+        "stages": stages,
+    }
+
+
+def _public_timing_summary(
+    wish_id: Optional[str],
+    completed_at: str,
+    stage_timing_record: Optional[Mapping[str, Any]] = None,
+) -> dict[str, Any]:
     """Derive CLI Wish-to-publication time without adding private host state.
 
     The generated CLI Wish id contains its UTC intake second. The completion
     boundary is the authenticated Factory public-readback receipt, not the
     native agent's prose or its final turn. Programmatic and historical ids do
     not necessarily carry time, so they remain explicitly unavailable.
+
+    Schema version 2 additionally carries a per-stage, per-operation timing
+    ``breakdown`` (see ``_public_stage_timing_breakdown``); the schema 1
+    fields above are otherwise unchanged for identical inputs.
     """
 
+    breakdown = _public_stage_timing_breakdown(stage_timing_record)
     unavailable = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": _TIMING_SUMMARY_KIND,
         "status": "unavailable",
         "reason": "Wish intake time is unavailable for this run.",
+        "breakdown": breakdown,
     }
     match = _CLI_WISH_ID.fullmatch(wish_id) if isinstance(wish_id, str) else None
     if match is None:
@@ -956,13 +1030,14 @@ def _public_timing_summary(wish_id: Optional[str], completed_at: str) -> dict[st
     if elapsed_seconds < 0:
         return unavailable
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": _TIMING_SUMMARY_KIND,
         "status": "measured",
         "started_at": started.isoformat().replace("+00:00", "Z"),
         "completed_at": completed_at,
         "elapsed_seconds": elapsed_seconds,
         "completion_boundary": "authenticated Factory public readback",
+        "breakdown": breakdown,
     }
 
 
@@ -1294,6 +1369,7 @@ def materialize_public_example(
     github_requested: bool = False,
     token_summary: Optional[Mapping[str, Any]] = None,
     wish_id: Optional[str] = None,
+    stage_timing_record: Optional[Mapping[str, Any]] = None,
 ) -> Path:
     """Create ``toys/<inventor>-<slug>`` from exact public Release bytes.
 
@@ -1647,7 +1723,9 @@ def materialize_public_example(
             "print_files": print_files,
         }
         public_token_summary = _public_token_summary(token_summary)
-        public_timing_summary = _public_timing_summary(wish_id, observed_at)
+        public_timing_summary = _public_timing_summary(
+            wish_id, observed_at, stage_timing_record
+        )
         _write_public_file(
             staging,
             "TOKENS.json",
@@ -1734,7 +1812,7 @@ def materialize_public_example(
             )
             timing_line = (
                 "- `TIMING.json` — Wish intake to locally sealed Release "
-                "elapsed time.\n"
+                "elapsed time, plus a per-stage timing breakdown.\n"
             )
         else:
             page_line = (
@@ -1747,7 +1825,7 @@ def materialize_public_example(
             )
             timing_line = (
                 "- `TIMING.json` — Wish intake to authenticated public-readback "
-                "elapsed time.\n"
+                "elapsed time, plus a per-stage timing breakdown.\n"
             )
         readme = (
             "# %s\n\n"
@@ -1911,6 +1989,7 @@ def materialize_public_example_if_source_checkout(
     github_requested: bool = False,
     token_summary: Optional[Mapping[str, Any]] = None,
     wish_id: Optional[str] = None,
+    stage_timing_record: Optional[Mapping[str, Any]] = None,
 ) -> Optional[Path]:
     """Materialize a public example when the host is running from a checkout."""
 
@@ -1931,6 +2010,7 @@ def materialize_public_example_if_source_checkout(
         github_requested=github_requested,
         token_summary=token_summary,
         wish_id=wish_id,
+        stage_timing_record=stage_timing_record,
     )
 
 

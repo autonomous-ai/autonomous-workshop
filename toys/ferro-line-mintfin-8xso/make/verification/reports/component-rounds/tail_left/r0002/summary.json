@@ -1,0 +1,62 @@
+{
+ "build": {
+  "tail_left": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "tail_left"
+ ],
+ "check_motion": true,
+ "checked": [
+  "tail_left"
+ ],
+ "checks_ok": true,
+ "entry": "part_tail_left.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/tail_left/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "tail_left"
+ ],
+ "print": {
+  "tail_left": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/tail_left/r0002/overhang-tail_left.log": "5721aaad330f0e26fbdc99bd52a659443155648857bea673dee9bf1aa2d4d1ce",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/tail_left/r0002/thickness-tail_left.log": "b98b730bd1772ce940ed636ab7cb38a6c40403dfb61d316c1a911ea14affa957"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:tail_left",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows the flat sagittal bed, four millimetre fan half, and attached hemispherical ball and half-neck. Top shows five blunt lobes with a two millimetre flat on the lowest leading lobe, clear open relief below the lobes, and a broad stepped root collar without the old feathered root. Iso confirms continuous fan, neck, collar and half-ball with no floating geometry. Tiny leading relief edge is consistent with the reported 0.17 percent edge taper. These views do not establish joint motion or physical strength.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/tail_left/r0002/visual-packet.json",
+  "packet_sha256": "e4385c707755ba506704d8dce7581adfb80e4ccd15d49b0ce3aa6cf43b9073ce",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,63 @@
+{
+ "build": {
+  "mount_pin": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "mount_pin"
+ ],
+ "check_motion": false,
+ "checked": [
+  "mount_pin"
+ ],
+ "checks_ok": false,
+ "entry": "part_mount_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mount_pin/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "mount_pin"
+ ],
+ "print": {
+  "mount_pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mount_pin/r0001/overhang-mount_pin.log": "4e5733512ee54a862d83f92e410f5aa72f3cdffa51df94f757c3528cc750b942",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mount_pin/r0001/thickness-mount_pin.log": "b2a611e1266aa51bd15644e0ca66e40211850dcc5655014a794e6ce71d1d9f82"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 2.1% of surface below (643 of 31053 samples); thinnest"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:mount_pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mount_pin/r0001/visual-packet.json",
+  "packet_sha256": "06e695d8c4fc23bc471ae41fd60c1a23ae24ca31e492ec6c72134c717b4e2ec9",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "bear_mask": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bear_mask"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bear_mask"
+ ],
+ "checks_ok": true,
+ "entry": "part_bear_mask.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bear_mask"
+ ],
+ "print": {
+  "bear_mask": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0005/overhang-bear_mask.log": "999b5786dc4cbddb3d928faa69f610e392b4801a1c038542e93320af2cfce016",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0005/thickness-bear_mask.log": "b364bd729ee0369f758623d9099055e209a8c6270af8f103f1cfed6462b8295d"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:bear_mask",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show the taller dark plate with its pocket in the lower section and uninterrupted material across the upper tear-masking band. No disconnected or floating region.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0005/visual-packet.json",
+  "packet_sha256": "d7711fa74da39402477fe19e1314faf6eb649d16e8208e2955748a54cb200966",
+  "status": "pass"
+ }
+}

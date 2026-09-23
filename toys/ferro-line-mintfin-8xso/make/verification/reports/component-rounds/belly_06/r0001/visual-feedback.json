@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin perimeter needs constant-section stock.",
+      "evidence": "Front and iso show the shallow sloping side rim; minimum wall measured 0.13 mm. Top is intact with no missing material.",
+      "part": "belly_06",
+      "repair": "Use a constant-section ellipse extrusion at least 1.2 mm thick, retaining the flat back and blunt oval profile; rerun thickness."
+    }
+  ],
+  "observation": "Front, top and iso inspected once. Cream oval remains coherent and flat, with a sloping side perimeter that fails the measured thickness requirement.",
+  "packet_sha256": "c455ee5dd4d39ebffa2cd308e08f68a1f5dec00fdd7dc15a8f58c3c4d5afa6f0",
+  "status": "fail"
+}

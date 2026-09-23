@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Swept parent clearance leaves a thin unsupported rear canopy",
+      "evidence": "Front view shows broad lower undercut under the convex rim; wall regions 167.6 mm2 at (3.6,-16.9,2.9) and 17.0 mm2 at (1.2,-11.9,1.0), minimum0.20mm; unsupported325.9mm2 at (0.1,-12.9,1.4).",
+      "part": "body_01_rear",
+      "repair": "Project the rear-most parent-clearance section back to the print seam to remove the canopy while retaining the lower barrel and socket; assess the residual seam width before applying this rear-specific construction."
+    }
+  ],
+  "observation": "Front, top and iso inspected. Rear body retains convex barrel flank, four slotted socket fingers, open mouth and symmetric ankle corners. Front view exposes a broad undercut below the raised upper edge; the swept parent clearance has left a thin unsupported canopy. Wish measurement identifies two sub-1.2 wall regions, and overhang measurement finds a broad unsupported region.",
+  "packet_sha256": "c1565608f15fb986f640ffe04311ba9da22dffb5a2f3d4d4c3eab2fa61328293",
+  "status": "fail"
+}

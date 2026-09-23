@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "reason": "Finalizer rejects .jsonl paths and runtime-cache contents. Original bytes are preserved outside the sealed product, with inspection streams packaged as semantically identical JSON arrays. No CAD source, geometry, review, render, or verification result changed. Historical report paths and hashes retain their original meaning and resolve via these records.",
+  "inspection_records": [
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/contact/contact-results.jsonl",
+      "original_sha256": "3fe4e5af2ad7cb25cab104b6a6c8f194c5d603db48a9777bd4398e755d66eb54",
+      "original_bytes": 102644,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/contact/contact-results.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/contact/contact-results.records.json",
+      "packaged_sha256": "19e25ef9e2915eb482d25526b157f357c93113fef0c156b8b077c141f34f0944",
+      "packaged_bytes": 121925,
+      "record_count": 238,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/dimensions/measurement-requests.jsonl",
+      "original_sha256": "92365bf81708a8b3fcdb6eb6aac244df31e5dff78bc98bd85dd03f0758b8bb56",
+      "original_bytes": 11539,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/dimensions/measurement-requests.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/dimensions/measurement-requests.records.json",
+      "packaged_sha256": "8dcd6c2adde095f4b01edebb297009addaad367da39e11b77997544d423483d0",
+      "packaged_bytes": 16226,
+      "record_count": 81,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/dimensions/measurements.jsonl",
+      "original_sha256": "48a533ad55ef27347ef4860772bb9ff9d3b2e427f093ef31b45e2366c68f57e2",
+      "original_bytes": 149387,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/dimensions/measurements.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/dimensions/measurements.records.json",
+      "packaged_sha256": "7141933be714c4c386605ca2fac2d148a8e28f6fec6f11b9d0e778d478475a3d",
+      "packaged_bytes": 296593,
+      "record_count": 81,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/feature-probes/sightline-requests.jsonl",
+      "original_sha256": "074336f31ab4059d4918ed6d93a0d996419e6bad18b36ba59c0b4cbac5bada78",
+      "original_bytes": 324,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/feature-probes/sightline-requests.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/feature-probes/sightline-requests.records.json",
+      "packaged_sha256": "3075cb3b922ae54f9cd60a74adb2bf273a8cbc0eae6c4f23dcf7a95479f1f157",
+      "packaged_bytes": 436,
+      "record_count": 2,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/feature-probes/sightline-results.jsonl",
+      "original_sha256": "c7aff051f99b1a3b7c8dce2e6654e8ab8d700a1234b4357e18b3fc23602fff06",
+      "original_bytes": 5602,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/feature-probes/sightline-results.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/feature-probes/sightline-results.records.json",
+      "packaged_sha256": "f9fe5a02ab49b07579248933d20aedbdf3a522c122fbcfafcc70e8df80421518",
+      "packaged_bytes": 14927,
+      "record_count": 2,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/final-features/requests.jsonl",
+      "original_sha256": "b26e0fbdfd0a745818de69213f53b5396bbdf2de0c6648e27add9a24f8893fe2",
+      "original_bytes": 1296,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/final-features/requests.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/final-features/requests.records.json",
+      "packaged_sha256": "83b7545c7ca8fbd960ccb93268a83db459a807b09ba45b4cd68347070a05ce18",
+      "packaged_bytes": 1800,
+      "record_count": 9,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/final-features/results.jsonl",
+      "original_sha256": "ead0375b8de2f213109ab85dffb0a8f40e497ab6fe061bb20009ea0c791ccdf1",
+      "original_bytes": 14889,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/final-features/results.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/final-features/results.records.json",
+      "packaged_sha256": "c6265f55bb6f8cf25300eec4df9b6cf9b410721482711529ba133eaa0e83c3a0",
+      "packaged_bytes": 31165,
+      "record_count": 9,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/geometry/raw-assembly/raw-results.jsonl",
+      "original_sha256": "05e0b805319d66604b1a4d4956933040c67cfe4670f16fed0687c5f0e58ce3ac",
+      "original_bytes": 54703,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/geometry/raw-assembly/raw-results.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/geometry/raw-assembly/raw-results.records.json",
+      "packaged_sha256": "d679359c159fa04204796c6b081ded77ff5b3fb1488bbae62b54ddf531cdd39b",
+      "packaged_bytes": 124226,
+      "record_count": 2,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/geometry/raw-assembly/requests.jsonl",
+      "original_sha256": "87ba90d667a0cf4e9fb562e5b0310e81168334d3c105764760d97cd1ce3fab5a",
+      "original_bytes": 793,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/geometry/raw-assembly/requests.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/geometry/raw-assembly/requests.records.json",
+      "packaged_sha256": "046653389b5be9da947e1439b3360ec0bb4619391cf53484c7a0596bfbd01cec",
+      "packaged_bytes": 1150,
+      "record_count": 2,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/geometry/raw-components/requests.jsonl",
+      "original_sha256": "d80d299bacf88d33b79abfdd1527f5390211490c29f6f7c2870c2aad61c212f9",
+      "original_bytes": 964,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/geometry/raw-components/requests.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/geometry/raw-components/requests.records.json",
+      "packaged_sha256": "5d686b3e8e18d8e910be6ee8997104065a241cb8bd13c7dfaf700f977d6cf592",
+      "packaged_bytes": 1315,
+      "record_count": 6,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/geometry/raw-components/results.jsonl",
+      "original_sha256": "63da0cfc8ae12feedc1162ceb5b995d17fa305597d4b56dfdc42ac1441ec3b5b",
+      "original_bytes": 11578,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/geometry/raw-components/results.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/geometry/raw-components/results.records.json",
+      "packaged_sha256": "d6cbddf90f98da52b268c4eb2d7e5b092b6695238bd36a64e1384a3c03e3acef",
+      "packaged_bytes": 30173,
+      "record_count": 6,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/geometry/requests.jsonl",
+      "original_sha256": "9bbd555d28fe1418909933e9a2739c2619594919c9fc4f1671cda31fb564eb17",
+      "original_bytes": 2598,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/geometry/requests.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/geometry/requests.records.json",
+      "packaged_sha256": "eacf46ca87a6c7d5cbfcc2fe619f68456c04d648f16c7813e6fd53f980187b57",
+      "packaged_bytes": 3588,
+      "record_count": 21,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/geometry/results.jsonl",
+      "original_sha256": "eb30b317219f7d31353944024c93aee5f094ae9c7c8e162b02c368823ae4ac41",
+      "original_bytes": 25018,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/geometry/results.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/geometry/results.records.json",
+      "packaged_sha256": "7ddf4f6879818dd964f076dc7c7aee7629d3a2b1689c0a2fac74884bb9bba57c",
+      "packaged_bytes": 62767,
+      "record_count": 21,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/production/inspection/requests.jsonl",
+      "original_sha256": "358122667dd754d9281c1eac9baa7bef9eb647389360380c15d64e426aa313c5",
+      "original_bytes": 13948,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/production/inspection/requests.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/production/inspection/requests.records.json",
+      "packaged_sha256": "9fdcdf8a8470a94fbf21b13c813280511761d75fabd85550a9ddd261672c17ec",
+      "packaged_bytes": 18067,
+      "record_count": 98,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/audits/visual-repair/production/inspection/results.jsonl",
+      "original_sha256": "5235c2d48996fc6e30bfd53394f9c812ad1269f99c0325b4996a062e6bfd6033",
+      "original_bytes": 102163,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/audits/visual-repair/production/inspection/results.jsonl",
+      "packaged_product_path": "gear_vortex/audits/visual-repair/production/inspection/results.records.json",
+      "packaged_sha256": "a246fb0df945f4c8bc91d5d686aa80cddfd5e3e13cde99be4017c1f934227dcb",
+      "packaged_bytes": 257121,
+      "record_count": 98,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/measure/audits/core-dimensions/bezel-boss-measurements.jsonl",
+      "original_sha256": "7bb1bae80217ddea10c7767fb166dab4ae94de7a5ca4cdb2ee4c90633ced5293",
+      "original_bytes": 5119,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/measure/audits/core-dimensions/bezel-boss-measurements.jsonl",
+      "packaged_product_path": "gear_vortex/measure/audits/core-dimensions/bezel-boss-measurements.records.json",
+      "packaged_sha256": "e29829960a36eea10085cd65a10f780cc22700284e39d802438d8a21e0436287",
+      "packaged_bytes": 10679,
+      "record_count": 3,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/measure/audits/core-dimensions/bezel-boss-requests.jsonl",
+      "original_sha256": "c559bc4fd9551acd311444512663fab4010b7b3d93bae0478ce7a15e157a2108",
+      "original_bytes": 439,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/measure/audits/core-dimensions/bezel-boss-requests.jsonl",
+      "packaged_product_path": "gear_vortex/measure/audits/core-dimensions/bezel-boss-requests.records.json",
+      "packaged_sha256": "a1f5933836c5668a2ab75000a6f87d0429429dd7baadea76a5d7ab42924d2894",
+      "packaged_bytes": 589,
+      "record_count": 3,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/measure/audits/core-dimensions/measurement-requests.jsonl",
+      "original_sha256": "145aa14f4b89c9a30e129bab1cbc4f9b98a07dfec109e8d3453fd2c2557d35ec",
+      "original_bytes": 6345,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/measure/audits/core-dimensions/measurement-requests.jsonl",
+      "packaged_product_path": "gear_vortex/measure/audits/core-dimensions/measurement-requests.records.json",
+      "packaged_sha256": "3bd1fd136f5d7b8394654c7150550a17f494f2926b5ed52a878b35ccadac007e",
+      "packaged_bytes": 8505,
+      "record_count": 43,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/measure/audits/core-dimensions/measurements.jsonl",
+      "original_sha256": "1e6f2b14a8d48b028f1a604e3fc66807dd3056ea83955e2e28eff68d39cb8337",
+      "original_bytes": 77580,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/measure/audits/core-dimensions/measurements.jsonl",
+      "packaged_product_path": "gear_vortex/measure/audits/core-dimensions/measurements.records.json",
+      "packaged_sha256": "09835abcfa67068e02d06ba8fe5a8cc398c152f20ebf7bf9eb0dd162db21e727",
+      "packaged_bytes": 155552,
+      "record_count": 43,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/measure/audits/final-geometry/requests.jsonl",
+      "original_sha256": "91d8decab9f826928dbfe341185be9c25bbf5a7e1476058c4849992d7231e394",
+      "original_bytes": 5238,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/measure/audits/final-geometry/requests.jsonl",
+      "packaged_product_path": "gear_vortex/measure/audits/final-geometry/requests.records.json",
+      "packaged_sha256": "ff393d3bc5774e4ab5048f476c7b101775332355849eec0f344df6627628ef9e",
+      "packaged_bytes": 7215,
+      "record_count": 42,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    },
+    {
+      "former_product_path": "gear_vortex/measure/audits/final-geometry/results.jsonl",
+      "original_sha256": "2b2a451629232ec6d2bf54c3a76acdef4dc3cddb8fd07e0ad3de91ec2a64e3a4",
+      "original_bytes": 46010,
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/original-inspection-streams/gear_vortex/measure/audits/final-geometry/results.jsonl",
+      "packaged_product_path": "gear_vortex/measure/audits/final-geometry/results.records.json",
+      "packaged_sha256": "77c78f3ceb5f0cb0ee56a7f72779ca3e9b2c06f2da18d61506653a602d3710f3",
+      "packaged_bytes": 119142,
+      "record_count": 42,
+      "encoding": "JSON array in original line order; every parsed record unchanged"
+    }
+  ],
+  "preserved_cache_directories": [
+    {
+      "former_product_path": "__cadgen__",
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/preserved-runtime-caches/__cadgen__"
+    },
+    {
+      "former_product_path": "parts/__cadgen__",
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/preserved-runtime-caches/parts/__cadgen__"
+    },
+    {
+      "former_product_path": "coupon-kit/__cadgen__",
+      "preserved_workspace_path": "artifacts/make/r0001/manifest-policy-repair/preserved-runtime-caches/coupon-kit/__cadgen__"
+    }
+  ]
+}

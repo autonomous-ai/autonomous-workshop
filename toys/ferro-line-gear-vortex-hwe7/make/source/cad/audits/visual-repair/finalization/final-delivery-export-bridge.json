@@ -1,0 +1,26 @@
+{
+  "status": "PASS_IDENTICAL_GEOMETRY_AND_NATIVE_ASSEMBLY_SEMANTICS",
+  "old_step": {
+    "path": "artifacts/make/r0001/visual-repair-preflight-fit-documentation/delivery-before-final-generation.step",
+    "sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff"
+  },
+  "final_step": {
+    "path": "artifacts/make/r0001/product/assembled.step",
+    "sha256": "1090686699b62b20fdf935bbc3fdebfe1eb98bee3c214da4f3128937fb6e79b4"
+  },
+  "final_cad_export_sha256": "1090686699b62b20fdf935bbc3fdebfe1eb98bee3c214da4f3128937fb6e79b4",
+  "final_package_sha256": "7fdd68e20617c8adec514780a9e45d679dd520618f04416871f05ec90aab6b39",
+  "native_raw_package_sha256": "c597eed420fdb959a650343c393dcae7259c96631a8be497cb04dd00cec35b38",
+  "native_semantic_fields_equal": [
+    "components",
+    "occurrences",
+    "assemblyMates",
+    "assembly",
+    "bbox",
+    "stats"
+  ],
+  "identical_step_geometry_prefix_characters": 25331420,
+  "final_refs_sha256": "9e7d77863cf425b46dce2e374cf3ceae6c01043cc4114553b2a4e269922561a9",
+  "prior_native_diff_sha256": "e2040636b149188fd7da924a0c7b58539c8ad68f85c6889d75bf61851b180e83",
+  "scope": "Source CAD unchanged. Exact geometry/context STEP prefix unchanged; terminal style serialization varies. Raw native component, occurrence, color, transform, hierarchy, mating, bounds and statistics records are equal. Existing static measurements retain their original byte bindings; this bridge connects those inspected shapes to final delivery. No new motion or physical-fit claim."
+}

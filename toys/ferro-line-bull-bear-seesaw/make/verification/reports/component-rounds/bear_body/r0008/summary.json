@@ -1,0 +1,71 @@
+{
+ "build": {
+  "bear_body": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bear_body"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bear_body"
+ ],
+ "checks_ok": false,
+ "entry": "part_bear_body.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0008",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bear_body"
+ ],
+ "print": {
+  "bear_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0008/overhang-bear_body.log": "df2f976256a2518cad0f4468b06edd567ebb7271042b48921ca1c64b11d80945",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0008/thickness-bear_body.log": "168b76d6dd8abd29d1b35fcb41b7263a4301fe49cf6f399ee512b72952dc4e1f"
+   },
+   "measured_round": 8,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.13) 0.1% of surface below (255 of 224140 samples); thinnes"
+    ],
+    "thinnest_mm": 0.25,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 8,
+ "scope": "component:bear_body",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin upper insert-pocket lip",
+    "evidence": "Iso view shows a small remaining ledge between pocket top and curved head edge; numeric wall failure at that location.",
+    "part": "bear_body",
+    "repair": "Open the shallow pocket through the top edge while retaining frontal skin and side/bottom capture."
+   }
+  ],
+  "observation": "Overall body and rounded eye-drop apertures are coherent, but the top of the shallow insert pocket leaves a narrow curved lip.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0008/visual-packet.json",
+  "packet_sha256": "3ccfb6bb64b34088ca790345939fc434c51d7138c67794e8298520d8b4dfab66",
+  "status": "fail"
+ }
+}

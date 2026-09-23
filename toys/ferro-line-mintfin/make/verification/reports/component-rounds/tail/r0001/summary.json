@@ -1,0 +1,62 @@
+{
+ "build": {
+  "tail": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "tail"
+ ],
+ "check_motion": false,
+ "checked": [
+  "tail"
+ ],
+ "checks_ok": true,
+ "entry": "part_tail.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tail/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "tail"
+ ],
+ "print": {
+  "tail": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tail/r0001/overhang-tail.log": "11b37fc19edce75fc2d9a24058fa7eae1373fb84e667438c07cd8e143f2da13e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tail/r0001/thickness-tail.log": "b1c9e6858bacdad862bd57a2ef13281544e7220e448c4ec4a54142824d9806bf"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:tail",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show a grounded wedge with a broad rooted dorsal fin and a flat blunt tail end. Top confirms a tapered paddle, one incoming C-bearing and no outgoing pin; the terminal component is complete and coherent.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tail/r0001/visual-packet.json",
+  "packet_sha256": "861dc3b28860f6da04bbef7acbb6b3a1614c588d3b41c9485001e4bbf8d18728",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "bear_body": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bear_body"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bear_body"
+ ],
+ "checks_ok": true,
+ "entry": "part_bear_body.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0006",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bear_body"
+ ],
+ "print": {
+  "bear_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0006/overhang-bear_body.log": "c9431a32659364ce320da7c3dade69148508f827688ab3a2ef589d351df8f52d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0006/thickness-bear_body.log": "8f8a3076dcb4631a62382ff6558eb359cbe9b4a2afccf90dc87c85b07eda28a0"
+   },
+   "measured_round": 6,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.25,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 6,
+ "scope": "component:bear_body",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show paired eyes above the central nose, unchanged tear windows below, and supported rear pins. The taller central cavity remains surrounded by the head with no detached feature.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0006/visual-packet.json",
+  "packet_sha256": "81ca1300a47af0de6ba3aa6806a14fc5d9714ebe59bb9f1f56d31832fa6250fd",
+  "status": "pass"
+ }
+}

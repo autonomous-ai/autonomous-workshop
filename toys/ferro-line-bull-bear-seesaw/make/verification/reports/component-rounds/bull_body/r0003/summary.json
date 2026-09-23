@@ -1,0 +1,65 @@
+{
+ "build": {
+  "bull_body": {
+   "failures": [
+    "[scripts/gen]       return print_part(\"bull_body\")",
+    "[scripts/gen]   seesaw_lib.py:190 in print_part",
+    "[scripts/gen]       assert len(part.solids())==1, (role,len(part.solids()))",
+    "[scripts/gen] re-run with --verbose for the full traceback"
+   ],
+   "verdict": "FAIL"
+  }
+ },
+ "changed": [
+  "bull_body"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bull_body"
+ ],
+ "checks_ok": false,
+ "entry": "part_bull_body.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bull_body"
+ ],
+ "print": {
+  "bull_body": {
+   "logs": {},
+   "measured_round": 3,
+   "overhang": {
+    "failures": [
+     "build failed"
+    ],
+    "overhang_mm2": null,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "build failed"
+    ],
+    "thinnest_mm": null,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:bull_body",
+ "visual": {
+  "detail": "Visual render failed or source changed; inspect visual-render.log",
+  "findings": [],
+  "status": "error"
+ }
+}

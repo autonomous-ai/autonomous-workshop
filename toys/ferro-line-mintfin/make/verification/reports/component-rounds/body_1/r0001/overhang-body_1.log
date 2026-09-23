@@ -1,0 +1,17 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_body_1.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_1/r0001/overhang-body_1.md
+(5.9s, exit 0)
+--- stdout
+part_body_1.step.py: 19.9 cm2 of surface, grid 0.400 mm, 345 unsupported samples over 6 region(s)
+  PASS  no face under 45 deg needs support     18.6% of the surface faces down that steeply; 0 region(s) need support, 2 bridge, 4 below 1 mm2
+  PASS  bridges within 12 mm                   2 region(s), longest span 8.1 mm
+        every unsupported region, largest first:
+        1. [bridge  ]    18.5 mm2 at (17.8, -0.1, 6.5)  span   8.1 mm of 8x8, 8.0 mm of air below
+        2. [bridge  ]    17.5 mm2 at (1.9, 0.2, 2.7)  span   7.1 mm of 7x9, 5.6 mm of air below
+        3. [trace   ]     0.7 mm2 at (20.6, 2.4, 0.3)  span   3.6 mm of 4x4, 1.6 mm of air below
+        4. [trace   ]     0.6 mm2 at (17.0, -3.6, 0.2)  span   1.5 mm of 4x1, 1.2 mm of air below
+        5. [trace   ]     0.1 mm2 at (21.8, -1.5, 0.3)  span   0.0 mm of 0x0, 1.2 mm of air below
+        6. [trace   ]     0.1 mm2 at (15.1, 2.9, 0.3)  span   0.0 mm of 0x0, 1.6 mm of air below
+RESULT: prints unsupported
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_1/r0001/overhang-body_1.md
+
+--- stderr

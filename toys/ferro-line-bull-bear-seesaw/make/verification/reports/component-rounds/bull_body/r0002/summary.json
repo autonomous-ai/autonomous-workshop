@@ -1,0 +1,63 @@
+{
+ "build": {
+  "bull_body": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bull_body"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bull_body"
+ ],
+ "checks_ok": false,
+ "entry": "part_bull_body.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bull_body"
+ ],
+ "print": {
+  "bull_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0002/overhang-bull_body.log": "5872f01f6af7d963681202227ff3fa06895c418f4b239a1fefb489cc339e978f",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0002/thickness-bull_body.log": "c8108fc0c4769c32c94fe142d409d792fa2413ca7091b3c876dd3ef2b42db058"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 25.5% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 397.6,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.25,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:bull_body",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0002/visual-packet.json",
+  "packet_sha256": "eb02bb4f84adbe8cc04b5863f0989a9318fbe773c201e0445ef15cf38d3cdc5f",
+  "status": "pending"
+ }
+}

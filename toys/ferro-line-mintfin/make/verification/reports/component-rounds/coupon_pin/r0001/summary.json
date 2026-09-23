@@ -1,0 +1,63 @@
+{
+ "build": {
+  "coupon_pin": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "coupon_pin"
+ ],
+ "check_motion": false,
+ "checked": [
+  "coupon_pin"
+ ],
+ "checks_ok": false,
+ "entry": "part_coupon_pin.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_pin/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "coupon_pin"
+ ],
+ "print": {
+  "coupon_pin": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_pin/r0001/overhang-coupon_pin.log": "e8ca66bff4f88e0fba5d5e7ba6099f7b1ae9d8f1f7bcce0b23a806dc4ac6ae00",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_pin/r0001/thickness-coupon_pin.log": "841bc50828ef6e808d3a11976c602edec36fcfb4c858b424af46b043f48cf48c"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 29.1% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 1.1,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:coupon_pin",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/coupon_pin/r0001/visual-packet.json",
+  "packet_sha256": "739ff2157449bf27e83b289ec55d6f5ed0e85562c2aa44d8ef0373ff961c34ae",
+  "status": "pending"
+ }
+}

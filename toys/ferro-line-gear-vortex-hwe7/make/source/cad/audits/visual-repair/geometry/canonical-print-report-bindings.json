@@ -1,0 +1,343 @@
+{
+  "reports": [
+    {
+      "role": "axle",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0002/thickness-axle.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-axle.md",
+      "sha256": "f2a38268676fbfe814f52728f4a7f9e0052b0bd0428ab6a9d85d82c2189cf7c6",
+      "source_log_sha256": "fbb0be3753a6c983567e2016c54c828644f58543e8acbf6b8f24c0848833f73d"
+    },
+    {
+      "role": "axle",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0002/overhang-axle.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-axle.md",
+      "sha256": "c5531d680b15459d73cf2e401cbecc1898e31d2bc26245dfc34a2fc8230b26de",
+      "source_log_sha256": "94260d18b98d321380a7e91210ed1d7aba30529854fdcf677c325420182ca0f3"
+    },
+    {
+      "role": "bezel",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-bezel.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-bezel.md",
+      "sha256": "5bdc51adbf08cd66680b97e8cce0909dc5accf97c96fd060df2050cb9a7fbdc0",
+      "source_log_sha256": "6f5f5f3578ae317171e2287ab7f2e49ebf7ec5b86881b34342dfc494cdc6e672"
+    },
+    {
+      "role": "bezel",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-bezel.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-bezel.md",
+      "sha256": "ed57e0a9983a262284c7f16ee2aa267de9c7de9c17275fa90e54840910cafece",
+      "source_log_sha256": "531788a090310c34f2b857fecda33680e78ccdceb202e81bb1643337d9e4fcb8"
+    },
+    {
+      "role": "carrier",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-carrier.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-carrier.md",
+      "sha256": "167ecda35a784e4bd146d4b51f11338cebe04c14536dbcbc2ca477ac2c27f01d",
+      "source_log_sha256": "1a55b3f083d72fa9ed9c971217b83f7b371f21353b4f19ddf38ab76fafd756a5"
+    },
+    {
+      "role": "carrier",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-carrier.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-carrier.md",
+      "sha256": "69eda1da50ee8ec5a14b102a4a3a4978695cc7aadc93bb3d596f6583275ecf99",
+      "source_log_sha256": "68db92574985f40d1a69284cf9ba21e3da38b7206014ee067a264f5a4c8172e9"
+    },
+    {
+      "role": "coupon",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-coupon.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-coupon.md",
+      "sha256": "37dc936391fbe4ef96a51a6409dd50d0517eb0b28dbf23fec48683c4b18586f0",
+      "source_log_sha256": "dbd948bdf2b5ca075e7cddf34be57f677e5fea9185996c7a0d270d34452d6b56"
+    },
+    {
+      "role": "coupon",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-coupon.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-coupon.md",
+      "sha256": "907764442ad8fa3b7f555d9817c6cde35d23af70952cc7fa02356b26b47fe6d5",
+      "source_log_sha256": "01a5f70db669eea7d44cad9744d93aaa3e5b6ccd390ba191ed383be524e7a2fd"
+    },
+    {
+      "role": "foot_trim",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-foot_trim.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-foot_trim.md",
+      "sha256": "cdf92e7ac741ded77c136d912e18fecb75998bde483482638916269821aa336e",
+      "source_log_sha256": "c46c0d2d4910deab3fe6624bc915bf504a94974045784978834bd27c979f5bac"
+    },
+    {
+      "role": "foot_trim",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-foot_trim.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-foot_trim.md",
+      "sha256": "feafce5055fd4859cba09ef4d41bf229dc5fe1b44bbd5d63f001a6bcf6d3b3d0",
+      "source_log_sha256": "5b4ef1af718dcacf24503375f84d3824c38ab7353c89ed629a95659b5abb29ab"
+    },
+    {
+      "role": "gear_14",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_14.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-gear_14.md",
+      "sha256": "57ead46f0fde6c2b780366cf6cbc9f2de7e104a91d4aa4458d79d1d4232cf9cf",
+      "source_log_sha256": "0b0a06e3591811c0147f0e381b6ca71020eb6899a9419183d62608ebf898dcd7"
+    },
+    {
+      "role": "gear_14",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_14.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-gear_14.md",
+      "sha256": "634bb507a8153591361f694afc0df411ed9e48d551c87702d674754f18a14887",
+      "source_log_sha256": "dce1843fe386b0d53abb1cb9b9c87a5f91a07b72068c169549ad880f2ac9b689"
+    },
+    {
+      "role": "gear_15",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_15.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-gear_15.md",
+      "sha256": "a848d4d81e4fb3c30f894e76da0f14278dea5920b92550f24a973d43f017ab14",
+      "source_log_sha256": "d17a9f81e30f36eef7eab35a80d254604753e9566aab3f44befcf0def4d9e1b0"
+    },
+    {
+      "role": "gear_15",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_15.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-gear_15.md",
+      "sha256": "63a5771d1a2e6613c0528360e5927dec1fee59b577f59a5510fd89394949fddb",
+      "source_log_sha256": "6a47d152ccdf0f9d4613732e91bf0b55571f52826917444ff1d5cdee4e80f42c"
+    },
+    {
+      "role": "gear_18",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_18.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-gear_18.md",
+      "sha256": "b5f3d59a224e5090e685e63f085a08822983b6c0300cfffec6e294f51070fb26",
+      "source_log_sha256": "c0ff2bf680a634cf5969779e146190f8747ca3d32dfee1d431e920354d85430b"
+    },
+    {
+      "role": "gear_18",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_18.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-gear_18.md",
+      "sha256": "f32b9101e3731356ea727bee2dd423d1804f79b3ca5b934ddb5ab37cdf6aa940",
+      "source_log_sha256": "77e6692ee747dac0b7e84f5e1327d0b2492fb8ff16204cc8e16209200436353b"
+    },
+    {
+      "role": "gear_20",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_20.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-gear_20.md",
+      "sha256": "08885b6c8bd6a96347eb6f6e3ba716cfd61c963e001ce7fff0845f315126fd66",
+      "source_log_sha256": "de00fbb9297cf3785b0ea1b4540e780954ff346e368cf8262588ec561fcc975b"
+    },
+    {
+      "role": "gear_20",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_20.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-gear_20.md",
+      "sha256": "81c26398a5582313a102dc17aec4893102f7f745762b4e34aa8a7535b0bb9094",
+      "source_log_sha256": "0d5ef52421ccb50417c4bd4190f04aee230e3c6674ceae0fc69e44934bbe4351"
+    },
+    {
+      "role": "gear_22",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_22.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-gear_22.md",
+      "sha256": "19808db0a4590efbfde5c5f2691bf492ace874061ab6985806970b13a7aadb1e",
+      "source_log_sha256": "aca6d971c7d0e45deb79c1d2041a8e3cf3c0ad012f40cf0878155c79bd450b0e"
+    },
+    {
+      "role": "gear_22",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_22.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-gear_22.md",
+      "sha256": "7a87790e80e5a48869a54b0b68174d76d6b9f5b79678db680815d19bcd8d4e04",
+      "source_log_sha256": "7c13f5377710c5fc29d1985942b9e35b907c5fda70b01f830d190af201b2045e"
+    },
+    {
+      "role": "gear_23",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_23.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-gear_23.md",
+      "sha256": "15cd516e3af417c7c5a181e033e7f96813d6535dfebf2531010a67bd25df4f4d",
+      "source_log_sha256": "18a82083f6b10405406ceb04b1fc5e24385bc5dabfb8ed0f2fb89cba9610e7bf"
+    },
+    {
+      "role": "gear_23",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_23.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-gear_23.md",
+      "sha256": "a5194ff28f2688ee7d6e00fb2594c79b08c33a896168a0aaa1caefa7273d8ed1",
+      "source_log_sha256": "798f94e9cd9cc04490ab987861449b1b8aa06dd09bcaf629adea19b79e56d51e"
+    },
+    {
+      "role": "gear_26",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/thickness-gear_26.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-gear_26.md",
+      "sha256": "4252a9f6dd7292d1944cec3a04412632307f7ec9608bfc3a148e20eb5932846d",
+      "source_log_sha256": "7bc58352c25eb301a72291c2822b4c3b9595a8151f48898d4a0e80733c82c6f8"
+    },
+    {
+      "role": "gear_26",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0004/overhang-gear_26.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-gear_26.md",
+      "sha256": "835f02d3544865510d4a47bb4f71abaffa571af56b745e474d7fad7a78466aa9",
+      "source_log_sha256": "cf955683e2c9cfa9716ae47c042fb33ba00e3a8ab8d36d136fe59d69eecb724a"
+    },
+    {
+      "role": "gear_cap",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-gear_cap.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-gear_cap.md",
+      "sha256": "e9001fc089e64c9fac0b2644f80434ed6a04e20accee16aba21ee6312a9254ca",
+      "source_log_sha256": "9733d46ae1149ad0b28f9862312860ce11f151c2ac580488619241239dbd507a"
+    },
+    {
+      "role": "gear_cap",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-gear_cap.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-gear_cap.md",
+      "sha256": "09fa86ca1af0e9dc71bd0ef543b30c9bca51cf5d09235aab48d8b2d1d60282c7",
+      "source_log_sha256": "50accc68b4ce6dda07db057b59580107258881905394e8a7f17fec5f1dfd4b17"
+    },
+    {
+      "role": "main_cap",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-main_cap.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-main_cap.md",
+      "sha256": "880c4d21b5658755d2d5fc0d1bb729327a3780e0e5717a9cf94d24f1d46c2f36",
+      "source_log_sha256": "12900fee39e7c46a523a7e03b2e4d6c2bd30a03447637d84fda916fef73dc691"
+    },
+    {
+      "role": "main_cap",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-main_cap.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-main_cap.md",
+      "sha256": "6850353d6509348f602cd49b32b4b16c7744083ef985888663434a168b2e892a",
+      "source_log_sha256": "26f6804adf46b49ebc988fe649f5bc4475340cb1e544ebfba4383b1bec5352cd"
+    },
+    {
+      "role": "orange_disc",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-orange_disc.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-orange_disc.md",
+      "sha256": "3925a50c25a29b9268eb87e9e42fa561fef947f3333dd22293a3d427d484dbe5",
+      "source_log_sha256": "fd43cb7831eb6b382312dd2db77a5d7bd5e9b23cffd738444eaa7a8118fe62a4"
+    },
+    {
+      "role": "orange_disc",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-orange_disc.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-orange_disc.md",
+      "sha256": "b4f6f548037b478c287ddf87cb3350fccb262572b0a03966ca3493368753fef2",
+      "source_log_sha256": "ddf80d24cedcdbf00df2056ad6a2f7d079ca8fc29f68d78e4b05b188849d40c2"
+    },
+    {
+      "role": "pedestal",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-pedestal.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-pedestal.md",
+      "sha256": "b55c623060215b14d8318138f3f7cee4a357eac851b8637e7fa372a6e9adb94f",
+      "source_log_sha256": "4f578e708bfdd35b27a25e8389e4a56f6ac4350de27c71bf773024447f44aa2b"
+    },
+    {
+      "role": "pedestal",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-pedestal.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-pedestal.md",
+      "sha256": "864a93716c4182c24b09754040a0522b358b8fc98e2f9b3d1b0b125c93aaa212",
+      "source_log_sha256": "23ce761c64755bbbc10a0913c799806056c148456386c3cd2bee4ad63877cc4f"
+    },
+    {
+      "role": "pedestal_lid",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-pedestal_lid.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-pedestal_lid.md",
+      "sha256": "7331426438bed042f6657a497125e65473104a94045adec436331173d2e24087",
+      "source_log_sha256": "3208fe40b9189135997d3f450beeec0fa921e5c296565d8e9b35c8cdec128e88"
+    },
+    {
+      "role": "pedestal_lid",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-pedestal_lid.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-pedestal_lid.md",
+      "sha256": "b8e126223bb9b7c3fa0f3aab2a75c57fa066ddd56edd6c023769ef24d1251234",
+      "source_log_sha256": "614a43d2977b241cd2bec65819f8fa4f4b207be740df35b68dba76d9ada2efb3"
+    },
+    {
+      "role": "rim_trim",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-rim_trim.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-rim_trim.md",
+      "sha256": "a573201da5104e0f1ffdd218987247e00f0acf3e4f68386b93fabc537f09f589",
+      "source_log_sha256": "7107117acd5b9c67d22b8d1b823cff98e7981a378de050d28b66730ea016fa65"
+    },
+    {
+      "role": "rim_trim",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-rim_trim.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-rim_trim.md",
+      "sha256": "9f5f83cf77e3930587fcd29376c83206d22e901bfe6e560fcf4aa5ac459b27b1",
+      "source_log_sha256": "59bf1f6f41fa3584db84ab43ee7f92c34d3a3a008756823bd932c293e5bbe71b"
+    },
+    {
+      "role": "stem",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-stem.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-stem.md",
+      "sha256": "458e2adc5fe68318f0d1fb958aada2090fe478bb1925d88fac1737b890921baa",
+      "source_log_sha256": "509714eb850c13509196a05a160eb0f6b6d0fdb5376ad23cb3ca674d767c5b51"
+    },
+    {
+      "role": "stem",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-stem.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-stem.md",
+      "sha256": "62eba982cb26a5cc43b79c1eaba6cca4e994419ac3d0c3708b0286a4cc599a20",
+      "source_log_sha256": "f29d61e59ac2d86c3d58fe6fd9e1c8c279f9b863eb72419db8be8945f78688d8"
+    },
+    {
+      "role": "sun",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-sun.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-sun.md",
+      "sha256": "720de60baf00acfbb85ab4102c5d9ae3a176dbc57618d6dbf1420d19ffc5da2f",
+      "source_log_sha256": "5bcea1dc40e24545a357e196af5446c3217e19b3134abfbb87bbe95e77916870"
+    },
+    {
+      "role": "sun",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-sun.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-sun.md",
+      "sha256": "c51d57e40349be4f58459a1647591765e005f3de8df77e95f241d19dc3075c51",
+      "source_log_sha256": "060f7b77107aec2125be56b4a0640ae49fadf00732e885031e8efc125101331f"
+    },
+    {
+      "role": "support_collar",
+      "gate": "thickness",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/thickness-support_collar.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/thickness-support_collar.md",
+      "sha256": "0d6e349422f04201dff3d51653f3b8604ebcf471c5682e8857afa9ff5f7981cf",
+      "source_log_sha256": "b14cff4619cddcb0b4309bd2255330c91a082cfe4d738b18f829d070a9427236"
+    },
+    {
+      "role": "support_collar",
+      "gate": "overhang",
+      "source_report": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/rounds/r0001/overhang-support_collar.md",
+      "canonical_path": "artifacts/make/r0001/product/gear_vortex/measure/overhang-support_collar.md",
+      "sha256": "33d875fa488a547587299ab2de15e07221f81ab37a521f7c489430b7267f8b65",
+      "source_log_sha256": "bbce9b7a2591652b25c8be61c50d65952e335020b1606b21ade47dcfb6e0a5b5"
+    }
+  ],
+  "count": 42,
+  "print_ready_claim": false,
+  "scope": "Copied exact passing digital reports from native make_round retained/current evidence; no physical or print-readiness claim."
+}

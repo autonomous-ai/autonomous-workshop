@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_bear_body.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0007/thickness-bear_body.md
+(14.5s, exit 1)
+--- stdout
+part_bear_body.step.py: 27.67 cm3 solid, grid 0.251 mm (307x311x121), 238406 surface samples, thickness resolved to 0.126 mm
+  FAIL  wall >= 0.80 mm (+/-0.13)      0.7% of surface below (1634 of 238406 samples); thinnest 0.25 mm at (31.3, -25.6, 13.4) in 18 region(s); 3 wall(s) (widest band 5.42 mm), 15 taper(s) at feature edges (0.07% of surface, budget 2%); 294 more within measurement error of the limit
+  PASS  thickness distribution         median 4.02 mm, p95 39.85 mm, max 82.47 mm
+  WARN  hollowable at 1.20 mm wall     10.42 of 27.67 cm3 (38%) in 1 pocket(s)
+  PASS  filament that would save       1.56 cm3, 1.9 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [wall ] 0.25 mm at (-15.0, -32.0, 9.7)   1025 samples, 69.7 mm2, runs 12.9 mm, band 5.42 mm
+        2. [wall ] 0.25 mm at (31.3, -25.6, 13.4)    241 samples, 18.0 mm2, runs 9.7 mm, band 1.85 mm
+        3. [wall ] 0.25 mm at (-31.1, -25.7, 6.9)    214 samples, 16.8 mm2, runs 9.4 mm, band 1.78 mm
+        4. [taper] 0.25 mm at (-23.4, -27.8, 18.4)     21 samples, 1.4 mm2, runs 2.5 mm, band 0.54 mm
+        5. [taper] 0.25 mm at (26.6, -27.8, 19.0)     16 samples, 1.1 mm2, runs 2.0 mm, band 0.56 mm
+        6. [taper] 0.38 mm at (-26.5, -35.2, 19.5)     14 samples, 1.0 mm2, runs 2.3 mm, band 0.44 mm
+        ... and 12 smaller region(s)
+RESULT: WALL BELOW MINIMUM
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0007/thickness-bear_body.md
+
+--- stderr

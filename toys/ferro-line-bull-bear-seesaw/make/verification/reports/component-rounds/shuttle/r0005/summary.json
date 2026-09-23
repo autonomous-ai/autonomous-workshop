@@ -1,0 +1,62 @@
+{
+ "build": {
+  "shuttle": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "shuttle"
+ ],
+ "check_motion": false,
+ "checked": [
+  "shuttle"
+ ],
+ "checks_ok": true,
+ "entry": "part_shuttle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "shuttle"
+ ],
+ "print": {
+  "shuttle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0005/overhang-shuttle.log": "90d2013f3b3891a7ec939bd1851e46e1daef3fc58bba7c7af1b50b55a47dce37",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0005/thickness-shuttle.log": "89b3792a9fde4e6dd2a726d5cfe14c0e0791cbe60600cf297048722ad6a9ddca"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:shuttle",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show the connected carrier with a lower right T tongue, while the reinforced driver slot and left mask remain intact. Attachment is now below the tear-window heights.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0005/visual-packet.json",
+  "packet_sha256": "f357ef14922e26dc9c5c0b22bc24e20d680380846177ed191d2f5983e06fdbde",
+  "status": "pass"
+ }
+}

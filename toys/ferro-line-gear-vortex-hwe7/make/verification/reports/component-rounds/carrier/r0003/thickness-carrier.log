@@ -1,0 +1,20 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_carrier.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0003/thickness-carrier.md
+(13.7s, exit 0)
+--- stdout
+part_carrier.step.py: 11.37 cm3 solid, grid 0.354 mm (424x344x71), 78509 surface samples, thickness resolved to 0.177 mm
+  PASS  wall >= 0.80 mm (+/-0.18)      0.1% of surface below (90 of 78509 samples); thinnest 0.35 mm at (-1.2, -30.2, 23.5) in 19 region(s); no region is a wall, 19 taper(s) at feature edges (0.06% of surface, budget 2%); 41 more within measurement error of the limit
+  PASS  thickness distribution         median 3.18 mm, p95 7.08 mm, max 51.30 mm
+  WARN  hollowable at 1.20 mm wall     1.90 of 11.37 cm3 (17%) in 1 pocket(s)
+  PASS  filament that would save       0.28 cm3, 0.4 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.53 mm at (-40.4, 1.0, 13.5)      8 samples, 0.8 mm2, runs 1.3 mm, band 0.62 mm
+        2. [taper] 0.35 mm at (38.4, 25.9, 13.2)     10 samples, 0.7 mm2, runs 2.0 mm, band 0.37 mm
+        3. [taper] 0.53 mm at (43.5, -46.3, 13.5)      8 samples, 0.7 mm2, runs 1.2 mm, band 0.57 mm
+        4. [taper] 0.35 mm at (-1.2, -30.2, 23.5)      8 samples, 0.6 mm2, runs 2.6 mm, band 0.23 mm
+        5. [taper] 0.35 mm at (-20.3, -47.1, 13.1)      7 samples, 0.4 mm2, runs 2.1 mm, band 0.20 mm
+        6. [taper] 0.35 mm at (69.1, -20.7, 13.2)      7 samples, 0.4 mm2, runs 2.0 mm, band 0.19 mm
+        ... and 13 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0003/thickness-carrier.md
+
+--- stderr

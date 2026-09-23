@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_02_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_02_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_02_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_02_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_02_front"
+ ],
+ "print": {
+  "body_02_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0004/overhang-body_02_front.log": "7b861a4191386870d12ca2ef4a29852a307941f36737dcfa462220b431e242ea",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0004/thickness-body_02_front.log": "57e9f42862ee4b24fd584c1bf2bc572d3067e6ec7a72d2ad6ef22df753f37925"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:body_02_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Constant flat land removes the stepped thin crescent, leaving one open clearance crescent above centered sphere, a broad crown bridge, symmetric ankle corners and continuous belly seat. Default gates and1.2mm wall pass. New rear sphere heel needs later motion verification.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0004/visual-packet.json",
+  "packet_sha256": "4f9b2297756325337221593003addca658c5521762d6e85e09e31e2663798b8e",
+  "status": "pass"
+ }
+}

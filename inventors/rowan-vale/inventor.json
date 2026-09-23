@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "edf6fed74efb39097f1bda69da4baed03659a2e948095e4c54aca0a3783afb04",
+      "kind": "codex-skill",
+      "name": "rowan-vale-inventor",
+      "path": "skills/rowan-vale-inventor"
+    }
+  ],
+  "id": "rowan-vale",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

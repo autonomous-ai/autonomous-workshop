@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": true,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_carrier.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "carrier"
+ ],
+ "print": {
+  "carrier": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0004/overhang-carrier.log": "ed0f477013ad424f693d62b2ba3aeca474ed7f8d77d90389eb6b3ccdf27101e9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0004/thickness-carrier.log": "0b0a57c32b79bab7c7338ad1a5c91fdd1711dae5db2e3751cb9e14e27a6565fc"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.43,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [
+  "carrier"
+ ],
+ "round": 5,
+ "scope": "component:carrier",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Fresh front/top/iso inspection: circular annular field with an open four-sector core aperture and bearing bore; fourteen short planet posts and two opposite tall bezel pillars are connected to the plate. The plate has a uniform thin edge. No floating post, interrupted outer boundary or filled central bore appears. Digital visual inspection does not establish physical fit or print readiness.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/carrier/r0005/visual-packet.json",
+  "packet_sha256": "cdb596c4b16240c69942f5bc3bd514b14c10ce78675b694d39a59aa07fd837fc",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,125 @@
+{
+  "status": "SCOPED_DIMENSIONAL_EVIDENCE_PASS",
+  "audited_utc": "2026-09-21T08:32:14.759874+00:00",
+  "bindings": {
+    "native_summary": {
+      "path": "artifacts/make/r0001/visual-repair-dimensions/summary.json",
+      "sha256": "8753e32cc9a605db076c5d9a2074f1ab52d58003fef240e35f2c381c1acbab90"
+    },
+    "native_rows": {
+      "path": "artifacts/make/r0001/visual-repair-dimensions/measurements.jsonl",
+      "sha256": "48a533ad55ef27347ef4860772bb9ff9d3b2e427f093ef31b45e2366c68f57e2"
+    },
+    "actual_step": {
+      "path": "artifacts/make/r0001/visual-repair-dimensions/actual-step-results.json",
+      "sha256": "685391d79d92e9f6e9b9ebc5587d0e369b9f051059c82b678de55fd74353f008"
+    },
+    "tooth_thinning": {
+      "path": "artifacts/make/r0001/visual-repair-dimensions/tooth-thinning-results.json",
+      "sha256": "6fcda5c6574906ec7b9a9026183ef1e853198453794b8134222e45cad75fec36"
+    },
+    "manifest": {
+      "path": "artifacts/make/r0001/visual-repair-dimensions/manifest.json",
+      "sha256": "1e59a6a21052c006c4c37dbac5c86073d63e295d4d30f28c725cb6757de028d2"
+    },
+    "tooth_bindings": {
+      "path": "artifacts/make/r0001/visual-repair-dimensions/tooth-thinning-bindings.json",
+      "sha256": "9be96c4db50f6133a965128cfd930755c8717fb43a5ec15e5addcb3bb76a0b43"
+    }
+  },
+  "assembly_sha256": "088f5713abcaead93cae05310bbb32e18028aeff3645060681ce69f6556c08ff",
+  "native_requests": 81,
+  "native_numeric_checks": 117,
+  "native_failed_checks": 0,
+  "tooth_thinning": {
+    "count": 174,
+    "min_per_flank_mm": 0.17999998084131952,
+    "max_per_flank_mm": 0.17999999998905092,
+    "required_interval_mm": [
+      0.15,
+      0.25
+    ],
+    "nominal_mm": 0.18,
+    "scope": "Measured thinning on nominal module1.5 pitchcircle R=m*z/2. Does not independently prove pitch diameter,module,pressure angle,involute law,contact or motion. Equal per-flank attribution derives symmetrically from total measured tooth thickness."
+  },
+  "profile": {
+    "forms": 8,
+    "tip_counts": [
+      14,
+      15,
+      18,
+      20,
+      22,
+      23,
+      26,
+      36
+    ],
+    "window_count_each": 5,
+    "minimum_continuous_radial_root_rim_lower_bound_mm": 3.249999999993886
+  },
+  "print_pose_roles": 21,
+  "all_master_xy_bounds_fit220": true,
+  "balance": {
+    "rotating32": {
+      "count": 32,
+      "volume_mm3": 121669.91429657706,
+      "uniform_density_center_of_mass_mm": [
+        -6.774791156413733e-10,
+        -28.63497521576258,
+        120.00000001215196
+      ],
+      "radial_offset_from_hub_axis_mm": 1.217082794964159e-08
+    },
+    "separate_material_groups": {
+      "gears_same_material": {
+        "count": 14,
+        "volume_mm3": 34881.952517713995,
+        "uniform_density_center_of_mass_mm": [
+          2.033993987271096e-12,
+          -30.799999999999997,
+          119.99999999999777
+        ],
+        "radial_offset_from_hub_axis_mm": 3.0190987807903718e-12
+      },
+      "black_rotating_parts": {
+        "count": 18,
+        "volume_mm3": 86787.96177886307,
+        "uniform_density_center_of_mass_mm": [
+          -9.505900810264743e-10,
+          -27.764805088759587,
+          120.00000001703698
+        ],
+        "radial_offset_from_hub_axis_mm": 1.7063480408529506e-08
+      }
+    },
+    "scope": "Ideal digital balance about hub axis, preserving separate black/goldmaterial densities; physical balance and coasting untested."
+  },
+  "continuous_bounds": {
+    "method": "Continuous circles enclosing measured planet tooth-tip cylinders and94mmcarrier radius;0.35mm main plus0.35mmplanet radial allowances. Not a motion sweep.",
+    "nominal_radius_mm": 94.24911798841586,
+    "nominal_diameter_mm": 188.49823597683172,
+    "diameter_with_play_mm": 189.89823597683173,
+    "height_with_play_mm": 214.94911798841588,
+    "pedestal_clearance_with_play_mm": 11.050882011584136,
+    "minimum_nonneighbor_planet_gap_with_play_mm": 3.1941619435047537
+  },
+  "stem_clearance": {
+    "minimum_axial_separation_mm": 18.99999999999998,
+    "moving_max_y_mm": -24.99999999999998,
+    "stem_min_y_mm": -6.0,
+    "scope": "All32rotating actualSTEPsolid bounding boxes lie entirely ahead of stem by19mm. Rotation aboutYpreservesYcoordinates, so the lowerbound holds throughfullturn. This does not qualify journal/torque/friction."
+  },
+  "precision_policy": {
+    "native_report_coordinate_reconciliation_mm": 2e-05,
+    "source_pitch_distance_assertion_mm": 1e-08,
+    "distinction": "The2e-5allowance reconciles rounded native output only. It does not replace or relax the unchanged1e-8source pitch-center assertion.",
+    "tooth_required_interval": "Strict0.15..0.25mm without widened threshold;0.001mmnominal comparison is diagnostic only."
+  },
+  "not_claimed": [
+    "motion PASS",
+    "contact PASS",
+    "independent review PASS",
+    "physical printing/fit/coasting/durability",
+    "final readiness"
+  ]
+}

@@ -9,11 +9,15 @@ from unittest import mock
 from workshop.errors import ContractError
 from workshop.runtime.progress import (
     NATIVE_PROGRESS_FILENAME,
+    WISH_RUN_TIMING_OPERATIONS,
+    WISH_RUN_TIMING_RECORD_FILENAME,
     NativeProgressUnavailable,
     WishRunTimingEvent,
     begin_native_progress,
     native_progress_turn_floor,
     read_native_progress,
+    read_wish_run_timing_record,
+    record_wish_run_timing_event,
     trusted_native_progress,
     wish_run_timing_span,
     write_native_progress,
@@ -414,6 +418,180 @@ class WishRunTimingTest(unittest.TestCase):
             ):
                 ran = True
         self.assertTrue(ran)
+
+
+class WishRunTimingRecordTest(unittest.TestCase):
+    """The recorder that turns a bracketed timing stream into host state."""
+
+    def event(self, **overrides):
+        values = {
+            "observed_at": "2026-08-27T03:14:15.000Z",
+            "product_id": "wish-timing-record",
+            "stage": "make",
+            "operation": "session.resume",
+            "state": "completed",
+            "elapsed_ms": 250,
+        }
+        values.update(overrides)
+        return WishRunTimingEvent(**values)
+
+    def test_pins_observed_operation_vocabulary(self):
+        """Adding a bracketed operation must be a deliberate, visible change."""
+
+        self.assertEqual(
+            WISH_RUN_TIMING_OPERATIONS,
+            (
+                "run.initialize",
+                "stage.prepare",
+                "session.start",
+                "session.resume",
+                "outcome.process",
+                "gate.evaluate",
+                "effect.factory",
+            ),
+        )
+
+    def test_aggregates_by_stage_then_operation_with_counts_and_states(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host_state = Path(temporary).resolve()
+            record_wish_run_timing_event(
+                host_state,
+                self.event(
+                    observed_at="2026-08-27T03:14:15.000Z",
+                    state="started",
+                    elapsed_ms=None,
+                ),
+            )
+            record_wish_run_timing_event(
+                host_state,
+                self.event(
+                    observed_at="2026-08-27T03:14:15.250Z",
+                    state="completed",
+                    elapsed_ms=250,
+                ),
+            )
+            record_wish_run_timing_event(
+                host_state,
+                self.event(
+                    observed_at="2026-08-27T03:14:20.000Z",
+                    stage="make",
+                    operation="session.resume",
+                    state="failed",
+                    elapsed_ms=100,
+                ),
+            )
+            record_wish_run_timing_event(
+                host_state,
+                self.event(
+                    observed_at="2026-08-27T03:14:21.000Z",
+                    stage="release",
+                    operation="effect.factory",
+                    state="completed",
+                    elapsed_ms=50,
+                ),
+            )
+
+            record = read_wish_run_timing_record(
+                host_state / WISH_RUN_TIMING_RECORD_FILENAME,
+                product_id="wish-timing-record",
+            )
+            self.assertIsNotNone(record)
+            self.assertEqual(
+                record["stages"]["make"]["session.resume"],
+                {"count": 2, "elapsed_ms": 350, "states": {"completed": 1, "failed": 1}},
+            )
+            self.assertEqual(
+                record["stages"]["release"]["effect.factory"],
+                {"count": 1, "elapsed_ms": 50, "states": {"completed": 1}},
+            )
+            self.assertEqual(record["measured_ms"], 400)
+            self.assertEqual(record["total_ms"], 6_000)
+            self.assertEqual(record["unmeasured_ms"], 5_600)
+            self.assertEqual(
+                record["total_ms"], record["measured_ms"] + record["unmeasured_ms"]
+            )
+
+    def test_started_event_with_no_terminal_partner_is_not_counted(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host_state = Path(temporary).resolve()
+            record_wish_run_timing_event(
+                host_state,
+                self.event(state="started", elapsed_ms=None),
+            )
+            record = read_wish_run_timing_record(
+                host_state / WISH_RUN_TIMING_RECORD_FILENAME,
+                product_id="wish-timing-record",
+            )
+            self.assertIsNotNone(record)
+            self.assertEqual(record["stages"], {})
+            self.assertEqual(record["measured_ms"], 0)
+            self.assertEqual(record["total_ms"], 0)
+            self.assertEqual(record["unmeasured_ms"], 0)
+
+    def test_dropped_write_lowers_measured_and_raises_unmeasured_not_the_total(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host_state = Path(temporary).resolve()
+            path = host_state / WISH_RUN_TIMING_RECORD_FILENAME
+            record_wish_run_timing_event(
+                host_state,
+                self.event(observed_at="2026-08-27T03:14:15.000Z", state="started", elapsed_ms=None),
+            )
+            before = read_wish_run_timing_record(path, product_id="wish-timing-record")
+
+            # A terminal event that never lands: e.g. the observer callback
+            # raised before this ran, or (as simulated here) the write itself
+            # failed. Nothing about this call reaches the durable record.
+            with mock.patch("os.replace", side_effect=OSError("disk full")):
+                with self.assertRaises(OSError):
+                    record_wish_run_timing_event(
+                        host_state,
+                        self.event(
+                            observed_at="2026-08-27T03:14:20.000Z",
+                            state="completed",
+                            elapsed_ms=5_000,
+                        ),
+                    )
+            dropped = read_wish_run_timing_record(path, product_id="wish-timing-record")
+
+            # A later event succeeds and its own timestamp becomes the new
+            # anchor, so the missed duration surfaces as unmeasured time
+            # rather than vanishing or corrupting the total.
+            record_wish_run_timing_event(
+                host_state,
+                self.event(
+                    observed_at="2026-08-27T03:14:25.000Z",
+                    state="completed",
+                    elapsed_ms=100,
+                ),
+            )
+            after = read_wish_run_timing_record(path, product_id="wish-timing-record")
+            self.assertEqual(dropped, before)
+            self.assertEqual(after["measured_ms"], 100)
+            self.assertEqual(after["total_ms"], 10_000)
+            self.assertEqual(after["unmeasured_ms"], 9_900)
+
+    def test_unwritable_host_state_raises_for_the_caller_to_swallow(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host_state = Path(temporary).resolve() / "missing"
+            with self.assertRaises(OSError):
+                record_wish_run_timing_event(host_state, self.event())
+
+    def test_foreign_or_corrupt_record_is_ignored_and_a_fresh_one_starts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host_state = Path(temporary).resolve()
+            path = host_state / WISH_RUN_TIMING_RECORD_FILENAME
+            path.write_text("not json", encoding="utf-8")
+            os.chmod(path, 0o600)
+            record_wish_run_timing_event(host_state, self.event())
+            record = read_wish_run_timing_record(
+                path, product_id="wish-timing-record"
+            )
+            self.assertIsNotNone(record)
+            self.assertEqual(record["measured_ms"], 250)
+
+            other = read_wish_run_timing_record(path, product_id="a-different-wish")
+            self.assertIsNone(other)
+
 
 if __name__ == "__main__":
     unittest.main()

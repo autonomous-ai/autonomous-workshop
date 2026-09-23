@@ -1,0 +1,61 @@
+{
+ "build": {
+  "bear_body": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bear_body"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bear_body"
+ ],
+ "checks_ok": true,
+ "entry": "part_bear_body.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bear_body"
+ ],
+ "print": {
+  "bear_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0002/overhang-bear_body.log": "db9dd1831408d90927e11aff21277c8a924a909305f2787543053c6e8aab365d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0002/thickness-bear_body.log": "872da9fd45587e108f43ec715b71f3b64c63e04054a772b702f7f7bb139d6113"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.25,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:bear_body",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0002/visual-packet.json",
+  "packet_sha256": "b296813119e34567f86569977d2fe8e808d5f84cb06666e0b42276468f4720c2",
+  "status": "pending"
+ }
+}

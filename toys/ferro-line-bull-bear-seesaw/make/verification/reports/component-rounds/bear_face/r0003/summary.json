@@ -1,0 +1,62 @@
+{
+ "build": {
+  "bear_face": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bear_face"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bear_face"
+ ],
+ "checks_ok": true,
+ "entry": "part_bear_face.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_face/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bear_face"
+ ],
+ "print": {
+  "bear_face": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_face/r0003/overhang-bear_face.log": "31e6e4d3c97350f4b24a85f3b15983e976f3616c7023ed1c5b19cfd8581cb67b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_face/r0003/thickness-bear_face.log": "41920766284da9b215800a00977e965d1abf315c1b247dafabc81d31c813eff2"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:bear_face",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show a taller continuous black backing plate with its original locating key intact; no extra or disconnected geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_face/r0003/visual-packet.json",
+  "packet_sha256": "ef74afccc8e58119b0bf46b14d16085defbed8be4e3e2a221a6f76dd07c4c0ee",
+  "status": "pass"
+ }
+}

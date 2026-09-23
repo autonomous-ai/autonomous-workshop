@@ -184,10 +184,14 @@ from workshop.runtime.package_data import (
 from workshop.runtime.progress import (
     NATIVE_PROGRESS_FILENAME,
     SAFE_NATIVE_ACTIVITY_CLASSES,
+    WISH_RUN_TIMING_RECORD_FILENAME,
     NativeRunProgress,
+    WishRunTimingEvent,
     WishRunTimingObserver,
     begin_native_progress,
     native_progress_turn_floor,
+    read_wish_run_timing_record,
+    record_wish_run_timing_event,
     trusted_native_progress,
     wish_run_timing_span,
     write_native_progress,
@@ -3133,6 +3137,10 @@ def _record_public_example_projection(
                     checkpoint,
                 ),
                 wish_id=checkpoint.product_id,
+                stage_timing_record=read_wish_run_timing_record(
+                    run.host_state_root / WISH_RUN_TIMING_RECORD_FILENAME,
+                    product_id=checkpoint.product_id,
+                ),
             )
             target_relative = (
                 target.relative_to(repository).as_posix()
@@ -6737,6 +6745,43 @@ def _combined_activity_observer(
     return observe
 
 
+def _record_wish_run_timing(event: WishRunTimingEvent) -> None:
+    """Best-effort persistence of one Wish run timing event to host state.
+
+    Mirrors the token record's telemetry posture: this is presentation
+    telemetry, never lifecycle or gate authority, so every failure here
+    -- an unresolvable or unwritable host-state path included -- is
+    swallowed rather than raised.
+    """
+
+    try:
+        host_state = native_run_paths(event.product_id).host_state
+        record_wish_run_timing_event(host_state, event)
+    except Exception:
+        pass
+
+
+def _combined_timing_observer(
+    observer: Optional[WishRunTimingObserver],
+) -> WishRunTimingObserver:
+    """Record every bracketed timing event, alongside any live consumer.
+
+    The live progress reporter remains the only user-visible consumer; the
+    recorder is a second, independently failure-safe consumer of the same
+    event stream, so a fault in either can never affect the other or the Run.
+    """
+
+    def observe(event: WishRunTimingEvent) -> None:
+        if observer is not None:
+            try:
+                observer(event)
+            except Exception:
+                pass
+        _record_wish_run_timing(event)
+
+    return observe
+
+
 def _host_evidence_sha256(value: Mapping[str, Any]) -> str:
     return _sha256(_canonical_json_bytes(dict(value)))
 
@@ -10188,7 +10233,9 @@ def start_native_run(
         )
 
     activity_observer = _validated_activity_observer(activity_observer)
-    timing_observer = _validated_timing_observer(timing_observer)
+    timing_observer = _combined_timing_observer(
+        _validated_timing_observer(timing_observer)
+    )
     with wish_run_timing_span(
         timing_observer,
         product_id=wish.product_id,
@@ -10514,7 +10561,9 @@ def publish_native_run(
     publish is left exactly as it was rather than half-open.
     """
 
-    timing_observer = _validated_timing_observer(timing_observer)
+    timing_observer = _combined_timing_observer(
+        _validated_timing_observer(timing_observer)
+    )
     paths = native_run_paths(product_id)
     with _native_run_mutation_lock(paths):
         run = _open_budgeted_agent_run(paths)
@@ -10619,7 +10668,9 @@ def resume_native_run(
         raise ContractError("choose an exact turn boundary or an untimed turn, not both")
 
     activity_observer = _validated_activity_observer(activity_observer)
-    timing_observer = _validated_timing_observer(timing_observer)
+    timing_observer = _combined_timing_observer(
+        _validated_timing_observer(timing_observer)
+    )
     paths = native_run_paths(product_id)
     with _native_run_mutation_lock(paths):
         run = _open_budgeted_agent_run(paths)

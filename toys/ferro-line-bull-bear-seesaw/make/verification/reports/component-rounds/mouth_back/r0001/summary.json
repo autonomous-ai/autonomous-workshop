@@ -1,0 +1,61 @@
+{
+ "build": {
+  "mouth_back": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "mouth_back"
+ ],
+ "check_motion": false,
+ "checked": [
+  "mouth_back"
+ ],
+ "checks_ok": true,
+ "entry": "part_mouth_back.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mouth_back/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "mouth_back"
+ ],
+ "print": {
+  "mouth_back": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mouth_back/r0001/overhang-mouth_back.log": "4d4b37dc2404d5fd4f4d06fed08b5c5eca4c1967d225c4ad76aa935258a0402e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mouth_back/r0001/thickness-mouth_back.log": "0fc03c532518d6241e8da6453e1b08754af78fe5c09dd52c2d445d63804e9c7f"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:mouth_back",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mouth_back/r0001/visual-packet.json",
+  "packet_sha256": "58fd003a94fcf2ab112898632c8c12a02331397991f9418ddd605c5acdb6b124",
+  "status": "pending"
+ }
+}

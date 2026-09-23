@@ -1,0 +1,62 @@
+{
+ "build": {
+  "head_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "head_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "head_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_head_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "head_front"
+ ],
+ "print": {
+  "head_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0003/overhang-head_front.log": "6a8437d89ea7451fa7990de02b59d56b35c001780e720f7c271a1354e5e713e7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0003/thickness-head_front.log": "bea83add860c11008b5f07d9349c75b6f4ec8050448904f20f48f91e75b52c98"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.21,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:head_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Inspected front, top and iso. Rounded head mass has a continuous supported cheek skirt, uniform indexing lip and three open flat-bottomed magnet seats. Residual thin forehead rim removed. Default and explicit1.2mm wall checks and support check pass; no visible disconnected stock or unsupported shelf.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/head_front/r0003/visual-packet.json",
+  "packet_sha256": "51f9f6a2b2c9ff3d019753be5f3ac21bdc4a84f71c38669dfb5b1c5c7b3ffdf4",
+  "status": "pass"
+ }
+}

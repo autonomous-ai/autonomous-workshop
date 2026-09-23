@@ -1,0 +1,16 @@
+{
+  "title": "Gear Vortex",
+  "summary": "Two spirals of brass-coloured gears surround an orange-backed open core. This digital prototype has incomplete geometry and motion verification and has not been physically tested.",
+  "print_ready_claim": false,
+  "status": "geometry-unverified",
+  "limitations": [
+    "Final integrated verification is UNVERIFIED: formal motion and 45 final geometry inspection requests remain incomplete after the shared inspection allowance was exhausted. Earlier scoped standalone measurements are retained, not promoted to an integrated pass.",
+    "Formal motion remains UNVERIFIED: current round 4 returned exit 3 with no condition results.",
+    "All 238 discrete fixed-center contact samples passed. The 48-state animation and independent visual review passed for modeled form and presented action. Continuous contact, complete coupled motion, retention and physical operation remain unverified.",
+    "Seven gears per arm use the fewer/larger fallback; module 1.5 meets the minimum but not the 2.0 preference.",
+    "Completed digital geometry, dimensional and delivery checks do not establish physical print readiness.",
+    "Physical printing, fit, friction, coasting, balance and durability remain untested.",
+    "Orange appearance depends on ambient light and suitable translucent material; rendering colours do not establish physical finishes.",
+    "Geometry inspection is incomplete. This prototype is unverified and is not print-ready; see GEOMETRY-NOTES.md."
+  ]
+}

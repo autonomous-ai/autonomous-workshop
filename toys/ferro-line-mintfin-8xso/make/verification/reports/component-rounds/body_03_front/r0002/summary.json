@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_03_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_03_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_03_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_03_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_03_front"
+ ],
+ "print": {
+  "body_03_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0002/overhang-body_03_front.log": "5f261d861e28e67be097580092e22dc8d657902e788b85900d801c57ed36ef6b",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0002/thickness-body_03_front.log": "8084009a62093491412f677c17d376584f4c2306d98c861500495fc8cc0afcba"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:body_03_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected once. The incoming ball is aligned on the dorsal midline, with a visible relief arc around its root. The broad flat seam, convex elliptical perimeter, flat crown and two symmetric ankle cutouts are intact; no loose material or visually misplaced feature is apparent. Static views do not verify motion.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_03_front/r0002/visual-packet.json",
+  "packet_sha256": "3a999ea88e00d44b08e09ee7a1346a0bb66d75b2a3c82ce6cf9ee19a832232e1",
+  "status": "pass"
+ }
+}

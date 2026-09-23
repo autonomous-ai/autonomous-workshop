@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_5": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_5"
+ ],
+ "check_motion": false,
+ "checked": [
+  "body_5"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_5.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_5/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_5"
+ ],
+ "print": {
+  "body_5": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_5/r0001/overhang-body_5.log": "d0f3fb8f1b771271f95c9b8cc631f3b0f4ad191a30600b3d5e0304870e864e84",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_5/r0001/thickness-body_5.log": "8630df2eaf0fcefd0f9ab17536bf773d5f59e800dbf83e7234f8701cfaeef840"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:body_5",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and iso show a progressively shorter and narrower footless segment. Top shows an open C throat and centered pin, with a broad continuous fin on the crown and no loose ornament.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/body_5/r0001/visual-packet.json",
+  "packet_sha256": "5fdb4250a9dd5274dcca5d5d3ba519d54f18b4578cbba6d2ffe5a41ad93a7124",
+  "status": "pass"
+ }
+}

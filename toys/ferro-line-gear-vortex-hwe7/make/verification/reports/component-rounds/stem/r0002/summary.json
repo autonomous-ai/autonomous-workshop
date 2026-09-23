@@ -1,0 +1,62 @@
+{
+ "build": {
+  "stem": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "stem"
+ ],
+ "check_motion": true,
+ "checked": [
+  "stem"
+ ],
+ "checks_ok": true,
+ "entry": "part_stem.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/stem/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "stem"
+ ],
+ "print": {
+  "stem": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/stem/r0002/overhang-stem.log": "895e8da6f1ac9e916d6d7403f00bca01dfd865e02e329230bb00c08263c79e59",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/stem/r0002/thickness-stem.log": "a51b4eb553fe3237f5dcec1aba2928307198be2a58b36585444b5d158572f4de"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:stem",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front and isometric views show the slender black stem, smaller lower keyed peg, tapered shoulder and rectangular top tongue. Top view confirms the round body; no detached geometry is visible.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/stem/r0002/visual-packet.json",
+  "packet_sha256": "79f0955d6a9856cef5d32ff1b4d918560b6432b74b54d8cb773574e179765616",
+  "status": "pass"
+ }
+}

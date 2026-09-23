@@ -1,0 +1,9 @@
+{
+  "scope": "Research inventory snapshot updated after review provenance audit; concept, CAD source and canonical review bytes unchanged.",
+  "prior_source_sha256": "211fc8bf5f00d30365bcb09d42845074b342e8a0376cc510b6b36eed2735d724",
+  "current_source_path": "artifacts/make/r0001/spark-source.json",
+  "current_source_sha256": "461204dee3a2f035cb0f496769f671a6ec4b9f1a94c56fed02d035f5363ed975",
+  "canonical_concept_sha256": "a611ef1801208772e434885d85ec0ad861c7c136fd0d3bf3dbff5ce6a48244b7",
+  "signature_review_sha256": "5a96ece7de81be2a7628457737e3a03dcefb86873bfb4dc16418d8c68bd2f3cf",
+  "motion_review_sha256": "b2b7e75583671ffb0a9628491efb4e41202d83c66f2bb297c65e7d8f8bd131fe"
+}

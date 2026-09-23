@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_base.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "base"
+ ],
+ "print": {
+  "base": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0002/overhang-base.log": "6d1872da08f815b2dc5bf22a173ed15c13bb6617ec872386d9c468259cbb6a8a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0002/thickness-base.log": "99a94b34dddeec08bcd6044904909e4b7aff5a5bb6cd6cf21c3000f41113463a"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "base"
+ ],
+ "round": 3,
+ "scope": "component:base",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show a broad rounded rectangular footprint, rear socket boss and aligned transverse opening; no stray or disconnected geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/base/r0003/visual-packet.json",
+  "packet_sha256": "48a944655b0e323509fc39d3451d8aeee99d672309ec3c990e15473bc7f6f79c",
+  "status": "pass"
+ }
+}

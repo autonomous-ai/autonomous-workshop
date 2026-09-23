@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_02_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_02_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_02_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_02_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_02_front"
+ ],
+ "print": {
+  "body_02_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0002/overhang-body_02_front.log": "2b5db12556f3eb0bf7ec63617be9b9b7fae0b3de28be2dcb074a641dc88b3d24",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0002/thickness-body_02_front.log": "31306445d22ed5558cf8c355073739eb1f603880eb32deef9ee5f4a3fd0c393b"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.53,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:body_02_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a flat rim land and connected incoming ball. Top and iso show a symmetric barrel section, two clean open ankle corners, the flattened crown and clear socket relief; no thin pocket roof or stray solid is visible.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_front/r0002/visual-packet.json",
+  "packet_sha256": "41edbd1bb92763cd01b4bb94a8a7b402c8f2a5e515baa9581a9f643fdc55b29d",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,71 @@
+{
+ "build": {
+  "face_nostril": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_nostril"
+ ],
+ "check_motion": true,
+ "checked": [
+  "face_nostril"
+ ],
+ "checks_ok": false,
+ "entry": "part_face_nostril.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_nostril/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_nostril"
+ ],
+ "print": {
+  "face_nostril": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_nostril/r0001/overhang-face_nostril.log": "6f267a4274bee83983ab1b59a95aa30cab0fe0f817ff50a5ce58f040bbc0dfb1",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_nostril/r0001/thickness-face_nostril.log": "d4be30735740f462737dec27b11e851118949f51b29b70b98ca94b896d01e0ea"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 25.8% of surface below (113 of 392 samples); thinnest "
+    ],
+    "thinnest_mm": 0.73,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:face_nostril",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Standing-feature thickness fails0.8mm gate",
+    "evidence": "Default wall report0.73mm minimum over2mm2 broad region.",
+    "part": "face_nostril",
+    "repair": "Increase cylinder height from0.8 to1.0mm, keeping diameter1.6mm and face-local position."
+   }
+  ],
+  "observation": "Front, top and iso show one regular charcoal cylinder with flat adhesive underside, correct round profile and no stray material. Numeric standing-feature minimum check fails across the thin slab.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_nostril/r0001/visual-packet.json",
+  "packet_sha256": "d9287a343c1d73be52a65fb279ec7543d552b608c01bef571c9fbb6f69bccc22",
+  "status": "fail"
+ }
+}

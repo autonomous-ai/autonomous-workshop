@@ -1,0 +1,17 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_mount_pin.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mount_pin/r0002/thickness-mount_pin.md
+(6.5s, exit 0)
+--- stdout
+part_mount_pin.step.py: 1.01 cm3 solid, grid 0.133 mm (95x95x141), 42126 surface samples, thickness resolved to 0.067 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.8% of surface below (326 of 42126 samples); thinnest 0.13 mm at (1.4, -3.7, 14.9) in 4 region(s); no region is a wall, 4 taper(s) at feature edges (0.79% of surface, budget 2%); 53 more within measurement error of the limit
+  PASS  thickness distribution         median 7.93 mm, p95 18.13 mm, max 18.13 mm
+  WARN  hollowable at 1.20 mm wall     0.28 of 1.01 cm3 (27%) in 1 pocket(s)
+  PASS  filament that would save       0.04 cm3, 0.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.13 mm at (1.5, 3.7, 14.7)     94 samples, 1.8 mm2, runs 2.7 mm, band 0.67 mm
+        2. [taper] 0.13 mm at (1.4, -3.7, 14.9)     93 samples, 1.8 mm2, runs 2.6 mm, band 0.68 mm
+        3. [taper] 0.13 mm at (-1.5, 3.7, 14.9)     76 samples, 1.4 mm2, runs 2.8 mm, band 0.51 mm
+        4. [taper] 0.13 mm at (-1.5, -3.7, 13.6)     63 samples, 1.2 mm2, runs 2.7 mm, band 0.43 mm
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/mount_pin/r0002/thickness-mount_pin.md
+
+--- stderr

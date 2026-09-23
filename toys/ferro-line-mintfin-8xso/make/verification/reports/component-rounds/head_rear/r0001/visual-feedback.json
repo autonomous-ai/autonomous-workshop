@@ -1,0 +1,19 @@
+{
+  "findings": [
+    {
+      "defect": "Gill seat roofs unsupported in seam-down print orientation",
+      "evidence": "Both side recesses visible in top and iso; report locates31.2/33.9mm2 overhang at print X\u00b130,Z10.",
+      "part": "head_rear",
+      "repair": "Open or slope the lateral seat roofs while preserving gill seating and head envelope."
+    },
+    {
+      "defect": "Measured1.2mm wall failure near mouth",
+      "evidence": "Extra Wish wall report18.0mm2 band at print(3.4,3.2,30.6), band1.32mm.",
+      "part": "J00 socket lip",
+      "repair": "Provide a supported retaining lip section while preserving ball clearance, undercut and25degree bend."
+    }
+  ],
+  "observation": "Front, top and iso show the rounded posterior head, four split socket fingers, three horn recesses and symmetric lateral gill recesses. Lateral recess roofs are visibly unsupported; the numeric overhang report locates both. The retaining mouth has an additional measured thin band requiring repair.",
+  "packet_sha256": "7020c8ec54c4e5374ab2550b95103b977f66e0f35dfcaf1ab0f196861e78a531",
+  "status": "fail"
+}

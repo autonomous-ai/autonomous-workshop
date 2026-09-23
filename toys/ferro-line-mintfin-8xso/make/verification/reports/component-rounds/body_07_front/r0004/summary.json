@@ -1,0 +1,63 @@
+{
+ "build": {
+  "body_07_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_07_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_07_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_07_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_07_front"
+ ],
+ "print": {
+  "body_07_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0004/overhang-body_07_front.log": "bc93f03216f92f1138f5b7455dc72b6e29f0c9de83c9cf81dccef30e1f0f8641",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0004/thickness-body_07_front.log": "85fa954b5a7d86eb8db0829fc51999a3bb5e808386a2c9b060382a620cdb472a"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [
+     "no overhang result"
+    ],
+    "overhang_mm2": null,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "no passing wall result"
+    ],
+    "thinnest_mm": null,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:body_07_front",
+ "visual": {
+  "detail": "Visual render failed or source changed; inspect visual-render.log",
+  "findings": [],
+  "status": "error"
+ }
+}

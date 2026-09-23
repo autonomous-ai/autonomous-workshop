@@ -1,0 +1,63 @@
+{
+ "build": {
+  "tear_back": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "tear_back"
+ ],
+ "check_motion": false,
+ "checked": [
+  "tear_back"
+ ],
+ "checks_ok": false,
+ "entry": "part_tear_back.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "tear_back"
+ ],
+ "print": {
+  "tear_back": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0002/overhang-tear_back.log": "f84c1c63a490594dc221dba53f786ae4bf9e72282f7a6911ae9415392aa0a8ec",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0002/thickness-tear_back.log": "72b7cec1b9b0a55e1aa66093b4f7339dfd69e35bd90a20acb28bdd3913b2b2cc"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.5% of surface below (1834 of 370763 samples); thinne"
+    ],
+    "thinnest_mm": 0.51,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:tear_back",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/tear_back/r0002/visual-packet.json",
+  "packet_sha256": "6e2bc63aa332e03c7d18f5a769f82c98d97d2062d3adfe78ea17c80bcd4d0cbf",
+  "status": "pending"
+ }
+}

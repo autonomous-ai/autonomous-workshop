@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin lower rim beside rounded tear holes",
+      "evidence": "Top and iso show narrow material below each bulb; thickness gate fails.",
+      "part": "bear_face",
+      "repair": "Extend the plate and matching body pocket downward by 1.6 mm."
+    }
+  ],
+  "observation": "Fixed plate and upper key are connected; rounded tear clearances leave a visibly narrow lower rim.",
+  "packet_sha256": "9d580014f242ebde2b386cf83b3182efb0ce479e2a2983a171619da3964525c5",
+  "status": "fail"
+}

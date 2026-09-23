@@ -1,0 +1,62 @@
+{
+ "build": {
+  "gear_18": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gear_18"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gear_18"
+ ],
+ "checks_ok": true,
+ "entry": "part_gear_18.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_18/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_18"
+ ],
+ "print": {
+  "gear_18": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_18/r0001/overhang-gear_18.log": "6cbcdb11a2b3e1a4a48c446e2fec495c929fa28b6da4b80f11fe46c76ff92cb3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_18/r0001/thickness-gear_18.log": "4dbd1c2fa51582c75265ea1c8ba0305e69f0c8b9538f2cf0fffd74af0fa5f231"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:gear_18",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Eighteen distinct teeth and five swept spokes are continuous. Spoke handedness reverses relative to gear16; centered bore and planar face remain intact in all views.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_18/r0001/visual-packet.json",
+  "packet_sha256": "b0cf6079f35e768dd225a54b0960b2313ac8414f436258e76e52d3b8d805fd3a",
+  "status": "pass"
+ }
+}

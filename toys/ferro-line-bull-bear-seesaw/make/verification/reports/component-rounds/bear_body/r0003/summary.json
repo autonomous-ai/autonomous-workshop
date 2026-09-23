@@ -1,0 +1,65 @@
+{
+ "build": {
+  "bear_body": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bear_body"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bear_body"
+ ],
+ "checks_ok": false,
+ "entry": "part_bear_body.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bear_body"
+ ],
+ "print": {
+  "bear_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0003/overhang-bear_body.log": "3a65bd57361daf5f7428e8a3d6b5a1656b85331a2a34d88de57191f7e4316142",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0003/thickness-bear_body.log": "85f1c340da7401dc4db56c11d39292153b422570ec3fcaedc5b5bf574c98100a"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 25.8% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 23.3,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.13) 0.5% of surface below (1022 of 241785 samples); thinne"
+    ],
+    "thinnest_mm": 0.25,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:bear_body",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_body/r0003/visual-packet.json",
+  "packet_sha256": "f5e86d27492f94fb6230dd288cbe4ffea9648e509458d3276fabbb563d3c67d6",
+  "status": "pending"
+ }
+}

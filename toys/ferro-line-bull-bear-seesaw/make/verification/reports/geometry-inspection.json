@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "print_ready_claim": false,
+  "checks": [
+    {
+      "id": "refs:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "validate:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "interfere:assembly",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_base",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_base",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_beam",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_beam",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_bear_body",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_bear_body",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_bear_face",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_bear_face",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_bear_mask",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_bear_mask",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_bull_body",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_bull_body",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_bull_muzzle",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_bull_muzzle",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_main_pin",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_main_pin",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_mount_pin",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_mount_pin",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_mouth_back",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_mouth_back",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_retainer",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_retainer",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_shuttle",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_shuttle",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_stand",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_stand",
+      "status": "passed"
+    },
+    {
+      "id": "refs:part_tear_back",
+      "status": "passed"
+    },
+    {
+      "id": "validate:part_tear_back",
+      "status": "passed"
+    }
+  ],
+  "verification_sha256": "3d76d7006f77af1f1d65daafa9235e338bb122fc25ef88964e4f3e6f1a7221c1"
+}

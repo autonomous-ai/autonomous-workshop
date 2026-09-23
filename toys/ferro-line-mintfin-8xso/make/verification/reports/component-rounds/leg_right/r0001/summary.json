@@ -1,0 +1,62 @@
+{
+ "build": {
+  "leg_right": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "leg_right"
+ ],
+ "check_motion": true,
+ "checked": [
+  "leg_right"
+ ],
+ "checks_ok": true,
+ "entry": "part_leg_right.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_right/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "leg_right"
+ ],
+ "print": {
+  "leg_right": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_right/r0001/overhang-leg_right.log": "c6f896f7683020fe690d22314a8972ca15d05cd3c2d547681fc8d0dcedd9e0c9",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_right/r0001/thickness-leg_right.log": "1e1df64ebf1155f1057fd0a5da2b50c2210b2727a36e9eba7c43a88ea58c832b"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:leg_right",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The mirrored paw retains the bent ankle, continuous flat sole and broad planar toe face in front/top/iso. The upper key is supported by the sloped buttress; no residual slot fins or floating pieces are visible. Separate claws will complete the toe appearance; this view does not establish the assembled bond.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/leg_right/r0001/visual-packet.json",
+  "packet_sha256": "ff44e247e23a74e1633b9d6cb67c31e29596953d699fb03c128e5c0d9f81a03d",
+  "status": "pass"
+ }
+}

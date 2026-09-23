@@ -1,0 +1,69 @@
+{
+ "build": {
+  "stem": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "stem"
+ ],
+ "check_motion": true,
+ "checked": [
+  "stem"
+ ],
+ "checks_ok": true,
+ "entry": "part_stem.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/stem/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "stem"
+ ],
+ "print": {
+  "stem": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/stem/r0001/overhang-stem.log": "d61b9af09cb6a2f5199b95c7480d0781607619dce18375b329591d110750af1e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/stem/r0001/thickness-stem.log": "8f23acc14d92e30811f67cabbbc0825c7c65cf45088f51de9338796f3880cb8a"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:stem",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Missing black surface color",
+    "evidence": "All three views show the unassigned blue-gray material.",
+    "part": "stem",
+    "repair": "Assign shared black sRGB color."
+   }
+  ],
+  "observation": "The stem is straight and slender, with a bottom keyed tenon and a centered top rectangular tongue. Its finish remains blue-gray.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/stem/r0001/visual-packet.json",
+  "packet_sha256": "72641b2f4103f4e37635e1e46d2eff2ee1435922d98ad60df81f7f7e80b1d57a",
+  "status": "fail"
+ }
+}

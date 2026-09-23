@@ -1,0 +1,73 @@
+{
+ "build": {
+  "pedestal_lid": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "pedestal_lid"
+ ],
+ "check_motion": true,
+ "checked": [
+  "pedestal_lid"
+ ],
+ "checks_ok": false,
+ "entry": "part_pedestal_lid.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal_lid/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "pedestal_lid"
+ ],
+ "print": {
+  "pedestal_lid": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal_lid/r0001/overhang-pedestal_lid.log": "392e95743b169e956a8df89c7f9ed03e31c7f1b0de6cd1fc137d9187f21ef192",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal_lid/r0001/thickness-pedestal_lid.log": "a7bcea6b0b420e1ae98d2869051de3cf63a2687718ea8533238fb0fc09369d40"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 42.9% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 19.2,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.10) 0.2% of surface below (769 of 387501 samples); thinnes"
+    ],
+    "thinnest_mm": 0.2,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:pedestal_lid",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin sharp tab tips and missing black finish",
+    "evidence": "Front right tab ends at a sharp apex; thickness report flags subminimum bands.",
+    "part": "pedestal_lid",
+    "repair": "Use sloped trapezoid tabs with finite outer tip thickness and matched base groove; assign black."
+   }
+  ],
+  "observation": "Three radial tabs are present, but front and iso show their sharp wedge ends. Finish is blue-gray.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal_lid/r0001/visual-packet.json",
+  "packet_sha256": "5bb58e27eb5b6ac7a6b2eed6ada3b78a8385b91482892018e6f2351ce6f7fb18",
+  "status": "fail"
+ }
+}

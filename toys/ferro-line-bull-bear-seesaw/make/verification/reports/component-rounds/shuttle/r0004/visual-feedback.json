@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front/top/iso show a thin continuous carrier with left mask pad, reinforced central slot tower and right T connector. Slot has visible material above it; no extra solid or misplaced branch.",
+  "packet_sha256": "fd2b5fa88c147b78db56cda50f28c85ece802daa25fb856bf91972da864e2cf5",
+  "status": "pass"
+}

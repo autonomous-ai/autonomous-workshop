@@ -1,0 +1,62 @@
+{
+ "build": {
+  "gear_16": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gear_16"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gear_16"
+ ],
+ "checks_ok": true,
+ "entry": "part_gear_16.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_16/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_16"
+ ],
+ "print": {
+  "gear_16": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_16/r0002/overhang-gear_16.log": "a3b81fd19a7d5c0ce9e7243aa6377240b538b577791085d63b56767b4dd7dc24",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_16/r0002/thickness-gear_16.log": "15d36ea4e66f592cbf27a637725529276dc0c0da4113d3444beacd1f4c5a1a39"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.33,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:gear_16",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Sixteen distinct broad-tip teeth surround five swept windows. Front shows uniform face thickness; top and iso show an open centered bore, continuous rim and connected spokes.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_16/r0002/visual-packet.json",
+  "packet_sha256": "de274443322827e9208c6d51826d67715c4836251b54c8a9185a2457401f038d",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_07_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_07_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_07_front"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_07_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_07_front"
+ ],
+ "print": {
+  "body_07_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0002/overhang-body_07_front.log": "57a09bc217abad1195444359ae80d47cf69c8f87f380c2f6cc6fa3deacfaf4a7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0002/thickness-body_07_front.log": "ef8548ad33ed0153fe286ec33c3d0a42f35f7ce2e0b8d1ddf1497aba051d9d4d"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 7.0% of surface below (3133 of 44673 samples); thinnes"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:body_07_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Feathered funnel wall",
+    "evidence": "Top and iso show a sharp crescent around the root; measured wall minimum 0.13 mm.",
+    "part": "body_07_front",
+    "repair": "Replace the oblique funnel with a straight opening through the full-thickness plate."
+   }
+  ],
+  "observation": "Front, top and iso inspected: tapered funnel leaves a broad wafer edge around the ball root in the 1.2 mm plate.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0002/visual-packet.json",
+  "packet_sha256": "82002d05c0481f3e4c4929d2a9184e2dc7b51f138b5c010149af0910a35da85b",
+  "status": "fail"
+ }
+}

@@ -1,0 +1,26 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_16/r0001/visual/front.png": "d18fb0a798f7f2bbf068d649453fbe2dd913f154a66318972e1be1268911229c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_16/r0001/visual/iso.png": "319f0a323e5437683833f9410898ca69fab4ef9478e0153e5fa86e4007e13bdc",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_16/r0001/visual/top.png": "57a707af9aeb12295501eff857032aba01d98675fd7e6146afcea3bcd3f53d69"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "assemblies/__init__.py": "e6582202b40d5bde989f4eeb4e96ded2a9e3aef2f8cc4aa1e07c323d317048e2",
+    "design.json": "8ca07e42461da39da0b5fdcc7336844df40b17131d3181170cbc4dbc62f1f18b",
+    "features/__init__.py": "b81051b77f4513064945b53cfb27edbfdb0904f0951d9c007c50a94aa52fc473",
+    "features/gearing.py": "57c7315d1ef13a1c1b1823d08ecbd66b8f46d8c2104d26a1a4d0bffb08a1835f",
+    "params.py": "bd61a8be9008e85c10c3ca00588ba72dc74929b73af0dead7c9f0b66296c2586",
+    "part_gear_16.step": "ddb7bdb3e59e3772c685d690278821f1f932ccaa6a1ed3ce29caeb8abed8a355",
+    "part_gear_16.step.py": "c46ac045b8f1b82b80c70e8b145ac871b642e8fe9e01398b1da821517b89aff2",
+    "part_gear_18.step.py": "48b501e033b04bea312989071a7cae3241fe7cd7c5bed90282b51fb479de39dc",
+    "part_gear_20.step.py": "f6bfe6055c51623ae1a17c543a58b5fb983aea0252f277558e1e14c28243f8bd",
+    "part_gear_22.step.py": "f501986540e13ab077c61924420a67f2693d7ff94e074c46127c55d01b3209df",
+    "part_gear_24.step.py": "4a1685cf8a73bfd3e8fe4d9a3ca940de3f0de813f474ff069c99a962a7a6a26c",
+    "part_gear_26.step.py": "a468749a3c64bdd6f087d14f2d9fefb565dff7e17b1700c79fe1a276cb49393b",
+    "part_sun.step.py": "235b4a8b75887e66a404620147999fba2832e6528dfcde1028d8531410fc4812",
+    "parts/__init__.py": "4d42cb213ca584794ea361191ed15b00a33fdfca4cbf6d3d74e6f8bac366d51b",
+    "parts/gears.py": "8268c18141738ec561461c4a6c646ea14398f291f6b7c13d365dca058e5aaa44"
+  }
+}

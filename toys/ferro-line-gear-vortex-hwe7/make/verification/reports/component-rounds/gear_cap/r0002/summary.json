@@ -1,0 +1,64 @@
+{
+ "build": {
+  "gear_cap": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gear_cap"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gear_cap"
+ ],
+ "checks_ok": false,
+ "entry": "part_gear_cap.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_cap"
+ ],
+ "print": {
+  "gear_cap": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0002/overhang-gear_cap.log": "8f4f18a09a5a3392699ce608b14e72ee2b142a4b4e163a1fc0e7c8fdcc288c7e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0002/thickness-gear_cap.log": "8dc27d9d4126481152d3c271f65acf5a87f9dfe34807d39a368797855e3b2c34"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 11.3% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 1.9,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:gear_cap",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a straight cylindrical wall. Top and iso show an open concentric bore with two lead-ins and retained internal helical thread; no visible tears or detached geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_cap/r0002/visual-packet.json",
+  "packet_sha256": "33234ffdf1bcb2c436c8c7dc18291a3eda349763fb8d7352c2cc57b2a1398dd1",
+  "status": "pass"
+ }
+}

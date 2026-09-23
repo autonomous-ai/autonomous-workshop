@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin crescent walls and unsupported ball lower cap.",
+      "evidence": "Front and iso show the sphere beyond the lower barrel profile with thin side rails. Explicit1.2mm check finds two walls near print X+/-6.1,Y-3.3,Z0.8..1.2, areas10.3/10.1mm2, minimum0.2mm; overhang region6.8mm2 at(0,-8.4,.5),span4.2mm and2mm air below.",
+      "part": "body_08_front",
+      "repair": "Revise the final front-half seam/land to retain >=1.2mm after J07 parent relief, and give the ball lower cap a45degree conical support base or change its construction split while preserving functional mouth clearance."
+    }
+  ],
+  "observation": "Front, top and iso inspected once. Incoming sphere projects below the narrow barrel outline and leaves unsupported lower cap stock in this seam-down print pose. The circular parent-socket relief feathers both sidewalls.",
+  "packet_sha256": "cbb584e32bcb7a0efc14493995c97163f596452eb6a252d3986e6699fdf41b6c",
+  "status": "fail"
+}

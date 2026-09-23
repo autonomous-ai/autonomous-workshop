@@ -1,0 +1,71 @@
+{
+ "build": {
+  "body_02_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_02_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_02_rear"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_02_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0005",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_02_rear"
+ ],
+ "print": {
+  "body_02_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0005/overhang-body_02_rear.log": "72afa9f566378645260e3de8087fef8ad9672c066c9d8035feced060109030df",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0005/thickness-body_02_rear.log": "12991ff3adc3663736eb6b3181f35bc1d353608b253257507687c9299802588a"
+   },
+   "measured_round": 5,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 0.4% of surface below (902 of 256952 samples); thinnes"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 5,
+ "scope": "component:body_02_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin membrane between converging relief tip and slit root",
+    "evidence": "Default fine-grid wall2.6mm2 at print(0.2,-14.0,1.5), minimum0.13mm; underside partly hidden in exterior views. Overhang passes.",
+    "part": "body_02_rear",
+    "repair": "Open only the small tip membrane into the existing central slit, preserving at least2mm actual radial cavity wall at the affected axial stations, then rerun both thickness resolutions."
+   }
+  ],
+  "observation": "Front, top and iso inspected. Correctly centered relief clears the roof support failure while preserving exterior form. A thin membrane now remains at its closing tip next to the axial socket slit, measured2.6mm2 under the default fine-grid wall check. Explicit1.2mm coarser check passes but does not override this measured failure.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_02_rear/r0005/visual-packet.json",
+  "packet_sha256": "2e72d77b3c9cdc354782bf2c38a7605812b82c1082ddc030815b7c8a7cd49d15",
+  "status": "fail"
+ }
+}

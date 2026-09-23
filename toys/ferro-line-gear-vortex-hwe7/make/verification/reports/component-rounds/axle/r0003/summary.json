@@ -1,0 +1,73 @@
+{
+ "build": {
+  "axle": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "axle"
+ ],
+ "check_motion": true,
+ "checked": [
+  "axle"
+ ],
+ "checks_ok": false,
+ "entry": "part_axle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "axle"
+ ],
+ "print": {
+  "axle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0003/overhang-axle.log": "609db0a4738c43d22bf2cdf82157998169a2e14fae3bc25f881afe4a526e2b07",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0003/thickness-axle.log": "bb1ad27f194a1cdc7ad3f4f2f588d00f95c44cf1ba31b1ada725fb9982e9e154"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 3.9% of the surface faces down that steeply; "
+    ],
+    "overhang_mm2": 115.7,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 1.2% of surface below (2912 of 275959 samples); thinne"
+    ],
+    "thinnest_mm": 0.14,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:axle",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin shoulder lip and truncated thread-end wedges",
+    "evidence": "Front and iso show a fine lip around the shoulder; numeric report locates thin walls at the shoulder and thread ends.",
+    "part": "axle",
+    "repair": "Thicken shoulder downward while retaining orange seat datum; taper thread ends and runout to self-supporting slopes."
+   }
+  ],
+  "observation": "The hollow sightline is clear and threads render intact. The shoulder has a visibly knife-thin outer lip, consistent with the wall and overhang failures.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/axle/r0003/visual-packet.json",
+  "packet_sha256": "3585d072b655d147b43b082bcc43a94daba0b82dbaba7a99ec63f3cecc01465f",
+  "status": "fail"
+ }
+}

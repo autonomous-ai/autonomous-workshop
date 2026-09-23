@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Iso shows the new short cylindrical mouth land above the spherical cavity; the four open slits and internal preload pads remain visible. Front has an even lip height and flat bed, and top has no obstructing plug or detached geometry. Numeric wall1.2 and support checks pass; retention and articulation still need assembled checks.",
+  "packet_sha256": "f42bf3491eb98f0f42f7b8c08885352e7b1d49a7b2a3ca5cfcc029f1800e5c82",
+  "status": "pass"
+}

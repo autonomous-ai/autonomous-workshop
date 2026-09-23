@@ -289,11 +289,13 @@ h2{font-size:20px;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
       <tr><td><code>_shade</code></td><td class="n">3.25</td><td>one shading call per triangle</td></tr>
     </tbody>
   </table></div>
-  <p class="note" style="margin-top:10px">Every one of those is a per-face call that could be one
-  array call over all faces. Hoisting <code>np.cross</code> and <code>_shade</code> out of the loop
-  alone would take roughly a third off; a fully vectorised rasteriser is an order of magnitude. That
-  is measured on a synthetic mesh through the repo's renderer, not on the runs, so treat it as the
-  size of the prize rather than a promise.</p>
+  <p class="note" style="margin-top:10px">Every one of those was a per-face call that could be one
+  array call over all faces, and on 2026-09-21 they became one. <code>render_review</code> now
+  computes face normals and shading in single array calls and rasterises faces in batches, with each
+  pixel's candidates still applied in draw order so the depth test keeps its hysteresis. On the same
+  synthetic mesh a 1.44 M-triangle frame at 900 px falls from <b>83 s to 2.2 s</b> — 58 µs to 1.6 µs
+  per triangle, <b>37×</b> — with pixel-identical output. These runs predate the change: their
+  renders are what the per-face pass cost.</p>
 
   <h3 style="font-size:15px;margin:22px 0 6px">v13 end to end</h3>
   <p class="note">The whole run in twelve steps. <i>wall</i> is the elapsed window, <i>tool</i> is how

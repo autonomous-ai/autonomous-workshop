@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_04_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_04_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_04_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_04_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_04_front"
+ ],
+ "print": {
+  "body_04_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0004/overhang-body_04_front.log": "a72c2d1c8e4ee132138baa568d7a6476cd16adb7bc111657f6aa2fff3f3607ac",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0004/thickness-body_04_front.log": "71fba1e6ac2875c025500f7efd8f25e0733c6b1526042527d3f55ab12a90c78e"
+   },
+   "measured_round": 4,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 4,
+ "scope": "component:body_04_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Top and iso show the repaired clean crescent clearance with no feathered stepped shelf. Front shows a flat constant land supporting the ball and heel; shallow symmetric side notches remain. No detached geometry, unintended cuts or misplaced features are visible. Assembled clearance remains a separate check.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_04_front/r0004/visual-packet.json",
+  "packet_sha256": "742a2946d15a76cc0747f80cd8c09b37d78ac13ed0ff11176286e32546dd22ca",
+  "status": "pass"
+ }
+}

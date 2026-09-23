@@ -1,0 +1,62 @@
+{
+ "build": {
+  "face_happy_mouth": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "face_happy_mouth"
+ ],
+ "check_motion": true,
+ "checked": [
+  "face_happy_mouth"
+ ],
+ "checks_ok": true,
+ "entry": "part_face_happy_mouth.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_happy_mouth/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "face_happy_mouth"
+ ],
+ "print": {
+  "face_happy_mouth": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_happy_mouth/r0002/overhang-face_happy_mouth.log": "469dc2d2e59cf5e2c64cfb38c2594df04be0052f7d72b694a8b1d6d3a661ab9c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_happy_mouth/r0002/thickness-face_happy_mouth.log": "0e035aa8f3b2563aa948922a387d0b02c8e529bf37d3a82be21a6877fb7ea0c4"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.2,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:face_happy_mouth",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Smile retains paired rounded upper lobes and broad curved lower outline, flat attachment face and uniform outer extrusion. Iso shows centered tongue recess with wider intact lower charcoal border after upward shift; no open edge, floating material or unintended cut-through. Default0.8 standing-feature wall and support checks pass; this is isolated geometry, not assembled expression review.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/face_happy_mouth/r0002/visual-packet.json",
+  "packet_sha256": "a7409ea8390a231d34d98d9dc4e90afb27342b4b80b3de6c8b01a49261510947",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "gear_20": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "gear_20"
+ ],
+ "check_motion": true,
+ "checked": [
+  "gear_20"
+ ],
+ "checks_ok": true,
+ "entry": "part_gear_20.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_20/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "gear_20"
+ ],
+ "print": {
+  "gear_20": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_20/r0001/overhang-gear_20.log": "0791f978f6f1c90caa2d23f880b741d1e391e673eb2b6930078a497837099e92",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_20/r0001/thickness-gear_20.log": "a15cbf7a76ffee1f136b7be98f5651fb3804b71810a89fa3672c8e8684f84e99"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:gear_20",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Twenty distinct teeth, five swept spokes, concentric bore and uninterrupted root rim are visible. Handedness reverses from gear18 and the front profile is uniform.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/gear_20/r0001/visual-packet.json",
+  "packet_sha256": "ebaa2aaf916052a866577bab4bd22a584eb5066c8f9009f386af655b78c43408",
+  "status": "pass"
+ }
+}

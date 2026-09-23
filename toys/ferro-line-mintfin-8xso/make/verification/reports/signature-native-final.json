@@ -1,0 +1,614 @@
+[
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "tokens": [
+        {
+          "line": 1,
+          "token": "artifacts/make/r0001/product/mintfin/measure/signature/neutral-happy#",
+          "cadPath": "artifacts/make/r0001/product/mintfin/measure/signature/neutral-happy",
+          "stepPath": "artifacts/make/r0001/product/mintfin/measure/signature/neutral-happy.step",
+          "stepHash": "df4e2117537953a31fa05f1b3adfc0807b1ab02b8c12e7ee78a54aca38785f70",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 101,
+            "leafOccurrenceCount": 66,
+            "shapeCount": 66,
+            "faceCount": 1531,
+            "edgeCount": 3892,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -66.5,
+                -12.969913,
+                0.0
+              ],
+              "max": [
+                66.5,
+                157.0,
+                93.0
+              ]
+            }
+          },
+          "selections": [],
+          "warnings": [],
+          "entryFacts": {
+            "size": [
+              133.0,
+              169.969913,
+              93.0
+            ],
+            "extentAxis": "y",
+            "center": [
+              0.0,
+              72.0150435,
+              46.5
+            ],
+            "diag": 235.00589636268185,
+            "kind": "assembly"
+          },
+          "planes": [
+            {
+              "axis": "y",
+              "coordinate": 20.0,
+              "normalSign": 1,
+              "faceCount": 4,
+              "totalArea": 9572.889364,
+              "bbox": {
+                "min": [
+                  -33.247547,
+                  20.0,
+                  13.004094
+                ],
+                "max": [
+                  33.25,
+                  20.0,
+                  58.998801
+                ]
+              },
+              "selectors": [
+                "o1.1.1.1.1.f24",
+                "o1.1.1.1.2.f2"
+              ]
+            },
+            {
+              "axis": "y",
+              "coordinate": 63.15,
+              "normalSign": 1,
+              "faceCount": 4,
+              "totalArea": 7547.664852,
+              "bbox": {
+                "min": [
+                  -29.799983,
+                  63.15,
+                  2.150022
+                ],
+                "max": [
+                  29.8,
+                  63.15,
+                  46.05
+                ]
+              },
+              "selectors": [
+                "o1.1.3.2.1.1.1.f27",
+                "o1.1.3.2.1.1.2.f1"
+              ]
+            },
+            {
+              "axis": "y",
+              "coordinate": 53.35,
+              "normalSign": 1,
+              "faceCount": 4,
+              "totalArea": 6946.514694,
+              "bbox": {
+                "min": [
+                  -28.748073,
+                  53.35,
+                  3.504732
+                ],
+                "max": [
+                  28.75,
+                  53.35,
+                  45.8
+                ]
+              },
+              "selectors": [
+                "o1.1.3.1.1.1.f27",
+                "o1.1.3.1.1.2.f1"
+              ]
+            },
+            {
+              "axis": "y",
+              "coordinate": 74.4,
+              "normalSign": 1,
+              "faceCount": 4,
+              "totalArea": 6517.483578,
+              "bbox": {
+                "min": [
+                  -26.545205,
+                  74.4,
+                  3.750713
+                ],
+                "max": [
+                  26.55,
+                  74.4,
+                  44.45
+                ]
+              },
+              "selectors": [
+                "o1.1.3.2.2.1.1.1.f22",
+                "o1.1.3.2.2.1.1.2.f1"
+              ]
+            }
+          ],
+          "entryPositioning": {
+            "kind": "assembly",
+            "bbox": {
+              "min": [
+                -66.5,
+                -12.969913,
+                0.0
+              ],
+              "max": [
+                66.5,
+                157.0,
+                93.0
+              ]
+            },
+            "bboxFacts": {
+              "size": [
+                133.0,
+                169.969913,
+                93.0
+              ],
+              "extentAxis": "y",
+              "center": [
+                0.0,
+                72.0150435,
+                46.5
+              ],
+              "diag": 235.00589636268185
+            },
+            "majorPlanes": [
+              {
+                "axis": "y",
+                "coordinate": 20.0,
+                "normalSign": 1,
+                "faceCount": 4,
+                "totalArea": 9572.889364,
+                "bbox": {
+                  "min": [
+                    -33.247547,
+                    20.0,
+                    13.004094
+                  ],
+                  "max": [
+                    33.25,
+                    20.0,
+                    58.998801
+                  ]
+                },
+                "selectors": [
+                  "o1.1.1.1.1.f24",
+                  "o1.1.1.1.2.f2"
+                ]
+              },
+              {
+                "axis": "y",
+                "coordinate": 63.15,
+                "normalSign": 1,
+                "faceCount": 4,
+                "totalArea": 7547.664852,
+                "bbox": {
+                  "min": [
+                    -29.799983,
+                    63.15,
+                    2.150022
+                  ],
+                  "max": [
+                    29.8,
+                    63.15,
+                    46.05
+                  ]
+                },
+                "selectors": [
+                  "o1.1.3.2.1.1.1.f27",
+                  "o1.1.3.2.1.1.2.f1"
+                ]
+              },
+              {
+                "axis": "y",
+                "coordinate": 53.35,
+                "normalSign": 1,
+                "faceCount": 4,
+                "totalArea": 6946.514694,
+                "bbox": {
+                  "min": [
+                    -28.748073,
+                    53.35,
+                    3.504732
+                  ],
+                  "max": [
+                    28.75,
+                    53.35,
+                    45.8
+                  ]
+                },
+                "selectors": [
+                  "o1.1.3.1.1.1.f27",
+                  "o1.1.3.1.1.2.f1"
+                ]
+              },
+              {
+                "axis": "y",
+                "coordinate": 74.4,
+                "normalSign": 1,
+                "faceCount": 4,
+                "totalArea": 6517.483578,
+                "bbox": {
+                  "min": [
+                    -26.545205,
+                    74.4,
+                    3.750713
+                  ],
+                  "max": [
+                    26.55,
+                    74.4,
+                    44.45
+                  ]
+                },
+                "selectors": [
+                  "o1.1.3.2.2.1.1.1.f22",
+                  "o1.1.3.2.2.1.1.2.f1"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "errors": []
+    },
+    "id": "happy-refs"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "entry": "artifacts/make/r0001/product/mintfin/measure/signature/neutral-happy",
+      "occurrenceCount": 66,
+      "failureCount": 0,
+      "parts": [],
+      "errors": []
+    },
+    "id": "happy-validate"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "entry": "artifacts/make/r0001/product/mintfin/measure/signature/neutral-happy",
+      "tolerance": 1.0,
+      "stats": {
+        "occurrences": 66,
+        "pairs_total": 2145,
+        "pairs_tested": 214,
+        "pairs_skipped_bbox": 1931,
+        "pairs_truncated": 0
+      },
+      "clashCount": 0,
+      "clashes": [],
+      "errors": []
+    },
+    "id": "happy-interfere"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "tokens": [
+        {
+          "line": 1,
+          "token": "artifacts/make/r0001/product/mintfin/measure/signature/neutral-sleepy#",
+          "cadPath": "artifacts/make/r0001/product/mintfin/measure/signature/neutral-sleepy",
+          "stepPath": "artifacts/make/r0001/product/mintfin/measure/signature/neutral-sleepy.step",
+          "stepHash": "a25ca9c2122ad38e07c4f3a703d416740f58f74a8ac6eff54c292fb395cdc8c8",
+          "summary": {
+            "kind": "assembly",
+            "occurrenceCount": 98,
+            "leafOccurrenceCount": 63,
+            "shapeCount": 63,
+            "faceCount": 1530,
+            "edgeCount": 3912,
+            "vertexCount": 0,
+            "bounds": {
+              "min": [
+                -66.5,
+                -9.379751,
+                0.0
+              ],
+              "max": [
+                66.5,
+                157.0,
+                93.0
+              ]
+            }
+          },
+          "selections": [],
+          "warnings": [],
+          "entryFacts": {
+            "size": [
+              133.0,
+              166.379751,
+              93.0
+            ],
+            "extentAxis": "y",
+            "center": [
+              0.0,
+              73.8101245,
+              46.5
+            ],
+            "diag": 232.42250653243977,
+            "kind": "assembly"
+          },
+          "planes": [
+            {
+              "axis": "y",
+              "coordinate": 20.0,
+              "normalSign": 1,
+              "faceCount": 4,
+              "totalArea": 9572.889364,
+              "bbox": {
+                "min": [
+                  -33.247547,
+                  20.0,
+                  13.004094
+                ],
+                "max": [
+                  33.25,
+                  20.0,
+                  58.998801
+                ]
+              },
+              "selectors": [
+                "o1.1.1.1.1.f24",
+                "o1.1.1.1.2.f2"
+              ]
+            },
+            {
+              "axis": "y",
+              "coordinate": 63.15,
+              "normalSign": 1,
+              "faceCount": 4,
+              "totalArea": 7547.664852,
+              "bbox": {
+                "min": [
+                  -29.799983,
+                  63.15,
+                  2.150022
+                ],
+                "max": [
+                  29.8,
+                  63.15,
+                  46.05
+                ]
+              },
+              "selectors": [
+                "o1.1.3.2.1.1.1.f27",
+                "o1.1.3.2.1.1.2.f1"
+              ]
+            },
+            {
+              "axis": "y",
+              "coordinate": 53.35,
+              "normalSign": 1,
+              "faceCount": 4,
+              "totalArea": 6946.514694,
+              "bbox": {
+                "min": [
+                  -28.748073,
+                  53.35,
+                  3.504732
+                ],
+                "max": [
+                  28.75,
+                  53.35,
+                  45.8
+                ]
+              },
+              "selectors": [
+                "o1.1.3.1.1.1.f27",
+                "o1.1.3.1.1.2.f1"
+              ]
+            },
+            {
+              "axis": "y",
+              "coordinate": 74.4,
+              "normalSign": 1,
+              "faceCount": 4,
+              "totalArea": 6517.483578,
+              "bbox": {
+                "min": [
+                  -26.545205,
+                  74.4,
+                  3.750713
+                ],
+                "max": [
+                  26.55,
+                  74.4,
+                  44.45
+                ]
+              },
+              "selectors": [
+                "o1.1.3.2.2.1.1.1.f22",
+                "o1.1.3.2.2.1.1.2.f1"
+              ]
+            }
+          ],
+          "entryPositioning": {
+            "kind": "assembly",
+            "bbox": {
+              "min": [
+                -66.5,
+                -9.379751,
+                0.0
+              ],
+              "max": [
+                66.5,
+                157.0,
+                93.0
+              ]
+            },
+            "bboxFacts": {
+              "size": [
+                133.0,
+                166.379751,
+                93.0
+              ],
+              "extentAxis": "y",
+              "center": [
+                0.0,
+                73.8101245,
+                46.5
+              ],
+              "diag": 232.42250653243977
+            },
+            "majorPlanes": [
+              {
+                "axis": "y",
+                "coordinate": 20.0,
+                "normalSign": 1,
+                "faceCount": 4,
+                "totalArea": 9572.889364,
+                "bbox": {
+                  "min": [
+                    -33.247547,
+                    20.0,
+                    13.004094
+                  ],
+                  "max": [
+                    33.25,
+                    20.0,
+                    58.998801
+                  ]
+                },
+                "selectors": [
+                  "o1.1.1.1.1.f24",
+                  "o1.1.1.1.2.f2"
+                ]
+              },
+              {
+                "axis": "y",
+                "coordinate": 63.15,
+                "normalSign": 1,
+                "faceCount": 4,
+                "totalArea": 7547.664852,
+                "bbox": {
+                  "min": [
+                    -29.799983,
+                    63.15,
+                    2.150022
+                  ],
+                  "max": [
+                    29.8,
+                    63.15,
+                    46.05
+                  ]
+                },
+                "selectors": [
+                  "o1.1.3.2.1.1.1.f27",
+                  "o1.1.3.2.1.1.2.f1"
+                ]
+              },
+              {
+                "axis": "y",
+                "coordinate": 53.35,
+                "normalSign": 1,
+                "faceCount": 4,
+                "totalArea": 6946.514694,
+                "bbox": {
+                  "min": [
+                    -28.748073,
+                    53.35,
+                    3.504732
+                  ],
+                  "max": [
+                    28.75,
+                    53.35,
+                    45.8
+                  ]
+                },
+                "selectors": [
+                  "o1.1.3.1.1.1.f27",
+                  "o1.1.3.1.1.2.f1"
+                ]
+              },
+              {
+                "axis": "y",
+                "coordinate": 74.4,
+                "normalSign": 1,
+                "faceCount": 4,
+                "totalArea": 6517.483578,
+                "bbox": {
+                  "min": [
+                    -26.545205,
+                    74.4,
+                    3.750713
+                  ],
+                  "max": [
+                    26.55,
+                    74.4,
+                    44.45
+                  ]
+                },
+                "selectors": [
+                  "o1.1.3.2.2.1.1.1.f22",
+                  "o1.1.3.2.2.1.1.2.f1"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "errors": []
+    },
+    "id": "sleepy-refs"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "entry": "artifacts/make/r0001/product/mintfin/measure/signature/neutral-sleepy",
+      "occurrenceCount": 63,
+      "failureCount": 0,
+      "parts": [],
+      "errors": []
+    },
+    "id": "sleepy-validate"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "entry": "artifacts/make/r0001/product/mintfin/measure/signature/neutral-sleepy",
+      "tolerance": 1.0,
+      "stats": {
+        "occurrences": 63,
+        "pairs_total": 1953,
+        "pairs_tested": 205,
+        "pairs_skipped_bbox": 1748,
+        "pairs_truncated": 0
+      },
+      "clashCount": 0,
+      "clashes": [],
+      "errors": []
+    },
+    "id": "sleepy-interfere"
+  }
+]

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "belly_07": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_07"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_07"
+ ],
+ "checks_ok": true,
+ "entry": "part_belly_07.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_07/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_07"
+ ],
+ "print": {
+  "belly_07": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_07/r0002/overhang-belly_07.log": "64d3f58e4185b3dea23e58f1d3da22775df58794059d2566e832c80b6a885a32",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_07/r0002/thickness-belly_07.log": "644622ee88bafe6ed80d5e3fe79d87ef8ea13268b211207e6a487909636ba5f3"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:belly_07",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Short cream underside oval has rounded sides and flat parallel broad faces with uniform depth. Its compact proportions distinguish it from forward long scallops as intended for the narrow rear section. Default and additional1.2mm wall/support checks pass. Placement and slit clearance await assembly.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_07/r0002/visual-packet.json",
+  "packet_sha256": "205fd887ab756ed3d6ce72b53730c30b858a2c4032b2e8903f344e94a2e69691",
+  "status": "pass"
+ }
+}

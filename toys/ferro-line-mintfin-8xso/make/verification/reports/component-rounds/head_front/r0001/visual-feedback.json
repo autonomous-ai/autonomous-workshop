@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Unsupported cheek-rim ledge and locally thin indexing rim",
+      "evidence": "Front/iso show an overhanging cheek shelf. Overhang report327mm2; two thin wallbands around upper cheeks22.1/20.6mm2.",
+      "part": "head_front",
+      "repair": "Use constant outward offset for >=1.2 rim stock and taper the rear of the cheek lip into the rounded head with a self-supporting skirt."
+    }
+  ],
+  "observation": "Inspected front, top and iso. Rounded head and three upward-open magnet pockets are coherent; cheek indexing rim visibly projects as a ledge beyond the underlying head. Numeric checks locate broad unsupported underside and two thin rim walls.",
+  "packet_sha256": "840e952196510a3f944371eb3d77270ef8c72b32a33288d031ef58c9ada02457",
+  "status": "fail"
+}

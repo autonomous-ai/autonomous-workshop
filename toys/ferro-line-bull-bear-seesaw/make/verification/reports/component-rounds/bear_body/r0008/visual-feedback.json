@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin upper insert-pocket lip",
+      "evidence": "Iso view shows a small remaining ledge between pocket top and curved head edge; numeric wall failure at that location.",
+      "part": "bear_body",
+      "repair": "Open the shallow pocket through the top edge while retaining frontal skin and side/bottom capture."
+    }
+  ],
+  "observation": "Overall body and rounded eye-drop apertures are coherent, but the top of the shallow insert pocket leaves a narrow curved lip.",
+  "packet_sha256": "3ccfb6bb64b34088ca790345939fc434c51d7138c67794e8298520d8b4dfab66",
+  "status": "fail"
+}

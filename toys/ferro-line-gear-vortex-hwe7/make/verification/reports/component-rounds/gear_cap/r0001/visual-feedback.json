@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin thread lead wedges exceed wall-gate taper allowance.",
+      "evidence": "Iso shows abrupt exposed thread termination; thickness report localizes thin bands atZ0 andZ4.7.",
+      "part": "gear_cap",
+      "repair": "Add45degree bore lead-ins at both ends to remove thin thread-start lips while keeping a full central thread."
+    }
+  ],
+  "observation": "Centered open cap and continuous wall are visible in top/front/iso, but exposed thread starts end in thin wedges at both flat faces.",
+  "packet_sha256": "a4f4c112c78de45cf617705f60101786711ea9a322322b740ee85e682a24637c",
+  "status": "fail"
+}

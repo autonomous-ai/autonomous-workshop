@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin boss corners",
+      "evidence": "Top view shows almost no material beyond square aperture corners; thickness gate confirms.",
+      "part": "tear_back",
+      "repair": "Reduce bear square post and socket size while preserving clearance and round outer boss."
+    }
+  ],
+  "observation": "Blue backing and rail remain connected; square socket corners nearly touch the round outer bosses.",
+  "packet_sha256": "5303d1ddd296cc35cb81ae57adefbdfb4f12e6199ebe7a54d0079b97dcc3a088",
+  "status": "fail"
+}

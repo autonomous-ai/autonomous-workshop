@@ -167,6 +167,20 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   comparison, specialist creation, or independent review when it improves the
   active Goal. Do not launch another `codex` process or build a Python worker
   scheduler.
+- Wait for a long command in as few requests as possible. Every request re-sends
+  the whole session, so a poll that waits one second costs the same as one that
+  waits thirty and buys thirty times less waiting. On the Codex runtime: open a
+  long command with `yield_time_ms: 30000`, continue an unfinished one with an
+  empty `write_stdin` poll at `yield_time_ms: 30000` or more, and continue a
+  yielded `exec` cell with `wait` at the same large yield. `1000` is not a
+  waiting value; it is the `max_output_tokens` half of the `exec` pragma
+  example. Never sleep between polls. Wait for a child agent the same way: one
+  `wait_agent` at a long timeout, never repeated short waits, `list_agents`
+  polling, or a `sleep` between them. A runtime whose shell tool blocks until
+  the command exits, such as Claude Code's `Bash`, needs only a long timeout and
+  no polling at all. This rule is repeated in `references/make.md`; it lives
+  here because a compaction drops that file from the session and this file
+  survives.
 - Keep every tool subprocess attached to the Manager's dedicated POSIX process
   session. Do not daemonize, detach, call `setsid`/`start_new_session`, or leave
   a background process running after a tool returns. Host timeout recovery

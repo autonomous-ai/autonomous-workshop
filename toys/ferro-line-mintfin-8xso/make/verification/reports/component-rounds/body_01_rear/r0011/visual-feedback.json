@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Retaining lip still fails1.2mm wall gate",
+      "evidence": "Iso mouth edge; extra wall check17.3mm2 thin band at(4.3,-7.5,7.5), width1.28mm despite default wall/supportPASS.",
+      "part": "body_01_rear",
+      "repair": "Increase true throat land and adjust neck/clearance jointly while preserving0.6 radial undercut,2mm socket shell and25degree travel; recheck affected components."
+    }
+  ],
+  "observation": "All views inspected. Body half has coherent convex shoulder, flat split face, open ankle corners and four slitted cup sectors. Simple throat land removes the prior rolled ridge, but the retaining edge still contains a measured thin circumferential band at1.2mm threshold.",
+  "packet_sha256": "d9b276ebe6de76e62108c6633ef332d1eeccceb1b1a6302eb3c5d1986e8c44cf",
+  "status": "fail"
+}

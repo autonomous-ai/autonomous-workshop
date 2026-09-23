@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_01_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_01_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0007",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_front"
+ ],
+ "print": {
+  "body_01_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0007/overhang-body_01_front.log": "e998c2673ef0578eac99595efe69ff7a5f091bbb0be28e9b0885ed2cc9db153e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0007/thickness-body_01_front.log": "8e55c8f7ffeb2103ff2fb4d9701ea84d2cd96664ce80f301c20e830ea0a2158e"
+   },
+   "measured_round": 7,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 7,
+ "scope": "component:body_01_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Inspected front, top and iso. Revised head clearance restores the upper crown outline around an open crescent; incoming sphere and heel remain centered and connected. Uniform flat land, symmetric ankle openings and intact broad lower patch seat are visible. Default gates and explicit 1.2 mm wall check pass; no motion claim.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_front/r0007/visual-packet.json",
+  "packet_sha256": "12aa4e5048eb0ef7cb4bb2a460ee20e52a3f595d7a5877819a9f4946e33b84f7",
+  "status": "pass"
+ }
+}

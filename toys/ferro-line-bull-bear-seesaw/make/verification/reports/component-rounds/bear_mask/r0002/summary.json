@@ -1,0 +1,63 @@
+{
+ "build": {
+  "bear_mask": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bear_mask"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bear_mask"
+ ],
+ "checks_ok": false,
+ "entry": "part_bear_mask.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bear_mask"
+ ],
+ "print": {
+  "bear_mask": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0002/overhang-bear_mask.log": "c25fbc4667707fc5ae0d0e0b9325150ed55e91dfe3140d4ae7c229961586d571",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0002/thickness-bear_mask.log": "fb34a9e8df6278440abf7ebaf878b24f8f939c1d3060316cc4cb2dd31d6acf21"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 2.2% of surface below (1155 of 57694 samples); thinnes"
+    ],
+    "thinnest_mm": 0.6,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:bear_mask",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bear_mask/r0002/visual-packet.json",
+  "packet_sha256": "3a6eb7d0218e6281b0c0a63b14364f438067b761ffb534fae5e683f320571eb2",
+  "status": "pending"
+ }
+}

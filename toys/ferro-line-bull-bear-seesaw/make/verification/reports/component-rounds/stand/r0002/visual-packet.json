@@ -1,0 +1,36 @@
+{
+  "images": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0002/visual/front.png": "d4167237f8637d7963ca9fe719ace61eb00676438a75486d72bfa9f012e359a4",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0002/visual/iso.png": "15adbb9a40adf726699683d14b24faeb5c3d4183a84a743f8ea958db545abfbb",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0002/visual/top.png": "cddd86063d78c5c598d94517d9114287d0b7219b897e01ca36d881dbabeb1f77"
+  },
+  "references": {},
+  "schema_version": 1,
+  "sources": {
+    "part_base.step": "65bf30859ddbdac9828cf8435c0009a88d37a12b3d85dfcd92dc7f61a89c67d9",
+    "part_base.step.py": "6165aa2a5d90947aa6efd6e203fbb15ef7d6011df0a53c09397a8559de37422c",
+    "part_beam.step": "58464f345830cc8a63ebc996e4e6ddf4931e8f01543812a551da964abd721ca0",
+    "part_beam.step.py": "c714071f05621b0e9d0ee4dae038a6b50841e6ad4dd909ff54bd7df01a94fb5b",
+    "part_bear_body.step": "02123b13153b65b3de345ed3d2b037f74dc8dd20d6ac9d4ffe858381988fe360",
+    "part_bear_body.step.py": "a6d25a76f0eecd74c490e932446f1cb76defa38bb46dd5b86c6dce2ac1777649",
+    "part_bear_mask.step": "03fbfacc6b3cfe19172376fa85d93de8d83fb122bb042f92ac3e1d5c108d3cf0",
+    "part_bear_mask.step.py": "10b7eb0165bb97785a482e32a7473bfdd6d5b33b6a68af222bdfb842d7592768",
+    "part_bull_body.step": "89e76068a7449ab9b8c082a6c56c918e4ae5ca31f687ac29330d009964a12346",
+    "part_bull_body.step.py": "5ee104516698d78b44525d3744dc691c7d46b948dcf1b881283699f437762a8b",
+    "part_main_pin.step": "45c628116af3e71016e88577d5aca43a9961bd03536017442be645241098ace3",
+    "part_main_pin.step.py": "9a20e5f6e3add2d3bbd99f6de46058856246b22f520184787c86b55925461ce6",
+    "part_mount_pin.step": "1ad5041de938dd6c1b57fd0c49e5ccd97b8a8c80695988547c0030085f4aeb1b",
+    "part_mount_pin.step.py": "d801794c6631106a45e5b296d8fb833410d67e9fc28d41e8e1b4720515e09275",
+    "part_mouth_back.step": "707f856871cd67abc4af4175108ad48b0c40f0222fa9b888b54643f9aa84a4c9",
+    "part_mouth_back.step.py": "accdc32ff5ff24615d503d31d00c6839e21e31019606171637a838313f688f86",
+    "part_retainer.step": "1a8a7d6b70e4dbe0502cafd5ee99bb394307d988ddb55144737e3efa526f8c1a",
+    "part_retainer.step.py": "3a8639f371a63cce1940747bf28290b36869a8242c1fcc372418437bae30ed24",
+    "part_shuttle.step": "3d022a885db925f13ddb0cda7702b3819b6169aabcd892410c7af10ccc8c041d",
+    "part_shuttle.step.py": "c0b4245ec61c3f6c6dc968b02b006807b888cec5868b9fc8d5096370be880204",
+    "part_stand.step": "223aae9a16ebf1fb03f47e331cb2d2fbe4bf3fd05d3ae006ffae8457195d7c9f",
+    "part_stand.step.py": "8ffc50837c60bd865e4e79d3881df23a441136265385a01c20986111af7cff78",
+    "part_tear_back.step": "fabecc67b859525cfffc75f289e551314e193ed007709b4e60efbaa6907b3711",
+    "part_tear_back.step.py": "8c037ade2ff16e14a710154d8392eb1ebebefa151e0f29936b2bea8131d0225c",
+    "seesaw_lib.py": "4d2f70358368fc760d9ec5487e773ec4033842347aee8c0e38b26cceab2019ec"
+  }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_shuttle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0004",
+ "overhang_angle": 45.0,
+ "parts": [
+  "shuttle"
+ ],
+ "print": {
+  "shuttle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0003/overhang-shuttle.log": "13136a5977efbc0e3171445f06c9ce1339998f7f3bcdd6d0279be18b81cdbd8e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0003/thickness-shuttle.log": "3ae5a4702fbf0bf15160a9006c758bebe542e3e1c1b3d0d833da7eeaaa8c6059"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "shuttle"
+ ],
+ "round": 4,
+ "scope": "component:shuttle",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show a thin continuous carrier with left mask pad, reinforced central slot tower and right T connector. Slot has visible material above it; no extra solid or misplaced branch.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/shuttle/r0004/visual-packet.json",
+  "packet_sha256": "fd2b5fa88c147b78db56cda50f28c85ece802daa25fb856bf91972da864e2cf5",
+  "status": "pass"
+ }
+}

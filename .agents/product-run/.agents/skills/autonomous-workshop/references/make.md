@@ -95,9 +95,23 @@ early-proof or recovery turn, takes precedence over them.
   bytes.
 - Start a long command (`make_round`, `verify_project`, a multi-part `gen`, a
   state or motion sheet) with `yield_time_ms: 30000`. If it is still running,
-  continue it with `write_stdin` at the same yield. Never put a `sleep` between
-  polls. Wait for a child with one `wait_agent` at a long timeout rather than
-  repeated 10-second waits.
+  continue it with an empty `write_stdin` poll at `yield_time_ms: 30000` or
+  more. A measured empty poll returns after about 30 s whatever larger number
+  it asks for, so 30000 is the practical ceiling and anything above it is
+  harmless but pointless. The yield is an upper bound, not a sleep: the poll
+  returns the moment the command exits, so a long yield never waits longer than
+  the work actually takes, and a short one only buys another full-price
+  request. When an `exec` cell yields with a cell id instead of finishing,
+  continue that cell with `wait` at the same large yield; `wait` at 1000 or
+  10000 is the same waste as a short `write_stdin` poll.
+- `1000` is not a waiting value. It appears in the `exec` pragma example
+  (`// @exec: {"yield_time_ms": 10000, "max_output_tokens": 1000}`) as an
+  **output** budget; copied onto a poll it is ten times worse than the 10000 ms
+  default, and below the 5000 ms floor an empty poll enforces anyway. If the
+  right yield is not obvious, omit `yield_time_ms` and take the default rather
+  than writing a small number. Never put a `sleep` between polls. Wait for a
+  child with one `wait_agent` at a long timeout rather than repeated 10-second
+  waits.
 - Keep tool output bounded: read round summaries, not full logs, and open a
   log only for the failure the summary cannot place.
 

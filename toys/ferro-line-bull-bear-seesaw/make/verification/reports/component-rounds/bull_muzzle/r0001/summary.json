@@ -1,0 +1,73 @@
+{
+ "build": {
+  "bull_muzzle": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "bull_muzzle"
+ ],
+ "check_motion": false,
+ "checked": [
+  "bull_muzzle"
+ ],
+ "checks_ok": false,
+ "entry": "part_bull_muzzle.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_muzzle/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bull_muzzle"
+ ],
+ "print": {
+  "bull_muzzle": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_muzzle/r0001/overhang-bull_muzzle.log": "b0523fc52da10dd595ef148af377020784cb0b0219fda16a7598eb712fa007ca",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_muzzle/r0001/thickness-bull_muzzle.log": "e9e086d441cfcf86f4ae1af44bd718e63b307479083a1c1df08fb0a1ba4a8672"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 25.7% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 13.1,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 2.0% of surface below (2062 of 101942 samples); thinne"
+    ],
+    "thinnest_mm": 0.47,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:bull_muzzle",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin outer capture rim",
+    "evidence": "Iso shows narrow outer lip around rear perimeter; thickness report confirms 0.47 mm wall.",
+    "part": "bull_muzzle",
+    "repair": "Reduce flare and increase rear rim depth."
+   }
+  ],
+  "observation": "Flat oval muzzle, smile and nostril openings are coherent, but capture rim is too thin.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_muzzle/r0001/visual-packet.json",
+  "packet_sha256": "1304b19f50fc971281a9ebe387aaa9d0aaca1ccc79b2e0b69c082ccf891c2111",
+  "status": "fail"
+ }
+}

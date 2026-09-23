@@ -1,0 +1,62 @@
+{
+ "build": {
+  "belly_01": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_01"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_01"
+ ],
+ "checks_ok": true,
+ "entry": "part_belly_01.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_01/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_01"
+ ],
+ "print": {
+  "belly_01": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_01/r0003/overhang-belly_01.log": "93a04144b9da4902e9581a786ed82915dca0fc82ad86a1e8d9183bdcfd782555",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_01/r0003/thickness-belly_01.log": "b03bc6d9b0838f660200a76b3591cac109859a6ed21b8269044a75ea44d7426f"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:belly_01",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front shows a constant thin slab with both broad faces flat. Top confirms a centered smooth oval with the revised42 by9 proportions and no clipped or ragged edges. Iso confirms uniform1.2 thickness and continuous broad adhesive face, with no floating or extra material. Numeric1.2mm wall check has zero sub-minimum samples. Assembled paw clearance is checked separately.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_01/r0003/visual-packet.json",
+  "packet_sha256": "215777359e87bcfd4e3cc0b88b2fb73fd59bd57a81df22a4811288538a7375b4",
+  "status": "pass"
+ }
+}

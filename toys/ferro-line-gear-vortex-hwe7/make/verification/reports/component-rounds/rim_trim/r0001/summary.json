@@ -1,0 +1,71 @@
+{
+ "build": {
+  "rim_trim": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "rim_trim"
+ ],
+ "check_motion": true,
+ "checked": [
+  "rim_trim"
+ ],
+ "checks_ok": false,
+ "entry": "part_rim_trim.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/rim_trim/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "rim_trim"
+ ],
+ "print": {
+  "rim_trim": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/rim_trim/r0001/overhang-rim_trim.log": "adfe396e0f0868b7bfca5470c8c6a4f23a403f92e27aa327a78f1c095b62cd99",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/rim_trim/r0001/thickness-rim_trim.log": "ce113cddbe61cc62b4bd49271ecc06305bc198eb66f471b116bd5074f0c2c0bc"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 30.0% of surface below (16451 of 52201 samples); thinn"
+    ],
+    "thinnest_mm": 0.73,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:rim_trim",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Wrong surface finish; thin height confirmed by numeric check",
+    "evidence": "All views show dark neutral color; side view is extremely thin and thickness report fails.",
+    "part": "rim_trim",
+    "repair": "Assign brass and increase section height to at least1.2mm with a matching supportfree recess."
+   }
+  ],
+  "observation": "The concentric trim ring is uniformly slender but is dark blue-gray instead of brass.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/rim_trim/r0001/visual-packet.json",
+  "packet_sha256": "cdf61bd37e5c33c4dbdab884cbfceb5aeb1caeeae58f00b69db20d90c95abaad",
+  "status": "fail"
+ }
+}

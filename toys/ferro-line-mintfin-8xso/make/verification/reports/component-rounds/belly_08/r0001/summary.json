@@ -1,0 +1,69 @@
+{
+ "build": {
+  "belly_08": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "belly_08"
+ ],
+ "check_motion": true,
+ "checked": [
+  "belly_08"
+ ],
+ "checks_ok": true,
+ "entry": "part_belly_08.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belly_08"
+ ],
+ "print": {
+  "belly_08": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0001/overhang-belly_08.log": "87252336a5d681642b83246b2159e82233c20d2159d7bf993f4bf02726c555d0",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0001/thickness-belly_08.log": "3e045a52fd9c6df241cf25aba0700ff9c382dcbd831ccbb8528927fad9a11a63"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:belly_08",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Thin perimeter needs constant-section stock.",
+    "evidence": "Front and iso show the shallow sloping side rim; minimum wall measured 0.13 mm. Top is intact with no missing material. The final small oval expands slightly across its short axis toward the upper face.",
+    "part": "belly_08",
+    "repair": "Use a constant-section ellipse extrusion at least 1.2 mm thick, retaining the flat back and blunt oval profile; rerun thickness."
+   }
+  ],
+  "observation": "Front, top and iso inspected once. Cream oval remains coherent and flat, with a sloping side perimeter that fails the measured thickness requirement.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/belly_08/r0001/visual-packet.json",
+  "packet_sha256": "80800b83954f803997f6e17a2ea90c358b61413c89b1ea41007a5fd64ab27afe",
+  "status": "fail"
+ }
+}

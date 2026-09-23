@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Small unsupported crown ledge adjacent to seam",
+      "evidence": "Front shows shallow top-side undercut; overhang report locates2.7mm2 at print(-1.8,-20.9,0.2). Source sections show clearance lower boundary rises3.25mm per axialmm across the first0.25mm.",
+      "part": "body_01_rear",
+      "repair": "Remove a local crown wedge with0.9mm rise per axialmm from seamZ45.8 to restored crownZ46.7, ending after1mm. Keep full rear crown and socket."
+    }
+  ],
+  "observation": "Front, top and iso inspected. Crown and convex barrel are restored; socket fingers, mouth and ankle notches remain coherent. A small seam-side crown ledge remains unsupported, located by the 2.7mm2 overhang measurement. Both default and1.2mm wall checks pass.",
+  "packet_sha256": "f33651eb98b9b7ad4934969d5c886728c4b23bbf522f2d145a1d943e8c57224c",
+  "status": "fail"
+}

@@ -1,0 +1,376 @@
+{
+  "schema_version": 1,
+  "status": "unverified",
+  "print_ready_claim": false,
+  "checks": [
+    {
+      "id": "check_motion:gear_vortex",
+      "status": "unverified",
+      "reasons": [
+        "geometry analysis cancelled or its time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:assembly",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:assembly",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "interfere:assembly",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_axle",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_axle",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_bezel",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_bezel",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_carrier",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_carrier",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_coupon",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_coupon",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_foot_trim",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_foot_trim",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_gear_14",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_gear_14",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_gear_15",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_gear_15",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_gear_18",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_gear_18",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_gear_20",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_gear_20",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_gear_22",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_gear_22",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_gear_23",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_gear_23",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_gear_26",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_gear_26",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_gear_cap",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_gear_cap",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_main_cap",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_main_cap",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_orange_disc",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_orange_disc",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_pedestal",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_pedestal",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_pedestal_lid",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_pedestal_lid",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_rim_trim",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_rim_trim",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_stem",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_stem",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_sun",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_sun",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "refs:part_support_collar",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    },
+    {
+      "id": "validate:part_support_collar",
+      "status": "unverified",
+      "reasons": [
+        "geometry inspection time allowance exhausted"
+      ],
+      "completed": 0
+    }
+  ],
+  "verification_sha256": "7c582ae6aa0db178d8f9b7ca239e45effd3a7a2c8cbc3094d95494b3de7f6d81"
+}

@@ -1,0 +1,11 @@
+part_mount_pin.step.py: 576 triangles, 288 vertices
+  PASS  sliver triangles                   0 under 1e-06 mm altitude (dropped)
+  PASS  watertight (no open edges)         0 boundary edges
+  PASS  manifold edges                     0 edges shared by >2 faces
+  PASS  manifold vertices                  0 pinched (two cones of material meeting at a point)
+  PASS  consistent winding                 0 edges with flipped neighbours
+  PASS  positive volume (normals point out) 1.02 cm3
+  PASS  connected shells                   1 (>1 = separate bodies; check they touch, not float)
+  PASS  fits 256x256x256 bed               12.0x12.0x18.2 mm
+  PASS  small triangles                    281 under 0.8 mm edge scale (thin walls / nozzle limit)
+RESULT: printable

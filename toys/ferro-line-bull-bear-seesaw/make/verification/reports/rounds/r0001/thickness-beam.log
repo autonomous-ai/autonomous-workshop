@@ -1,0 +1,12 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_beam.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-beam.md
+(17.4s, exit 0)
+--- stdout
+part_beam.step.py: 21.83 cm3 solid, grid 0.162 mm (1165x140x67), 341801 surface samples, thickness resolved to 0.081 mm
+  PASS  wall >= 0.80 mm (+/-0.08)      0.0% of surface below (0 of 341801 samples)
+  PASS  thickness distribution         median 10.05 mm, p95 11.99 mm, max 188.00 mm
+  WARN  hollowable at 1.20 mm wall     12.56 of 21.83 cm3 (58%) in 3 pocket(s)
+  PASS  filament that would save       1.88 cm3, 2.3 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0001/thickness-beam.md
+
+--- stderr

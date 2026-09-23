@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Missing black surface color",
+      "evidence": "All three views show the unassigned blue-gray material.",
+      "part": "stem",
+      "repair": "Assign shared black sRGB color."
+    }
+  ],
+  "observation": "The stem is straight and slender, with a bottom keyed tenon and a centered top rectangular tongue. Its finish remains blue-gray.",
+  "packet_sha256": "72641b2f4103f4e37635e1e46d2eff2ee1435922d98ad60df81f7f7e80b1d57a",
+  "status": "fail"
+}

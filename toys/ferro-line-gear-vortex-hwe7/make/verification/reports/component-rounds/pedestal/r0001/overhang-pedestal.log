@@ -1,0 +1,13 @@
+$ <HOME>/.local/share/autonomous-workshop-python/bin/python3.13 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_overhang <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/part_pedestal.step.py --angle 45.0 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal/r0001/overhang-pedestal.md
+(5.3s, exit 1)
+--- stdout
+part_pedestal.step.py: 271.2 cm2 of surface, grid 0.400 mm, 3374 unsupported samples over 2 region(s)
+  FAIL  no face under 45 deg needs support     31.7% of the surface faces down that steeply; 2 region(s) need support, 0 bridge, 0 below 1 mm2; worst 458.5 mm2 spanning 99.0 mm
+  PASS  bridges within 12 mm                   0 region(s), longest span 0.0 mm
+        every unsupported region, largest first:
+        1. [overhang]   458.5 mm2 at (0.2, 0.1, 0.8)  span  99.0 mm of 99x99, 2.0 mm of air below
+        2. [overhang]    64.7 mm2 at (0.3, 0.1, 3.0)  span  12.1 mm of 12x12, 4.0 mm of air below
+RESULT: NEEDS SUPPORT
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/gear_vortex/measure/component-rounds/pedestal/r0001/overhang-pedestal.md
+
+--- stderr

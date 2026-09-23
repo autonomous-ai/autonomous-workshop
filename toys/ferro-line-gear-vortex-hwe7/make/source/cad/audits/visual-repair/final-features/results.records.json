@@ -1,0 +1,1459 @@
+[
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "z",
+      "from": {
+        "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+        "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.25.2.f5",
+        "displaySelector": "o1.25.2.f5",
+        "copyText": "#o1.25.2.f5",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.25.2.f5",
+          "bbox": {
+            "min": [
+              34.7,
+              -43.3,
+              120.325
+            ],
+            "max": [
+              34.998491,
+              -39.3,
+              120.325
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              0.2984909999999985,
+              4.0,
+              0.0
+            ],
+            "extentAxis": "y",
+            "center": [
+              34.8492455,
+              -41.3,
+              120.325
+            ],
+            "diag": 4.011121648252643
+          },
+          "center": [
+            34.849246,
+            -41.3,
+            120.325
+          ],
+          "occurrenceId": "o1.25.2",
+          "shapeId": "o1.25.2.s1",
+          "kind": "plane",
+          "area": 1.193964,
+          "origin": [
+            34.7,
+            -38.3,
+            120.325
+          ],
+          "normal": [
+            -0.0,
+            -0.0,
+            -1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 120.325,
+          "planeOffset": -120.325
+        },
+        "coordinate": 120.325,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+        "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.25.2.f482",
+        "displaySelector": "o1.25.2.f482",
+        "copyText": "#o1.25.2.f482",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.25.2.f482",
+          "bbox": {
+            "min": [
+              34.7,
+              -43.3,
+              119.675
+            ],
+            "max": [
+              34.998491,
+              -39.3,
+              119.675
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              0.2984909999999985,
+              4.0,
+              0.0
+            ],
+            "extentAxis": "y",
+            "center": [
+              34.8492455,
+              -41.3,
+              119.675
+            ],
+            "diag": 4.011121648252643
+          },
+          "center": [
+            34.849246,
+            -41.3,
+            119.675
+          ],
+          "occurrenceId": "o1.25.2",
+          "shapeId": "o1.25.2.s1",
+          "kind": "plane",
+          "area": 1.193964,
+          "origin": [
+            34.7,
+            -38.3,
+            119.675
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 119.675,
+          "planeOffset": 119.675
+        },
+        "coordinate": 119.675,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": -0.6500000000000057,
+        "absoluteDistance": 0.6500000000000057,
+        "euclideanDistance": 0.6500000000000057,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "knurl_groove_width"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+      "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.25.2.f481",
+      "displaySelector": "o1.25.2.f481",
+      "copyText": "#o1.25.2.f481",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.25.2",
+        "bbox": {
+          "min": [
+            -34.998491,
+            -43.3,
+            85.001509
+          ],
+          "max": [
+            34.998491,
+            -39.3,
+            154.998491
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            69.996982,
+            4.0,
+            69.996982
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -41.3,
+            120.0
+          ],
+          "diag": 99.07146399552522
+        },
+        "center": [
+          0.0,
+          -41.3,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "bezel_black",
+        "translation": [
+          0.0,
+          -39.3,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -39.3,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.25.2.f481",
+        "bbox": {
+          "min": [
+            34.7,
+            -43.3,
+            119.675
+          ],
+          "max": [
+            34.7,
+            -39.3,
+            120.325
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            0.0,
+            4.0,
+            0.6500000000000057
+          ],
+          "extentAxis": "y",
+          "center": [
+            34.7,
+            -41.3,
+            120.0
+          ],
+          "diag": 4.052468383590427
+        },
+        "center": [
+          34.7,
+          -41.3,
+          120.0
+        ],
+        "occurrenceId": "o1.25.2",
+        "shapeId": "o1.25.2.s1",
+        "kind": "plane",
+        "area": 2.6,
+        "origin": [
+          34.7,
+          -38.3,
+          119.675
+        ],
+        "normal": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "axisAlignment": {
+          "axis": "x",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "x",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "x",
+        "coordinate": 34.7,
+        "planeOffset": 34.7
+      }
+    },
+    "id": "knurl_floor"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+      "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.25.2.f1",
+      "displaySelector": "o1.25.2.f1",
+      "copyText": "#o1.25.2.f1",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1.25.2",
+        "bbox": {
+          "min": [
+            -34.998491,
+            -43.3,
+            85.001509
+          ],
+          "max": [
+            34.998491,
+            -39.3,
+            154.998491
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            69.996982,
+            4.0,
+            69.996982
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            -41.3,
+            120.0
+          ],
+          "diag": 99.07146399552522
+        },
+        "center": [
+          0.0,
+          -41.3,
+          120.0
+        ],
+        "kind": "frame",
+        "name": "bezel_black",
+        "translation": [
+          0.0,
+          -39.3,
+          120.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "z": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          -39.3,
+          0.0,
+          1.0,
+          0.0,
+          120.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "o1.25.2.f1",
+        "bbox": {
+          "min": [
+            34.967536,
+            -43.3,
+            120.325
+          ],
+          "max": [
+            34.998491,
+            -39.3,
+            121.507125
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            0.030954999999998734,
+            4.0,
+            1.1821249999999992
+          ],
+          "extentAxis": "y",
+          "center": [
+            34.9830135,
+            -41.3,
+            120.91606250000001
+          ],
+          "diag": 4.171136263375963
+        },
+        "center": [
+          34.985972,
+          -41.3,
+          120.91614
+        ],
+        "occurrenceId": "o1.25.2",
+        "shapeId": "o1.25.2.s1",
+        "kind": "cylinder",
+        "area": 4.73032,
+        "origin": [
+          0.0,
+          -39.3,
+          120.0
+        ],
+        "normal": [
+          0.9996573234001926,
+          -0.0,
+          0.026177008468551553
+        ],
+        "axisAlignment": {
+          "axis": "y",
+          "sign": -1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "x",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "x",
+        "coordinate": 0.0,
+        "planeOffset": 3.1412410162261866,
+        "radius": 35.0,
+        "axisVector": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      }
+    },
+    "id": "bezel_outer"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "y",
+      "from": {
+        "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+        "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.25.2.f2",
+        "displaySelector": "o1.25.2.f2",
+        "copyText": "#o1.25.2.f2",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.25.2.f2",
+          "bbox": {
+            "min": [
+              -34.998491,
+              -43.3,
+              85.001509
+            ],
+            "max": [
+              34.998491,
+              -43.3,
+              154.998491
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              69.996982,
+              0.0,
+              69.996982
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -43.3,
+              120.0
+            ],
+            "diag": 98.99068126958542
+          },
+          "center": [
+            0.0,
+            -43.3,
+            120.0
+          ],
+          "occurrenceId": "o1.25.2",
+          "shapeId": "o1.25.2.s1",
+          "kind": "plane",
+          "area": 1184.755996,
+          "origin": [
+            0.0,
+            -43.3,
+            120.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -43.3,
+          "planeOffset": 43.3
+        },
+        "coordinate": -43.3,
+        "coordinateSource": "coordinate"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly",
+        "stepPath": "artifacts/make/r0001/visual-repair-delivery/current-assembly.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.25.2.f4",
+        "displaySelector": "o1.25.2.f4",
+        "copyText": "#o1.25.2.f4",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "o1.25.2.f4",
+          "bbox": {
+            "min": [
+              -34.998491,
+              -39.3,
+              85.001509
+            ],
+            "max": [
+              34.998491,
+              -39.3,
+              154.998491
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              69.996982,
+              0.0,
+              69.996982
+            ],
+            "extentAxis": "x",
+            "center": [
+              0.0,
+              -39.3,
+              120.0
+            ],
+            "diag": 98.99068126958542
+          },
+          "center": [
+            0.0,
+            -39.3,
+            120.0
+          ],
+          "occurrenceId": "o1.25.2",
+          "shapeId": "o1.25.2.s1",
+          "kind": "plane",
+          "area": 1184.755996,
+          "origin": [
+            0.0,
+            -39.3,
+            120.0
+          ],
+          "normal": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "axisAlignment": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "y",
+            "sign": 1,
+            "aligned": true
+          },
+          "axis": "y",
+          "coordinate": -39.3,
+          "planeOffset": -39.3
+        },
+        "coordinate": -39.3,
+        "coordinateSource": "coordinate"
+      },
+      "measurement": {
+        "signedDistance": 4.0,
+        "absoluteDistance": 4.0,
+        "euclideanDistance": 4.0,
+        "vectorRelationship": {
+          "relation": "opposed",
+          "dot": -1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "bezel_height"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon",
+      "stepPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.f11",
+      "displaySelector": "f11",
+      "copyText": "#f11",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1",
+        "bbox": {
+          "min": [
+            -23.0,
+            -9.0,
+            0.0
+          ],
+          "max": [
+            23.0,
+            9.0,
+            13.5
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            46.0,
+            18.0,
+            13.5
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            0.0,
+            6.75
+          ],
+          "diag": 51.20790954530364
+        },
+        "center": [
+          0.0,
+          0.0,
+          6.75
+        ],
+        "kind": "frame",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "f11",
+        "bbox": {
+          "min": [
+            -12.872572,
+            -1.999378,
+            3.3
+          ],
+          "max": [
+            -8.875,
+            1.999378,
+            8.7
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            3.997572,
+            3.998756,
+            5.3999999999999995
+          ],
+          "extentAxis": "z",
+          "center": [
+            -10.873785999999999,
+            0.0,
+            6.0
+          ],
+          "diag": 7.818608024624332
+        },
+        "center": [
+          -10.8749,
+          -0.0,
+          6.000011
+        ],
+        "occurrenceId": "o1",
+        "shapeId": "s1",
+        "kind": "cylinder",
+        "area": 67.831083,
+        "origin": [
+          -10.875,
+          0.0,
+          3.0
+        ],
+        "normal": [
+          0.0,
+          -0.0,
+          -1.0
+        ],
+        "axisAlignment": {
+          "axis": "z",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "z",
+          "sign": -1,
+          "aligned": true
+        },
+        "axis": "z",
+        "coordinate": 3.0,
+        "planeOffset": -3.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "coupon_post_left"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon",
+      "stepPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.f12",
+      "displaySelector": "f12",
+      "copyText": "#f12",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1",
+        "bbox": {
+          "min": [
+            -23.0,
+            -9.0,
+            0.0
+          ],
+          "max": [
+            23.0,
+            9.0,
+            13.5
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            46.0,
+            18.0,
+            13.5
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            0.0,
+            6.75
+          ],
+          "diag": 51.20790954530364
+        },
+        "center": [
+          0.0,
+          0.0,
+          6.75
+        ],
+        "kind": "frame",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "f12",
+        "bbox": {
+          "min": [
+            8.877428,
+            -1.999378,
+            3.3
+          ],
+          "max": [
+            12.875,
+            1.999378,
+            8.7
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            3.997572,
+            3.998756,
+            5.3999999999999995
+          ],
+          "extentAxis": "z",
+          "center": [
+            10.876214000000001,
+            0.0,
+            6.0
+          ],
+          "diag": 7.818608024624332
+        },
+        "center": [
+          10.8751,
+          -0.0,
+          6.000011
+        ],
+        "occurrenceId": "o1",
+        "shapeId": "s1",
+        "kind": "cylinder",
+        "area": 67.831083,
+        "origin": [
+          10.875,
+          0.0,
+          3.0
+        ],
+        "normal": [
+          0.0,
+          -0.0,
+          -1.0
+        ],
+        "axisAlignment": {
+          "axis": "z",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "z",
+          "sign": -1,
+          "aligned": true
+        },
+        "axis": "z",
+        "coordinate": 3.0,
+        "planeOffset": -3.0,
+        "radius": 2.0,
+        "axisVector": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "coupon_post_right"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon",
+      "stepPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.f7",
+      "displaySelector": "f7",
+      "copyText": "#f7",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1",
+        "bbox": {
+          "min": [
+            -23.0,
+            -9.0,
+            0.0
+          ],
+          "max": [
+            23.0,
+            9.0,
+            13.5
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            46.0,
+            18.0,
+            13.5
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            0.0,
+            6.75
+          ],
+          "diag": 51.20790954530364
+        },
+        "center": [
+          0.0,
+          0.0,
+          6.75
+        ],
+        "kind": "frame",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "f7",
+        "bbox": {
+          "min": [
+            -14.470525,
+            -3.598881,
+            3.0
+          ],
+          "max": [
+            -7.275,
+            3.598881,
+            3.3
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            7.195525,
+            7.197762,
+            0.2999999999999998
+          ],
+          "extentAxis": "y",
+          "center": [
+            -10.8727625,
+            0.0,
+            3.15
+          ],
+          "diag": 10.182011482721329
+        },
+        "center": [
+          -10.875,
+          -0.0,
+          3.15
+        ],
+        "occurrenceId": "o1",
+        "shapeId": "s1",
+        "kind": "cylinder",
+        "area": 6.783028,
+        "origin": [
+          -10.875,
+          0.0,
+          3.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "axisAlignment": {
+          "axis": "z",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "z",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "z",
+        "coordinate": 3.0,
+        "planeOffset": 3.0,
+        "radius": 3.6,
+        "axisVector": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "coupon_seat_left"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "cadPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon",
+      "stepPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+      "selectorType": "face",
+      "normalizedSelector": "o1.f8",
+      "displaySelector": "f8",
+      "copyText": "#f8",
+      "frame": {
+        "selectorType": "occurrence",
+        "selector": "o1",
+        "bbox": {
+          "min": [
+            -23.0,
+            -9.0,
+            0.0
+          ],
+          "max": [
+            23.0,
+            9.0,
+            13.5
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            46.0,
+            18.0,
+            13.5
+          ],
+          "extentAxis": "x",
+          "center": [
+            0.0,
+            0.0,
+            6.75
+          ],
+          "diag": 51.20790954530364
+        },
+        "center": [
+          0.0,
+          0.0,
+          6.75
+        ],
+        "kind": "frame",
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "localAxes": {
+          "x": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "y": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "z": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "transform": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "selectionPositioning": {
+        "selectorType": "face",
+        "selector": "f8",
+        "bbox": {
+          "min": [
+            7.279475,
+            -3.598881,
+            3.0
+          ],
+          "max": [
+            14.475,
+            3.598881,
+            3.3
+          ]
+        },
+        "bboxFacts": {
+          "size": [
+            7.195525,
+            7.197762,
+            0.2999999999999998
+          ],
+          "extentAxis": "y",
+          "center": [
+            10.8772375,
+            0.0,
+            3.15
+          ],
+          "diag": 10.182011482721329
+        },
+        "center": [
+          10.875,
+          -0.0,
+          3.15
+        ],
+        "occurrenceId": "o1",
+        "shapeId": "s1",
+        "kind": "cylinder",
+        "area": 6.783028,
+        "origin": [
+          10.875,
+          0.0,
+          3.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "axisAlignment": {
+          "axis": "z",
+          "sign": 1,
+          "aligned": true,
+          "magnitude": 1.0
+        },
+        "normalAxis": {
+          "axis": "z",
+          "sign": 1,
+          "aligned": true
+        },
+        "axis": "z",
+        "coordinate": 3.0,
+        "planeOffset": 3.0,
+        "radius": 3.6,
+        "axisVector": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    },
+    "id": "coupon_seat_right"
+  },
+  {
+    "ok": true,
+    "exitCode": 0,
+    "result": {
+      "ok": true,
+      "axis": "x",
+      "from": {
+        "cadPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon",
+        "stepPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.f11",
+        "displaySelector": "f11",
+        "copyText": "#f11",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "f11",
+          "bbox": {
+            "min": [
+              -12.872572,
+              -1.999378,
+              3.3
+            ],
+            "max": [
+              -8.875,
+              1.999378,
+              8.7
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              3.997572,
+              3.998756,
+              5.3999999999999995
+            ],
+            "extentAxis": "z",
+            "center": [
+              -10.873785999999999,
+              0.0,
+              6.0
+            ],
+            "diag": 7.818608024624332
+          },
+          "center": [
+            -10.8749,
+            -0.0,
+            6.000011
+          ],
+          "occurrenceId": "o1",
+          "shapeId": "s1",
+          "kind": "cylinder",
+          "area": 67.831083,
+          "origin": [
+            -10.875,
+            0.0,
+            3.0
+          ],
+          "normal": [
+            0.0,
+            -0.0,
+            -1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 3.0,
+          "planeOffset": -3.0,
+          "radius": 2.0,
+          "axisVector": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "coordinate": -10.875,
+        "coordinateSource": "point"
+      },
+      "to": {
+        "cadPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon",
+        "stepPath": "artifacts/make/r0001/visual-repair-geometry/raw-components/current-coupon.step",
+        "selectorType": "face",
+        "normalizedSelector": "o1.f12",
+        "displaySelector": "f12",
+        "copyText": "#f12",
+        "positioning": {
+          "selectorType": "face",
+          "selector": "f12",
+          "bbox": {
+            "min": [
+              8.877428,
+              -1.999378,
+              3.3
+            ],
+            "max": [
+              12.875,
+              1.999378,
+              8.7
+            ]
+          },
+          "bboxFacts": {
+            "size": [
+              3.997572,
+              3.998756,
+              5.3999999999999995
+            ],
+            "extentAxis": "z",
+            "center": [
+              10.876214000000001,
+              0.0,
+              6.0
+            ],
+            "diag": 7.818608024624332
+          },
+          "center": [
+            10.8751,
+            -0.0,
+            6.000011
+          ],
+          "occurrenceId": "o1",
+          "shapeId": "s1",
+          "kind": "cylinder",
+          "area": 67.831083,
+          "origin": [
+            10.875,
+            0.0,
+            3.0
+          ],
+          "normal": [
+            0.0,
+            -0.0,
+            -1.0
+          ],
+          "axisAlignment": {
+            "axis": "z",
+            "sign": 1,
+            "aligned": true,
+            "magnitude": 1.0
+          },
+          "normalAxis": {
+            "axis": "z",
+            "sign": -1,
+            "aligned": true
+          },
+          "axis": "z",
+          "coordinate": 3.0,
+          "planeOffset": -3.0,
+          "radius": 2.0,
+          "axisVector": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "coordinate": 10.875,
+        "coordinateSource": "point"
+      },
+      "measurement": {
+        "signedDistance": 21.75,
+        "absoluteDistance": 21.75,
+        "euclideanDistance": 21.75,
+        "vectorRelationship": {
+          "relation": "parallel",
+          "dot": 1.0,
+          "aligned": true
+        }
+      }
+    },
+    "id": "coupon_post_spacing"
+  }
+]

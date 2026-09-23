@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_bull_body.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0008",
+ "overhang_angle": 45.0,
+ "parts": [
+  "bull_body"
+ ],
+ "print": {
+  "bull_body": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0007/overhang-bull_body.log": "14d1c02908acecda1279513cdce7b13349f9b82db33448a3f1986f748e76298d",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0007/thickness-bull_body.log": "877819f1dc9d1475034596270ee704f5f00d69ad9448039d3c0ccd2ea98210eb"
+   },
+   "measured_round": 7,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.25,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "bull_body"
+ ],
+ "round": 8,
+ "scope": "component:bull_body",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front/top/iso show blunt paired horns, broad torso, toe bridge, rear cavity and three integral pins. Eye, nostril, closed-mouth and smile openings are present; no disconnected feature. Expression colour is reviewed after assembly.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/bull_body/r0008/visual-packet.json",
+  "packet_sha256": "00d2b1a0c1bab105b7dd8203fb441bddfb4e0964c76534012e2fabdc945fb44f",
+  "status": "pass"
+ }
+}

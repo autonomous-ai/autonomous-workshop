@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Thin outer capture rim",
+      "evidence": "Iso shows narrow outer lip around rear perimeter; thickness report confirms 0.47 mm wall.",
+      "part": "bull_muzzle",
+      "repair": "Reduce flare and increase rear rim depth."
+    }
+  ],
+  "observation": "Flat oval muzzle, smile and nostril openings are coherent, but capture rim is too thin.",
+  "packet_sha256": "1304b19f50fc971281a9ebe387aaa9d0aaca1ccc79b2e0b69c082ccf891c2111",
+  "status": "fail"
+}

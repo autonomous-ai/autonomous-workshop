@@ -1,0 +1,73 @@
+{
+ "build": {
+  "body_01_rear": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_01_rear"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_01_rear"
+ ],
+ "checks_ok": false,
+ "entry": "part_body_01_rear.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_01_rear"
+ ],
+ "print": {
+  "body_01_rear": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0003/overhang-body_01_rear.log": "aa372006a21eac24b155de8ff06b1ddd0d370d375ca1e4f842841a60c6384ded",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0003/thickness-body_01_rear.log": "14f57c24b9d2b6dee051f61a4ddcbe1bf88c542a3786f97146203889b17f4587"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [
+     "no face under 45 deg needs support 41.6% of the surface faces down that steeply;"
+    ],
+    "overhang_mm2": 325.9,
+    "verdict": "FAIL"
+   },
+   "thickness": {
+    "failures": [
+     "wall >= 0.80 mm (+/-0.07) 3.6% of surface below (7569 of 224337 samples); thinne"
+    ],
+    "thinnest_mm": 0.13,
+    "verdict": "FAIL"
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:body_01_rear",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [
+   {
+    "defect": "Swept parent clearance leaves a thin unsupported rear canopy",
+    "evidence": "Front view shows broad lower undercut under the convex rim; wall regions 167.6 mm2 at (3.6,-16.9,2.9) and 17.0 mm2 at (1.2,-11.9,1.0), minimum0.20mm; unsupported325.9mm2 at (0.1,-12.9,1.4).",
+    "part": "body_01_rear",
+    "repair": "Project the rear-most parent-clearance section back to the print seam to remove the canopy while retaining the lower barrel and socket; assess the residual seam width before applying this rear-specific construction."
+   }
+  ],
+  "observation": "Front, top and iso inspected. Rear body retains convex barrel flank, four slotted socket fingers, open mouth and symmetric ankle corners. Front view exposes a broad undercut below the raised upper edge; the swept parent clearance has left a thin unsupported canopy. Wish measurement identifies two sub-1.2 wall regions, and overhang measurement finds a broad unsupported region.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_01_rear/r0003/visual-packet.json",
+  "packet_sha256": "c1565608f15fb986f640ffe04311ba9da22dffb5a2f3d4d4c3eab2fa61328293",
+  "status": "fail"
+ }
+}

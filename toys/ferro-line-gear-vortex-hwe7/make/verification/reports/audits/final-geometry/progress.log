@@ -1,0 +1,175 @@
+[inspect] start "refs:axle": refs artifacts/make/r0001/product/gear_vortex/part_axle.step.py --facts --planes --positioning
+[inspect] done "refs:axle": rc=0 in 7.34s
+[inspect] start "validate:axle": validate artifacts/make/r0001/product/gear_vortex/part_axle.step.py
+[inspect] build: part_axle.step.py; completed=0 reused=0
+[inspect] build: part_axle.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:axle": rc=0 in 30.20s
+[inspect] start "refs:bezel": refs artifacts/make/r0001/product/gear_vortex/part_bezel.step.py --facts --planes --positioning
+[inspect] done "refs:bezel": rc=0 in 5.25s
+[inspect] start "validate:bezel": validate artifacts/make/r0001/product/gear_vortex/part_bezel.step.py
+[inspect] build: part_bezel.step.py; completed=0 reused=0
+[inspect] build: part_bezel.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:bezel": rc=0 in 5.70s
+[inspect] start "refs:carrier": refs artifacts/make/r0001/product/gear_vortex/part_carrier.step.py --facts --planes --positioning
+[inspect] done "refs:carrier": rc=0 in 8.75s
+[inspect] start "validate:carrier": validate artifacts/make/r0001/product/gear_vortex/part_carrier.step.py
+[inspect] build: part_carrier.step.py; completed=0 reused=0
+[inspect] build: part_carrier.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:carrier": rc=0 in 27.61s
+[inspect] start "refs:coupon": refs artifacts/make/r0001/product/gear_vortex/part_coupon.step.py --facts --planes --positioning
+[inspect] done "refs:coupon": rc=0 in 1.62s
+[inspect] start "validate:coupon": validate artifacts/make/r0001/product/gear_vortex/part_coupon.step.py
+[inspect] build: part_coupon.step.py; completed=0 reused=0
+[inspect] build: part_coupon.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:coupon": rc=0 in 4.97s
+[inspect] start "refs:foot_trim": refs artifacts/make/r0001/product/gear_vortex/part_foot_trim.step.py --facts --planes --positioning
+[inspect] done "refs:foot_trim": rc=0 in 0.81s
+[inspect] start "validate:foot_trim": validate artifacts/make/r0001/product/gear_vortex/part_foot_trim.step.py
+[inspect] build: part_foot_trim.step.py; completed=0 reused=0
+[inspect] done "validate:foot_trim": rc=0 in 1.02s
+[inspect] start "refs:gear_16": refs artifacts/make/r0001/product/gear_vortex/part_gear_16.step.py --facts --planes --positioning
+[inspect] done "refs:gear_16": rc=0 in 5.28s
+[inspect] start "validate:gear_16": validate artifacts/make/r0001/product/gear_vortex/part_gear_16.step.py
+[inspect] build: part_gear_16.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:gear_16": rc=0 in 5.26s
+[inspect] start "refs:gear_18": refs artifacts/make/r0001/product/gear_vortex/part_gear_18.step.py --facts --planes --positioning
+[inspect] done "refs:gear_18": rc=0 in 5.67s
+[inspect] start "validate:gear_18": validate artifacts/make/r0001/product/gear_vortex/part_gear_18.step.py
+[inspect] build: part_gear_18.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:gear_18": rc=0 in 5.79s
+[inspect] start "refs:gear_20": refs artifacts/make/r0001/product/gear_vortex/part_gear_20.step.py --facts --planes --positioning
+[inspect] done "refs:gear_20": rc=0 in 5.07s
+[inspect] start "validate:gear_20": validate artifacts/make/r0001/product/gear_vortex/part_gear_20.step.py
+[inspect] build: part_gear_20.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:gear_20": rc=0 in 5.31s
+[inspect] start "refs:gear_22": refs artifacts/make/r0001/product/gear_vortex/part_gear_22.step.py --facts --planes --positioning
+[inspect] done "refs:gear_22": rc=0 in 5.80s
+[inspect] start "validate:gear_22": validate artifacts/make/r0001/product/gear_vortex/part_gear_22.step.py
+[inspect] build: part_gear_22.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:gear_22": rc=0 in 7.25s
+[inspect] start "refs:gear_24": refs artifacts/make/r0001/product/gear_vortex/part_gear_24.step.py --facts --planes --positioning
+[inspect] done "refs:gear_24": rc=0 in 4.98s
+[inspect] start "validate:gear_24": validate artifacts/make/r0001/product/gear_vortex/part_gear_24.step.py
+[inspect] build: part_gear_24.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:gear_24": rc=0 in 5.71s
+[inspect] start "refs:gear_26": refs artifacts/make/r0001/product/gear_vortex/part_gear_26.step.py --facts --planes --positioning
+[inspect] done "refs:gear_26": rc=0 in 5.36s
+[inspect] start "validate:gear_26": validate artifacts/make/r0001/product/gear_vortex/part_gear_26.step.py
+[inspect] build: part_gear_26.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:gear_26": rc=0 in 5.77s
+[inspect] start "refs:gear_cap": refs artifacts/make/r0001/product/gear_vortex/part_gear_cap.step.py --facts --planes --positioning
+[inspect] done "refs:gear_cap": rc=0 in 0.83s
+[inspect] start "validate:gear_cap": validate artifacts/make/r0001/product/gear_vortex/part_gear_cap.step.py
+[inspect] build: part_gear_cap.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:gear_cap": rc=0 in 2.85s
+[inspect] start "refs:main_cap": refs artifacts/make/r0001/product/gear_vortex/part_main_cap.step.py --facts --planes --positioning
+[inspect] done "refs:main_cap": rc=0 in 1.25s
+[inspect] start "validate:main_cap": validate artifacts/make/r0001/product/gear_vortex/part_main_cap.step.py
+[inspect] build: part_main_cap.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:main_cap": rc=0 in 3.70s
+[inspect] start "refs:orange_disc": refs artifacts/make/r0001/product/gear_vortex/part_orange_disc.step.py --facts --planes --positioning
+[inspect] done "refs:orange_disc": rc=0 in 0.62s
+[inspect] start "validate:orange_disc": validate artifacts/make/r0001/product/gear_vortex/part_orange_disc.step.py
+[inspect] build: part_orange_disc.step.py; completed=0 reused=0
+[inspect] done "validate:orange_disc": rc=0 in 0.83s
+[inspect] start "refs:pedestal": refs artifacts/make/r0001/product/gear_vortex/part_pedestal.step.py --facts --planes --positioning
+[inspect] done "refs:pedestal": rc=0 in 1.77s
+[inspect] start "validate:pedestal": validate artifacts/make/r0001/product/gear_vortex/part_pedestal.step.py
+[inspect] build: part_pedestal.step.py; completed=0 reused=0
+[inspect] done "validate:pedestal": rc=0 in 1.50s
+[inspect] start "refs:pedestal_lid": refs artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step.py --facts --planes --positioning
+[inspect] done "refs:pedestal_lid": rc=0 in 0.91s
+[inspect] start "validate:pedestal_lid": validate artifacts/make/r0001/product/gear_vortex/part_pedestal_lid.step.py
+[inspect] build: part_pedestal_lid.step.py; completed=0 reused=0
+[inspect] done "validate:pedestal_lid": rc=0 in 0.96s
+[inspect] start "refs:rim_trim": refs artifacts/make/r0001/product/gear_vortex/part_rim_trim.step.py --facts --planes --positioning
+[inspect] done "refs:rim_trim": rc=0 in 0.69s
+[inspect] start "validate:rim_trim": validate artifacts/make/r0001/product/gear_vortex/part_rim_trim.step.py
+[inspect] build: part_rim_trim.step.py; completed=0 reused=0
+[inspect] done "validate:rim_trim": rc=0 in 1.00s
+[inspect] start "refs:stem": refs artifacts/make/r0001/product/gear_vortex/part_stem.step.py --facts --planes --positioning
+[inspect] done "refs:stem": rc=0 in 0.70s
+[inspect] start "validate:stem": validate artifacts/make/r0001/product/gear_vortex/part_stem.step.py
+[inspect] build: part_stem.step.py; completed=0 reused=0
+[inspect] done "validate:stem": rc=0 in 0.78s
+[inspect] start "refs:sun": refs artifacts/make/r0001/product/gear_vortex/part_sun.step.py --facts --planes --positioning
+[inspect] done "refs:sun": rc=0 in 6.18s
+[inspect] start "validate:sun": validate artifacts/make/r0001/product/gear_vortex/part_sun.step.py
+[inspect] build: part_sun.step.py; completed=0 reused=0
+[inspect] build: part_sun.step.py; completed=0 reused=0
+[inspect] validate: o1; completed=1 reused=0
+[inspect] done "validate:sun": rc=0 in 9.22s
+[inspect] start "refs:support_collar": refs artifacts/make/r0001/product/gear_vortex/part_support_collar.step.py --facts --planes --positioning
+[inspect] done "refs:support_collar": rc=0 in 0.79s
+[inspect] start "validate:support_collar": validate artifacts/make/r0001/product/gear_vortex/part_support_collar.step.py
+[inspect] build: part_support_collar.step.py; completed=0 reused=0
+[inspect] done "validate:support_collar": rc=0 in 1.37s
+[inspect] start "validate:assembly": validate artifacts/make/r0001/product/gear_vortex/gear_vortex.step.py
+[inspect] build: gear_vortex.step.py; completed=0 reused=0
+[inspect] build: gear_vortex.step.py; completed=0 reused=0
+[inspect] validate: o1.7; completed=7 reused=0
+[inspect] validate: o1.9; completed=9 reused=0
+[inspect] validate: o1.11; completed=11 reused=1
+[inspect] validate: o1.12; completed=12 reused=1
+[inspect] validate: o1.13; completed=13 reused=1
+[inspect] validate: o1.14; completed=14 reused=1
+[inspect] validate: o1.15; completed=15 reused=1
+[inspect] validate: o1.16; completed=16 reused=1
+[inspect] validate: o1.23.3.1; completed=25 reused=9
+[inspect] done "validate:assembly": rc=0 in 69.10s
+[inspect] start "interfere:assembly": interfere artifacts/make/r0001/product/gear_vortex/gear_vortex.step.py
+[inspect] interfere: o1.16/o1.23.3.6; completed=0 reused=0
+[inspect] interfere: o1.16/o1.23.1; completed=2 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.6; completed=3 reused=0
+[inspect] interfere: o1.15/o1.16; completed=4 reused=0
+[inspect] interfere: o1.16/o1.17; completed=6 reused=0
+[inspect] interfere: o1.17/o1.23.1; completed=7 reused=0
+[inspect] interfere: o1.17/o1.18; completed=9 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.5; completed=12 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.7; completed=14 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.8; completed=16 reused=0
+[inspect] interfere: o1.23.1/o1.23.2; completed=18 reused=0
+[inspect] interfere: o1.18/o1.19; completed=21 reused=0
+[inspect] interfere: o1.14/o1.15; completed=23 reused=0
+[inspect] interfere: o1.9/o1.17; completed=26 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.9; completed=28 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.4; completed=30 reused=0
+[inspect] interfere: o1.9/o1.24.1; completed=34 reused=0
+[inspect] interfere: o1.7/o1.24.1; completed=36 reused=0
+[inspect] interfere: o1.9/o1.10; completed=39 reused=0
+[inspect] interfere: o1.10/o1.24.1; completed=40 reused=0
+[inspect] interfere: o1.4/o1.24.1; completed=41 reused=0
+[inspect] interfere: o1.24.1/o1.24.2; completed=43 reused=0
+[inspect] interfere: o1.3/o1.24.1; completed=49 reused=0
+[inspect] interfere: o1.20/o1.23.1; completed=54 reused=0
+[inspect] interfere: o1.19/o1.20; completed=55 reused=0
+[inspect] interfere: o1.23.1/o1.23.4.1; completed=56 reused=0
+[inspect] interfere: o1.23.1/o1.23.4.2; completed=58 reused=0
+[inspect] interfere: o1.13/o1.23.1; completed=60 reused=0
+[inspect] interfere: o1.13/o1.14; completed=61 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.10; completed=62 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.3; completed=64 reused=0
+[inspect] interfere: o1.9/o1.12; completed=67 reused=0
+[inspect] interfere: o1.12/o1.13; completed=68 reused=0
+[inspect] interfere: o1.20/o1.21; completed=71 reused=0
+[inspect] interfere: o1.9/o1.11; completed=73 reused=0
+[inspect] interfere: o1.11/o1.12; completed=74 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.2; completed=75 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.1; completed=78 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.11; completed=80 reused=0
+[inspect] interfere: o1.22/o1.23.1; completed=82 reused=0
+[inspect] interfere: o1.21/o1.22; completed=83 reused=0
+[inspect] interfere: o1.23.1/o1.23.3.12; completed=85 reused=0
+[inspect] done "interfere:assembly": rc=0 in 115.89s

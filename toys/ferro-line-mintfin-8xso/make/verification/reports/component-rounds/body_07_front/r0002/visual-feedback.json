@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "defect": "Feathered funnel wall",
+      "evidence": "Top and iso show a sharp crescent around the root; measured wall minimum 0.13 mm.",
+      "part": "body_07_front",
+      "repair": "Replace the oblique funnel with a straight opening through the full-thickness plate."
+    }
+  ],
+  "observation": "Front, top and iso inspected: tapered funnel leaves a broad wafer edge around the ball root in the 1.2 mm plate.",
+  "packet_sha256": "82002d05c0481f3e4c4929d2a9184e2dc7b51f138b5c010149af0910a35da85b",
+  "status": "fail"
+}

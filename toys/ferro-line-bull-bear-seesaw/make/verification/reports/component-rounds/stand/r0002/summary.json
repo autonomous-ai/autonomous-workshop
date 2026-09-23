@@ -1,0 +1,61 @@
+{
+ "build": {
+  "stand": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "stand"
+ ],
+ "check_motion": false,
+ "checked": [
+  "stand"
+ ],
+ "checks_ok": true,
+ "entry": "part_stand.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "stand"
+ ],
+ "print": {
+  "stand": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0002/overhang-stand.log": "eafb74f831f4952a0ae37893780578db68e13891569f0bf623c5c4429faaf890",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0002/thickness-stand.log": "26d5f3e0bef42892f9c18b8fa7a5adad51d71c5bf035b57bd7580e4fd909e79e"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:stand",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/stand/r0002/visual-packet.json",
+  "packet_sha256": "11eb735f63d0caf5980d98613c97ff39c97b735a10f0bc1fc704b349a2cdcb20",
+  "status": "pending"
+ }
+}

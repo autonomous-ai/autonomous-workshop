@@ -1,0 +1,62 @@
+{
+ "build": {
+  "body_07_front": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "body_07_front"
+ ],
+ "check_motion": true,
+ "checked": [
+  "body_07_front"
+ ],
+ "checks_ok": true,
+ "entry": "part_body_07_front.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "body_07_front"
+ ],
+ "print": {
+  "body_07_front": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0003/overhang-body_07_front.log": "ecf57040d622133e59b7c1bf4132f0d0f2a027f6d460ea340ed51745d86ebb64",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0003/thickness-body_07_front.log": "ffbcc494753309d1056f5f833b28cd4c0cbe549fd7d034da4710bbe3b117016c"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:body_07_front",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected: continuous 1.2 mm plate, rounded incoming ball and straight open bore. The former feathered crescent is gone; crown remains flat and ball root is connected.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/mintfin/measure/component-rounds/body_07_front/r0003/visual-packet.json",
+  "packet_sha256": "32eca33e230d40644f4521dd1c46deb69b617a9169c7b046b1a00f806c87e349",
+  "status": "pass"
+ }
+}
