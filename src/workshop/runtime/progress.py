@@ -234,6 +234,191 @@ def wish_run_timing_span(
         )
 
 
+def _write_private_file_atomically(path: Path, content: bytes) -> None:
+    """Durably install owner-only bytes at ``path`` via a synced rename."""
+
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=".%s." % path.name,
+        suffix=".tmp",
+        dir=str(path.parent),
+    )
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(descriptor, 0o600)
+        written = 0
+        while written < len(content):
+            written += os.write(descriptor, content[written:])
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = -1
+        os.replace(temporary, path)
+        directory = os.open(
+            str(path.parent), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        )
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+
+
+WISH_RUN_TIMING_RECORD_FILENAME = "wish-run-timing.json"
+_WISH_RUN_TIMING_RECORD_KIND = "autonomous-workshop.wish-run-timing-record"
+_WISH_RUN_TIMING_RECORD_SCHEMA_VERSION = 1
+_MAX_WISH_RUN_TIMING_RECORD_BYTES = 256 * 1024
+_WISH_RUN_TIMING_TERMINAL_STATES = ("completed", "failed")
+
+
+def _wish_run_timing_ms(observed_at: str) -> int:
+    return int(
+        datetime.fromisoformat(observed_at.replace("Z", "+00:00")).timestamp() * 1000
+    )
+
+
+def _empty_wish_run_timing_record(product_id: str, observed_at: str) -> dict[str, Any]:
+    return {
+        "schema_version": _WISH_RUN_TIMING_RECORD_SCHEMA_VERSION,
+        "kind": _WISH_RUN_TIMING_RECORD_KIND,
+        "product_id": product_id,
+        "started_at": observed_at,
+        "last_observed_at": observed_at,
+        "measured_ms": 0,
+        "total_ms": 0,
+        "unmeasured_ms": 0,
+        "stages": {},
+    }
+
+
+def _valid_wish_run_timing_record(value: Any, product_id: str) -> bool:
+    if (
+        not isinstance(value, Mapping)
+        or set(value)
+        != {
+            "schema_version",
+            "kind",
+            "product_id",
+            "started_at",
+            "last_observed_at",
+            "measured_ms",
+            "total_ms",
+            "unmeasured_ms",
+            "stages",
+        }
+        or value.get("schema_version") != _WISH_RUN_TIMING_RECORD_SCHEMA_VERSION
+        or value.get("kind") != _WISH_RUN_TIMING_RECORD_KIND
+        or value.get("product_id") != product_id
+        or not isinstance(value.get("started_at"), str)
+        or not isinstance(value.get("last_observed_at"), str)
+        or any(
+            type(value.get(name)) is not int or value[name] < 0
+            for name in ("measured_ms", "total_ms", "unmeasured_ms")
+        )
+        or not isinstance(value.get("stages"), Mapping)
+    ):
+        return False
+    for stage_name, operations in value["stages"].items():
+        if stage_name not in _STAGES or not isinstance(operations, Mapping):
+            return False
+        for operation_name, aggregate in operations.items():
+            if (
+                operation_name not in WISH_RUN_TIMING_OPERATIONS
+                or not isinstance(aggregate, Mapping)
+                or set(aggregate) != {"count", "elapsed_ms", "states"}
+                or type(aggregate.get("count")) is not int
+                or aggregate["count"] < 1
+                or type(aggregate.get("elapsed_ms")) is not int
+                or aggregate["elapsed_ms"] < 0
+                or not isinstance(aggregate.get("states"), Mapping)
+                or not set(aggregate["states"]).issubset(
+                    _WISH_RUN_TIMING_TERMINAL_STATES
+                )
+                or any(
+                    type(count) is not int or count < 1
+                    for count in aggregate["states"].values()
+                )
+            ):
+                return False
+    return True
+
+
+def read_wish_run_timing_record(
+    path: Path, *, product_id: str
+) -> Optional[dict[str, Any]]:
+    """Best-effort read of the incremental per-stage timing aggregate.
+
+    Never raises: an unavailable, foreign, or corrupt record reads as absent
+    so a caller can always fall back to starting a fresh one.
+    """
+
+    try:
+        if path.is_symlink() or not path.is_file():
+            return None
+        info = path.lstat()
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or not 1 <= info.st_size <= _MAX_WISH_RUN_TIMING_RECORD_BYTES
+        ):
+            return None
+        content = path.read_bytes()
+        value = json.loads(content.decode("utf-8"), object_pairs_hook=_strict_object)
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError):
+        return None
+    if not _valid_wish_run_timing_record(value, product_id):
+        return None
+    return value
+
+
+def record_wish_run_timing_event(host_state: Path, event: WishRunTimingEvent) -> None:
+    """Aggregate one bracketed timing event into the durable per-Run record.
+
+    Only a terminal event contributes an occurrence and a duration; a
+    ``started`` event with no terminal partner is never counted, not even as
+    zero. The record's ``measured_ms``/``total_ms``/``unmeasured_ms`` triple
+    always reconciles: a write that never lands (an exception raised here, or
+    the process dying mid-update) simply leaves the prior durable totals in
+    place, so the next successful write's wall-clock anchor still advances
+    ``total_ms`` past whatever was missed, and that gap surfaces as
+    ``unmeasured_ms`` rather than corrupting the total or crashing the Run.
+    This function itself may raise on a genuinely unwritable path; callers
+    that must never fail the Run are responsible for swallowing that.
+    """
+
+    path = host_state / WISH_RUN_TIMING_RECORD_FILENAME
+    # A record read from disk is freshly parsed, so it is safe to mutate.
+    record = read_wish_run_timing_record(path, product_id=event.product_id)
+    if record is None:
+        record = _empty_wish_run_timing_record(event.product_id, event.observed_at)
+    if event.observed_at > record["last_observed_at"]:
+        record["last_observed_at"] = event.observed_at
+    if event.state in _WISH_RUN_TIMING_TERMINAL_STATES:
+        aggregate = record["stages"].setdefault(event.stage, {}).setdefault(
+            event.operation, {"count": 0, "elapsed_ms": 0, "states": {}}
+        )
+        aggregate["count"] += 1
+        aggregate["elapsed_ms"] += event.elapsed_ms
+        aggregate["states"][event.state] = (
+            aggregate["states"].get(event.state, 0) + 1
+        )
+        record["measured_ms"] += event.elapsed_ms
+    total_ms = max(
+        record["measured_ms"],
+        _wish_run_timing_ms(record["last_observed_at"])
+        - _wish_run_timing_ms(record["started_at"]),
+    )
+    record["total_ms"] = total_ms
+    record["unmeasured_ms"] = total_ms - record["measured_ms"]
+    content = _canonical_json(record) + b"\n"
+    if len(content) > _MAX_WISH_RUN_TIMING_RECORD_BYTES:
+        raise ContractError("Wish run timing record exceeded its safe size limit")
+    _write_private_file_atomically(path, content)
+
+
 def _require_sha256(value: Any, label: str) -> str:
     if not isinstance(value, str) or _SHA256.fullmatch(value) is None:
         raise ContractError("%s must be a lowercase sha256" % label)
@@ -550,36 +735,7 @@ def _write_progress_generation(path: Path, generation: int) -> None:
     _require_counter(generation, "native progress generation")
     generation_path = _progress_generation_path(path)
     content = ("%d\n" % generation).encode("ascii")
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=".%s." % generation_path.name,
-        suffix=".tmp",
-        dir=str(generation_path.parent),
-    )
-    temporary = Path(temporary_name)
-    try:
-        os.fchmod(descriptor, 0o600)
-        written = 0
-        while written < len(content):
-            written += os.write(descriptor, content[written:])
-        os.fsync(descriptor)
-        os.close(descriptor)
-        descriptor = -1
-        os.replace(temporary, generation_path)
-        directory = os.open(
-            str(generation_path.parent),
-            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0),
-        )
-        try:
-            os.fsync(directory)
-        finally:
-            os.close(directory)
-    finally:
-        if descriptor >= 0:
-            os.close(descriptor)
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+    _write_private_file_atomically(generation_path, content)
 
 
 def write_native_progress(
@@ -736,6 +892,7 @@ __all__ = [
     "NATIVE_PROGRESS_KIND",
     "SAFE_NATIVE_ACTIVITY_CLASSES",
     "WISH_RUN_TIMING_OPERATIONS",
+    "WISH_RUN_TIMING_RECORD_FILENAME",
     "WISH_RUN_TIMING_STATES",
     "NativeProgressUnavailable",
     "NativeRunProgress",
@@ -744,6 +901,8 @@ __all__ = [
     "begin_native_progress",
     "native_progress_turn_floor",
     "read_native_progress",
+    "read_wish_run_timing_record",
+    "record_wish_run_timing_event",
     "trusted_native_progress",
     "wish_run_timing_span",
     "write_native_progress",

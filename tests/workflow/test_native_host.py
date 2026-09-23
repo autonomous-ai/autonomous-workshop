@@ -34,6 +34,7 @@ from workshop.workflow.native_run import (
     _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,
     _MAX_CONSECUTIVE_UNFINISHED_NATIVE_TURNS,
     _RECOVERABLE_BACKOFF_MAX_SECONDS,
+    _combined_timing_observer,
     _current_make_proposal_rejection,
     _deep_make_critical_path_prompt,
     _deep_make_recovery_prompt,
@@ -41,6 +42,7 @@ from workshop.workflow.native_run import (
     _make_proof_acceptance_path,
     _make_proof_ready,
     _make_proof_ready_path,
+    _record_wish_run_timing,
     _v13_operator_resume_recovery,
     _materialized_release_contract,
     NativeRunPaths,
@@ -76,7 +78,12 @@ from workshop.runtime import (
     CodexRecoverableInvocationError,
 )
 from workshop.runtime.codex import CodexNativeSessionLauncher
-from workshop.runtime.progress import NativeRunProgress
+from workshop.runtime.progress import (
+    NativeRunProgress,
+    WISH_RUN_TIMING_RECORD_FILENAME,
+    WishRunTimingEvent,
+    read_wish_run_timing_record,
+)
 from workshop.wish import Wish
 from workshop.workflow.agent_run import (
     AgentArtifact,
@@ -436,6 +443,110 @@ class NativeTokenTelemetryCompatibilityTest(unittest.TestCase):
                     "status": "unavailable",
                 },
             )
+
+
+class WishRunTimingRecorderTest(unittest.TestCase):
+    """The second, host-state consumer fanned out alongside live progress."""
+
+    def event(self, **overrides):
+        values = {
+            "observed_at": "2026-08-27T03:14:15.250Z",
+            "product_id": "wish-timing-recorder",
+            "stage": "make",
+            "operation": "gate.evaluate",
+            "state": "completed",
+            "elapsed_ms": 42,
+        }
+        values.update(overrides)
+        return WishRunTimingEvent(**values)
+
+    def test_records_to_the_paths_resolved_host_state(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            workspace = root / "workspace"
+            host_state = root / "host"
+            workspace.mkdir()
+            host_state.mkdir()
+            with mock.patch(
+                "workshop.workflow.native_run.native_run_paths",
+                return_value=NativeRunPaths(workspace=workspace, host_state=host_state),
+            ):
+                _record_wish_run_timing(self.event())
+            record = read_wish_run_timing_record(
+                host_state / WISH_RUN_TIMING_RECORD_FILENAME,
+                product_id="wish-timing-recorder",
+            )
+            self.assertIsNotNone(record)
+            self.assertEqual(
+                record["stages"]["make"]["gate.evaluate"],
+                {"count": 1, "elapsed_ms": 42, "states": {"completed": 1}},
+            )
+
+    def test_unresolvable_host_state_never_raises(self):
+        with mock.patch(
+            "workshop.workflow.native_run.native_run_paths",
+            side_effect=StateConflict("native run host state is unavailable"),
+        ):
+            _record_wish_run_timing(self.event())
+
+    def test_combined_observer_isolates_the_two_consumers(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            workspace = root / "workspace"
+            host_state = root / "host"
+            workspace.mkdir()
+            host_state.mkdir()
+            paths = NativeRunPaths(workspace=workspace, host_state=host_state)
+
+            # A raising external (live-progress-shaped) observer must not
+            # prevent the recorder from persisting the event.
+            def raising_observer(unused_event):
+                raise OSError("progress stream failed")
+
+            with mock.patch(
+                "workshop.workflow.native_run.native_run_paths",
+                return_value=paths,
+            ):
+                observe = _combined_timing_observer(raising_observer)
+                observe(self.event())
+            record = read_wish_run_timing_record(
+                host_state / WISH_RUN_TIMING_RECORD_FILENAME,
+                product_id="wish-timing-recorder",
+            )
+            self.assertIsNotNone(record)
+            self.assertEqual(record["measured_ms"], 42)
+
+            # A recorder failure (host state unresolvable) must not prevent
+            # the external observer -- the live progress stream -- from
+            # seeing every event exactly as before.
+            seen = []
+            with mock.patch(
+                "workshop.workflow.native_run.native_run_paths",
+                side_effect=StateConflict("native run host state is unavailable"),
+            ):
+                observe = _combined_timing_observer(seen.append)
+                event = self.event(state="started", elapsed_ms=None)
+                observe(event)
+            self.assertEqual(seen, [event])
+
+    def test_none_observer_still_records(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            workspace = root / "workspace"
+            host_state = root / "host"
+            workspace.mkdir()
+            host_state.mkdir()
+            with mock.patch(
+                "workshop.workflow.native_run.native_run_paths",
+                return_value=NativeRunPaths(workspace=workspace, host_state=host_state),
+            ):
+                observe = _combined_timing_observer(None)
+                observe(self.event())
+            record = read_wish_run_timing_record(
+                host_state / WISH_RUN_TIMING_RECORD_FILENAME,
+                product_id="wish-timing-recorder",
+            )
+            self.assertIsNotNone(record)
 
 
 class _FakeOutcome:
