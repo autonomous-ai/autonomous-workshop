@@ -28,4 +28,6 @@ ADR. Small factual corrections that do not change the decision are allowed.
 
 - [0068: Cancellable geometry and disclosed unverified handoff](0068-cancellable-geometry-and-unverified-handoff.md)
 - [0069: Corrections carry byte-identical parts forward](0069-correction-carry-forward.md)
+- [0070: A redundant final sweep reuses its verdict and exits zero](0070-redundant-final-sweep-reuses-its-verdict.md)
+- [0071: Component rounds fan out, bounded by host width](0071-bounded-component-round-fan-out.md)
 - [0072: A gate that can verify nothing must refuse](0072-a-gate-that-verifies-nothing-refuses.md)
