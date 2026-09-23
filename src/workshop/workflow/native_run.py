@@ -184,11 +184,13 @@ from workshop.runtime.package_data import (
 from workshop.runtime.progress import (
     NATIVE_PROGRESS_FILENAME,
     SAFE_NATIVE_ACTIVITY_CLASSES,
+    WISH_RUN_TIMING_RECORD_FILENAME,
     NativeRunProgress,
     WishRunTimingEvent,
     WishRunTimingObserver,
     begin_native_progress,
     native_progress_turn_floor,
+    read_wish_run_timing_record,
     record_wish_run_timing_event,
     trusted_native_progress,
     wish_run_timing_span,
@@ -3135,6 +3137,10 @@ def _record_public_example_projection(
                     checkpoint,
                 ),
                 wish_id=checkpoint.product_id,
+                stage_timing_record=read_wish_run_timing_record(
+                    run.host_state_root / WISH_RUN_TIMING_RECORD_FILENAME,
+                    product_id=checkpoint.product_id,
+                ),
             )
             target_relative = (
                 target.relative_to(repository).as_posix()

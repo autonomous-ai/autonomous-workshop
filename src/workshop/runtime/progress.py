@@ -49,12 +49,13 @@ WISH_RUN_TIMING_OPERATIONS = (
     "effect.factory",
 )
 WISH_RUN_TIMING_STATES = ("started", "completed", "failed")
+WISH_RUN_TIMING_STAGES = (
+    "wish", "match", "invent", "make", "playtest", "release", "deliver"
+)
 _ACTIVE_ACTIVITY_CLASSES = frozenset(
     ("starting", "running", "reasoning", "tool", "subagent", "finalizing")
 )
-_STAGES = frozenset(
-    ("wish", "match", "invent", "make", "playtest", "release", "deliver")
-)
+_STAGES = frozenset(WISH_RUN_TIMING_STAGES)
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _UTC_TIMESTAMP = re.compile(
@@ -893,6 +894,7 @@ __all__ = [
     "SAFE_NATIVE_ACTIVITY_CLASSES",
     "WISH_RUN_TIMING_OPERATIONS",
     "WISH_RUN_TIMING_RECORD_FILENAME",
+    "WISH_RUN_TIMING_STAGES",
     "WISH_RUN_TIMING_STATES",
     "NativeProgressUnavailable",
     "NativeRunProgress",
