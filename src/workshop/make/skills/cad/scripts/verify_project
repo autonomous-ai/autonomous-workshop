@@ -2,9 +2,11 @@
 """Run a CAD project through a sequential preflight, quick, or final workflow.
 
 The runner removes orchestration overhead, not validation.  It batches explicit
-generation targets, runs inspect JSONL in one process, and keeps every geometry
-consumer sequential so the single-request warm daemon never becomes a hidden
-queue.
+generation targets, runs inspect JSONL in one process, and disables the warm
+daemon for every geometry command it launches, as Make Round also does: this
+runner owns those children by process group, and a shared daemon would sit
+outside that group and could survive cancellation.  The daemon stays live on
+the agent-driven generation path, which needs no such ownership.
 
     python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --quick
     python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh
