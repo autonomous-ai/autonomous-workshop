@@ -159,7 +159,12 @@ are separate. Frozen older runs retain their materialized rules and tools.
    isolated component round passes. Use explicit `--ref` only when a reference
    depicts that component by itself; project-level likeness and motion checks
    belong to the assembled object. A pass is component-specific evidence, not
-   permission to skip the combined review.
+   permission to skip the combined review. When a sealed Wish reference shows
+   one component, score it in that component's round with
+   `--ref LABEL=wish-references/<file>`. The assembly round scores every
+   sealed reference that no current component pass has scored, against the
+   whole object, so a single-component image left for the assembly will fail
+   there.
 3. Only after every component passes, author the non-part combined `*.step.py`
    entry and begin assembled-object rounds with:
 

@@ -10,8 +10,11 @@
 Every verdict comes from the original cad and image-to-cad tools, run
 unchanged; this script only sequences them, remembers what changed between
 rounds, and prints a summary short enough to read instead of the logs. It
-never lowers a threshold or edits source. Native Manager visual observations
-are recorded against exact evidence; this tool makes no model calls.
+never lowers a threshold or edits source. An assembly round scores every
+reference the Wish sealed, unless a current component round already scored it;
+it never passes on an empty reference list when the Wish has references.
+Native Manager visual observations are recorded against exact evidence; this
+tool makes no model calls.
 
 Exit 0: all checks and native visual feedback passed. Exit 1: failed or pending. Exit 2: the
 round could not run.
@@ -354,6 +357,12 @@ def diff_parts(previous: dict, current: dict) -> list[str]:
     return sorted(role for role, digest in current.items() if previous.get(role) != digest)
 
 
+LEDGER_LINE = re.compile(r"^\s*[-*]?\s*`?([A-Za-z][A-Za-z0-9_-]*)=(ref/[^`\s]+)`?\s*$")
+# The Likeness handoff table in image-to-cad's build_spec.md template. A filled
+# template produced no reference at all until this row was read too (ADR 0072).
+LEDGER_ROW = re.compile(r"^\s*\|\s*([A-Za-z][A-Za-z0-9_-]*)\s*\|\s*`?(ref/[^`\s|]+)`?\s*\|")
+
+
 def parse_refs(values, spec_paths) -> list[tuple[str, str]]:
     """``LABEL=PATH`` pairs from the command line, else from the spec's ledger."""
     refs = []
@@ -366,7 +375,7 @@ def parse_refs(values, spec_paths) -> list[tuple[str, str]]:
         return refs
     for spec in spec_paths:
         for line in Path(spec).read_text(encoding="utf-8", errors="replace").splitlines():
-            match = re.match(r"^\s*[-*]?\s*`?([A-Za-z][A-Za-z0-9_-]*)=(ref/[^`\s]+)`?\s*$", line)
+            match = LEDGER_LINE.match(line) or LEDGER_ROW.match(line)
             if match:
                 refs.append((match.group(1), str(Path(spec).parent / match.group(2))))
     return refs
@@ -405,6 +414,14 @@ def render_summary(summary: dict) -> str:
         lines.append(
             "  like  %-4s %-10s IoU %.3f vs %.2f%s  pose az %.1f el %.1f fov %s%s"
             % ("ok" if item["ok"] else "FAIL", item["label"], item["iou"], summary["min"], delta, item["az"], item["el"], item["fov"], "  (re-searched)" if item.get("searched") else "")
+        )
+    failed = {item["label"] for item in summary["likeness"] if not item.get("ok")}
+    for item in summary.get("sealed") or []:
+        lines.append("  seal  %-14s scored by %s" % (item["label"], item["scored_by"]))
+    if any(item["scored_by"] == "assembly" and item["label"] in failed for item in summary.get("sealed") or []):
+        lines.append(
+            "  hint  a sealed reference that shows one Component is scored in that Component's round: "
+            "--component part_<role>.step.py --ref LABEL=wish-references/<file>"
         )
     if summary.get("motion_status") == "not-run":
         lines.append("  move  SKIP motion unverified")
@@ -574,15 +591,140 @@ def resolve_reference(ref: str, project: Path):
     if candidate.is_absolute():
         return candidate if candidate.is_file() else None
     roots = [project, Path.cwd()]
-    for parent in [project, *project.parents]:
-        if (parent / "WISH.json").is_file():
-            roots.append(parent)
-            break
+    workspace = run_root(project)
+    if workspace is not None:
+        roots.append(workspace)
     for root in roots:
         path = root / candidate
         if path.is_file():
             return path
     return None
+
+
+def run_root(project: Path):
+    """The run workspace holding WISH.json above the project, or None outside a run."""
+
+    for parent in [project, *project.parents]:
+        if (parent / "WISH.json").is_file():
+            return parent
+    return None
+
+
+# Kept in step with WISH_REFERENCES_DIRECTORY and _REFERENCE_NAME in
+# workshop/wish/contracts.py. This script is materialized into a run as a
+# standalone tool and cannot import the host package.
+WISH_REFERENCES_DIR = "wish-references"
+SEALED_NAME = re.compile(r"^(ref-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)\.(?:png|jpg|webp)$")
+
+
+def sealed_references(project: Path):
+    """The references the Wish sealed, as ``(references, error)``.
+
+    Each reference is ``{"label", "path", "sha256"}``; the label is the sealed
+    file's stem, so it names the same image in every round. Outside a run there
+    is no Wish and no sealed reference. A Wish that cannot be read is an error,
+    never an empty list: an empty list is how antisol-v01 scored nothing.
+    """
+
+    root = run_root(project)
+    if root is None:
+        return [], None
+    try:
+        wish = json.loads((root / "WISH.json").read_text(encoding="utf-8"))
+        items = wish.get("references") or []
+        if not isinstance(items, list):
+            raise ValueError("references is not a list")
+    except (OSError, ValueError, AttributeError) as exc:
+        return [], "WISH.json unreadable: %s" % exc
+    sealed = []
+    for item in items:
+        name = item.get("name") if isinstance(item, dict) else None
+        digest = item.get("sha256") if isinstance(item, dict) else None
+        match = SEALED_NAME.fullmatch(name) if isinstance(name, str) else None
+        if match is None or not isinstance(digest, str):
+            return [], "WISH.json names an invalid reference: %r" % (name,)
+        sealed.append({"label": match.group(1), "path": root / WISH_REFERENCES_DIR / name, "sha256": digest})
+    return sealed, None
+
+
+def component_coverage(project: Path, digests: dict, floor: float) -> dict[str, str]:
+    """Reference sha256 -> Component role, for every reference a current,
+    passing component round scored at or above the floor.
+
+    A reference that depicts one Component is scored in that Component's round
+    (ADR 0063); this is how the assembly knows not to score it again against
+    the whole object. A Component whose STEP moved since its pass covers
+    nothing, exactly as --require-component-passes treats it.
+    """
+
+    covered = {}
+    rounds = project / "measure" / COMPONENT_ROUNDS_DIR
+    for state_path in sorted(rounds.glob("*/" + STATE_NAME)) if rounds.is_dir() else ():
+        role = state_path.parent.name
+        # Unreadable or partial component evidence covers nothing. That is
+        # never a silent pass: the sealed reference is then scored against
+        # the assembly, which is the strict outcome.
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            round_value = state["round"]
+            if type(round_value) is not int or round_value < 1:
+                continue
+            summary = json.loads((state_path.parent / ("r%04d" % round_value) / "summary.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        if summary.get("ok") is not True or summary.get("scope") != "component:%s" % role:
+            continue
+        if (state.get("parts") or {}).get(role) != digests.get(role):
+            continue
+        paths = {label: path for label, path in summary.get("refs") or []}
+        for item in summary.get("likeness") or []:
+            if item.get("ok") is not True or float(item.get("iou", 0.0)) < floor or item.get("label") not in paths:
+                continue
+            path = resolve_reference(paths[item["label"]], project)
+            if path is not None:
+                covered.setdefault(file_hash(path), role)
+    return covered
+
+
+def with_sealed_references(project: Path, refs: list, digests: dict, floor: float):
+    """The assembly round's references: every sealed one not already scored by
+    a Component, plus the ledger's references the Wish did not seal.
+
+    Returns ``(refs, sealed_report, errors)``. A sealed reference that is
+    missing or no longer matches its hash is an error the round fails on,
+    never a reference quietly dropped. A ledger entry that is a copy of a
+    sealed image is not scored twice.
+    """
+
+    sealed, error = sealed_references(project)
+    if error is not None:
+        return refs, [], [{"label": "WISH.json", "error": error}]
+    if not sealed:
+        return refs, [], []
+    sealed_hashes = {item["sha256"] for item in sealed}
+    kept = []
+    for label, ref in refs:
+        path = resolve_reference(ref, project)
+        if path is not None and file_hash(path) in sealed_hashes:
+            continue
+        kept.append((label, ref))
+    covered = component_coverage(project, digests, floor)
+    to_score, report, errors = [], [], []
+    for item in sealed:
+        name = item["path"].name
+        if not item["path"].is_file():
+            errors.append({"label": item["label"], "error": "sealed reference missing: %s" % name})
+            continue
+        if file_hash(item["path"]) != item["sha256"]:
+            errors.append({"label": item["label"], "error": "sealed reference %s does not match its sealed hash" % name})
+            continue
+        role = covered.get(item["sha256"])
+        if role is not None:
+            report.append({"label": item["label"], "scored_by": "component:%s" % role})
+            continue
+        to_score.append((item["label"], str(item["path"])))
+        report.append({"label": item["label"], "scored_by": "assembly"})
+    return to_score + kept, report, errors
 
 
 SEARCH_HALF_WINDOW_DEG = 30.0
@@ -826,6 +968,13 @@ def make_round(args) -> int:
     # 3. likeness per reference, replaying the previous pose when one exists.
     refs = parse_refs(args.refs, [] if component is not None else sorted(project.glob("*_spec.md")))
     likeness = []
+    sealed = []
+    if component is None:
+        # ADR 0072: the Wish's sealed references are scored whether or not any
+        # ledger names them. A component round still scores only what it is
+        # explicitly given (ADR 0063).
+        refs, sealed, errors = with_sealed_references(project, refs, digests, args.min)
+        likeness.extend(errors)
     previous_pose_paths = state.get("pose_paths")
     legacy_poses = state.get("poses_path") if previous_pose_paths is None else None
     pose_paths = {}
@@ -922,6 +1071,7 @@ def make_round(args) -> int:
         "checks_ok": ok,
         "visual": visual,
         "refs": refs,
+        "sealed": sealed,
         "ok": False,
         "out": str(out),
     }
@@ -1047,6 +1197,42 @@ def self_check() -> int:
         check(False, "a malformed --ref is refused")
     except ValueError:
         check(True, "a malformed --ref is refused")
+    with tempfile.TemporaryDirectory() as tmp:
+        spec = Path(tmp) / "toy_spec.md"
+        spec.write_text("| Label | Project-local reference | Minimum IoU |\n|---|---|---:|\n| <> | `ref/<file>` | 0.90 |\n| hero | `ref/hero.png` | 0.90 |\n", encoding="utf-8")
+        check([r[0] for r in parse_refs([], [spec])] == ["hero"], "the template's Likeness handoff row is a ledger entry; its header and placeholder are not")
+    with tempfile.TemporaryDirectory() as tmp:
+        run_dir = Path(tmp)
+        project = run_dir / "artifacts" / "cad"
+        project.mkdir(parents=True)
+        check(sealed_references(project) == ([], None), "a project outside any run has no sealed reference")
+        (run_dir / "wish-references").mkdir()
+        (run_dir / "wish-references" / "ref-01-hero.png").write_bytes(b"hero")
+        (run_dir / "wish-references" / "ref-02-side.png").write_bytes(b"side")
+        (run_dir / "WISH.json").write_text(json.dumps({"references": [
+            {"name": "ref-01-hero.png", "sha256": hashlib.sha256(b"hero").hexdigest()},
+            {"name": "ref-02-side.png", "sha256": hashlib.sha256(b"other").hexdigest()},
+            {"name": "ref-03-gone.png", "sha256": hashlib.sha256(b"gone").hexdigest()},
+        ]}), encoding="utf-8")
+        sealed, error = sealed_references(project)
+        check(error is None and [s["label"] for s in sealed] == ["ref-01-hero", "ref-02-side", "ref-03-gone"], "a sealed reference is labelled by its file stem")
+        (project / "ref").mkdir()
+        (project / "ref" / "copy.png").write_bytes(b"hero")
+        refs, report, errors = with_sealed_references(project, [("copy", "ref/copy.png")], {}, 0.9)
+        check([label for label, _ in refs] == ["ref-01-hero"], "a ledger copy of a sealed image is scored once, under its sealed label")
+        check(report == [{"label": "ref-01-hero", "scored_by": "assembly"}], "an uncovered sealed reference is scored against the assembly")
+        check([e["label"] for e in errors] == ["ref-02-side", "ref-03-gone"] and "sealed hash" in errors[0]["error"] and "missing" in errors[1]["error"], "a changed or missing sealed reference is an error, never a silent drop")
+        (run_dir / "WISH.json").write_text("{not json", encoding="utf-8")
+        _, _, errors = with_sealed_references(project, [], {}, 0.9)
+        check(len(errors) == 1 and "WISH.json unreadable" in errors[0]["error"], "an unreadable Wish fails the round instead of scoring nothing")
+    text = render_summary({
+        "round": 1, "project": "/p", "parts": ["a"], "changed": ["a"], "checked": ["a"],
+        "build": {"a": {"verdict": "PASS", "failures": []}},
+        "likeness": [{"label": "ref-01-body", "iou": 0.31, "ok": False, "delta": None, "az": 0.0, "el": 0.0, "fov": 0}],
+        "sealed": [{"label": "ref-01-body", "scored_by": "assembly"}],
+        "min": 0.9, "motion": None, "full": None, "ok": False, "out": "/p/measure/rounds/r0001",
+    })
+    check("seal  ref-01-body" in text and "--component part_<role>.step.py" in text, "a sealed reference that failed against the assembly points at the component round")
     summary = {
         "round": 3, "scope": "assembly", "project": "/p/cad", "parts": ["frame", "knob", "lens"], "changed": ["frame"], "checked": ["frame"],
         "build": {"frame": {"verdict": "PASS", "failures": []}},
@@ -1075,7 +1261,7 @@ def main(argv=None) -> int:
     parser.add_argument("--entry", help="entry generator name when more than one non-part *.step.py exists")
     parser.add_argument("--component", help="review one isolated part_<role>.step.py using its own round history")
     parser.add_argument("--require-component-passes", action="store_true", help="before assembly review, require current passing isolated rounds for every part")
-    parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH", help="reference view; repeatable; default from the spec ledger")
+    parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH", help="reference view; repeatable; default from the spec ledger. The Wish's sealed references are always scored at assembly scope")
     parser.add_argument("--min", type=float, default=0.90, help="likeness floor passed to render_views (default 0.90)")
     parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle diameter for the wall gate (default 0.4 mm)")
     parser.add_argument("--overhang-angle", type=float, default=45.0, help="slope from vertical the printer bridges unsupported (default 45 deg)")

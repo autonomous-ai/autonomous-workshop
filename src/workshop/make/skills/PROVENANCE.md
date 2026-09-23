@@ -572,6 +572,17 @@ review until all current component STEP bytes have passing isolated evidence.
 The native Manager still supplies the visual judgment. Forge and Quest keep
 their prior whole-product round sequence.
 
+Sealed-reference extension (2026-09-24, ADR 0072): an assembly round now
+scores every reference the Wish sealed under `wish-references/`, read from
+`WISH.json` rather than from a ledger the Manager writes. A sealed reference
+is skipped only when a current, passing component round already scored it at
+or above the floor. A sealed reference that is missing or no longer matches
+its hash, or a `WISH.json` that cannot be read, fails the round rather than
+scoring nothing. The ledger parser also reads the Likeness handoff table row
+of image-to-cad's build spec template. `ad-astra-antisol-v01` sealed eight
+references, and its rounds scored none of them. The reviewed `cad` and
+`image-to-cad` tools, and every threshold, are unchanged.
+
 ## Local audit dependency transport (2026-09-08)
 
 A preserved Make rejection and a current-code subprocess reproduction show that

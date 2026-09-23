@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import subprocess
@@ -627,6 +628,216 @@ class MakeRoundTest(unittest.TestCase):
             )
         self.assertEqual(done.returncode, 2)
         self.assertIn("entry", done.stderr)
+
+
+class SealedReferenceTest(unittest.TestCase):
+    """ADR 0072: a Wish's sealed references are scored whether or not a ledger names them."""
+
+    def _run_root(self, tmp, references, *, missing=()):
+        """A run workspace as the host lays it out, with the CAD project nested inside."""
+        run = Path(tmp)
+        (run / "wish-references").mkdir()
+        sealed = []
+        for name, content in references.items():
+            if name not in missing:
+                (run / "wish-references" / name).write_bytes(content)
+            sealed.append({"name": name, "sha256": hashlib.sha256(content).hexdigest()})
+        (run / "WISH.json").write_text(json.dumps({"references": sealed}))
+        project = run / "artifacts/make/r0001/product/cad"
+        project.mkdir(parents=True)
+        (project / "toy.step.py").write_text("def gen_step(): return 'assembly'\n")
+        (project / "part_body.step.py").write_text("def gen_step(): return 'body'\n")
+        _install_gate_identity(project)
+        return project
+
+    def _fake_run(self, scores, calls):
+        """Stand in for every tool; render_views returns the score set for its reference."""
+
+        def fake_run(command, **kwargs):
+            tool = Path(command[1]).name
+            calls.append(command)
+            if tool == "gen":
+                source = Path(command[2])
+                source.with_name(source.name[:-len(".py")]).write_bytes(source.read_bytes())
+            if tool == "render_review":
+                out = Path(command[command.index("-o") + 1])
+                out.mkdir()
+                for view in ("front", "top", "iso"):
+                    (out / (view + ".png")).write_bytes(view.encode())
+            if tool in ("check_thickness", "check_overhang"):
+                stdout, code = _gate_output(tool, fails=False)
+                log = kwargs.get("log")
+                if log is not None:
+                    Path(log).parent.mkdir(parents=True, exist_ok=True)
+                    Path(log).write_text(stdout, encoding="utf-8")
+                return subprocess.CompletedProcess(command, code, stdout, "")
+            if tool == "render_views.py":
+                label = command[command.index("--label") + 1]
+                iou = scores.get(Path(command[command.index("--match") + 1]).name)
+                if iou is None:
+                    return subprocess.CompletedProcess(command, 1, "", "render failed")
+                payload = {"views": [{"label": label, "iou": iou, "ok": iou >= 0.9, "az": 0.0, "el": 0.0}]}
+                return subprocess.CompletedProcess(command, 0, json.dumps(payload, indent=2), "")
+            return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
+
+        return fake_run
+
+    def _main(self, module, project, argv, scores, calls):
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()), mock.patch.object(
+            module, "skills_root", return_value=project
+        ), mock.patch.object(module, "run", side_effect=self._fake_run(scores, calls)):
+            return module.main([str(project), *argv])
+
+    def _matched(self, calls):
+        return [Path(c[c.index("--match") + 1]).name for c in calls if Path(c[1]).name == "render_views.py"]
+
+    def test_sealed_references_are_scored_at_assembly_without_any_ledger(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"})
+            module, calls = load_module(), []
+            self._main(module, project, [], {"ref-01-whole.png": 0.95}, calls)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertEqual(self._matched(calls), ["ref-01-whole.png"])
+            self.assertEqual([(i["label"], i["iou"]) for i in summary["likeness"]], [("ref-01-whole", 0.95)])
+            self.assertTrue(summary["checks_ok"])
+            self.assertEqual(summary["sealed"], [{"label": "ref-01-whole", "scored_by": "assembly"}])
+
+    def test_a_sealed_reference_below_the_floor_fails_the_round(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"})
+            module, calls = load_module(), []
+            self._main(module, project, [], {"ref-01-whole.png": 0.41}, calls)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertFalse(summary["checks_ok"])
+            self.assertEqual([(i["label"], i["iou"], i["ok"]) for i in summary["likeness"]], [("ref-01-whole", 0.41, False)])
+            self.assertIn("--component part_<role>.step.py", module.render_summary(summary))
+
+    def test_a_missing_sealed_reference_refuses_rather_than_dropping_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"}, missing={"ref-01-whole.png"})
+            module, calls = load_module(), []
+            self._main(module, project, [], {}, calls)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertFalse(summary["checks_ok"])
+            self.assertIn("sealed reference missing", summary["likeness"][0]["error"])
+
+    def test_a_sealed_reference_whose_bytes_changed_refuses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"})
+            (project.parents[4] / "wish-references/ref-01-whole.png").write_bytes(b"swapped")
+            module, calls = load_module(), []
+            self._main(module, project, [], {"ref-01-whole.png": 0.99}, calls)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertFalse(summary["checks_ok"])
+            self.assertIn("does not match its sealed hash", summary["likeness"][0]["error"])
+            self.assertEqual(self._matched(calls), [])
+
+    def test_an_unreadable_wish_refuses_rather_than_scoring_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"})
+            (project.parents[4] / "WISH.json").write_text("{not json")
+            module, calls = load_module(), []
+            self._main(module, project, [], {"ref-01-whole.png": 0.99}, calls)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertFalse(summary["checks_ok"])
+            self.assertIn("WISH.json", summary["likeness"][0]["error"])
+
+    def test_a_ledger_copy_of_a_sealed_reference_is_scored_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"})
+            (project / "ref").mkdir()
+            (project / "ref/hero.png").write_bytes(b"whole")
+            (project / "toy_spec.md").write_text("- `hero=ref/hero.png`\n")
+            module, calls = load_module(), []
+            self._main(module, project, [], {"ref-01-whole.png": 0.95}, calls)
+            self.assertEqual(self._matched(calls), ["ref-01-whole.png"])
+
+    def test_an_agent_found_ledger_reference_is_still_scored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"})
+            (project / "ref").mkdir()
+            (project / "ref/found.png").write_bytes(b"found by the agent")
+            (project / "toy_spec.md").write_text("| found | `ref/found.png` | 0.90 | side view |\n")
+            module, calls = load_module(), []
+            self._main(module, project, [], {"ref-01-whole.png": 0.95, "found.png": 0.92}, calls)
+            self.assertEqual(sorted(self._matched(calls)), ["found.png", "ref-01-whole.png"])
+
+    def test_a_component_round_never_scores_sealed_references_implicitly(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"})
+            module, calls = load_module(), []
+            self._main(module, project, ["--component", "part_body.step.py"], {"ref-01-whole.png": 0.95}, calls)
+            summary = json.loads((project / "measure/component-rounds/body/r0001/summary.json").read_text())
+            self.assertEqual(summary["refs"], [])
+            self.assertEqual(self._matched(calls), [])
+
+    def _pass_component(self, module, project, scores, calls):
+        argv = ["--component", "part_body.step.py", "--ref", "body=wish-references/ref-01-body.png"]
+        self._main(module, project, argv, scores, calls)
+        summary = json.loads((project / "measure/component-rounds/body/r0001/summary.json").read_text())
+        feedback = project / "measure/feedback-body.json"
+        feedback.write_text(json.dumps({
+            "packet_sha256": summary["visual"]["packet_sha256"], "status": "pass", "findings": [],
+            "observation": "The isolated component is coherent in all three views.",
+        }))
+        return module.record_visual(project, feedback, component="part_body.step.py")
+
+    def test_a_passing_component_round_covers_the_sealed_reference_it_scored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-body.png": b"body", "ref-02-whole.png": b"whole"})
+            module, calls = load_module(), []
+            scores = {"ref-01-body.png": 0.93, "ref-02-whole.png": 0.94}
+            self.assertTrue(self._pass_component(module, project, scores, calls)["ok"])
+            calls.clear()
+            self._main(module, project, [], scores, calls)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertEqual(self._matched(calls), ["ref-02-whole.png"])
+            self.assertTrue(summary["checks_ok"])
+            self.assertEqual(summary["sealed"], [
+                {"label": "ref-01-body", "scored_by": "component:body"},
+                {"label": "ref-02-whole", "scored_by": "assembly"},
+            ])
+
+    def test_a_component_changed_after_its_pass_no_longer_covers_its_reference(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-body.png": b"body"})
+            module, calls = load_module(), []
+            scores = {"ref-01-body.png": 0.93}
+            self.assertTrue(self._pass_component(module, project, scores, calls)["ok"])
+            (project / "part_body.step.py").write_text("def gen_step(): return 'moved body'\n")
+            calls.clear()
+            self._main(module, project, [], {"ref-01-body.png": 0.31}, calls)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertEqual(self._matched(calls), ["ref-01-body.png"])
+            self.assertFalse(summary["checks_ok"])
+            self.assertEqual(summary["sealed"], [{"label": "ref-01-body", "scored_by": "assembly"}])
+
+    def test_a_project_outside_any_run_keeps_its_ledger_behaviour(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            (project / "toy.step.py").write_text("def gen_step(): return 'assembly'\n")
+            _install_gate_identity(project)
+            module, calls = load_module(), []
+            self._main(module, project, [], {}, calls)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertEqual(summary["likeness"], [])
+            self.assertEqual(summary["sealed"], [])
+            self.assertTrue(summary["checks_ok"])
+
+    def test_the_template_table_row_is_a_ledger_entry(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            spec = Path(tmp) / "toy_spec.md"
+            spec.write_text(
+                "| Label | Project-local reference | Minimum IoU | Why this viewpoint is usable |\n"
+                "|---|---|---:|---|\n"
+                "| <> | `ref/<file>` | 0.90 | <> |\n"
+                "| hero | `ref/hero.png` | 0.90 | the front reads the silhouette |\n"
+                "- `side=ref/side.png`\n"
+            )
+            refs = module.parse_refs([], [spec])
+        self.assertEqual([label for label, _ in refs], ["hero", "side"])
+        self.assertTrue(refs[0][1].endswith("ref/hero.png"))
 
 
 if __name__ == "__main__":

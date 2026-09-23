@@ -29,6 +29,18 @@ _Avoid_: Wish id, wish-id, run id
 The small baseline contract every toy satisfies regardless of what its Wish
 asked for. It binds shared checks, never creative scope.
 
+**Design Contract**:
+The person's approved enumeration of one toy's decided form — its unique
+geometries, their dimensions, its visual requirements, and its references —
+sealed inside the Wish. Unlike the Toy Blueprint it belongs to one toy; unlike
+the Wish's prose it is exact enough to check.
+_Avoid_: Spec, design spec, concept
+
+**Contract Mode**:
+A run that was given a Design Contract at creation and is judged against it,
+rather than against requirements the Manager compiled. Frozen for the run.
+_Avoid_: Strict mode, image-derived mode
+
 **Correction Run**:
 A fresh run that imports an already-sealed toy as data and rebuilds it against
 a correction brief. The original run is never mutated.
@@ -177,6 +189,22 @@ An independent critique of a toy's renders performed before the critic is told
 the Wish or the concept, so that what the object actually shows is recorded
 separately from what it was meant to show.
 _Avoid_: QA, review pass, critique
+
+**Unique Geometry**:
+One distinct shape in a Design Contract, shared by every Component built to it.
+A chess set has six, not thirty-two. It is the unit a Design Contract names
+before any Component exists.
+_Avoid_: Piece type, part shape
+
+**Requirement Scope**:
+Whether a visual requirement in a Design Contract is judged on the assembled
+toy or on one Unique Geometry, and so on every Component built to it. It
+decides which renders may serve as that requirement's evidence.
+
+**Conformance**:
+Agreement between a sealed toy and its Design Contract, requirement by
+requirement. A toy can pass every Gate and still lack conformance.
+_Avoid_: Match, contract match, compliance
 
 **Print Gate**:
 The deterministic geometry check that a toy is actually printable — fit, mesh

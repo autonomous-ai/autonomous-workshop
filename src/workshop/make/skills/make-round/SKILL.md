@@ -140,7 +140,17 @@ component geometry.
 - `<project>/cad` is the directory holding the generator sources: exactly one
   entry `<name>.step.py` and any number of `part_<role>.step.py`.
 - `--ref LABEL=PATH` repeats once per reference view. Omitted, the labels are
-  read from the `LABEL=ref/<file>` lines of the project's `*_spec.md`.
+  read from the project's `*_spec.md`: a `LABEL=ref/<file>` line or a row of
+  the build spec's Likeness handoff table.
+- Every reference the Wish sealed under `wish-references/` is scored in the
+  assembly round without being named anywhere (ADR 0072). It is labelled by
+  its file stem, for example `ref-01-hero`. The one exception is a sealed
+  reference that a current, passing component round already scored at or
+  above the floor. To use that exception for a reference that shows a single
+  Component, pass `--ref LABEL=wish-references/<file>` to that Component's
+  round. Otherwise the reference is scored against the whole object and
+  fails there. A sealed reference that is missing or has changed fails the
+  round. The ledger only needs to list references you found yourself.
 - `--nozzle` is the diameter the print will use and sets the minimum wall;
   `--overhang-angle` is the slope from vertical the printer bridges unsupported.
 - Only parts whose written STEP bytes changed since the previous round are
