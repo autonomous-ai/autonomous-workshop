@@ -1,0 +1,16 @@
+{
+  "name": "autonomous-workshop-tooling",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Node-side dev tooling for the autonomous-workshop repo (Sandcastle agent orchestration).",
+  "devDependencies": {
+    "@ai-hero/sandcastle": "^0.12.0"
+  },
+  "scripts": {
+    "sandcastle": "npx tsx .sandcastle/main.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}

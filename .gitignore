@@ -66,3 +66,5 @@ __cadgen__/
 /tools/render/node_modules/
 
 _prototypes/
+# Node dev tooling (Sandcastle agent orchestration).
+/node_modules/
