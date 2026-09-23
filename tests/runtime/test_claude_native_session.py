@@ -146,6 +146,51 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         )
         self.assertNotIn("FACTORY_PASSWORD", environment)
 
+    def test_environment_forwards_non_interactive_authentication(self):
+        """A sandbox with no interactive login still authenticates its turns."""
+
+        environment = claude_subprocess_environment(
+            {
+                "PATH": "/usr/bin",
+                "HOME": "/home/agent",
+                "CLAUDE_CODE_OAUTH_TOKEN": "oauth-token",
+                "ANTHROPIC_API_KEY": "api-key",
+            }
+        )
+        self.assertEqual(environment["CLAUDE_CODE_OAUTH_TOKEN"], "oauth-token")
+        self.assertEqual(environment["ANTHROPIC_API_KEY"], "api-key")
+
+    def test_environment_forwards_no_unrelated_account_authority(self):
+        """Runtime authentication widened; external-effect authority did not."""
+
+        environment = claude_subprocess_environment(
+            {
+                "PATH": "/usr/bin",
+                "HOME": "/home/agent",
+                "CLAUDE_CODE_OAUTH_TOKEN": "oauth-token",
+                "FACTORY_API_TOKEN": "factory",
+                "GH_TOKEN": "github",
+                "AWS_SECRET_ACCESS_KEY": "aws",
+                "STRIPE_SECRET_KEY": "stripe",
+            }
+        )
+        for name in (
+            "FACTORY_API_TOKEN",
+            "GH_TOKEN",
+            "AWS_SECRET_ACCESS_KEY",
+            "STRIPE_SECRET_KEY",
+        ):
+            self.assertNotIn(name, environment)
+
+    def test_environment_extra_may_not_smuggle_factory_credentials(self):
+        """The widened allowlist did not widen the caller-supplied extras."""
+
+        with self.assertRaisesRegex(ContractError, "extra environment is invalid"):
+            claude_subprocess_environment(
+                {"PATH": "/usr/bin", "HOME": "/home/agent"},
+                extra={"FACTORY_API_TOKEN": "factory"},
+            )
+
     def test_turn_boundary_accepts_a_longer_turn_and_an_untimed_one(self):
         """Only an explicit request may exceed the historical one-hour default."""
 
