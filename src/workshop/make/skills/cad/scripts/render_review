@@ -16,9 +16,12 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import functools
+import hashlib
 import importlib.util
 import io
 import math
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -33,6 +36,7 @@ DEFAULT_SIZE = 900
 DEFAULT_TOLERANCE = 0.08
 DEFAULT_PAD = 0.07
 BACKGROUND = (237, 240, 244)
+TESSELLATION_CACHE_NAMESPACE = "tessellation-v1"
 NAMED_VIEWS = {
     "front": (-90.0, 0.0),
     "back": (90.0, 0.0),
@@ -153,16 +157,56 @@ def _leaves(shape, parent_location=None, inherited_colour=None):
         yield placed
 
 
-def tessellate_occurrences(shape, tolerance: float, angular: float | None = None):
-    """Tessellate each placed leaf, optionally naming the angular deflection.
+@functools.lru_cache(maxsize=1)
+def _self_source_identity() -> str:
+    """This file's own bytes, since it lives outside the cadgen package that
+    `tool_identity()` hashes but still governs how a triangle is produced."""
+    return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
-    build123d defaults the angular half of the deflection to 0.1 rad, about
-    sixty-three steps around a full circle, which a reader sees as facet rings
-    across a curved cap however fine the millimetre tolerance is. Callers that
-    render curved organic form pass `angular` instead of copying this routine.
+
+def _tessellation_cache(entry: Path | None):
+    """A content-bound cache for occurrence tessellation, or None to skip it.
+
+    Mirrors ADR 0068's inspection cache (`cadgen.inspection_runtime`): a miss
+    is silent, corruption is a miss, and `WORKSHOP_GEOMETRY_CACHE=0` (already
+    set for host sealing re-derivation) disables reads and writes. Only the
+    directory it writes under differs, so `_directory` is overridden to walk
+    `self.root`'s own components rather than the inspection cache's fixed
+    `("__cadgen__", "inspection-v2")` pair.
     """
-    occurrences = []
-    for index, child in enumerate(_leaves(shape)):
+    if entry is None:
+        return None
+    _runtime_paths()
+    from cadgen.inspection_runtime import Measurements
+
+    class _OccurrenceTessellationCache(Measurements):
+        @contextlib.contextmanager
+        def _directory(self):
+            project = self.root.parent.parent
+            if project.absolute() != project.resolve():
+                raise OSError("cache project path contains a symlink")
+            flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+            fd = os.open(project, flags)
+            try:
+                for name in self.root.relative_to(project).parts:
+                    try:
+                        os.mkdir(name, mode=0o700, dir_fd=fd)
+                    except FileExistsError:
+                        pass
+                    child = os.open(name, flags, dir_fd=fd)
+                    os.close(fd)
+                    fd = child
+                yield fd
+            finally:
+                os.close(fd)
+
+    cache = _OccurrenceTessellationCache(entry)
+    cache.root = entry.parent / "__cadgen__" / TESSELLATION_CACHE_NAMESPACE
+    return cache
+
+
+def _tessellate_leaf(child, tolerance: float, angular: float | None, cache):
+    def compute():
         vertices, triangles = (
             child.tessellate(tolerance)
             if angular is None
@@ -170,6 +214,44 @@ def tessellate_occurrences(shape, tolerance: float, angular: float | None = None
         )
         points = np.asarray([[p.X, p.Y, p.Z] for p in vertices], dtype=float)
         faces = np.asarray(triangles, dtype=np.int64)
+        return points, faces
+
+    if cache is None:
+        return compute()
+
+    from cadgen.inspection_runtime import shape_identity
+
+    def inputs():
+        # The placed leaf's own B-rep, never STEP bytes: a warm multi-target
+        # `gen` does not reproduce single-target STEP bytes, which would miss
+        # when it should hit. Placement is part of the key, not normalised
+        # away, since two occurrences of one part at different positions are
+        # different evidence until a test proves otherwise.
+        return [shape_identity(child.wrapped), tolerance, angular, _self_source_identity()]
+
+    def operation():
+        points, faces = compute()
+        return {"points": points.tolist(), "faces": faces.tolist()}
+
+    value = cache.run("tessellate", "occurrence", inputs, operation, failed=lambda _v: False)
+    return np.asarray(value["points"], dtype=float), np.asarray(value["faces"], dtype=np.int64)
+
+
+def tessellate_occurrences(shape, tolerance: float, angular: float | None = None, *, cache_entry: Path | None = None):
+    """Tessellate each placed leaf, optionally naming the angular deflection.
+
+    build123d defaults the angular half of the deflection to 0.1 rad, about
+    sixty-three steps around a full circle, which a reader sees as facet rings
+    across a curved cap however fine the millimetre tolerance is. Callers that
+    render curved organic form pass `angular` instead of copying this routine.
+
+    `cache_entry` names the project entry whose directory holds a persistent,
+    content-keyed tessellation cache; omit it to tessellate every call fresh.
+    """
+    cache = _tessellation_cache(cache_entry)
+    occurrences = []
+    for index, child in enumerate(_leaves(shape)):
+        points, faces = _tessellate_leaf(child, tolerance, angular, cache)
         if len(points) and len(faces):
             occurrences.append((points, faces, _shape_colour(child, index)))
     if not occurrences:
@@ -443,7 +525,7 @@ def main(argv=None) -> int:
         parser.error("--angular-tolerance must be in (0, 1] radians")
 
     source, shape = build_shape(args.source)
-    occurrences = tessellate_occurrences(shape, args.tolerance, args.angular_tolerance)
+    occurrences = tessellate_occurrences(shape, args.tolerance, args.angular_tolerance, cache_entry=source)
     views = [parse_view(value) for value in (args.view or ["iso"])]
     out = args.out or source.parent / "snap" / "review"
     out.mkdir(parents=True, exist_ok=True)
