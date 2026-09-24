@@ -1,6 +1,6 @@
 # ADR 0070: A redundant final sweep reuses its verdict and exits zero
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-09-22; amended 2026-09-24 to reuse only terminal verdicts
 - Owners: CAD skill (`verify_project`), Make round contract
 - Relates to: ADR 0068 (content-bound measurement cache, host re-derivation),
