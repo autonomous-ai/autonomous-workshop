@@ -1194,6 +1194,34 @@ _RESULT_LINE_RE = re.compile(
 _CLOSURE_LINE_RE = re.compile(r"^- Closure: sha256:([0-9a-f]{64})\s*$", re.MULTILINE)
 
 
+def _sweep_tool_paths(*, image_derived: bool) -> list[Path]:
+    """Every tool file or package a final sweep can read or invoke."""
+    paths = [
+        Path(__file__).resolve(),
+        SCRIPTS_DIR / "gen",
+        SCRIPTS_DIR / "check_layout",
+        SCRIPTS_DIR / "check_mount",
+        SCRIPTS_DIR / "check_motion",
+        SCRIPTS_DIR / "check_fit",
+        SCRIPTS_DIR / "check_spec_numbers",
+        SCRIPTS_DIR / "check_spec_format",
+        SCRIPTS_DIR / "check_mesh",
+        SCRIPTS_DIR / "check_overhang",
+        SCRIPTS_DIR / "check_thickness",
+        SCRIPTS_DIR / "inspect",
+        SCRIPTS_DIR / "motion_policy.py",
+        SCRIPTS_DIR / "motion_presentation.py",
+        POWER_SCRIPTS_DIR / "check_power",
+        CADGEN_PACKAGE_DIR,
+    ]
+    if image_derived:
+        paths.extend([
+            IMAGE_SCRIPTS_DIR / "render_views.py",
+            IMAGE_SCRIPTS_DIR / "check_likeness.py",
+        ])
+    return paths
+
+
 def _tool_closure_sha256(paths: Sequence[Path]) -> str | None:
     """Hash the source bytes of every tool file/package the sweep can invoke.
 
@@ -2472,7 +2500,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if "--self-check" in raw_argv:
         return self_check()
     parser = build_parser()
-    args = parser.parse_args(list(argv) if argv is not None else None)
+    args = parser.parse_args(raw_argv)
     cwd = Path.cwd().resolve()
     project = (cwd / args.project).resolve() if not Path(args.project).is_absolute() else Path(args.project).resolve()
     if not project.is_dir():
@@ -2799,36 +2827,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             if not args.no_report and not args.dry_run:
                 reuse_report = report_path or (project / "measure" / "verification-pipeline.md")
-                tool_paths = [
-                    Path(__file__).resolve(),
-                    SCRIPTS_DIR / "gen",
-                    SCRIPTS_DIR / "check_layout",
-                    SCRIPTS_DIR / "check_mount",
-                    SCRIPTS_DIR / "check_motion",
-                    SCRIPTS_DIR / "check_fit",
-                    SCRIPTS_DIR / "check_spec_numbers",
-                    SCRIPTS_DIR / "check_spec_format",
-                    SCRIPTS_DIR / "check_mesh",
-                    SCRIPTS_DIR / "check_overhang",
-                    SCRIPTS_DIR / "check_thickness",
-                    SCRIPTS_DIR / "inspect",
-                    SCRIPTS_DIR / "motion_policy.py",
-                    SCRIPTS_DIR / "motion_presentation.py",
-                    POWER_SCRIPTS_DIR / "check_power",
-                    CADGEN_PACKAGE_DIR,
-                ]
-                if args.image_derived:
-                    tool_paths.extend([
-                        IMAGE_SCRIPTS_DIR / "render_views.py",
-                        IMAGE_SCRIPTS_DIR / "check_likeness.py",
-                    ])
                 closure = _sweep_closure_sha256(
                     entries=entries,
                     cwd=cwd,
                     project=project,
                     raw_argv=raw_argv,
                     signature_review_sha256=signature_review_sha256,
-                    tool_paths=tool_paths,
+                    tool_paths=_sweep_tool_paths(image_derived=bool(args.image_derived)),
                 )
                 prior = _prior_terminal_verdict(reuse_report) if closure is not None else None
                 if prior is not None and prior[1] == closure:
