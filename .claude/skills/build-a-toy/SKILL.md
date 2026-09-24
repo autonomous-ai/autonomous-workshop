@@ -86,17 +86,21 @@ Poll `uv run workshop status <wish-id> --json`. Its `status` is `active`,
 
 - `complete`: go to Step 4.
 - Anything else means the run is **incomplete**, which is not a design
-  result. Resume it:
-  `uv run workshop resume <wish-id> --turn-minutes 360 --json`. Leave
-  `--max-tokens` out, because a resume keeps the saved budget. Resumes are
-  unlimited and never count as a round.
-- When the receipt's `budget` shows the token cap was reached, report plainly
-  that **the token budget, the run's only backstop, is exhausted**. Hand the
-  decision to the person. A resume cannot proceed past it.
-- If two consecutive resumes end with the same `status`, `stage`,
-  `budget.last_stop_reason` and used-token count, the run is not
-  progressing. Stop and show the person both receipts. Resuming again cannot
-  change a result that deterministic.
+  result. Read the receipt's `stop_category` (present whenever `status` is
+  not `complete`) to decide what to do next, rather than guessing from
+  `status`, `stage` or token counts:
+  - `transport` or `inspection-in-progress`: the stop is resumable and, for
+    `inspection-in-progress`, still converging. Resume it:
+    `uv run workshop resume <wish-id> --turn-minutes 360 --json`. Leave
+    `--max-tokens` out, because a resume keeps the saved budget. Resumes are
+    unlimited and never count as a round.
+  - `budget`: report plainly that **the token budget, the run's only
+    backstop, is exhausted**. Hand the decision to the person. A resume
+    cannot proceed past it.
+  - `gate-refusal` or `unclassified`: stop and show the person the receipt.
+    A host gate refusal will not be resolved by resuming unchanged, and an
+    unclassified stop is not safe to guess about. Ask the person how to
+    proceed.
 
 Done when: the status is `complete`, and the ledger records the run
 workspace and toy directory. The workspace is

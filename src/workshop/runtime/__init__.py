@@ -3,7 +3,10 @@
 from workshop.runtime.agent_assets import inventor_custom_agent_bytes
 from workshop.runtime.contracts import Receipt
 from workshop.runtime.codex import (
+    CODEX_FAILURE_DIAGNOSTIC_FILENAME,
+    CODEX_FAILURE_DIAGNOSTIC_KIND,
     CODEX_PERMISSION_PROFILE,
+    MAX_CODEX_FAILURE_DIAGNOSTIC_BYTES,
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
     CodexFinalizedWithoutTerminalError,
     CodexInvocationError,
@@ -35,9 +38,12 @@ __all__ = [
     "CodexFinalizedWithoutTerminalError",
     "CodexInvocationError",
     "CodexRecoverableInvocationError",
+    "CODEX_FAILURE_DIAGNOSTIC_FILENAME",
+    "CODEX_FAILURE_DIAGNOSTIC_KIND",
     "CODEX_PERMISSION_PROFILE",
     "DEFAULT_MANAGER_ID",
     "MANAGER_PROJECT_PATH",
+    "MAX_CODEX_FAILURE_DIAGNOSTIC_BYTES",
     "MINIMUM_CODEX_NATIVE_RUNTIME_VERSION",
     "SUPPORTED_MANAGER_IDS",
     "CodexNativeSessionBinding",

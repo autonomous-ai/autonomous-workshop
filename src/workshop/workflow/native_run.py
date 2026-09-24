@@ -156,8 +156,11 @@ from workshop.runtime import (
     CodexRecoverableInvocationError,
     CodexNativeSessionLauncher,
     CodexNativeSessionOutcome,
+    CODEX_FAILURE_DIAGNOSTIC_FILENAME,
+    CODEX_FAILURE_DIAGNOSTIC_KIND,
     DEFAULT_MANAGER_ID,
     EffectLedger,
+    MAX_CODEX_FAILURE_DIAGNOSTIC_BYTES,
     NativeManagerInvocationError,
     NativeManagerRecoverableError,
     Receipt,
@@ -9754,6 +9757,116 @@ def _draft_publication_intent_state(
     return intent.state
 
 
+_INSPECTION_PROGRESS_SNAPSHOT_FILENAME = "inspection-progress-snapshot.json"
+
+
+def _inspection_cache_measurement_count(paths: NativeRunPaths) -> int:
+    """Count durable geometry-inspection measurements on disk (ADR 0050 #47).
+
+    The count itself carries no geometry content; it is only ever compared to
+    an earlier count to notice that an inspection is still converging.
+    """
+
+    cache_dir = paths.workspace / "product" / "cad" / "__cadgen__" / "inspection-v2"
+    try:
+        entries = list(cache_dir.iterdir())
+    except OSError:
+        return 0
+    return sum(1 for entry in entries if entry.suffix == ".json" and entry.is_file())
+
+
+def _read_inspection_progress_snapshot(
+    paths: NativeRunPaths, product_id: str
+) -> Optional[int]:
+    path = paths.host_state / _INSPECTION_PROGRESS_SNAPSHOT_FILENAME
+    try:
+        snapshot = _read_stable_private_json(
+            path, label="inspection progress snapshot", maximum_bytes=4096
+        )
+    except WorkshopError:
+        return None
+    if snapshot.get("product_id") != product_id:
+        return None
+    count = snapshot.get("count")
+    return count if isinstance(count, int) and count >= 0 else None
+
+
+def _write_inspection_progress_snapshot(
+    paths: NativeRunPaths, product_id: str, count: int
+) -> None:
+    _write_private_json(
+        paths.host_state / _INSPECTION_PROGRESS_SNAPSHOT_FILENAME,
+        {"product_id": product_id, "count": count},
+    )
+
+
+def _diagnosed_provider_transport_failure(
+    checkpoint: AgentRunCheckpoint, paths: NativeRunPaths
+) -> bool:
+    """Whether this run's own ADR 0050 diagnosis names a provider transport error."""
+
+    try:
+        diagnosis = _read_stable_private_json(
+            paths.host_state / CODEX_FAILURE_DIAGNOSTIC_FILENAME,
+            label="codex turn failure diagnostic",
+            maximum_bytes=MAX_CODEX_FAILURE_DIAGNOSTIC_BYTES,
+        )
+    except WorkshopError:
+        return False
+    if not (
+        diagnosis.get("schema_version") == 2
+        and diagnosis.get("kind") == CODEX_FAILURE_DIAGNOSTIC_KIND
+        and diagnosis.get("product_id") == checkpoint.product_id
+        and diagnosis.get("wish_sha256") == checkpoint.wish_sha256
+    ):
+        return False
+    detail = diagnosis.get("diagnostic")
+    terminal_error = detail.get("terminal_error") if isinstance(detail, Mapping) else None
+    return (
+        isinstance(terminal_error, Mapping)
+        and terminal_error.get("category") == "provider-transport"
+    )
+
+
+def _native_stop_category(
+    checkpoint: AgentRunCheckpoint,
+    *,
+    paths: Optional[NativeRunPaths],
+    action: str,
+    lifetime_budget: Optional[Mapping[str, Any]],
+) -> str:
+    """Bounded, content-free cause for why a non-complete run is not running.
+
+    This is telemetry derived from the host's own existing diagnosis (ADR
+    0050), budget and gate state. It carries no provider text, and per ADR
+    0050 it cannot advance a stage, alter a gate or authorize an effect.
+    """
+
+    if checkpoint.status == "failed":
+        # The only sites that ever set checkpoint.status = "failed" are
+        # deterministic host-gate exhaustion (the isolated CAD gate's
+        # consecutive-rejection limit, and the legacy-release upgrade and
+        # final CAD guard gates in Release).
+        return "gate-refusal"
+    if lifetime_budget is not None and lifetime_budget.get("last_stop_reason"):
+        return "budget"
+    if paths is None:
+        return "unclassified"
+    if _diagnosed_provider_transport_failure(checkpoint, paths):
+        return "transport"
+    previous_count = _read_inspection_progress_snapshot(paths, checkpoint.product_id)
+    current_count = _inspection_cache_measurement_count(paths)
+    if action not in ("inspected", "inspected-terminal"):
+        # A plain status read stays read-only; only a resume that actually
+        # ran (or attempted to run) a session advances the snapshot.
+        _write_inspection_progress_snapshot(
+            paths, checkpoint.product_id, current_count
+        )
+    if previous_count is not None and current_count > previous_count:
+        return "inspection-in-progress"
+    return "unclassified"
+
+
 def _native_receipt(
     checkpoint: AgentRunCheckpoint,
     *,
@@ -9980,6 +10093,13 @@ def _native_receipt(
                 lifetime_budget["last_stop_reason"] = stop["reason"]
         except WorkshopError:
             lifetime_budget = {"status": "unavailable", "scope": "lifetime-native-execution"}
+    stop_category = (
+        _native_stop_category(
+            checkpoint, paths=paths, action=action, lifetime_budget=lifetime_budget
+        )
+        if visible_status != "complete"
+        else None
+    )
     receipt: dict[str, Any] = {
         "schema_version": 1,
         "kind": "native-agent-run",
@@ -10001,6 +10121,7 @@ def _native_receipt(
         "progress": progress,
         "publication": publication,
         **({"budget": lifetime_budget} if lifetime_budget is not None else {}),
+        **({"stop_category": stop_category} if stop_category is not None else {}),
         "tokens": (
             _native_token_summary(paths, checkpoint)
             if paths is not None
