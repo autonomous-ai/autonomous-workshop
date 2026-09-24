@@ -1949,12 +1949,60 @@ def _validate_review_print_gates(
         )
 
 
+def _sealed_design_contract(
+    run_root: Path, wish_sha256: str
+) -> Optional[Mapping[str, Any]]:
+    """Load the sealed Design Contract from the materialized Wish, if any.
+
+    ``WISH.json`` is host-materialized read-only alongside ``STAGE.json`` for
+    every stage (ADR 0072, Delivery 2), so Contract Mode is detected here
+    rather than threaded through STAGE inputs.
+    """
+
+    wish_path = run_root / "WISH.json"
+    try:
+        wish_identity = wish_path.lstat()
+    except OSError as exc:
+        raise ProposalError("Make requires a materialized Wish at WISH.json") from exc
+    if wish_path.is_symlink() or not stat.S_ISREG(wish_identity.st_mode):
+        raise ProposalError("Materialized Wish must be a real run-local file")
+    wish, content, _ = _read_json(run_root, "WISH.json", "Materialized Wish")
+    if hashlib.sha256(content).hexdigest() != wish_sha256:
+        raise ProposalError("Materialized Wish does not match its assignment binding")
+    context = wish.get("context")
+    if not isinstance(context, dict):
+        return None
+    design_contract = context.get("design_contract")
+    if design_contract is None:
+        return None
+    if not isinstance(design_contract, dict):
+        raise ProposalError("Sealed design contract is invalid")
+    return design_contract
+
+
+def _sealed_assembly_requirement_texts(design_contract: Mapping[str, Any]) -> list[str]:
+    requirements = design_contract.get("requirements")
+    if not isinstance(requirements, list):
+        raise ProposalError("Sealed design contract requirements are invalid")
+    texts: list[str] = []
+    for raw in requirements:
+        if not isinstance(raw, dict):
+            raise ProposalError("Sealed design contract requirement is invalid")
+        if raw.get("scope") == "assembly":
+            text = raw.get("text")
+            if not isinstance(text, str) or not text:
+                raise ProposalError("Sealed design contract requirement text is invalid")
+            texts.append(text)
+    return texts
+
+
 def _validate_signature_review(
     run_root: Path,
     *,
     product_root_value: str,
     cad_project_path: PurePosixPath,
     concept_sha256: str,
+    wish_sha256: str,
 ) -> None:
     review_relative = (
         PurePosixPath(product_root_value) / cad_project_path / SIGNATURE_REVIEW_PATH
@@ -1974,42 +2022,43 @@ def _validate_signature_review(
         "Make signature review",
         maximum=MAX_SIGNATURE_REVIEW_BYTES,
     )
-    review = _fields(
-        review,
-        {
-            "schema_version",
-            "kind",
-            "concept_sha256",
-            "iso_sha256",
-            "signature_sha256",
-            "reviewer",
-            "blind_held_read",
-            "blind_form_read",
-            "blind_subjects_read",
-            "blind_action_read",
-            "blind_relationship_read",
-            "anti_generic_signature_read",
-            "wish_revealed_after_blind_read",
-            "held_object_unmistakable",
-            "form_matches_wish",
-            "subjects_match_wish",
-            "action_matches_wish",
-            "relationship_matches_wish",
-            "anti_generic_signature_visible",
-            "signature_experience_unmistakable",
-            "finished_product_desirable",
-            "review_rounds",
-            "critical_form_requirements",
-            "blocking_visual_defects",
-            "print_gate_sha256s",
-            "largest_risk",
-            "resolution",
-        },
-        "Make signature review",
-    )
+    design_contract = _sealed_design_contract(run_root, wish_sha256)
+    review_fields = {
+        "schema_version",
+        "kind",
+        "concept_sha256",
+        "iso_sha256",
+        "signature_sha256",
+        "reviewer",
+        "blind_held_read",
+        "blind_form_read",
+        "blind_subjects_read",
+        "blind_action_read",
+        "blind_relationship_read",
+        "anti_generic_signature_read",
+        "wish_revealed_after_blind_read",
+        "held_object_unmistakable",
+        "form_matches_wish",
+        "subjects_match_wish",
+        "action_matches_wish",
+        "relationship_matches_wish",
+        "anti_generic_signature_visible",
+        "signature_experience_unmistakable",
+        "finished_product_desirable",
+        "review_rounds",
+        "critical_form_requirements",
+        "blocking_visual_defects",
+        "print_gate_sha256s",
+        "largest_risk",
+        "resolution",
+    }
+    if design_contract is not None:
+        review_fields = review_fields | {"requirements_source"}
+    review = _fields(review, review_fields, "Make signature review")
+    expected_schema_version = 9 if design_contract is not None else 8
     if (
         type(review["schema_version"]) is not int
-        or review["schema_version"] != 8
+        or review["schema_version"] != expected_schema_version
         or review["kind"] != SIGNATURE_REVIEW_KIND
         or review["concept_sha256"] != concept_sha256
     ):
@@ -2035,16 +2084,19 @@ def _validate_signature_review(
     )
     if len(requirements) > 16:
         raise ProposalError("Make critical form requirements exceed the limit")
+    requirement_texts: list[str] = []
     for index, raw_requirement in enumerate(requirements, 1):
         requirement = _fields(
             raw_requirement,
             {"requirement", "blind_evidence", "matches"},
             "Make critical form requirement %d" % index,
         )
-        _bounded_text(
-            requirement["requirement"],
-            "Make critical form requirement %d text" % index,
-            1_000,
+        requirement_texts.append(
+            _bounded_text(
+                requirement["requirement"],
+                "Make critical form requirement %d text" % index,
+                1_000,
+            )
         )
         _bounded_text(
             requirement["blind_evidence"],
@@ -2054,6 +2106,16 @@ def _validate_signature_review(
         if requirement["matches"] is not True:
             raise ProposalError(
                 "Make critical form requirement %d does not visibly match" % index
+            )
+    if design_contract is not None:
+        if review["requirements_source"] != "contract":
+            raise ProposalError(
+                "Make signature review requirements_source must be contract"
+            )
+        if requirement_texts != _sealed_assembly_requirement_texts(design_contract):
+            raise ProposalError(
+                "Make critical form requirements must match the sealed contract's "
+                "assembly requirements exactly"
             )
     blockers = _array(
         review["blocking_visual_defects"], "Make blocking visual defects"
@@ -2297,6 +2359,7 @@ def _make_contract(
         product_root_value=product_root_value,
         cad_project_path=project_relative,
         concept_sha256=invented["concept_sha256"],
+        wish_sha256=assignment["wish_sha256"],
     )
     verification_relative = _safe_relative(
         cad_verification_path, "CAD verification path"

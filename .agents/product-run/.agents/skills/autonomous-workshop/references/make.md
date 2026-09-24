@@ -203,8 +203,11 @@ are separate. Frozen older runs retain their materialized rules and tools.
    Give one independent native critic only the images and that animation. Record its blind held
    object, volumetric form, subjects, action, and relationship. Then reveal the
    Wish and concept and check every positive and negative held-form constraint.
-   Allow up to three focused repairs, each followed by regenerated preflight,
-   images and an independent rereview. Stop as soon as the review passes.
+   In Contract Mode (a sealed Design Contract, ADR 0072), the host copies the
+   contract's assembly-scoped requirements into `critical_form_requirements`
+   at this reveal step; do not author that list. Allow up to three focused
+   repairs, each followed by regenerated preflight, images and an independent
+   rereview. Stop as soon as the review passes.
 8. Run the integrated final verifier once. Do not use it as an iteration loop.
 9. Write product metadata and invoke the Make finalizer immediately.
 
@@ -306,6 +309,14 @@ critical requirement has exactly `requirement`, `blind_evidence`, and
 `matches: true`. Evaluate form against the actual Wish: an exposed mechanism
 or a flat component is not inherently a defect. Wrong required relationships,
 unresolved geometry defects, and unproved promised functions remain blockers.
+
+In Contract Mode, seal schema-v9 instead: the same fields as v8 plus
+`requirements_source`, set to `"contract"`. `critical_form_requirements` must
+be exactly the sealed contract's assembly-scoped requirements, in the
+contract's order and wording -- a missing, extra, reordered, or reworded row
+refuses, as does the wrong `requirements_source`. Every other schema-v8 rule
+still applies unchanged. Outside Contract Mode, keep sealing schema v8 exactly
+as before; do not add `requirements_source` there.
 
 Separate immutable user requirements from inventor-selected styling. In Spark,
 before the final review, revise nonessential naming, species, palette or

@@ -238,8 +238,17 @@ class StageProposalToolTest(unittest.TestCase):
             "d" * 64,
         )
         self.roster = InventorRoster((alice, eve))
+        self.wish_sha256 = self.write_wish(
+            {
+                "schema_version": 1,
+                "product_id": "run-local-toy",
+                "objective": "Build a tiny lunar observatory with a rotating mask.",
+                "constraints": {},
+                "context": {},
+            }
+        )
         self.assignment = NativeMatchAssignment(
-            wish_sha256="e" * 64,
+            wish_sha256=self.wish_sha256,
             inventor_roster_sha256=self.roster.roster_sha256,
             selected_inventor_id="eve",
             selected_agent_path=eve.agent_path,
@@ -291,6 +300,81 @@ class StageProposalToolTest(unittest.TestCase):
         content = canonical_json(value) if canonical else json.dumps(value).encode()
         path.write_bytes(content)
         return path
+
+    def write_wish(self, document):
+        """Materialize WISH.json (ADR 0072) and return its sha256."""
+
+        content = canonical_json(document)
+        (self.run_root / "WISH.json").write_bytes(content)
+        return sha256(content)
+
+    def seal_contract_wish(self, requirements):
+        """Seal a Design Contract as the Wish, and its own matching Match/Invented pair.
+
+        Contract Mode (ADR 0072, Delivery 2) binds the sealed contract's
+        requirements to WISH.json's ``context.design_contract``; the Match
+        assignment and Invented contract both bind their own ``wish_sha256``
+        to it, so a Contract Mode fixture needs its own pair rather than
+        reusing ``self.assignment``/``self.invented``.
+        """
+
+        design_contract = {
+            "schema_version": 1,
+            "title": "Moon Nook",
+            "inventor": "eve",
+            "envelope_mm": [120.0, 120.0, 90.0],
+            "references": [{"file": "ref-01-observatory.png", "shows": "assembly"}],
+            "geometries": [
+                {
+                    "id": "dome",
+                    "name": "Observatory dome",
+                    "count": 1,
+                    "extents_mm": [80.0, 80.0, 60.0],
+                    "wall_min_mm": 1.2,
+                }
+            ],
+            "requirements": [
+                {"id": "R%02d" % index, "scope": "assembly", "text": text}
+                for index, text in enumerate(requirements, 1)
+            ],
+        }
+        wish_sha256 = self.write_wish(
+            {
+                "schema_version": 1,
+                "product_id": "run-local-toy",
+                "objective": "```design-contract\n%s\n```" % json.dumps(design_contract),
+                "constraints": {},
+                "context": {"design_contract": design_contract},
+            }
+        )
+        assignment = NativeMatchAssignment(
+            wish_sha256=wish_sha256,
+            inventor_roster_sha256=self.roster.roster_sha256,
+            selected_inventor_id="eve",
+            selected_agent_path=self.assignment.selected_agent_path,
+            selected_agent_sha256=self.assignment.selected_agent_sha256,
+            selected_source_manifest_sha256=self.assignment.selected_source_manifest_sha256,
+            selected_taste_sha256=self.assignment.selected_taste_sha256,
+            blueprint_sha256=self.blueprint.sha256,
+            ranking=(
+                MatchRankingEntry(
+                    "eve", "The Wish asks for a specific coherent tiny world."
+                ),
+                MatchRankingEntry(
+                    "alice", "The classic-edition specialist is less direct for this Wish."
+                ),
+            ),
+        )
+        invented = NativeInvented(
+            wish_sha256=assignment.wish_sha256,
+            assignment_sha256=assignment.assignment_sha256,
+            taste_sha256=assignment.selected_taste_sha256,
+            blueprint_sha256=assignment.blueprint_sha256,
+            schema_version=5,
+            concept=v5_concept(),
+            research=self.invented.to_dict()["research"],
+        )
+        return assignment, invented, design_contract
 
     def write_stage(self, stage, inputs, *, round_index=None, writable=False):
         path = self.run_root / "STAGE.json"
@@ -525,7 +609,15 @@ class StageProposalToolTest(unittest.TestCase):
             "blueprint_sha256": self.blueprint.sha256,
         }
 
-    def create_product(self):
+    def create_product(
+        self,
+        *,
+        invented=None,
+        critical_form_requirements=None,
+        schema_version=8,
+        requirements_source=None,
+    ):
+        invented = invented if invented is not None else self.invented
         product_root = self.run_root / "artifacts/make/r0001/product"
         (product_root / "cad/project").mkdir(parents=True)
         (product_root / "cad/project/snap").mkdir()
@@ -556,9 +648,9 @@ class StageProposalToolTest(unittest.TestCase):
         print_gates = write_print_gate_reports(
             product_root / "cad/project", ("moon",)
         )
-        write_parts(product_root, self.invented.to_dict()["concept"])
-        for group in self.invented.to_dict()["concept"]["build_plan"]:
-            seal_group(product_root, self.invented.to_dict()["concept"], group["group"])
+        write_parts(product_root, invented.to_dict()["concept"])
+        for group in invented.to_dict()["concept"]["build_plan"]:
+            seal_group(product_root, invented.to_dict()["concept"], group["group"])
         render = Image.new("RGB", (900, 900), "#fff4df")
         pen = ImageDraw.Draw(render)
         pen.ellipse((180, 160, 720, 700), fill="#35aeb8")
@@ -574,9 +666,9 @@ class StageProposalToolTest(unittest.TestCase):
             product_root / "cad/project/snap/signature.png", format="PNG"
         )
         review = {
-            "schema_version": 8,
+            "schema_version": schema_version,
             "kind": "autonomous-workshop.signature-experience-review",
-            "concept_sha256": self.invented.concept_sha256,
+            "concept_sha256": invented.concept_sha256,
             "iso_sha256": sha256(
                 (product_root / "cad/project/snap/iso.png").read_bytes()
             ),
@@ -600,7 +692,9 @@ class StageProposalToolTest(unittest.TestCase):
             "signature_experience_unmistakable": True,
             "finished_product_desirable": True,
             "review_rounds": 3,
-            "critical_form_requirements": [
+            "critical_form_requirements": critical_form_requirements
+            if critical_form_requirements is not None
+            else [
                 {
                     "requirement": "The observatory must be rounded and volumetric.",
                     "blind_evidence": "The exact views show rounded depth.",
@@ -612,6 +706,8 @@ class StageProposalToolTest(unittest.TestCase):
             "largest_risk": "The three states need a stronger direction cue.",
             "resolution": "The final sheet uses separated contrasting states.",
         }
+        if requirements_source is not None:
+            review["requirements_source"] = requirements_source
         (product_root / "cad/project/snap/SIGNATURE-REVIEW.json").write_bytes(
             canonical_json(review)
         )
@@ -1619,6 +1715,188 @@ class StageProposalToolTest(unittest.TestCase):
         )
         self.assertIn("not bound to the final signature.png", stale.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_accepts_a_contract_mode_v9_review_matching_the_sealed_contract(self):
+        requirements = (
+            "The observatory must be rounded and volumetric.",
+            "The opening must reveal a rotating three-state mask.",
+        )
+        assignment, invented, _ = self.seal_contract_wish(requirements)
+        product_root, _, _, _ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=[
+                {
+                    "requirement": text,
+                    "blind_evidence": "The exact views show this clearly.",
+                    "matches": True,
+                }
+                for text in requirements
+            ],
+        )
+        self.write_stage(
+            "make",
+            {
+                "assignment": assignment.to_dict(),
+                "invented": invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+        )
+        made_document, made_bytes = self.assert_canonical_file(
+            "artifacts/make/r0001/made.json"
+        )
+        made = NativeMade.from_mapping(made_document)
+        made.assert_context(assignment, invented, expected_round=1)
+        self.assert_outcome(
+            "make",
+            "artifacts/make/r0001/made.json",
+            made_bytes,
+            "playtest",
+        )
+
+    def test_make_refuses_a_contract_mode_review_whose_rows_or_source_differ(self):
+        requirements = (
+            "The observatory must be rounded and volumetric.",
+            "The opening must reveal a rotating three-state mask.",
+        )
+        assignment, invented, _ = self.seal_contract_wish(requirements)
+
+        def sealed_rows(texts):
+            return [
+                {
+                    "requirement": text,
+                    "blind_evidence": "The exact views show this clearly.",
+                    "matches": True,
+                }
+                for text in texts
+            ]
+
+        cases = {
+            "reordered": (
+                sealed_rows(tuple(reversed(requirements))),
+                "contract",
+                "must match the sealed contract",
+            ),
+            "extra": (
+                sealed_rows(requirements + ("An uncontracted extra requirement.",)),
+                "contract",
+                "must match the sealed contract",
+            ),
+            "missing": (
+                sealed_rows(requirements[:1]),
+                "contract",
+                "must match the sealed contract",
+            ),
+            "reworded": (
+                sealed_rows(requirements[:1] + (requirements[1] + " but reworded.",)),
+                "contract",
+                "must match the sealed contract",
+            ),
+            "wrong_source": (
+                sealed_rows(requirements),
+                "manager",
+                "requirements_source must be contract",
+            ),
+        }
+        for name, (rows, source, expected_message) in cases.items():
+            with self.subTest(case=name):
+                product_root, _, _, _ = self.create_product(
+                    invented=invented,
+                    schema_version=9,
+                    requirements_source=source,
+                    critical_form_requirements=rows,
+                )
+                self.write_stage(
+                    "make",
+                    {
+                        "assignment": assignment.to_dict(),
+                        "invented": invented.to_dict(),
+                        "feedback": [],
+                    },
+                    round_index=1,
+                )
+                result = self.run_tool(
+                    "make",
+                    "--product-root",
+                    "artifacts/make/r0001/product",
+                    "--cad-project-path",
+                    "cad/project",
+                    "--cad-verification-path",
+                    "cad/project/validation/cad-build.json",
+                    expected=2,
+                )
+                self.assertIn(expected_message, result.stderr)
+                shutil.rmtree(self.run_root / "artifacts/make/r0001/product")
+                (self.run_root / "agent-outcome.json").unlink(missing_ok=True)
+
+    def test_make_still_accepts_a_non_contract_v8_review_unchanged(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+        )
+        made_document, made_bytes = self.assert_canonical_file(
+            "artifacts/make/r0001/made.json"
+        )
+        made = NativeMade.from_mapping(made_document)
+        made.assert_context(self.assignment, self.invented, expected_round=1)
+        self.assert_outcome(
+            "make",
+            "artifacts/make/r0001/made.json",
+            made_bytes,
+            "playtest",
+        )
+
+    def test_make_refuses_a_v9_review_outside_contract_mode(self):
+        product_root, _, _, _ = self.create_product(
+            schema_version=9,
+            requirements_source="contract",
+        )
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        result = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("fields are invalid", result.stderr)
 
     def test_interrupted_image_geometry_seals_unverified_product_and_release_notes(self):
         from workshop.release.native import prepare_make_output_release

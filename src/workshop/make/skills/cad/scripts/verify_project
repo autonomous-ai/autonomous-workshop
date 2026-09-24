@@ -209,6 +209,11 @@ SIGNATURE_REVIEW_FIELDS = {
     "largest_risk",
     "resolution",
 }
+# Schema v9 (ADR 0072, Contract Mode): the host copies the sealed Design
+# Contract's requirements into the review and records their source. This
+# in-sandbox gate cannot see the sealed Wish, so it checks the field's shape
+# only; matching the review's rows to the contract is the host finalizer's job.
+SIGNATURE_REVIEW_FIELDS_V9 = SIGNATURE_REVIEW_FIELDS | {"requirements_source"}
 SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -281,9 +286,16 @@ def _required_signature_review(project: Path) -> str:
     ).encode("utf-8")
     if content != canonical or not isinstance(review, dict):
         raise ValueError("signature review must use canonical JSON encoding")
-    if set(review) != SIGNATURE_REVIEW_FIELDS:
-        raise ValueError("signature review fields do not match schema 8")
-    if review.get("schema_version") != 8 or review.get("kind") != SIGNATURE_REVIEW_KIND:
+    schema_version = review.get("schema_version")
+    if schema_version == 9:
+        if set(review) != SIGNATURE_REVIEW_FIELDS_V9:
+            raise ValueError("signature review fields do not match schema 9")
+        if review.get("requirements_source") not in ("contract", "manager"):
+            raise ValueError("signature review requirements_source is invalid")
+    else:
+        if set(review) != SIGNATURE_REVIEW_FIELDS:
+            raise ValueError("signature review fields do not match schema 8")
+    if schema_version not in (8, 9) or review.get("kind") != SIGNATURE_REVIEW_KIND:
         raise ValueError("signature review identity is invalid")
     for key in (
         "reviewer",

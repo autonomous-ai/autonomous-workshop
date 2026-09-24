@@ -1026,7 +1026,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             / "src/workshop/make/skills/cad/scripts/verify_project"
         )
 
-    def _write_signature_review(self, *, review_rounds):
+    def _write_signature_review(self, *, review_rounds, schema_version=8, requirements_source=None):
         snap = self.project / "snap"
         snap.mkdir()
         iso = b"exact iso fixture"
@@ -1034,7 +1034,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         (snap / "iso.png").write_bytes(iso)
         (snap / "signature.png").write_bytes(signature)
         review = {
-            "schema_version": 8,
+            "schema_version": schema_version,
             "kind": "autonomous-workshop.signature-experience-review",
             "concept_sha256": "0" * 64,
             "iso_sha256": _sha(iso),
@@ -1068,6 +1068,8 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             "largest_risk": "The relationship could be subtle.",
             "resolution": "The exact relationship is visible.",
         }
+        if requirements_source is not None:
+            review["requirements_source"] = requirements_source
         (snap / "SIGNATURE-REVIEW.json").write_text(
             json.dumps(review, sort_keys=True, separators=(",", ":")),
             encoding="utf-8",
@@ -1191,6 +1193,34 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             encoding="utf-8",
         )
         with self.assertRaisesRegex(ValueError, "must map report paths"):
+            validate(self.project)
+
+    def test_schema_nine_signature_review_requires_requirements_source(self):
+        import runpy
+
+        self._write_signature_review(
+            review_rounds=1, schema_version=9, requirements_source="contract"
+        )
+        validate = runpy.run_path(str(self.verifier))["_required_signature_review"]
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        self.assertEqual(validate(self.project), _sha(review_path.read_bytes()))
+
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["requirements_source"] = "operator"
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "requirements_source is invalid"):
+            validate(self.project)
+
+        review["requirements_source"] = "contract"
+        review["schema_version"] = 8
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "do not match schema 8"):
             validate(self.project)
 
     def test_blocking_form_defect_cannot_unlock_final_geometry(self):
