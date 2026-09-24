@@ -1996,6 +1996,186 @@ def _sealed_assembly_requirement_texts(design_contract: Mapping[str, Any]) -> li
     return texts
 
 
+def _sealed_geometry_requirement_rows(
+    design_contract: Mapping[str, Any],
+) -> list[tuple[str, str]]:
+    """``(geometry id, text)`` for every sealed geometry-scoped requirement,
+    in the contract's order."""
+
+    requirements = design_contract.get("requirements")
+    if not isinstance(requirements, list):
+        raise ProposalError("Sealed design contract requirements are invalid")
+    rows: list[tuple[str, str]] = []
+    for raw in requirements:
+        if not isinstance(raw, dict):
+            raise ProposalError("Sealed design contract requirement is invalid")
+        scope = raw.get("scope")
+        if isinstance(scope, str) and scope.startswith("geometry:"):
+            text = raw.get("text")
+            if not isinstance(text, str) or not text:
+                raise ProposalError("Sealed design contract requirement text is invalid")
+            rows.append((scope[len("geometry:"):], text))
+    return rows
+
+
+_GEOMETRY_PACKET_VIEWS = ("front", "top", "iso")
+
+
+def _validate_geometry_requirements(
+    run_root: Path,
+    *,
+    review: Mapping[str, Any],
+    design_contract: Mapping[str, Any],
+    project_relative: PurePosixPath,
+) -> None:
+    """Bind every geometry-scoped row (ADR 0072, issue 54) to a current,
+    passing Component's hashed visual packet, and count one blind read per
+    Unique Geometry that carries such a row."""
+
+    sealed_rows = _sealed_geometry_requirement_rows(design_contract)
+    if not sealed_rows:
+        return
+    requirements = _array(
+        review["geometry_form_requirements"],
+        "Make geometry form requirements",
+        nonempty=True,
+    )
+    if len(requirements) != len(sealed_rows):
+        raise ProposalError(
+            "Make geometry form requirements must match the sealed contract's "
+            "geometry requirements exactly"
+        )
+    make_round_script = run_root / ".agents/skills/make-round/scripts/make_round"
+    try:
+        make_round_globals = runpy.run_path(str(make_round_script))
+    except OSError as exc:
+        raise ProposalError("Make round tool is unavailable: %s" % exc) from exc
+    current_passing_component_round = make_round_globals["current_passing_component_round"]
+
+    distinct_geometries: list[str] = []
+    for index, (raw_requirement, (geometry, text)) in enumerate(
+        zip(requirements, sealed_rows), 1
+    ):
+        requirement = _fields(
+            raw_requirement,
+            {
+                "requirement",
+                "geometry",
+                "blind_evidence",
+                "matches",
+                "packet_sha256",
+                "view",
+            },
+            "Make geometry form requirement %d" % index,
+        )
+        if (
+            requirement["geometry"] != geometry
+            or _bounded_text(
+                requirement["requirement"],
+                "Make geometry form requirement %d text" % index,
+                1_000,
+            )
+            != text
+        ):
+            raise ProposalError(
+                "Make geometry form requirements must match the sealed contract's "
+                "geometry requirements exactly"
+            )
+        _bounded_text(
+            requirement["blind_evidence"],
+            "Make geometry form requirement %d evidence" % index,
+            1_000,
+        )
+        if requirement["matches"] is not True:
+            raise ProposalError(
+                "Make geometry form requirement %d does not visibly match" % index
+            )
+        view = requirement["view"]
+        if view not in _GEOMETRY_PACKET_VIEWS:
+            raise ProposalError(
+                "Make geometry form requirement %d names an invalid view" % index
+            )
+        packet_sha256 = _sha256(
+            requirement["packet_sha256"],
+            "Make geometry form requirement %d packet" % index,
+        )
+        role = geometry
+        step_relative = project_relative / ("part_%s.step" % role)
+        step_path = run_root.joinpath(*step_relative.parts)
+        digest = None
+        try:
+            step_identity = step_path.lstat()
+        except OSError:
+            step_identity = None
+        if (
+            step_identity is not None
+            and not step_path.is_symlink()
+            and stat.S_ISREG(step_identity.st_mode)
+        ):
+            digest = hashlib.sha256(step_path.read_bytes()).hexdigest()
+        project_path = run_root.joinpath(*project_relative.parts)
+        summary, reason = current_passing_component_round(project_path, role, digest)
+        if reason:
+            raise ProposalError(
+                "Make geometry form requirement %d has no bound Component visual "
+                "packet: %s" % (index, reason)
+            )
+        round_value = summary["round"]
+        packet_relative = (
+            project_relative
+            / "measure/component-rounds"
+            / role
+            / ("r%04d" % round_value)
+            / "visual-packet.json"
+        )
+        packet, packet_content, _ = _read_json(
+            run_root,
+            packet_relative.as_posix(),
+            "Make geometry form requirement %d visual packet" % index,
+        )
+        if hashlib.sha256(packet_content).hexdigest() != packet_sha256:
+            raise ProposalError(
+                "Make geometry form requirement %d is not bound to its Component's "
+                "current visual packet" % index
+            )
+        images = packet.get("images")
+        suffix = "/visual/%s.png" % view
+        if not isinstance(images, dict) or not any(
+            isinstance(key, str) and key.endswith(suffix) for key in images
+        ):
+            raise ProposalError(
+                "Make geometry form requirement %d names a view its visual packet "
+                "does not contain" % index
+            )
+        if geometry not in distinct_geometries:
+            distinct_geometries.append(geometry)
+
+    blind_reads = _array(
+        review["geometry_blind_reads"], "Make geometry blind reads", nonempty=True
+    )
+    if len(blind_reads) != len(distinct_geometries):
+        raise ProposalError(
+            "Make geometry blind reads must have exactly one entry per Unique "
+            "Geometry with a geometry-scoped requirement"
+        )
+    for index, (raw_blind_read, geometry) in enumerate(
+        zip(blind_reads, distinct_geometries), 1
+    ):
+        blind_read = _fields(
+            raw_blind_read,
+            {"geometry", "blind_read"},
+            "Make geometry blind read %d" % index,
+        )
+        if blind_read["geometry"] != geometry:
+            raise ProposalError(
+                "Make geometry blind reads must be ordered by first geometry-scoped "
+                "requirement"
+            )
+        _bounded_text(
+            blind_read["blind_read"], "Make geometry blind read %d" % index, 1_000
+        )
+
+
 def _validate_signature_review(
     run_root: Path,
     *,
@@ -2023,6 +2203,11 @@ def _validate_signature_review(
         maximum=MAX_SIGNATURE_REVIEW_BYTES,
     )
     design_contract = _sealed_design_contract(run_root, wish_sha256)
+    sealed_geometry_rows = (
+        _sealed_geometry_requirement_rows(design_contract)
+        if design_contract is not None
+        else []
+    )
     review_fields = {
         "schema_version",
         "kind",
@@ -2054,6 +2239,11 @@ def _validate_signature_review(
     }
     if design_contract is not None:
         review_fields = review_fields | {"requirements_source"}
+    if sealed_geometry_rows:
+        review_fields = review_fields | {
+            "geometry_form_requirements",
+            "geometry_blind_reads",
+        }
     review = _fields(review, review_fields, "Make signature review")
     expected_schema_version = 9 if design_contract is not None else 8
     if (
@@ -2117,6 +2307,12 @@ def _validate_signature_review(
                 "Make critical form requirements must match the sealed contract's "
                 "assembly requirements exactly"
             )
+        _validate_geometry_requirements(
+            run_root,
+            review=review,
+            design_contract=design_contract,
+            project_relative=review_relative.parent.parent,
+        )
     blockers = _array(
         review["blocking_visual_defects"], "Make blocking visual defects"
     )

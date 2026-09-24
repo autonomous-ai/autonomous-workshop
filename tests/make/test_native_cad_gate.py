@@ -1223,6 +1223,55 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "do not match schema 8"):
             validate(self.project)
 
+    def test_schema_nine_geometry_requirements_are_checked_structurally(self):
+        """This in-sandbox gate has no sealed contract to bind rows against
+        (issue 54); it only checks the field's shape."""
+        import runpy
+
+        self._write_signature_review(
+            review_rounds=1, schema_version=9, requirements_source="contract"
+        )
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["geometry_form_requirements"] = [
+            {
+                "requirement": "The dome must have one smooth uninterrupted curve.",
+                "geometry": "dome",
+                "blind_evidence": "The exact iso view shows one smooth curve.",
+                "matches": True,
+                "packet_sha256": "0" * 64,
+                "view": "iso",
+            }
+        ]
+        review["geometry_blind_reads"] = [
+            {"geometry": "dome", "blind_read": "One smooth domed curve, no seams."}
+        ]
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        validate = runpy.run_path(str(self.verifier))["_required_signature_review"]
+        self.assertEqual(validate(self.project), _sha(review_path.read_bytes()))
+
+        invalid_view = json.loads(review_path.read_text(encoding="utf-8"))
+        invalid_view["geometry_form_requirements"][0]["view"] = "left"
+        review_path.write_text(
+            json.dumps(invalid_view, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "view is invalid"):
+            validate(self.project)
+
+        missing_blind_read = json.loads(review_path.read_text(encoding="utf-8"))
+        missing_blind_read["geometry_form_requirements"][0]["view"] = "iso"
+        missing_blind_read["geometry_blind_reads"] = []
+        review_path.write_text(
+            json.dumps(missing_blind_read, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "geometry_blind_reads is invalid"):
+            validate(self.project)
+
     def test_blocking_form_defect_cannot_unlock_final_geometry(self):
         self._write_signature_review(review_rounds=1)
         review_path = self.project / "snap/SIGNATURE-REVIEW.json"

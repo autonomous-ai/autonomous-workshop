@@ -308,7 +308,7 @@ class StageProposalToolTest(unittest.TestCase):
         (self.run_root / "WISH.json").write_bytes(content)
         return sha256(content)
 
-    def seal_contract_wish(self, requirements):
+    def seal_contract_wish(self, requirements, geometry_requirements=()):
         """Seal a Design Contract as the Wish, and its own matching Match/Invented pair.
 
         Contract Mode (ADR 0072, Delivery 2) binds the sealed contract's
@@ -316,6 +316,9 @@ class StageProposalToolTest(unittest.TestCase):
         assignment and Invented contract both bind their own ``wish_sha256``
         to it, so a Contract Mode fixture needs its own pair rather than
         reusing ``self.assignment``/``self.invented``.
+
+        ``geometry_requirements`` is an optional sequence of ``(geometry id,
+        text)`` pairs sealed with ``scope: "geometry:<id>"`` (issue 54).
         """
 
         design_contract = {
@@ -336,6 +339,14 @@ class StageProposalToolTest(unittest.TestCase):
             "requirements": [
                 {"id": "R%02d" % index, "scope": "assembly", "text": text}
                 for index, text in enumerate(requirements, 1)
+            ]
+            + [
+                {
+                    "id": "G%02d" % index,
+                    "scope": "geometry:%s" % geometry,
+                    "text": text,
+                }
+                for index, (geometry, text) in enumerate(geometry_requirements, 1)
             ],
         }
         wish_sha256 = self.write_wish(
@@ -1765,6 +1776,304 @@ class StageProposalToolTest(unittest.TestCase):
             made_bytes,
             "playtest",
         )
+
+    def write_component_round(
+        self, project, role, *, ok=True, round_number=1, step_bytes=None
+    ):
+        """A current, passing (or failing) isolated Component round with a
+        hashed visual packet (issue 54). Returns the packet's sha256.
+        """
+
+        step_bytes = step_bytes if step_bytes is not None else b"ISO-10303-21;\n%s\n" % role.encode()
+        (project / ("part_%s.step" % role)).write_bytes(step_bytes)
+        digest = hashlib.sha256(step_bytes).hexdigest()
+        round_root = project / "measure/component-rounds" / role
+        round_dir = round_root / ("r%04d" % round_number)
+        visual_dir = round_dir / "visual"
+        visual_dir.mkdir(parents=True)
+        images = {}
+        for view in ("front", "top", "iso"):
+            image_path = visual_dir / ("%s.png" % view)
+            image_path.write_bytes(b"\x89PNG\r\n\x1a\n" + view.encode())
+            images[str(image_path.resolve())] = hashlib.sha256(
+                image_path.read_bytes()
+            ).hexdigest()
+        packet_bytes = json.dumps(
+            {
+                "schema_version": 1,
+                "sources": {},
+                "images": images,
+                "references": {},
+            },
+            sort_keys=True,
+            indent=2,
+        ).encode() + b"\n"
+        (round_dir / "visual-packet.json").write_bytes(packet_bytes)
+        summary = {
+            "round": round_number,
+            "scope": "component:%s" % role,
+            "entry": "part_%s.step.py" % role,
+            "parts": [role],
+            "ok": ok,
+        }
+        (round_dir / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+        state = {
+            "round": round_number,
+            "scope": "component:%s" % role,
+            "parts": {role: digest},
+        }
+        (round_root / "make-round-state.json").write_text(
+            json.dumps(state), encoding="utf-8"
+        )
+        return hashlib.sha256(packet_bytes).hexdigest()
+
+    def materialize_make_round(self):
+        helper = self.run_root / ".agents/skills/make-round/scripts/make_round"
+        helper.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(
+            REPOSITORY / "src/workshop/make/skills/make-round/scripts/make_round",
+            helper,
+        )
+
+    @staticmethod
+    def geometry_review_row(geometry, text, packet_sha256, *, view="iso"):
+        return {
+            "requirement": text,
+            "geometry": geometry,
+            "blind_evidence": "The exact %s view shows this clearly." % view,
+            "matches": True,
+            "packet_sha256": packet_sha256,
+            "view": view,
+        }
+
+    def test_make_accepts_a_contract_mode_review_with_a_bound_geometry_requirement(self):
+        requirements = self.CONTRACT_REQUIREMENTS
+        geometry_text = "The dome must have one smooth uninterrupted curve."
+        assignment, invented, _ = self.seal_contract_wish(
+            requirements, geometry_requirements=[("dome", geometry_text)]
+        )
+        self.materialize_make_round()
+        product_root, *_ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        packet_sha256 = self.write_component_round(product_root / "cad/project", "dome")
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        review["geometry_form_requirements"] = [
+            self.geometry_review_row("dome", geometry_text, packet_sha256)
+        ]
+        review["geometry_blind_reads"] = [
+            {"geometry": "dome", "blind_read": "One smooth domed curve, no seams."}
+        ]
+        review_path.write_bytes(canonical_json(review))
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
+
+    def test_make_refuses_a_geometry_requirement_with_no_bound_packet(self):
+        requirements = self.CONTRACT_REQUIREMENTS
+        geometry_text = "The dome must have one smooth uninterrupted curve."
+        assignment, invented, _ = self.seal_contract_wish(
+            requirements, geometry_requirements=[("dome", geometry_text)]
+        )
+        self.materialize_make_round()
+        product_root, *_ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        review["geometry_form_requirements"] = [
+            self.geometry_review_row("dome", geometry_text, "a" * 64)
+        ]
+        review["geometry_blind_reads"] = [
+            {"geometry": "dome", "blind_read": "One smooth domed curve, no seams."}
+        ]
+        review_path.write_bytes(canonical_json(review))
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("no bound Component visual packet", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_refuses_a_geometry_requirement_with_a_stale_packet(self):
+        requirements = self.CONTRACT_REQUIREMENTS
+        geometry_text = "The dome must have one smooth uninterrupted curve."
+        assignment, invented, _ = self.seal_contract_wish(
+            requirements, geometry_requirements=[("dome", geometry_text)]
+        )
+        self.materialize_make_round()
+        product_root, *_ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        project = product_root / "cad/project"
+        packet_sha256 = self.write_component_round(project, "dome")
+        # The Component's STEP moved after its isolated pass.
+        (project / "part_dome.step").write_bytes(b"ISO-10303-21;\nchanged\n")
+        review_path = project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        review["geometry_form_requirements"] = [
+            self.geometry_review_row("dome", geometry_text, packet_sha256)
+        ]
+        review["geometry_blind_reads"] = [
+            {"geometry": "dome", "blind_read": "One smooth domed curve, no seams."}
+        ]
+        review_path.write_bytes(canonical_json(review))
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("changed after its component pass", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_refuses_a_geometry_requirement_bound_to_the_wrong_packet(self):
+        requirements = self.CONTRACT_REQUIREMENTS
+        geometry_text = "The dome must have one smooth uninterrupted curve."
+        assignment, invented, _ = self.seal_contract_wish(
+            requirements, geometry_requirements=[("dome", geometry_text)]
+        )
+        self.materialize_make_round()
+        product_root, *_ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        project = product_root / "cad/project"
+        self.write_component_round(project, "dome")
+        # A different Component's packet hash is quoted instead of dome's own.
+        other_packet_sha256 = self.write_component_round(project, "other")
+        review_path = project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        review["geometry_form_requirements"] = [
+            self.geometry_review_row("dome", geometry_text, other_packet_sha256)
+        ]
+        review["geometry_blind_reads"] = [
+            {"geometry": "dome", "blind_read": "One smooth domed curve, no seams."}
+        ]
+        review_path.write_bytes(canonical_json(review))
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("not bound to its Component's current visual packet", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_refuses_a_geometry_requirement_naming_an_absent_view(self):
+        requirements = self.CONTRACT_REQUIREMENTS
+        geometry_text = "The dome must have one smooth uninterrupted curve."
+        assignment, invented, _ = self.seal_contract_wish(
+            requirements, geometry_requirements=[("dome", geometry_text)]
+        )
+        self.materialize_make_round()
+        product_root, *_ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        project = product_root / "cad/project"
+        packet_sha256 = self.write_component_round(project, "dome")
+        review_path = project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        row = self.geometry_review_row("dome", geometry_text, packet_sha256)
+        row["view"] = "left"
+        review["geometry_form_requirements"] = [row]
+        review["geometry_blind_reads"] = [
+            {"geometry": "dome", "blind_read": "One smooth domed curve, no seams."}
+        ]
+        review_path.write_bytes(canonical_json(review))
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("names an invalid view", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_refuses_geometry_requirements_that_differ_from_the_sealed_contract(self):
+        requirements = self.CONTRACT_REQUIREMENTS
+        geometry_text = "The dome must have one smooth uninterrupted curve."
+        assignment, invented, _ = self.seal_contract_wish(
+            requirements, geometry_requirements=[("dome", geometry_text)]
+        )
+        self.materialize_make_round()
+        product_root, *_ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        project = product_root / "cad/project"
+        packet_sha256 = self.write_component_round(project, "dome")
+        review_path = project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        review["geometry_form_requirements"] = [
+            self.geometry_review_row(
+                "dome", geometry_text + " but reworded.", packet_sha256
+            )
+        ]
+        review["geometry_blind_reads"] = [
+            {"geometry": "dome", "blind_read": "One smooth domed curve, no seams."}
+        ]
+        review_path.write_bytes(canonical_json(review))
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn(
+            "geometry form requirements must match the sealed contract", result.stderr
+        )
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_refuses_a_missing_geometry_blind_read(self):
+        requirements = self.CONTRACT_REQUIREMENTS
+        geometry_text = "The dome must have one smooth uninterrupted curve."
+        assignment, invented, _ = self.seal_contract_wish(
+            requirements, geometry_requirements=[("dome", geometry_text)]
+        )
+        self.materialize_make_round()
+        product_root, *_ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        project = product_root / "cad/project"
+        packet_sha256 = self.write_component_round(project, "dome")
+        review_path = project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        review["geometry_form_requirements"] = [
+            self.geometry_review_row("dome", geometry_text, packet_sha256)
+        ]
+        review["geometry_blind_reads"] = []
+        review_path.write_bytes(canonical_json(review))
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("must not be empty", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_counts_one_blind_read_per_unique_geometry_with_two_requirements(self):
+        requirements = self.CONTRACT_REQUIREMENTS
+        first_text = "The dome must have one smooth uninterrupted curve."
+        second_text = "The dome must show no visible seam line."
+        assignment, invented, _ = self.seal_contract_wish(
+            requirements,
+            geometry_requirements=[("dome", first_text), ("dome", second_text)],
+        )
+        self.materialize_make_round()
+        product_root, *_ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        project = product_root / "cad/project"
+        packet_sha256 = self.write_component_round(project, "dome")
+        review_path = project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        review["geometry_form_requirements"] = [
+            self.geometry_review_row("dome", first_text, packet_sha256),
+            self.geometry_review_row("dome", second_text, packet_sha256),
+        ]
+        # Exactly one blind read for the one Unique Geometry with rows.
+        review["geometry_blind_reads"] = [
+            {"geometry": "dome", "blind_read": "One smooth domed curve, no seams."}
+        ]
+        review_path.write_bytes(canonical_json(review))
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
 
     def test_make_accepts_a_contract_mode_v9_review_matching_the_sealed_contract(self):
         requirements = self.CONTRACT_REQUIREMENTS
