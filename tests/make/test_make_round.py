@@ -830,6 +830,32 @@ class SealedReferenceTest(unittest.TestCase):
             self.assertFalse(summary["checks_ok"])
             self.assertEqual(summary["sealed"], [{"label": "ref-01-body", "scored_by": "assembly"}])
 
+    def test_current_passing_component_round_names_why_a_component_does_not_qualify(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            lookup = module.current_passing_component_round
+            self.assertEqual(lookup(project, "body", "d1"), (None, "part_body.step.py has no isolated component round"))
+            root = project / "measure/component-rounds/body"
+            root.mkdir(parents=True)
+            state_path = root / module.STATE_NAME
+            for state in ([], {"round": 0, "scope": "component:body"}, {"round": 1, "scope": "component:wheel"}):
+                state_path.write_text(json.dumps(state))
+                self.assertEqual(lookup(project, "body", "d1"), (None, "part_body.step.py has invalid component state"))
+            state_path.write_text(json.dumps({"round": 1, "scope": "component:body", "parts": {"body": "d1"}}))
+            self.assertEqual(lookup(project, "body", "d1"), (None, "part_body.step.py has no component summary"))
+            (root / "r0001").mkdir()
+            summary_path = root / "r0001/summary.json"
+            summary = {"scope": "component:body", "entry": "part_body.step.py", "parts": ["body"], "ok": True}
+            for invalid in ([], {**summary, "entry": "part_wheel.step.py"}, {**summary, "parts": ["body", "wheel"]}):
+                summary_path.write_text(json.dumps(invalid))
+                self.assertEqual(lookup(project, "body", "d1"), (None, "part_body.step.py has invalid component summary"))
+            summary_path.write_text(json.dumps({**summary, "ok": False}))
+            self.assertEqual(lookup(project, "body", "d1"), (None, "part_body.step.py latest component round did not pass"))
+            summary_path.write_text(json.dumps(summary))
+            self.assertEqual(lookup(project, "body", "d2"), (None, "part_body.step.py changed after its component pass"))
+            self.assertEqual(lookup(project, "body", "d1"), (summary, ""))
+
     def test_a_project_outside_any_run_keeps_its_ledger_behaviour(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
