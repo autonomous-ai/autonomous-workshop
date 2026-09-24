@@ -142,7 +142,7 @@ def _parse_geometries(value: Any, errors: List[str]) -> Tuple[Tuple[ContractGeom
         elif identifier in seen:
             errors.append("%s.id repeats an earlier geometry id: %r" % (label, identifier))
             identifier = None
-        elif identifier is not None:
+        else:
             seen.add(identifier)
         name = item.get("name")
         if not isinstance(name, str) or not name.strip():
@@ -210,7 +210,7 @@ def _parse_requirements(
         elif identifier in seen:
             errors.append("%s.id repeats an earlier requirement id: %r" % (label, identifier))
             identifier = None
-        elif identifier is not None:
+        else:
             seen.add(identifier)
         scope = _scope(item.get("scope"), geometry_ids, "%s.scope" % label, errors)
         text = item.get("text")

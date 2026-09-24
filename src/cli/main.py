@@ -771,7 +771,7 @@ def _wish(args: argparse.Namespace) -> int:
         progress=progress,
         live_progress=live_progress,
     )
-    if wish.context.get("design_contract") is not None:
+    if args.contract is not None:
         receipt = {**receipt, "contract_mode": True}
     if args.json:
         _print_json(receipt)
