@@ -308,7 +308,14 @@ class StageProposalToolTest(unittest.TestCase):
         (self.run_root / "WISH.json").write_bytes(content)
         return sha256(content)
 
-    def seal_contract_wish(self, requirements, geometry_requirements=()):
+    def seal_contract_wish(
+        self,
+        requirements,
+        geometry_requirements=(),
+        *,
+        objective=None,
+        extra_context=None,
+    ):
         """Seal a Design Contract as the Wish, and its own matching Match/Invented pair.
 
         Contract Mode (ADR 0072, Delivery 2) binds the sealed contract's
@@ -319,6 +326,12 @@ class StageProposalToolTest(unittest.TestCase):
 
         ``geometry_requirements`` is an optional sequence of ``(geometry id,
         text)`` pairs sealed with ``scope: "geometry:<id>"`` (issue 54).
+
+        ``objective`` and ``extra_context`` let a caller seal this as a
+        correction run (``workshop fix --contract``, issue #52) instead of a
+        fresh Wish: the objective becomes the correction brief rather than
+        the contract's own bytes, and ``context.revision`` marks it as a
+        correction, exactly as ``prepare_revision`` seals one.
         """
 
         design_contract = {
@@ -349,13 +362,17 @@ class StageProposalToolTest(unittest.TestCase):
                 for index, (geometry, text) in enumerate(geometry_requirements, 1)
             ],
         }
+        context = {"design_contract": design_contract}
+        if extra_context:
+            context.update(extra_context)
         wish_sha256 = self.write_wish(
             {
                 "schema_version": 1,
                 "product_id": "run-local-toy",
-                "objective": "```design-contract\n%s\n```" % json.dumps(design_contract),
+                "objective": objective
+                or "```design-contract\n%s\n```" % json.dumps(design_contract),
                 "constraints": {},
-                "context": {"design_contract": design_contract},
+                "context": context,
             }
         )
         assignment = NativeMatchAssignment(
@@ -2045,6 +2062,54 @@ class StageProposalToolTest(unittest.TestCase):
                 self.assertIn(expected_message, result.stderr)
                 shutil.rmtree(self.run_root / "artifacts/make/r0001/product")
                 (self.run_root / "agent-outcome.json").unlink(missing_ok=True)
+
+    def test_make_judges_a_contract_mode_correction_against_the_whole_contract(self):
+        """A correction sealed with ``fix --contract`` (issue #52) still needs
+
+        every contract requirement in its review, not only the one its brief
+        names -- the same rows a fresh Contract Mode Wish would require.
+        """
+        requirements = self.CONTRACT_REQUIREMENTS
+        assignment, invented, _ = self.seal_contract_wish(
+            requirements,
+            objective="Round out the observatory's silhouette a little more.",
+            extra_context={
+                "source": "workshop-fix",
+                "revision": {
+                    "schema_version": 1,
+                    "source_title": "Moon Nook",
+                    "source_status": "public",
+                    "source_page_url": "https://example.test/moon-nook",
+                    "source_artifact_sha256": "e" * 64,
+                    "snapshot_path": "revision-source.zip",
+                    "snapshot_sha256": "f" * 64,
+                    "work_path": "revision-work",
+                },
+            },
+        )
+        # A review carrying only the brief's requirement, not the untouched
+        # requirement nobody restated, is refused exactly like a fresh run's
+        # incomplete review would be.
+        self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements[:1]),
+        )
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("must match the sealed contract", result.stderr)
+        shutil.rmtree(self.run_root / "artifacts/make/r0001/product")
+        (self.run_root / "agent-outcome.json").unlink(missing_ok=True)
+
+        # The whole contract's rows pass, even though the brief named only one.
+        self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
 
     def test_make_still_accepts_a_non_contract_v8_review_unchanged(self):
         self.create_product()

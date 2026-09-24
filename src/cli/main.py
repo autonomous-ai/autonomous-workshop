@@ -795,17 +795,16 @@ def _fix(args: argparse.Namespace) -> int:
     else:
         prompt = args.prompt
     loaded_references = load_wish_references(list(args.references or ()))
-    # A correction without images calls exactly as it did before --ref existed,
-    # so its Wish keeps the canonical bytes of the pre-reference contract.
-    reference_options = (
-        {
-            "references": [item.reference for item in loaded_references],
-            "reference_sources": wish_reference_sources(loaded_references),
-        }
-        if loaded_references
-        else {}
-    )
-    wish, snapshot = prepare_revision(args.source, prompt, **reference_options)
+    # A correction without images or a contract calls exactly as it did before
+    # --ref and --contract existed, so its Wish keeps the canonical bytes of
+    # the pre-reference contract.
+    revision_options: dict = {}
+    if loaded_references:
+        revision_options["references"] = [item.reference for item in loaded_references]
+        revision_options["reference_sources"] = wish_reference_sources(loaded_references)
+    if args.contract is not None:
+        _, revision_options["design_contract"] = _load_sealed_contract(args.contract)
+    wish, snapshot = prepare_revision(args.source, prompt, **revision_options)
     runtime = manager_runtime_selection(
         args.agent, model=args.model, reasoning_effort=args.effort,
     )
@@ -818,6 +817,8 @@ def _fix(args: argparse.Namespace) -> int:
         wish_reference_files=wish_reference_files(loaded_references),
         progress=progress, live_progress=_LiveWishProgress(progress, runtime.spec.display_name),
     )
+    if args.contract is not None:
+        receipt = {**receipt, "contract_mode": True}
     if args.json:
         _print_json(receipt)
     else:
@@ -2134,6 +2135,18 @@ def parser() -> argparse.ArgumentParser:
     fix.add_argument("--agent", choices=tuple(SUPPORTED_MANAGER_IDS), default=DEFAULT_MANAGER_ID)
     fix.add_argument("--model")
     fix.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS)
+    fix.add_argument(
+        "--contract",
+        type=Path,
+        metavar="FILE",
+        help=(
+            "seal a Design Contract into this correction, freezing it in "
+            "Contract Mode: the review then carries every one of the "
+            "contract's requirements, not only the ones --prompt names; a "
+            "contract that fails to parse or exceeds either row limit "
+            "refuses before any run starts, exactly like `wish --contract`"
+        ),
+    )
     fix.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
                       help="enable Make motion checks and animation review (default: false)")
     fix.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS)

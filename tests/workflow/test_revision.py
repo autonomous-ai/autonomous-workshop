@@ -88,6 +88,23 @@ class RevisionTest(unittest.TestCase):
         self.assertNotIn("references", bare.to_dict())
         self.assertNotIn("reference_sources", bare.context)
 
+    def test_seals_a_design_contract_into_the_correction_context(self):
+        contract = {
+            "schema_version": 1, "title": "Antisol", "inventor": "ad-astra",
+            "requirements": [{"id": "R01", "scope": "assembly", "text": "Keep the sun den."}],
+        }
+        wish, _ = prepare_revision(
+            self.source, "Widen the rim", design_contract=contract,
+        )
+        self.assertEqual(wish.context["design_contract"], contract)
+        # The prompt stays the correction brief; only wish --contract replaces
+        # the objective wholesale with the contract's own bytes.
+        self.assertEqual(wish.objective, "Widen the rim")
+        # Without --contract, the sealed key is absent rather than null, same
+        # as the reference-image fields above.
+        bare, _ = prepare_revision(self.source, "Widen the rim")
+        self.assertNotIn("design_contract", bare.context)
+
     def test_accepts_an_unreleased_archive_and_records_its_status(self):
         """A --no-publish toy is a correction source; a Factory draft is not."""
         self.publication["publication"] = {
