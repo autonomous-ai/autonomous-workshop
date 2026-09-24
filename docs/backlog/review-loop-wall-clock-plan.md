@@ -66,9 +66,12 @@ caching and need no ADR of their own.
   build, and key tessellation per occurrence on content. Rendering from the
   exported STEP is not byte-identical (0.08% of pixels) and is excluded. Output
   must stay byte-identical.
-- **`verify_project` honours `make_round`'s reuse ledger**, which already exists
-  and is sound at `make_round:300-347` (`print_context` / `reusable_print`) and
-  is currently ignored.
+- ~~**`verify_project` honours `make_round`'s reuse ledger**~~ (#43, closed
+  against the baseline). The ledger holds Print Gate results, which the verifier
+  computes only under `--print-gates`, and the baseline Spark correction ran
+  none. It keys on STEP bytes that a multi-target `gen` does not reproduce
+  across the single-part builds of Make Rounds. Reopen for a print-ready Run
+  once STEP serialisation is byte-stable.
 - **Polling overshoot falls out of this.** The measured wall-clock cost of
   polling is overshoot: 67 s across v13's four foreground jobs, against about
   12 minutes on the two datable v12 jobs that were backgrounded and polled with

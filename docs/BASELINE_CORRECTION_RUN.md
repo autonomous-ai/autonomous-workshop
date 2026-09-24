@@ -310,7 +310,7 @@ is 421 minutes.
   20 minutes (410 s × 3). A byte-identical route would reuse the in-process
   build or a content-keyed tessellation. Otherwise close #42.
 
-### #43 — Let the final verifier honour the Make Round reuse ledger: **close as written**
+### #43 — Let the final verifier honour the Make Round reuse ledger: **close as written** (applied: closed)
 
 - **Saving on this baseline: 0.** The ledger holds Print Gate results, and this
   Spark correction made no print-ready claim, so `verify_project` ran without
@@ -319,8 +319,13 @@ is 421 minutes.
   sweep**, which is not a Print Gate. Reusing it is hash-gated skipping. Whether
   that counts as compromising determinism is the grilling handoff's open Q8, so
   it is the owner's call, not this ticket's.
+- **Likely to miss even where it applies.** The ledger reuses a result only
+  for byte-identical STEP. Each sweep regenerates every entry in one
+  multi-target `gen`, while Make Rounds generate parts singly, the pairing that
+  gave 11 of 24 unchanged parts different bytes here. This is read from the
+  code, not tested.
 - **Recommendation:** reopen only for a print-ready Run, where the ledger
-  applies.
+  applies, and after STEP serialisation is byte-stable.
 
 ### #44 — Name the component-round set explicitly: **defer with #45** (applied: closed with #45)
 
