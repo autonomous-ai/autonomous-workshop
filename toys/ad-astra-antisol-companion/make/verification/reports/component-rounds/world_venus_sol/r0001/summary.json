@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_venus_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_venus_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_venus_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_venus_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_venus_sol"
+ ],
+ "print": {
+  "world_venus_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001/overhang-world_venus_sol.log": "df8db66e7032098980661960e3a2ff4ef473c9c728c033aea8947e20dd064a4c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001/thickness-world_venus_sol.log": "b68e1d8e1172ab1a43401e24f1bd6ae882b203f8d0110763550382b6dd79a3bd"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_venus_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed piece: a drafted disc with a sphere seated in a short collar on its top face, globe sunk into the disc. Front view shows the globe centred over the disc with the seat collar closing the joint and the disc wall drafted; top view shows the globe concentric in the disc with an even rim of disc all round; iso shows a single coherent solid with no floating, missing or extra geometry and no visible intersections. Proportions match the rank ladder entry for venus (globe diameter against the fixed 34 mm disc).",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_venus_sol/r0001/visual-packet.json",
+  "packet_sha256": "4c9c6cf155a3b991203cfacb236033a74c3e427ba232e0850cc5f86ebef77c6b",
+  "status": "pass"
+ }
+}

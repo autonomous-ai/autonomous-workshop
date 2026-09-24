@@ -1,0 +1,17 @@
+{
+ "files": {
+  "den_anti_flare1_cyan": "50679cdd3bc995b41f04742ad75730aa9b69eb21f9fb9cc5707283cf163da7ce",
+  "den_anti_star_black": "dc21338d93e42d0f810fb0b43afdbd11c5c7e6710f07431d735eb34c99676db7",
+  "den_sol_flare1_orange": "d4e88d7f0d391c2ed9ab7fc2f86e0b1bd8569a9a92973f179aed590cee25ad70",
+  "den_sol_star_sunflower_yellow": "95aa870a75b4e5b8bbec99ee32d222ff3130d7cd152e2c2ed2e3d15bcef3893f"
+ },
+ "group": "stars",
+ "kind": "autonomous-workshop.make-group",
+ "parts": [
+  "den_sol_star_sunflower_yellow",
+  "den_sol_flare1_orange",
+  "den_anti_star_black",
+  "den_anti_flare1_cyan"
+ ],
+ "schema_version": 1
+}

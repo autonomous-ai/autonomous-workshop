@@ -1,0 +1,13 @@
+{
+ "files": {
+  "tray_anti_gray": "eaa1d516212b29d6b604dfbaafb74bb37fa9155e244f1df1924c6937d557c42a",
+  "tray_sol_gray": "f2051fc3c35882c5fb09279d7939f53a520d6795f8d8fb36e11e8e822f64915b"
+ },
+ "group": "storage",
+ "kind": "autonomous-workshop.make-group",
+ "parts": [
+  "tray_sol_gray",
+  "tray_anti_gray"
+ ],
+ "schema_version": 1
+}

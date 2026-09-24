@@ -1,0 +1,49 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0001",
+ "likeness": {},
+ "parts": {
+  "world_mars_anti": "701aa22c961623eebf434ee0d0ec510af329cca39a73f04bb3732ef55d887077"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "world_mars_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0001/overhang-world_mars_anti.log": "abafd0a9685d41a831550dfabc18fd3bee19151a0a520b373724a834ea27a8d5",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_anti/r0001/thickness-world_mars_anti.log": "a7d554635c3397df34830c21ad30f810e7e4c03d428b1fe9379cd410cd80e629"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.5.2",
+   "scipy": "1.18.1"
+  },
+  "platform": "linux",
+  "python": "<HOME>/miniconda3/bin/python3.13",
+  "python_version": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+  "sources": {
+   "check_overhang": "a3bcb271c46a52c21fbf507f56537bdfda27070c31ece232b070382b5e886c97",
+   "check_thickness": "6e1a743b3b228b68bc7ead1c23ca9ba320a813797a869bf6ada16b53c28f0b7d",
+   "make_round": "60b135a36039fe3a8416f73cc89eb456f8a348f21b4a3951377557a11afbbec5",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 1,
+ "scope": "component:world_mars_anti"
+}

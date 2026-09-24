@@ -1,0 +1,29 @@
+{
+ "files": {
+  "earth_sol_dryland1_beige": "c7973aad47440182d1a10ed0cc3bb9b83f83f585da187918cd1cc5f15a90b160",
+  "earth_sol_ice_white": "b04cd370f4ca440188bcc3e37bfb8ef189b11e3ddd3ac56f04f35366ef6dd2d6",
+  "earth_sol_land1_green": "f149f50a734df943262427a85023c522668632bad28f20a83463ebd1ad16ad1c",
+  "mars_sol_albedo1_cocoa_brown": "48eff7ceb6cc6b0ffe224997f3acd8d196d4cab67ce0cce8b8f9e9061b89901b",
+  "mars_sol_caps1_white": "30b85fc646ef30a30bf50f321c873c0caa3dd5c8989755a55f55ee503631b06a",
+  "mercury_sol_caloris_floor_white": "0c6dc60a7a3899ab2a1088ef0d63283924f58834dfe9e269c144cb6e49769a51",
+  "mercury_sol_caloris_rim_cocoa_brown": "31b510c0c7780c1f7a880c012b4a934016938ecd9ffa4fcb0835b551707b0fa7",
+  "mercury_sol_plains1_cocoa_brown": "9851bcaa0b145fe426bfe2bae2e31fc8dce949af21654a00623d6189a26f83d0",
+  "venus_sol_highland1_beige": "d0a277f9057ee9b2f8c62e860f5f38bf629360f9b380ccf835be13901f46e174",
+  "venus_sol_lowland1_cocoa_brown": "1b41b9ab8f2208033fac0edb40d31f9cda3a9dd7fc904de69011f06dfa8f0069"
+ },
+ "group": "inner-world-markings",
+ "kind": "autonomous-workshop.make-group",
+ "parts": [
+  "mercury_sol_plains1_cocoa_brown",
+  "mercury_sol_caloris_rim_cocoa_brown",
+  "mercury_sol_caloris_floor_white",
+  "mars_sol_albedo1_cocoa_brown",
+  "mars_sol_caps1_white",
+  "venus_sol_highland1_beige",
+  "earth_sol_land1_green",
+  "earth_sol_dryland1_beige",
+  "earth_sol_ice_white",
+  "venus_sol_lowland1_cocoa_brown"
+ ],
+ "schema_version": 1
+}

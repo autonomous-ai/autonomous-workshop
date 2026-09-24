@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_neptune_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_neptune_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_neptune_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_neptune_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_neptune_anti"
+ ],
+ "print": {
+  "world_neptune_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/overhang-world_neptune_anti.log": "df649d2bc7efc766b2fb44f1e8b82af8f0f76f45ddfdf218ab93b91344f74292",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/thickness-world_neptune_anti.log": "e7bfe06727bfaa135a0e3e21b20c06f357c50ec32bff43a70bb421e378735781"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_neptune_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed piece: a drafted disc with a sphere seated in a short collar on its top face, globe sunk into the disc. Front view shows the globe centred over the disc with the seat collar closing the joint and the disc wall drafted; top view shows the globe concentric in the disc with an even rim of disc all round; iso shows a single coherent solid with no floating, missing or extra geometry and no visible intersections. Proportions match the rank ladder entry for neptune (globe diameter against the fixed 34 mm disc).",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_anti/r0001/visual-packet.json",
+  "packet_sha256": "852f29d1376d8e351c8c3c2ed12d7fd087b0d9ea7559e0dbcf9c854996db21ac",
+  "status": "pass"
+ }
+}

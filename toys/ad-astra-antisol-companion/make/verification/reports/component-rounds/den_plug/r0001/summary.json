@@ -1,0 +1,61 @@
+{
+ "build": {
+  "den_plug": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "den_plug"
+ ],
+ "check_motion": false,
+ "checked": [
+  "den_plug"
+ ],
+ "checks_ok": true,
+ "entry": "part_den_plug.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "den_plug"
+ ],
+ "print": {
+  "den_plug": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/overhang-den_plug.log": "b0630283a5303cd7d849ecf6aaaaf17c9f19ef12bf0481313c248bb5c7378210",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/thickness-den_plug.log": "10aa0bcd404e578d12faab27b604bd492f6b033d088e9dc97b77bd16c107eac5"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.22,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:den_plug",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/den_plug/r0001/visual-packet.json",
+  "packet_sha256": "2372e644d7a3c859c911f55afa752b670bd4089ecedf5c3cc4cfdea23d4cd394",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_panel_northwest.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northwest/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_northwest"
+ ],
+ "print": {
+  "panel_northwest": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northwest/r0001/overhang-panel_northwest.log": "427b2da01dac9f59a02b09c0fd6644f47796e688dd8ea4919f058e75f018e490",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northwest/r0001/thickness-panel_northwest.log": "6946407a3f5dfc58c6041ace89dda75edb6a3321d3aa062dd3c13243bbe603fa"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "panel_northwest"
+ ],
+ "round": 3,
+ "scope": "component:panel_northwest",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Board panel: flat slab with square terrain pockets and grooves. Front view is an even slab; top view a rectangle; iso shows pockets and grooves cut into the top face, ribs continuous, no stray solid.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northwest/r0003/visual-packet.json",
+  "packet_sha256": "30207e52409c839858b6a2ea530b343151b9cae3538de8f4d20201e7ba3dad4d",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "files": {
+  "panel_northeast_dark_gray": "03c442f46e5c985da5e431af45e36b26828a0fa3552d8841a02e4dfeda0e9c7f",
+  "panel_northwest_dark_gray": "231cfd8fd0a7e2d4803b97d380e796649f9ea1187036624b875629b4e85f1ab6",
+  "panel_southeast_dark_gray": "f7f5471c781357e43f0e055bbab83e1e09fbcbff67fdc801707c18f0dc1fee32",
+  "panel_southwest_dark_gray": "5b5a44babe9db8ee3b70276b4671b77fbac9975691138c12a8286a00b9ca03a7"
+ },
+ "group": "board-panels",
+ "kind": "autonomous-workshop.make-group",
+ "parts": [
+  "panel_southwest_dark_gray",
+  "panel_southeast_dark_gray",
+  "panel_northwest_dark_gray",
+  "panel_northeast_dark_gray"
+ ],
+ "schema_version": 1
+}

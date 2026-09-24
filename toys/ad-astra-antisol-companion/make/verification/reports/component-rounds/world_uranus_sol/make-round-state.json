@@ -1,0 +1,49 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001",
+ "likeness": {},
+ "parts": {
+  "world_uranus_sol": "b47c381ba8116a4be49096a6fa10944f0e90f9c3be866f8fa9db677ede046feb"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "world_uranus_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001/overhang-world_uranus_sol.log": "d9dea02accfd1a5c0c3e932566ab1ab78e3eb47e6946856ef01df69c315d420a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0001/thickness-world_uranus_sol.log": "30aa6bb103e5676957426081d4b3a8a97eb4758c665a32028aacf0d85621c43e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.28,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.5.2",
+   "scipy": "1.18.1"
+  },
+  "platform": "linux",
+  "python": "<HOME>/miniconda3/bin/python3.13",
+  "python_version": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+  "sources": {
+   "check_overhang": "a3bcb271c46a52c21fbf507f56537bdfda27070c31ece232b070382b5e886c97",
+   "check_thickness": "6e1a743b3b228b68bc7ead1c23ca9ba320a813797a869bf6ada16b53c28f0b7d",
+   "make_round": "60b135a36039fe3a8416f73cc89eb456f8a348f21b4a3951377557a11afbbec5",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 1,
+ "scope": "component:world_uranus_sol"
+}

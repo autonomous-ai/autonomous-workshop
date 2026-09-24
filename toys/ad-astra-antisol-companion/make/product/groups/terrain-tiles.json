@@ -1,0 +1,15 @@
+{
+ "files": {
+  "belt_b4_cocoa_brown": "3ac022797ab982b9601d420abb10b2fdab7959e5f0b759e2f0d19e48283ffb45",
+  "corona_c1_orange": "223de973faa04e17a70e386fc873877c0e546c54eca738bf03e5968addda2518",
+  "corona_c9_cyan": "a5c237b3b04a20ab8daa34c23c93521b2a444b898cdb87856f34eb95b97284cb"
+ },
+ "group": "terrain-tiles",
+ "kind": "autonomous-workshop.make-group",
+ "parts": [
+  "belt_b4_cocoa_brown",
+  "corona_c1_orange",
+  "corona_c9_cyan"
+ ],
+ "schema_version": 1
+}

@@ -1,0 +1,33 @@
+{
+ "files": {
+  "jupiter_sol_bands1_cocoa_brown": "f07538771bdba9a51245ab11660a95ad4fc67e56a2426d1f35fba502f361b232",
+  "jupiter_sol_collar_cocoa_brown": "d587adaaa55949245c0d575056f49b4eb5423431ea578093f9ad7721eb48f69d",
+  "jupiter_sol_spot_red": "07f5d6d1f8b22315173c032190d5d71687ec724245b875116288313f7b5b3b89",
+  "jupiter_sol_zones1_beige": "4d0a5c0b6394722628cd3a3df861db40a7744c83ca9826b4b84b28b428e35c39",
+  "neptune_sol_bands1_white": "535337aaf7da9f5dc40ebb03cffe7198cf4ace42445f7f490c1884b1267aece8",
+  "neptune_sol_companion_white": "cb89a909d16406947916b95e2fbe097c600e930078bdb45915f2665119c45749",
+  "neptune_sol_spot_dark_gray": "966a1af1d374b3f94df41d39bed8eecc5e9795d4d329605521e73bc6e10a6937",
+  "saturn_sol_bands1_sunflower_yellow": "8cc59d1c4a94b194cdea116843dda4754d9067895da76f09208d742b93540f65",
+  "saturn_sol_cap_white": "f389f03a607059a67e6fcb4f055aadcb6e1abcdb3b8d7c1e8f4058979f4dffcc",
+  "saturn_sol_ring_white": "179d6c6633616cec9021985f1194d3b600cf96bcd7eb6814be849c1503e10622",
+  "saturn_sol_southbelt_cocoa_brown": "921ac974df5c70d2d8f8f8055b1ddc0464aba129a25ca7ed4b4be93833e3a613",
+  "uranus_sol_ring_white": "630d8624fef8b739893dcc4ad4a5763fdded660d71d3b4c5836810428de507b1"
+ },
+ "group": "outer-world-markings",
+ "kind": "autonomous-workshop.make-group",
+ "parts": [
+  "neptune_sol_spot_dark_gray",
+  "neptune_sol_bands1_white",
+  "neptune_sol_companion_white",
+  "uranus_sol_ring_white",
+  "saturn_sol_bands1_sunflower_yellow",
+  "saturn_sol_southbelt_cocoa_brown",
+  "saturn_sol_cap_white",
+  "saturn_sol_ring_white",
+  "jupiter_sol_bands1_cocoa_brown",
+  "jupiter_sol_spot_red",
+  "jupiter_sol_zones1_beige",
+  "jupiter_sol_collar_cocoa_brown"
+ ],
+ "schema_version": 1
+}

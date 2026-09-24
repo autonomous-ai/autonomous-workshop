@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_mars_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_mars_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_mars_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_mars_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mars_sol"
+ ],
+ "print": {
+  "world_mars_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001/overhang-world_mars_sol.log": "60164795123e45ad73d092a360e55f75422c2f108ad7aaf7af70e237df01cae7",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001/thickness-world_mars_sol.log": "a993a644392de83b58b420b0ca4e904588ac1b7fe72333025556cc15d5405c95"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_mars_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed piece: a drafted disc with a sphere seated in a short collar on its top face, globe sunk into the disc. Front view shows the globe centred over the disc with the seat collar closing the joint and the disc wall drafted; top view shows the globe concentric in the disc with an even rim of disc all round; iso shows a single coherent solid with no floating, missing or extra geometry and no visible intersections. Proportions match the rank ladder entry for mars (globe diameter against the fixed 34 mm disc).",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mars_sol/r0001/visual-packet.json",
+  "packet_sha256": "8583ccbf6bf267b2a47b28468ca85385b3326fba86d53049167bf43d1c99014b",
+  "status": "pass"
+ }
+}

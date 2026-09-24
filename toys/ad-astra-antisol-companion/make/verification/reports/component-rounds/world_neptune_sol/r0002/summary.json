@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_neptune_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_neptune_sol"
+ ],
+ "print": {
+  "world_neptune_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/overhang-world_neptune_sol.log": "3c6f4dc249a7287a7e22973853b4652f37ae0f469becd1f60302c88336d73c41",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0001/thickness-world_neptune_sol.log": "24363289ce594eb6133f44289c9e8c55ec83eb2634591ab79b9d72bacd0c5522"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "world_neptune_sol"
+ ],
+ "round": 2,
+ "scope": "component:world_neptune_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed piece: a drafted disc with a sphere seated in a short collar on its top face, globe sunk into the disc. Front view shows the globe centred over the disc with the seat collar closing the joint and the disc wall drafted; top view shows the globe concentric in the disc with an even rim of disc all round; iso shows a single coherent solid with no floating, missing or extra geometry and no visible intersections. Proportions match the rank ladder entry for neptune (globe diameter against the fixed 34 mm disc).",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_neptune_sol/r0002/visual-packet.json",
+  "packet_sha256": "d17016df448f54d1160cce7ec6e40063cdec0597f16cd85e9822b9495307e53b",
+  "status": "pass"
+ }
+}

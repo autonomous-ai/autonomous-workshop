@@ -1,0 +1,25 @@
+{
+ "files": {
+  "earth_sol_globe_blue": "9e50501b3af381f5e91e8d007c18b8474102a9b05ad7f9af3c1ff9ebbcec05dc",
+  "jupiter_sol_globe_orange": "f77c2d2f6429d17f4c6ae642a96335a14dfdaacf46865581d89200db59b24a4a",
+  "mars_sol_globe_red": "7bf21cc92080932390da395739d7994a21864ad7ff7752f6c65b16ae3a0c772f",
+  "mercury_sol_globe_gray": "268f56af559f6e7244ab753abdb5ddce4c2dad111d1545f2361ee65ab3561b51",
+  "neptune_sol_globe_blue": "69c804419e072df3fcd6c59c0c6c34125f6567fc42aabf5abaea6fe3578cb869",
+  "saturn_sol_globe_yellow": "f0c98a341be12c63576bf7bf1a8b5363fa03c2e9228bdfe6693d16deb5b2ecdc",
+  "uranus_sol_globe_cyan": "ad375b0e7ec299dcf83909c2202b9c410727bcb5287387f8874539bc86790471",
+  "venus_sol_globe_sunflower_yellow": "ed3f6b1c376142cce1a68edd69ba16f628944a30bbd52915709134d31f9f144b"
+ },
+ "group": "globes",
+ "kind": "autonomous-workshop.make-group",
+ "parts": [
+  "mercury_sol_globe_gray",
+  "mars_sol_globe_red",
+  "venus_sol_globe_sunflower_yellow",
+  "earth_sol_globe_blue",
+  "neptune_sol_globe_blue",
+  "uranus_sol_globe_cyan",
+  "saturn_sol_globe_yellow",
+  "jupiter_sol_globe_orange"
+ ],
+ "schema_version": 1
+}

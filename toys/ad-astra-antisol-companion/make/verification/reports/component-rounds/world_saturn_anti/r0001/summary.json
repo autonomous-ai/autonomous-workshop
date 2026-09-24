@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_saturn_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_saturn_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_saturn_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_saturn_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_anti"
+ ],
+ "print": {
+  "world_saturn_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/overhang-world_saturn_anti.log": "c3ef1a246ee650d90f055f33ef8c486c7f90d0576e08750addf74b6f6e077c99",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/thickness-world_saturn_anti.log": "fb7452d5c969b1e8c71e00eb8272366a2c3ed010b2aace57a0a638cb52834c8e"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_saturn_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed piece: a drafted disc with a sphere seated in a short collar on its top face, globe sunk into the disc. Front view shows the globe centred over the disc with the seat collar closing the joint and the disc wall drafted; top view shows the globe concentric in the disc with an even rim of disc all round; iso shows a single coherent solid with no floating, missing or extra geometry and no visible intersections. The ring is a near-horizontal plate tilted at the planet's obliquity with its support web filling the underside down to the disc; the ring meets the globe all round and nothing hangs free. Proportions match the rank ladder entry for saturn (globe diameter against the fixed 34 mm disc).",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/visual-packet.json",
+  "packet_sha256": "c880509368d27475c8468e4fdaaff23c12850204d52a3db86cf428554737b823",
+  "status": "pass"
+ }
+}

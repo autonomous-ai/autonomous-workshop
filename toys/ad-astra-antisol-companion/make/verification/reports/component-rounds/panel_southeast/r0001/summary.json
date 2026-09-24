@@ -1,0 +1,61 @@
+{
+ "build": {
+  "panel_southeast": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "panel_southeast"
+ ],
+ "check_motion": false,
+ "checked": [
+  "panel_southeast"
+ ],
+ "checks_ok": true,
+ "entry": "part_panel_southeast.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": false,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_southeast"
+ ],
+ "print": {
+  "panel_southeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/overhang-panel_southeast.log": "10ae99b385266372d4048b1c75349b735fe309bfb0890657e039b079e510922c",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/thickness-panel_southeast.log": "fedb96fc4c2700c20db3be0470532aa963b5ef0505c35d9af3fbda3507b12d40"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:panel_southeast",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_southeast/r0001/visual-packet.json",
+  "packet_sha256": "1a00e0eef59fe41957e520129382a8d87b8b64b417df5e5650ef6690c0b8ca2c",
+  "status": "pending"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_uranus_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_uranus_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_uranus_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_uranus_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_uranus_anti"
+ ],
+ "print": {
+  "world_uranus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/overhang-world_uranus_anti.log": "1cb84a680d716cc958a2a5d3025d610827e82afd9c7330bada21ea633a74532e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/thickness-world_uranus_anti.log": "e9c67a025e59347fdb2f9b7c77d0d8044bbe97e193292734a1c0b82057436217"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_uranus_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed piece: a drafted disc with a sphere seated in a short collar on its top face, globe sunk into the disc. Front view shows the globe centred over the disc with the seat collar closing the joint and the disc wall drafted; top view shows the globe concentric in the disc with an even rim of disc all round; iso shows a single coherent solid with no floating, missing or extra geometry and no visible intersections. The ring is an upright hoop, seen almost edge-on in front view and plainly as a vertical hoop in top view, with a small foot where it leaves the disc top; it springs from the globe all round. Proportions match the rank ladder entry for uranus (globe diameter against the fixed 34 mm disc).",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/visual-packet.json",
+  "packet_sha256": "bb87fe3fb303dbeb527b9b17ce98ce407ea463bad5b0cffbb66308bb9e3b25de",
+  "status": "pass"
+ }
+}

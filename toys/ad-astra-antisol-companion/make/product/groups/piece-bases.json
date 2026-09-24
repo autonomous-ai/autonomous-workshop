@@ -1,0 +1,17 @@
+{
+ "files": {
+  "mercury_anti_disc_black": "3eb187dba077413e8b5487de594186293b7610880cf46d08f8bbc286bd07b53a",
+  "mercury_anti_numeral1_white": "dc8a69a90eec231c7deeee70e38f389a126604bd062e1464981763df819a7451",
+  "mercury_sol_disc_white": "678f87238d299ed17628c0a6a7ac19922072e5b6c7a8bff598389603b038e416",
+  "mercury_sol_numeral1_black": "c3f3e5f93a0772578bc5e7c7deb400333fa7e9546de5e010e5aeef6f5fe00eec"
+ },
+ "group": "piece-bases",
+ "kind": "autonomous-workshop.make-group",
+ "parts": [
+  "mercury_sol_disc_white",
+  "mercury_anti_disc_black",
+  "mercury_sol_numeral1_black",
+  "mercury_anti_numeral1_white"
+ ],
+ "schema_version": 1
+}

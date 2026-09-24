@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_earth_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_earth_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_earth_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_earth_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_earth_anti"
+ ],
+ "print": {
+  "world_earth_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001/overhang-world_earth_anti.log": "165f395d5c5dd9e494f59131c66b4595bfe262d9eac4cd5f55d78fbfb167b411",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001/thickness-world_earth_anti.log": "4161c689a567a1be5d4fe4d1ea7a43e85bfc450f250087c24f0839491e4037f1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_earth_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "One printed piece: a drafted disc with a sphere seated in a short collar on its top face, globe sunk into the disc. Front view shows the globe centred over the disc with the seat collar closing the joint and the disc wall drafted; top view shows the globe concentric in the disc with an even rim of disc all round; iso shows a single coherent solid with no floating, missing or extra geometry and no visible intersections. Proportions match the rank ladder entry for earth (globe diameter against the fixed 34 mm disc).",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001/visual-packet.json",
+  "packet_sha256": "579bf7c65d518fff139c166302f1272ebe13715be4277a475da090079e92d290",
+  "status": "pass"
+ }
+}
