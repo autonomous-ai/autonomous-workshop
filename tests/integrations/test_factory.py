@@ -731,6 +731,42 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertNotIn("manual_path", legacy_intent.request)
         self.assertNotIn("manual_path", receipt.details)
 
+    def test_public_title_override_renames_only_the_factory_listing(self):
+        self.context.public_title = "Renamed Toy"
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        self.assertEqual(parts["title"], [b"Renamed Toy"])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            # Make's own sealed page bytes never change.
+            self.assertEqual(
+                archive.read("workshop-release-page.json"),
+                canonical_json(self.page),
+            )
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(facts["release"]["title"], "Verified Toy")
+            self.assertEqual(facts["release"]["public_title"], "Renamed Toy")
+
+    def test_without_public_title_the_listing_is_byte_for_byte_unchanged(self):
+        transport = FactoryTransport()
+        baseline_receipt = self.writer(FactoryTransport())(
+            self.context, self.release, self.manifest
+        )
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(receipt.details, baseline_receipt.details)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        self.assertEqual(parts["title"], [b"Verified Toy"])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertNotIn("public_title", facts["release"])
+
     def test_pdf_first_import_carries_exact_binary_manual_without_rich_content(self):
         manual = self.use_pdf_first_release()
         transport = FactoryTransport()

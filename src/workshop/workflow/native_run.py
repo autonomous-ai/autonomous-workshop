@@ -3092,6 +3092,7 @@ def _record_public_example_projection(
     made: NativeMade,
     inventor_id: str,
     receipt: Optional[Receipt] = None,
+    public_title: Optional[str] = None,
 ) -> Mapping[str, Any]:
     """Project the toy directory and optionally commit and push it.
 
@@ -3141,6 +3142,7 @@ def _record_public_example_projection(
                     run.host_state_root / WISH_RUN_TIMING_RECORD_FILENAME,
                     product_id=checkpoint.product_id,
                 ),
+                public_title=public_title,
             )
             target_relative = (
                 target.relative_to(repository).as_posix()
@@ -3163,7 +3165,7 @@ def _record_public_example_projection(
                     pushed_path = push_toy_directory(
                         repository,
                         target,
-                        title=str(release.product["title"]),
+                        title=public_title or str(release.product["title"]),
                     )
                 except (GitPushError, StateConflict, OSError):
                     public = {
@@ -3193,7 +3195,7 @@ def _record_public_example_projection(
         "publication_slug": (
             receipt.slug
             if receipt is not None
-            else unreleased_public_slug(release.product["title"])
+            else unreleased_public_slug(public_title or release.product["title"])
         ),
         "projection": public,
     }
@@ -3212,6 +3214,7 @@ def _try_record_public_example_projection(
     made: NativeMade,
     inventor_id: str,
     receipt: Optional[Receipt] = None,
+    public_title: Optional[str] = None,
 ) -> Mapping[str, Any]:
     """Keep even an unexpected projection regression outside the lifecycle."""
 
@@ -3222,6 +3225,7 @@ def _try_record_public_example_projection(
             made=made,
             inventor_id=inventor_id,
             receipt=receipt,
+            public_title=public_title,
         )
     except Exception:
         return {
@@ -8388,7 +8392,7 @@ def _verified_release(
 
 
 def _publication_release_context(
-    run: AgentRun, verified: _VerifiedRelease
+    run: AgentRun, verified: _VerifiedRelease, *, public_title: Optional[str] = None
 ) -> ReleaseContext:
     """Build Factory-only context after the native credential-free turn."""
 
@@ -8417,6 +8421,7 @@ def _publication_release_context(
             "hero",
         ),
         token_usage=_publication_token_usage(run),
+        public_title=public_title,
     )
 
 
@@ -8539,6 +8544,8 @@ def _existing_release_for_promotion(
 def _attempt_release_publication(
     run: AgentRun,
     verified: _VerifiedRelease,
+    *,
+    public_title: Optional[str] = None,
 ) -> tuple[Receipt, bool]:
     """Create and publish exact Factory state through its durable effect ledger.
 
@@ -8561,6 +8568,18 @@ def _attempt_release_publication(
         )
     try:
         receipt = _read_release_effect(run, verified.release)
+        if public_title is not None and receipt is not None and not receipt.is_verified_public:
+            # An earlier publish attempt (without --title, or with a
+            # different one) already created a Factory draft under a
+            # different name. Reusing it here would silently publish under
+            # the stale title instead of the one just requested, so this is
+            # refused rather than guessed at. Finish or discard that attempt
+            # first, then retry with --title.
+            raise StateConflict(
+                "an unpublished Factory draft from an earlier publish attempt "
+                "already exists for this toy; finish or resume that publish "
+                "before retrying with a different --title"
+            )
         if receipt is not None and receipt.is_verified_public:
             _assert_required_public_readback(verified.release, receipt)
             _try_record_public_example_projection(
@@ -8569,6 +8588,7 @@ def _attempt_release_publication(
                 made=verified.made,
                 inventor_id=verified.inventor_id,
                 receipt=receipt,
+                public_title=public_title,
             )
             return receipt, False
         try:
@@ -8585,7 +8605,7 @@ def _attempt_release_publication(
                 **transport_overrides,
             )
             receipt = writer(
-                _publication_release_context(run, verified),
+                _publication_release_context(run, verified, public_title=public_title),
                 verified.package.root,
                 verified.package.manifest,
             )
@@ -8607,6 +8627,7 @@ def _attempt_release_publication(
             made=verified.made,
             inventor_id=verified.inventor_id,
             receipt=receipt,
+            public_title=public_title,
         )
         return receipt, True
     except _FactoryCredentialsUnavailable:
@@ -10544,10 +10565,29 @@ def _resume_native_run_locked(
     )
 
 
+def _normalize_public_title(title: Any) -> str:
+    """Validate a ``workshop publish --title`` override before any effect.
+
+    The same rule the local unreleased archive uses to derive a safe
+    directory slug from a title is reused here, so a title that cannot
+    produce one is refused up front rather than partway through a Factory
+    effect.
+    """
+
+    if not isinstance(title, str):
+        raise ContractError("publish --title must be text")
+    stripped = title.strip()
+    if not stripped or len(title) > 300:
+        raise ContractError("publish --title must be short, non-empty text")
+    unreleased_public_slug(stripped)
+    return stripped
+
+
 def publish_native_run(
     product_id: str,
     *,
     timing_observer: Optional[WishRunTimingObserver] = None,
+    title: Optional[str] = None,
 ) -> Mapping[str, Any]:
     """Publish the sealed Release of a run that was kept local.
 
@@ -10559,8 +10599,17 @@ def publish_native_run(
     The restriction is dropped only for the publication attempt and restored
     unless authenticated public readback succeeds, so a run that fails to
     publish is left exactly as it was rather than half-open.
+
+    ``title`` publishes the toy under a new public name instead of the exact
+    one Make sealed. It never touches Make's sealed bytes or the immutable
+    Release contract; only the host's own publication layer (the Factory
+    listing and the local unreleased archive) is re-sealed under it, and that
+    layer records the Make title and the public title side by side. It is
+    refused before any effect for a title that cannot produce a safe public
+    slug, and refused outright for a toy that is not Unreleased.
     """
 
+    public_title = _normalize_public_title(title) if title is not None else None
     timing_observer = _combined_timing_observer(
         _validated_timing_observer(timing_observer)
     )
@@ -10577,13 +10626,23 @@ def publish_native_run(
             # Not a kept-local run: either it published already, or it is a
             # publishing run whose effect is still owed. Report, never resend.
             receipt = _read_release_effect(run, verified.release)
-            if receipt is None or not receipt.is_verified_public:
-                raise StateConflict(
-                    "this run already publishes; resume it instead"
+            if receipt is not None and receipt.is_verified_public:
+                if public_title is not None:
+                    raise StateConflict(
+                        "publish --title requires an Unreleased toy; "
+                        "this toy is already public"
+                    )
+                _assert_required_public_readback(verified.release, receipt)
+                return _native_receipt(
+                    checkpoint, paths=paths, action="publication-already-public"
                 )
-            _assert_required_public_readback(verified.release, receipt)
-            return _native_receipt(
-                checkpoint, paths=paths, action="publication-already-public"
+            if public_title is not None:
+                raise StateConflict(
+                    "publish --title requires an Unreleased toy; this run is "
+                    "not Unreleased (resume the plain publish instead)"
+                )
+            raise StateConflict(
+                "this run already publishes; resume it instead"
             )
         _record_authorization(
             paths,
@@ -10601,7 +10660,7 @@ def publish_native_run(
                 operation="effect.factory",
             ):
                 unused_receipt, promoted = _attempt_release_publication(
-                    run, verified
+                    run, verified, public_title=public_title
                 )
                 del unused_receipt
         except _FactoryCredentialsUnavailable:

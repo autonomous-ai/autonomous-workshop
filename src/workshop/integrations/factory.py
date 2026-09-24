@@ -3239,6 +3239,17 @@ class FactoryReleaseWriter:
         )
         if page.get("schema_version") != MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION and FACTORY_MADE_FORBIDDEN_PAGE_FIELDS & set(context.made.product):
             raise ContractError("Made product facts contain Release page fields")
+        # ``public_title`` is host-owned override state that never touches
+        # Make's sealed bytes or the immutable Release page on disk: it
+        # rides only this in-memory ReleaseContext. When present it becomes
+        # the public/Factory-facing name; the sealed page's own title is
+        # still recorded beside it in the product facts sent to Factory, so
+        # the rename is explicit rather than hidden.
+        public_title = getattr(context, "public_title", None)
+        effective_title = public_title if public_title else page.get("title")
+        release_record = dict(page)
+        if public_title:
+            release_record["public_title"] = public_title
         identity = self.session.login()
         client = FactoryClient(self.session.authenticated_transport)
 
@@ -3257,7 +3268,7 @@ class FactoryReleaseWriter:
             "inventor": {"name": context.taste.name},
             "wish": context.wish.to_dict(),
             "product": dict(context.made.product),
-            "release": dict(page),
+            "release": release_record,
             ("publication_anchor" if make_output else "manual"): {
                 "path": manual_path,
                 "sha256": manual_sha256,
@@ -3290,7 +3301,7 @@ class FactoryReleaseWriter:
         metadata = _normalize_import(
             {
                 "status": "draft",
-                "title": page.get("title"),
+                "title": effective_title,
                 "description": page.get("summary"),
                 "category": FACTORY_TOY_CATEGORY_SLUG,
                 "tags": ["toy"],

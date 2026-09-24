@@ -95,6 +95,19 @@ It lists the bytes that run already sealed — no model runs, no tokens are spen
 and no geometry changes — so what appears on Factory is what you reviewed
 locally. A publication that does not complete leaves the run unreleased.
 
+A chain of single-change corrections names each build with a revision suffix
+(`v01`, `v02`, ...). To publish the conforming build under its clean name
+instead of spending one more correction run, add `--title`:
+
+```bash
+uv run workshop publish <product-id> --title "Rainward Sun"
+```
+
+This re-seals only the host's own Release under the new title; Make's sealed
+bytes are untouched, and the archive records the Make title beside the public
+one. `--title` requires an Unreleased toy and is refused for a title with no
+safe public slug.
+
 The Rainward Sun prompt above is a prepared example. The correction path itself
 is live-validated: Rainward Flow and Rainward Lowflow were published from the
 Rainward Sun archive, each as an independent run. See [the correction-run contract](docs/adr/0065-published-toy-correction-runs.md).

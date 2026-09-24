@@ -1470,6 +1470,7 @@ class _FactoryEffects:
             details = {
                 "release_sha256": manifest.artifact_sha256,
                 "product_page_sha256": product_page_sha256,
+                "primary_model_sha256": _sha256(exact_print_package["assembled.step"]),
                 "page_url": _PAGE_URL,
                 "cover_url": _COVER_URL,
             }
@@ -3539,6 +3540,142 @@ class NativeFullRunTest(unittest.TestCase):
                 again = publish_native_run(wish.product_id)
             self.assertEqual(again["action"], "publication-already-public")
             self.assertEqual(len(effects.publish_calls), 1)
+
+    def test_publish_with_title_renames_only_the_release(self):
+        """`workshop publish --title` re-seals only the Release, not Make.
+
+        This is issue #46: a build-a-toy chain names every intermediate
+        correction with a revision suffix, so the build that finally
+        conforms still carries that suffixed name unless the operator gives
+        it a clean public title at publish time. The rename must never touch
+        Make's sealed bytes, must be refused for a title with no safe slug,
+        and must be refused once the toy is already public.
+        """
+
+        from workshop.errors import ContractError
+        from workshop.workflow.native_run import (
+            _local_release_only_at,
+            publish_native_run,
+        )
+
+        launcher = _OneSessionProductAgent()
+        effects = _FactoryEffects()
+        cad_calls = []
+
+        def verify_cad(made, **arguments):
+            cad_calls.append(made)
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(
+                    (made.made_sha256 + str(len(cad_calls))).encode("ascii")
+                ),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            repository = root / "repository"
+            (repository / "toys").mkdir(parents=True)
+            wish = Wish.create(
+                "orbit-dog-publish-title",
+                "Build a pocket draughts set inspired by my orbit-loving dog.",
+                constraints={"audience": "14+", "manufacture": "not-authorized"},
+                context={"source": "native-publish-title-test"},
+            )
+
+            def host():
+                return mock.patch.dict(
+                    os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+                )
+
+            def checkout():
+                return mock.patch(
+                    "workshop.workflow.native_run._source_checkout_root",
+                    return_value=repository,
+                )
+
+            with host(), checkout(), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ):
+                sealed = start_native_run(
+                    wish, effort="spark", local_release_only=True
+                )
+                paths = native_run_paths(wish.product_id)
+                sealed_checkpoint = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                ).snapshot()
+            self.assertEqual(sealed["publication"]["status"], "unreleased")
+            archive = sorted((repository / "toys").iterdir())[0]
+            sealed_model = (archive / "make/models/assembled.step").read_bytes()
+
+            # A title that cannot produce a safe public slug is refused
+            # before any Factory effect and before the run's restriction
+            # changes at all.
+            with host(), checkout():
+                with self.assertRaises(ContractError):
+                    publish_native_run(wish.product_id, title="   ")
+                with self.assertRaises(ContractError):
+                    publish_native_run(wish.product_id, title="!!!")
+            self.assertTrue(_local_release_only_at(paths, wish.product_id))
+            self.assertFalse((paths.host_state / "release-effect.json").exists())
+
+            with host(), checkout(), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                side_effect=effects.credentials,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter",
+                side_effect=effects.writer,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession",
+                side_effect=effects.session,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition",
+                side_effect=effects.transition,
+            ):
+                published = publish_native_run(
+                    wish.product_id, title="Orbit Companion"
+                )
+
+            self.assertEqual(published["action"], "published-existing-release")
+            self.assertEqual(published["publication"]["status"], "public")
+            self.assertFalse(_local_release_only_at(paths, wish.product_id))
+
+            # Make's sealed bytes never moved; only the Release was re-sealed.
+            published_checkpoint = AgentRun.open(
+                paths.workspace, host_state_root=paths.host_state
+            ).snapshot()
+            self.assertEqual(
+                published_checkpoint.checkpoint_sha256,
+                sealed_checkpoint.checkpoint_sha256,
+            )
+            self.assertEqual(effects.handoff_files["assembled.step"], sealed_model)
+
+            # The re-sealed publication carries the Make title and the
+            # public title side by side, never hiding the rename.
+            published_toys = sorted((repository / "toys").iterdir())
+            published_archive = next(
+                candidate for candidate in published_toys if candidate != archive
+            )
+            publication = json.loads(
+                (published_archive / "publication/PUBLICATION.json").read_text()
+            )
+            self.assertEqual(publication["title"], "Orbit Companion")
+            self.assertEqual(publication["make_title"], "Orbit Dog Draughts")
+
+            # A toy that is already public is refused with a message that
+            # names why.
+            with host(), checkout():
+                with self.assertRaisesRegex(StateConflict, "already public"):
+                    publish_native_run(wish.product_id, title="Another Name")
 
     def test_one_native_session_runs_every_stage_and_host_seals_the_release(self):
         launcher = _OneSessionProductAgent()
