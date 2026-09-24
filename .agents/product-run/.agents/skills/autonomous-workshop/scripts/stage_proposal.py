@@ -2415,9 +2415,12 @@ def _make_contract(
     current_record = verification_text.split(
         "\n---\n\n## Previous pipeline record", 1
     )[0]
-    if _wish_has_sealed_references(
-        run_root, assignment["wish_sha256"]
-    ) and "- Mode: `image-derived final`\n" not in current_record:
+    final_mode = "- Mode: `final`\n"
+    image_derived_final_mode = "- Mode: `image-derived final`\n"
+    if (
+        _wish_has_sealed_references(run_root, assignment["wish_sha256"])
+        and image_derived_final_mode not in current_record
+    ):
         raise ProposalError(
             "Make finalizer requires the current final verifier record to have "
             "run with --image-derived because the Wish sealed references"
@@ -2435,9 +2438,9 @@ def _make_contract(
             raise ProposalError("unverified CAD handoff lacks its final geometry disclosure") from exc
     elif (
         not current_record.startswith("# Verification pipeline record\n")
-        or not any(
-            "- Mode: `%s`\n" % mode in current_record
-            for mode in ("final", "image-derived final")
+        or (
+            final_mode not in current_record
+            and image_derived_final_mode not in current_record
         )
         or "- Result: **PASS** (exit 0)\n" not in current_record
     ):
