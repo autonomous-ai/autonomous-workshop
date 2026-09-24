@@ -109,6 +109,15 @@ Keep a Changelog and uses semantic versioning for released distributions.
   Python 3.14.
 - Locked, subtractive top-groove geometry for printable box parts, including
   bounded failure diagnostics when Make cannot reach its release target.
+- `workshop status --json` and resume receipts now carry a bounded
+  `stop_category` (`transport`, `budget`, `gate-refusal`,
+  `inspection-in-progress`, or `unclassified`) whenever a run is not
+  `complete`, derived from the host's existing ADR 0050 terminal-failure
+  diagnosis, token budget and deterministic gate state -- never from
+  free-form provider text. `build-a-toy` Step 3 resumes on `transport` and
+  `inspection-in-progress`, reports `budget` as the exhausted backstop, and
+  stops to ask on `gate-refusal` or `unclassified`, replacing its old
+  two-identical-resumes heuristic.
 
 ### Changed
 

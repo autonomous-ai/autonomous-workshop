@@ -281,3 +281,153 @@ class ResumeInspectionTest(unittest.TestCase):
                     mock.patch.object(host, "_resume_native_run_locked", return_value={}), \
                     mock.patch.object(host, "_adopt_resume_inspection_tools", side_effect=AssertionError("terminal migration")):
                 host.resume_native_run(self.product_id)
+
+
+class StopCategoryTest(ResumeInspectionTest):
+    """The status/resume receipt names a bounded cause for a non-complete run (#47)."""
+
+    def test_complete_run_carries_no_stop_category(self):
+        run = self.start_old()
+        checkpoint = dataclasses.replace(run.snapshot(), status="complete")
+        receipt = host._native_receipt(checkpoint, paths=self.paths, action="inspected")
+        self.assertNotIn("stop_category", receipt)
+
+    def test_gate_exhaustion_reports_gate_refusal(self):
+        run = self.start_old()
+        checkpoint = dataclasses.replace(run.snapshot(), status="failed")
+        receipt = host._native_receipt(checkpoint, paths=self.paths, action="inspected")
+        self.assertEqual(receipt["stop_category"], "gate-refusal")
+
+    def test_no_diagnosis_and_no_cache_growth_reports_unclassified(self):
+        run = self.start_old()
+        receipt = host.native_run_status(self.product_id)
+        self.assertNotEqual(run.snapshot().status, "complete")
+        self.assertEqual(receipt["stop_category"], "unclassified")
+
+    def test_transport_diagnosis_reports_transport(self):
+        run = self.start_old()
+        checkpoint = run.snapshot()
+        host._write_private_json(
+            self.paths.host_state / runtime.CODEX_FAILURE_DIAGNOSTIC_FILENAME,
+            {
+                "schema_version": 2,
+                "kind": runtime.CODEX_FAILURE_DIAGNOSTIC_KIND,
+                "product_id": self.product_id,
+                "wish_sha256": checkpoint.wish_sha256,
+                "diagnostic": {
+                    "terminal_error": {
+                        "event_type": "error",
+                        "category": "provider-transport",
+                        "signature": "stream-disconnected",
+                        "code": None,
+                        "message_bytes": 42,
+                    },
+                },
+            },
+        )
+        receipt = host.native_run_status(self.product_id)
+        self.assertEqual(receipt["stop_category"], "transport")
+
+    def test_stale_diagnosis_from_a_different_wish_is_not_trusted(self):
+        run = self.start_old()
+        host._write_private_json(
+            self.paths.host_state / runtime.CODEX_FAILURE_DIAGNOSTIC_FILENAME,
+            {
+                "schema_version": 2,
+                "kind": runtime.CODEX_FAILURE_DIAGNOSTIC_KIND,
+                "product_id": self.product_id,
+                "wish_sha256": "0" * 64,
+                "diagnostic": {
+                    "terminal_error": {
+                        "event_type": "error",
+                        "category": "provider-transport",
+                        "signature": "stream-disconnected",
+                        "code": None,
+                        "message_bytes": 42,
+                    },
+                },
+            },
+        )
+        receipt = host.native_run_status(self.product_id)
+        self.assertEqual(receipt["stop_category"], "unclassified")
+
+    def test_schema_v1_diagnosis_reports_unclassified_not_a_guess(self):
+        run = self.start_old()
+        checkpoint = run.snapshot()
+        host._write_private_json(
+            self.paths.host_state / runtime.CODEX_FAILURE_DIAGNOSTIC_FILENAME,
+            {
+                "schema_version": 1,
+                "kind": runtime.CODEX_FAILURE_DIAGNOSTIC_KIND,
+                "product_id": self.product_id,
+                "wish_sha256": checkpoint.wish_sha256,
+            },
+        )
+        receipt = host.native_run_status(self.product_id)
+        self.assertEqual(receipt["stop_category"], "unclassified")
+
+    def test_budget_stop_reports_budget_over_a_stale_transport_diagnosis(self):
+        run = self.start_old()
+        checkpoint = run.snapshot()
+        host._write_private_json(
+            self.paths.host_state / runtime.CODEX_FAILURE_DIAGNOSTIC_FILENAME,
+            {
+                "schema_version": 2,
+                "kind": runtime.CODEX_FAILURE_DIAGNOSTIC_KIND,
+                "product_id": self.product_id,
+                "wish_sha256": checkpoint.wish_sha256,
+                "diagnostic": {
+                    "terminal_error": {
+                        "event_type": "error",
+                        "category": "provider-transport",
+                        "signature": "stream-disconnected",
+                        "code": None,
+                        "message_bytes": 42,
+                    },
+                },
+            },
+        )
+        lifetime_budget = {"status": "available", "scope": "product-tokens", "last_stop_reason": "product token limit reached"}
+        category = host._native_stop_category(
+            checkpoint, paths=self.paths, action="inspected", lifetime_budget=lifetime_budget
+        )
+        self.assertEqual(category, "budget")
+
+    def test_growing_inspection_cache_reports_inspection_in_progress(self):
+        # start_old() already ran a native turn, which recorded a stop-time
+        # snapshot of zero durable inspection measurements.
+        run = self.start_old()
+        checkpoint = run.snapshot()
+        cache = self.paths.workspace / "product/cad/__cadgen__/inspection-v2"
+        cache.mkdir(parents=True)
+        (cache / "first.json").write_text('{"measured": 1}')
+        grown = host._native_receipt(checkpoint, paths=self.paths, action="started")
+        self.assertEqual(grown["stop_category"], "inspection-in-progress")
+        # Once a later stop has recorded the grown count, no further growth
+        # means the cause is unclassified again, not a guessed repeat.
+        settled = host._native_receipt(checkpoint, paths=self.paths, action="started")
+        self.assertEqual(settled["stop_category"], "unclassified")
+
+    def test_plain_status_reads_never_advance_the_inspection_snapshot(self):
+        run = self.start_old()
+        checkpoint = run.snapshot()
+        cache = self.paths.workspace / "product/cad/__cadgen__/inspection-v2"
+        cache.mkdir(parents=True)
+        (cache / "first.json").write_text('{"measured": 1}')
+        # A resume-flavored action records the stop-time snapshot (1 file).
+        host._native_receipt(checkpoint, paths=self.paths, action="started")
+        for _ in range(3):
+            # Nothing has grown since that recorded stop, and a plain status
+            # read never advances the snapshot itself.
+            self.assertEqual(
+                host.native_run_status(self.product_id)["stop_category"],
+                "unclassified",
+            )
+        (cache / "second.json").write_text('{"measured": 2}')
+        # The cache grew past the last recorded stop; status reports that
+        # without needing to mutate anything.
+        for _ in range(2):
+            self.assertEqual(
+                host.native_run_status(self.product_id)["stop_category"],
+                "inspection-in-progress",
+            )

@@ -379,6 +379,9 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
     if isinstance(initial_effort, str) and initial_effort != effort:
         print("Initial effort: %s; operator override applies to subsequent turns." % initial_effort)
     print("%s: %s at %s" % (verb, status, stage))
+    stop_category = receipt.get("stop_category")
+    if isinstance(stop_category, str) and stop_category:
+        print("Stop category: %s" % stop_category)
     budget = receipt.get("budget")
     if isinstance(budget, Mapping) and budget.get("unit") == "tokens":
         if budget.get("usage_status") == "observed":
