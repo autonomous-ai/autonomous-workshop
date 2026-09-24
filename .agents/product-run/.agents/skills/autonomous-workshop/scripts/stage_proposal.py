@@ -2051,7 +2051,17 @@ def _validate_geometry_requirements(
 ) -> None:
     """Bind every geometry-scoped row (ADR 0072, issue 54) to a current,
     passing Component's hashed visual packet, and count one blind read per
-    Unique Geometry that carries such a row."""
+    Unique Geometry that carries such a row.
+
+    Each Unique Geometry's blind read records its own ``review_rounds``
+    (issue 55), separate from the assembly review's. Binding a row's
+    ``packet_sha256`` to the Component's *current* passing packet is what
+    lets an unaffected geometry's read carry forward unchanged across a
+    repair: a Component nobody repaired still has the same packet hash, so
+    its row needs no new round, while a repaired Component's packet hash
+    moves and its row must rebind -- the same reasoning ADR 0069 uses to
+    carry byte-identical parts forward. Assembly-scoped reads have no such
+    per-Component binding, so any geometry change still invalidates them."""
 
     requirements = _array(
         review["geometry_form_requirements"],
@@ -2181,7 +2191,7 @@ def _validate_geometry_requirements(
     ):
         blind_read = _fields(
             raw_blind_read,
-            {"geometry", "blind_read"},
+            {"geometry", "blind_read", "review_rounds"},
             "Make geometry blind read %d" % index,
         )
         if blind_read["geometry"] != geometry:
@@ -2192,6 +2202,14 @@ def _validate_geometry_requirements(
         _bounded_text(
             blind_read["blind_read"], "Make geometry blind read %d" % index, 1_000
         )
+        if (
+            type(blind_read["review_rounds"]) is not int
+            or blind_read["review_rounds"] not in (1, 2, 3, 4)
+        ):
+            raise ProposalError(
+                "Make geometry blind read %d must record its own one to four "
+                "review rounds, separate from the assembly review" % index
+            )
 
 
 _BLIND_REREAD_IMAGES = {"iso", "signature"}

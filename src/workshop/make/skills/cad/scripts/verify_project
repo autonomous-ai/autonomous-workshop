@@ -367,11 +367,22 @@ def _required_signature_review(project: Path) -> str:
                     "Geometry with a geometry-scoped requirement"
                 )
             for entry in geometry_blind_reads:
-                if not isinstance(entry, dict) or set(entry) != {"geometry", "blind_read"}:
+                if not isinstance(entry, dict) or set(entry) != {
+                    "geometry",
+                    "blind_read",
+                    "review_rounds",
+                }:
                     raise ValueError("signature review geometry blind read is invalid")
                 blind_read = entry.get("blind_read")
                 if not isinstance(blind_read, str) or not blind_read.strip() or len(blind_read) > 1000:
                     raise ValueError("signature review geometry blind read is invalid")
+                if type(entry.get("review_rounds")) is not int or entry.get(
+                    "review_rounds"
+                ) not in (1, 2, 3, 4):
+                    raise ValueError(
+                        "signature review geometry blind read must record its own "
+                        "one to four review rounds"
+                    )
         blind_rereads = review.get("blind_rereads")
         if not isinstance(blind_rereads, list):
             raise ValueError("signature review blind_rereads is invalid")

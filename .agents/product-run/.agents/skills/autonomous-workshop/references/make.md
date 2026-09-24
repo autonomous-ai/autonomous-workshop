@@ -229,8 +229,23 @@ disclose that the critic already knows the Wish; do not claim naive recognition.
 After the fourth failed review, preserve the failures and finalize a truthful
 failed need rather than exceeding the allowance. Do not use the
 full verifier as the visual iteration loop. Any geometry change after the
-review invalidates it and requires a fresh blind read of the regenerated
-images; copying old prose and replacing hashes is not a review.
+review invalidates the assembly-scoped read and requires a fresh blind read of
+the regenerated images; copying old prose and replacing hashes is not a
+review.
+
+In Contract Mode with geometry-scoped rows (ADR 0072, issue 55), a
+geometry-scoped repair has its own allowance, separate from the assembly
+review's: each Unique Geometry's `geometry_blind_reads` entry records its own
+`review_rounds`, one through four, exactly like the assembly review's
+`review_rounds`. Repairing one Component invalidates only that Component's own
+geometry-scoped requirement and blind read -- its row must rebind to the
+Component's new `visual-packet.json` hash -- and only that geometry's
+`review_rounds` needs to grow. A Unique Geometry nobody touched keeps the same
+packet hash it always had, so its row and blind read carry forward unchanged,
+at whatever `review_rounds` they were already at; do not spend a fresh blind
+read on a Component the repair never changed. The assembly-scoped read has no
+such per-Component binding, so any geometry change still invalidates it and
+still needs a fresh blind read of the regenerated iso/signature images.
 
 Do not manually delete `__cadgen__` or use `--fresh` inside the product
 sandbox. The trusted host owns the isolated fresh rebuild. The finalizer safely

@@ -1916,6 +1916,7 @@ class StageProposalToolTest(unittest.TestCase):
         }
 
     DOME_CURVE = "The dome must have one smooth uninterrupted curve."
+    BASE_MOUNT = "The base must have four flush mounting feet."
 
     def create_geometry_contract_product(self, geometry_requirements):
         """Seal a Contract Mode Wish with ``geometry_requirements`` and create
@@ -1941,7 +1942,11 @@ class StageProposalToolTest(unittest.TestCase):
 
         if blind_reads is None:
             blind_reads = [
-                {"geometry": "dome", "blind_read": "One smooth domed curve, no seams."}
+                {
+                    "geometry": "dome",
+                    "blind_read": "One smooth domed curve, no seams.",
+                    "review_rounds": 1,
+                }
             ]
         review_path = project / "snap/SIGNATURE-REVIEW.json"
         review = json.loads(review_path.read_bytes())
@@ -2066,6 +2071,127 @@ class StageProposalToolTest(unittest.TestCase):
         )
         self.run_make_round_one(assignment, invented)
         self.assert_made_round_one(assignment, invented)
+
+    def test_make_geometry_blind_read_requires_its_own_review_rounds(self):
+        assignment, invented, project = self.create_geometry_contract_product(
+            [("dome", self.DOME_CURVE)]
+        )
+        packet_sha256 = self.write_component_round(project, "dome")
+        self.write_geometry_review(
+            project,
+            [self.geometry_review_row("dome", self.DOME_CURVE, packet_sha256)],
+            blind_reads=[
+                {
+                    "geometry": "dome",
+                    "blind_read": "One smooth domed curve, no seams.",
+                }
+            ],
+        )
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("fields are invalid", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_refuses_a_geometry_blind_read_exceeding_its_own_allowance(self):
+        assignment, invented, project = self.create_geometry_contract_product(
+            [("dome", self.DOME_CURVE)]
+        )
+        packet_sha256 = self.write_component_round(project, "dome")
+        self.write_geometry_review(
+            project,
+            [self.geometry_review_row("dome", self.DOME_CURVE, packet_sha256)],
+            blind_reads=[
+                {
+                    "geometry": "dome",
+                    "blind_read": "One smooth domed curve, no seams.",
+                    "review_rounds": 5,
+                }
+            ],
+        )
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn(
+            "must record its own one to four review rounds", result.stderr
+        )
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_gives_a_geometry_repair_its_own_allowance_and_carries_the_rest(self):
+        """Issue 55: a repair to one Component consumes its own geometry
+        allowance, separate from the assembly review's fixed ``review_rounds``
+        (3 in ``create_product``); an untouched Component's read carries
+        forward on the same packet hash it always had, needing no new round."""
+
+        assignment, invented, project = self.create_geometry_contract_product(
+            [("dome", self.DOME_CURVE), ("base", self.BASE_MOUNT)]
+        )
+        base_packet_sha256 = self.write_component_round(project, "base")
+        self.write_component_round(project, "dome")
+        # A focused repair to the dome only: a second, changed Component round.
+        dome_packet_sha256 = self.write_component_round(
+            project,
+            "dome",
+            round_number=2,
+            step_bytes=b"ISO-10303-21;\ndome-repaired\n",
+        )
+        self.write_geometry_review(
+            project,
+            [
+                self.geometry_review_row("dome", self.DOME_CURVE, dome_packet_sha256),
+                self.geometry_review_row("base", self.BASE_MOUNT, base_packet_sha256),
+            ],
+            blind_reads=[
+                {
+                    "geometry": "dome",
+                    "blind_read": "One smooth domed curve, seam removed.",
+                    "review_rounds": 2,
+                },
+                {
+                    "geometry": "base",
+                    "blind_read": "Four flush mounting feet, unchanged.",
+                    "review_rounds": 1,
+                },
+            ],
+        )
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
+
+    def test_make_refuses_a_repaired_geometrys_read_still_bound_to_its_old_packet(self):
+        assignment, invented, project = self.create_geometry_contract_product(
+            [("dome", self.DOME_CURVE), ("base", self.BASE_MOUNT)]
+        )
+        base_packet_sha256 = self.write_component_round(project, "base")
+        stale_dome_packet_sha256 = self.write_component_round(project, "dome")
+        # Repair the dome, but the review still cites its pre-repair packet.
+        self.write_component_round(
+            project,
+            "dome",
+            round_number=2,
+            step_bytes=b"ISO-10303-21;\ndome-repaired\n",
+        )
+        self.write_geometry_review(
+            project,
+            [
+                self.geometry_review_row(
+                    "dome", self.DOME_CURVE, stale_dome_packet_sha256
+                ),
+                self.geometry_review_row("base", self.BASE_MOUNT, base_packet_sha256),
+            ],
+            blind_reads=[
+                {
+                    "geometry": "dome",
+                    "blind_read": "One smooth domed curve, seam removed.",
+                    "review_rounds": 2,
+                },
+                {
+                    "geometry": "base",
+                    "blind_read": "Four flush mounting feet, unchanged.",
+                    "review_rounds": 1,
+                },
+            ],
+        )
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn(
+            "not bound to its Component's current visual packet", result.stderr
+        )
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_make_accepts_a_contract_mode_v9_review_matching_the_sealed_contract(self):
         requirements = self.CONTRACT_REQUIREMENTS

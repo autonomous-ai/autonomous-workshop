@@ -1245,7 +1245,11 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             }
         ]
         review["geometry_blind_reads"] = [
-            {"geometry": "dome", "blind_read": "One smooth domed curve, no seams."}
+            {
+                "geometry": "dome",
+                "blind_read": "One smooth domed curve, no seams.",
+                "review_rounds": 1,
+            }
         ]
         review_path.write_text(
             json.dumps(review, sort_keys=True, separators=(",", ":")),
@@ -1271,6 +1275,21 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             encoding="utf-8",
         )
         with self.assertRaisesRegex(ValueError, "geometry_blind_reads is invalid"):
+            validate(self.project)
+
+        invalid_allowance = json.loads(review_path.read_text(encoding="utf-8"))
+        invalid_allowance["geometry_form_requirements"] = review[
+            "geometry_form_requirements"
+        ]
+        invalid_allowance["geometry_blind_reads"] = review["geometry_blind_reads"]
+        invalid_allowance["geometry_blind_reads"][0]["review_rounds"] = 5
+        review_path.write_text(
+            json.dumps(invalid_allowance, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(
+            ValueError, "must record its own one to four review rounds"
+        ):
             validate(self.project)
 
     def test_schema_nine_blind_rereads_are_checked_structurally(self):
