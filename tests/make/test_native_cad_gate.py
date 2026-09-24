@@ -1070,6 +1070,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         }
         if requirements_source is not None:
             review["requirements_source"] = requirements_source
+            review["blind_rereads"] = []
         (snap / "SIGNATURE-REVIEW.json").write_text(
             json.dumps(review, sort_keys=True, separators=(",", ":")),
             encoding="utf-8",
@@ -1270,6 +1271,49 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             encoding="utf-8",
         )
         with self.assertRaisesRegex(ValueError, "geometry_blind_reads is invalid"):
+            validate(self.project)
+
+    def test_schema_nine_blind_rereads_are_checked_structurally(self):
+        """This in-sandbox gate has no sealed contract to bind a reread's
+        citation against (issue 53); it only checks the field's shape."""
+        import runpy
+
+        self._write_signature_review(
+            review_rounds=1, schema_version=9, requirements_source="contract"
+        )
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        validate = runpy.run_path(str(self.verifier))["_required_signature_review"]
+
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        review["blind_rereads"] = [
+            {
+                "image": "signature",
+                "question": "Does the mask show more than one position?",
+                "answer": "Yes -- it rotates through three distinct positions.",
+            }
+        ]
+        review_path.write_text(
+            json.dumps(review, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        self.assertEqual(validate(self.project), _sha(review_path.read_bytes()))
+
+        invalid_image = json.loads(review_path.read_text(encoding="utf-8"))
+        invalid_image["blind_rereads"][0]["image"] = "front"
+        review_path.write_text(
+            json.dumps(invalid_image, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "blind reread image is invalid"):
+            validate(self.project)
+
+        missing_field = json.loads(review_path.read_text(encoding="utf-8"))
+        del missing_field["blind_rereads"]
+        review_path.write_text(
+            json.dumps(missing_field, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "fields do not match schema 9"):
             validate(self.project)
 
     def test_blocking_form_defect_cannot_unlock_final_geometry(self):

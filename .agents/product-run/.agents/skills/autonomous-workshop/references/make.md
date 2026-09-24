@@ -323,6 +323,18 @@ refuses, as does the wrong `requirements_source`. Every other schema-v8 rule
 still applies unchanged. Outside Contract Mode, keep sealing schema v8 exactly
 as before; do not add `requirements_source` there.
 
+Schema v9 also carries `blind_rereads`, always present and empty unless used.
+When the blind read never mentions a contract requirement, ask the critic one
+narrow targeted blind re-read question about the one image that bears on it
+-- still blind, with no list of requirements and no intended answer revealed
+-- and preserve the exact question and the critic's verbatim answer as one
+entry naming the image it concerns (`"iso"`, `"signature"`, or, for a
+geometry-scoped requirement, `"geometry:<id>"`). That requirement's
+`blind_evidence` may then cite the preserved answer. Using this path is a
+choice, not a requirement: a blind read that already covers a requirement
+needs no re-read, and asking one does not excuse a requirement the images
+never show.
+
 Separate immutable user requirements from inventor-selected styling. In Spark,
 before the final review, revise nonessential naming, species, palette or
 styling decisions when the result suggests a better fit; preserve the previous

@@ -694,6 +694,7 @@ class StageProposalToolTest(unittest.TestCase):
         critical_form_requirements=None,
         schema_version=8,
         requirements_source=None,
+        blind_rereads=None,
     ):
         invented = invented if invented is not None else self.invented
         product_root = self.run_root / "artifacts/make/r0001/product"
@@ -786,6 +787,7 @@ class StageProposalToolTest(unittest.TestCase):
         }
         if requirements_source is not None:
             review["requirements_source"] = requirements_source
+            review["blind_rereads"] = blind_rereads if blind_rereads is not None else []
         (product_root / "cad/project/snap/SIGNATURE-REVIEW.json").write_bytes(
             canonical_json(review)
         )
@@ -2170,6 +2172,57 @@ class StageProposalToolTest(unittest.TestCase):
         self.create_product(schema_version=9, requirements_source="contract")
         result = self.run_make_round_one(self.assignment, self.invented, expected=2)
         self.assertIn("fields are invalid", result.stderr)
+
+    def test_make_accepts_a_v9_review_citing_a_preserved_blind_reread(self):
+        """A requirement's evidence may cite a targeted blind re-read (issue
+        53, ADR 0072): one narrow question asked blind about an image, with
+        its verbatim answer preserved alongside the blind reads."""
+
+        requirements = self.CONTRACT_REQUIREMENTS
+        assignment, invented, _ = self.seal_contract_wish(requirements)
+        rows = self.contract_review_rows(requirements)
+        rows[1]["blind_evidence"] = (
+            "The blind re-read confirms it: 'the mask visibly rotates "
+            "through three distinct positions.'"
+        )
+        self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=rows,
+            blind_rereads=[
+                {
+                    "image": "signature",
+                    "question": "Does the mask show more than one position?",
+                    "answer": (
+                        "Yes -- the mask visibly rotates through three "
+                        "distinct positions."
+                    ),
+                }
+            ],
+        )
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
+
+    def test_make_refuses_a_blind_reread_naming_an_image_outside_the_review(self):
+        requirements = self.CONTRACT_REQUIREMENTS
+        assignment, invented, _ = self.seal_contract_wish(requirements)
+        self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+            blind_rereads=[
+                {
+                    "image": "front",
+                    "question": "Does the mask show more than one position?",
+                    "answer": "Yes.",
+                }
+            ],
+        )
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("names an image outside the review", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_interrupted_image_geometry_seals_unverified_product_and_release_notes(self):
         from workshop.release.native import prepare_make_output_release
