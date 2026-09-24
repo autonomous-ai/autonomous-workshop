@@ -81,6 +81,7 @@ IMAGE_SCRIPTS_DIR = SCRIPTS_DIR.parents[1] / "image-to-cad" / "scripts"
 POWER_SCRIPTS_DIR = (
     SCRIPTS_DIR.parents[1] / "electromechanical-integration" / "scripts"
 )
+CADGEN_PACKAGE_DIR = SCRIPTS_DIR / "packages" / "cadgen" / "src" / "cadgen"
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
 DEFAULT_PREVIEW_TOLERANCE = 0.1
@@ -1178,6 +1179,130 @@ def _run_preflight_audits(
     return 1 if failures else 0
 
 
+# ── Redundant final sweep reuse (ADR 0070) ─────────────────────────────────
+#
+# A full sweep on a project that has not changed since its last terminal
+# (PASS or FAIL) verdict re-emits that verdict instead of recomputing it. The
+# closure below is the sweep's entire hash-relevant input: the built STEP
+# bytes for every entry, the tool source bytes a rebuild or inspection would
+# read, the exact CLI arguments, the signature review, and the README/spec
+# file map. An UNVERIFIED verdict is never reused -- see main()'s call site.
+
+_RESULT_LINE_RE = re.compile(
+    r"^- Result: \*\*(PASS|FAIL|UNVERIFIED)\b.*\(exit (-?\d+)\)\s*$", re.MULTILINE
+)
+_CLOSURE_LINE_RE = re.compile(r"^- Closure: sha256:([0-9a-f]{64})\s*$", re.MULTILINE)
+
+
+def _sweep_tool_paths(*, image_derived: bool) -> list[Path]:
+    """Every tool file or package a final sweep can read or invoke."""
+    paths = [
+        Path(__file__).resolve(),
+        SCRIPTS_DIR / "gen",
+        SCRIPTS_DIR / "check_layout",
+        SCRIPTS_DIR / "check_mount",
+        SCRIPTS_DIR / "check_motion",
+        SCRIPTS_DIR / "check_fit",
+        SCRIPTS_DIR / "check_spec_numbers",
+        SCRIPTS_DIR / "check_spec_format",
+        SCRIPTS_DIR / "check_mesh",
+        SCRIPTS_DIR / "check_overhang",
+        SCRIPTS_DIR / "check_thickness",
+        SCRIPTS_DIR / "inspect",
+        SCRIPTS_DIR / "motion_policy.py",
+        SCRIPTS_DIR / "motion_presentation.py",
+        POWER_SCRIPTS_DIR / "check_power",
+        CADGEN_PACKAGE_DIR,
+    ]
+    if image_derived:
+        paths.extend([
+            IMAGE_SCRIPTS_DIR / "render_views.py",
+            IMAGE_SCRIPTS_DIR / "check_likeness.py",
+        ])
+    return paths
+
+
+def _tool_closure_sha256(paths: Sequence[Path]) -> str | None:
+    """Hash the source bytes of every tool file/package the sweep can invoke.
+
+    A directory is hashed by every `*.py` file underneath it, path and bytes
+    both, mirroring the tool-identity hash ADR 0068 already uses for the
+    geometry engine. Any unreadable path is an uncomputable closure, not a
+    silent partial hash.
+    """
+    digest = hashlib.sha256()
+    try:
+        for path in sorted(paths):
+            if path.is_dir():
+                for source in sorted(path.rglob("*.py")):
+                    digest.update(str(source.relative_to(path.parent)).encode("utf-8"))
+                    digest.update(source.read_bytes())
+            else:
+                digest.update(path.name.encode("utf-8"))
+                digest.update(path.read_bytes())
+    except OSError:
+        return None
+    return digest.hexdigest()
+
+
+def _sweep_closure_sha256(
+    *,
+    entries: list[Path],
+    cwd: Path,
+    project: Path,
+    raw_argv: Sequence[str],
+    signature_review_sha256: str | None,
+    tool_paths: Sequence[Path],
+) -> str | None:
+    """The redundant-sweep reuse key: None whenever any input is uncomputable."""
+    try:
+        step_bytes = {
+            str(entry.relative_to(cwd)): _sha256_file(_step_for_entry(entry))
+            for entry in entries
+        }
+        doc_bytes = {
+            str(path.relative_to(project)): _sha256_file(path)
+            for path in (project / "README.md", *sorted(project.glob("*_spec.md")))
+            if path.is_file()
+        }
+    except OSError:
+        return None
+    tool_hash = _tool_closure_sha256(tool_paths)
+    if tool_hash is None:
+        return None
+    payload = {
+        "steps": step_bytes,
+        "docs": doc_bytes,
+        "tools": tool_hash,
+        "argv": list(raw_argv),
+        "signature_review": signature_review_sha256,
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def _prior_terminal_verdict(path: Path) -> tuple[int, str] | None:
+    """A prior sweep's (exit code, closure hash) -- only for a terminal verdict.
+
+    A missing file, unreadable content, a record with no closure line, or an
+    UNVERIFIED verdict are all a miss, never a crash and never a reuse: an
+    UNVERIFIED sweep is a resumption in progress, not a fact about the project.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    result_match = _RESULT_LINE_RE.search(text)
+    closure_match = _CLOSURE_LINE_RE.search(text)
+    if not result_match or not closure_match:
+        return None
+    verdict, exit_code = result_match.group(1), int(result_match.group(2))
+    if verdict not in ("PASS", "FAIL"):
+        return None
+    return exit_code, closure_match.group(1)
+
+
 def _write_report(
     path: Path,
     runner: Runner,
@@ -1187,6 +1312,7 @@ def _write_report(
     elapsed: float,
     bed: tuple[float, float, float],
     preserve_existing: bool = False,
+    closure: str | None = None,
 ) -> None:
     previous = None
     if preserve_existing and path.is_file():
@@ -1207,6 +1333,7 @@ def _write_report(
         f"- Result: **{result_text}** (exit {result})",
         f"- Elapsed: {elapsed:.2f} s",
         f"- Bed: {bed[0]:g} x {bed[1]:g} x {bed[2]:g} mm",
+        *([f"- Closure: sha256:{closure}"] if closure is not None else []),
         "",
         "| # | command | result | seconds |",
         "|---:|---|---:|---:|",
@@ -1502,11 +1629,12 @@ def _final(
     likeness_mismatch_labels: set[str],
     likeness_accept_regression: str | None,
     search_fov: str,
+    skip_gen: bool = False,
 ) -> int:
     entries = [assembly, *parts]
     entry_args = [_path_arg(path, runner.cwd) for path in entries]
 
-    if not _run_or_stop(
+    if not skip_gen and not _run_or_stop(
         runner,
         [sys.executable, SCRIPTS_DIR / "gen", *entry_args, "--write", "--json"],
         warm=True,
@@ -2368,10 +2496,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    if "--self-check" in (list(argv) if argv is not None else sys.argv[1:]):
+    raw_argv = list(argv) if argv is not None else list(sys.argv[1:])
+    if "--self-check" in raw_argv:
         return self_check()
     parser = build_parser()
-    args = parser.parse_args(list(argv) if argv is not None else None)
+    args = parser.parse_args(raw_argv)
     cwd = Path.cwd().resolve()
     project = (cwd / args.project).resolve() if not Path(args.project).is_absolute() else Path(args.project).resolve()
     if not project.is_dir():
@@ -2674,6 +2803,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 }
             )
 
+    closure = None
+    reused = False
     if result != 0:
         mode = "quick" if args.quick else ("image-derived final" if args.image_derived else "final")
     elif args.quick:
@@ -2684,35 +2815,74 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         mode = "quick"
     else:
-        result = _final(
-            runner,
-            project,
-            assembly,
-            parts,
-            printables,
-            motion_manifest=motion_manifest,
-            check_motion=check_motion,
-            strict_fit=bool(args.strict_fit),
-            strict_mount=bool(args.strict_mount),
-            print_gates=bool(args.print_gates),
-            bed=bed,
-            nozzle=float(args.nozzle),
-            skip_thickness=bool(args.skip_thickness),
-            overhang_angle=float(args.overhang_angle),
-            image_derived=bool(args.image_derived),
-            likeness_refs=resolved_likeness_refs,
-            likeness_min=float(args.likeness_min),
-            likeness_accept_mismatch=args.likeness_accept_mismatch,
-            likeness_mismatch_labels=likeness_mismatch_labels,
-            likeness_accept_regression=args.likeness_accept_regression,
-            search_fov=str(args.search_fov),
-        )
         mode = "image-derived final" if args.image_derived else "final"
+        entries = [assembly, *parts]
+        entry_args = [_path_arg(path, runner.cwd) for path in entries]
+        if not _run_or_stop(
+            runner,
+            [sys.executable, SCRIPTS_DIR / "gen", *entry_args, "--write", "--json"],
+            warm=True,
+        ):
+            result = 1
+        else:
+            if not args.no_report and not args.dry_run:
+                reuse_report = report_path or (project / "measure" / "verification-pipeline.md")
+                closure = _sweep_closure_sha256(
+                    entries=entries,
+                    cwd=cwd,
+                    project=project,
+                    raw_argv=raw_argv,
+                    signature_review_sha256=signature_review_sha256,
+                    tool_paths=_sweep_tool_paths(image_derived=bool(args.image_derived)),
+                )
+                prior = _prior_terminal_verdict(reuse_report) if closure is not None else None
+                if prior is not None and prior[1] == closure:
+                    result = prior[0]
+                    reused = True
+                    runner.records.append({
+                        "command": "verify_project  # reused prior verdict (unchanged project)",
+                        "status": "reused",
+                        "seconds": 0.0,
+                    })
+            if not reused:
+                result = _final(
+                    runner,
+                    project,
+                    assembly,
+                    parts,
+                    printables,
+                    motion_manifest=motion_manifest,
+                    check_motion=check_motion,
+                    strict_fit=bool(args.strict_fit),
+                    strict_mount=bool(args.strict_mount),
+                    print_gates=bool(args.print_gates),
+                    bed=bed,
+                    nozzle=float(args.nozzle),
+                    skip_thickness=bool(args.skip_thickness),
+                    overhang_angle=float(args.overhang_angle),
+                    image_derived=bool(args.image_derived),
+                    likeness_refs=resolved_likeness_refs,
+                    likeness_min=float(args.likeness_min),
+                    likeness_accept_mismatch=args.likeness_accept_mismatch,
+                    likeness_mismatch_labels=likeness_mismatch_labels,
+                    likeness_accept_regression=args.likeness_accept_regression,
+                    search_fov=str(args.search_fov),
+                    skip_gen=True,
+                )
     elapsed = time.perf_counter() - workflow_started
     final_report = None
     if not args.quick and not args.no_report and not args.dry_run:
         final_report = report_path or (project / "measure" / "verification-pipeline.md")
-        _write_report(final_report, runner, mode=mode, result=result, elapsed=elapsed, bed=bed)
+        _write_report(
+            final_report,
+            runner,
+            mode=mode,
+            result=result,
+            elapsed=elapsed,
+            bed=bed,
+            preserve_existing=reused,
+            closure=closure,
+        )
         print(f"[verify_project] wrote report {final_report}", flush=True)
     if not args.dry_run:
         _write_harness_verdict(
