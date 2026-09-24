@@ -1202,20 +1202,13 @@ def _resume(args: argparse.Namespace) -> int:
 def _publish(args: argparse.Namespace) -> int:
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress, "Publication")
-    if args.title:
-        print(
-            "Publishing the sealed Release of %s under the public title %r; "
-            "no model runs and no geometry changes." % (args.product_id, args.title),
-            file=progress,
-            flush=True,
-        )
-    else:
-        print(
-            "Publishing the sealed Release of %s; no model runs and no geometry "
-            "changes." % args.product_id,
-            file=progress,
-            flush=True,
-        )
+    renamed = " under the public title %r" % args.title if args.title else ""
+    print(
+        "Publishing the sealed Release of %s%s; no model runs and no geometry "
+        "changes." % (args.product_id, renamed),
+        file=progress,
+        flush=True,
+    )
     receipt = publish_native_run(
         args.product_id,
         timing_observer=live_progress.timing,

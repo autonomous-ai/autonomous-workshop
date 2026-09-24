@@ -95,7 +95,6 @@ def unreleased_publication_snapshot(
     observed_at: str,
     primary_model: Any = None,
     print_files: Sequence[Any] = (),
-    public_title: Any = None,
 ) -> dict[str, Any]:
     """Build the whole ``publication/PUBLICATION.json`` of an unreleased toy."""
 
@@ -103,7 +102,7 @@ def unreleased_publication_snapshot(
         raise ContractError("unreleased publication requires a typed Release")
     if not isinstance(inventor_id, str) or not inventor_id:
         raise ContractError("unreleased publication requires an Inventor id")
-    document = {
+    return {
         "schema_version": 2,
         "kind": "autonomous-workshop.public-toy-snapshot",
         "title": str(release.product["title"]),
@@ -121,11 +120,6 @@ def unreleased_publication_snapshot(
         "primary_model": primary_model,
         "print_files": list(print_files),
     }
-    if public_title:
-        if not isinstance(public_title, str) or not public_title.strip():
-            raise ContractError("unreleased publication public title must be text")
-        document["public_title"] = public_title
-    return document
 
 
 def _canonical_json(value: Any) -> bytes:

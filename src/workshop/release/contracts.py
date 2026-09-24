@@ -131,9 +131,9 @@ class ReleaseContext:
             # a bad ``--title`` is refused here before any Factory effect.
             from workshop.release.public_archive import unreleased_public_slug
 
-            stripped = self.public_title.strip() if isinstance(self.public_title, str) else None
-            if not stripped:
+            if not isinstance(self.public_title, str) or not self.public_title.strip():
                 raise ContractError("ReleaseContext public title must be non-empty text")
+            stripped = self.public_title.strip()
             unreleased_public_slug(stripped)
             object.__setattr__(self, "public_title", stripped)
         object.__setattr__(self, "workspace", root)

@@ -3246,7 +3246,7 @@ class FactoryReleaseWriter:
         # still recorded beside it in the product facts sent to Factory, so
         # the rename is explicit rather than hidden.
         public_title = getattr(context, "public_title", None)
-        effective_title = public_title if public_title else page.get("title")
+        effective_title = public_title or page.get("title")
         release_record = dict(page)
         if public_title:
             release_record["public_title"] = public_title
