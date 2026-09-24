@@ -169,10 +169,27 @@ _Avoid_: Part, piece, module
 One build-and-repair cycle over a component or an assembly, driven by both
 numeric checks and the Manager's own inspection of the rendered result.
 
+**Carry Forward**:
+The permission for a Correction Run to keep a Component's existing evidence
+instead of earning it again, granted only when that Component's geometry is
+unchanged. Identity is established on the shape itself rather than on the
+exported file: a check is a pure function of the shape it reads, and two
+exports of one shape need not agree byte for byte. It carries evidence only.
+It lowers no threshold and skips nothing about the assembly.
+_Avoid_: Quick fix, quick mode, carry policy, `quick_fix`, `--quick`
+
 **CAD Project**:
 The self-contained directory holding a toy's geometry source, exports,
 measurements, renders, and verification report. It is the exact unit the host
 rebuilds and seals.
+
+**Evidence Scene**:
+An assembly built only to answer a question about a toy, never part of the toy
+and never printed: two pieces set side by side so a mirrored cue reads as one
+cue inverted, a rank ladder, two worlds that share a filament set adjacent. It
+is exported and rendered like any other geometry, so it costs what the toy
+costs.
+_Avoid_: Test scene, scratch assembly, render scene
 
 **Hero**:
 The single canonical render of the finished toy, chosen from the archived
