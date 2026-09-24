@@ -795,20 +795,16 @@ def _fix(args: argparse.Namespace) -> int:
     else:
         prompt = args.prompt
     loaded_references = load_wish_references(list(args.references or ()))
-    # A correction without images calls exactly as it did before --ref existed,
-    # so its Wish keeps the canonical bytes of the pre-reference contract.
-    reference_options = (
-        {
-            "references": [item.reference for item in loaded_references],
-            "reference_sources": wish_reference_sources(loaded_references),
-        }
-        if loaded_references
-        else {}
-    )
+    # A correction without images or a contract calls exactly as it did before
+    # --ref and --contract existed, so its Wish keeps the canonical bytes of
+    # the pre-reference contract.
+    revision_options: dict = {}
+    if loaded_references:
+        revision_options["references"] = [item.reference for item in loaded_references]
+        revision_options["reference_sources"] = wish_reference_sources(loaded_references)
     if args.contract is not None:
-        _, design_contract = _load_sealed_contract(args.contract)
-        reference_options = {**reference_options, "design_contract": design_contract}
-    wish, snapshot = prepare_revision(args.source, prompt, **reference_options)
+        _, revision_options["design_contract"] = _load_sealed_contract(args.contract)
+    wish, snapshot = prepare_revision(args.source, prompt, **revision_options)
     runtime = manager_runtime_selection(
         args.agent, model=args.model, reasoning_effort=args.effort,
     )
