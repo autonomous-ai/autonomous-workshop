@@ -685,13 +685,14 @@ def current_passing_component_round(project: Path, role: str, digest: str | None
     """
 
     entry = "part_%s.step.py" % role
+    scope = "component:%s" % role
     state_path = project / "measure" / COMPONENT_ROUNDS_DIR / role / STATE_NAME
     try:
         state = json.loads(state_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None, "%s has no isolated component round" % entry
-    round_value = state.get("round")
-    if type(round_value) is not int or round_value < 1 or state.get("scope") != "component:%s" % role:
+    round_value = state.get("round") if isinstance(state, dict) else None
+    if type(round_value) is not int or round_value < 1 or state.get("scope") != scope:
         return None, "%s has invalid component state" % entry
     summary_path = state_path.parent / ("r%04d" % round_value) / "summary.json"
     try:
@@ -699,7 +700,8 @@ def current_passing_component_round(project: Path, role: str, digest: str | None
     except (OSError, ValueError):
         return None, "%s has no component summary" % entry
     if (
-        summary.get("scope") != "component:%s" % role
+        not isinstance(summary, dict)
+        or summary.get("scope") != scope
         or summary.get("entry") != entry
         or summary.get("parts") != [role]
     ):
@@ -719,7 +721,7 @@ def component_coverage(project: Path, digests: dict, floor: float) -> dict[str, 
     (ADR 0063); this is how the assembly knows not to score it again against
     the whole object. A Component whose STEP moved since its pass covers
     nothing, exactly as --require-component-passes treats it: both read
-    ``current_passing_component_round`` (issue #48).
+    ``current_passing_component_round``.
     """
 
     covered = {}
