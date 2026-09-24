@@ -82,6 +82,7 @@ from workshop.wish import (
     Wish,
     generate_wish_id,
     load_wish_references,
+    parse_design_contract,
     wish_reference_files,
     wish_reference_sources,
 )
@@ -357,6 +358,8 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
     status = receipt.get("status", "unknown")
     stage = str(receipt.get("stage", "unknown")).title()
     print("Wish: %s" % product_id)
+    if receipt.get("contract_mode"):
+        print("Contract Mode: sealed")
     agent_id = receipt.get("agent", receipt.get("manager"))
     if isinstance(agent_id, str) and agent_id:
         print("Agent: %s" % manager_spec(agent_id).display_name)
@@ -587,6 +590,18 @@ def _start_run(
     """Announce and start one native run; callers print the receipt."""
 
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
+    sealed_contract = wish.context.get("design_contract")
+    if isinstance(sealed_contract, Mapping):
+        print(
+            "Contract Mode: sealed %r (%d requirement(s), %d reference(s))"
+            % (
+                sealed_contract.get("title"),
+                len(sealed_contract.get("requirements") or ()),
+                len(sealed_contract.get("references") or ()),
+            ),
+            file=progress,
+            flush=True,
+        )
     print(
         "Workflow: %s — %s" % (workflow.title, workflow.description),
         file=progress,
@@ -691,6 +706,22 @@ def _reject_conflicting_publication_options(args: argparse.Namespace) -> None:
         )
 
 
+def _load_sealed_contract(path: Path) -> tuple[str, dict]:
+    """Read and validate a Design Contract file, refusing before any run starts.
+
+    A contract that cannot be parsed or fails any of ADR 0072's checks must
+    never fall back to ordinary Wish mode, so ``parse_design_contract``'s
+    ``ContractError`` is left to propagate and abort ``wish`` entirely.
+    """
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise WorkshopError("cannot read design contract file") from exc
+    contract = parse_design_contract(text)
+    return text, contract.to_dict()
+
+
 def _wish(args: argparse.Namespace) -> int:
     _reject_conflicting_publication_options(args)
     workflow = workshop_effort(args.workflow)
@@ -701,9 +732,21 @@ def _wish(args: argparse.Namespace) -> int:
     reference_sources = wish_reference_sources(loaded_references)
     if reference_sources:
         context["reference_sources"] = reference_sources
+    if args.contract is not None:
+        if args.objective:
+            raise WorkshopError(
+                "--contract seals the whole file as the objective: do not also "
+                "type a WISH"
+            )
+        objective, sealed_contract = _load_sealed_contract(args.contract)
+        context["design_contract"] = sealed_contract
+    else:
+        if not args.objective:
+            raise WorkshopError("provide a WISH objective or --contract FILE")
+        objective = " ".join(args.objective)
     wish = Wish.create(
         generate_wish_id(),
-        " ".join(args.objective),
+        objective,
         context=context,
         references=[item.reference for item in loaded_references],
     )
@@ -728,6 +771,8 @@ def _wish(args: argparse.Namespace) -> int:
         progress=progress,
         live_progress=live_progress,
     )
+    if wish.context.get("design_contract") is not None:
+        receipt = {**receipt, "contract_mode": True}
     if args.json:
         _print_json(receipt)
     else:
@@ -1960,7 +2005,23 @@ def parser() -> argparse.ArgumentParser:
     wish = subcommands.add_parser(
         "wish", help="persist one Wish and start its native Manager session"
     )
-    wish.add_argument("objective", nargs="+", metavar="WISH")
+    wish.add_argument(
+        "objective",
+        nargs="*",
+        metavar="WISH",
+        help="a typed brief; omit when --contract seals a Design Contract instead",
+    )
+    wish.add_argument(
+        "--contract",
+        type=Path,
+        metavar="FILE",
+        help=(
+            "seal a Design Contract (ADR 0072) as the Wish objective, byte for "
+            "byte, and freeze the run in Contract Mode; a contract that fails "
+            "to parse or validate refuses before any run starts, naming every "
+            "failure at once"
+        ),
+    )
     wish.add_argument(
         "--ref",
         action="append",

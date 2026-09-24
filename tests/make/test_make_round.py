@@ -633,7 +633,7 @@ class MakeRoundTest(unittest.TestCase):
 class SealedReferenceTest(unittest.TestCase):
     """ADR 0072: a Wish's sealed references are scored whether or not a ledger names them."""
 
-    def _run_root(self, tmp, references, *, missing=()):
+    def _run_root(self, tmp, references, *, missing=(), context=None):
         """A run workspace as the host lays it out, with the CAD project nested inside."""
         run = Path(tmp)
         (run / "wish-references").mkdir()
@@ -642,7 +642,10 @@ class SealedReferenceTest(unittest.TestCase):
             if name not in missing:
                 (run / "wish-references" / name).write_bytes(content)
             sealed.append({"name": name, "sha256": hashlib.sha256(content).hexdigest()})
-        (run / "WISH.json").write_text(json.dumps({"references": sealed}))
+        wish = {"references": sealed}
+        if context is not None:
+            wish["context"] = context
+        (run / "WISH.json").write_text(json.dumps(wish))
         project = run / "artifacts/make/r0001/product/cad"
         project.mkdir(parents=True)
         (project / "toy.step.py").write_text("def gen_step(): return 'assembly'\n")
@@ -701,6 +704,21 @@ class SealedReferenceTest(unittest.TestCase):
             self.assertEqual([(i["label"], i["iou"]) for i in summary["likeness"]], [("ref-01-whole", 0.95)])
             self.assertTrue(summary["checks_ok"])
             self.assertEqual(summary["sealed"], [{"label": "ref-01-whole", "scored_by": "assembly"}])
+
+    def test_contract_mode_labels_a_sealed_reference_by_its_contract_shows_field(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            context = {
+                "design_contract": {
+                    "title": "Antisol",
+                    "references": [{"file": "ref-01-whole.png", "shows": "geometry:world-disc"}],
+                }
+            }
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"}, context=context)
+            module, calls = load_module(), []
+            self._main(module, project, [], {"ref-01-whole.png": 0.95}, calls)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertEqual([(i["label"], i["iou"]) for i in summary["likeness"]], [("geometry:world-disc", 0.95)])
+            self.assertEqual(summary["sealed"], [{"label": "geometry:world-disc", "scored_by": "assembly"}])
 
     def test_a_sealed_reference_below_the_floor_fails_the_round(self):
         with tempfile.TemporaryDirectory() as tmp:

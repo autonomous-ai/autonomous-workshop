@@ -970,6 +970,124 @@ class NativeCommandTest(unittest.TestCase):
             command.parse_args(("resume", "wish-one", "--publish"))
 
 
+def _contract_block(**overrides):
+    block = {
+        "schema_version": 1,
+        "title": "Antisol",
+        "inventor": "ad-astra",
+        "envelope_mm": [200, 200, 60],
+        "references": [{"file": "ref-01-antisol.png", "shows": "assembly"}],
+        "geometries": [
+            {
+                "id": "world-disc",
+                "name": "Planet disc",
+                "count": 16,
+                "extents_mm": [30, 30, 6],
+                "wall_min_mm": 1.2,
+            }
+        ],
+        "requirements": [
+            {"id": "R01", "scope": "assembly", "text": "The sun den is the focal point."}
+        ],
+    }
+    block.update(overrides)
+    return block
+
+
+def _contract_text(block=None, prose="# Antisol\n\nA toy about disc worlds.\n"):
+    body = block if block is not None else _contract_block()
+    return "%s\n```design-contract\n%s\n```\n" % (prose, json.dumps(body, indent=2))
+
+
+class WishContractCommandTest(unittest.TestCase):
+    """``workshop wish --contract`` (ADR 0072, Delivery 2)."""
+
+    def test_a_well_formed_contract_seals_as_the_objective_and_freezes_contract_mode(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            text = _contract_text()
+            contract_path.write_text(text, encoding="utf-8")
+            stdout, stderr = StringIO(), StringIO()
+            with mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-one"
+            ), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
+                result = main(("wish", "--contract", str(contract_path)))
+            self.assertEqual(result, 0)
+            sealed_wish = start.call_args.args[0]
+            self.assertEqual(sealed_wish.objective, text)
+            self.assertIn("design_contract", sealed_wish.context)
+            self.assertEqual(sealed_wish.context["design_contract"]["title"], "Antisol")
+            self.assertIn("Contract Mode: sealed", stdout.getvalue())
+
+    def test_a_contract_that_does_not_parse_refuses_and_starts_no_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            contract_path.write_text("# Antisol\n\nno fenced block here\n", encoding="utf-8")
+            with mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+                StringIO()
+            ), redirect_stderr(StringIO()) as stderr:
+                result = main(("wish", "--contract", str(contract_path)))
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("design contract", stderr.getvalue())
+
+    def test_a_contract_over_every_limit_names_every_failure_at_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            block = _contract_block(title="", inventor="")
+            block["requirements"] = [
+                {"id": "R%02d" % index, "scope": "assembly", "text": "Requirement %d." % index}
+                for index in range(1, 18)
+            ] + [
+                {"id": "R18", "scope": "geometry:does-not-exist", "text": "Missing geometry."}
+            ]
+            contract_path.write_text(_contract_text(block), encoding="utf-8")
+            with mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+                StringIO()
+            ), redirect_stderr(StringIO()) as stderr:
+                result = main(("wish", "--contract", str(contract_path)))
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            message = stderr.getvalue()
+            self.assertIn("title", message)
+            self.assertIn("inventor", message)
+            self.assertIn("at most 16 assembly", message)
+            self.assertIn("does not exist", message)
+
+    def test_contract_and_a_typed_objective_are_exclusive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            contract_path.write_text(_contract_text(), encoding="utf-8")
+            with mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+                StringIO()
+            ), redirect_stderr(StringIO()):
+                result = main(("wish", "a moon", "--contract", str(contract_path)))
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+
+    def test_neither_objective_nor_contract_refuses(self):
+        with mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+            StringIO()
+        ), redirect_stderr(StringIO()):
+            result = main(("wish",))
+        self.assertEqual(result, 2)
+        start.assert_not_called()
+
+    def test_a_run_without_contract_is_unchanged(self):
+        with mock.patch(
+            "cli.main.generate_wish_id", return_value="wish-one"
+        ), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(StringIO()) as stdout, redirect_stderr(StringIO()):
+            result = main(("wish", "a moon", "that", "waddles"))
+        self.assertEqual(result, 0)
+        sealed_wish = start.call_args.args[0]
+        self.assertNotIn("design_contract", sealed_wish.context)
+        self.assertNotIn("Contract Mode", stdout.getvalue())
+
+
 class DaydreamCommandTest(unittest.TestCase):
     def setUp(self):
         self._temporary = tempfile.TemporaryDirectory()

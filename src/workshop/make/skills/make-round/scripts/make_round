@@ -617,13 +617,35 @@ WISH_REFERENCES_DIR = "wish-references"
 SEALED_NAME = re.compile(r"^(ref-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)\.(?:png|jpg|webp)$")
 
 
+def contract_reference_labels(wish: dict) -> dict:
+    """Sealed file name -> Design Contract label, or ``{}`` outside Contract Mode.
+
+    ADR 0072: in Contract Mode the Make round labels sealed references by the
+    contract's ``shows`` field (``"assembly"`` or ``"geometry:<id>"``) instead
+    of the sealed file's stem, since that is the vocabulary the contract and
+    its review share.
+    """
+
+    context = wish.get("context") if isinstance(wish, dict) else None
+    contract = context.get("design_contract") if isinstance(context, dict) else None
+    if not isinstance(contract, dict):
+        return {}
+    labels = {}
+    for reference in contract.get("references") or ():
+        if isinstance(reference, dict) and isinstance(reference.get("file"), str) and isinstance(reference.get("shows"), str):
+            labels[reference["file"]] = reference["shows"]
+    return labels
+
+
 def sealed_references(project: Path):
     """The references the Wish sealed, as ``(references, error)``.
 
-    Each reference is ``{"label", "path", "sha256"}``; the label is the sealed
-    file's stem, so it names the same image in every round. Outside a run there
-    is no Wish and no sealed reference. A Wish that cannot be read is an error,
-    never an empty list: an empty list is how antisol-v01 scored nothing.
+    Each reference is ``{"label", "path", "sha256"}``. Outside Contract Mode
+    the label is the sealed file's stem, so it names the same image in every
+    round; in Contract Mode it is the contract's label for that file (ADR
+    0072). Outside a run there is no Wish and no sealed reference. A Wish
+    that cannot be read is an error, never an empty list: an empty list is
+    how antisol-v01 scored nothing.
     """
 
     root = run_root(project)
@@ -636,6 +658,7 @@ def sealed_references(project: Path):
             raise ValueError("references is not a list")
     except (OSError, ValueError, AttributeError) as exc:
         return [], "WISH.json unreadable: %s" % exc
+    contract_labels = contract_reference_labels(wish)
     sealed = []
     for item in items:
         name = item.get("name") if isinstance(item, dict) else None
@@ -643,7 +666,8 @@ def sealed_references(project: Path):
         match = SEALED_NAME.fullmatch(name) if isinstance(name, str) else None
         if match is None or not isinstance(digest, str):
             return [], "WISH.json names an invalid reference: %r" % (name,)
-        sealed.append({"label": match.group(1), "path": root / WISH_REFERENCES_DIR / name, "sha256": digest})
+        label = contract_labels.get(name, match.group(1))
+        sealed.append({"label": label, "path": root / WISH_REFERENCES_DIR / name, "sha256": digest})
     return sealed, None
 
 
