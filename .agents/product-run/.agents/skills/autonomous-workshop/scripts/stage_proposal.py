@@ -2194,6 +2194,38 @@ def _validate_geometry_requirements(
         )
 
 
+_BLIND_REREAD_IMAGES = {"iso", "signature"}
+
+
+def _validate_blind_rereads(
+    review: Mapping[str, Any], *, geometry_ids: set[str]
+) -> None:
+    """Preserve every targeted blind re-read (ADR 0072, issue 53): one narrow
+    question and its verbatim answer, bound to the image it concerns. Using
+    this path is the Manager's choice, so the list may be empty."""
+
+    rereads = _array(review["blind_rereads"], "Make blind rereads")
+    for index, raw_reread in enumerate(rereads, 1):
+        reread = _fields(
+            raw_reread,
+            {"image", "question", "answer"},
+            "Make blind reread %d" % index,
+        )
+        image = reread["image"]
+        if image not in _BLIND_REREAD_IMAGES and not (
+            isinstance(image, str)
+            and image.startswith("geometry:")
+            and image[len("geometry:") :] in geometry_ids
+        ):
+            raise ProposalError(
+                "Make blind reread %d names an image outside the review" % index
+            )
+        _bounded_text(
+            reread["question"], "Make blind reread %d question" % index, 500
+        )
+        _bounded_text(reread["answer"], "Make blind reread %d answer" % index, 1_000)
+
+
 def _validate_signature_review(
     run_root: Path,
     *,
@@ -2256,7 +2288,7 @@ def _validate_signature_review(
         "resolution",
     }
     if design_contract is not None:
-        review_fields = review_fields | {"requirements_source"}
+        review_fields = review_fields | {"requirements_source", "blind_rereads"}
     if sealed_geometry_rows:
         review_fields = review_fields | {
             "geometry_form_requirements",
@@ -2331,6 +2363,11 @@ def _validate_signature_review(
             review=review,
             sealed_rows=sealed_geometry_rows,
             project_relative=review_relative.parent.parent,
+        )
+    if design_contract is not None:
+        _validate_blind_rereads(
+            review,
+            geometry_ids={geometry for geometry, _ in sealed_geometry_rows},
         )
     blockers = _array(
         review["blocking_visual_defects"], "Make blocking visual defects"

@@ -213,7 +213,13 @@ SIGNATURE_REVIEW_FIELDS = {
 # Contract's requirements into the review and records their source. This
 # in-sandbox gate cannot see the sealed Wish, so it checks the field's shape
 # only; matching the review's rows to the contract is the host finalizer's job.
-SIGNATURE_REVIEW_FIELDS_V9 = SIGNATURE_REVIEW_FIELDS | {"requirements_source"}
+# Issue 53: the Manager may ask the critic one narrow blind re-read question
+# per unaddressed requirement and preserve its verbatim answer. Always
+# present (possibly empty) for schema 9, since using this path is a choice.
+SIGNATURE_REVIEW_FIELDS_V9 = SIGNATURE_REVIEW_FIELDS | {
+    "requirements_source",
+    "blind_rereads",
+}
 # Issue 54: a contract with geometry-scoped requirements additionally binds
 # each row to a Component's visual packet and counts one blind read per
 # Unique Geometry. Present only when the sealed contract has such rows; this
@@ -221,6 +227,7 @@ SIGNATURE_REVIEW_FIELDS_V9 = SIGNATURE_REVIEW_FIELDS | {"requirements_source"}
 SIGNATURE_REVIEW_GEOMETRY_FIELDS = {"geometry_form_requirements", "geometry_blind_reads"}
 SIGNATURE_REVIEW_FIELDS_V9_GEOMETRY = SIGNATURE_REVIEW_FIELDS_V9 | SIGNATURE_REVIEW_GEOMETRY_FIELDS
 GEOMETRY_PACKET_VIEWS = ("front", "top", "iso")
+BLIND_REREAD_IMAGES = ("iso", "signature")
 SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -301,6 +308,7 @@ def _required_signature_review(project: Path) -> str:
             raise ValueError("signature review fields do not match schema 9")
         if review.get("requirements_source") not in ("contract", "manager"):
             raise ValueError("signature review requirements_source is invalid")
+        geometries_with_rows: list[str] = []
         if has_geometry_rows:
             geometry_requirements = review.get("geometry_form_requirements")
             if not isinstance(geometry_requirements, list) or not 1 <= len(
@@ -309,7 +317,6 @@ def _required_signature_review(project: Path) -> str:
                 raise ValueError(
                     "signature review must enumerate geometry form requirements"
                 )
-            geometries_with_rows: list[str] = []
             for requirement in geometry_requirements:
                 if not isinstance(requirement, dict) or set(requirement) != {
                     "requirement",
@@ -365,6 +372,27 @@ def _required_signature_review(project: Path) -> str:
                 blind_read = entry.get("blind_read")
                 if not isinstance(blind_read, str) or not blind_read.strip() or len(blind_read) > 1000:
                     raise ValueError("signature review geometry blind read is invalid")
+        blind_rereads = review.get("blind_rereads")
+        if not isinstance(blind_rereads, list):
+            raise ValueError("signature review blind_rereads is invalid")
+        for reread in blind_rereads:
+            if not isinstance(reread, dict) or set(reread) != {
+                "image",
+                "question",
+                "answer",
+            }:
+                raise ValueError("signature review blind reread is invalid")
+            image = reread.get("image")
+            if image not in BLIND_REREAD_IMAGES and not (
+                isinstance(image, str)
+                and image.startswith("geometry:")
+                and image[len("geometry:") :] in geometries_with_rows
+            ):
+                raise ValueError("signature review blind reread image is invalid")
+            for field, maximum in (("question", 500), ("answer", 1000)):
+                value = reread.get(field)
+                if not isinstance(value, str) or not value.strip() or len(value) > maximum:
+                    raise ValueError(f"signature review blind reread {field} is invalid")
     else:
         if set(review) != SIGNATURE_REVIEW_FIELDS:
             raise ValueError("signature review fields do not match schema 8")
