@@ -286,6 +286,26 @@ class ResumeInspectionTest(unittest.TestCase):
 class StopCategoryTest(ResumeInspectionTest):
     """The status/resume receipt names a bounded cause for a non-complete run (#47)."""
 
+    def write_transport_diagnosis(self, wish_sha256):
+        host._write_private_json(
+            self.paths.host_state / runtime.CODEX_FAILURE_DIAGNOSTIC_FILENAME,
+            {
+                "schema_version": 2,
+                "kind": runtime.CODEX_FAILURE_DIAGNOSTIC_KIND,
+                "product_id": self.product_id,
+                "wish_sha256": wish_sha256,
+                "diagnostic": {
+                    "terminal_error": {
+                        "event_type": "error",
+                        "category": "provider-transport",
+                        "signature": "stream-disconnected",
+                        "code": None,
+                        "message_bytes": 42,
+                    },
+                },
+            },
+        )
+
     def test_complete_run_carries_no_stop_category(self):
         run = self.start_old()
         checkpoint = dataclasses.replace(run.snapshot(), status="complete")
@@ -307,47 +327,13 @@ class StopCategoryTest(ResumeInspectionTest):
     def test_transport_diagnosis_reports_transport(self):
         run = self.start_old()
         checkpoint = run.snapshot()
-        host._write_private_json(
-            self.paths.host_state / runtime.CODEX_FAILURE_DIAGNOSTIC_FILENAME,
-            {
-                "schema_version": 2,
-                "kind": runtime.CODEX_FAILURE_DIAGNOSTIC_KIND,
-                "product_id": self.product_id,
-                "wish_sha256": checkpoint.wish_sha256,
-                "diagnostic": {
-                    "terminal_error": {
-                        "event_type": "error",
-                        "category": "provider-transport",
-                        "signature": "stream-disconnected",
-                        "code": None,
-                        "message_bytes": 42,
-                    },
-                },
-            },
-        )
+        self.write_transport_diagnosis(checkpoint.wish_sha256)
         receipt = host.native_run_status(self.product_id)
         self.assertEqual(receipt["stop_category"], "transport")
 
     def test_stale_diagnosis_from_a_different_wish_is_not_trusted(self):
         run = self.start_old()
-        host._write_private_json(
-            self.paths.host_state / runtime.CODEX_FAILURE_DIAGNOSTIC_FILENAME,
-            {
-                "schema_version": 2,
-                "kind": runtime.CODEX_FAILURE_DIAGNOSTIC_KIND,
-                "product_id": self.product_id,
-                "wish_sha256": "0" * 64,
-                "diagnostic": {
-                    "terminal_error": {
-                        "event_type": "error",
-                        "category": "provider-transport",
-                        "signature": "stream-disconnected",
-                        "code": None,
-                        "message_bytes": 42,
-                    },
-                },
-            },
-        )
+        self.write_transport_diagnosis("0" * 64)
         receipt = host.native_run_status(self.product_id)
         self.assertEqual(receipt["stop_category"], "unclassified")
 
@@ -369,24 +355,7 @@ class StopCategoryTest(ResumeInspectionTest):
     def test_budget_stop_reports_budget_over_a_stale_transport_diagnosis(self):
         run = self.start_old()
         checkpoint = run.snapshot()
-        host._write_private_json(
-            self.paths.host_state / runtime.CODEX_FAILURE_DIAGNOSTIC_FILENAME,
-            {
-                "schema_version": 2,
-                "kind": runtime.CODEX_FAILURE_DIAGNOSTIC_KIND,
-                "product_id": self.product_id,
-                "wish_sha256": checkpoint.wish_sha256,
-                "diagnostic": {
-                    "terminal_error": {
-                        "event_type": "error",
-                        "category": "provider-transport",
-                        "signature": "stream-disconnected",
-                        "code": None,
-                        "message_bytes": 42,
-                    },
-                },
-            },
-        )
+        self.write_transport_diagnosis(checkpoint.wish_sha256)
         lifetime_budget = {"status": "available", "scope": "product-tokens", "last_stop_reason": "product token limit reached"}
         category = host._native_stop_category(
             checkpoint, paths=self.paths, action="inspected", lifetime_budget=lifetime_budget

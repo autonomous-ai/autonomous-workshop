@@ -9800,6 +9800,34 @@ def _write_inspection_progress_snapshot(
     )
 
 
+def _diagnosed_provider_transport_failure(
+    checkpoint: AgentRunCheckpoint, paths: NativeRunPaths
+) -> bool:
+    """Whether this run's own ADR 0050 diagnosis names a provider transport error."""
+
+    try:
+        diagnosis = _read_stable_private_json(
+            paths.host_state / CODEX_FAILURE_DIAGNOSTIC_FILENAME,
+            label="codex turn failure diagnostic",
+            maximum_bytes=MAX_CODEX_FAILURE_DIAGNOSTIC_BYTES,
+        )
+    except WorkshopError:
+        return False
+    if not (
+        diagnosis.get("schema_version") == 2
+        and diagnosis.get("kind") == CODEX_FAILURE_DIAGNOSTIC_KIND
+        and diagnosis.get("product_id") == checkpoint.product_id
+        and diagnosis.get("wish_sha256") == checkpoint.wish_sha256
+    ):
+        return False
+    detail = diagnosis.get("diagnostic")
+    terminal_error = detail.get("terminal_error") if isinstance(detail, Mapping) else None
+    return (
+        isinstance(terminal_error, Mapping)
+        and terminal_error.get("category") == "provider-transport"
+    )
+
+
 def _native_stop_category(
     checkpoint: AgentRunCheckpoint,
     *,
@@ -9824,25 +9852,8 @@ def _native_stop_category(
         return "budget"
     if paths is None:
         return "unclassified"
-    diagnosis: Optional[Mapping[str, Any]] = None
-    try:
-        diagnosis = _read_stable_private_json(
-            paths.host_state / CODEX_FAILURE_DIAGNOSTIC_FILENAME,
-            label="codex turn failure diagnostic",
-            maximum_bytes=MAX_CODEX_FAILURE_DIAGNOSTIC_BYTES,
-        )
-    except WorkshopError:
-        diagnosis = None
-    if (
-        diagnosis is not None
-        and diagnosis.get("schema_version") == 2
-        and diagnosis.get("kind") == CODEX_FAILURE_DIAGNOSTIC_KIND
-        and diagnosis.get("product_id") == checkpoint.product_id
-        and diagnosis.get("wish_sha256") == checkpoint.wish_sha256
-    ):
-        terminal_error = (diagnosis.get("diagnostic") or {}).get("terminal_error") or {}
-        if terminal_error.get("category") == "provider-transport":
-            return "transport"
+    if _diagnosed_provider_transport_failure(checkpoint, paths):
+        return "transport"
     previous_count = _read_inspection_progress_snapshot(paths, checkpoint.product_id)
     current_count = _inspection_cache_measurement_count(paths)
     if action not in ("inspected", "inspected-terminal"):
