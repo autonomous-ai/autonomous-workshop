@@ -1250,15 +1250,17 @@ def _resume(args: argparse.Namespace) -> int:
 def _publish(args: argparse.Namespace) -> int:
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress, "Publication")
+    renamed = " under the public title %r" % args.title if args.title else ""
     print(
-        "Publishing the sealed Release of %s; no model runs and no geometry "
-        "changes." % args.product_id,
+        "Publishing the sealed Release of %s%s; no model runs and no geometry "
+        "changes." % (args.product_id, renamed),
         file=progress,
         flush=True,
     )
     receipt = publish_native_run(
         args.product_id,
         timing_observer=live_progress.timing,
+        title=args.title,
     )
     if args.json:
         _print_json(receipt)
@@ -2238,6 +2240,18 @@ def parser() -> argparse.ArgumentParser:
     publish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     publish.add_argument(
         "--strict", action="store_true", help="exit 1 when publication does not complete"
+    )
+    publish.add_argument(
+        "--title",
+        default=None,
+        help=(
+            "publish under this public title instead of the exact one Make sealed. "
+            "Make's sealed bytes and the immutable Release contract are untouched; "
+            "only the host's own Factory listing and local unreleased archive are "
+            "re-sealed under it, and that re-sealed record keeps the Make title "
+            "beside the public one. Requires an Unreleased toy, and refuses a "
+            "title that cannot produce a safe public slug before any effect."
+        ),
     )
     publish.set_defaults(handler=_publish)
 

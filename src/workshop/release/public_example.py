@@ -1370,6 +1370,7 @@ def materialize_public_example(
     token_summary: Optional[Mapping[str, Any]] = None,
     wish_id: Optional[str] = None,
     stage_timing_record: Optional[Mapping[str, Any]] = None,
+    public_title: Optional[str] = None,
 ) -> Path:
     """Create ``toys/<inventor>-<slug>`` from exact public Release bytes.
 
@@ -1397,6 +1398,14 @@ def materialize_public_example(
         raise ContractError("public example requires typed Made and Release inputs")
     if type(disclose_exact_wish) is not bool:
         raise ContractError("public example Wish disclosure must be boolean")
+    if public_title is not None:
+        if not isinstance(public_title, str) or not public_title.strip():
+            raise ContractError("public example public title must be non-empty text")
+        public_title = public_title.strip()
+        # Reject a title that cannot produce a safe slug before any other
+        # effect: this reuses the exact rule the unreleased archive already
+        # applies to a title, so the check is identical either way.
+        unreleased_public_slug(public_title)
     manager = manager_spec(manager_id)
     runtime = (
         manager_runtime_selection(
@@ -1428,7 +1437,7 @@ def materialize_public_example(
     pdf_first = release.manual_path == NATIVE_RELEASE_MANUAL_PATH
     anchor_url = None
     if unreleased:
-        slug = unreleased_public_slug(release.product["title"])
+        slug = unreleased_public_slug(public_title or release.product["title"])
         details = _unreleased_receipt_details(made)
     else:
         slug = receipt.slug
@@ -1659,7 +1668,8 @@ def materialize_public_example(
             if unreleased or pdf_first or make_output
             else _https_public_url(details.get("cover_url"), "public cover URL")
         )
-        title = str(release.product["title"])
+        make_title = str(release.product["title"])
+        title = public_title or make_title
         summary = str(release.product["summary"])
         identities = {
             "native_release_sha256": release.release_sha256,
@@ -1718,6 +1728,11 @@ def materialize_public_example(
             "title": title,
             "inventor": {"id": inventor_id},
             "publication": publication_details,
+            **(
+                {"make_title": make_title}
+                if public_title and public_title != make_title
+                else {}
+            ),
             "identities": identities,
             "primary_model": primary_model,
             "print_files": print_files,
@@ -1990,6 +2005,7 @@ def materialize_public_example_if_source_checkout(
     token_summary: Optional[Mapping[str, Any]] = None,
     wish_id: Optional[str] = None,
     stage_timing_record: Optional[Mapping[str, Any]] = None,
+    public_title: Optional[str] = None,
 ) -> Optional[Path]:
     """Materialize a public example when the host is running from a checkout."""
 
@@ -2011,6 +2027,7 @@ def materialize_public_example_if_source_checkout(
         token_summary=token_summary,
         wish_id=wish_id,
         stage_timing_record=stage_timing_record,
+        public_title=public_title,
     )
 
 

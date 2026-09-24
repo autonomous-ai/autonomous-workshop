@@ -168,16 +168,14 @@ the ledger, then return to Step 3.
 ## Step 7 - Publish the conforming build
 
 Only a build with zero findings is published. It carries a suffixed title
-such as `<title> v03`. Ask the person which of these they want:
+such as `<title> v03`. Publish it under the clean `<title>` with
+`uv run workshop publish <wish-id> --title "<title>"`. This re-seals only the
+host's own Release; Make's sealed bytes are untouched, no correction run is
+spent, and no detection needs to run again. Omit `--title` to publish under
+the exact suffixed name Make sealed instead.
 
-- **publish as it is**, under the suffixed name; or
-- **spend one more correction run** whose brief changes only the title to
-  the clean `<title>`. Detection runs again on that build, and it is
-  published only if it still has zero findings.
-
-Publish with `uv run workshop publish <wish-id>`. Its summary line can report
-`effect.factory failed` after the listing actually went live. Before
-concluding anything, read the effect ledger in
+Its summary line can report `effect.factory failed` after the listing
+actually went live. Before concluding anything, read the effect ledger in
 `<workshop-home>/state/<wish-id>/factory-effects.sqlite3` and fetch the live
 page. Rows marked `factory-publish|unknown` mean the publication went out, so
 do not publish again.

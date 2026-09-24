@@ -84,6 +84,14 @@ class ReleaseContext:
     token_usage: Optional[Mapping[str, Any]] = field(
         default=None, repr=False, compare=False
     )
+    # An operator-chosen public name for ``workshop publish --title``. It
+    # never touches Make's sealed bytes or the immutable NativeRelease
+    # contract; it rides only this host-composed context so the Factory
+    # writer and the local unreleased-archive projection can publish under a
+    # different name than the one Make sealed. ``None`` means "use the
+    # sealed Release title exactly", which is the byte-for-byte-unchanged
+    # default path.
+    public_title: Optional[str] = field(default=None, compare=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -116,6 +124,18 @@ class ReleaseContext:
             if not isinstance(usage, Mapping) or usage.get("unit") != "tokens":
                 raise ContractError("ReleaseContext token usage must be a token budget")
             object.__setattr__(self, "token_usage", _plain_json(usage))
+        if self.public_title is not None:
+            # Reuse the exact rule the local unreleased archive already uses
+            # to derive a safe directory slug from a title: if a title cannot
+            # produce one there, it cannot produce one for Factory either, so
+            # a bad ``--title`` is refused here before any Factory effect.
+            from workshop.release.public_archive import unreleased_public_slug
+
+            if not isinstance(self.public_title, str) or not self.public_title.strip():
+                raise ContractError("ReleaseContext public title must be non-empty text")
+            stripped = self.public_title.strip()
+            unreleased_public_slug(stripped)
+            object.__setattr__(self, "public_title", stripped)
         object.__setattr__(self, "workspace", root)
         self.assert_current()
 
