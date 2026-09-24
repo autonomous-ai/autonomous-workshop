@@ -13,7 +13,7 @@ so the same defect must get the same id in every round.
 | `count:<geometry>` | geometry | the number of Components built to it differs from `count` |
 | `unmapped:<geometry>` | geometry | no Component could be mapped to the geometry at all |
 | `likeness:<ref-stem>` | likeness | IoU below 0.90, or the score could not be produced |
-| `requirement:<id>` | requirements | the requirement fails, or nothing ever reviewed it |
+| `requirement:<id>` | requirements | the review has no contract-bound row for it (should not happen for a run started with `--contract`) |
 
 Anything that could not be measured is a finding, never a pass. That rule is
 the whole reason this skill exists.
@@ -76,26 +76,25 @@ reference image's mask is broken, not the model. Flatten the image with
 `image-to-cad/scripts/ref_silhouette.py` and score again. Record both scores,
 and do not raise the finding against the toy for a mask problem.
 
-## Requirements (review coverage, then a blind read of the gaps)
+## Requirements (already contract-bound review)
 
-Read `<toy-dir>/make/verification/renders/SIGNATURE-REVIEW.json`. In legacy
-mode the Manager wrote its `critical_form_requirements`, so the list shows
-what was checked, not what should have been.
+Every round runs under `--contract`, so the host's finalizer already refused
+any proposal whose review did not carry, in the contract's own order, one row
+per assembly-scoped requirement (`critical_form_requirements`) and one row
+per geometry-scoped requirement (`geometry_form_requirements`, when the
+contract has any), each with matching text and `matches: true`. A round that
+reached `complete` has therefore already had every requirement reviewed and
+passed by the run itself — there is no Manager-written list to re-derive
+coverage from, and no gap to give a blind read.
 
-1. For each contract requirement, find the review row that covers it, and quote
-   that row's `requirement` text as the match. If no row covers it, the
-   requirement was **never reviewed**.
-2. Take a covered row with `matches: true` as the run's own evidence, and say
-   in the report that it is Manager-listed.
-3. Give every never-reviewed requirement a blind read. Hand a fresh subagent
-   only the images: `make/verification/renders/iso.png` and `signature.png`
-   for an assembly requirement, or the Component's front, top and iso views for
-   a geometry requirement (`render_views.py <copy> --view front --view top
-   --view iso`). Do not tell it the Wish, the contract or the intended answer.
-   Ask one narrow question about what it sees in the region the requirement
-   concerns. Keep its answer verbatim. Only then compare the answer with the
-   requirement. A requirement the answer does not clearly satisfy is a
-   `requirement:<id>` finding.
+Read `<toy-dir>/make/verification/renders/SIGNATURE-REVIEW.json`. For each
+contract requirement, in order, take its matching row — `critical_form_requirements`
+for an assembly-scoped requirement, `geometry_form_requirements` for a
+geometry-scoped one — and record `passed: "requirement:<id>"` in
+`findings.json`, quoting that row's `blind_evidence` as the evidence. If a
+row is somehow missing for a requirement, that is itself a `requirement:<id>`
+finding: it means this run did not, in fact, start under `--contract` with
+this exact contract, and no other layer would catch that.
 
 ## Output
 

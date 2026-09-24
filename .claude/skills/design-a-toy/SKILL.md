@@ -58,14 +58,31 @@ Drive to a written spec containing:
 
 ## Stage 2 - The gate
 
-**Stop. Show the human the spec and wait for explicit approval.**
+**Stop. Show the human the spec and the Design Contract block together, and
+wait for explicit approval of both.**
+
+Draft the block per
+[CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md): one `geometries[]`
+entry per item on the unique-geometry list, and one `requirements[]` row for
+every checkable claim the prose decided — a dimension, a count, a wall
+thickness, a visible feature. Check the block against the prose line by line,
+not just against itself: a block that leaves out a decided number or feature
+recreates the defect this gate exists to close. Name each
+`references[].file` as `ref-NN-<slug>.png` in the order Stage 3 will generate
+them, even though the files do not exist yet.
+
+Check the drafted block against CONTRACT-FORMAT.md's row limits before
+showing it: at most 16 assembly-scoped requirements, at most 4 per Unique
+Geometry, and the whole file (prose plus block) under 40,000 characters. A
+contract over either limit is cut back by the human, not by you.
 
 This gate exists because image generation is the expensive stage: one image per
-unique geometry, each iterated against pass criteria. Approving the spec before
-spending that is the whole point. Do not generate a single image before the
-human has approved the spec in this conversation.
+unique geometry, each iterated against pass criteria. Approving the spec and
+its contract before spending that is the whole point. Do not generate a
+single image before the human has approved both in this conversation.
 
-If the human changes anything, update the spec and show it again.
+If the human changes anything, update the spec and the block and show both
+again.
 
 ## Stage 3 - Reference images
 
@@ -114,25 +131,22 @@ image through as the reference itself: the likeness gate writes a measured
 similarity score into the toy's public archive, and what that score describes
 must be the Inventor's own expression.
 
-## Stage 4 - Emit the command
+## Stage 4 - Write the contract and hand off
 
-Write the spec as the Wish objective. It may run to 50,000 characters, so spend
-them: the objective is the only place the human's exact intent survives into the
-run byte-for-byte, read-only and hash-checked at every checkpoint.
+Write `CONTRACT.md` beside the reference images: the approved prose, then the
+approved `design-contract` block, exactly as
+[CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md) requires. Confirm the
+block's `references[].file` entries now match Stage 3's images one for one —
+that is what lets `workshop wish --contract` seal this exact file, byte for
+byte, as the run's hash-checked objective.
 
-Print the command for the human to run. Do not run it.
-
-```bash
-uv run workshop wish "<the full spec text>" \
-  --ref ref-01-<slug>.png \
-  --ref ref-02-<slug>.png \
-  ...
-```
+Hand off to the `build-a-toy` skill with the path to this `CONTRACT.md`. That
+skill owns every run this design starts, round 0 through every correction,
+always under `--contract`. Do not print a bare `workshop wish` command here.
 
 Then state plainly what happens next: Make builds against these images, the
-silhouette-likeness gate re-checks every round at IoU >= 0.90, and corrections
-go through `workshop resume` or `workshop fix` rather than back through this
-skill.
+silhouette-likeness gate re-checks every round at IoU >= 0.90, and every
+correction runs through `build-a-toy`, not back through this skill.
 
 ## What this skill does not do
 

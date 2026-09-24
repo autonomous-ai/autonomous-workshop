@@ -13,25 +13,13 @@ contract, or a plain report of why no build conformed.
 Use the vocabulary in `CONTEXT.md`: **Design Contract**, **Conformance**,
 **Requirement Scope**, **Unique Geometry**, **Component** (not "part").
 
-## Legacy mode
-
-This skill runs in **legacy mode** until batch 2 of ADR 0072 adds
-`workshop wish --contract`. That has two consequences. State them in every
-report:
-
-- The contract travels as the text of the Wish objective. The host does not
-  seal it as a contract, and nothing in the run binds its review to it.
-  **Conformance is established by this skill, not by the run.**
-- The run's `SIGNATURE-REVIEW.json` lists only the requirements the Manager
-  chose to write. [DETECT.md](DETECT.md) treats that list as a record of what
-  was checked, not of what should have been checked.
-
 ## The settled run parameters
 
 Every run this skill starts, whether `wish` or `fix`, uses:
 
 | Flag | Value | Why |
 |---|---|---|
+| `--contract` | always | Seals the Design Contract into the run (ADR 0072). The host refuses to complete the run unless its review carries every one of the contract's requirements, in order, each visibly matching — **conformance for requirements is established by the run itself, not by this skill re-deriving coverage from a Manager-written list** |
 | `--no-publish` | always, round 0 included | Nothing reaches Factory until it conforms |
 | `--turn-minutes` | `360` | The maximum. The clock is not the limit |
 | `--max-tokens` | `100000000` | **This is the real backstop.** With 360-minute turns and unlimited resume, a run stops when its tokens run out |
@@ -59,14 +47,17 @@ Done when: the contract validates with no errors, and the ledger exists.
 Skip this step when an existing toy was given. That toy is round 0: run
 Step 4 on it.
 
-Write the objective. Its first line is `Name this toy exactly: <title> v01.`,
-and the full `CONTRACT.md` follows. Every build in the chain takes a
-suffixed name. A local, unpublished projection can never overwrite a
+`--contract` seals its file byte for byte as the objective, so the round's
+name cannot be a line appended after the fact: copy `CONTRACT.md` to
+`build-a-toy/r00/CONTRACT.md` with one line prepended, `Name this toy
+exactly: <title> v01.`, ahead of the prose. This does not touch the fenced
+`design-contract` block, only the prose above it. Every build in the chain
+takes a suffixed name. A local, unpublished projection can never overwrite a
 different `toys/<slug>`, so reusing a name strands the run at its last step.
 Build the command:
 
 ```bash
-uv run workshop wish "$(cat <objective-file>)" --inventor <inventor> \
+uv run workshop wish --contract build-a-toy/r00/CONTRACT.md --inventor <inventor> \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
   --no-publish --turn-minutes 360 --max-tokens 100000000
 ```
@@ -138,17 +129,17 @@ Write `build-a-toy/r<NN>/brief.md`:
 - Each finding follows, as the contract value, the measured value, and the
   evidence. Give a concrete repair only where the fix is unambiguous.
   Otherwise state the target and leave the method to Make.
-- Then this line: *every other requirement of the Design Contract below still
+- Then this line: *every other requirement of the Design Contract still
   holds; a correction may not trade one requirement for another.*
 - Then a size budget, so the next round can still chain: `assembled.step`
   under 12 MB, and the heaviest Component under 4 MB.
-- Then the full `CONTRACT.md`. A correction run reviews against its brief
-  (ADR 0065), so the whole contract has to be in the brief.
 
-The brief becomes the correction run's Wish objective, which is limited to
-50,000 characters. If it is over the limit, stop and show the person. Cutting
-the contract to fit would remove exactly the requirements the run is judged
-against. Shorten the findings instead.
+`fix --contract` seals `CONTRACT.md` into the correction separately from the
+brief (it does not replace `--prompt-file`), so the brief itself only needs
+the findings, not a second copy of the whole contract. The brief becomes part
+of the correction run's Wish objective, which is limited to 50,000
+characters; if it is over the limit, shorten the findings and show the
+person, rather than cutting anything the run is judged against.
 
 **Show the person the brief and the exact command, and wait for explicit
 approval.** Then run the correction from the previous round's **run
@@ -157,6 +148,7 @@ archive, and it stays within `fix`'s 128 MiB source limit.
 
 ```bash
 uv run workshop fix "<previous-run-workspace>" --prompt-file build-a-toy/r<NN>/brief.md \
+  --contract <contract-dir>/CONTRACT.md \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
   --no-publish --turn-minutes 360 --max-tokens 100000000
 ```
@@ -187,6 +179,4 @@ out of budget, with:
 
 - each round's wish id, toy directory, and finding ids;
 - which findings were **unverified** rather than failed;
-- that the contract was supplied in **legacy mode** and is not hash-bound to
-  any run;
 - what was published, if anything, and how it was confirmed.

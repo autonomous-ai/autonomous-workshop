@@ -8,12 +8,12 @@ directory as its reference images. It has two parts:
 2. **One fenced `design-contract` block.** The checkable enumeration of that
    same spec. This skill checks conformance against the block.
 
-The whole file becomes the Wish objective, byte for byte. That is what lets
-batch 2 seal this exact format with `workshop wish --contract` instead of
-inventing a second one (ADR 0072). Keep the whole file under **40,000
-characters**. A correction brief is itself a Wish objective, which is limited
-to 50,000 characters, and every brief carries the full contract plus that
-round's findings.
+This is the exact format `workshop wish --contract` and `workshop fix
+--contract` seal: the whole file becomes the Wish objective, byte for byte
+(ADR 0072). Keep the whole file under **40,000 characters**. A correction
+brief is itself a Wish objective, which is limited to 50,000 characters, and
+does not need to repeat the contract, since `fix --contract` seals it
+separately from the brief.
 
 The block must cover the prose. If the prose decides something checkable, such
 as a dimension, a count, a wall thickness or a visible feature, and the block
