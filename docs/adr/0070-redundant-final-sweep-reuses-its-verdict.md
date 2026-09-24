@@ -1,7 +1,7 @@
 # ADR 0070: A redundant final sweep reuses its verdict and exits zero
 
 - Status: Proposed
-- Date: 2026-09-22
+- Date: 2026-09-22; amended 2026-09-24 to reuse only terminal verdicts
 - Owners: CAD skill (`verify_project`), Make round contract
 - Relates to: ADR 0068 (content-bound measurement cache, host re-derivation),
   ADR 0069 (corrections carry byte-identical parts forward), ADR 0061
@@ -17,7 +17,8 @@ instruction is not ambiguous, so restating it more firmly is not a remedy — it
 has already failed in the field.
 
 The waste is specifically re-verification of a project that has not changed
-since the last verdict. ADR 0068 already established that measurements bind to
+since the last verdict, and only a verdict that re-running cannot change.
+ADR 0068 already established that measurements bind to
 exact content — B-rep bytes, check options, Python/OCP identity, tool source
 bytes — and that the host disables cache reads and writes when it re-derives
 the archive. The principle needed here is that one, applied to the sweep as a
@@ -25,9 +26,9 @@ whole rather than to individual measurements.
 
 ## Decision
 
-When `verify_project` is asked for a full sweep and nothing hash-relevant has
-changed since the last recorded verdict for that project, it does not
-re-verify. It re-emits the recorded verdict, writes a `status: "reused"` row
+When `verify_project` is asked for a full sweep, nothing hash-relevant has
+changed since the last recorded verdict for that project, and that verdict is
+**terminal** -- PASS or FAIL -- it does not re-verify. It re-emits the recorded verdict, writes a `status: "reused"` row
 with `seconds: 0.0` into `measure/verification-pipeline.md` beside the
 preserved prior report, and **exits with the recorded verdict's own exit code**.
 
@@ -36,8 +37,21 @@ deliberate: refusing with a non-zero exit would convert a wasteful-but-harmless
 call on a passing project into a new failure on the critical path. The run that
 motivated this ADR passed all four of its redundant sweeps; under a hard
 refusal it would have failed four times for doing something that cost only
-time. A reused FAIL or UNVERIFIED likewise carries its original exit code, so
-reuse never upgrades a verdict.
+time. A reused FAIL likewise carries its original exit code, so reuse never
+upgrades a verdict.
+
+**An UNVERIFIED verdict is never reused.** It is a miss, and the sweep runs in
+full. UNVERIFIED is not a statement about the project: it says a check did not
+finish, most often because the sweep's shared `WORKSHOP_GEOMETRY_TIMEOUT`
+allowance ran out, and completed inspection measurements survive in
+`__cadgen__` so the next sweep resumes from them. On a large product that
+resumption is the designed route to a verdict. The baseline Correction Run
+(`docs/BASELINE_CORRECTION_RUN.md`) is the case: on its 222-occurrence board,
+sweeps 3, 4 and 5 ran on an unchanged project, went UNVERIFIED with 1 and then
+24 of 51 inspection checks complete, and PASSED on the fifth. Reusing
+UNVERIFIED would have re-emitted it at sweep 4 and the product could never
+have verified. Re-running an UNVERIFIED sweep costs at most what it costs
+today.
 
 Hash relevance is the sweep's own input closure: the built STEP bytes for every
 part, the verifier's arguments, and the tool source bytes already used as cache
@@ -63,6 +77,12 @@ unambiguous and was already ignored.
 
 **Host-side accounting only.** Rejected: it measures a cost that is already
 measured and removes none of it.
+
+**Reuse every recorded verdict, UNVERIFIED included.** This was the first
+version of this ADR, on the reasoning that a reused UNVERIFIED stays UNVERIFIED
+and so never upgrades anything. Rejected against the baseline Correction Run:
+not upgrading is exactly the harm, because an UNVERIFIED sweep on an unchanged
+project is the way a resumable inspection makes progress.
 
 **Refuse only the second and later consecutive no-change sweep.** Rejected as
 needless state: the closure hash answers the same question without tracking
@@ -100,10 +120,12 @@ is what reuse reads.
 
 ## Verification
 
-Contract tests: an unchanged project's second sweep records a `reused` row,
-re-emits the prior verdict, and exits with the prior exit code; the prior
-report survives; a reused FAIL exits non-zero; a reused UNVERIFIED stays
-UNVERIFIED.
+Contract tests: an unchanged project's second sweep after a PASS records a
+`reused` row, re-emits the prior verdict, and exits with the prior exit code;
+the prior report survives; a reused FAIL exits non-zero. An unchanged project
+whose prior verdict is UNVERIFIED runs a full sweep, writes no `reused` row, and
+resumes its inspection from the preserved measurements, so a sequence of
+UNVERIFIED sweeps can still end in PASS.
 
 Failure-path tests, one per input class, each asserting a full re-run rather
 than a hit: changed STEP bytes for one part, changed verifier arguments,

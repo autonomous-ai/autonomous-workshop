@@ -283,9 +283,9 @@ is 421 minutes.
   an UNVERIFIED verdict, and resuming was the only way to reach PASS. Under #41
   sweep 4 would have re-emitted UNVERIFIED and the product could never have
   verified.
-  [ADR 0070](adr/0070-redundant-final-sweep-reuses-its-verdict.md), still
-  Proposed, specifies the same reuse of an UNVERIFIED verdict and needs the same
-  amendment before it is accepted.
+  [ADR 0070](adr/0070-redundant-final-sweep-reuses-its-verdict.md) specified
+  the same reuse of an UNVERIFIED verdict. **Applied:** ADR 0070 and #41 now
+  reuse terminal verdicts only, and an UNVERIFIED sweep always runs in full.
 - **Recommendation:** narrow #41 to terminal verdicts only (PASS and FAIL),
   never reusing an UNVERIFIED verdict whose inspection can still make progress.
   Re-justify it on v13-style redundant PASS sweeps, and treat it as low

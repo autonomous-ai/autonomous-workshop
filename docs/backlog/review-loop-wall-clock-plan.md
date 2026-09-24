@@ -51,8 +51,10 @@ ADR 0070 covers the surprising part: the redundant-sweep skip that exits zero.
 The other two items are applications of ADR 0068's established content-bound
 caching and need no ADR of their own.
 
-- **Redundant final sweep** (ADR 0070): re-emit the recorded verdict, write a
-  `reused` row beside the preserved report, exit with the recorded exit code.
+- **Redundant final sweep** (ADR 0070): re-emit a recorded PASS or FAIL, write
+  a `reused` row beside the preserved report, exit with the recorded exit code.
+  Never reuse UNVERIFIED: a repeated sweep on an unchanged project is how a
+  resumable inspection reaches a verdict (`docs/BASELINE_CORRECTION_RUN.md`).
   Mirror the existing `refuse` path at `verify_project:2382-2420`, which already
   writes `{"status": "refused", "seconds": 0.0}` with `preserve_existing=True`.
 - **Shared tessellation across the three Print Gates.** The same solid is
