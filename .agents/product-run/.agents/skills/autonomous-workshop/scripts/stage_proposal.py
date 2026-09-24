@@ -2025,16 +2025,13 @@ def _validate_geometry_requirements(
     run_root: Path,
     *,
     review: Mapping[str, Any],
-    design_contract: Mapping[str, Any],
+    sealed_rows: list[tuple[str, str]],
     project_relative: PurePosixPath,
 ) -> None:
     """Bind every geometry-scoped row (ADR 0072, issue 54) to a current,
     passing Component's hashed visual packet, and count one blind read per
     Unique Geometry that carries such a row."""
 
-    sealed_rows = _sealed_geometry_requirement_rows(design_contract)
-    if not sealed_rows:
-        return
     requirements = _array(
         review["geometry_form_requirements"],
         "Make geometry form requirements",
@@ -2051,6 +2048,7 @@ def _validate_geometry_requirements(
     except OSError as exc:
         raise ProposalError("Make round tool is unavailable: %s" % exc) from exc
     current_passing_component_round = make_round_globals["current_passing_component_round"]
+    project_path = run_root.joinpath(*project_relative.parts)
 
     distinct_geometries: list[str] = []
     for index, (raw_requirement, (geometry, text)) in enumerate(
@@ -2099,8 +2097,7 @@ def _validate_geometry_requirements(
             requirement["packet_sha256"],
             "Make geometry form requirement %d packet" % index,
         )
-        role = geometry
-        step_relative = project_relative / ("part_%s.step" % role)
+        step_relative = project_relative / ("part_%s.step" % geometry)
         step_path = run_root.joinpath(*step_relative.parts)
         digest = None
         try:
@@ -2113,19 +2110,19 @@ def _validate_geometry_requirements(
             and stat.S_ISREG(step_identity.st_mode)
         ):
             digest = hashlib.sha256(step_path.read_bytes()).hexdigest()
-        project_path = run_root.joinpath(*project_relative.parts)
-        summary, reason = current_passing_component_round(project_path, role, digest)
+        summary, reason = current_passing_component_round(
+            project_path, geometry, digest
+        )
         if reason:
             raise ProposalError(
                 "Make geometry form requirement %d has no bound Component visual "
                 "packet: %s" % (index, reason)
             )
-        round_value = summary["round"]
         packet_relative = (
             project_relative
             / "measure/component-rounds"
-            / role
-            / ("r%04d" % round_value)
+            / geometry
+            / ("r%04d" % summary["round"])
             / "visual-packet.json"
         )
         packet, packet_content, _ = _read_json(
@@ -2307,10 +2304,11 @@ def _validate_signature_review(
                 "Make critical form requirements must match the sealed contract's "
                 "assembly requirements exactly"
             )
+    if sealed_geometry_rows:
         _validate_geometry_requirements(
             run_root,
             review=review,
-            design_contract=design_contract,
+            sealed_rows=sealed_geometry_rows,
             project_relative=review_relative.parent.parent,
         )
     blockers = _array(
