@@ -283,6 +283,9 @@ is 421 minutes.
   an UNVERIFIED verdict, and resuming was the only way to reach PASS. Under #41
   sweep 4 would have re-emitted UNVERIFIED and the product could never have
   verified.
+  [ADR 0070](adr/0070-redundant-final-sweep-reuses-its-verdict.md), still
+  Proposed, specifies the same reuse of an UNVERIFIED verdict and needs the same
+  amendment before it is accepted.
 - **Recommendation:** narrow #41 to terminal verdicts only (PASS and FAIL),
   never reusing an UNVERIFIED verdict whose inspection can still make progress.
   Re-justify it on v13-style redundant PASS sweeps, and treat it as low
@@ -330,6 +333,9 @@ is 421 minutes.
   printed parts.
 
 ### #45 — Run the component-round set concurrently (blocked on #44, not directly on #40): **recommend closure**
+
+The decision it would implement is
+[ADR 0071](adr/0071-bounded-component-round-fan-out.md), still Proposed.
 
 - **Ceiling on this baseline is about 7.5 minutes (1.8%).** Width 4 on this
   64-core host applied to about 10 minutes of component rounds.
