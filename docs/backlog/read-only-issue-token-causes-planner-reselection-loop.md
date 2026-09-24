@@ -111,5 +111,5 @@ block, with no commits produced by the second.
 
 ## Related
 
-- `docs/backlog/baseline-correction-run-needs-live-credentials.md` — issue #40's
-  own, independent blocker. Both must be cleared for the run to progress.
+- Issue #40's own blocker, a `claude` CLI without credentials, is cleared: the
+  baseline Run completed and is recorded in `docs/BASELINE_CORRECTION_RUN.md`.

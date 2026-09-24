@@ -739,6 +739,11 @@ notes beside the benchmark; do not turn them into lifecycle gate authority.
 
 ## A measured trace of two correction runs
 
+> **Superseded as the reference.** Both runs below predate batched
+> rasterisation and the carry policy's first real test. Measure new claims against
+> [`BASELINE_CORRECTION_RUN.md`](BASELINE_CORRECTION_RUN.md), which re-runs a
+> comparable correction on current code and names the figures here it contradicts.
+
 `correction-run-trace.html` in this directory is a span-by-span waterfall of
 two `workshop fix` runs over the same 24-part Anti-Sol board set: the Antisol
 Mirror (`ad-astra-antisol-v12`, which regenerated everything) and the Antisol
