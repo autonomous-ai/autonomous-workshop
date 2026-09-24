@@ -671,6 +671,46 @@ def sealed_references(project: Path):
     return sealed, None
 
 
+def current_passing_component_round(project: Path, role: str, digest: str | None) -> tuple[dict | None, str]:
+    """The current, passing isolated round for one Component's evidence, or
+    the reason it does not qualify.
+
+    Both the assembly-review prerequisite and sealed-reference coverage need
+    the same answer to "does this Component have a current, passing isolated
+    round": a readable state and summary, a valid round number, a scope/entry/
+    parts that agree with each other, a passing verdict, and STEP bytes that
+    have not moved since (``digest`` is the Component's current build hash;
+    ``None`` when it did not build this round). Returns ``(summary, "")`` when
+    it qualifies, else ``(None, reason)``.
+    """
+
+    entry = "part_%s.step.py" % role
+    state_path = project / "measure" / COMPONENT_ROUNDS_DIR / role / STATE_NAME
+    try:
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None, "%s has no isolated component round" % entry
+    round_value = state.get("round")
+    if type(round_value) is not int or round_value < 1 or state.get("scope") != "component:%s" % role:
+        return None, "%s has invalid component state" % entry
+    summary_path = state_path.parent / ("r%04d" % round_value) / "summary.json"
+    try:
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None, "%s has no component summary" % entry
+    if (
+        summary.get("scope") != "component:%s" % role
+        or summary.get("entry") != entry
+        or summary.get("parts") != [role]
+    ):
+        return None, "%s has invalid component summary" % entry
+    if not summary.get("ok"):
+        return None, "%s latest component round did not pass" % entry
+    if (state.get("parts") or {}).get(role) != digest:
+        return None, "%s changed after its component pass" % entry
+    return summary, ""
+
+
 def component_coverage(project: Path, digests: dict, floor: float) -> dict[str, str]:
     """Reference sha256 -> Component role, for every reference a current,
     passing component round scored at or above the floor.
@@ -678,27 +718,19 @@ def component_coverage(project: Path, digests: dict, floor: float) -> dict[str, 
     A reference that depicts one Component is scored in that Component's round
     (ADR 0063); this is how the assembly knows not to score it again against
     the whole object. A Component whose STEP moved since its pass covers
-    nothing, exactly as --require-component-passes treats it.
+    nothing, exactly as --require-component-passes treats it: both read
+    ``current_passing_component_round`` (issue #48).
     """
 
     covered = {}
     rounds = project / "measure" / COMPONENT_ROUNDS_DIR
     for state_path in sorted(rounds.glob("*/" + STATE_NAME)) if rounds.is_dir() else ():
         role = state_path.parent.name
-        # Unreadable or partial component evidence covers nothing. That is
-        # never a silent pass: the sealed reference is then scored against
-        # the assembly, which is the strict outcome.
-        try:
-            state = json.loads(state_path.read_text(encoding="utf-8"))
-            round_value = state["round"]
-            if type(round_value) is not int or round_value < 1:
-                continue
-            summary = json.loads((state_path.parent / ("r%04d" % round_value) / "summary.json").read_text(encoding="utf-8"))
-        except (OSError, ValueError, KeyError, TypeError):
-            continue
-        if summary.get("ok") is not True or summary.get("scope") != "component:%s" % role:
-            continue
-        if (state.get("parts") or {}).get(role) != digests.get(role):
+        # A Component that does not qualify covers nothing. That is never a
+        # silent pass: the sealed reference is then scored against the
+        # assembly, which is the strict outcome.
+        summary, reason = current_passing_component_round(project, role, digests.get(role))
+        if reason:
             continue
         paths = {label: path for label, path in summary.get("refs") or []}
         for item in summary.get("likeness") or []:
@@ -879,36 +911,9 @@ def make_round(args) -> int:
             failures.append("no part_<role>.step.py component sources exist")
         for part in all_parts:
             part_role = part.name[len("part_"):-len(".step.py")]
-            component_state_path, _ = state_and_round_root(project, part.name)
-            if not component_state_path.is_file():
-                failures.append("%s has no isolated component round" % part.name)
-                continue
-            component_state = json.loads(component_state_path.read_text(encoding="utf-8"))
-            component_round = component_state.get("round")
-            if (
-                type(component_round) is not int
-                or component_round < 1
-                or component_state.get("scope") != "component:%s" % part_role
-            ):
-                failures.append("%s has invalid component state" % part.name)
-                continue
-            component_summary_path = (
-                component_state_path.parent / ("r%04d" % component_round) / "summary.json"
-            )
-            if not component_summary_path.is_file():
-                failures.append("%s has no component summary" % part.name)
-                continue
-            component_summary = json.loads(component_summary_path.read_text(encoding="utf-8"))
-            if (
-                component_summary.get("scope") != "component:%s" % part_role
-                or component_summary.get("entry") != part.name
-                or component_summary.get("parts") != [part_role]
-            ):
-                failures.append("%s has invalid component summary" % part.name)
-            elif not component_summary.get("ok"):
-                failures.append("%s latest component round did not pass" % part.name)
-            elif component_state.get("parts", {}).get(part_role) != digests.get(part_role):
-                failures.append("%s changed after its component pass" % part.name)
+            _, reason = current_passing_component_round(project, part_role, digests.get(part_role))
+            if reason:
+                failures.append(reason)
         prerequisite_log = out / "component-prerequisites.log"
         if failures:
             prerequisite_log.write_text("\n".join(failures) + "\n", encoding="utf-8")
