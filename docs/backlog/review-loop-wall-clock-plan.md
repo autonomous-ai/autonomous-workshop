@@ -57,12 +57,15 @@ caching and need no ADR of their own.
   resumable inspection reaches a verdict (`docs/BASELINE_CORRECTION_RUN.md`).
   Mirror the existing `refuse` path at `verify_project:2382-2420`, which already
   writes `{"status": "refused", "seconds": 0.0}` with `preserve_existing=True`.
-- **Shared tessellation across the three Print Gates.** The same solid is
-  rebuilt from source four times per part per round -- `gen --write`,
-  `check_thickness`, `check_overhang`, `render_review` each rebuild rather than
-  reading the STEP just written (`printlib.py:216-239`); `--print-gates` adds
-  three more per part (`verify_project:1030-1080`). Output must stay
-  byte-identical.
+- **Build the assembly once per assembled round, and cache tessellation**
+  (#42, re-scoped against the baseline). Per-part rebuild sharing across
+  `gen --write`, `check_thickness`, `check_overhang` and `render_review`
+  measured at about 1% of the baseline Run and is out of scope. The assembled
+  round's render spends 410 s rebuilding the 222-occurrence assembly from source
+  and 467 s tessellating it, three times per correction. Use the in-process
+  build, and key tessellation per occurrence on content. Rendering from the
+  exported STEP is not byte-identical (0.08% of pixels) and is excluded. Output
+  must stay byte-identical.
 - **`verify_project` honours `make_round`'s reuse ledger**, which already exists
   and is sound at `make_round:300-347` (`print_context` / `reusable_print`) and
   is currently ignored.
@@ -86,7 +89,14 @@ verification disables cache reads and writes, so the one cache-free
 re-derivation at the sealing boundary is already enforced, outside the sandbox
 where it is worth more.
 
-## Step 3 — Bounded component fan-out
+## Step 3 — Bounded component fan-out (not pursued)
+
+Dropped against the baseline Correction Run (`docs/BASELINE_CORRECTION_RUN.md`):
+its 39 component rounds took about 10 minutes of a 421-minute Run, so width 4
+buys at most about 7.5 minutes (1.8%). The starvation risk ADR 0071 bounds
+already appeared serially: two final sweeps ran out of the geometry allowance.
+ADR 0071 is Rejected, and #44 and #45 are closed. The original plan follows for
+the record.
 
 ADR 0071. Fan out the component rounds that need a loop, as Codex-native
 subagents, joined at `--require-component-passes`. Width `max(2, ncpu // 4)`

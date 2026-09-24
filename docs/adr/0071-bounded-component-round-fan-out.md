@@ -1,6 +1,7 @@
 # ADR 0071: Component rounds fan out, bounded by host width
 
-- Status: Proposed
+- Status: Rejected (2026-09-24), against the baseline Correction Run; see
+  Rejection below
 - Date: 2026-09-22
 - Owners: Spark Make (component rounds), CAD skill, Workshop Manager session
 - Relates to: ADR 0063 (component-first Make), ADR 0068 (cancellable geometry,
@@ -116,3 +117,14 @@ changed after its passing round is refused.
 Starvation is the risk this ADR bounds, so it needs its own test: a fan-out at
 the cap must not produce an UNVERIFIED verdict that the same set produces as
 PASS when run serially.
+
+## Rejection
+
+Rejected on 2026-09-24, before implementation, against the baseline Correction
+Run (`docs/BASELINE_CORRECTION_RUN.md`, issue #40). That Run's 39 component
+rounds, all 24 components, took about 10 minutes of a 421-minute Run. At width 4
+the ceiling on the saving is about 7.5 minutes (1.8%). The risk this ADR bounds
+did not wait for fan-out: two of the Run's final verifier sweeps exhausted the
+geometry allowance while running serially. Issues #44 and #45 were closed with
+it. Revisit only if a measured fresh `wish` or `workshop fix --full` Run shows
+component rounds to be a material share of wall-clock.

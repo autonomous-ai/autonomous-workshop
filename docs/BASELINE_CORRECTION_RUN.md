@@ -294,7 +294,7 @@ is 421 minutes.
   439-second `gen` of unchanged entries (about 22 min over three resumptions
   here).
 
-### #42 — Build each part once per Make Round: **re-scope, or close as written**
+### #42 — Build each part once per Make Round: **re-scope, or close as written** (applied: re-scoped)
 
 - **Saving as written is at most about 6 minutes (1.4%).** The 39 component
   rounds cost about 10 minutes in total. The per-part rebuilds inside them are
@@ -322,7 +322,7 @@ is 421 minutes.
 - **Recommendation:** reopen only for a print-ready Run, where the ledger
   applies.
 
-### #44 — Name the component-round set explicitly: **defer with #45**
+### #44 — Name the component-round set explicitly: **defer with #45** (applied: closed with #45)
 
 - **Behaviour-neutral by design, so there is nothing for a baseline to save.**
 - **Its value is as the enabler for #45**, and #45 does not survive this
@@ -332,10 +332,10 @@ is 421 minutes.
   bytes. This one produced a set of all 24 from a correction that changed zero
   printed parts.
 
-### #45 — Run the component-round set concurrently (blocked on #44, not directly on #40): **recommend closure**
+### #45 — Run the component-round set concurrently (blocked on #44, not directly on #40): **recommend closure** (applied: closed, ADR 0071 Rejected)
 
 The decision it would implement is
-[ADR 0071](adr/0071-bounded-component-round-fan-out.md), still Proposed.
+[ADR 0071](adr/0071-bounded-component-round-fan-out.md), now Rejected.
 
 - **Ceiling on this baseline is about 7.5 minutes (1.8%).** Width 4 on this
   64-core host applied to about 10 minutes of component rounds.
