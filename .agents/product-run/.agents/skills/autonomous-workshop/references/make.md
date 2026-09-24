@@ -209,6 +209,11 @@ are separate. Frozen older runs retain their materialized rules and tools.
    repairs, each followed by regenerated preflight, images and an independent
    rereview. Stop as soon as the review passes.
 8. Run the integrated final verifier once. Do not use it as an iteration loop.
+   Whenever the Wish has references, run it with `--image-derived` and a
+   `--likeness-ref LABEL=PATH` for every one of them. The finalizer refuses a
+   toy with sealed references unless the current final report ran in that
+   mode (ADR 0072, Delivery 2); a plain final report cannot substitute for it,
+   no matter how cleanly it passed.
 9. Write product metadata and invoke the Make finalizer immediately.
 
 Complete the blind signature review and, if needed, up to three focused repairs before

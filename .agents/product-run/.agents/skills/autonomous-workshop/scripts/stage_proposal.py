@@ -1949,14 +1949,11 @@ def _validate_review_print_gates(
         )
 
 
-def _sealed_design_contract(
-    run_root: Path, wish_sha256: str
-) -> Optional[Mapping[str, Any]]:
-    """Load the sealed Design Contract from the materialized Wish, if any.
+def _materialized_wish(run_root: Path, wish_sha256: str) -> Mapping[str, Any]:
+    """Load and verify the host-materialized Wish at WISH.json.
 
     ``WISH.json`` is host-materialized read-only alongside ``STAGE.json`` for
-    every stage (ADR 0072, Delivery 2), so Contract Mode is detected here
-    rather than threaded through STAGE inputs.
+    every stage (ADR 0072, Delivery 2).
     """
 
     wish_path = run_root / "WISH.json"
@@ -1969,6 +1966,18 @@ def _sealed_design_contract(
     wish, content, _ = _read_json(run_root, "WISH.json", "Materialized Wish")
     if hashlib.sha256(content).hexdigest() != wish_sha256:
         raise ProposalError("Materialized Wish does not match its assignment binding")
+    return wish
+
+
+def _sealed_design_contract(
+    run_root: Path, wish_sha256: str
+) -> Optional[Mapping[str, Any]]:
+    """Load the sealed Design Contract from the materialized Wish, if any.
+
+    Contract Mode is detected here rather than threaded through STAGE inputs.
+    """
+
+    wish = _materialized_wish(run_root, wish_sha256)
     context = wish.get("context")
     if not isinstance(context, dict):
         return None
@@ -1978,6 +1987,18 @@ def _sealed_design_contract(
     if not isinstance(design_contract, dict):
         raise ProposalError("Sealed design contract is invalid")
     return design_contract
+
+
+def _wish_has_sealed_references(run_root: Path, wish_sha256: str) -> bool:
+    """Whether the materialized Wish sealed any reference images (ADR 0072).
+
+    A sealed reference can only ever be scored by the final verifier's
+    likeness gate under ``--image-derived``, so the finalizer uses this to
+    require that mode.
+    """
+
+    references = _materialized_wish(run_root, wish_sha256).get("references")
+    return isinstance(references, list) and len(references) > 0
 
 
 def _sealed_assembly_requirement_texts(design_contract: Mapping[str, Any]) -> list[str]:
@@ -2394,6 +2415,13 @@ def _make_contract(
     current_record = verification_text.split(
         "\n---\n\n## Previous pipeline record", 1
     )[0]
+    if _wish_has_sealed_references(
+        run_root, assignment["wish_sha256"]
+    ) and "- Mode: `image-derived final`\n" not in current_record:
+        raise ProposalError(
+            "Make finalizer requires the current final verifier record to have "
+            "run with --image-derived because the Wish sealed references"
+        )
     if "- Result: **UNVERIFIED** (exit 0)\n" in current_record:
         # A timeout permits only an explicitly unverified prototype. The
         # structured report rejects any measured failure and binds exact bytes.
@@ -2407,7 +2435,10 @@ def _make_contract(
             raise ProposalError("unverified CAD handoff lacks its final geometry disclosure") from exc
     elif (
         not current_record.startswith("# Verification pipeline record\n")
-        or "- Mode: `final`\n" not in current_record
+        or not any(
+            "- Mode: `%s`\n" % mode in current_record
+            for mode in ("final", "image-derived final")
+        )
         or "- Result: **PASS** (exit 0)\n" not in current_record
     ):
         raise ProposalError(

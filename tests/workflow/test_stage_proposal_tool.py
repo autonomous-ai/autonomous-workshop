@@ -376,6 +376,56 @@ class StageProposalToolTest(unittest.TestCase):
         )
         return assignment, invented, design_contract
 
+    def seal_referenced_wish(self):
+        """Seal a Wish with one reference image, and its own matching Match/Invented pair.
+
+        ADR 0072 Delivery 2: the finalizer must refuse a toy whose Wish sealed
+        references unless the final verifier ran with ``--image-derived``, so
+        this fixture needs its own ``wish_sha256`` binding rather than reusing
+        ``self.assignment``/``self.invented``.
+        """
+
+        wish_sha256 = self.write_wish(
+            {
+                "schema_version": 1,
+                "product_id": "run-local-toy",
+                "objective": "Build a tiny lunar observatory with a rotating mask.",
+                "constraints": {},
+                "context": {},
+                "references": [
+                    {
+                        "name": "ref-01-observatory.png",
+                        "sha256": "0" * 64,
+                        "media_type": "image/png",
+                        "size": 4,
+                        "width": 16,
+                        "height": 16,
+                    }
+                ],
+            }
+        )
+        assignment = NativeMatchAssignment(
+            wish_sha256=wish_sha256,
+            inventor_roster_sha256=self.roster.roster_sha256,
+            selected_inventor_id="eve",
+            selected_agent_path=self.assignment.selected_agent_path,
+            selected_agent_sha256=self.assignment.selected_agent_sha256,
+            selected_source_manifest_sha256=self.assignment.selected_source_manifest_sha256,
+            selected_taste_sha256=self.assignment.selected_taste_sha256,
+            blueprint_sha256=self.blueprint.sha256,
+            ranking=self.assignment.ranking,
+        )
+        invented = NativeInvented(
+            wish_sha256=assignment.wish_sha256,
+            assignment_sha256=assignment.assignment_sha256,
+            taste_sha256=assignment.selected_taste_sha256,
+            blueprint_sha256=assignment.blueprint_sha256,
+            schema_version=5,
+            concept=v5_concept(),
+            research=self.invented.to_dict()["research"],
+        )
+        return assignment, invented
+
     def write_stage(self, stage, inputs, *, round_index=None, writable=False):
         path = self.run_root / "STAGE.json"
         if path.exists() or path.is_symlink():
@@ -1926,6 +1976,75 @@ class StageProposalToolTest(unittest.TestCase):
             expected=2,
         )
         self.assertIn("passing final report", failed_current.stderr)
+
+    def test_make_refuses_sealed_references_whose_verifier_skipped_image_derived(self):
+        # ADR 0072 Delivery 2: a sealed reference can only be scored by the
+        # final verifier's likeness gate under --image-derived, so a toy with
+        # sealed references must be refused unless the current final report
+        # was run in that mode; a prior preserved image-derived record must
+        # not satisfy the check either.
+        assignment, invented = self.seal_referenced_wish()
+        product_root, _, _, _ = self.create_product(invented=invented)
+        self.write_stage(
+            "make",
+            {
+                "assignment": assignment.to_dict(),
+                "invented": invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        report = product_root / "cad/project/validation/cad-build.json"
+
+        plain_final = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("--image-derived", plain_final.stderr)
+
+        report.write_text(
+            "# Verification pipeline record\n\n"
+            "- Mode: `final`\n"
+            "- Result: **PASS** (exit 0)\n\n"
+            "---\n\n## Previous pipeline record\n\n"
+            "# Verification pipeline record\n\n"
+            "- Mode: `image-derived final`\n"
+            "- Result: **PASS** (exit 0)\n",
+            encoding="utf-8",
+        )
+        stale_image_derived = self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=2,
+        )
+        self.assertIn("--image-derived", stale_image_derived.stderr)
+
+        report.write_text(
+            "# Verification pipeline record\n\n"
+            "- Mode: `image-derived final`\n"
+            "- Result: **PASS** (exit 0)\n",
+            encoding="utf-8",
+        )
+        self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+        )
 
     def test_make_verification_must_belong_to_declared_cad_project(self):
         product_root, _, _, verification = self.create_product()
