@@ -376,9 +376,8 @@ def _required_signature_review(project: Path) -> str:
                 blind_read = entry.get("blind_read")
                 if not isinstance(blind_read, str) or not blind_read.strip() or len(blind_read) > 1000:
                     raise ValueError("signature review geometry blind read is invalid")
-                if type(entry.get("review_rounds")) is not int or entry.get(
-                    "review_rounds"
-                ) not in (1, 2, 3, 4):
+                review_rounds = entry["review_rounds"]
+                if type(review_rounds) is not int or review_rounds not in (1, 2, 3, 4):
                     raise ValueError(
                         "signature review geometry blind read must record its own "
                         "one to four review rounds"
