@@ -1716,25 +1716,23 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("not bound to the final signature.png", stale.stderr)
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
-    def test_make_accepts_a_contract_mode_v9_review_matching_the_sealed_contract(self):
-        requirements = (
-            "The observatory must be rounded and volumetric.",
-            "The opening must reveal a rotating three-state mask.",
-        )
-        assignment, invented, _ = self.seal_contract_wish(requirements)
-        product_root, _, _, _ = self.create_product(
-            invented=invented,
-            schema_version=9,
-            requirements_source="contract",
-            critical_form_requirements=[
-                {
-                    "requirement": text,
-                    "blind_evidence": "The exact views show this clearly.",
-                    "matches": True,
-                }
-                for text in requirements
-            ],
-        )
+    CONTRACT_REQUIREMENTS = (
+        "The observatory must be rounded and volumetric.",
+        "The opening must reveal a rotating three-state mask.",
+    )
+
+    @staticmethod
+    def contract_review_rows(texts):
+        return [
+            {
+                "requirement": text,
+                "blind_evidence": "The exact views show this clearly.",
+                "matches": True,
+            }
+            for text in texts
+        ]
+
+    def run_make_round_one(self, assignment, invented, *, expected=0):
         self.write_stage(
             "make",
             {
@@ -1744,7 +1742,7 @@ class StageProposalToolTest(unittest.TestCase):
             },
             round_index=1,
         )
-        self.run_tool(
+        return self.run_tool(
             "make",
             "--product-root",
             "artifacts/make/r0001/product",
@@ -1752,7 +1750,10 @@ class StageProposalToolTest(unittest.TestCase):
             "cad/project",
             "--cad-verification-path",
             "cad/project/validation/cad-build.json",
+            expected=expected,
         )
+
+    def assert_made_round_one(self, assignment, invented):
         made_document, made_bytes = self.assert_canonical_file(
             "artifacts/make/r0001/made.json"
         )
@@ -1765,137 +1766,62 @@ class StageProposalToolTest(unittest.TestCase):
             "playtest",
         )
 
-    def test_make_refuses_a_contract_mode_review_whose_rows_or_source_differ(self):
-        requirements = (
-            "The observatory must be rounded and volumetric.",
-            "The opening must reveal a rotating three-state mask.",
-        )
+    def test_make_accepts_a_contract_mode_v9_review_matching_the_sealed_contract(self):
+        requirements = self.CONTRACT_REQUIREMENTS
         assignment, invented, _ = self.seal_contract_wish(requirements)
+        self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
 
-        def sealed_rows(texts):
-            return [
-                {
-                    "requirement": text,
-                    "blind_evidence": "The exact views show this clearly.",
-                    "matches": True,
-                }
-                for text in texts
-            ]
-
+    def test_make_refuses_a_contract_mode_review_whose_rows_or_source_differ(self):
+        requirements = self.CONTRACT_REQUIREMENTS
+        assignment, invented, _ = self.seal_contract_wish(requirements)
+        rows_mismatch = "must match the sealed contract"
         cases = {
-            "reordered": (
-                sealed_rows(tuple(reversed(requirements))),
-                "contract",
-                "must match the sealed contract",
-            ),
+            "reordered": (tuple(reversed(requirements)), "contract", rows_mismatch),
             "extra": (
-                sealed_rows(requirements + ("An uncontracted extra requirement.",)),
+                requirements + ("An uncontracted extra requirement.",),
                 "contract",
-                "must match the sealed contract",
+                rows_mismatch,
             ),
-            "missing": (
-                sealed_rows(requirements[:1]),
-                "contract",
-                "must match the sealed contract",
-            ),
+            "missing": (requirements[:1], "contract", rows_mismatch),
             "reworded": (
-                sealed_rows(requirements[:1] + (requirements[1] + " but reworded.",)),
+                requirements[:1] + (requirements[1] + " but reworded.",),
                 "contract",
-                "must match the sealed contract",
+                rows_mismatch,
             ),
             "wrong_source": (
-                sealed_rows(requirements),
+                requirements,
                 "manager",
                 "requirements_source must be contract",
             ),
         }
-        for name, (rows, source, expected_message) in cases.items():
+        for name, (texts, source, expected_message) in cases.items():
             with self.subTest(case=name):
-                product_root, _, _, _ = self.create_product(
+                self.create_product(
                     invented=invented,
                     schema_version=9,
                     requirements_source=source,
-                    critical_form_requirements=rows,
+                    critical_form_requirements=self.contract_review_rows(texts),
                 )
-                self.write_stage(
-                    "make",
-                    {
-                        "assignment": assignment.to_dict(),
-                        "invented": invented.to_dict(),
-                        "feedback": [],
-                    },
-                    round_index=1,
-                )
-                result = self.run_tool(
-                    "make",
-                    "--product-root",
-                    "artifacts/make/r0001/product",
-                    "--cad-project-path",
-                    "cad/project",
-                    "--cad-verification-path",
-                    "cad/project/validation/cad-build.json",
-                    expected=2,
-                )
+                result = self.run_make_round_one(assignment, invented, expected=2)
                 self.assertIn(expected_message, result.stderr)
                 shutil.rmtree(self.run_root / "artifacts/make/r0001/product")
                 (self.run_root / "agent-outcome.json").unlink(missing_ok=True)
 
     def test_make_still_accepts_a_non_contract_v8_review_unchanged(self):
-        product_root, _, _, _ = self.create_product()
-        self.write_stage(
-            "make",
-            {
-                "assignment": self.assignment.to_dict(),
-                "invented": self.invented.to_dict(),
-                "feedback": [],
-            },
-            round_index=1,
-        )
-        self.run_tool(
-            "make",
-            "--product-root",
-            "artifacts/make/r0001/product",
-            "--cad-project-path",
-            "cad/project",
-            "--cad-verification-path",
-            "cad/project/validation/cad-build.json",
-        )
-        made_document, made_bytes = self.assert_canonical_file(
-            "artifacts/make/r0001/made.json"
-        )
-        made = NativeMade.from_mapping(made_document)
-        made.assert_context(self.assignment, self.invented, expected_round=1)
-        self.assert_outcome(
-            "make",
-            "artifacts/make/r0001/made.json",
-            made_bytes,
-            "playtest",
-        )
+        self.create_product()
+        self.run_make_round_one(self.assignment, self.invented)
+        self.assert_made_round_one(self.assignment, self.invented)
 
     def test_make_refuses_a_v9_review_outside_contract_mode(self):
-        product_root, _, _, _ = self.create_product(
-            schema_version=9,
-            requirements_source="contract",
-        )
-        self.write_stage(
-            "make",
-            {
-                "assignment": self.assignment.to_dict(),
-                "invented": self.invented.to_dict(),
-                "feedback": [],
-            },
-            round_index=1,
-        )
-        result = self.run_tool(
-            "make",
-            "--product-root",
-            "artifacts/make/r0001/product",
-            "--cad-project-path",
-            "cad/project",
-            "--cad-verification-path",
-            "cad/project/validation/cad-build.json",
-            expected=2,
-        )
+        self.create_product(schema_version=9, requirements_source="contract")
+        result = self.run_make_round_one(self.assignment, self.invented, expected=2)
         self.assertIn("fields are invalid", result.stderr)
 
     def test_interrupted_image_geometry_seals_unverified_product_and_release_notes(self):
