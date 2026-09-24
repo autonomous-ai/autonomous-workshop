@@ -1,6 +1,6 @@
 ---
 name: design-a-toy
-description: Design a complete Workshop toy with an Inventor before any run starts - grill the idea into a frozen spec, gate it, then generate one reference image per unique geometry and emit the `workshop wish` command. Use when starting a new toy, or when a previous run drifted from what you wanted.
+description: Design a complete Workshop toy with an Inventor before any run starts - grill the idea into a frozen spec, gate it, then generate one reference image per unique geometry and write the Design Contract for `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
 ---
 
 # Design a toy before the run
@@ -14,7 +14,7 @@ Inventor or passed it the Wish verbatim — the Inventor subagent's instructions
 carry only its Taste. The answer is not to police the run. It is to leave
 nothing for the run to invent.
 
-The output of this skill is one shell command.
+The output of this skill is one `CONTRACT.md`, handed to `build-a-toy`.
 
 ## Who designs
 
