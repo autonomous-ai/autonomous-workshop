@@ -13,8 +13,9 @@
 //   Phase 3 (Squash):           The host squashes each completed branch onto
 //                               the current branch as exactly one commit,
 //                               "<issue title> (#<id>)", closes finished
-//                               issues, and deletes the branch. An agent runs
-//                               only to resolve a squash that conflicts.
+//                               issues, and deletes the branch. A conflict
+//                               confined to the skill LOCK.json is recomputed;
+//                               an agent resolves any other conflict.
 //
 // The outer loop repeats up to MAX_ITERATIONS times so that newly unblocked
 // issues are picked up after each round of merges.
@@ -111,6 +112,25 @@ function squashMessage(issue: { id: string; title: string }, branch: string) {
 
 function hasConflicts(): boolean {
   return git("diff", "--name-only", "--diff-filter=U") !== "";
+}
+
+// A conflict confined to the Make skill LOCK.json is two branches each
+// refreshing a skill fingerprint. The merged tree's fingerprint is computable,
+// so recompute it and verify rather than spend a resolver agent on it.
+const SKILL_LOCK = "src/workshop/make/skills/LOCK.json";
+
+function relockSkills(): boolean {
+  if (git("diff", "--name-only", "--diff-filter=U") !== SKILL_LOCK) return false;
+  for (const script of [".sandcastle/relock_skills.py", "tools/verify_skill_locks.py"]) {
+    const run = spawnSync("uv", ["run", "python", script], { encoding: "utf8" });
+    if (run.status !== 0) {
+      console.error(`  ${script} failed:\n${run.stderr}`);
+      // Hand the resolver the original conflict, not a half-applied fix.
+      git("checkout", "--merge", "--", SKILL_LOCK);
+      return false;
+    }
+  }
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -285,10 +305,12 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
       encoding: "utf8",
     });
 
-    if (squash.status !== 0) {
-      if (!hasConflicts()) {
-        throw new Error(`git merge --squash ${issue.branch} failed:\n${squash.stderr}`);
-      }
+    if (squash.status !== 0 && !hasConflicts()) {
+      throw new Error(`git merge --squash ${issue.branch} failed:\n${squash.stderr}`);
+    }
+    if (squash.status !== 0 && relockSkills()) {
+      console.log(`  ${issue.branch}: recomputed ${SKILL_LOCK} fingerprints`);
+    } else if (squash.status !== 0) {
       console.log(`  ${issue.branch}: conflicts, running resolver`);
       await sandcastle.run({
         hooks,
