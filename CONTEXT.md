@@ -220,6 +220,18 @@ A chess set has six, not thirty-two. It is the unit a Design Contract names
 before any Component exists.
 _Avoid_: Piece type, part shape
 
+**Focal Component**:
+The one component of a toy's design allowed to dominate the composition,
+chosen and paid for in the design before any image exists. It is a part of
+the object, not a picture of it.
+_Avoid_: Hero, signature piece, centrepiece
+
+**Display Pose**:
+The one arrangement of a toy's moving parts that its design fixes for
+presentation. The assembly reference image, the built toy and the likeness
+check all use it, so a jointed toy has one silhouette to match rather than many.
+_Avoid_: Default pose, rest pose, render pose
+
 **Requirement Scope**:
 Whether a visual requirement in a Design Contract is judged on the assembled
 toy or on one Unique Geometry, and so on every Component built to it. It

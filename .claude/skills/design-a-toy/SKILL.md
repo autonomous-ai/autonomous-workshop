@@ -1,6 +1,6 @@
 ---
 name: design-a-toy
-description: Design a complete Workshop toy with an Inventor before any run starts - grill the idea into a frozen spec, gate it, then generate one reference image per unique geometry and write the Design Contract for `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
+description: Design any physical Workshop toy - a vehicle, a jointed robot, a bone dragon, a puzzle, a game - with an Inventor before any run starts - grill the idea into a frozen spec, gate it, then generate one reference image per unique geometry plus the assembly and write the Design Contract for `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
 ---
 
 # Design a toy before the run
@@ -25,7 +25,10 @@ something more agreeable. If the idea the human wants is outside the Taste, say
 so plainly and name which clause it fails — do not quietly widen the Taste to
 fit.
 
-Default Inventor: `ad-astra`.
+There is no default Inventor. Read the `description` line of every
+`inventors/*/TASTE.md`, propose the one or two whose scope fits the idea, name
+the clause that makes each fit, and let the human choose. A board-game
+Inventor is not a safe fallback for a vehicle, a creature or a mechanism.
 
 ## Stage 1 - Grill the idea into a spec
 
@@ -35,26 +38,49 @@ clear *image* with the decisions still unmade underneath it.
 
 Drive to a written spec containing:
 
-- **Source game and rights.** The exact ruleset, its public-domain evidence, and
-  the frozen rule-equivalence ledger: player counts, component functions and
-  quantities, setup, turn order, legal actions, information, randomness,
-  state transitions, interaction, ending, tie-breakers, scoring.
-- **Theme mapping.** Every mechanical role to a thematic meaning and a physical
-  cue, one to one. Flag any mapping that is only a renamed noun.
 - **The unique-geometry list.** Group the component inventory by *shape*, not by
   part. Name each unique geometry and how many parts use it. This list drives
-  everything downstream, and its length is the image budget.
-- **The hero.** Exactly one component is the `signature`. Name it, say what it
-  costs in sightlines and from which seats, and accept that cost in writing.
+  everything downstream, and its length is the image budget. A bone dragon's
+  thirty vertebrae may be three shapes; four identical wheels are one.
+- **The Focal Component.** Exactly one component is allowed to dominate: a car's
+  body, a robot's chest, a dragon's skull. Name it, say what it costs the rest
+  of the object, and accept that cost in writing.
 - **Per-geometry physical spec.** Form, duty, dimensions in mm, placement,
   interfaces, what it mates with. No hedged quantities — the Workshop concept
   contract rejects "roughly", "about", "several", "as needed". If a number is
   not decided, decide it.
 - **Envelope, wall thickness, print stance.**
-- **The fixed-frame plan.** How the set composes at 35 degrees azimuth, 22
-  degrees elevation, against `#f5f0e6`, and which component is the focal point.
-- **Mid-game check.** How the set reads in a crowded mid-game and a late-game
-  position, with captured pieces off the board.
+- **The fixed-frame plan.** How the toy composes in Release's product frame at
+  35 degrees azimuth, 22 degrees elevation, against `#f5f0e6`, with the Focal
+  Component as the focal point.
+- **Handling check.** How the toy survives being held, rolled, posed or
+  dropped: which parts break or come loose first, and that nothing load-bearing
+  is under 3 mm.
+
+When the toy has any moving part — a wheel, an axle, a joint, a hinge, a
+sliding or spinning part — also drive to:
+
+- **Motion and fit.** Every moving part, what it moves against, and how it is
+  retained. Whether it prints in place or is assembled. Each motion stated as
+  geometry the build can be checked against: clearance in mm, pin or axle
+  diameter, joint range in degrees. "Rolls freely" or "poses well" is prose for
+  the spec, never a requirement.
+- **The Display Pose.** One fixed arrangement of every moving part. The assembly
+  reference image and the built toy both use it, so the likeness gate compares
+  one silhouette against one silhouette.
+
+Only when the human explicitly asks for a playable game, also drive to:
+
+- **Source game and rights.** For a reskin: the exact ruleset, its public-domain
+  evidence, and the frozen rule-equivalence ledger — player counts, component
+  functions and quantities, setup, turn order, legal actions, information,
+  randomness, state transitions, interaction, ending, tie-breakers, scoring.
+  For an original game: the full ruleset to the same depth.
+- **Theme mapping.** Every mechanical role to a thematic meaning and a physical
+  cue, one to one. Flag any mapping that is only a renamed noun.
+- **Play-state check.** How the set reads in a crowded mid-game and a late-game
+  position, with captured pieces off the board, and what the Focal Component
+  costs in sightlines from each seat.
 
 ## Stage 2 - The gate
 
@@ -65,11 +91,12 @@ Draft the block per
 [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md): one `geometries[]`
 entry per item on the unique-geometry list, and one `requirements[]` row for
 every checkable claim the prose decided — a dimension, a count, a wall
-thickness, a visible feature. Check the block against the prose line by line,
+thickness, a clearance, a joint range, a visible feature. Check the block against the prose line by line,
 not just against itself: a block that leaves out a decided number or feature
 recreates the defect this gate exists to close. Name each
 `references[].file` as `ref-NN-<slug>.png` in the order Stage 3 will generate
-them, even though the files do not exist yet.
+them, even though the files do not exist yet. A toy with more than one
+component also gets one `"shows": "assembly"` reference, listed first.
 
 Check the drafted block against CONTRACT-FORMAT.md's row limits before
 showing it: at most 16 assembly-scoped requirements, at most 4 per Unique
@@ -86,8 +113,11 @@ again.
 
 ## Stage 3 - Reference images
 
-Generate **one image per unique geometry** from the approved list. A chess set
-has six piece shapes, not thirty-four.
+Generate **one image per unique geometry** from the approved list. Four
+identical wheels are one image, not four. When the toy has more than one
+component, also generate **one assembly image** of the whole toy, in its
+Display Pose when it has moving parts: the overall silhouette is what a vehicle,
+robot or creature is judged by first.
 
 **Always use AI image generation or AI image editing to make these images.
 Never build them by hand.** No hand-written ray caster, no procedural renderer,
@@ -113,14 +143,14 @@ Each image must be:
   height, and does not read color. Resolution beyond this buys no accuracy and
   spends the Wish's 48 MiB reference budget.
 - **One subject, fully inside the frame.** The gate rejects a reference whose
-  subject touches the image boundary. A populated board position cannot be a
-  reference.
+  subject touches the image boundary. The assembled toy counts as one subject; a
+  scene, a diorama or a populated board position does not.
 - **Named `ref-NN-<slug>.png`**, numbered from `01` in order with no gaps.
   Lowercase kebab slug. `png`, `jpg`, or `webp`. At most 99 images, at most
   12 MiB each.
 
 Iterate each image against criteria stated up front — silhouette reads the
-piece's role at thumbnail size, one focal point, contrast holds against
+component's role at thumbnail size, one focal point, contrast holds against
 `#f5f0e6` — with a hard round cap. "Until it looks good" is not a stopping
 condition. Take the best image at the cap and note what fell short.
 
