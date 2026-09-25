@@ -9,14 +9,13 @@ import contextlib
 from contextvars import ContextVar
 import functools
 import hashlib
-import io
 import json
 import os
 from pathlib import Path
 import sys
 import stat
 import uuid
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
 
 PROGRESS_ENV = "WORKSHOP_GEOMETRY_PROGRESS_FD"
@@ -124,9 +123,31 @@ def tool_identity() -> str:
     return digest.hexdigest()
 
 
+_IDENTITY_EDGE_SAMPLES = 5
+_IDENTITY_FACE_SAMPLES = 3
+
+
 def shape_identity(shape: Any, *, rigid_placement_invariant: bool = False) -> str:
-    from OCP.BinTools import BinTools, BinTools_FormatVersion
+    """A content hash of `shape`'s geometry, stable across repeated builds.
+
+    `OCP.BinTools.BinTools.Write_s` (this function's predecessor) dumps OCCT's
+    internal B-rep container order along with the geometry: a boolean result's
+    edge/curve representation lists are populated in an allocation-dependent
+    order (observed to vary run to run, including within one process, for
+    `part_belt_cell` -- see ADR 0073's amendment), so two builds of the
+    identical script produced different bytes for bit-identical geometry. This
+    hashes exact sampled points from each face's/edge's own analytic geometry
+    instead of OCCT's serialized container bytes, sorted by content rather
+    than by traversal order, so it does not depend on that internal order.
+    Two genuinely different shapes still hash differently: this is exact
+    content, not a tolerance-rounded approximation.
+    """
+    from OCP.BRep import BRep_Tool
+    from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
+    from OCP.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_VERTEX
+    from OCP.TopExp import TopExp_Explorer
     from OCP.TopLoc import TopLoc_Location
+    from OCP.TopoDS import TopoDS
 
     candidate = shape
     if rigid_placement_invariant:
@@ -135,9 +156,50 @@ def shape_identity(shape: Any, *, rigid_placement_invariant: bool = False) -> st
         # Scaled/mirrored placements retain their exact identity instead.
         if abs(transform.ScaleFactor() - 1.0) < 1e-12 and not transform.IsNegative():
             candidate = shape.Located(TopLoc_Location())
-    stream = io.BytesIO()
-    BinTools.Write_s(candidate, stream, False, False, BinTools_FormatVersion.BinTools_FormatVersion_VERSION_3)
-    return hashlib.sha256(stream.getvalue()).hexdigest()
+
+    def point(p: Any) -> tuple[float, float, float]:
+        return (p.X(), p.Y(), p.Z())
+
+    def subshapes(kind: Any) -> Iterator[Any]:
+        explorer = TopExp_Explorer(candidate, kind)
+        while explorer.More():
+            yield explorer.Current()
+            explorer.Next()
+
+    vertices = [point(BRep_Tool.Pnt_s(TopoDS.Vertex_s(raw))) for raw in subshapes(TopAbs_VERTEX)]
+
+    edges = []
+    for raw in subshapes(TopAbs_EDGE):
+        adaptor = BRepAdaptor_Curve(TopoDS.Edge_s(raw))
+        first, last = adaptor.FirstParameter(), adaptor.LastParameter()
+        samples = tuple(
+            point(adaptor.Value(first + (last - first) * i / (_IDENTITY_EDGE_SAMPLES - 1)))
+            for i in range(_IDENTITY_EDGE_SAMPLES)
+        )
+        edges.append((int(adaptor.GetType()), int(raw.Orientation()), samples))
+
+    faces = []
+    for raw in subshapes(TopAbs_FACE):
+        adaptor = BRepAdaptor_Surface(TopoDS.Face_s(raw))
+        u0, u1 = adaptor.FirstUParameter(), adaptor.LastUParameter()
+        v0, v1 = adaptor.FirstVParameter(), adaptor.LastVParameter()
+        # Sorted, not grid-ordered: face content, not sampling-grid traversal order.
+        samples = tuple(sorted(
+            point(adaptor.Value(
+                u0 + (u1 - u0) * i / (_IDENTITY_FACE_SAMPLES - 1),
+                v0 + (v1 - v0) * j / (_IDENTITY_FACE_SAMPLES - 1),
+            ))
+            for i in range(_IDENTITY_FACE_SAMPLES) for j in range(_IDENTITY_FACE_SAMPLES)
+        ))
+        faces.append((int(adaptor.GetType()), int(raw.Orientation()), samples))
+
+    payload = {
+        "shapeType": int(candidate.ShapeType()),
+        "vertices": sorted(vertices),
+        "edges": sorted(edges),
+        "faces": sorted(faces),
+    }
+    return hashlib.sha256(canonical(payload)).hexdigest()
 
 
 class Measurements:
