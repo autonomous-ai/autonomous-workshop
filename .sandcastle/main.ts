@@ -10,8 +10,11 @@
 //                               reviewer runs in the same sandbox on the same
 //                               branch (1 iteration). All issue pipelines run
 //                               concurrently via Promise.allSettled().
-//   Phase 3 (Merge):            A single agent merges all completed branches
-//                               into the current branch.
+//   Phase 3 (Squash):           The host squashes each completed branch onto
+//                               the current branch as exactly one commit,
+//                               "<issue title> (#<id>)", closes finished
+//                               issues, and deletes the branch. An agent runs
+//                               only to resolve a squash that conflicts.
 //
 // The outer loop repeats up to MAX_ITERATIONS times so that newly unblocked
 // issues are picked up after each round of merges.
@@ -21,6 +24,7 @@
 // Or add to package.json:
 //   "scripts": { "sandcastle": "npx tsx .sandcastle/main.ts" }
 
+import { execFileSync, spawnSync } from "node:child_process";
 import * as sandcastle from "@ai-hero/sandcastle";
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
 import { z } from "zod";
@@ -65,6 +69,49 @@ const hooks = {
 // starts. Avoids a full npm install from scratch; the hook above handles
 // platform-specific binaries and any packages added since the last copy.
 const copyToWorktree = ["node_modules"];
+
+// The implementer ends with exactly one of these. Only COMPLETE closes the
+// issue; INCOMPLETE work still lands, and the issue stays open.
+const COMPLETE = "<promise>COMPLETE</promise>";
+const INCOMPLETE = "<promise>INCOMPLETE</promise>";
+
+// ---------------------------------------------------------------------------
+// Squash helpers (host-side git, deterministic)
+// ---------------------------------------------------------------------------
+
+function git(...args: string[]): string {
+  return execFileSync("git", args, { encoding: "utf8" }).trim();
+}
+
+// Squash message: the issue title as subject, then each branch commit's
+// message (implementer and reviewer) with the `RALPH:` prefix and trailers
+// removed, then the de-duplicated trailers once at the end.
+function squashMessage(issue: { id: string; title: string }, branch: string) {
+  const id = issue.id.replace(/^#/, "");
+  const bodies: string[] = [];
+  const trailers = new Set<string>();
+  const shas = git("rev-list", "--reverse", `HEAD..${branch}`)
+    .split("\n")
+    .filter(Boolean);
+  for (const sha of shas) {
+    const lines = git("log", "-1", "--format=%B", sha)
+      .replace(/^RALPH:\s*/, "")
+      .split("\n");
+    const kept: string[] = [];
+    for (const line of lines) {
+      if (/^Co-Authored-By:/i.test(line)) trailers.add(line);
+      else kept.push(line);
+    }
+    bodies.push(kept.join("\n").trim());
+  }
+  return [`${issue.title} (#${id})`, ...bodies, [...trailers].join("\n")]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function hasConflicts(): boolean {
+  return git("diff", "--name-only", "--diff-filter=U") !== "";
+}
 
 // ---------------------------------------------------------------------------
 // Main loop
@@ -139,6 +186,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
           maxIterations: 100,
           agent: sandcastle.claudeCode("claude-sonnet-5", { effort: "medium" }),
           promptFile: "./.sandcastle/implement-prompt.md",
+          completionSignal: [COMPLETE, INCOMPLETE],
           promptArgs: {
             TASK_ID: issue.id,
             ISSUE_TITLE: issue.title,
@@ -162,11 +210,15 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
           // Each sandbox.run() only returns commits from its own run.
           return {
             ...review,
+            completed: implement.completionSignal === COMPLETE,
             commits: [...implement.commits, ...review.commits],
           };
         }
 
-        return implement;
+        return {
+          ...implement,
+          completed: implement.completionSignal === COMPLETE,
+        };
       } finally {
         await sandbox.close();
       }
@@ -191,7 +243,11 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
         entry.outcome.status === "fulfilled" &&
         entry.outcome.value.commits.length > 0,
     )
-    .map((entry) => entry.issue);
+    .map((entry) => ({
+      ...entry.issue,
+      completed:
+        entry.outcome.status === "fulfilled" && entry.outcome.value.completed,
+    }));
 
   const completedBranches = completedIssues.map((i) => i.branch);
 
@@ -209,30 +265,74 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   }
 
   // -------------------------------------------------------------------------
-  // Phase 3: Merge
+  // Phase 3: Squash
   //
-  // One agent merges all completed branches into the current branch,
-  // resolving any conflicts and running tests to confirm everything works.
-  //
-  // The {{BRANCHES}} and {{ISSUES}} prompt arguments are lists that the agent
-  // uses to know which branches to merge and which issues to close.
+  // Each branch lands as exactly one commit on the current branch, in plan
+  // order, so history stays linear: one issue, one commit, "<title> (#<id>)".
+  // The host does the git work itself; an agent only runs when a squash
+  // conflicts, and it resolves and verifies without committing.
   // -------------------------------------------------------------------------
-  await sandcastle.run({
-    hooks,
-    sandbox: docker({ env: sandboxEnv }),
-    name: "merger",
-    maxIterations: 1,
-    agent: sandcastle.claudeCode("claude-opus-5-5", { effort: "medium" }),
-    promptFile: "./.sandcastle/merge-prompt.md",
-    promptArgs: {
-      // A markdown list of branch names, one per line.
-      BRANCHES: completedBranches.map((b) => `- ${b}`).join("\n"),
-      // A markdown list of issue IDs and titles, one per line.
-      ISSUES: completedIssues.map((i) => `- ${i.id}: ${i.title}`).join("\n"),
-    },
-  });
+  if (git("status", "--porcelain", "--untracked-files=no") !== "") {
+    throw new Error(
+      "Working tree has uncommitted changes; refusing to squash branches.",
+    );
+  }
 
-  console.log("\nBranches merged.");
+  for (const issue of completedIssues) {
+    const id = issue.id.replace(/^#/, "");
+    const message = squashMessage(issue, issue.branch);
+    const squash = spawnSync("git", ["merge", "--squash", issue.branch], {
+      encoding: "utf8",
+    });
+
+    if (squash.status !== 0) {
+      if (!hasConflicts()) {
+        throw new Error(`git merge --squash ${issue.branch} failed:\n${squash.stderr}`);
+      }
+      console.log(`  ${issue.branch}: conflicts, running resolver`);
+      await sandcastle.run({
+        hooks,
+        sandbox: docker({ env: sandboxEnv }),
+        name: `resolver-${id}`,
+        maxIterations: 1,
+        agent: sandcastle.claudeCode("claude-opus-5-5", { effort: "medium" }),
+        promptFile: "./.sandcastle/resolve-prompt.md",
+        promptArgs: { BRANCH: issue.branch, ISSUE: `#${id}: ${issue.title}` },
+      });
+      if (hasConflicts()) {
+        // Leave the branch for a human; restore the clean tree and move on.
+        git("reset", "--hard", "HEAD");
+        console.error(`  ✗ ${issue.branch}: conflicts unresolved, left unmerged`);
+        continue;
+      }
+      git("add", "-A");
+    }
+
+    if (git("diff", "--cached", "--name-only") === "") {
+      console.log(`  ${issue.branch}: no net changes, nothing to commit`);
+    } else {
+      execFileSync("git", ["commit", "--quiet", "-F", "-"], { input: message });
+      console.log(`  ${issue.branch} → ${git("log", "-1", "--format=%h %s")}`);
+    }
+
+    if (issue.completed) {
+      execFileSync("gh", [
+        "issue",
+        "close",
+        id,
+        "--comment",
+        `Completed by Sandcastle in ${git("rev-parse", "HEAD")}`,
+      ]);
+    } else {
+      console.log(`  #${id} left open: implementer reported it incomplete`);
+    }
+
+    // Squashed branches are fully represented by their commit; keep none.
+    git("worktree", "prune");
+    git("branch", "-D", issue.branch);
+  }
+
+  console.log("\nBranches squashed.");
 }
 
 console.log("\nAll done.");
