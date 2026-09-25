@@ -85,6 +85,8 @@ class RegistryTest(unittest.TestCase):
                 "mira-fold",
                 "orin-shadow",
                 "pico-press",
+                "reskin-lab",
+                "rowan-vale",
                 "sonora-reed",
                 "soren-voss",
                 "tess-loop",

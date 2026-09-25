@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "f3a1e57522d9213babd8d9ea49aa05933bcc3408e8366cc685006a1f7005d62a",
+      "kind": "codex-skill",
+      "name": "reskin-lab-inventor",
+      "path": "skills/reskin-lab-inventor"
+    }
+  ],
+  "id": "reskin-lab",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}
