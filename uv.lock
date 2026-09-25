@@ -507,7 +507,9 @@ name = "autonomous-workshop"
 version = "0.6.0"
 source = { editable = "." }
 dependencies = [
+    { name = "build123d" },
     { name = "cadgen" },
+    { name = "cadquery-ocp" },
     { name = "pillow" },
     { name = "psutil" },
     { name = "pypdf" },
@@ -517,7 +519,9 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "build123d", specifier = "==0.11.1" },
     { name = "cadgen", specifier = "==0.4.19" },
+    { name = "cadquery-ocp", specifier = "==7.9.3.1.1" },
     { name = "pillow", specifier = ">=10,<13" },
     { name = "psutil", specifier = ">=7.2,<8" },
     { name = "pypdf", specifier = ">=6.16.2,<7" },

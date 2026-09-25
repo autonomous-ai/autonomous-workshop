@@ -1,5 +1,29 @@
 # Shared skill provenance
 
+## Pin build123d and cadquery-ocp for cadgen (2026-09-25)
+
+A Workshop-local change to the vendored `cad` tree, not an upstream resync.
+`cadgen/pyproject.toml` declared `build123d` and `cadquery-ocp` with no
+version, so two installs of the same `cadgen==0.4.19` could resolve
+different OCCT builds. #60's parallel-boolean experiment
+(`docs/PARALLEL_BOOLEAN_EXPERIMENT.md`, Finding 3) found a fresh resolve can
+land on a pair that does not work together at all -- `cadquery-ocp` 8.0.1
+drops `OCP.TDF.TDF_LabelSequence`, which `cadgen`'s STEP scene loader needs,
+while the newest `cadquery-ocp` release old enough to keep it is too old for
+newer `build123d`'s `OCP.collections` use -- and is the simplest explanation
+for two Carry Forward builds hashing a part differently under no geometry
+change.
+
+`cadgen/pyproject.toml`, the CAD skill's `requirements.txt` and the root
+`pyproject.toml` now all pin `build123d==0.11.1` and
+`cadquery-ocp==7.9.3.1.1` -- the pair `uv.lock` already resolved and the one
+`docs/PARALLEL_BOOLEAN_EXPERIMENT.md`'s own experiment ran against. This
+follows the existing `Pillow>=10,<13` precedent: `tools/verify_skill_locks.py`
+requires the Workshop to pin every CAD skill requirement exactly as the skill
+declares it, so the root dependency list carries the same two specifiers.
+This changes the `cad` fingerprint only; no script, gate or geometry
+algorithm changed.
+
 ## Corrections carry unchanged parts forward by default (2026-09-21)
 
 A Workshop-local change to the vendored `cad` and `make-round` trees, not an
