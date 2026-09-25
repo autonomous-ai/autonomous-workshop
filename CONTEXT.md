@@ -36,6 +36,13 @@ sealed inside the Wish. Unlike the Toy Blueprint it belongs to one toy; unlike
 the Wish's prose it is exact enough to check.
 _Avoid_: Spec, design spec, concept
 
+**Theme Hook**:
+One countable or pointable correspondence between a reskin's theme and its
+source game that makes the theme feel chosen for that game rather than pasted
+on — the eight planets of the solar system as the eight pieces of Jungle. A
+reskin without one is rejected, whatever it looks like.
+_Avoid_: Link, connection, theme fit
+
 **Contract Mode**:
 A run that was given a Design Contract at creation and is judged against it,
 rather than against requirements the Manager compiled. Frozen for the run.
