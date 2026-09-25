@@ -316,13 +316,16 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     }
 
     if (issue.completed) {
+      // Comment and close separately: `gh issue close --comment` is missing
+      // from older gh releases (e.g. Ubuntu's 2.4.0).
       execFileSync("gh", [
         "issue",
-        "close",
+        "comment",
         id,
-        "--comment",
+        "--body",
         `Completed by Sandcastle in ${git("rev-parse", "HEAD")}`,
       ]);
+      execFileSync("gh", ["issue", "close", id]);
     } else {
       console.log(`  #${id} left open: implementer reported it incomplete`);
     }
