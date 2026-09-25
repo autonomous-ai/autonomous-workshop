@@ -1372,6 +1372,74 @@ class StageProposalToolTest(unittest.TestCase):
             "playtest",
         )
 
+    def _run_make_with_component_identities(self, component_identities, toolchain, *, expected=0):
+        product_root, _, _, _ = self.create_product()
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text())
+        review["review_rounds"] = 4
+        review_path.write_bytes(canonical_json(review))
+        (product_root / "cad/project/component-identities.json").write_bytes(
+            canonical_json(
+                {"component_identities": component_identities, "toolchain": toolchain}
+            )
+        )
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        return self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=expected,
+        )
+
+    def test_make_seals_component_identities_when_the_round_left_them(self):
+        """Issue #64, ADR 0073: seal each Component's B-rep hash beside its STEP sha256."""
+        self._run_make_with_component_identities(
+            {"assembled.step": "e" * 64},
+            {"build123d": "0.11.1", "cadquery_ocp": "7.9.3.1.1"},
+        )
+        made_document, _ = self.assert_canonical_file("artifacts/make/r0001/made.json")
+        self.assertEqual(made_document["schema_version"], 2)
+        self.assertEqual(
+            made_document["component_identities"], {"assembled.step": "e" * 64}
+        )
+        self.assertEqual(
+            made_document["toolchain"],
+            {"build123d": "0.11.1", "cadquery_ocp": "7.9.3.1.1"},
+        )
+        made = NativeMade.from_mapping(made_document)
+        made.assert_context(self.assignment, self.invented, expected_round=1)
+        made.validate_product_tree(self.run_root)
+
+    def test_make_rejects_a_component_identity_naming_a_path_outside_the_manifest(self):
+        result = self._run_make_with_component_identities(
+            {"ghost.step": "e" * 64},
+            {"build123d": "0.11.1", "cadquery_ocp": "7.9.3.1.1"},
+            expected=2,
+        )
+        self.assertIn("outside the sealed STEP manifest", result.stderr)
+        self.assertFalse((self.run_root / "artifacts/make/r0001/made.json").exists())
+
+    def test_make_rejects_a_floating_toolchain_version(self):
+        result = self._run_make_with_component_identities(
+            {"assembled.step": "e" * 64},
+            {"build123d": "latest", "cadquery_ocp": "7.9.3.1.1"},
+            expected=2,
+        )
+        self.assertIn("exact non-floating version", result.stderr)
+        self.assertFalse((self.run_root / "artifacts/make/r0001/made.json").exists())
+
     def test_make_review_contract_is_accepted_by_the_cad_verifier(self):
         import runpy
 

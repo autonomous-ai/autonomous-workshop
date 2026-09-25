@@ -66,7 +66,7 @@ class NativeMadeTest(unittest.TestCase):
             research={"sources": [{"url": "https://example.test/moon", "claim": "scale"}]},
         )
 
-    def _made(self):
+    def _made(self, **overrides):
         product_root = self.run_root / "artifacts/make/r0001/product"
         project = product_root / "cad/project"
         validation = product_root / "validation"
@@ -105,6 +105,7 @@ class NativeMadeTest(unittest.TestCase):
             product_json_sha256=_sha(product_bytes),
             cad_verification_path="validation/cad-build.json",
             cad_verification_sha256=_sha(verification),
+            **overrides,
         )
         return made, product_root
 
@@ -126,6 +127,89 @@ class NativeMadeTest(unittest.TestCase):
             made.validate_product_tree(self.run_root)
         with self.assertRaisesRegex(ContractError, "different Workshop inputs"):
             made.assert_context(self.assignment, self.invented, expected_round=2)
+
+    def test_component_identities_seal_beside_step_sha256(self):
+        identity = "e" * 64
+        made, _ = self._made(
+            schema_version=2,
+            component_identities={"cad/project/moon.step": identity},
+            toolchain={"build123d": "0.11.1", "cadquery_ocp": "7.9.3.1.1"},
+        )
+        self.assertEqual(made.component_identities, {"cad/project/moon.step": identity})
+        self.assertEqual(
+            made.toolchain, {"build123d": "0.11.1", "cadquery_ocp": "7.9.3.1.1"}
+        )
+
+        rebuilt = NativeMade.from_mapping(made.to_dict())
+        self.assertEqual(rebuilt.made_sha256, made.made_sha256)
+        self.assertEqual(rebuilt.component_identities, made.component_identities)
+        self.assertEqual(rebuilt.toolchain, made.toolchain)
+
+    def test_schema_one_archive_carries_no_component_identities(self):
+        made, _ = self._made()
+        self.assertEqual(made.schema_version, 1)
+        self.assertEqual(made.component_identities, {})
+        self.assertEqual(made.toolchain, {})
+        self.assertNotIn("component_identities", made.to_dict())
+        self.assertNotIn("toolchain", made.to_dict())
+
+        rebuilt = NativeMade.from_mapping(made.to_dict())
+        self.assertEqual(rebuilt.made_sha256, made.made_sha256)
+
+    def test_schema_one_rejects_component_identities(self):
+        with self.assertRaisesRegex(
+            ContractError, "must not carry component identities"
+        ):
+            self._made(
+                schema_version=1,
+                component_identities={"cad/project/moon.step": "e" * 64},
+            )
+
+    def test_schema_two_requires_component_identities(self):
+        with self.assertRaisesRegex(ContractError, "must not be empty"):
+            self._made(
+                schema_version=2,
+                toolchain={"build123d": "0.11.1", "cadquery_ocp": "7.9.3.1.1"},
+            )
+
+    def test_schema_two_requires_toolchain(self):
+        with self.assertRaisesRegex(ContractError, "must not be empty"):
+            self._made(
+                schema_version=2,
+                component_identities={"cad/project/moon.step": "e" * 64},
+            )
+
+    def test_component_identity_path_must_be_a_sealed_step(self):
+        with self.assertRaisesRegex(ContractError, "outside the sealed STEP manifest"):
+            self._made(
+                schema_version=2,
+                component_identities={"cad/project/ghost.step": "e" * 64},
+                toolchain={"build123d": "0.11.1", "cadquery_ocp": "7.9.3.1.1"},
+            )
+
+    def test_component_identity_hash_must_be_sha256(self):
+        with self.assertRaisesRegex(ContractError, "64 lowercase hexadecimal"):
+            self._made(
+                schema_version=2,
+                component_identities={"cad/project/moon.step": "not-a-hash"},
+                toolchain={"build123d": "0.11.1", "cadquery_ocp": "7.9.3.1.1"},
+            )
+
+    def test_toolchain_must_name_exactly_build123d_and_cadquery_ocp(self):
+        with self.assertRaisesRegex(ContractError, "must record build123d"):
+            self._made(
+                schema_version=2,
+                component_identities={"cad/project/moon.step": "e" * 64},
+                toolchain={"build123d": "0.11.1"},
+            )
+
+    def test_toolchain_version_must_be_exact(self):
+        with self.assertRaisesRegex(ContractError, "exact, non-floating version"):
+            self._made(
+                schema_version=2,
+                component_identities={"cad/project/moon.step": "e" * 64},
+                toolchain={"build123d": "latest", "cadquery_ocp": "7.9.3.1.1"},
+            )
 
     def test_swapped_invent_result_is_refused(self):
         made, _ = self._made()

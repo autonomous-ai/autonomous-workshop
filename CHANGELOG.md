@@ -75,6 +75,17 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Added
 
+- `made.json` seals each Component's B-rep hash beside its STEP sha256
+  (schema 2's `component_identities`), plus the exact `build123d`/
+  `cadquery-ocp` versions it was computed under (`toolchain`), when Make
+  leaves `scripts/gen`'s per-Component `identitySha256`/`toolchainVersions`
+  at a `component-identities.json` sidecar in the CAD project. A Correction
+  Run reads a source archive's sealed hashes directly when its own toolchain
+  matches, skipping the extra build of the source Components that ADR 0073's
+  scratch-tree rebuild path (issue #61) otherwise costs; an archive with no
+  seal, or a toolchain mismatch, still takes that rebuild path unchanged. An
+  archive sealed before this change stays schema 1 and passes intake exactly
+  as before.
 - `scripts/render_set` in the CAD skill: a reference whole-set render script.
   A Make agent's copied frame script (the Antisol Companion's is
   byte-identical to v11's) has tessellated through a private routine that
