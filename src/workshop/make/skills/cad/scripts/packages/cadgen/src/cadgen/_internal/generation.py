@@ -1141,6 +1141,26 @@ def _rebuild_stale_assembly_children(
     return rebuilt
 
 
+def _built_shape_identity(result: object) -> str | None:
+    """The B-rep hash of the shape a ``gen_step()`` target just built, if any.
+
+    Read from ``scene.source_compound`` -- the in-memory build123d shape the
+    generator returned, before any STEP round-trip (ADR 0073: import and
+    build never give the same B-rep, so identity is never taken from a shape
+    reloaded off disk). ``None`` for an imported/committed STEP target, a
+    reused-package result with no fresh scene, or the DXF pipeline, none of
+    which set ``source_compound``.
+    """
+    scene = getattr(result, "scene", None)
+    compound = getattr(scene, "source_compound", None)
+    wrapped = getattr(compound, "wrapped", None)
+    if wrapped is None:
+        return None
+    from cadgen.inspection_runtime import shape_identity
+
+    return shape_identity(wrapped)
+
+
 def generate_step_targets(
     targets: Sequence[str],
     *,
@@ -1165,17 +1185,19 @@ def generate_step_targets(
     logger = CliLogger("scripts/gen", verbose=verbose)
     reported: list[dict[str, object]] = []
 
-    def _emit(spec: EntrySpec, outcome: str) -> None:
-        reported.append(
-            {
-                "ok": True,
-                "sourceRef": spec.source_ref,
-                "cadPath": spec.cad_ref,
-                "kind": spec.kind,
-                "outcome": outcome,
-                "packagePath": _display_path(render_package_dir(spec.entry_path)),
-            }
-        )
+    def _emit(spec: EntrySpec, outcome: str, result: object = None) -> None:
+        entry: dict[str, object] = {
+            "ok": True,
+            "sourceRef": spec.source_ref,
+            "cadPath": spec.cad_ref,
+            "kind": spec.kind,
+            "outcome": outcome,
+            "packagePath": _display_path(render_package_dir(spec.entry_path)),
+        }
+        identity = _built_shape_identity(result)
+        if identity is not None:
+            entry["identitySha256"] = identity
+        reported.append(entry)
 
     def _emit_contended(spec: EntrySpec) -> None:
         # The SAME payload the artifact CLIs answer with when a peer holds the lock, so a
@@ -1291,7 +1313,7 @@ def generate_step_targets(
         if isinstance(result, _ContendedGeneration):
             _emit_contended(spec)
             continue
-        _emit(spec, "skipped-peer" if isinstance(result, _SkippedGeneration) else "built")
+        _emit(spec, "skipped-peer" if isinstance(result, _SkippedGeneration) else "built", result)
     logger.total()
     _flush()
     return 0

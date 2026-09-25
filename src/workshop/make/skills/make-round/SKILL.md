@@ -25,19 +25,33 @@ what a round may CARRY FORWARD. It lowers no threshold, relaxes no gate and
 skips nothing about the assembly.
 
 What it permits, and only after the changed-part set is established by
-building and exporting EVERY part and hashing each against the source
-archive's `make/made.json` `product_manifest`:
+building EVERY part and comparing its B-rep identity against the source's
+(ADR 0073 -- never STEP bytes, which an exporter can serialize differently for
+an unchanged shape, and never a shape reloaded from a STEP file, which does
+not hash like the one that was built):
 
-- A part whose STEP is byte-identical to the source's needs no new isolated
-  component round. The source archive's round history for that part is still
-  exactly true of it, because a gate is a pure function of the STEP it reads.
-  Carry that history forward and record the hash it is carried on.
+- A part whose B-rep is identical to the source's needs no new isolated
+  component round, even when its exported STEP bytes differ. The source
+  archive's round history for that part is still exactly true of it, because a
+  gate is a pure function of the shape it reads. Carry that history forward
+  and record the B-rep hash it is carried on.
 - Its per-part measure reports are carried forward the same way, unchanged.
+
+`gen --write --json` reports each part's B-rep identity as `identitySha256`,
+computed on the shape it just built, never on an import. For a source archive
+sealed before `made.json` carried this hash (every archive today -- see issue
+#64), get the source side by rebuilding the source's own `part_<role>.step.py`
+in a scratch copy of its `make/` tree with the same `gen --write --json` and
+reading its `identitySha256` there; the source's own generator sources and
+shared helpers are already inside the revision snapshot, so this needs no new
+input. There is no tolerance on this comparison: two hashes either match or
+they do not.
 
 You are not trusted on this, and do not need to be: `make_round
 --require-component-passes` rebuilds every part and refuses assembly review
-for any whose digest no longer matches its recorded pass. A part that moved
-cannot be carried even if you try.
+for any whose B-rep identity no longer matches its recorded pass. A part
+whose shape moved cannot be carried even if you try -- and one whose exported
+STEP merely serialized differently is no longer refused for it.
 
 What the policy never touches:
 
@@ -53,7 +67,7 @@ What the policy never touches:
   safe.
 
 Write a `measure/quick-fix-carry.md` naming every part carried forward, the
-sha256 it was carried on, and what was regenerated instead. A reader must be
+B-rep hash it was carried on, and what was regenerated instead. A reader must be
 able to tell a carried report from a fresh one without diffing, because the
 round record itself cannot say which run produced it. If the changed-part set
 turns out to be most of the project, say so and regenerate everything: the

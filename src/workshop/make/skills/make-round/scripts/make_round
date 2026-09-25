@@ -248,6 +248,29 @@ def parse_build(stdout: str, stderr: str, returncode: int) -> dict:
     return {"verdict": "FAIL", "failures": fails[-4:] or ["gen exit %d" % returncode]}
 
 
+def parse_identity(stdout: str) -> str | None:
+    """A built part's B-rep hash from `gen --json`, when the tool reported one.
+
+    `gen` emits `identitySha256` only for a shape it just built from a
+    `gen_step()` source (ADR 0073: never for a shape reloaded from STEP).
+    Absent for a component sourced by another cadgen build, an older cadgen
+    without the field, or a mocked `run` in a test -- callers fall back to
+    hashing the exported STEP bytes.
+    """
+    for line in (stdout or "").splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except ValueError:
+            continue
+        value = payload.get("identitySha256") if isinstance(payload, dict) else None
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
 def parse_thickness(stdout: str) -> dict:
     """The verdict and the thinnest region from a check_thickness run."""
     verdict = "PASS" if "RESULT: printable at this wall" in stdout else "FAIL"
@@ -351,7 +374,7 @@ def reusable_print(item: dict | None) -> bool:
 
 
 def diff_parts(previous: dict, current: dict) -> list[str]:
-    """Roles whose STEP bytes changed, or every role when nothing was recorded."""
+    """Roles whose identity changed, or every role when nothing was recorded."""
     if not previous:
         return sorted(current)
     return sorted(role for role, digest in current.items() if previous.get(role) != digest)
@@ -678,10 +701,14 @@ def current_passing_component_round(project: Path, role: str, digest: str | None
     Both the assembly-review prerequisite and sealed-reference coverage need
     the same answer to "does this Component have a current, passing isolated
     round": a readable state and summary, a valid round number, a scope/entry/
-    parts that agree with each other, a passing verdict, and STEP bytes that
-    have not moved since (``digest`` is the Component's current build hash;
-    ``None`` when it did not build this round). Returns ``(summary, "")`` when
-    it qualifies, else ``(None, reason)``.
+    parts that agree with each other, a passing verdict, and an identity that
+    has not moved since (``digest`` is the Component's current build identity,
+    a B-rep hash whenever the build reported one, else the exported STEP's
+    sha256 -- ADR 0073; ``None`` when it did not build this round). A Component
+    whose STEP bytes differ from its recorded pass but whose B-rep identity
+    still matches qualifies; the exporter's serialization is not the thing
+    being checked. Returns ``(summary, "")`` when it qualifies, else
+    ``(None, reason)``.
     """
 
     entry = "part_%s.step.py" % role
@@ -719,7 +746,7 @@ def component_coverage(project: Path, digests: dict, floor: float) -> dict[str, 
 
     A reference that depicts one Component is scored in that Component's round
     (ADR 0063); this is how the assembly knows not to score it again against
-    the whole object. A Component whose STEP moved since its pass covers
+    the whole object. A Component whose identity moved since its pass covers
     nothing, exactly as --require-component-passes treats it: both read
     ``current_passing_component_round``.
     """
@@ -887,7 +914,10 @@ def make_round(args) -> int:
     if not parts:
         parts = [entry]
 
-    # 1. build every part once; hash the STEP bytes so the next round knows what moved.
+    # 1. build every part once. Identity is the B-rep hash `gen --json` reports for
+    # the shape it just built from source (ADR 0073); a part built from an
+    # imported STEP, or reported by a tool too old to say, falls back to hashing
+    # the exported STEP bytes so it still has an identity to compare next round.
     digests: dict[str, str] = {}
     build: dict[str, dict] = {}
     build_failures: dict[str, dict] = {}
@@ -901,12 +931,13 @@ def make_round(args) -> int:
         if parsed["verdict"] == "FAIL":
             build_failures[role] = parsed
             continue
-        digests[role] = hashlib.sha256(step.read_bytes()).hexdigest()
+        digests[role] = parse_identity(done.stdout) or hashlib.sha256(step.read_bytes()).hexdigest()
     changed = diff_parts(state.get("parts", {}), digests) if not args.all_parts else sorted(digests)
 
     # Spark can make assembly review contingent on current, passing isolated
-    # component evidence. Comparing freshly built STEP bytes catches edits in
-    # the component file and in any shared helper it imports.
+    # component evidence. Comparing B-rep identity, not STEP bytes, catches
+    # edits in the component file and in any shared helper it imports without
+    # refusing a part the exporter merely serialized differently (ADR 0073).
     if args.require_component_passes:
         failures = []
         if not all_parts:

@@ -558,6 +558,83 @@ class MakeRoundTest(unittest.TestCase):
                 self.assertEqual(module.main([str(project), "--require-component-passes"]), 1)
             self.assertIn("part_wheel.step.py changed after its component pass", stderr.getvalue())
 
+    def test_require_component_passes_compares_brep_identity_not_step_bytes(self):
+        """ADR 0073: `gen`'s reported B-rep identity is what a carried pass is
+        checked against, so an exporter-only difference in the STEP bytes it
+        wrote does not refuse a Component whose shape did not move -- and a
+        real identity change still does."""
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module = load_module()
+            (project / "toy.step.py").write_text("def gen_step(): return 'assembly'\n")
+            (project / "part_wheel.step.py").write_text("def gen_step(): return 'wheel-v1'\n")
+            (project / "toy_spec.md").write_text("hero=ref/whole.png\n")
+
+            identity = {"value": "brep-hash-1"}
+
+            def fake_run(command, **kwargs):
+                tool = Path(command[1]).name
+                if tool == "gen":
+                    source = Path(command[2])
+                    source.with_name(source.name[:-len(".py")]).write_bytes(source.read_bytes())
+                    return subprocess.CompletedProcess(
+                        command, 0, json.dumps({"identitySha256": identity["value"]}) + "\n", ""
+                    )
+                if tool == "render_review":
+                    out = Path(command[command.index("-o") + 1])
+                    out.mkdir()
+                    for view in ("front", "top", "iso"):
+                        (out / (view + ".png")).write_bytes(view.encode())
+                if tool in ("check_thickness", "check_overhang"):
+                    stdout, code = _gate_output(tool, fails=False)
+                    log = kwargs.get("log")
+                    if log is not None:
+                        Path(log).parent.mkdir(parents=True, exist_ok=True)
+                        Path(log).write_text(stdout, encoding="utf-8")
+                    return subprocess.CompletedProcess(command, code, stdout, "")
+                return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
+
+            with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(
+                module, "skills_root", return_value=project
+            ), mock.patch.object(module, "run", side_effect=fake_run):
+                self.assertEqual(module.main([str(project), "--component", "part_wheel.step.py"]), 1)
+            summary = json.loads((project / "measure/component-rounds/wheel/r0001/summary.json").read_text())
+            feedback = project / "measure/feedback-wheel.json"
+            feedback.write_text(json.dumps({
+                "packet_sha256": summary["visual"]["packet_sha256"],
+                "status": "pass", "findings": [],
+                "observation": "The isolated component is coherent in all three views.",
+            }))
+            self.assertTrue(module.record_visual(project, feedback, component="part_wheel.step.py")["ok"])
+
+            # The generator's written bytes move (an exporter-style difference), but the
+            # reported B-rep identity does not: the carried pass still qualifies.
+            (project / "part_wheel.step.py").write_text("def gen_step(): return 'wheel-v1-reexported'\n")
+            with contextlib.redirect_stderr(io.StringIO()) as stderr, mock.patch.object(
+                module, "skills_root", return_value=project
+            ), mock.patch.object(module, "run", side_effect=fake_run):
+                self.assertEqual(module.main([str(project), "--require-component-passes"]), 1)
+            self.assertNotIn("part_wheel.step.py changed after its component pass", stderr.getvalue())
+
+            # The B-rep identity itself moves: the carried pass is refused, exactly as a
+            # STEP-byte change used to refuse it.
+            identity["value"] = "brep-hash-2"
+            with contextlib.redirect_stderr(io.StringIO()) as stderr, mock.patch.object(
+                module, "skills_root", return_value=project
+            ), mock.patch.object(module, "run", side_effect=fake_run):
+                self.assertEqual(module.main([str(project), "--require-component-passes"]), 1)
+            self.assertIn("part_wheel.step.py changed after its component pass", stderr.getvalue())
+
+    def test_parse_identity_reads_the_brep_hash_gen_reports(self):
+        module = load_module()
+        stdout = "human progress line\n" + json.dumps({"identitySha256": "abc123", "outcome": "built"}) + "\n"
+        self.assertEqual(module.parse_identity(stdout), "abc123")
+
+    def test_parse_identity_is_none_without_a_reported_identity(self):
+        module = load_module()
+        self.assertIsNone(module.parse_identity(""))
+        self.assertIsNone(module.parse_identity('{"outcome": "built"}\n'))
+        self.assertIsNone(module.parse_identity("not json at all"))
 
     def test_visual_pass_cannot_unlock_full_verification_after_numeric_failure(self):
         with tempfile.TemporaryDirectory() as tmp:
