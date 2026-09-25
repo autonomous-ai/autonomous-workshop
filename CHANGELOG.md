@@ -121,6 +121,17 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Changed
 
+- `render_review`'s occurrence tessellation cache is on by default, with one
+  cache per CAD Project. A shape from `build_shape` (the renderer's shape
+  loader) now carries its resolved source, so `tessellate_occurrences` hits
+  the cache with no `cache_entry` argument -- the toy's own render scripts
+  never passed one, so they were always retessellating. The cache root walks
+  from that source up to the enclosing `cad` directory instead of sitting
+  beside the entry, so sources in different scratch subdirectories of one
+  project, including a render repeated after a Blind Review defect, share one
+  cache. `WORKSHOP_GEOMETRY_CACHE=0` still disables reads and writes, a
+  corrupt or missing entry is still a miss, and explicit `cache_entry` callers
+  are unaffected.
 - New Codex runs default to Astra at medium effort. Explicit model selections
   and the exact model frozen into existing runs are unchanged.
 - Resynced the vendored CAD skills to `autonomous-product-to-cad` `673a9fa`

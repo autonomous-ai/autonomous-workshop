@@ -121,6 +121,58 @@ class TessellationCacheTest(unittest.TestCase):
         self.assertEqual(self.calls, 2)
         self.assertFalse((self.entry.parent / "__cadgen__").exists())
 
+    def test_shape_from_the_shape_loader_is_cached_with_no_cache_argument(self):
+        entry = self.entry.with_name("assembly.step.py")
+        entry.write_text(
+            "from build123d import Box\ndef gen_step():\n    return Box(2, 3, 4)\n",
+            encoding="utf-8",
+        )
+        _source, shape = self.renderer["build_shape"](entry)
+        first = self.renderer["tessellate_occurrences"](shape, 0.08)
+        self.assertEqual(self.calls, 1)
+        self.assertTrue((entry.parent / "__cadgen__" / self.renderer["TESSELLATION_CACHE_NAMESPACE"]).exists())
+
+        _source, shape = self.renderer["build_shape"](entry)
+        second = self.renderer["tessellate_occurrences"](shape, 0.08)
+        self.assertEqual(self.calls, 1, "a shape from build_shape must be cached without naming cache_entry")
+        np.testing.assert_array_equal(first[0][0], second[0][0])
+
+    def test_a_shape_built_in_process_is_never_cached_by_default(self):
+        self.renderer["tessellate_occurrences"](Box(2, 3, 4), 0.08)
+        self.assertEqual(self.calls, 1)
+        self.renderer["tessellate_occurrences"](Box(2, 3, 4), 0.08)
+        self.assertEqual(self.calls, 2, "a shape with no resolved source must not be cached")
+        self.assertFalse((self.entry.parent / "__cadgen__").exists())
+
+    def test_two_sources_in_different_scratch_directories_share_one_project_cache(self):
+        project = self.entry.parent / "widget" / "cad"
+        parts = project / "parts"
+        assemblies = project / "assemblies"
+        parts.mkdir(parents=True)
+        assemblies.mkdir(parents=True)
+        first_entry = parts / "a.step.py"
+        second_entry = assemblies / "b.step.py"
+        source = "from build123d import Box\ndef gen_step():\n    return Box(2, 3, 4)\n"
+        first_entry.write_text(source, encoding="utf-8")
+        second_entry.write_text(source, encoding="utf-8")
+
+        _source, shape = self.renderer["build_shape"](first_entry)
+        first = self.renderer["tessellate_occurrences"](shape, 0.08)
+        self.assertEqual(self.calls, 1)
+
+        _source, shape = self.renderer["build_shape"](second_entry)
+        second = self.renderer["tessellate_occurrences"](shape, 0.08)
+        self.assertEqual(
+            self.calls, 1,
+            "two sources in different scratch directories of one CAD Project must hit the same cache",
+        )
+        np.testing.assert_array_equal(first[0][0], second[0][0])
+
+        project_cache = project / "__cadgen__" / self.renderer["TESSELLATION_CACHE_NAMESPACE"]
+        self.assertTrue(project_cache.exists())
+        self.assertFalse((parts / "__cadgen__").exists())
+        self.assertFalse((assemblies / "__cadgen__").exists())
+
     def test_main_builds_the_assembly_once_regardless_of_view_count(self):
         entry = self.entry.with_name("assembly.step.py")
         entry.write_text(

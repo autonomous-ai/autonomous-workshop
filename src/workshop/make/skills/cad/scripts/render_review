@@ -98,6 +98,12 @@ def _load_entry(path: Path):
     return module
 
 
+#: Attribute name `build_shape` stamps its resolved source onto the shape it
+#: returns, so a caller that never names a cache location still gets one:
+#: `tessellate_occurrences` reads it back when `cache_entry` is omitted.
+_RESOLVED_SOURCE_ATTR = "_render_review_resolved_source"
+
+
 def build_shape(source: Path):
     source = _resolve_source(source)
     if source.name.endswith(ENTRY_SUFFIX):
@@ -109,12 +115,14 @@ def build_shape(source: Path):
             shape = builder()
         if shape is None:
             raise ValueError(f"{source.name} {GEN_FUNC}() returned None")
-        return source, shape
-    if source.suffix.lower() in {".step", ".stp"}:
+    elif source.suffix.lower() in {".step", ".stp"}:
         from build123d import import_step
 
-        return source, import_step(str(source))
-    raise ValueError(f"{source} is neither a {ENTRY_SUFFIX} entry nor STEP")
+        shape = import_step(str(source))
+    else:
+        raise ValueError(f"{source} is neither a {ENTRY_SUFFIX} entry nor STEP")
+    setattr(shape, _RESOLVED_SOURCE_ATTR, source)
+    return source, shape
 
 
 def _linear_to_srgb(value: float) -> int:
@@ -164,6 +172,26 @@ def _self_source_identity() -> str:
     return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
 
+def _cad_project_root(entry: Path) -> Path:
+    """Walk up from `entry` to the CAD Project directory that holds it.
+
+    A CAD Project is the self-contained `cad` directory a toy's geometry
+    source, exports, measurements and renders all live under (see CONTEXT.md);
+    scratch subdirectories -- `parts/`, `assemblies/`, a repair round's own
+    working folder -- nest arbitrarily deep inside it. Rooting the cache there
+    instead of beside `entry` is what makes two sources in different scratch
+    directories of one project, including a render repeated after a Blind
+    Review defect, hit the same cache. An entry not nested under a `cad`
+    directory (a bare fixture, a one-off STEP) falls back to its own folder,
+    which is exactly today's behaviour.
+    """
+    directory = entry.parent if entry.is_file() or not entry.exists() else entry
+    for candidate in (directory, *directory.parents):
+        if candidate.name == "cad":
+            return candidate
+    return directory
+
+
 def _tessellation_cache(entry: Path | None):
     """A content-bound cache for occurrence tessellation, or None to skip it.
 
@@ -172,7 +200,8 @@ def _tessellation_cache(entry: Path | None):
     set for host sealing re-derivation) disables reads and writes. Only the
     directory it writes under differs, so `_directory` is overridden to walk
     `self.root`'s own components rather than the inspection cache's fixed
-    `("__cadgen__", "inspection-v2")` pair.
+    `("__cadgen__", "inspection-v2")` pair, and `self.root` itself is rooted
+    at the CAD Project (`_cad_project_root`) rather than beside `entry`.
     """
     if entry is None:
         return None
@@ -201,7 +230,7 @@ def _tessellation_cache(entry: Path | None):
                 os.close(fd)
 
     cache = _OccurrenceTessellationCache(entry)
-    cache.root = entry.parent / "__cadgen__" / TESSELLATION_CACHE_NAMESPACE
+    cache.root = _cad_project_root(entry) / "__cadgen__" / TESSELLATION_CACHE_NAMESPACE
     return cache
 
 
@@ -245,9 +274,14 @@ def tessellate_occurrences(shape, tolerance: float, angular: float | None = None
     across a curved cap however fine the millimetre tolerance is. Callers that
     render curved organic form pass `angular` instead of copying this routine.
 
-    `cache_entry` names the project entry whose directory holds a persistent,
-    content-keyed tessellation cache; omit it to tessellate every call fresh.
+    `cache_entry` names the project entry whose CAD Project holds a
+    persistent, content-keyed tessellation cache. Omit it and a `shape`
+    obtained from `build_shape` is still cached, under the source it
+    carries; only a `shape` with no such source (built in-process, never
+    loaded) tessellates fresh every call.
     """
+    if cache_entry is None:
+        cache_entry = getattr(shape, _RESOLVED_SOURCE_ATTR, None)
     cache = _tessellation_cache(cache_entry)
     occurrences = []
     for index, child in enumerate(_leaves(shape)):
