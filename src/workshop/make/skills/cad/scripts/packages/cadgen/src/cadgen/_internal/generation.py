@@ -79,6 +79,7 @@ from cadgen._internal.source_hash import (
     python_source_hash,
     record_first_party_execution,
 )
+from cadgen._internal.step_metadata import read_text_to_cad_step_metadata
 from cadgen.step_export import build_build123d_step_scene
 from cadgen._internal.step_scene import (
     load_step_scene_cached,
@@ -977,6 +978,29 @@ def _assembly_glb_package_current(spec: EntrySpec) -> bool:
     return assembly_package_current(spec.entry_path)
 
 
+def _step_export_is_current(spec: EntrySpec) -> bool:
+    """Whether an on-demand STEP export (``scripts/gen --write``) already on disk
+    at ``spec.step_export_path`` still reflects the entry's current script, so
+    writing it can be skipped once the render package's own closure check (see
+    :func:`_assembly_is_current`) says the source is unchanged.
+
+    gen_step never writes a STEP as part of ordinary generation -- the only
+    record of which script version last produced this file is the
+    ``cadgen:sourceHash`` property ``step_export_job`` embeds in it at write
+    time, which is the exported entry script's own-file hash. Paired with an
+    unchanged source closure (checked separately by the caller), an unchanged
+    own-file hash means nothing this export depends on could have changed.
+    """
+    if spec.step_export_path is None or spec.script_path is None:
+        return False
+    if not spec.step_export_path.is_file():
+        return False
+    recorded_hash = str(read_text_to_cad_step_metadata(spec.step_export_path).get("sourceHash") or "").strip()
+    if not recorded_hash:
+        return False
+    return python_source_hash(spec.script_path).source_hash == recorded_hash
+
+
 def _generated_child_is_stale(child_spec: EntrySpec, *, force: bool) -> bool:
     """Whether a generated child part must be rebuilt before composing a parent.
 
@@ -1245,21 +1269,21 @@ def generate_step_targets(
     if step_options is not None and step_options.has_metadata:
         selected_specs = [_apply_step_options_to_spec(spec, step_options) for spec in selected_specs]
     _rebuild_stale_assembly_children(all_specs, selected_specs, force=force, logger=logger)
+
+    def _spec_is_current(spec: EntrySpec) -> bool:
+        # An explicit STEP export (--write) must be written even when the compose is
+        # current, UNLESS the file it would write is already there and already matches
+        # this exact source -- otherwise a resumed --write sweep could never take the
+        # fast path below, and would recompose every entry on every run.
+        if _spec_requests_extra_outputs(spec) and not _step_export_is_current(spec):
+            return False
+        return _assembly_is_current(spec) and _assembly_glb_package_current(spec)
+
     # No-op fast path: skip recomposing a generated assembly whose source closure
     # (the generator's Python import reach) is unchanged. Runs after the
-    # child rebuild so a just-rebuilt child correctly invalidates the closure. Only
-    # for plain in-place regeneration (no --force or output overrides).
-    no_output_override = not any(path is not None for path in target_output_paths)
-    if not force and no_output_override:
-        current_specs = [
-            spec
-            for spec in selected_specs
-            # An explicit STEP export (--write-step) must be written even when the
-            # compose is current, so it keeps the spec in the run.
-            if not _spec_requests_extra_outputs(spec)
-            and _assembly_is_current(spec)
-            and _assembly_glb_package_current(spec)
-        ]
+    # child rebuild so a just-rebuilt child correctly invalidates the closure.
+    if not force:
+        current_specs = [spec for spec in selected_specs if _spec_is_current(spec)]
         if current_specs:
             for spec in current_specs:
                 logger.info(f"{spec.cad_ref} is current; skipped recompose")
@@ -1274,11 +1298,9 @@ def generate_step_targets(
 
     # Same condition as the pre-lock fast path above, re-checked once the lock is held
     # so a run that queued behind a concurrent build of this model no-ops instead of
-    # rebuilding it. --force and explicit extra outputs always do the work.
+    # rebuilding it. --force always does the work.
     def _built_by_a_peer(spec: EntrySpec) -> bool:
-        if force or not no_output_override or _spec_requests_extra_outputs(spec):
-            return False
-        return _assembly_is_current(spec) and _assembly_glb_package_current(spec)
+        return not force and _spec_is_current(spec)
 
     def generate_step(spec: EntrySpec, progress_sink: object | None = None) -> object:
         # The lock and the progress record are now one thing, keyed by the same package
