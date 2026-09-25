@@ -62,6 +62,9 @@ __cadgen__/
 /docs/inventor-army/
 /mockups/
 
+# brainstorm-reskin run workspaces (run.json, per-candidate contracts/images)
+/brainstorm-reskin/
+
 # Host renderer dependencies are installed per machine (workshop doctor).
 /tools/render/node_modules/
 

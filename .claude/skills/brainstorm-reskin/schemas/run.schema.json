@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomous.ai/schemas/inventor/brainstorm-reskin-run-v1.json",
+  "title": "brainstorm-reskin run log",
+  "description": "Append-only record of one brainstorm-reskin run, written to brainstorm-reskin/<game>-<date>/run.json. Never contains a credential or API key.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["game", "theme_hint", "seed", "image_model", "started_at", "steps"],
+  "properties": {
+    "game": {"type": "string", "minLength": 1, "maxLength": 200},
+    "theme_hint": {"type": ["string", "null"], "maxLength": 500},
+    "seed": {"type": "integer"},
+    "image_model": {"type": "string", "minLength": 1, "maxLength": 200},
+    "started_at": {"type": "string", "format": "date-time"},
+    "steps": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/step"}
+    }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "required": ["type", "at"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "personalities_drawn",
+            "contract_generated",
+            "gate_rejected",
+            "judgment",
+            "standings",
+            "tie_break",
+            "winner",
+            "human_approval"
+          ]
+        },
+        "at": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"type": {"const": "personalities_drawn"}}},
+          "then": {
+            "required": ["type", "at", "personalities", "seed"],
+            "properties": {
+              "personalities": {
+                "type": "array", "minItems": 5, "maxItems": 5,
+                "items": {"type": "string", "minLength": 1}
+              },
+              "seed": {"type": "integer"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"type": {"const": "contract_generated"}}},
+          "then": {
+            "required": ["type", "at", "agent_id", "personality", "contract_path", "hero_path"],
+            "properties": {
+              "agent_id": {"type": "string", "minLength": 1},
+              "personality": {"type": "string", "minLength": 1},
+              "contract_path": {"type": "string", "minLength": 1},
+              "hero_path": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"type": {"const": "gate_rejected"}}},
+          "then": {
+            "required": ["type", "at", "agent_id", "personality", "reasons", "replacement_personality"],
+            "properties": {
+              "agent_id": {"type": "string", "minLength": 1},
+              "personality": {"type": "string", "minLength": 1},
+              "reasons": {
+                "type": "array", "minItems": 1,
+                "items": {"type": "string", "minLength": 1}
+              },
+              "replacement_personality": {"type": ["string", "null"], "minLength": 1}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"type": {"const": "judgment"}}},
+          "then": {
+            "required": ["type", "at", "pair", "ordering", "winner", "reason"],
+            "properties": {
+              "pair": {
+                "type": "array", "minItems": 2, "maxItems": 2,
+                "items": {"type": "string", "minLength": 1}
+              },
+              "ordering": {"type": "string", "enum": ["ab", "ba"]},
+              "winner": {"type": ["string", "null"]},
+              "reason": {"type": "string", "minLength": 1, "maxLength": 1000}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"type": {"const": "standings"}}},
+          "then": {
+            "required": ["type", "at", "standings"],
+            "properties": {
+              "standings": {
+                "type": "array", "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["agent_id", "points"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "agent_id": {"type": "string", "minLength": 1},
+                    "points": {"type": "number"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"type": {"const": "tie_break"}}},
+          "then": {
+            "required": ["type", "at", "tied", "winner", "reason"],
+            "properties": {
+              "tied": {
+                "type": "array", "minItems": 2,
+                "items": {"type": "string", "minLength": 1}
+              },
+              "winner": {"type": "string", "minLength": 1},
+              "reason": {"type": "string", "minLength": 1, "maxLength": 1000}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"type": {"const": "winner"}}},
+          "then": {
+            "required": ["type", "at", "agent_id", "contract_path"],
+            "properties": {
+              "agent_id": {"type": "string", "minLength": 1},
+              "contract_path": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"type": {"const": "human_approval"}}},
+          "then": {
+            "required": ["type", "at", "approved_at"],
+            "properties": {
+              "approved_at": {"type": "string", "format": "date-time"}
+            }
+          }
+        }
+      ]
+    }
+  }
+}
