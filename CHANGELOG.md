@@ -75,6 +75,18 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Added
 
+- `scripts/render_set` in the CAD skill: a reference whole-set render script.
+  A Make agent's copied frame script (the Antisol Companion's is
+  byte-identical to v11's) has tessellated through a private routine that
+  bypasses the Workshop renderer's cache; `render_set` separates the phase
+  those scripts already have -- building an Evidence Scene or board state and
+  writing it to STEP once (`write_scenes`) -- from rendering that STEP from a
+  named list of cameras through `render_review.build_shape`/
+  `tessellate_occurrences` with an explicit angular tolerance
+  (`render_scenes`), so repeated cameras on one scene and unmoved occurrences
+  across board states are cache hits. It chooses no camera and builds no
+  scene itself. SKILL.md's appearance-review step now names it as the
+  starting point for a whole-set render instead of a previous toy's script.
 - Wren Coil joins the bundled Inventor roster: everyday-carry objects that
   carry a standard 21.5 x 11.5 x 0.75 mm NFC inlay inside a tool with a real,
   load-bearing second job. Its `wren-coil-inventor` skill puts the coupling
