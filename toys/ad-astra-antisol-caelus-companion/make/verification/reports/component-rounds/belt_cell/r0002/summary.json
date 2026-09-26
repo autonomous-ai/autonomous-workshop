@@ -1,0 +1,55 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_belt_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "belt_cell"
+ ],
+ "print": {
+  "belt_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/overhang-belt_cell.log": "7545d074a4a636443f8e26171ea830e230997f4cdec08483cc0329a11c7fdc4a",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0001/thickness-belt_cell.log": "af8e5aaf929526075d800dba27c4fac6ac16cef5f2e3325ec0f127eaa84fdfbc"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [
+  "belt_cell"
+ ],
+ "round": 2,
+ "scope": "component:belt_cell",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: a flat tile with a jagged rubble rim standing above its floor and a flat bed face. Top: forty-odd disjoint flat-topped boulders ringing a smooth circular landing pad in the middle. Iso: the pad is clear of the rubble all round and no boulder overhangs the tile edge or floats. No defects.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/belt_cell/r0002/visual-packet.json",
+  "packet_sha256": "1e0eaf285bf0764489c912a1c20b58e30d08c2a015b4d0408b0e780bd36ea103",
+  "status": "pass"
+ }
+}

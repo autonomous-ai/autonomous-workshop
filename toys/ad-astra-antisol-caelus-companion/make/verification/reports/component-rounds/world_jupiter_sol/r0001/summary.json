@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_jupiter_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_jupiter_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_jupiter_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_jupiter_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_jupiter_sol"
+ ],
+ "print": {
+  "world_jupiter_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/overhang-world_jupiter_sol.log": "612b12e5bc3dfccbf241ba96d33562a7e0dcd1f173fbd1b19f54a1c6f436c852",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/thickness-world_jupiter_sol.log": "f40b9089aead0712cefd4a7ff8992e3558da9b9ce6dadd8a77726f7b59a6e8ad"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_jupiter_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso: the largest globe in the set on the standard disc, one smooth sphere with no relief anywhere -- correct, because every marking on this world is a flush colour inlay and carries no geometry. The ball is centred, seated into the disc, and the seat collar is continuous. No defects.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0001/visual-packet.json",
+  "packet_sha256": "dc45c88d0a42f8a15f8896e5e04191c6eb0dd0fd42fea951cd8bca84bc686bc9",
+  "status": "pass"
+ }
+}

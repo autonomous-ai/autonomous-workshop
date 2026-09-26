@@ -1,0 +1,54 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_jupiter_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_jupiter_sol"
+ ],
+ "print": {
+  "world_jupiter_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0002/overhang-world_jupiter_sol.log": "3e305445a5d793dc3196ad21ac220d25f62dd6c8243df1ec19e126ff4b6a981e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0002/thickness-world_jupiter_sol.log": "d49063a5ad7ef02619d675de26e5ae220a2320be5d196a8cd23809cee5e1fc3d"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:world_jupiter_sol",
+ "sealed": [],
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Largest sphere on a wide seat cone over a flaring disc; coherent.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0002/visual-packet.json",
+  "packet_sha256": "5fbde47bac704a183133d44c5a9109edcdb5f55b91b59b66f850ccbd2ae60b14",
+  "status": "pass"
+ }
+}

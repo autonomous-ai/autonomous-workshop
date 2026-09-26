@@ -1,0 +1,63 @@
+{
+ "build": {
+  "world_uranus_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_uranus_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_uranus_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_uranus_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_uranus_sol"
+ ],
+ "print": {
+  "world_uranus_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0002/overhang-world_uranus_sol.log": "1dd1670c66248dbc5ae80b171763fd47c39e10ed598275364c8c1078dd5b4d6e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0002/thickness-world_uranus_sol.log": "6e9273cd7f2d233b004d28cc63feee619e0ee8dda538da9259fafe12fa5ab291"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.28,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:world_uranus_sol",
+ "sealed": [],
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Sphere with the thin upright hoop footed on the disc; flaring disc; coherent.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_sol/r0002/visual-packet.json",
+  "packet_sha256": "0d930f309d82dc23bb54fe07dc0752fc200890b07afe720ecca9fd9c0fab88bd",
+  "status": "pass"
+ }
+}

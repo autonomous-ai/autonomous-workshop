@@ -1,0 +1,49 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0002",
+ "likeness": {},
+ "parts": {
+  "world_jupiter_sol": "75b09a7a2e32cf4c32616db5119f2dcaf738577cecceb19e4b75eab44d9c6111"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "world_jupiter_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0002/overhang-world_jupiter_sol.log": "3e305445a5d793dc3196ad21ac220d25f62dd6c8243df1ec19e126ff4b6a981e",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_jupiter_sol/r0002/thickness-world_jupiter_sol.log": "d49063a5ad7ef02619d675de26e5ae220a2320be5d196a8cd23809cee5e1fc3d"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.5.2",
+   "scipy": "1.18.1"
+  },
+  "platform": "linux",
+  "python": "<HOME>/miniconda3/bin/python3.13",
+  "python_version": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+  "sources": {
+   "check_overhang": "a3bcb271c46a52c21fbf507f56537bdfda27070c31ece232b070382b5e886c97",
+   "check_thickness": "6e1a743b3b228b68bc7ead1c23ca9ba320a813797a869bf6ada16b53c28f0b7d",
+   "make_round": "c6945074db9ca34b36945f6096b744e29f08a55cfe43f5763b9f141107aab336",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 2,
+ "scope": "component:world_jupiter_sol"
+}

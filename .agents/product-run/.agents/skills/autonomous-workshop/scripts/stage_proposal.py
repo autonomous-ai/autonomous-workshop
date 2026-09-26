@@ -1517,6 +1517,36 @@ def _validate_manifest(value: Any, label: str) -> dict[str, Any]:
     return dict(manifest)
 
 
+def _validate_component_identities(
+    component_identities: Any, toolchain: Any, paths: set[str]
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Seal each Component's B-rep hash beside its STEP sha256 (issue #64, ADR 0073).
+
+    The hash format itself is toolchain-sensitive (ADR 0073's amendment), so
+    it is sealed alongside the exact `build123d`/`cadquery-ocp` versions it
+    was computed under; a Correction Run only trusts a seal made under its
+    own toolchain and rebuilds otherwise.
+    """
+    identities = _mapping(
+        component_identities, "native Made component identities", nonempty=True
+    )
+    for path, identity_sha256 in identities.items():
+        if not isinstance(path, str) or path not in paths or not path.endswith(".step"):
+            raise ProposalError(
+                "native Made component identity names a path outside the "
+                "sealed STEP manifest: %s" % path
+            )
+        _sha256(identity_sha256, "native Made component identity %s" % path)
+    chain = _mapping(toolchain, "native Made toolchain", nonempty=True)
+    if set(chain) != {"build123d", "cadquery_ocp"}:
+        raise ProposalError(
+            "native Made toolchain must record build123d and cadquery_ocp"
+        )
+    for tool, version in chain.items():
+        _exact_version(version, "native Made toolchain %s version" % tool)
+    return dict(identities), dict(chain)
+
+
 def _validate_made(value: Any) -> dict[str, Any]:
     expected = {
         "schema_version",
@@ -1536,9 +1566,11 @@ def _validate_made(value: Any) -> dict[str, Any]:
         "cad_verification_sha256",
         "made_sha256",
     }
+    if isinstance(value, dict) and value.get("schema_version") == 2:
+        expected |= {"component_identities", "toolchain"}
     made = _fields(value, expected, "native Made")
-    if type(made["schema_version"]) is not int or made["schema_version"] != 1:
-        raise ProposalError("native Made schema_version must be 1")
+    if type(made["schema_version"]) is not int or made["schema_version"] not in (1, 2):
+        raise ProposalError("native Made schema_version must be 1 or 2")
     if made["kind"] != MADE_KIND:
         raise ProposalError("native Made kind is invalid")
     round_index = _positive_int(made["round"], "native Made round")
@@ -1558,6 +1590,11 @@ def _validate_made(value: Any) -> dict[str, Any]:
     _safe_relative(made["cad_verification_path"], "native Made verification path")
     _validate_manifest(made["product_manifest"], "native Made product manifest")
     _mapping(made["product"], "native Made product", nonempty=True)
+    if made["schema_version"] == 2:
+        paths = {entry["path"] for entry in made["product_manifest"]["entries"]}
+        _validate_component_identities(
+            made["component_identities"], made["toolchain"], paths
+        )
     identity = {key: made[key] for key in expected - {"made_sha256"}}
     if made["made_sha256"] != json_sha256(identity):
         raise ProposalError("native Made sha256 is invalid")
@@ -2742,8 +2779,31 @@ def _make_contract(
             "declared CAD project: %s" % ", ".join(duplicate_snap_paths)
         )
     _validate_build_groups(invented["concept"], product_root)
+    # Seal each Component's B-rep hash beside its STEP sha256 (issue #64, ADR
+    # 0073), if the round left `gen --write --json`'s identitySha256/
+    # toolchainVersions at this well-known sidecar path -- optional, so an
+    # archive with no such file still seals schema 1 exactly as before.
+    identities_path = (project_relative / "component-identities.json").as_posix()
+    schema_version = 1
+    component_identities: dict[str, str] | None = None
+    toolchain: dict[str, str] | None = None
+    if identities_path in paths:
+        identities_document, _, _ = _read_json(
+            run_root,
+            "%s/%s" % (product_root_value, identities_path),
+            "Make component identities",
+        )
+        sealed = _fields(
+            identities_document,
+            {"component_identities", "toolchain"},
+            "Make component identities",
+        )
+        component_identities, toolchain = _validate_component_identities(
+            sealed["component_identities"], sealed["toolchain"], paths
+        )
+        schema_version = 2
     identity = {
-        "schema_version": 1,
+        "schema_version": schema_version,
         "kind": MADE_KIND,
         "round": round_index,
         "wish_sha256": assignment["wish_sha256"],
@@ -2759,6 +2819,9 @@ def _make_contract(
         "cad_verification_path": verification_relative.as_posix(),
         "cad_verification_sha256": verification_sha256,
     }
+    if schema_version == 2:
+        identity["component_identities"] = component_identities
+        identity["toolchain"] = toolchain
     return {**identity, "made_sha256": json_sha256(identity)}
 
 

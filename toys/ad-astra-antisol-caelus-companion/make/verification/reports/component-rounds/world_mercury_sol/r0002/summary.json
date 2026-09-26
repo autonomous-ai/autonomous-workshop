@@ -1,0 +1,54 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_mercury_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_mercury_sol"
+ ],
+ "print": {
+  "world_mercury_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0002/overhang-world_mercury_sol.log": "e67a15c0309e23b27e660adb318d948e9ee98e2f419ee626eb17b64ba4592b78",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0002/thickness-world_mercury_sol.log": "326e32774f197513a3922e6304ac539827d6e86a2b3f82a119c2c40c381e02fe"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:world_mercury_sol",
+ "sealed": [],
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Smallest sphere on a short seat over a flaring disc; coherent.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_sol/r0002/visual-packet.json",
+  "packet_sha256": "23c0d4f040935b380b67212af9de5147fa0520938283f535ec4dfb0b0a4640b0",
+  "status": "pass"
+ }
+}

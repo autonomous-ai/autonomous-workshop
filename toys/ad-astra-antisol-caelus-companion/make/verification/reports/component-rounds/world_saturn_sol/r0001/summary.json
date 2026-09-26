@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_saturn_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_saturn_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_saturn_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_saturn_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_sol"
+ ],
+ "print": {
+  "world_saturn_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001/overhang-world_saturn_sol.log": "478b09e8724c6d203b0b0be454fda6830bca0096bedd9c4f2789bcfe396ec3ce",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001/thickness-world_saturn_sol.log": "e76187fffbd5cde4fcf6a66bef3d96ead78bc10d1a7477b05265aa761d5b3949"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_saturn_sol",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: the ring is a near-level plate cutting across the globe at the planet's obliquity, with the revolved web filling the angle beneath its low side so nothing bridges air. Top: the plate's outer rim sits outside the globe and inside the disc. Iso: the plate lies almost flat as intended and reads as a brim rather than a hoop. Proportions right for rank 7; no extra bodies, no gaps, no interpenetration.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0001/visual-packet.json",
+  "packet_sha256": "718fe08aac28a1b93fc32341f31bf0f6a2e9c3f9d6cb290b1f8925814d943af5",
+  "status": "pass"
+ }
+}

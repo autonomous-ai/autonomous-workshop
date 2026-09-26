@@ -75,6 +75,29 @@ Keep a Changelog and uses semantic versioning for released distributions.
 
 ### Added
 
+- `made.json` seals each Component's B-rep hash beside its STEP sha256
+  (schema 2's `component_identities`), plus the exact `build123d`/
+  `cadquery-ocp` versions it was computed under (`toolchain`), when Make
+  leaves `scripts/gen`'s per-Component `identitySha256`/`toolchainVersions`
+  at a `component-identities.json` sidecar in the CAD project. A Correction
+  Run reads a source archive's sealed hashes directly when its own toolchain
+  matches, skipping the extra build of the source Components that ADR 0073's
+  scratch-tree rebuild path (issue #61) otherwise costs; an archive with no
+  seal, or a toolchain mismatch, still takes that rebuild path unchanged. An
+  archive sealed before this change stays schema 1 and passes intake exactly
+  as before.
+- `scripts/render_set` in the CAD skill: a reference whole-set render script.
+  A Make agent's copied frame script (the Antisol Companion's is
+  byte-identical to v11's) has tessellated through a private routine that
+  bypasses the Workshop renderer's cache; `render_set` separates the phase
+  those scripts already have -- building an Evidence Scene or board state and
+  writing it to STEP once (`write_scenes`) -- from rendering that STEP from a
+  named list of cameras through `render_review.build_shape`/
+  `tessellate_occurrences` with an explicit angular tolerance
+  (`render_scenes`), so repeated cameras on one scene and unmoved occurrences
+  across board states are cache hits. It chooses no camera and builds no
+  scene itself. SKILL.md's appearance-review step now names it as the
+  starting point for a whole-set render instead of a previous toy's script.
 - Wren Coil joins the bundled Inventor roster: everyday-carry objects that
   carry a standard 21.5 x 11.5 x 0.75 mm NFC inlay inside a tool with a real,
   load-bearing second job. Its `wren-coil-inventor` skill puts the coupling

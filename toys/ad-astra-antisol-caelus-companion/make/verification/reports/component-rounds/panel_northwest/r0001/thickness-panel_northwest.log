@@ -1,0 +1,12 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_panel_northwest.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northwest/r0001/thickness-panel_northwest.md
+(7.5s, exit 0)
+--- stdout
+part_panel_northwest.step.py: 157.78 cm3 solid, grid 0.277 mm (423x683x37), 379343 surface samples, thickness resolved to 0.139 mm
+  PASS  wall >= 0.80 mm (+/-0.14)      0.0% of surface below (0 of 379343 samples)
+  PASS  thickness distribution         median 8.87 mm, p95 115.87 mm, max 187.94 mm
+  WARN  hollowable at 1.20 mm wall     102.29 of 157.78 cm3 (65%) in 1 pocket(s)
+  PASS  filament that would save       15.34 cm3, 19.0 g at 15% infill -- the slicer already leaves most of that space empty
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northwest/r0001/thickness-panel_northwest.md
+
+--- stderr

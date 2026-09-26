@@ -1,0 +1,49 @@
+{
+ "last_out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0002",
+ "likeness": {},
+ "parts": {
+  "world_mercury_anti": "5dc8f8b3af8712085eb7753c34c1ca08a84f6902801cada2dea7c39b478de435"
+ },
+ "pose_paths": {},
+ "poses_path": null,
+ "print": {
+  "world_mercury_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0002/overhang-world_mercury_anti.log": "c57624cd0ab9c3896f5a7a246f1e57f16dc60b833267ca5c2b7eae019e524a30",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_mercury_anti/r0002/thickness-world_mercury_anti.log": "702f4a785841b481ef4ef38d9c9aca0d0aa3dd8a84c7cac01d5e811607b4de94"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "print_context": {
+  "nozzle": 0.4,
+  "overhang_angle": 45.0,
+  "packages": {
+   "numpy": "2.5.2",
+   "scipy": "1.18.1"
+  },
+  "platform": "linux",
+  "python": "<HOME>/miniconda3/bin/python3.13",
+  "python_version": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+  "sources": {
+   "check_overhang": "a3bcb271c46a52c21fbf507f56537bdfda27070c31ece232b070382b5e886c97",
+   "check_thickness": "6e1a743b3b228b68bc7ead1c23ca9ba320a813797a869bf6ada16b53c28f0b7d",
+   "make_round": "c6945074db9ca34b36945f6096b744e29f08a55cfe43f5763b9f141107aab336",
+   "meshlib.py": "efc485387efc4c4736e41c7fb07ec932e3c21c7d69e41771ebe9bfa1bbe5c7ec",
+   "printlib.py": "7c7f4130d567c80100ab4beed72acc11c170681e938ff0c5855b80b010791de9"
+  }
+ },
+ "round": 2,
+ "scope": "component:world_mercury_anti"
+}

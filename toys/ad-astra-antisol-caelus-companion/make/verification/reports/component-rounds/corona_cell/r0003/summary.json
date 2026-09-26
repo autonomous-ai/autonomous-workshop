@@ -1,0 +1,63 @@
+{
+ "build": {
+  "corona_cell": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "corona_cell"
+ ],
+ "check_motion": false,
+ "checked": [
+  "corona_cell"
+ ],
+ "checks_ok": true,
+ "entry": "part_corona_cell.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "corona_cell"
+ ],
+ "print": {
+  "corona_cell": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0003/overhang-corona_cell.log": "a84d02e52e8df59686d3c3e80b4943fe653b2a2c0578c00cb98469849f0ee127",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0003/thickness-corona_cell.log": "d0d048723a20747be9ad74814e4244643cb0c186abfc7c5ce4cde8cd515db1f2"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:corona_cell",
+ "sealed": [],
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Flat square tile with a sunburst groove pattern round a central disc and two tapered tongues standing on adjacent corners; tongues rise from the tile without gaps.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/corona_cell/r0003/visual-packet.json",
+  "packet_sha256": "cbe212abea3d35501c45636cabdf1864a70ae0e1e009919520e62abfdea778e2",
+  "status": "pass"
+ }
+}
