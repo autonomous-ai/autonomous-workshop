@@ -1,0 +1,54 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_earth_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_earth_sol"
+ ],
+ "print": {
+  "world_earth_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0002/overhang-world_earth_sol.log": "95106eba34e1d82ea11f562ca05bd5c13f16c6863f5c4bb359f446033e89b210",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0002/thickness-world_earth_sol.log": "0fe9a046a07792cd399c743c12bc21d1082c0586c37b7a26087308644ab1c3c4"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:world_earth_sol",
+ "sealed": [],
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Small sphere on a seat collar over a disc that flares outward as it rises (Sol); sphere centred.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_sol/r0002/visual-packet.json",
+  "packet_sha256": "602f1d5b92ccfd124e97473671c059a0d2a0c3161d85aa8b7b4ff8b304ca391c",
+  "status": "pass"
+ }
+}

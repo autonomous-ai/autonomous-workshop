@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_uranus_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_uranus_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_uranus_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_uranus_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_uranus_anti"
+ ],
+ "print": {
+  "world_uranus_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/overhang-world_uranus_anti.log": "4fc1f3dc4d7addeeac17f44e0f38ea8903313992b43fd34e5beb8ba85952aca3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/thickness-world_uranus_anti.log": "3d210c528fac8b5137b8658be655fefabc7643cf480da7ba0e45a7d26aa2c0f4"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.14,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_uranus_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front: the same sphere on a disc that drafts the other way -- widest at the bed, which is the Anti-Sol cue -- and the hoop's edge-on tab at the top. Top: hoop as a single upright line through the globe, mirrored about the piece axis against the Sol piece. Iso: the hoop leans toward -X, the exact mirror of the Sol piece. The sphere is unbroken everywhere; no marking, no seam, no patch. No missing or extra parts, no visible intersection, no floating geometry.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/visual-packet.json",
+  "packet_sha256": "9feb9c4794f0519d521194768f2333754b55680d541fa66962aed06c96be3922",
+  "status": "pass"
+ }
+}

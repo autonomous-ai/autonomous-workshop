@@ -1,0 +1,32 @@
+{
+ "component_identities": {
+  "cad/part_belt_cell.step": "be84d3beaa31a20d6d96d059b28f5ec0b84ae0e02b2c2aa6d4e61d986a76fc11",
+  "cad/part_corona_cell.step": "bdf9607c828e8fac3daf1c4ba377aa6456b8c24cc0df71a14a2d36c7e6cdcdb8",
+  "cad/part_den_plug.step": "d3b08357eb5f0cb653655c707a83e7451e0eb320421c8c254a47348db1f3c51d",
+  "cad/part_orbit_tray.step": "70f7e9d48ed69571384437ae7d446ea69eb395081b5350c9c5bfe1e24c3a2f5f",
+  "cad/part_panel_northeast.step": "0dc6d0aeea40a7e40accaeb80f3a22077b2d3a8ec7b6a6025bdb7ffe29b60bab",
+  "cad/part_panel_northwest.step": "c56a66890e9261687d8b7d40b725a7b110081bc4818cc2339dc94d1013bcca18",
+  "cad/part_panel_southeast.step": "f618bd611ebfa1b757020cbd7871fcc51399be9e06087f938d4416b73f4c37d8",
+  "cad/part_panel_southwest.step": "7872691ab1c88a5f7f15b4a4dcda76a6e0c056f271061468b85c11394e633bb8",
+  "cad/part_world_earth_anti.step": "8b081ac40277c446ee5a7f15b22e0896ae069d31cb95a612abd7ea33ac20de85",
+  "cad/part_world_earth_sol.step": "5ae02fbe4995f3c873431c34049df090b1c265fa012fa54604373b3de72cbc01",
+  "cad/part_world_jupiter_anti.step": "156ef9c442ab27fa67f91fca3fbe8ccd458b1716ddebf50415bc8f67566e5c7b",
+  "cad/part_world_jupiter_sol.step": "224a667126899fc7b5cb909658ee61d5aa906963daf49c5bb3c0a9fa810f8eb1",
+  "cad/part_world_mars_anti.step": "3f65775e5635a9583bdc6877378dad13d67929ad49d9cf55edcd9802d04e4984",
+  "cad/part_world_mars_sol.step": "9d7e5912b6b4b0bb0000d4e04c164b2d30c01100496eb3e60aa4aa6d56593130",
+  "cad/part_world_mercury_anti.step": "bea2fb56bf7edea95aca9dcfec56ccd3a4057e2b032178ceeab65c0e81401049",
+  "cad/part_world_mercury_sol.step": "e77041aa649a42b5c83ea09d9e5a13cb6a1675f5b88a93f0b28699100d93009c",
+  "cad/part_world_neptune_anti.step": "17d06e365ae5743195cdd290021b459af058ad7dc0f75c9e7448187998c8f46b",
+  "cad/part_world_neptune_sol.step": "a1eb98470e76615bb75170ce02e46e6932a637bf9a3369023c2f2b10db7f5e52",
+  "cad/part_world_saturn_anti.step": "4d5b50430d4a624819314e0fb598bf6c6da4f0f4c75c145980ffd994bd3c68ba",
+  "cad/part_world_saturn_sol.step": "1779d695eede97e201abde2390514759a0fadacdfaee4c1351970b1211a71316",
+  "cad/part_world_uranus_anti.step": "304fae15db9f3ec2c2606f824d62768e19acece8eaa2467e1eca003991d5768b",
+  "cad/part_world_uranus_sol.step": "7e13ddd4df53cd03d3b94a69aba8f4196c686dc8ce20dfd90e9dd976be823556",
+  "cad/part_world_venus_anti.step": "fc2f674497e48f8f9efdf9cfa734ab1a7def78849653ab9c5e357bdff1fe4799",
+  "cad/part_world_venus_sol.step": "83e90168d65040961cab0a9f02cc54d33af9ed2aefecba842227488a3ca10824"
+ },
+ "toolchain": {
+  "build123d": "0.11.1",
+  "cadquery_ocp": "7.9.3.1.1"
+ }
+}

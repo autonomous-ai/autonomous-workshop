@@ -1,0 +1,63 @@
+{
+ "build": {
+  "panel_northeast": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "panel_northeast"
+ ],
+ "check_motion": false,
+ "checked": [
+  "panel_northeast"
+ ],
+ "checks_ok": true,
+ "entry": "part_panel_northeast.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0003",
+ "overhang_angle": 45.0,
+ "parts": [
+  "panel_northeast"
+ ],
+ "print": {
+  "panel_northeast": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0003/overhang-panel_northeast.log": "c9ebdca3304974c3db225e748c9ff4a5a0c53811bc44a8e0efe225f4dd66a4c3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0003/thickness-panel_northeast.log": "fa4a236baf0738671b0ad942c5e82aa4ad047d6c2829ae856cb807a87fdb1e56"
+   },
+   "measured_round": 3,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": null,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 3,
+ "scope": "component:panel_northeast",
+ "sealed": [],
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Thin flat board panel with a grid of shallow cells and recessed pockets on its field; flat bed face; proportions as a quarter board.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/panel_northeast/r0003/visual-packet.json",
+  "packet_sha256": "792c3f49ecc4043e10c0dddd640ab46d03ef2bbd4ea98fb514c98a149b8d3cf7",
+  "status": "pass"
+ }
+}

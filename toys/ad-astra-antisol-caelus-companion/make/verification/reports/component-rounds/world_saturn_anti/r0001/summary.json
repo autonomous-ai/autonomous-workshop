@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_saturn_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_saturn_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_saturn_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_saturn_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_anti"
+ ],
+ "print": {
+  "world_saturn_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/overhang-world_saturn_anti.log": "71960dbf618e8c498ad43a11e5eb0fa862a716ca73d9383da6e5b548ab1b1873",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/thickness-world_saturn_anti.log": "9299b4ac95ed1f0eb8f5f505234bb4a9c5a1b340667128fe24666b5b4ddafec1"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_saturn_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "The Sol piece mirrored: the plate tips the other way, the web sits under the opposite side, the disc drafts widest at the bed. Iso shows the brim clearly separated from Uranus's upright hoop in kind. No missing or extra geometry, no intersections.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_anti/r0001/visual-packet.json",
+  "packet_sha256": "ea00d75be6235d4e2ea8c6a41b41df7d9fc807caa384f9694547c48e047aef05",
+  "status": "pass"
+ }
+}

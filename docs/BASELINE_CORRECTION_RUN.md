@@ -11,6 +11,7 @@ was waiting on it re-justified or recommended for closure.
 - Code: branch `feat/sandcastle` at `a5ecbfa2`, which includes batched
   rasterisation and the carry-forward policy (both landed 2026-09-21), the
   host-state timing recorder (#38) and the published breakdown (#39)
+- Re-measured on the finished work in [issue #65](#correction-run-on-the-finished-work-issue-65)
 
 ## What was run, and why these choices
 
@@ -372,3 +373,275 @@ each needs an owner's decision first.
    it. v12, v13 and this baseline's archive (129.4 MiB) cannot be corrected, but
    `workshop fix` printed "Correct it again: `workshop fix
    toys/ad-astra-antisol-companion`" anyway.
+
+## Correction Run on the finished work (issue #65)
+
+The same correction, run again once the tool work planned from this baseline
+had landed: tessellation caching (#63), B-rep component identity sealed in
+`made.json` (#64, #74), a pinned CAD toolchain (#75), and the rest of #58–#62.
+It is measured with the method used for the baseline above.
+
+- Run: `wish-20260926-040206-7a936b4f`, 2026-09-26 04:02:06Z → 07:51:27Z
+- Archive: [`toys/ad-astra-antisol-caelus-companion`](../toys/ad-astra-antisol-caelus-companion/)
+  (`TIMING.json` schema 2, `TOKENS.json` schema 3)
+- Code: branch `sandcastle-run` at `64113ef1`
+
+```
+workshop fix --agent claude --model claude-opus-5-5 --effort medium --no-publish \
+  --prompt-file brief.txt toys/ad-astra-antisol-v11
+```
+
+**Model and effort differ from the baseline.** The baseline ran
+`claude-opus-5` at `high`. This Run used `claude-opus-5-5` at `medium`, by the
+owner's choice. The gap between the two totals therefore mixes model behaviour
+with the tool changes, and **it is not the saving from those changes**. That
+saving is read from the benchmark (#58). This Run answers one question: how
+long does a Correction Run take now?
+
+Everything else matches the baseline. The source is `v11` again (the
+Companion archive is 129.4 MiB, over the revision cap). The brief is the
+baseline's Neptune companion-cloud brief, word for word. The Run is
+`--no-publish`.
+
+**Host conditions were worse than the baseline's.** The machine was shared
+with two ~95 GB vLLM workers, several VMs and a second Workshop Run.
+The SSH service cgroup that hosted the Run has no memory limit. It has
+recorded 120 `oom_kill` events and a 525 GB peak. That counter covers the
+cgroup's whole life, so individual kills below are attributed only where
+their exit status says so. Before launch, the venv could not import
+`build123d`. OCP's bundled `libfontconfig` loaded the system libexpat 1.8.7
+ahead of miniconda's `pyexpat`, which needs newer symbols. The Claude
+subprocess allowlist drops `LD_LIBRARY_PATH`, so the fix went into the
+environment rather than the command: a `libexpat.so.1` symlink to miniconda's
+libexpat, placed beside the bundled fontconfig (`$ORIGIN` RUNPATH). No
+repository code changed.
+
+**The Run completed and sealed, as unverified geometry.** Release sealed the
+archive locally with publication status `unreleased`. The sealed product
+status is `geometry-unverified`. The final `verify_project` record is
+UNVERIFIED because one inspection worker exited without a verdict (see
+below). Spark accepts Make's output as it is (ADR 0061), so the host sealed
+it without a further gate.
+
+Make hit its 120-minute stage budget **once**, at 06:02:40. `workshop resume`
+continued the same session 12 s later, and Make finished inside that second
+invocation.
+
+### The timing record
+
+| | ms | share of total |
+|---|---:|---:|
+| **total** | **13,632,868** (3h47m13s) | 100% |
+| **measured** | **13,580,127** | 99.61% |
+| **unmeasured** | **52,741** | **0.39%** |
+
+`elapsed_seconds` is 13,619 (3h46m59s).
+
+| # | stage / operation | count | elapsed | share | states |
+|---:|---|---:|---:|---:|---|
+| 1 | make / `session.resume` | 3 | 9,921.0 s | 72.8% | 1 completed, 2 failed |
+| 2 | make / `session.start` | 1 | 3,614.6 s | 26.5% | 1 failed |
+| 3 | make / `outcome.process` | 1 | 40.8 s | 0.30% | completed |
+| 4 | wish / `run.initialize` | 1 | 2.3 s | 0.02% | completed |
+| 5 | make / `gate.evaluate` | 1 | 1.0 s | — | completed |
+| 6 | release / `stage.prepare` | 1 | 0.19 s | — | completed |
+| 7 | make / `stage.prepare` | 5 | 0.15 s | — | 5 completed |
+
+Make ran four native turns. Three of them ended at the 60-minute turn
+boundary (3,600–3,615 s each) and are recorded as `failed`, like the
+baseline's. The host accepted Make's first proposal. The record has three of
+the baseline's four defects, all unchanged:
+
+- Release's `outcome.process` (142.8 s) and `gate.evaluate` (91.9 s) are
+  missing from the breakdown.
+- `completion_boundary` says "authenticated Factory public readback" on a
+  `--no-publish` Run.
+- Routine turn boundaries are recorded as failures.
+
+### Inside Make: the session transcript
+
+The session transcript covers **3h45m53s** across four native turns. It was
+accounted as in the baseline: each tool call was paired with its result, and
+each background job was extended to the last write of its log.
+
+| | wall | share | baseline |
+|---|---:|---:|---:|
+| a tool call or background job running | 3h28m34s | 92.3% | 81.5% |
+| …foreground tool calls alone | 3h17m23s | 87.4% | 63.1% |
+| model generating (nothing running, gap ≤ 5 min) | 17m20s | 7.7% | 15.7% |
+| silent (nothing running, gap > 5 min) | 0 | 0% | 2.7% |
+
+Where the running time went, as a union of wall intervals. Polling waits are
+excluded, and each job counts only while it was working:
+
+| work | wall (union) | notes |
+|---|---:|---|
+| whole-set renders | **95.7 min** | per-world, neighbour and ladder frames, `iso`, three board states and their sheet, companion detail frames, and the full re-render after the review's repair |
+| `make_round` | 41.5 min | 23 component rounds (7.0 min), 3 assembled rounds (34.5 min), **none of which completed** |
+| `verify_project` | 43.7 min | 5 launches, below |
+| `gen` and `production.py` outside rounds | 28.7 min | identity rebuilds, two whole-product `gen`s, two 222-part production writes |
+| measurement scripts under `measure/` | 22.9 min | Neptune atlas, flush, facing, mirror, separation and companion reports, run twice |
+| renders ∪ `make_round` | **133.6 min** | **59% of the session** (baseline: 219.5 min, 52%) |
+
+### Carry Forward: identity held, carrying still ran on bytes
+
+**Every part's B-rep identity matched the source, including
+`part_belt_cell`.** The source archive's `made.json` is schema 1, so the
+agent rebuilt the source's own `part_*.step.py` in a scratch copy, as the
+make-round skill prescribes. It then compared `identitySha256` part by part.
+All 24 matched, so #74's fix holds on this product. Both sides were built on
+this host under the same toolchain, so the comparison says nothing about
+whether identity holds across platforms.
+
+**STEP bytes are still unstable.** 13 of 24 printable STEPs came back
+byte-identical to the source archive and 11 did not. That is the same count
+as the baseline.
+
+**`make_round` carried one Component, and it carried it on STEP bytes.** The
+isolated rounds that `make_round --require-component-passes` would accept were
+never compared on B-rep identity. There are two reasons:
+
+1. **The source's round records predate #64.** `v11` was built on darwin
+   (Python 3.13.5). Its component-round states key each part on the sha256 of
+   its exported STEP, not on identity.
+2. **This Run's rounds fell back to STEP bytes as well.** The agent's earlier
+   `gen --write` had already built every part, so inside each round `gen`
+   printed `part_<role> is current; skipped recompose` and reported no
+   `identitySha256`. `make_round` then hashes the STEP bytes instead
+   (`make_round`, `digests[role] = parse_identity(...) or sha256(step bytes)`).
+   The evidence: `belt_cell`'s recorded state hash `ab46409a…` is the sha256
+   of `part_belt_cell.step`, while its identity is `be84d3be…`. None of the
+   component-round `gen` logs contain an `identitySha256`.
+
+So `orbit_tray` carried, because its round state's STEP hash still matched.
+The other **23 Components got fresh isolated rounds**, about 17 s each, 7.0
+minutes in all. The assembled round then reported `build skip 24 unchanged
+part(s) (retained PASS evidence)`. The agent's `quick-fix-carry.md` says
+every component-round history was carried "on the B-rep identity". The
+histories were copied, but the passes `make_round` accepted are this Run's
+own, for 23 of 24 parts.
+
+### Tessellation cache hits
+
+| render | goes through the cache? | observed |
+|---|---|---|
+| assembled-round `render_review` (`make_round`) | yes | **no hits possible.** Round `r0002` crashed at cache setup after a 406 s build, with `ModuleNotFoundError: No module named 'cadgen.inspection_runtime'`. Rounds `r0003`/`r0004` were killed with SIGKILL (`-9`) at 678.5 s and 631.6 s, below `make_round`'s 900 s timeout, under host memory pressure |
+| per-world, neighbour and ladder frames (`world_views.py`) | no | the toy's private `_tessellate`, carried from `v11`; it never reads the cache |
+| three board states → signature sheet (`snap_frames.py tess`) | yes | pass 1: 494 leaf lookups, 422 entries written (at most 72 hits). Pass 2, after the repair: 21 new entries, so **431–473 of 494 lookups hit (87–96%)**. The range allows for the three parallel processes each missing the same new key |
+| `iso` (`snap_frames.write_iso`) | yes | the cache sat under the product's `__cadgen__/`, which was pruned before the seal, so its hits cannot be counted |
+
+**The hits bought no wall time.** The board-state tessellation took 8m24s on
+pass 1 and 8m26s on pass 2. `iso` took 7m53s and then 8m02s after the
+repair. The cause is not isolated. Possible causes are STEP import, misses
+concentrated in the heaviest leaves, cache I/O (109 MB of JSON for 443
+entries), and host contention.
+
+**The `r0002` crash is a defect, not the environment.** `make_round` runs the
+`render_review` CLI with the venv's interpreter. That resolves `cadgen` to the
+pinned PyPI `cadgen==0.4.19`, which has no `inspection_runtime` module. The
+toy's `snap_frames.py` puts the skill's vendored `cadgen` on `sys.path`
+itself, and the `render_review` CLI does not. The agent added `PYTHONPATH`
+for its later rounds. Without it, every assembled round in a default
+environment fails at its render.
+
+### The final verifier
+
+| launch | wall | result | inspection |
+|---:|---:|---|---|
+| 1 | ~16 s | preflight FAIL | report path given relative to the wrong directory |
+| 2 | ~23 s | preflight FAIL | `snap/SIGNATURE-REVIEW.json` not in canonical JSON encoding |
+| 3 | 652.3 s | UNVERIFIED | default 600 s allowance ran out; 210 of 222 occurrences validated |
+| 4 | 710.8 s | UNVERIFIED | `WORKSHOP_GEOMETRY_TIMEOUT=1800`: 50 of 51, `interfere:assembly` passed, `refs:part_world_venus_sol` worker exited at start-up |
+| 5 | 1,216.5 s | **UNVERIFIED** (sealed record) | 50 of 51, `interfere:assembly` worker exited without a verdict after 12 pair checks |
+
+Launch 5 was forced by a record change, not a geometry change. The review's
+`reviewer` field went over the finalizer's 200-character limit, and the
+review hash is part of the verification closure. Launch 5 also regenerated
+every entry (`gen` 449 s, against 22 s and 1.3 s in launches 3 and 4) and
+reused no inspection measurements (`reused=0`). Why was not investigated.
+Launch 4's `interfere:assembly` verdict is not merged into launch 5's
+record, so the sealed record is UNVERIFIED on a check that an earlier launch
+passed on the same geometry.
+
+### The blind review
+
+The critic was one native subagent. Round 1 ran blind at +1h49m. The reveal
+comparison found that on the Sol piece the collar covered most of the new
+cloud. The brief's placement (8° south of the spot's centre, at the same
+longitude) puts 41% of it under the seat. The agent moved it to 11.5° south
+and 10° west of the spot's centre. That required a full re-render and
+regeneration (06:21:48–06:59:14, **37.4 min** on the critical path). Round 2
+passed with one stated shortfall: the cloud does not sit at the spot's
+longitude. **The shipped correction knowingly departs from the brief** in
+placement, and the archive says so.
+
+### Tokens
+
+The record is again **partial**: 1 of 4 Make turns measured, the final
+45-minute turn. The three turns that ended at a turn boundary have no
+`result` event.
+
+| | tokens |
+|---|---:|
+| input | 10,254,642 |
+| …cached (cache reads) | 10,221,826 (99.7%) |
+| …cache writes | 32,764 |
+| output | 15,521 |
+| …reasoning | 3,023 |
+
+As with the baseline, these are lower bounds on one turn, not the Run's cost.
+
+### Toolchain
+
+| | `build123d` | `cadquery-ocp` | platform |
+|---|---|---|---|
+| source archive `v11` | **not recorded** | **not recorded** (STEP header: "Open CASCADE STEP processor 7.9") | darwin, Python 3.13.5 (from its round states) |
+| this Run | 0.11.1 | 7.9.3.1.1 | linux, Python 3.13.13; sealed in `made.json` schema 2 `toolchain` |
+
+`v11`'s `made.json` is schema 1, which has no `toolchain` field. At the
+commit that added `v11` (`0eff2969`), the repository's `uv.lock` resolves
+0.11.1 / 7.9.3.1.1. That is the repository's lock, not a record of the
+machine that built the archive.
+
+### Against the baseline
+
+Read the totals with the model and effort difference in mind. They are not
+the saving from the tool changes.
+
+| | baseline (#40) | **this Run (#65)** |
+|---|---:|---:|
+| model, effort | `claude-opus-5`, `high` | `claude-opus-5-5`, `medium` |
+| host elapsed | 7h00m53s | **3h46m59s** |
+| native Make turns | 8 | 4 |
+| stops needing `workshop resume` | 3 | **1** |
+| model generating | 15.7% | 7.7% |
+| whole-set render wall | 171.6 min | 95.7 min |
+| `make_round` wall | 64.6 min (39 component, 3 assembled rounds) | 41.5 min (23 component, 3 assembled, 0 completed) |
+| `verify_project` | 5 sweeps, 59m36s, final PASS | 5 launches, 43m39s, final **UNVERIFIED** |
+| byte-identical part STEPs | 13 of 24 | 13 of 24 |
+| B-rep identity equal to source | not measurable | **24 of 24** |
+| Components carried | none | **1** (`orbit_tray`, on STEP bytes) |
+| tessellation cache hits | no cache | 431–473 of 494 on the board-state pass, no wall saved |
+| sealed archive | 129.4 MiB | **133.6 MiB** |
+
+### What this Run says
+
+Ranked by how much each one blocks the savings the tool work was meant to
+deliver. None is filed as a ticket.
+
+1. **`make_round`'s assembled render cannot use the cache in a default
+   environment.** The `render_review` CLI imports
+   `cadgen.inspection_runtime`, which the pinned PyPI `cadgen` does not ship.
+   Round `r0002` lost 406 s to it.
+2. **Carry Forward on B-rep identity falls back to STEP bytes** whenever
+   `gen` skips an up-to-date part, and against any source sealed before #64.
+   Until both are fixed, Components carry only when their STEP bytes happen
+   to match. Here that was 1 of 24, although all 24 kept their identity.
+3. **Cache hits did not shorten the renders they served.** Profile a warm
+   pass before building more on the cache.
+4. **One worker exit makes the whole final record UNVERIFIED.** A verdict
+   an earlier launch reached on identical geometry is not reused. Under memory
+   pressure, this is what decided the sealed status.
+5. **The revision cap still traps the result.** At 133.6 MiB this archive
+   cannot be corrected again, yet `workshop fix` printed "Correct it again:
+   `workshop fix toys/ad-astra-antisol-caelus-companion`".
