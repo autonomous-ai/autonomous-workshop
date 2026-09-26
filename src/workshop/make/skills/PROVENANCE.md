@@ -1,5 +1,35 @@
 # Shared skill provenance
 
+## Vendored cadgen installed into the Workshop venv (2026-09-26)
+
+A Workshop-local change to the vendored `cad` tree, not an upstream resync.
+`cad/scripts/packages/cadgen` has declared version 0.4.19 since it was
+vendored, the same number as the unrelated `earthtojake/text-to-cad` release on
+PyPI that the root `cadgen==0.4.19` pin installed. The two are different code:
+the PyPI wheel lacks `cadgen.inspection_runtime` (added here in 6716bf26) and
+carries modules this copy never had. A process that imported `cadgen` before
+putting the vendored path first got the PyPI copy, and a later
+`cadgen.inspection_runtime` import could not be found. The #65 Correction Run
+lost an assembled-round render to it: `render_review` put the path first only
+after the entry it was rendering had imported `cadgen`.
+
+Two changes:
+
+- The root `pyproject.toml` installs this tree through `[tool.uv.sources]`
+  (editable), so the uv venv holds the vendored code under the same pin. A plain
+  pip install of the Workshop wheel still resolves the pinned PyPI release.
+- `render_review.build_shape` puts the vendored path first before it runs the
+  entry, as `gen`, `snap_frames` and the other skill entry points already do.
+
+The vendored `pyproject.toml` now builds with `uv_build` instead of setuptools.
+setuptools writes `src/cadgen.egg-info/` and `build/` into the source tree,
+which here is a fingerprinted skill: they would drift this `LOCK.json`
+fingerprint on every synced checkout and be copied into every run. It also
+drops the `readme = "README.md"` line, since no README was ever vendored, and
+the setuptools package-data for `.mjs` files that do not exist here. **The `cad`
+fingerprint changed**: a frozen run keeps its materialized skills, and a parked
+one picks the fix up through `workshop resume --refresh-tools`.
+
 ## Pin build123d and cadquery-ocp for cadgen (2026-09-25)
 
 A Workshop-local change to the vendored `cad` tree, not an upstream resync.

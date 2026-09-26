@@ -105,6 +105,10 @@ _RESOLVED_SOURCE_ATTR = "_render_review_resolved_source"
 
 
 def build_shape(source: Path):
+    # Before the entry runs: a generator that imports `cadgen` binds the name
+    # for the whole process, and the tessellation cache's later
+    # `cadgen.inspection_runtime` import can only find what that copy ships.
+    _runtime_paths()
     source = _resolve_source(source)
     if source.name.endswith(ENTRY_SUFFIX):
         with contextlib.redirect_stdout(io.StringIO()):

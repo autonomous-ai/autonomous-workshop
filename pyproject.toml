@@ -62,3 +62,11 @@ workshop = [
   "invent/skills/**/*.pyc",
   "invent/skills/**/*.pyo",
 ]
+
+# The CAD skill ships its own cadgen fork, and it still declares 0.4.19 -- the
+# same number as the unrelated text-to-cad release on PyPI, which lacks modules
+# the skill imports (`cadgen.inspection_runtime`). uv installs the fork itself,
+# so a tool that imports `cadgen` without the skill's path gets the same code.
+# A plain pip install of the wheel still resolves the PyPI release by the pin.
+[tool.uv.sources]
+cadgen = { path = "src/workshop/make/skills/cad/scripts/packages/cadgen", editable = true }
