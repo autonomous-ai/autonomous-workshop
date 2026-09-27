@@ -316,8 +316,9 @@ Each item pairs a SANITY check with a VISUAL check, per `cad`'s build loop.
       does not take a lowered one. `check_likeness --accept-mismatch` records a
       mismatch **while iterating** — and only once that view has two rounds on
       record — which is a note about the loop, never a delivery decision.
-      Shipping below 0.90 remains the user's explicit acceptance of a **failing**
-      gate, never a floor the run lowered for itself: recorded at final with
+      Shipping below 0.90 remains an explicit, reasoned acceptance of a
+      **failing** gate (the Workshop Manager's inside a run, reported when the
+      run ends), never a floor the run lowered for itself: recorded at final with
       `--likeness-accept-mismatch "<reason>"`, allowed only for a view whose
       history shows it stalled out, and written into the pipeline record as
       `accepted-fail` while `measure/likeness.md` keeps reporting the failure
@@ -325,7 +326,7 @@ Each item pairs a SANITY check with a VISUAL check, per `cad`'s build loop.
       scores below the best this view has recorded, floor or no floor
 - [ ] three rounds in a row that move the number by nothing end the loop:
       the gate reports `stalled out`, still fails, and hands the accept-or-
-      reject decision to the user rather than inviting another render
+      reject decision to its owner rather than inviting another render
 - [ ] the final command declares `--powered` for any functional electrical load,
       otherwise `--unpowered`; never neither
 

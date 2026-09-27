@@ -2565,6 +2565,118 @@ def _geometry_validate_disclosure(product_root: Path, verification: Path, produc
     return value
 
 
+LIKENESS_ACCEPTANCE_NAME = "likeness-acceptance.json"
+MAX_LIKENESS_ACCEPTANCES = 64
+_ACCEPTED_LIKENESS_RESULT = re.compile(
+    r"^- Result: \*\*PASS \((\d+) accepted failing gates?\)\*\* \(exit 0\)$", re.MULTILINE
+)
+
+
+def _likeness_acceptances(
+    run_root: Path, product_root_value: str, verification_relative: PurePosixPath
+) -> Optional[list[dict[str, Any]]]:
+    """The final verifier's likeness acceptances, or None when it wrote none.
+
+    ADR 0074: the verifier writes ``likeness-acceptance.json`` beside its
+    report and binds it to the report's exact bytes. Every entry is a
+    likeness failure the Workshop Manager accepted after it stalled out, with
+    the reason the run reports when it ends.
+    """
+
+    relative = "%s/%s" % (
+        product_root_value,
+        (verification_relative.parent / LIKENESS_ACCEPTANCE_NAME).as_posix(),
+    )
+    if not os.path.lexists(run_root.joinpath(*PurePosixPath(relative).parts)):
+        return None
+    label = "Make %s" % LIKENESS_ACCEPTANCE_NAME
+    document, _, _ = _read_json(run_root, relative, label)
+    record = _fields(document, {"schema_version", "verification_sha256", "acceptances"}, label)
+    verification_sha256, _, _ = _hash_regular(
+        run_root,
+        "%s/%s" % (product_root_value, verification_relative.as_posix()),
+        "CAD verification",
+    )
+    if record["schema_version"] != 1 or _sha256(
+        record["verification_sha256"], label + " verification_sha256"
+    ) != verification_sha256:
+        raise ProposalError("%s does not bind the current CAD verification report" % label)
+    acceptances = _array(record["acceptances"], label + " acceptances")
+    if len(acceptances) > MAX_LIKENESS_ACCEPTANCES:
+        raise ProposalError("%s lists too many acceptances" % label)
+    for index, raw in enumerate(acceptances, 1):
+        item_label = "%s acceptance %d" % (label, index)
+        item = _fields(raw, {"label", "scope", "iou", "floor", "reason", "accepted_by"}, item_label)
+        _bounded_text(item["label"], item_label + " label", 200)
+        scope = _bounded_text(item["scope"], item_label + " scope", 200)
+        if scope != "assembly" and not scope.startswith("component:"):
+            raise ProposalError("%s scope is invalid" % item_label)
+        _bounded_text(item["reason"], item_label + " reason", 1_000)
+        if item["accepted_by"] != "workshop-manager":
+            raise ProposalError("%s must be accepted by the workshop-manager" % item_label)
+        floor, iou = item["floor"], item["iou"]
+        if (
+            type(floor) not in (int, float)
+            or type(iou) not in (int, float)
+            or not 0.0 <= iou < floor <= 1.0
+        ):
+            raise ProposalError("%s must record an IoU below its floor" % item_label)
+    return acceptances
+
+
+def _seal_likeness_acceptances(
+    product_root: Path, acceptances: Optional[list[dict[str, Any]]]
+) -> None:
+    """Copy the verifier's acceptances into product.json; never let the agent author them."""
+
+    path = product_root / "product.json"
+    if path.is_symlink() or not path.is_file():
+        return
+    try:
+        product = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        return  # the ordinary product.json read reports it
+    if not isinstance(product, dict):
+        return
+    if acceptances is None:
+        if "likeness_acceptances" in product:
+            raise ProposalError(
+                "Make product.json likeness_acceptances must come from the final "
+                "verifier's %s, which does not exist" % LIKENESS_ACCEPTANCE_NAME
+            )
+        return
+    updated = dict(product)
+    if acceptances:
+        updated["likeness_acceptances"] = acceptances
+    else:
+        updated.pop("likeness_acceptances", None)
+    if updated != product:
+        path.write_text(json.dumps(updated, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _passing_final_result(
+    current_record: str, acceptances: Optional[list[dict[str, Any]]]
+) -> bool:
+    """A plain PASS, or a PASS whose only accepted failures are the Manager's
+    recorded assembly likeness acceptances (ADR 0074)."""
+
+    if "- Result: **PASS** (exit 0)\n" in current_record:
+        return True
+    match = _ACCEPTED_LIKENESS_RESULT.search(current_record)
+    if match is None or not acceptances or not any(
+        item["scope"] == "assembly" for item in acceptances
+    ):
+        return False
+    rows = [
+        line.split("|")
+        for line in current_record.splitlines()
+        if line.startswith("|") and len(line.split("|")) > 3 and line.split("|")[3].strip() == "accepted-fail"
+    ]
+    return len(rows) == int(match.group(1)) and all(
+        "check_likeness" in row[2] for row in rows
+    )
+
+
 def _make_contract(
     run_root: Path,
     stage: Mapping[str, Any],
@@ -2638,6 +2750,19 @@ def _make_contract(
         raise ProposalError(
             "CAD verification must live inside the declared CAD project"
         )
+    likeness_acceptances = _likeness_acceptances(
+        run_root, product_root_value, verification_relative
+    )
+    if (
+        likeness_acceptances is None
+        and _wish_has_sealed_references(run_root, assignment["wish_sha256"])
+        and _sealed_design_contract(run_root, assignment["wish_sha256"]) is not None
+    ):
+        raise ProposalError(
+            "Contract Mode Make requires the final verifier's %s bound to its "
+            "report; rerun verify_project --image-derived (ADR 0074)" % LIKENESS_ACCEPTANCE_NAME
+        )
+    _seal_likeness_acceptances(product_root, likeness_acceptances)
     product_document, product_bytes, _ = _read_json(
         run_root,
         "%s/product.json" % product_root_value,
@@ -2691,7 +2816,7 @@ def _make_contract(
             final_mode not in current_record
             and image_derived_final_mode not in current_record
         )
-        or "- Result: **PASS** (exit 0)\n" not in current_record
+        or not _passing_final_result(current_record, likeness_acceptances)
     ):
         raise ProposalError(
             "CAD verification must be a passing final report or a disclosed unverified handoff"

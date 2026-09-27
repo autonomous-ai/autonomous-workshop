@@ -23,10 +23,12 @@ the orthogonal review set and searched reference poses under `snap/`, records
 the cameras in `snap/poses.json`, writes `measure/likeness.md`, and fails when
 any pair is below the 0.90 delivery floor. The integrated runner never lowers
 that floor. If the same view against the same reference has reached three
-consecutive non-improving rounds, stop the edit loop and put the decision back
-to the user. An explicit
+consecutive non-improving rounds, stop the edit loop and decide. Inside a
+Workshop run the Workshop Manager owns that decision (ADR 0074): an explicit
 `--likeness-accept-mismatch "<why this measured mismatch is acceptable>"` on
-the final runner can then unblock delivery. The raw likeness gate remains a
+the final runner can then unblock delivery, and the run reports the label,
+score and reason to the person when it ends. The runner also writes them to
+`measure/likeness-acceptance.json`, bound to the exact pipeline record. The raw likeness gate remains a
 failure; `measure/verification-pipeline.md` reports `PASS (1 accepted failing
 gate)` and records the score and exact reason. Errors, an unaccepted regression,
 or a fresh improving row still fail. If the fresh gate passes, the runner warns

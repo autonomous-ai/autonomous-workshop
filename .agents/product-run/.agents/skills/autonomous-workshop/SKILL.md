@@ -98,7 +98,10 @@ few decisions and checks that make it real.
 - For Spark, treat the low reasoning profile as a focus constraint rather than
   a quality waiver: choose the signature interaction early, keep one complete
   build on the critical path, batch independent tool work, and spend additional
-  cycles only on a concrete failing check or visible product defect.
+  cycles only on a concrete failing check or visible product defect. A sealed
+  reference that has not been scored, or scores below its floor, is a failing
+  check, and an organic feature the reference shows built as a plain box is a
+  visible defect (ADR 0074).
 - For Forge and Quest, spend high reasoning where it changes the concept and
   exact final product. Invent begins with a 20-minute high-reasoning turn and
   receives one decisive 10-minute medium recovery when needed. Make begins

@@ -78,6 +78,8 @@ from typing import Sequence
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 IMAGE_SCRIPTS_DIR = SCRIPTS_DIR.parents[1] / "image-to-cad" / "scripts"
+MAKE_ROUND_SCRIPT = SCRIPTS_DIR.parents[1] / "make-round" / "scripts" / "make_round"
+LIKENESS_ACCEPTANCE_NAME = "likeness-acceptance.json"
 POWER_SCRIPTS_DIR = (
     SCRIPTS_DIR.parents[1] / "electromechanical-integration" / "scripts"
 )
@@ -87,7 +89,7 @@ PART_PREFIX = "part_"
 DEFAULT_PREVIEW_TOLERANCE = 0.1
 # Keep these in step with check_likeness.DEFAULT_MIN and STALL_STREAK. Final
 # acceptance never lowers the numeric floor: it preserves the raw failure and
-# records the user's decision separately.
+# records the Workshop Manager's decision and reason separately (ADR 0074).
 LIKENESS_FLOOR = 0.90
 LIKENESS_STALL_STREAK = 3
 DEFAULT_BED = (220.0, 220.0, 220.0)
@@ -737,6 +739,7 @@ def _accepted_likeness_summary(
     likeness_refs: list[tuple[str, Path]],
     eligible_labels: set[str],
     prior_row_counts: dict[str, int],
+    items: list[tuple[str, float]] | None = None,
 ) -> tuple[str | None, list[str]]:
     """Look up the fresh gate decision; do not reproduce its pass/fail rules."""
     history = _read_likeness_history(project)
@@ -777,7 +780,168 @@ def _accepted_likeness_summary(
             blockers.append(f"{label}: final likeness row has no numeric score")
             continue
         accepted.append(f"{label}={float(iou):.3f}<{LIKENESS_FLOOR:.2f}")
+        if items is not None:
+            items.append((label, float(iou)))
     return (", ".join(accepted) if accepted else None), blockers
+
+
+# ── Contract Mode likeness (ADR 0074) ─────────────────────────────────────────
+#
+# A Design Contract labels each sealed image `assembly` or `geometry:<id>`. The
+# verifier scores the assembly images against the whole object. A geometry
+# image shows one Component, so scoring it here would fail every run and
+# measure nothing; it is accounted for by that Component's current round
+# instead. make_round owns what "a current, passing component round" means, so
+# the verifier asks it rather than reproducing the rule.
+
+
+def _contract_sealed_references(project: Path) -> tuple[dict | None, list[dict], str | None]:
+    """``(make_round globals, sealed images, error)`` in Contract Mode.
+
+    Outside a run, or in a run with no Design Contract, this is
+    ``(None, [], None)`` and nothing changes. A Wish that cannot be read is an
+    error, never an empty list.
+    """
+    if not MAKE_ROUND_SCRIPT.is_file():
+        return None, [], None
+    make_round = runpy.run_path(str(MAKE_ROUND_SCRIPT))
+    sealed, error = make_round["sealed_references"](project)
+    if error is not None:
+        return None, [], error
+    if not any(item["label"] == "assembly" or item["label"].startswith("geometry:") for item in sealed):
+        return None, [], None
+    return make_round, sealed, None
+
+
+def _contract_likeness_refusal(sealed: list[dict], likeness_refs: list[tuple[str, Path]]) -> str | None:
+    """Why this --likeness-ref set cannot verify a Contract Mode toy, or None."""
+    given = {hashlib.sha256(Path(reference).read_bytes()).hexdigest(): label for label, reference in likeness_refs}
+    for item in sealed:
+        if item["label"].startswith("geometry:") and item["sha256"] in given:
+            role = item["label"][len("geometry:"):]
+            return (
+                f"--likeness-ref {given[item['sha256']]} is the sealed {item['label']} image; it shows one "
+                f"Component and is scored in its component round (make_round --component "
+                f"part_{role}.step.py), never against the whole object"
+            )
+    missing = [item["path"].name for item in sealed if item["label"] == "assembly" and item["sha256"] not in given]
+    if missing:
+        return (
+            "Contract Mode final verification must score every sealed assembly image; "
+            "pass --likeness-ref for " + ", ".join(missing)
+        )
+    return None
+
+
+def _gen_part_identities(stdout: str) -> dict[str, str]:
+    """Part role -> B-rep identity for every part `gen --json` just built (ADR 0073)."""
+    identities: dict[str, str] = {}
+    for line in (stdout or "").splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        name = Path(str(payload.get("sourceRef") or "")).name
+        identity = payload.get("identitySha256")
+        if name.startswith(PART_PREFIX) and name.endswith(ENTRY_SUFFIX) and isinstance(identity, str) and identity:
+            identities[name[len(PART_PREFIX):-len(ENTRY_SUFFIX)]] = identity
+    return identities
+
+
+def _component_likeness_coverage(
+    make_round: dict,
+    project: Path,
+    sealed: list[dict],
+    identities: dict[str, str],
+) -> tuple[list[str], list[dict]]:
+    """``(failures, acceptances)`` for every sealed geometry image.
+
+    A Component's identity is the B-rep hash `gen` reported for it, or, when
+    `gen` found it current and built nothing, the sha256 of its STEP on disk.
+    """
+    digests: dict[str, str] = {}
+    for item in sealed:
+        if not item["label"].startswith("geometry:"):
+            continue
+        role = item["label"][len("geometry:"):]
+        step = project / f"{PART_PREFIX}{role}.step"
+        if role in identities:
+            digests[role] = identities[role]
+        elif step.is_file():
+            digests[role] = _sha256_file(step)
+    covered = make_round["component_coverage"](project, digests, LIKENESS_FLOOR)
+    failures: list[str] = []
+    acceptances: list[dict] = []
+    for item in sealed:
+        if not item["label"].startswith("geometry:"):
+            continue
+        role = item["label"][len("geometry:"):]
+        cover = covered.get(item["sha256"])
+        if cover is None:
+            failures.append(
+                f"{item['label']}: no current component round passed {LIKENESS_FLOOR:.2f} or "
+                f"was accepted after stalling out; run make_round --component part_{role}.step.py"
+            )
+            continue
+        accepted = cover.get("accepted")
+        if accepted is not None:
+            acceptances.append({
+                "label": item["label"],
+                "scope": f"component:{cover['role']}",
+                "iou": float(accepted["iou"]),
+                "floor": LIKENESS_FLOOR,
+                "reason": accepted["reason"],
+                "accepted_by": "workshop-manager",
+            })
+    return failures, acceptances
+
+
+def _component_likeness_failed(runner: "Runner", make_round: dict, project: Path, sealed: list[dict]) -> bool:
+    """Record the Contract Mode component-image gate; True when it fails."""
+    started = time.perf_counter()
+    failures, acceptances = _component_likeness_coverage(
+        make_round, project, sealed, _gen_part_identities(runner.last_stdout)
+    )
+    for failure in failures:
+        print(f"verify_project: {failure}", file=sys.stderr)
+    if runner.likeness_acceptances is not None:
+        runner.likeness_acceptances.extend(acceptances)
+    labels = ", ".join(item["label"] for item in sealed if item["label"].startswith("geometry:"))
+    runner.records.append({
+        "command": f"component likeness  # ADR 0074: {labels or 'no component images'}",
+        "status": f"rc={1 if failures else 0}",
+        "seconds": time.perf_counter() - started,
+    })
+    for item in acceptances:
+        runner.note(
+            "component likeness acceptance",
+            f"{item['label']}={item['iou']:.3f}<{LIKENESS_FLOOR:.2f} accepted by the Workshop Manager; "
+            f"reason: {item['reason']}",
+        )
+    return bool(failures)
+
+
+def _prior_assembly_acceptances(report: Path) -> list[dict]:
+    try:
+        record = json.loads((report.parent / LIKENESS_ACCEPTANCE_NAME).read_text(encoding="utf-8"))
+        return [item for item in record["acceptances"] if item.get("scope") == "assembly"]
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return []
+
+
+def _write_likeness_acceptance(report: Path, acceptances: list[dict]) -> None:
+    """Bind the Manager's likeness acceptances to this exact verification report."""
+    record = {
+        "schema_version": 1,
+        "verification_sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+        "acceptances": acceptances,
+    }
+    (report.parent / LIKENESS_ACCEPTANCE_NAME).write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
 
 
 def _component_steps(project: Path) -> tuple[list[Path], list[Path]]:
@@ -899,6 +1063,10 @@ class Runner:
         self.records: list[dict[str, object]] = []
         self.inspection_checks: list[dict[str, object]] = []
         self.geometry_deadline = None
+        self.last_stdout = ""
+        # None outside an image-derived final run; else every likeness failure
+        # the Workshop Manager accepted, written beside the report (ADR 0074).
+        self.likeness_acceptances: list[dict] | None = None
 
     def command(
         self,
@@ -960,6 +1128,7 @@ class Runner:
             self.records.append({"command": shlex.join(args), "status": "unverified", "seconds": time.perf_counter() - started})
             print(f"[verify_project] {check['id']}: UNVERIFIED; recorded for final documentation", flush=True)
             return 0
+        self.last_stdout = stdout or ""
         completed = subprocess.CompletedProcess(args, return_code, stdout)
         elapsed = time.perf_counter() - started
         self.records.append(
@@ -1483,6 +1652,8 @@ def _write_report(
                   "print_ready_claim": False, "checks": runner.inspection_checks,
                   "verification_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
     (path.parent / "geometry-inspection.json").write_text(json.dumps(disclosure, indent=2) + "\n", encoding="utf-8")
+    if runner.likeness_acceptances is not None:
+        _write_likeness_acceptance(path, runner.likeness_acceptances)
 
 
 # ── Harness verdict ───────────────────────────────────────────────────────────
@@ -1917,6 +2088,7 @@ def _final(
         if likeness_rc != 0:
             accepted = None
             acceptance_blockers: list[str] = []
+            accepted_items: list[tuple[str, float]] = []
             if likeness_rc == 1 and likeness_accept_mismatch:
                 accepted, acceptance_blockers = _accepted_likeness_summary(
                     project,
@@ -1924,6 +2096,7 @@ def _final(
                     likeness_refs,
                     likeness_mismatch_labels,
                     prior_row_counts,
+                    items=accepted_items,
                 )
             if accepted is None or acceptance_blockers:
                 for blocker in acceptance_blockers:
@@ -1934,9 +2107,21 @@ def _final(
             runner.records[-1]["status"] = "accepted-fail"
             runner.note(
                 "check_likeness acceptance",
-                f"raw floor failure accepted by user: {accepted}; "
+                f"raw floor failure accepted by the Workshop Manager: {accepted}; "
                 f"reason: {likeness_accept_mismatch}",
             )
+            if runner.likeness_acceptances is not None:
+                runner.likeness_acceptances.extend(
+                    {
+                        "label": label,
+                        "scope": "assembly",
+                        "iou": iou,
+                        "floor": LIKENESS_FLOOR,
+                        "reason": likeness_accept_mismatch,
+                        "accepted_by": "workshop-manager",
+                    }
+                    for label, iou in accepted_items
+                )
         elif likeness_accept_mismatch:
             print(
                 "verify_project: warning: --likeness-accept-mismatch was not needed; "
@@ -2607,7 +2792,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="reference image inside the project; repeat for every usable viewpoint",
     )
     parser.add_argument("--likeness-min", type=float, default=0.90, help="minimum IoU for every likeness pair; final delivery cannot set it below 0.90")
-    parser.add_argument("--likeness-accept-mismatch", metavar="REASON", help="accept a raw sub-0.90 likeness failure after the same view/reference has stalled out; preserves the failing score and records the user reason")
+    parser.add_argument("--likeness-accept-mismatch", metavar="REASON", help="accept a raw sub-0.90 likeness failure after the same view/reference has stalled out; preserves the failing score and records the Workshop Manager's reason, which the run reports when it ends")
     parser.add_argument("--likeness-accept-regression", metavar="REASON", help="record why a final score below the best prior run is accepted; passed through to check_likeness")
     parser.add_argument("--search-fov", default="0,25,40", help="comma-separated FOVs for reference-pose search (default: 0,25,40)")
     parser.add_argument("--report", help="final pipeline record path inside project (default: measure/verification-pipeline.md)")
@@ -2692,7 +2877,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.likeness_accept_mismatch is not None:
         args.likeness_accept_mismatch = args.likeness_accept_mismatch.strip()
         if not args.likeness_accept_mismatch:
-            parser.error("--likeness-accept-mismatch requires a non-empty user reason")
+            parser.error("--likeness-accept-mismatch requires a non-empty reason")
     if args.likeness_min < LIKENESS_FLOOR:
         parser.error(
             f"--likeness-min {args.likeness_min:.2f} is below the {LIKENESS_FLOOR:.2f} "
@@ -2866,6 +3051,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         resolved_likeness_refs.append((label, reference))
 
     likeness_mismatch_labels: set[str] = set()
+    contract_make_round: dict | None = None
+    contract_sealed: list[dict] = []
     if args.image_derived:
         if not (args.powered or args.unpowered):
             refuse(
@@ -2879,6 +3066,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         if not resolved_likeness_refs:
             refuse("--image-derived requires at least one --likeness-ref LABEL=PATH")
+        contract_make_round, contract_sealed, contract_error = _contract_sealed_references(project)
+        if contract_error is not None:
+            refuse(contract_error)
+        if contract_make_round is not None:
+            refusal = _contract_likeness_refusal(contract_sealed, resolved_likeness_refs)
+            if refusal is not None:
+                refuse(refusal)
         for audit_name in ("check_spec.py", "check_landmarks.py"):
             audit = project / "measure" / audit_name
             if not audit.is_file():
@@ -2941,10 +3135,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         mode = "image-derived final" if args.image_derived else "final"
         entries = [assembly, *parts]
         entry_args = [_path_arg(path, runner.cwd) for path in entries]
+        if args.image_derived and not args.no_report and not args.dry_run:
+            runner.likeness_acceptances = []
         if not _run_or_stop(
             runner,
             [sys.executable, SCRIPTS_DIR / "gen", *entry_args, "--write", "--json"],
             warm=True,
+        ):
+            result = 1
+        elif contract_make_round is not None and not args.dry_run and _component_likeness_failed(
+            runner, contract_make_round, project, contract_sealed
         ):
             result = 1
         else:
@@ -2962,6 +3162,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 if prior is not None and prior[1] == closure:
                     result = prior[0]
                     reused = True
+                    if runner.likeness_acceptances is not None:
+                        # The reused verdict's assembly acceptance stands with it.
+                        runner.likeness_acceptances.extend(_prior_assembly_acceptances(reuse_report))
                     runner.records.append({
                         "command": "verify_project  # reused prior verdict (unchanged project)",
                         "status": "reused",

@@ -441,6 +441,22 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                 )
             else:
                 print("Round %s: %s — unscored" % (entry.get("round", "?"), entry.get("verdict", "?")))
+    acceptances = receipt.get("likeness_acceptances")
+    if isinstance(acceptances, (list, tuple)):
+        # ADR 0074: every likeness failure the Manager accepted, with its reason.
+        for item in acceptances:
+            if not isinstance(item, Mapping):
+                continue
+            iou, floor = item.get("iou"), item.get("floor")
+            print(
+                "Likeness accepted by the Workshop Manager: %s IoU %s < %s — %s"
+                % (
+                    item.get("label", "?"),
+                    "%.3f" % iou if isinstance(iou, (int, float)) else "?",
+                    "%.2f" % floor if isinstance(floor, (int, float)) else "?",
+                    item.get("reason", ""),
+                )
+            )
     publication = receipt.get("publication")
     publication_reason = None
     if isinstance(publication, Mapping):

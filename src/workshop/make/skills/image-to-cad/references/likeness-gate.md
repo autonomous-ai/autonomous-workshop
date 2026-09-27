@@ -158,8 +158,10 @@ a view whose history already shows it stalled out, the pipeline record marks
 that gate `accepted-fail` and carries the reason in full, and the run is then
 allowed to finish. So the two files say different things on purpose — the
 likeness report is the measurement, the pipeline record is the decision. A
-delivery below 0.90 stays what `CLAUDE.md` calls it: an explicit human
-acceptance of a measured failing result.
+delivery below 0.90 stays an explicit acceptance of a measured failing result,
+never a lowered floor. Inside a Workshop run the Workshop Manager makes it,
+with a written reason, and the run reports every such acceptance to the person
+when it ends (ADR 0074); the record never calls it a user's decision.
 
 **A failing loop ends after three rounds that move nothing.** `stalled` or
 `regressing` three times in a row for one view — an `improving` round resets
@@ -170,9 +172,11 @@ holds its best, and what the last three rounds bought in total — then points a
 the **delivery** decision, `verify_project --likeness-accept-mismatch`, and
 deliberately not at a lowered `--min`. A stalled loop being told to lower its
 own floor is how the number stops meaning anything, so the stalled path never
-suggests it. That decision is the user's: below 0.90 only an explicit human
-acceptance of a measured failing result can ship, so an agent's job at this
-point is to stop rendering and ask.
+suggests it. Below 0.90 only an explicit, reasoned acceptance of a measured
+failing result can ship, so at this point an agent stops rendering and either
+accepts with a reason that names what the reference shows and why the geometry
+cannot follow it, or keeps the failure. In a Workshop run that acceptance is the
+Workshop Manager's and is reported when the run ends (ADR 0074).
 Without a stopping condition the alternative is what this gate was built after
 — rounds of rendering that left one number on disk.
 

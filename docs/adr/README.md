@@ -31,3 +31,5 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0070: A redundant final sweep reuses its verdict and exits zero](0070-redundant-final-sweep-reuses-its-verdict.md)
 - [0071: Component rounds fan out, bounded by host width](0071-bounded-component-round-fan-out.md)
 - [0072: A gate that can verify nothing must refuse](0072-a-gate-that-verifies-nothing-refuses.md)
+- [0073: Carry Forward compares geometry, not STEP bytes](0073-carry-forward-compares-geometry-not-step-bytes.md)
+- [0074: Every Component is scored against its own sealed image](0074-every-component-scored-against-its-own-image.md)

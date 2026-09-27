@@ -315,6 +315,7 @@ class StageProposalToolTest(unittest.TestCase):
         *,
         objective=None,
         extra_context=None,
+        references=None,
     ):
         """Seal a Design Contract as the Wish, and its own matching Match/Invented pair.
 
@@ -365,16 +366,17 @@ class StageProposalToolTest(unittest.TestCase):
         context = {"design_contract": design_contract}
         if extra_context:
             context.update(extra_context)
-        wish_sha256 = self.write_wish(
-            {
-                "schema_version": 1,
-                "product_id": "run-local-toy",
-                "objective": objective
-                or "```design-contract\n%s\n```" % json.dumps(design_contract),
-                "constraints": {},
-                "context": context,
-            }
-        )
+        wish = {
+            "schema_version": 1,
+            "product_id": "run-local-toy",
+            "objective": objective
+            or "```design-contract\n%s\n```" % json.dumps(design_contract),
+            "constraints": {},
+            "context": context,
+        }
+        if references is not None:
+            wish["references"] = references
+        wish_sha256 = self.write_wish(wish)
         assignment = NativeMatchAssignment(
             wish_sha256=wish_sha256,
             inventor_roster_sha256=self.roster.roster_sha256,
@@ -2521,6 +2523,127 @@ class StageProposalToolTest(unittest.TestCase):
             "--cad-verification-path",
             "cad/project/validation/cad-build.json",
         )
+
+    # ADR 0074: a likeness failure the Workshop Manager accepted is carried,
+    # bound to the exact verification report, into product.json for the host
+    # to report when the run ends. Nothing else may pass as accepted.
+
+    ACCEPTED_LIKENESS_RECORD = (
+        "# Verification pipeline record\n\n"
+        "- Mode: `image-derived final`\n"
+        "- Result: **PASS (1 accepted failing gate)** (exit 0)\n\n"
+        "| # | command | result | seconds |\n"
+        "|---:|---|---:|---:|\n"
+        "| 1 | `python check_likeness.py --pair a b --label assembly` | accepted-fail | 0.10 |\n"
+        "| 2 | `check_likeness acceptance  # NOTE: accepted by the Workshop Manager` | note | 0.00 |\n"
+    )
+    ASSEMBLY_ACCEPTANCE = {
+        "label": "assembly",
+        "scope": "assembly",
+        "iou": 0.483,
+        "floor": 0.9,
+        "reason": "The pose search cannot place the kneeling statue's wings; three repairs moved nothing.",
+        "accepted_by": "workshop-manager",
+    }
+
+    def likeness_stage(self):
+        assignment, invented = self.seal_referenced_wish()
+        product_root, _, _, _ = self.create_product(invented=invented)
+        self.write_stage(
+            "make",
+            {"assignment": assignment.to_dict(), "invented": invented.to_dict(), "feedback": []},
+            round_index=1,
+        )
+        return product_root, product_root / "cad/project/validation/cad-build.json"
+
+    def write_likeness_acceptance(self, report, acceptances, *, verification_sha256=None):
+        (report.parent / "likeness-acceptance.json").write_text(json.dumps({
+            "schema_version": 1,
+            "verification_sha256": verification_sha256 or hashlib.sha256(report.read_bytes()).hexdigest(),
+            "acceptances": acceptances,
+        }), encoding="utf-8")
+
+    def finalize_make(self, expected=0):
+        return self.run_tool(
+            "make",
+            "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project",
+            "--cad-verification-path", "cad/project/validation/cad-build.json",
+            expected=expected,
+        )
+
+    def test_make_carries_a_manager_likeness_acceptance_into_the_product(self):
+        product_root, report = self.likeness_stage()
+        report.write_text(self.ACCEPTED_LIKENESS_RECORD, encoding="utf-8")
+        self.write_likeness_acceptance(report, [self.ASSEMBLY_ACCEPTANCE])
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertEqual(product["likeness_acceptances"], [self.ASSEMBLY_ACCEPTANCE])
+
+    def test_make_refuses_an_accepted_failure_without_its_acceptance_record(self):
+        _, report = self.likeness_stage()
+        report.write_text(self.ACCEPTED_LIKENESS_RECORD, encoding="utf-8")
+        refused = self.finalize_make(expected=2)
+        self.assertIn("passing final report", refused.stderr)
+
+    def test_make_refuses_an_acceptance_record_bound_to_another_report(self):
+        _, report = self.likeness_stage()
+        report.write_text(self.ACCEPTED_LIKENESS_RECORD, encoding="utf-8")
+        self.write_likeness_acceptance(report, [self.ASSEMBLY_ACCEPTANCE], verification_sha256="1" * 64)
+        refused = self.finalize_make(expected=2)
+        self.assertIn("likeness-acceptance.json", refused.stderr)
+
+    def test_make_refuses_an_accepted_failure_that_is_not_likeness(self):
+        _, report = self.likeness_stage()
+        report.write_text(
+            self.ACCEPTED_LIKENESS_RECORD.replace("python check_likeness.py --pair a b --label assembly", "check_fit project"),
+            encoding="utf-8",
+        )
+        self.write_likeness_acceptance(report, [self.ASSEMBLY_ACCEPTANCE])
+        refused = self.finalize_make(expected=2)
+        self.assertIn("passing final report", refused.stderr)
+
+    def test_make_refuses_likeness_acceptances_the_verifier_did_not_record(self):
+        product_root, report = self.likeness_stage()
+        report.write_text(
+            "# Verification pipeline record\n\n- Mode: `image-derived final`\n- Result: **PASS** (exit 0)\n",
+            encoding="utf-8",
+        )
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        product["likeness_acceptances"] = [self.ASSEMBLY_ACCEPTANCE]
+        (product_root / "product.json").write_text(json.dumps(product), encoding="utf-8")
+        refused = self.finalize_make(expected=2)
+        self.assertIn("likeness_acceptances", refused.stderr)
+
+    def test_make_in_contract_mode_requires_the_verifier_acceptance_record(self):
+        requirements = self.CONTRACT_REQUIREMENTS
+        reference = {
+            "name": "ref-01-observatory.png", "sha256": "0" * 64, "media_type": "image/png",
+            "size": 4, "width": 16, "height": 16,
+        }
+        assignment, invented, _ = self.seal_contract_wish(requirements, references=[reference])
+        product_root, _, _, _ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        self.write_stage(
+            "make",
+            {"assignment": assignment.to_dict(), "invented": invented.to_dict(), "feedback": []},
+            round_index=1,
+        )
+        report = product_root / "cad/project/validation/cad-build.json"
+        report.write_text(
+            "# Verification pipeline record\n\n- Mode: `image-derived final`\n- Result: **PASS** (exit 0)\n",
+            encoding="utf-8",
+        )
+        refused = self.finalize_make(expected=2)
+        self.assertIn("likeness-acceptance.json", refused.stderr)
+        self.write_likeness_acceptance(report, [])
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertNotIn("likeness_acceptances", product)
 
     def test_make_verification_must_belong_to_declared_cad_project(self):
         product_root, _, _, verification = self.create_product()

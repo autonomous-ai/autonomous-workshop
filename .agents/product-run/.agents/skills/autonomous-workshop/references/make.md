@@ -159,12 +159,25 @@ are separate. Frozen older runs retain their materialized rules and tools.
    isolated component round passes. Use explicit `--ref` only when a reference
    depicts that component by itself; project-level likeness and motion checks
    belong to the assembled object. A pass is component-specific evidence, not
-   permission to skip the combined review. When a sealed Wish reference shows
-   one component, score it in that component's round with
-   `--ref LABEL=wish-references/<file>`. The assembly round scores every
-   sealed reference that no current component pass has scored, against the
-   whole object, so a single-component image left for the assembly will fail
-   there.
+   permission to skip the combined review. In Contract Mode (ADR 0074) name
+   each component file after its Unique Geometry id, `part_<id>.step.py`: its
+   round then scores the sealed `geometry:<id>` image automatically, puts that
+   image in the visual packet, and does not pass below the 0.90 floor. Compare
+   the packet's views with that image, not with the contract text. The
+   assembly round never scores a component image against the whole object;
+   one with no current component pass fails there as missing. Outside
+   Contract Mode, score a sealed Wish reference that shows one component in
+   that component's round with `--ref LABEL=wish-references/<file>`; the
+   assembly round scores every sealed reference no current component pass
+   has scored, against the whole object.
+
+   When a component image stays below the floor after three rounds that did
+   not raise its IoU by more than 0.005 (`stalled 3/3` in the summary), the
+   Manager may accept it by rerunning that component round with
+   `--accept-likeness "<reason>"`. The reason names what the image shows and
+   why this geometry cannot follow it. An image that has not stalled out
+   cannot be accepted. Every acceptance is reported to the person when the
+   run ends; it is never recorded as the person's decision.
 3. Only after every component passes, author the non-part combined `*.step.py`
    entry and begin assembled-object rounds with:
 
@@ -213,7 +226,14 @@ are separate. Frozen older runs retain their materialized rules and tools.
    `--likeness-ref LABEL=PATH` for every one of them. The finalizer refuses a
    toy with sealed references unless the current final report ran in that
    mode (ADR 0072, Delivery 2); a plain final report cannot substitute for it,
-   no matter how cleanly it passed.
+   no matter how cleanly it passed. In Contract Mode pass exactly the sealed
+   `assembly` images: the verifier refuses a component image there, and
+   itself fails unless every `geometry:<id>` image has a current component
+   round that passed or was accepted after stalling out (ADR 0074). A stalled
+   assembly image may be accepted with `--likeness-accept-mismatch
+   "<reason>"`; the finalizer copies every acceptance from the verifier's
+   `measure/likeness-acceptance.json` into `product.json`. Do not author
+   `likeness_acceptances` yourself.
 9. Write product metadata and invoke the Make finalizer immediately.
 
 Complete the blind signature review and, if needed, up to three focused repairs before

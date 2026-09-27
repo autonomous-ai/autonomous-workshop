@@ -794,8 +794,11 @@ class SealedReferenceTest(unittest.TestCase):
             module, calls = load_module(), []
             self._main(module, project, [], {"ref-01-whole.png": 0.95}, calls)
             summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
-            self.assertEqual([(i["label"], i["iou"]) for i in summary["likeness"]], [("geometry:world-disc", 0.95)])
-            self.assertEqual(summary["sealed"], [{"label": "geometry:world-disc", "scored_by": "assembly"}])
+            # ADR 0074: a Component's image is never scored against the whole object.
+            self.assertEqual(self._matched(calls), [])
+            self.assertEqual([i["label"] for i in summary["likeness"]], ["geometry:world-disc"])
+            self.assertIn("--component part_world-disc.step.py", summary["likeness"][0]["error"])
+            self.assertEqual(summary["sealed"], [{"label": "geometry:world-disc", "scored_by": "missing"}])
 
     def test_a_sealed_reference_below_the_floor_fails_the_round(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -959,6 +962,185 @@ class SealedReferenceTest(unittest.TestCase):
             refs = module.parse_refs([], [spec])
         self.assertEqual([label for label, _ in refs], ["hero", "side"])
         self.assertTrue(refs[0][1].endswith("ref/hero.png"))
+
+
+class ContractComponentLikenessTest(unittest.TestCase):
+    """ADR 0074: in Contract Mode a Component is scored against its own sealed image."""
+
+    _run_root = SealedReferenceTest._run_root
+    _fake_run = SealedReferenceTest._fake_run
+    _main = SealedReferenceTest._main
+    _matched = SealedReferenceTest._matched
+
+    CONTRACT = {
+        "design_contract": {
+            "title": "Broken God",
+            "references": [
+                {"file": "ref-01-whole.png", "shows": "assembly"},
+                {"file": "ref-02-body.png", "shows": "geometry:body"},
+            ],
+        }
+    }
+    REFS = {"ref-01-whole.png": b"whole", "ref-02-body.png": b"body"}
+
+    def _contract_root(self, tmp):
+        return self._run_root(tmp, self.REFS, context=self.CONTRACT)
+
+    def _component(self, module, project, iou, calls, extra=()):
+        code = self._main(
+            module, project, ["--component", "part_body.step.py", *extra],
+            {"ref-01-whole.png": 0.95, "ref-02-body.png": iou}, calls,
+        )
+        state = json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())
+        summary = json.loads(
+            (project / ("measure/component-rounds/body/r%04d/summary.json" % state["round"])).read_text()
+        )
+        return code, summary
+
+    def _visual_pass(self, module, project, summary):
+        feedback = project / "measure/feedback-body.json"
+        feedback.write_text(json.dumps({
+            "packet_sha256": summary["visual"]["packet_sha256"], "status": "pass", "findings": [],
+            "observation": "The isolated component is coherent in all three views.",
+        }))
+        return module.record_visual(project, feedback, component="part_body.step.py")
+
+    def test_a_component_round_scores_its_sealed_image_without_any_ref(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, 0.52, calls)
+            self.assertEqual(self._matched(calls), ["ref-02-body.png"])
+            self.assertEqual([(i["label"], i["iou"], i["ok"]) for i in summary["likeness"]],
+                             [("geometry:body", 0.52, False)])
+            self.assertFalse(summary["checks_ok"])
+            self.assertEqual(summary["sealed"], [{"label": "geometry:body", "scored_by": "component:body"}])
+
+    def test_the_sealed_image_is_in_the_component_visual_packet(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, 0.93, calls)
+            packet = json.loads(Path(summary["visual"]["packet"]).read_text())
+            self.assertEqual([Path(p).name for p in packet["references"]], ["ref-02-body.png"])
+
+    def test_an_explicit_ref_to_the_same_image_is_scored_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            self._component(module, project, 0.93, calls, ["--ref", "body=wish-references/ref-02-body.png"])
+            self.assertEqual(self._matched(calls), ["ref-02-body.png"])
+
+    def test_the_assembly_never_scores_a_component_image_against_the_whole_object(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            self._main(module, project, [], {"ref-01-whole.png": 0.95, "ref-02-body.png": 0.10}, calls)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertEqual(self._matched(calls), ["ref-01-whole.png"])
+            self.assertFalse(summary["checks_ok"])
+            missing = [i for i in summary["likeness"] if i["label"] == "geometry:body"]
+            self.assertEqual(len(missing), 1)
+            self.assertIn("--component part_body.step.py", missing[0]["error"])
+            self.assertIn({"label": "geometry:body", "scored_by": "missing"}, summary["sealed"])
+
+    def test_a_passing_component_round_covers_its_image_at_assembly(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, 0.93, calls)
+            self.assertTrue(self._visual_pass(module, project, summary)["ok"])
+            calls.clear()
+            self._main(module, project, [], {"ref-01-whole.png": 0.95, "ref-02-body.png": 0.10}, calls)
+            summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertEqual(self._matched(calls), ["ref-01-whole.png"])
+            self.assertTrue(summary["checks_ok"])
+            self.assertEqual(summary["sealed"], [
+                {"label": "assembly", "scored_by": "assembly"},
+                {"label": "geometry:body", "scored_by": "component:body"},
+            ])
+
+    def test_three_rounds_that_move_nothing_stall_the_image_out(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            streaks = []
+            for iou in (0.60, 0.70, 0.701, 0.699, 0.702):
+                _, summary = self._component(module, project, iou, calls)
+                item = summary["likeness"][0]
+                streaks.append((item["stall_streak"], item["stalled_out"]))
+            self.assertEqual(streaks, [(0, False), (0, False), (1, False), (2, False), (3, True)])
+
+    def test_an_improving_round_resets_the_stall_count(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            for iou in (0.60, 0.601, 0.602, 0.70):
+                _, summary = self._component(module, project, iou, calls)
+            self.assertEqual(summary["likeness"][0]["stall_streak"], 0)
+
+    def test_the_manager_cannot_accept_an_image_that_has_not_stalled_out(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            self._component(module, project, 0.60, calls)
+            _, summary = self._component(module, project, 0.601, calls, ["--accept-likeness", "arm is close enough"])
+            item = summary["likeness"][0]
+            self.assertNotIn("accepted", item)
+            self.assertIn("1/3", item["acceptance_refused"])
+            self.assertFalse(summary["checks_ok"])
+
+    def test_a_stalled_out_image_accepted_by_the_manager_covers_the_assembly(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            reason = "Claws are thinner than the 0.4 mm nozzle can hold; silhouette otherwise matches."
+            for iou in (0.60, 0.601, 0.602):
+                self._component(module, project, iou, calls)
+            _, summary = self._component(module, project, 0.603, calls, ["--accept-likeness", reason])
+            item = summary["likeness"][0]
+            self.assertFalse(item["ok"])
+            self.assertEqual(item["accepted"], {"by": "workshop-manager", "reason": reason})
+            self.assertTrue(summary["checks_ok"])
+            self.assertTrue(self._visual_pass(module, project, summary)["ok"])
+            calls.clear()
+            self._main(module, project, [], {"ref-01-whole.png": 0.95}, calls)
+            assembly = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+            self.assertTrue(assembly["checks_ok"])
+            self.assertIn({
+                "label": "geometry:body", "scored_by": "component:body",
+                "accepted": {"by": "workshop-manager", "reason": reason, "iou": 0.603},
+            }, assembly["sealed"])
+            self.assertIn("ACCEPTED", module.render_summary(assembly))
+
+    def test_accept_likeness_needs_a_component_and_a_reason(self):
+        module = load_module()
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                module.main(["/tmp", "--accept-likeness", "reason"])
+            with self.assertRaises(SystemExit):
+                module.main(["/tmp", "--component", "part_body.step.py", "--accept-likeness", "  "])
+
+    def test_a_component_identity_matches_its_recorded_step_bytes_too(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            with mock.patch.object(module, "parse_identity", return_value="b" * 64):
+                _, summary = self._component(module, project, 0.93, calls)
+            self._visual_pass(module, project, summary)
+            self.assertEqual(module.current_passing_component_round(project, "body", "b" * 64)[1], "")
+            step = hashlib.sha256((project / "part_body.step").read_bytes()).hexdigest()
+            found, reason = module.current_passing_component_round(project, "body", step)
+            self.assertEqual(reason, "")
+            self.assertEqual(module.current_passing_component_round(project, "body", "0" * 64)[1],
+                             "part_body.step.py changed after its component pass")
+
+    def test_outside_contract_mode_a_component_still_scores_only_what_it_is_given(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-body.png": b"body"})
+            module, calls = load_module(), []
+            self._main(module, project, ["--component", "part_body.step.py"], {"ref-01-body.png": 0.2}, calls)
+            self.assertEqual(self._matched(calls), [])
 
 
 if __name__ == "__main__":

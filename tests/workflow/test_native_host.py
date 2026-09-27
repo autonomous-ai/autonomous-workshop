@@ -50,6 +50,8 @@ from workshop.workflow.native_run import (
     _best_round,
     _budgeted_turn_launcher,
     _phase_design_vault,
+    _likeness_acceptance_history,
+    _made_likeness_acceptances,
     _playtest_score_history,
     _record_playtest_evidence,
     _record_make_evidence,
@@ -3296,6 +3298,44 @@ class NativeHostTest(unittest.TestCase):
             (gates / "0010-playtest.json").write_text(json.dumps({"evidence": {"checks": []}}), encoding="utf-8")
             with self.assertRaisesRegex(StateConflict, "malformed: 0010-playtest.json"):
                 _playtest_score_history(host)
+
+    def test_likeness_acceptances_are_read_from_the_latest_make_gate_receipt(self):
+        # ADR 0074: the run reports every likeness failure the Workshop
+        # Manager accepted, from the host's own receipt of the current Make.
+        accepted = {"label": "geometry:arm-right", "scope": "component:arm-right", "iou": 0.466,
+                    "floor": 0.9, "reason": "Claws below the nozzle.", "accepted_by": "workshop-manager"}
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary).resolve()
+            self.assertEqual(_likeness_acceptance_history(host), [])
+            gates = host / "gates"
+            gates.mkdir()
+
+            def receipt(name, checks):
+                (gates / name).write_text(json.dumps({"evidence": {"checks": checks}}), encoding="utf-8")
+
+            receipt("0003-make.json", {"round": 1, "likeness_acceptances": [accepted]})
+            receipt("0004-playtest.json", {"round": 1, "verdict": "block"})
+            self.assertEqual(_likeness_acceptance_history(host), [accepted])
+            receipt("0006-make.json", {"round": 2})
+            self.assertEqual(_likeness_acceptance_history(host), [])
+            (gates / "0008-make.json").write_text("{nope", encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "unreadable: 0008-make.json"):
+                _likeness_acceptance_history(host)
+
+    def test_made_likeness_acceptances_are_validated_before_the_host_seals_them(self):
+        accepted = {"label": "assembly", "scope": "assembly", "iou": 0.483, "floor": 0.9,
+                    "reason": "Wings cannot be posed.", "accepted_by": "workshop-manager"}
+        self.assertEqual(_made_likeness_acceptances({"title": "t"}), [])
+        self.assertEqual(_made_likeness_acceptances({"likeness_acceptances": [accepted]}), [accepted])
+        for bad in (
+            "nope",
+            [dict(accepted, accepted_by="user")],
+            [dict(accepted, iou=0.95)],
+            [dict(accepted, reason="")],
+            [{k: v for k, v in accepted.items() if k != "scope"}],
+        ):
+            with self.assertRaises(ContractError):
+                _made_likeness_acceptances({"likeness_acceptances": bad})
 
     def test_repair_base_names_the_best_sealed_round_only_when_the_last_is_worse(self):
         with tempfile.TemporaryDirectory() as temporary:

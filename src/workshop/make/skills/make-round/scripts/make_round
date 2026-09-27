@@ -3,6 +3,7 @@
 
     make_round <project>/cad [--component part_<role>.step.py]
                [--require-component-passes] [--ref LABEL=PATH ...] [--min 0.90]
+               [--accept-likeness REASON]
                [--nozzle 0.4] [--overhang-angle 45] [--all-parts] [--no-motion]
                [--full] [--out DIR] [--json] [--record-visual FEEDBACK.json]
                [--self-check]
@@ -13,6 +14,9 @@ rounds, and prints a summary short enough to read instead of the logs. It
 never lowers a threshold or edits source. An assembly round scores every
 reference the Wish sealed, unless a current component round already scored it;
 it never passes on an empty reference list when the Wish has references.
+In Contract Mode a component round scores the sealed image of its own Unique
+Geometry, and the assembly never scores that image against the whole object
+(ADR 0074).
 Native Manager visual observations are recorded against exact evidence; this
 tool makes no model calls.
 
@@ -42,6 +46,13 @@ COMPONENT_ROUNDS_DIR = "component-rounds"
 TOOL_TIMEOUT_SECONDS = 900
 FULL_TIMEOUT_SECONDS = 1800
 MAX_TAIL_CHARS = 600
+# Keep these in step with check_likeness.STALL_DELTA and STALL_STREAK: a round
+# that moves IoU by no more than the delta did not move it, and that many such
+# rounds in a row is a stalled-out image the Manager may accept (ADR 0074).
+STALL_DELTA = 0.005
+STALL_STREAK = 3
+GEOMETRY_LABEL = "geometry:"
+MAX_ACCEPT_REASON = 1000
 _GEOMETRY_DEADLINES = {}
 
 
@@ -434,13 +445,21 @@ def render_summary(summary: dict) -> str:
             lines.append("  like  FAIL %-10s %s" % (item["label"], item["error"][:70]))
             continue
         delta = "" if item.get("delta") is None else "  %+.3f" % item["delta"]
+        verdict = "ok" if item["ok"] else "ACCEPTED" if accepted_likeness(item) else "FAIL"
+        stalled = "  stalled %d/%d" % (item["stall_streak"], STALL_STREAK) if not item["ok"] and "stall_streak" in item else ""
         lines.append(
-            "  like  %-4s %-10s IoU %.3f vs %.2f%s  pose az %.1f el %.1f fov %s%s"
-            % ("ok" if item["ok"] else "FAIL", item["label"], item["iou"], summary["min"], delta, item["az"], item["el"], item["fov"], "  (re-searched)" if item.get("searched") else "")
+            "  like  %-4s %-10s IoU %.3f vs %.2f%s  pose az %.1f el %.1f fov %s%s%s"
+            % (verdict, item["label"], item["iou"], summary["min"], delta, item["az"], item["el"], item["fov"], "  (re-searched)" if item.get("searched") else "", stalled)
         )
+        if accepted_likeness(item):
+            lines.append("        accepted by the Workshop Manager: %s" % item["accepted"]["reason"][:200])
+        elif item.get("acceptance_refused"):
+            lines.append("        acceptance refused: %s" % item["acceptance_refused"])
     failed = {item["label"] for item in summary["likeness"] if not item.get("ok")}
     for item in summary.get("sealed") or []:
-        lines.append("  seal  %-14s scored by %s" % (item["label"], item["scored_by"]))
+        accepted = item.get("accepted")
+        note = "  ACCEPTED by the Workshop Manager at IoU %.3f: %s" % (accepted["iou"], accepted["reason"][:160]) if accepted else ""
+        lines.append("  seal  %-14s scored by %s%s" % (item["label"], item["scored_by"], note))
     if any(item["scored_by"] == "assembly" and item["label"] in failed for item in summary.get("sealed") or []):
         lines.append(
             "  hint  a sealed reference that shows one Component is scored in that Component's round: "
@@ -735,14 +754,19 @@ def current_passing_component_round(project: Path, role: str, digest: str | None
         return None, "%s has invalid component summary" % entry
     if not summary.get("ok"):
         return None, "%s latest component round did not pass" % entry
-    if (state.get("parts") or {}).get(role) != digest:
+    # The recorded B-rep identity, or the STEP bytes the round wrote: a reader
+    # without a fresh build (the final verifier on a part `gen` found current)
+    # can only hash the file (ADR 0074).
+    recorded = ((state.get("parts") or {}).get(role), (state.get("steps") or {}).get(role))
+    if digest is None or digest not in recorded:
         return None, "%s changed after its component pass" % entry
     return summary, ""
 
 
-def component_coverage(project: Path, digests: dict, floor: float) -> dict[str, str]:
-    """Reference sha256 -> Component role, for every reference a current,
-    passing component round scored at or above the floor.
+def component_coverage(project: Path, digests: dict, floor: float) -> dict[str, dict]:
+    """Reference sha256 -> ``{"role", "accepted"}``, for every reference a
+    current, passing component round scored at or above the floor, or whose
+    stalled-out failure the Manager accepted with a reason (ADR 0074).
 
     A reference that depicts one Component is scored in that Component's round
     (ADR 0063); this is how the assembly knows not to score it again against
@@ -763,12 +787,90 @@ def component_coverage(project: Path, digests: dict, floor: float) -> dict[str, 
             continue
         paths = {label: path for label, path in summary.get("refs") or []}
         for item in summary.get("likeness") or []:
-            if item.get("ok") is not True or float(item.get("iou", 0.0)) < floor or item.get("label") not in paths:
+            accepted = accepted_likeness(item)
+            passed = item.get("ok") is True and float(item.get("iou", 0.0)) >= floor
+            if not (passed or accepted) or item.get("label") not in paths:
                 continue
             path = resolve_reference(paths[item["label"]], project)
             if path is not None:
-                covered.setdefault(file_hash(path), role)
+                covered.setdefault(file_hash(path), {
+                    "role": role,
+                    "accepted": None if passed else {**accepted, "iou": float(item["iou"])},
+                })
     return covered
+
+
+def accepted_likeness(item: dict) -> dict | None:
+    """A Manager acceptance recorded on a stalled-out likeness item, else None."""
+
+    accepted = item.get("accepted")
+    if (
+        isinstance(accepted, dict)
+        and accepted.get("by") == "workshop-manager"
+        and isinstance(accepted.get("reason"), str)
+        and accepted["reason"].strip()
+        and item.get("stalled_out") is True
+        and "iou" in item
+    ):
+        return {"by": "workshop-manager", "reason": accepted["reason"]}
+    return None
+
+
+def sealed_file_error(item: dict) -> dict | None:
+    """Why one sealed reference cannot be scored, or None when it can."""
+
+    name = item["path"].name
+    if not item["path"].is_file():
+        return {"label": item["label"], "error": "sealed reference missing: %s" % name}
+    if file_hash(item["path"]) != item["sha256"]:
+        return {"label": item["label"], "error": "sealed reference %s does not match its sealed hash" % name}
+    return None
+
+
+def with_component_reference(project: Path, role: str, refs: list):
+    """A component round's references: the sealed image of this Component's
+    Unique Geometry, plus whatever it was explicitly given (ADR 0074).
+
+    Only Contract Mode labels a sealed image ``geometry:<id>``, and a Component
+    is built to the geometry whose id is its role. Outside Contract Mode, and
+    for a Component no sealed image shows, this returns ``refs`` unchanged:
+    ADR 0063's rule of scoring no implicit whole-object image still holds.
+    """
+
+    sealed, error = sealed_references(project)
+    if error is not None:
+        return refs, [], [{"label": "WISH.json", "error": error}]
+    label = GEOMETRY_LABEL + role
+    mine = [item for item in sealed if item["label"] == label]
+    if not mine:
+        return refs, [], []
+    hashes = {item["sha256"] for item in mine}
+    kept = []
+    for ref_label, ref in refs:
+        path = resolve_reference(ref, project)
+        if path is not None and file_hash(path) in hashes:
+            continue
+        kept.append((ref_label, ref))
+    to_score, report, errors = [], [], []
+    for item in mine:
+        problem = sealed_file_error(item)
+        if problem is not None:
+            errors.append(problem)
+            continue
+        to_score.append((label, str(item["path"])))
+        report.append({"label": label, "scored_by": "component:%s" % role})
+    return to_score + kept, report, errors
+
+
+def stall_streak(history: list) -> int:
+    """Consecutive latest rounds that did not raise IoU by more than STALL_DELTA."""
+
+    streak = 0
+    for before, after in zip(reversed(history[:-1]), reversed(history)):
+        if after - before > STALL_DELTA:
+            break
+        streak += 1
+    return streak
 
 
 def with_sealed_references(project: Path, refs: list, digests: dict, floor: float):
@@ -796,16 +898,28 @@ def with_sealed_references(project: Path, refs: list, digests: dict, floor: floa
     covered = component_coverage(project, digests, floor)
     to_score, report, errors = [], [], []
     for item in sealed:
-        name = item["path"].name
-        if not item["path"].is_file():
-            errors.append({"label": item["label"], "error": "sealed reference missing: %s" % name})
+        problem = sealed_file_error(item)
+        if problem is not None:
+            errors.append(problem)
             continue
-        if file_hash(item["path"]) != item["sha256"]:
-            errors.append({"label": item["label"], "error": "sealed reference %s does not match its sealed hash" % name})
+        cover = covered.get(item["sha256"])
+        if cover is not None:
+            entry = {"label": item["label"], "scored_by": "component:%s" % cover["role"]}
+            if cover["accepted"] is not None:
+                entry["accepted"] = cover["accepted"]
+            report.append(entry)
             continue
-        role = covered.get(item["sha256"])
-        if role is not None:
-            report.append({"label": item["label"], "scored_by": "component:%s" % role})
+        if item["label"].startswith(GEOMETRY_LABEL):
+            # ADR 0074: an image of one Component scored against the whole
+            # object fails every run and measures nothing, so it is never
+            # scored here. Without a current component pass it is missing.
+            role = item["label"][len(GEOMETRY_LABEL):]
+            errors.append({
+                "label": item["label"],
+                "error": "no current passing component round scored this image; run "
+                         "--component part_%s.step.py" % role,
+            })
+            report.append({"label": item["label"], "scored_by": "missing"})
             continue
         to_score.append((item["label"], str(item["path"])))
         report.append({"label": item["label"], "scored_by": "assembly"})
@@ -1031,7 +1145,10 @@ def make_round(args) -> int:
     refs = parse_refs(args.refs, [] if component is not None else sorted(project.glob("*_spec.md")))
     likeness = []
     sealed = []
-    if component is None:
+    if component is not None:
+        refs, sealed, errors = with_component_reference(project, component, refs)
+        likeness.extend(errors)
+    else:
         # ADR 0072: the Wish's sealed references are scored whether or not any
         # ledger names them. A component round still scores only what it is
         # explicitly given (ADR 0063).
@@ -1093,6 +1210,30 @@ def make_round(args) -> int:
         )
     poses_path = next(reversed(pose_paths.values()), state.get("poses_path"))
 
+    # ADR 0074: remember every score, so a failing image that three rounds of
+    # repair did not move is stalled out, and only a stalled-out image may be
+    # accepted below the floor -- by the Manager, with a reason, on the record.
+    previous_history = state.get("likeness_history") or {}
+    likeness_history = {}
+    for item in likeness:
+        if "iou" not in item:
+            continue
+        history = [float(v) for v in previous_history.get(item["label"]) or []] + [item["iou"]]
+        likeness_history[item["label"]] = history
+        item["stall_streak"] = stall_streak(history)
+        item["stalled_out"] = item["stall_streak"] >= STALL_STREAK
+    accept_reason = getattr(args, "accept_likeness", None)
+    if accept_reason is not None:
+        failing = [item for item in likeness if "iou" in item and not item["ok"]]
+        for item in failing:
+            if item["stalled_out"]:
+                item["accepted"] = {"by": "workshop-manager", "reason": accept_reason}
+            else:
+                item["acceptance_refused"] = "not stalled out: %d/%d rounds without improvement" % (
+                    item["stall_streak"], STALL_STREAK)
+        if not failing:
+            print("make_round: warning: --accept-likeness was not needed; no image is below the floor", file=sys.stderr)
+
     # 4. motion gate when the project declares a manifest.
     motion = None
     manifest = measure / "motion.json"
@@ -1107,7 +1248,7 @@ def make_round(args) -> int:
     ok = (
         all(item["verdict"] == "PASS" for item in build.values())
         and all(item["verdict"] in ("PASS", "UNVERIFIED") for item in printing.values())
-        and all(item.get("ok") for item in likeness)
+        and all(item.get("ok") or accepted_likeness(item) for item in likeness)
         and (motion is None or motion["verdict"] in ("pass", "unverified"))
         and (full is None or full["ok"])
     )
@@ -1148,6 +1289,13 @@ def make_round(args) -> int:
         "print": printing,
         "print_context": context,
         "likeness": {item["label"]: item["iou"] for item in likeness if "iou" in item},
+        "likeness_history": {**previous_history, **likeness_history},
+        "steps": {
+            role: file_hash(part.with_name(part.name[:-len(".py")]))
+            for part in parts
+            for role in [part.name.removeprefix("part_").removesuffix(".step.py")]
+            if role in digests and part.with_name(part.name[:-len(".py")]).is_file()
+        },
         "poses_path": poses_path,
         "pose_paths": pose_paths,
         "last_out": str(out),
@@ -1325,6 +1473,7 @@ def main(argv=None) -> int:
     parser.add_argument("--require-component-passes", action="store_true", help="before assembly review, require current passing isolated rounds for every part")
     parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH", help="reference view; repeatable; default from the spec ledger. The Wish's sealed references are always scored at assembly scope")
     parser.add_argument("--min", type=float, default=0.90, help="likeness floor passed to render_views (default 0.90)")
+    parser.add_argument("--accept-likeness", metavar="REASON", help="with --component: accept an image still below the floor after %d rounds that did not move it; the reason is reported when the run ends" % STALL_STREAK)
     parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle diameter for the wall gate (default 0.4 mm)")
     parser.add_argument("--overhang-angle", type=float, default=45.0, help="slope from vertical the printer bridges unsupported (default 45 deg)")
     parser.add_argument("--all-parts", action="store_true", help="report every built part, not only the changed ones")
@@ -1347,6 +1496,12 @@ def main(argv=None) -> int:
         parser.error("--component and --entry are mutually exclusive")
     if args.component and args.out:
         parser.error("--out is not supported for canonical component round evidence")
+    if args.accept_likeness is not None:
+        if not args.component:
+            parser.error("--accept-likeness requires --component; the assembly image is accepted by the final verifier")
+        args.accept_likeness = args.accept_likeness.strip()
+        if not 1 <= len(args.accept_likeness) <= MAX_ACCEPT_REASON:
+            parser.error("--accept-likeness requires a reason of 1 to %d characters" % MAX_ACCEPT_REASON)
     return make_round(args)
 
 

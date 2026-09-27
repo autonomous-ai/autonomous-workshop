@@ -863,6 +863,22 @@ class NativeCommandTest(unittest.TestCase):
         self.assertIn("Round 1: block — play 8 wish_fit 7.5 (readers disagree on wish_fit)", text)
         self.assertIn("Round 2: pass — unscored", text)
 
+    def test_run_text_reports_every_likeness_the_manager_accepted(self):
+        stdout = StringIO()
+        receipt = native_receipt(status="completed", stage="release")
+        receipt["likeness_acceptances"] = [
+            {"label": "geometry:arm-right", "scope": "component:arm-right", "iou": 0.466, "floor": 0.9,
+             "reason": "Claws are thinner than the nozzle can hold.", "accepted_by": "workshop-manager"},
+            "not a mapping",
+        ]
+        with mock.patch("cli.main.native_run_status", return_value=receipt), redirect_stdout(stdout):
+            main(("status", "wish-one"))
+        self.assertIn(
+            "Likeness accepted by the Workshop Manager: geometry:arm-right IoU 0.466 < 0.90 "
+            "— Claws are thinner than the nozzle can hold.",
+            stdout.getvalue(),
+        )
+
     def test_status_text_surfaces_actionable_publication_need(self):
         stdout = StringIO()
         receipt = native_receipt(status="waiting", stage="release")

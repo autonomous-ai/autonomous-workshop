@@ -2636,6 +2636,63 @@ def _playtest_score_history(host_state_root: Path) -> list[dict[str, Any]]:
     return history
 
 
+_LIKENESS_ACCEPTANCE_FIELDS = frozenset({"label", "scope", "iou", "floor", "reason", "accepted_by"})
+
+
+def _made_likeness_acceptances(product: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The likeness failures the Workshop Manager accepted, from sealed product metadata.
+
+    ADR 0074: the Make finalizer copies them from the final verifier's
+    hash-bound record. The host checks their shape again before sealing them
+    into its own receipt, so a report never repeats an unbounded or
+    self-labelled "user" acceptance.
+    """
+
+    raw = product.get("likeness_acceptances", ())
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence) or len(raw) > 64:
+        raise ContractError("Made likeness acceptances are invalid")
+    acceptances: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, Mapping) or set(item) != _LIKENESS_ACCEPTANCE_FIELDS:
+            raise ContractError("Made likeness acceptance fields are invalid")
+        label, scope, reason = item["label"], item["scope"], item["reason"]
+        iou, floor = item["iou"], item["floor"]
+        if (
+            not isinstance(label, str) or not 1 <= len(label.strip()) <= 200
+            or not isinstance(scope, str) or not (scope == "assembly" or scope.startswith("component:"))
+            or not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 1000
+            or item["accepted_by"] != "workshop-manager"
+            or type(iou) not in (int, float) or type(floor) not in (int, float)
+            or not 0.0 <= iou < floor <= 1.0
+        ):
+            raise ContractError("Made likeness acceptance is invalid")
+        acceptances.append({key: item[key] for key in sorted(_LIKENESS_ACCEPTANCE_FIELDS)})
+    return acceptances
+
+
+def _likeness_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The accepted likeness failures of the current Make, from the host's own receipt."""
+
+    gates = Path(host_state_root) / "gates"
+    if not gates.is_dir():
+        return []
+    receipts = sorted(
+        path for path in gates.iterdir()
+        if path.name.endswith("-make.json") and not path.is_symlink()
+    )
+    if not receipts:
+        return []
+    latest = receipts[-1]
+    try:
+        checks = json.loads(latest.read_bytes().decode("utf-8"))["evidence"]["checks"]
+        acceptances = checks.get("likeness_acceptances") or []
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        raise StateConflict("Make gate receipt is unreadable: %s" % latest.name) from exc
+    if not isinstance(acceptances, list):
+        raise StateConflict("Make gate receipt is malformed: %s" % latest.name)
+    return acceptances
+
+
 def _best_round(history: Sequence[Mapping[str, Any]]) -> Optional[Mapping[str, Any]]:
     """The round a repair should start from: fewest machine failures first.
 
@@ -7287,6 +7344,9 @@ def _evaluate_make_stage(
                 "build_parts": build_groups["parts"],
                 "production_parts": production_parts,
             }
+        likeness_acceptances = _made_likeness_acceptances(made.product)
+        if likeness_acceptances:
+            product_checks["likeness_acceptances"] = likeness_acceptances
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -9910,6 +9970,9 @@ def _native_receipt(
     }
     needs: list[str] = list(checkpoint.needs)
     rounds = _playtest_score_history(paths.host_state) if paths is not None else []
+    likeness_acceptances = (
+        _likeness_acceptance_history(paths.host_state) if paths is not None else []
+    )
     local_release_run = False
     if paths is not None:
         try:
@@ -10125,6 +10188,7 @@ def _native_receipt(
         "schema_version": 1,
         "kind": "native-agent-run",
         "rounds": rounds,
+        "likeness_acceptances": likeness_acceptances,
         "product_id": checkpoint.product_id,
         "status": visible_status,
         "stage": visible_stage,
