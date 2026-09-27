@@ -3,8 +3,9 @@
 A Design Contract is one Markdown file, `CONTRACT.md`, kept in the same
 directory as its reference images. It has two parts:
 
-1. **Prose.** The full spec that `design-a-toy` Stage 1 wrote and the person
-   approved at Stage 2. The Make agent reads it for intent.
+1. **Prose.** The full spec that `design-a-toy` Stage 1 wrote, reconciled with
+   the reference images the person approved. The Make agent reads it for
+   intent.
 2. **One fenced `design-contract` block.** The checkable enumeration of that
    same spec. This skill checks conformance against the block.
 

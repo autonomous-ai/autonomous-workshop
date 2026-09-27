@@ -1,6 +1,6 @@
 ---
 name: design-a-toy
-description: Design any physical Workshop toy - a vehicle, a jointed robot, a bone dragon, a puzzle, a game - with an Inventor before any run starts - grill the idea into a frozen spec, gate it, then generate one reference image per unique geometry plus the assembly and write the Design Contract for `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
+description: Design any physical Workshop toy - a vehicle, a jointed robot, a bone dragon, a puzzle, a game - with an Inventor before any run starts - grill the idea into a frozen spec, draft the Design Contract, generate one reference image per unique geometry plus the assembly, reconcile them with the contract, then get the human's one visual review before handing off to `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
 ---
 
 # Design a toy before the run
@@ -15,6 +15,13 @@ carry only its Taste. The answer is not to police the run. It is to leave
 nothing for the run to invent.
 
 The output of this skill is one `CONTRACT.md`, handed to `build-a-toy`.
+
+The human reviews **pictures, not the contract**. They answer the design
+questions in Stage 1 and approve the finished set of images in Stage 4. They
+never read or approve the `design-contract` block or a contract diff. Keeping the
+contract and the images in agreement is this skill's job, done by measurement
+in Stage 3b, so that approving the images is the same as approving the
+contract.
 
 ## Who designs
 
@@ -35,6 +42,13 @@ Inventor is not a safe fallback for a vehicle, a creature or a mechanism.
 Invoke the `grilling` skill and work the design as a decision tree. Do not skip
 this because the human arrives with a clear idea; a clear idea is usually a
 clear *image* with the decisions still unmade underneath it.
+
+Ask the human only about what the toy looks like and does: which parts it
+has, which one dominates, what moves, how many of each, the pose. Keep each
+question short and in plain words about the toy. Do not ask for millimetres,
+wall thicknesses, clearances, pin diameters, print stance or row limits. Decide
+those yourself as the Inventor, from the Taste and the feasibility checks, and
+write them into the spec without asking.
 
 Drive to a written spec containing:
 
@@ -82,10 +96,7 @@ Only when the human explicitly asks for a playable game, also drive to:
   position, with captured pieces off the board, and what the Focal Component
   costs in sightlines from each seat.
 
-## Stage 2 - The gate
-
-**Stop. Show the human the spec and the Design Contract block together, and
-wait for explicit approval of both.**
+## Stage 2 - Draft the contract
 
 Draft the block per
 [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md): one `geometries[]`
@@ -93,27 +104,25 @@ entry per item on the unique-geometry list, and one `requirements[]` row for
 every checkable claim the prose decided — a dimension, a count, a wall
 thickness, a clearance, a joint range, a visible feature. Check the block against the prose line by line,
 not just against itself: a block that leaves out a decided number or feature
-recreates the defect this gate exists to close. Name each
+lets the run drift, and nobody downstream reads the prose closely enough to
+notice. Name each
 `references[].file` as `ref-NN-<slug>.png` in the order Stage 3 will generate
 them, even though the files do not exist yet. A toy with more than one
 component also gets one `"shows": "assembly"` reference, listed first.
 
-Check the drafted block against CONTRACT-FORMAT.md's row limits before
-showing it: at most 16 assembly-scoped requirements, at most 4 per Unique
-Geometry, and the whole file (prose plus block) under 40,000 characters. A
-contract over either limit is cut back by the human, not by you.
+Check the drafted block against CONTRACT-FORMAT.md's row limits: at most 16
+assembly-scoped requirements, at most 4 per Unique Geometry, and the whole
+file (prose plus block) under 40,000 characters. If the design does not fit,
+do not silently drop decisions. Ask the human which *features* to give up, in
+plain words about the toy ("keep the moving jaw or the separate claws?"), never
+as contract rows.
 
-This gate exists because image generation is the expensive stage: one image per
-unique geometry, each iterated against pass criteria. Approving the spec and
-its contract before spending that is the whole point. Do not generate a
-single image before the human has approved both in this conversation.
-
-If the human changes anything, update the spec and the block and show both
-again.
+Do not show the block to the human and do not wait for approval. Go straight to
+Stage 3.
 
 ## Stage 3 - Reference images
 
-Generate **one image per unique geometry** from the approved list. Four
+Generate **one image per unique geometry** from the Stage 1 list. Four
 identical wheels are one image, not four. When the toy has more than one
 component, also generate **one assembly image** of the whole toy, in its
 Display Pose when it has moving parts: the overall silhouette is what a vehicle,
@@ -134,8 +143,13 @@ direction: it draws whatever the spec's numbers say and nothing the spec forgot,
 so it can never show you that the spec is wrong, which is the one thing a
 reference image is for at this stage.
 
-A generated image is allowed to be looser than the spec. That is a feature. The
-spec carries the millimetres, the image carries the silhouette and the read.
+A generated image is allowed to be looser than the spec in surface detail. That
+is a feature. The spec carries the millimetres, the image carries the silhouette
+and the read. It is **not** allowed to disagree with the spec in proportion,
+landmark position, count or side. Make is scored on the silhouette, so an image
+that draws a different body from the one the contract dimensions will fail the
+likeness gate however well Make builds. Stage 3b closes that gap before
+anything is sealed.
 
 Each image must be:
 
@@ -161,18 +175,98 @@ image through as the reference itself: the likeness gate writes a measured
 similarity score into the toy's public archive, and what that score describes
 must be the Inventor's own expression.
 
-## Stage 4 - Write the contract and hand off
+## Stage 3b - Reconcile every image with the contract
 
-Write `CONTRACT.md` beside the reference images: the approved prose, then the
-approved `design-contract` block, exactly as
+An image that passes its own criteria can still describe a different toy.
+Before Stage 4, **measure** every image against the drafted contract. Do not
+judge by eye. Measuring scripts are allowed here. They read an image; they do
+not draw one.
+
+For each image, take its alpha silhouette and check:
+
+1. **Aspect.** Compare the silhouette's width to height with the contract's
+   ratio in the view the image shows. For a component, that is its extents; for
+   the assembly, the envelope in the Display Pose. A component image must show
+   the view its extents describe, orthographic front or side, so the two
+   ratios compare.
+2. **Landmarks.** Scale the image to the contract's height and draw the
+   contract's datums over it. For the assembly, these are every stated Z height
+   and X position: base top, pelvis, heart, hinge axes, shoulders, crest top.
+   For a component, they are its named features: window centre, hole
+   positions, bend angle. Read off where the image puts each one.
+3. **Masses.** Compare the width of each major body at its own height with the
+   contract dimension. A torso, a head, a base or a wing root are examples. A
+   56 mm torso drawn as a 33 mm skeleton is a disagreement even when the
+   overall aspect matches.
+4. **Counts, sides and orientation.** Tooth, blade, spoke and finger counts;
+   which side the eye or the claw is on; which way a hole faces. Count blades
+   and teeth by machine (edge crossings along a scan line), not by eye.
+
+Anything off by more than 5% of the governing dimension is a
+**disagreement**, as is any count, side or orientation that differs. Record
+every check in the working notes as a table: image, check, contract value,
+image value, verdict.
+
+**Resolve each disagreement by judging which one is right.** Do not assume the
+contract wins. Look at the image as the Inventor would, against the Taste:
+
+- **The image is better,** meaning it reads more clearly, has better
+  proportions or is more sensible as an object. Then amend the contract to
+  match the image. Change the prose and the block together, and derive the new
+  numbers from the image's measured proportions. Redo every feasibility check
+  the changed numbers touch: gear centres, joint ranges, clearances, walls,
+  bed size, the row limits. Then re-measure **every** image against the
+  amended contract, because one changed height can move five landmarks.
+- **The contract is better, or the image is not buildable as drawn.** Then fix
+  the image by AI editing or regeneration, never by hand. An anisotropic resize
+  of the keyed silhouette may close a residual aspect gap of up to 20%. It
+  cannot fix a landmark or a mass that sits in the wrong place.
+
+The assembly image matters most. The final likeness gate scores it against the
+whole built toy, so its landmarks and masses must match the contract before
+anything else is accepted.
+
+Make these decisions yourself and keep going. Do not show the human the
+disagreement table or a contract diff: they review the images in Stage 4, and
+the contract follows whatever images they approve.
+
+Done when: no disagreement remains. A disagreement you cannot close after the
+round cap is not waved through: raise it at Stage 4 as a visible difference in
+the picture ("the image shows three horns, the build will have two").
+
+## Stage 4 - Visual review
+
+**Stop. This is the only approval gate.** Show the human every reference image
+at once, assembly first. Give each one a single line in plain words: what it is
+and how many parts use it ("ref-02 wheel - four of these"). Publish them as one
+private Artifact page (load the `artifact-design` skill first) that works at
+phone width and shows the whole set in one look, and give the human its link
+plus each file path. Do not show the contract, the requirement rows, the
+measurement table or millimetre lists unless the human asks.
+
+Also say, in plain words, anything the build will not match exactly, from
+Stage 3b or from the generation notes.
+
+Wait for explicit approval of the images. If the human wants a change - a
+different shape, proportion, count, pose or feature - fix the images by AI
+editing or regeneration, amend the contract so it says what the new images
+show, and redo Stage 3b for **every** image. Then update the same Artifact
+page and show only the images that changed, always with the assembly image,
+which is the one the likeness gate scores. Repeat until the human approves.
+
+## Stage 5 - Write the contract and hand off
+
+Write `CONTRACT.md` beside the reference images: the prose, then the
+`design-contract` block, both reconciled with the approved images, exactly as
 [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md) requires. Confirm the
 block's `references[].file` entries now match Stage 3's images one for one —
 that is what lets `workshop wish --contract` seal this exact file, byte for
 byte, as the run's hash-checked objective.
 
-Hand off to the `build-a-toy` skill with the path to this `CONTRACT.md`. That
-skill owns every run this design starts, round 0 through every correction,
-always under `--contract`. Do not print a bare `workshop wish` command here.
+Approving the images is the go-ahead. Do not ask again: write the contract
+and hand off to the `build-a-toy` skill straight away with the path to this
+`CONTRACT.md`. That skill owns every run this design
+starts, round 0 through every correction, always under `--contract`. Do not print a bare `workshop wish` command here.
 
 Then state plainly what happens next: Make builds against these images, the
 silhouette-likeness gate re-checks every round at IoU >= 0.90, and every
