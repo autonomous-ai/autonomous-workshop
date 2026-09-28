@@ -1,6 +1,6 @@
 ---
 name: design-a-toy
-description: Design any physical Workshop toy - a vehicle, a jointed robot, a bone dragon, a puzzle, a game - with an Inventor before any run starts - grill the idea into a frozen spec, draft the Design Contract, generate one reference image per unique geometry plus the assembly, reconcile them with the contract, then get the human's one visual review before handing off to `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
+description: Design any physical Workshop toy - a vehicle, a jointed robot, a bone dragon, a puzzle, a game - with an Inventor before any run starts - grill the idea into a frozen spec, draft the Design Contract, generate one reference image per unique geometry plus the assembly, reconcile them with the contract feature by feature, check that everything they show can be printed, then get the human's one visual review before handing off to `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
 ---
 
 # Design a toy before the run
@@ -201,11 +201,22 @@ For each image, take its alpha silhouette and check:
 4. **Counts, sides and orientation.** Tooth, blade, spoke and finger counts;
    which side the eye or the claw is on; which way a hole faces. Count blades
    and teeth by machine (edge crossings along a scan line), not by eye.
+5. **Every dimensioned feature.** Go through the contract, prose and block,
+   and list every millimetre number that describes something an image shows:
+   a hole or window diameter, a blade or rib width, a shaft diameter, a claw
+   or segment length, a gap, a depth seen from the side. Measure each one in
+   the image at contract scale, one row per number. A number with no row
+   means Stage 3b is not done. Broken God round 0 passed checks 1 to 4 and
+   still shipped crude parts: the contract said a 20 mm heart window, 5-8 mm
+   wing blades and 18 mm claws, and the images drew 9 mm, 11-13 mm and
+   37 mm. Make followed the numbers, and every part came out a different
+   shape from its picture.
 
-Anything off by more than 5% of the governing dimension is a
-**disagreement**, as is any count, side or orientation that differs. Record
-every check in the working notes as a table: image, check, contract value,
-image value, verdict.
+A measurement is a **disagreement** when it is off by more than 5% of the
+dimension it measures and by more than 0.5 mm. The 0.5 mm floor is for small
+features, where 5% is less than the measuring error. Any count, side or
+orientation that differs is also a disagreement. Record every check in the
+working notes as a table: image, check, contract value, image value, verdict.
 
 **Resolve each disagreement by judging which one is right.** Do not assume the
 contract wins. Look at the image as the Inventor would, against the Taste:
@@ -230,9 +241,54 @@ Make these decisions yourself and keep going. Do not show the human the
 disagreement table or a contract diff: they review the images in Stage 4, and
 the contract follows whatever images they approve.
 
-Done when: no disagreement remains. A disagreement you cannot close after the
-round cap is not waved through: raise it at Stage 4 as a visible difference in
-the picture ("the image shows three horns, the build will have two").
+Done when: no disagreement remains, and every dimensioned feature has its
+row. A disagreement you cannot close after the round cap is not waved through:
+raise it at Stage 4 as a visible difference in the picture ("the image shows
+three horns, the build will have two").
+
+## Stage 3c - Check that what the images show can be printed
+
+The build is scored against these images, so everything they show must be
+printable at the size the contract gives it. Otherwise Make has to simplify it,
+and a simplified part looks crude next to its picture. Workshop prints with a
+0.4 mm nozzle, and its print gate refuses any part that needs support.
+
+Scale each image to its contract size after Stage 3b. Measure the smallest
+features it shows, and check the contract's own numbers against the same
+limits:
+
+| Feature | Minimum |
+|---|---|
+| A solid thin member: a bar, rib, claw, shaft, blade edge or wall | 0.8 mm across |
+| A gap, slot, slit or opening meant to stay open | 0.5 mm |
+| Raised or sunk decoration: a rivet, boss, ridge or groove | 1.0 mm across |
+
+Then check support. Name each geometry's print stance. In that stance, find
+every form the image shows that would print over air: an underside flatter
+than 45 degrees from vertical, a hanging claw or hook, a dome or lip that
+overhangs, a bridge longer than 12 mm. Workshop's print gate fails a part
+that needs support, and it cannot be told that a part is allowed support.
+
+Resolve each problem yourself, in this order of preference, and keep the look:
+
+1. **Make the whole toy bigger**, when many details are too small together and
+   the bed still fits.
+2. **Enlarge the one detail**, when it can grow without changing the read.
+3. **Change the print stance or split the part**, for a support problem.
+4. **Reshape the underside**: a 45 degree chamfer, a teardrop hole or a
+   pointed arch. Keep the silhouette the image shows. Never flatten an organic
+   form into a box to pass the gate.
+5. **Drop the detail**, only when nothing above works.
+
+Any change to size, shape or stance amends the contract. When an image no
+longer shows what the contract says, fix the image by AI editing. Then redo
+Stage 3b for every image you touched, and the assembly image.
+
+Record every check in the working notes as a table: image, feature, size at
+contract scale, minimum, verdict, resolution.
+
+Done when: every feature the images show meets its minimum, every form has a
+support-free stance, and every change is in both the contract and the images.
 
 ## Stage 4 - Visual review
 
@@ -245,12 +301,14 @@ plus each file path. Do not show the contract, the requirement rows, the
 measurement table or millimetre lists unless the human asks.
 
 Also say, in plain words, anything the build will not match exactly, from
-Stage 3b or from the generation notes.
+Stage 3b or from the generation notes. List each Stage 3c change the same way:
+what grew, what was reshaped for printing, and what was dropped ("the rivets
+are drawn at 0.7 mm and will print as 1 mm bumps").
 
 Wait for explicit approval of the images. If the human wants a change - a
 different shape, proportion, count, pose or feature - fix the images by AI
 editing or regeneration, amend the contract so it says what the new images
-show, and redo Stage 3b for **every** image. Then update the same Artifact
+show, and redo Stages 3b and 3c for **every** image. Then update the same Artifact
 page and show only the images that changed, always with the assembly image,
 which is the one the likeness gate scores. Repeat until the human approves.
 
