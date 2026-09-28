@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from tests.make.test_make_round import _gate_output, fake_visual_render, load_module, record_fixture_visual_pass
+from tests.make.test_make_round import _gate_output, fake_visual_render, load_module, png, record_fixture_visual_pass
 
 
 class MakeRoundPoseEvidenceTest(unittest.TestCase):
@@ -29,7 +29,7 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
             refs = []
             for label in ("hero", "side"):
                 ref = project / (label + ".png")
-                ref.write_bytes(b"fake reference")
+                ref.write_bytes(png(label.encode()))
                 refs.append(label + "=" + str(ref))
             args = SimpleNamespace(
                 project=str(project), entry=None, out=None, all_parts=False,
@@ -67,6 +67,7 @@ class MakeRoundPoseEvidenceTest(unittest.TestCase):
                     out = Path(command[command.index("-o") + 1])
                     out.mkdir(parents=True, exist_ok=True)
                     (out / "poses.json").write_text(json.dumps({"poses": poses}))
+                    (out / ("%s-shaded.png" % label)).write_bytes(png(b"model " + label.encode()))
                     iou = control["replay_iou" if replayed else "search_iou"]
                     ok = iou >= args.min
                     code = 0 if ok else 1

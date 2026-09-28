@@ -3,7 +3,7 @@
 
     make_round <project>/cad [--component part_<role>.step.py]
                [--require-component-passes] [--ref LABEL=PATH ...] [--min 0.90]
-               [--accept-likeness REASON]
+               [--accept-likeness REASON --acceptance-review REVIEW.json]
                [--nozzle 0.4] [--overhang-angle 45] [--all-parts] [--no-motion]
                [--full] [--out DIR] [--json] [--record-visual FEEDBACK.json]
                [--self-check]
@@ -17,6 +17,10 @@ it never passes on an empty reference list when the Wish has references.
 In Contract Mode a component round scores the sealed image of its own Unique
 Geometry, and the assembly never scores that image against the whole object
 (ADR 0074).
+Every scored reference is also composed beside the model, rendered at the
+pose the likeness gate matched, so the native review compares form rather than
+three views of the model alone; below the floor that review must list the
+differences it sees (ADR 0075).
 Native Manager visual observations are recorded against exact evidence; this
 tool makes no model calls.
 
@@ -49,10 +53,19 @@ MAX_TAIL_CHARS = 600
 # Keep these in step with check_likeness.STALL_DELTA and STALL_STREAK: a round
 # that moves IoU by no more than the delta did not move it, and that many such
 # rounds in a row is a stalled-out image the Manager may accept (ADR 0074).
+# Only a round whose geometry changed counts toward the streak (ADR 0075).
 STALL_DELTA = 0.005
 STALL_STREAK = 3
 GEOMETRY_LABEL = "geometry:"
 MAX_ACCEPT_REASON = 1000
+MAX_DIFFERENCES = 12
+# An observation that repeats the previous round's at least this long was
+# copied, not made (ADR 0075).
+COPIED_OBSERVATION_CHARS = 40
+COMPARISON_HEIGHT = 480
+# Names that identify the Workshop Manager; an acceptance review must come
+# from someone else (ADR 0075).
+MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
 _GEOMETRY_DEADLINES = {}
 
 
@@ -73,7 +86,52 @@ def source_hashes(project):
     }
 
 
-def prepare_visual(project, entry, out, cad, refs):
+def compose_comparison(reference: Path, render: Path, out_path: Path, caption: str) -> None:
+    """The reference beside the model at the matched pose, both scaled to one
+    height as the likeness gate normalises them, so a thinner limb, a blockier
+    body or a missing opening shows as a difference of form (ADR 0075)."""
+
+    from PIL import Image, ImageDraw
+
+    panels = []
+    for path in (reference, render):
+        image = Image.open(path)
+        image.load()
+        flat = Image.new("RGBA", image.size, (255, 255, 255, 255))
+        flat.alpha_composite(image.convert("RGBA"))
+        width = max(1, round(flat.width * COMPARISON_HEIGHT / flat.height))
+        panels.append(flat.convert("RGB").resize((width, COMPARISON_HEIGHT)))
+    gap, header = 16, 24
+    canvas = Image.new("RGB", (sum(p.width for p in panels) + gap, COMPARISON_HEIGHT + header), "white")
+    canvas.paste(panels[0], (0, header))
+    canvas.paste(panels[1], (panels[0].width + gap, header))
+    ImageDraw.Draw(canvas).text((4, 4), caption, fill="black")
+    canvas.save(out_path)
+
+
+def prepare_comparisons(project, out, refs, likeness):
+    """``(comparisons, error)``: one composed image per scored reference."""
+
+    paths = dict(refs)
+    comparisons = {}
+    for index, item in enumerate(likeness):
+        if "iou" not in item:
+            continue
+        reference = resolve_reference(paths.get(item["label"], ""), project) if item["label"] in paths else None
+        render = Path(item["shaded"]) if item.get("shaded") else None
+        if reference is None or render is None or not render.is_file():
+            return {}, "no shaded render at the matched pose for %s" % item["label"]
+        target = out / "visual" / ("compare-%02d.png" % index)
+        caption = "%s  reference | model at the matched pose  IoU %.3f" % (item["label"], item["iou"])
+        try:
+            compose_comparison(reference, render, target, caption)
+        except Exception as exc:  # noqa: BLE001 - any unreadable image leaves no evidence
+            return {}, "could not compose the comparison for %s: %s" % (item["label"], exc)
+        comparisons[str(target.resolve())] = {"label": item["label"], "sha256": file_hash(target)}
+    return comparisons, None
+
+
+def prepare_visual(project, entry, out, cad, refs, likeness=()):
     """Render evidence for native inspection; never infer a visual verdict."""
     before = source_hashes(project)
     views = out / "visual"
@@ -83,19 +141,25 @@ def prepare_visual(project, entry, out, cad, refs):
     paths = [views / (v + ".png") for v in ("front", "top", "iso")]
     if done.returncode or not all(p.is_file() for p in paths) or before != source_hashes(project):
         return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}
+    comparisons, error = prepare_comparisons(project, out, refs, likeness)
+    if error is not None:
+        return {"status": "error", "findings": [], "detail": error}
     references = {}
     for label, ref in refs:
         path = resolve_reference(ref, project)
         if path is not None:
             references[str(path.resolve())] = file_hash(path)
-    packet = {"schema_version": 1, "sources": before,
+    packet = {"schema_version": 2, "sources": before,
               "images": {str(p.resolve()): file_hash(p) for p in paths},
-              "references": references}
+              "references": references,
+              "comparisons": comparisons}
     packet_path = out / "visual-packet.json"
     packet_path.write_text(json.dumps(packet, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    detail = "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"
+    if comparisons:
+        detail += "; compare each reference with the model beside it and list every difference of form"
     return {"status": "pending", "findings": [], "packet": str(packet_path),
-            "packet_sha256": file_hash(packet_path),
-            "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"}
+            "packet_sha256": file_hash(packet_path), "detail": detail}
 
 
 def component_role(project: Path, value: str) -> tuple[str, Path]:
@@ -156,11 +220,15 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
     packet = json.loads(packet_path.read_text())
     if packet["sources"] != source_hashes(project):
         raise ValueError("visual feedback has stale CAD sources or design constraints")
-    for path, digest in {**packet["images"], **packet["references"]}.items():
+    comparisons = packet.get("comparisons") or {}
+    bound = {**packet["images"], **packet["references"],
+             **{path: item["sha256"] for path, item in comparisons.items()}}
+    for path, digest in bound.items():
         if file_hash(path) != digest:
             raise ValueError("visual feedback has stale images or references")
     feedback = json.loads(Path(feedback_path).read_text())
-    if set(feedback) != {"packet_sha256", "status", "findings", "observation"}:
+    required = {"packet_sha256", "status", "findings", "observation"}
+    if not required <= set(feedback) or not set(feedback) <= required | {"differences"}:
         raise ValueError("invalid visual feedback fields")
     if feedback["packet_sha256"] != visual["packet_sha256"]:
         raise ValueError("visual feedback belongs to a different round")
@@ -178,6 +246,10 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
         raise ValueError("visual status contradicts findings")
     if not isinstance(feedback["observation"], str) or not 1 <= len(feedback["observation"].strip()) <= 2000:
         raise ValueError("visual feedback needs a bounded observation, including uncertainty")
+    check_differences(feedback, summary, comparisons)
+    previous = previous_observation(out, summary)
+    if previous is not None and " ".join(previous.split()) in " ".join(feedback["observation"].split()):
+        raise ValueError("visual feedback repeats the previous round's observation; inspect this round's images")
     visual.update(feedback)
     summary["ok"] = summary["checks_ok"] and feedback["status"] == "pass"
     if full:
@@ -206,6 +278,47 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
     (out / "visual-feedback.json").write_text(json.dumps(feedback, sort_keys=True, indent=2) + "\n")
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
     return summary
+
+
+def check_differences(feedback: dict, summary: dict, comparisons: dict) -> None:
+    """Below the floor, the review must say how the model differs from its
+    reference; a difference to repair cannot pass (ADR 0075)."""
+
+    differences = feedback.get("differences", [])
+    if not isinstance(differences, list) or len(differences) > MAX_DIFFERENCES:
+        raise ValueError("visual feedback needs at most %d differences" % MAX_DIFFERENCES)
+    for item in differences:
+        if not isinstance(item, dict) or set(item) != {"feature", "reference", "model", "decision", "reason"}:
+            raise ValueError("a difference needs feature, reference, model, decision and reason")
+        if any(not isinstance(v, str) or not 1 <= len(v.strip()) <= 1000 for v in item.values()):
+            raise ValueError("difference text must be nonempty and bounded")
+        if item["decision"] not in ("repair", "keep"):
+            raise ValueError("a difference is either repaired or kept with a reason")
+    if feedback["status"] == "pass" and any(item["decision"] == "repair" for item in differences):
+        raise ValueError("a difference still to repair cannot pass")
+    compared = {item["label"] for item in comparisons.values()}
+    below = [item["label"] for item in summary.get("likeness") or []
+             if "iou" in item and not item.get("ok") and item["label"] in compared]
+    if below and not differences:
+        raise ValueError(
+            "%s is below the floor: list how the model differs from its reference" % ", ".join(below))
+
+
+def previous_observation(out: Path, summary: dict) -> str | None:
+    """The previous round's recorded observation, when it is long enough that
+    repeating it can only be a copy."""
+
+    round_value = summary.get("round")
+    if type(round_value) is not int or round_value < 2:
+        return None
+    try:
+        earlier = json.loads((out.parent / ("r%04d" % (round_value - 1)) / "visual-feedback.json").read_text())
+    except (OSError, ValueError):
+        return None
+    text = earlier.get("observation") if isinstance(earlier, dict) else None
+    if not isinstance(text, str) or len(text.strip()) < COPIED_OBSERVATION_CHARS:
+        return None
+    return text
 
 
 # ---------------------------------------------------------------------------
@@ -451,8 +564,13 @@ def render_summary(summary: dict) -> str:
             "  like  %-4s %-10s IoU %.3f vs %.2f%s  pose az %.1f el %.1f fov %s%s%s"
             % (verdict, item["label"], item["iou"], summary["min"], delta, item["az"], item["el"], item["fov"], "  (re-searched)" if item.get("searched") else "", stalled)
         )
+        if not item["ok"] and item.get("worst_bands"):
+            lines.append("        widest misfit (from top: model/reference width) %s" % ", ".join(
+                "%.2f: %s" % (b["from_top"], b["ratio"]) for b in item["worst_bands"]
+                if isinstance(b.get("from_top"), (int, float))))
         if accepted_likeness(item):
-            lines.append("        accepted by the Workshop Manager: %s" % item["accepted"]["reason"][:200])
+            lines.append("        accepted by the Workshop Manager after review by %s: %s" % (
+                accepted_likeness(item)["reviewer"], item["accepted"]["reason"][:200]))
         elif item.get("acceptance_refused"):
             lines.append("        acceptance refused: %s" % item["acceptance_refused"])
     failed = {item["label"] for item in summary["likeness"] if not item.get("ok")}
@@ -477,6 +595,9 @@ def render_summary(summary: dict) -> str:
         lines.append("  visual %s  %s" % (visual["status"].upper(), visual.get("observation", visual.get("detail", ""))))
         for item in visual["findings"]:
             lines.append("    %s: %s | evidence: %s | repair: %s" % (item["part"], item["defect"], item["evidence"], item["repair"]))
+        for item in visual.get("differences") or []:
+            lines.append("    differs %s: reference %s | model %s | %s: %s" % (
+                item["feature"], item["reference"], item["model"], item["decision"], item["reason"]))
         if visual["status"] == "pending":
             lines.append("    inspect %s then use --record-visual <feedback.json>" % visual["packet"])
     verdict = ("UNVERIFIED" if summary.get("geometry_status") == "unverified" else "PASS") if summary["ok"] else "FAIL"
@@ -804,6 +925,7 @@ def accepted_likeness(item: dict) -> dict | None:
     """A Manager acceptance recorded on a stalled-out likeness item, else None."""
 
     accepted = item.get("accepted")
+    review = accepted.get("review") if isinstance(accepted, dict) else None
     if (
         isinstance(accepted, dict)
         and accepted.get("by") == "workshop-manager"
@@ -811,9 +933,54 @@ def accepted_likeness(item: dict) -> dict | None:
         and accepted["reason"].strip()
         and item.get("stalled_out") is True
         and "iou" in item
+        and isinstance(review, dict)
+        and isinstance(review.get("reviewer"), str)
+        and review["reviewer"].strip()
+        and review["reviewer"].strip().lower() not in MANAGER_NAMES
     ):
-        return {"by": "workshop-manager", "reason": accepted["reason"]}
+        return {"by": "workshop-manager", "reason": accepted["reason"], "reviewer": review["reviewer"]}
     return None
+
+
+def acceptance_review(path, state: dict, round_root: Path, identity) -> tuple[dict | None, str]:
+    """An independent reviewer's agreement to accept the latest round's image
+    below the floor, or why there is none (ADR 0075).
+
+    The reviewer judged the latest round's composed comparisons, so the
+    geometry being accepted must be exactly the geometry it saw.
+    """
+
+    try:
+        review = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return None, "acceptance review unreadable: %s" % exc
+    if not isinstance(review, dict) or set(review) != {"round", "comparisons", "reviewer", "agrees", "reason"}:
+        return None, "acceptance review needs round, comparisons, reviewer, agrees and reason"
+    latest = state.get("round")
+    if type(review["round"]) is not int or review["round"] != latest:
+        return None, "acceptance review must judge the latest round, r%04d" % (latest or 0)
+    try:
+        summary = json.loads((round_root / ("r%04d" % latest) / "summary.json").read_text(encoding="utf-8"))
+        packet = json.loads(Path(summary["visual"]["packet"]).read_text(encoding="utf-8"))
+    except (OSError, ValueError, KeyError, TypeError):
+        return None, "the reviewed round has no visual packet"
+    shown = {p: item["sha256"] for p, item in (packet.get("comparisons") or {}).items()}
+    if not shown or review["comparisons"] != shown:
+        return None, "acceptance review must name the reviewed round's comparison images and their hashes"
+    if any(not Path(p).is_file() or file_hash(p) != digest for p, digest in shown.items()):
+        return None, "the reviewed comparison images changed"
+    reviewer = review["reviewer"]
+    if not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= 200:
+        return None, "acceptance review needs the reviewer's name"
+    if reviewer.strip().lower() in MANAGER_NAMES:
+        return None, "the Workshop Manager cannot review its own acceptance"
+    if review["agrees"] is not True:
+        return None, "the reviewer did not agree to accept the image"
+    if not isinstance(review["reason"], str) or not 1 <= len(review["reason"].strip()) <= MAX_ACCEPT_REASON:
+        return None, "acceptance review needs a reason of 1 to %d characters" % MAX_ACCEPT_REASON
+    if identity is None or state.get("identity") != identity:
+        return None, "the geometry changed after the reviewed round"
+    return {"reviewer": reviewer.strip(), "reason": review["reason"].strip(), "round": latest}, ""
 
 
 def sealed_file_error(item: dict) -> dict | None:
@@ -862,11 +1029,22 @@ def with_component_reference(project: Path, role: str, refs: list):
     return to_score + kept, report, errors
 
 
-def stall_streak(history: list) -> int:
-    """Consecutive latest rounds that did not raise IoU by more than STALL_DELTA."""
+def stall_streak(history: list, identities: list | None = None) -> int:
+    """Consecutive latest rounds that changed the geometry without raising IoU
+    by more than STALL_DELTA.
 
+    A rerun whose geometry did not change tried nothing, so it neither counts
+    nor breaks the streak (ADR 0075). A round with no recorded identity counts
+    as changed, as every round did before identities were recorded.
+    """
+
+    identities = list(identities or [])
+    identities = [None] * (len(history) - len(identities)) + identities[-len(history):] if history else []
     streak = 0
-    for before, after in zip(reversed(history[:-1]), reversed(history)):
+    pairs = zip(reversed(history[:-1]), reversed(history), reversed(identities[:-1]), reversed(identities))
+    for before, after, was, now in pairs:
+        if was is not None and was == now:
+            continue
         if after - before > STALL_DELTA:
             break
         streak += 1
@@ -1047,6 +1225,13 @@ def make_round(args) -> int:
             continue
         digests[role] = parse_identity(done.stdout) or hashlib.sha256(step.read_bytes()).hexdigest()
     changed = diff_parts(state.get("parts", {}), digests) if not args.all_parts else sorted(digests)
+    # The geometry this round scored: the Component's identity, or every
+    # part's for the assembly. None when it did not build.
+    if component is not None:
+        round_identity = digests.get(component)
+    else:
+        round_identity = None if build_failures else hashlib.sha256(
+            json.dumps(digests, sort_keys=True).encode()).hexdigest()
 
     # Spark can make assembly review contingent on current, passing isolated
     # component evidence. Comparing B-rep identity, not STEP bytes, catches
@@ -1194,6 +1379,7 @@ def make_round(args) -> int:
             continue
         if selected_poses.is_file():
             pose_paths[label] = str(selected_poses.resolve())
+        shaded = selected_poses.parent / ("%s-shaded.png" % label)
         prior = (state.get("likeness") or {}).get(label)
         likeness.append(
             {
@@ -1206,6 +1392,11 @@ def make_round(args) -> int:
                 "fov": result.get("fov", 0),
                 "searched": searched,
                 "poses_path": pose_paths.get(label),
+                "worst_bands": [
+                    {"from_top": b.get("from_top"), "ratio": b.get("ratio")}
+                    for b in result.get("worst_bands") or [] if isinstance(b, dict)
+                ],
+                "shaded": str(shaded.resolve()) if shaded.is_file() else None,
             }
         )
     poses_path = next(reversed(pose_paths.values()), state.get("poses_path"))
@@ -1214,23 +1405,30 @@ def make_round(args) -> int:
     # repair did not move is stalled out, and only a stalled-out image may be
     # accepted below the floor -- by the Manager, with a reason, on the record.
     previous_history = state.get("likeness_history") or {}
+    previous_identities = state.get("likeness_identities") or {}
     likeness_history = {}
+    likeness_identities = {}
     for item in likeness:
         if "iou" not in item:
             continue
         history = [float(v) for v in previous_history.get(item["label"]) or []] + [item["iou"]]
+        identities = list(previous_identities.get(item["label"]) or []) + [round_identity]
         likeness_history[item["label"]] = history
-        item["stall_streak"] = stall_streak(history)
+        likeness_identities[item["label"]] = identities
+        item["stall_streak"] = stall_streak(history, identities)
         item["stalled_out"] = item["stall_streak"] >= STALL_STREAK
     accept_reason = getattr(args, "accept_likeness", None)
     if accept_reason is not None:
         failing = [item for item in likeness if "iou" in item and not item["ok"]]
+        review, refusal = acceptance_review(args.acceptance_review, state, round_root, round_identity)
         for item in failing:
-            if item["stalled_out"]:
-                item["accepted"] = {"by": "workshop-manager", "reason": accept_reason}
-            else:
-                item["acceptance_refused"] = "not stalled out: %d/%d rounds without improvement" % (
+            if not item["stalled_out"]:
+                item["acceptance_refused"] = "not stalled out: %d/%d rounds that changed the geometry without improving it" % (
                     item["stall_streak"], STALL_STREAK)
+            elif review is None:
+                item["acceptance_refused"] = refusal
+            else:
+                item["accepted"] = {"by": "workshop-manager", "reason": accept_reason, "review": review}
         if not failing:
             print("make_round: warning: --accept-likeness was not needed; no image is below the floor", file=sys.stderr)
 
@@ -1242,7 +1440,7 @@ def make_round(args) -> int:
         motion = parse_motion(done.stdout, done.returncode, done.stderr)
 
     # 5. Native visual inspection is a separate evidence submission, not a model call.
-    visual = prepare_visual(project, entry, out, cad, refs)
+    visual = prepare_visual(project, entry, out, cad, refs, likeness)
     full = None
 
     ok = (
@@ -1290,6 +1488,8 @@ def make_round(args) -> int:
         "print_context": context,
         "likeness": {item["label"]: item["iou"] for item in likeness if "iou" in item},
         "likeness_history": {**previous_history, **likeness_history},
+        "likeness_identities": {**previous_identities, **likeness_identities},
+        "identity": round_identity,
         "steps": {
             role: file_hash(part.with_name(part.name[:-len(".py")]))
             for part in parts
@@ -1473,7 +1673,8 @@ def main(argv=None) -> int:
     parser.add_argument("--require-component-passes", action="store_true", help="before assembly review, require current passing isolated rounds for every part")
     parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH", help="reference view; repeatable; default from the spec ledger. The Wish's sealed references are always scored at assembly scope")
     parser.add_argument("--min", type=float, default=0.90, help="likeness floor passed to render_views (default 0.90)")
-    parser.add_argument("--accept-likeness", metavar="REASON", help="with --component: accept an image still below the floor after %d rounds that did not move it; the reason is reported when the run ends" % STALL_STREAK)
+    parser.add_argument("--accept-likeness", metavar="REASON", help="with --component: accept an image still below the floor after %d rounds that changed the geometry without moving it; the reason is reported when the run ends" % STALL_STREAK)
+    parser.add_argument("--acceptance-review", metavar="REVIEW.json", help="with --accept-likeness: the independent reviewer's agreement, judged on the latest round's comparison images")
     parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle diameter for the wall gate (default 0.4 mm)")
     parser.add_argument("--overhang-angle", type=float, default=45.0, help="slope from vertical the printer bridges unsupported (default 45 deg)")
     parser.add_argument("--all-parts", action="store_true", help="report every built part, not only the changed ones")
@@ -1502,6 +1703,10 @@ def main(argv=None) -> int:
         args.accept_likeness = args.accept_likeness.strip()
         if not 1 <= len(args.accept_likeness) <= MAX_ACCEPT_REASON:
             parser.error("--accept-likeness requires a reason of 1 to %d characters" % MAX_ACCEPT_REASON)
+        if not args.acceptance_review:
+            parser.error("--accept-likeness requires --acceptance-review from a reviewer who is not the Workshop Manager")
+    elif args.acceptance_review:
+        parser.error("--acceptance-review is only used with --accept-likeness")
     return make_round(args)
 
 

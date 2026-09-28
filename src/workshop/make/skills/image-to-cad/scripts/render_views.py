@@ -106,6 +106,7 @@ from check_likeness import (  # noqa: E402
     normalise,
     require_complete_reference,
     silhouette,
+    worst_bands,
 )
 from measure_image import _flood_components, _open_mask  # noqa: E402
 
@@ -792,6 +793,7 @@ def main(argv: list[str] | None = None) -> int:
                         "kind": "replay-match" if replayed else "match",
                         "reference": str(ref_path),
                         "iou": final["iou"], "aspect_delta": final["aspect_delta"],
+                        "worst_bands": worst_bands(final["bands"]),
                         "poses_tried": best["poses_tried"], "ok": ok, **pose})
         pairs.append((label, ref_path))
         matched.append({"label": label, "az": pose["az"], "el": pose["el"],

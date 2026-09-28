@@ -110,6 +110,12 @@ calls were reassembling by hand.
   geometry and incorrect form. A high likeness score cannot establish visual
   correctness. Use a targeted additional view if a part is hidden; record
   unresolved visibility as inconclusive rather than claiming a pass.
+- For every scored reference the packet also holds `compare-NN.png`: the
+  reference beside the model rendered at the pose the likeness gate matched,
+  both at one height. Judge form there. Look for bodies thinner or blockier
+  than the reference, openings or gaps it shows that the model fills, members
+  merged or missing, and detail simplified away. Silhouette IoU cannot see
+  any of these.
 - `make_round` never lowers a threshold, never edits source, and never
   replaces the final `verify_project` run the Make gate requires. It writes
   round reports under `<project>/measure/rounds/`, component histories under
@@ -214,6 +220,24 @@ evidence, and proposed source correction. Keep observations short and concrete.
 
 Use `pass` with an empty findings list only after inspection finds no errors;
 use `inconclusive` and describe the missing evidence when a verdict is impossible.
+
+When a scored reference is below the floor, add `differences`: every way the
+model's form differs from that reference in `compare-NN.png`, at most 12.
+
+```json
+"differences": [{
+  "feature": "claws",
+  "reference": "three hooked claws reaching 37 mm",
+  "model": "three straight claws stopping at 18 mm",
+  "decision": "keep",
+  "reason": "The Design Contract fixes 18 mm claws (R23)"
+}]
+```
+
+`decision` is `repair` or `keep`. A difference to `repair` cannot pass; it
+needs a matching finding and a new round. A kept difference names what forces
+it. An empty list below the floor is refused, and so is an observation that
+repeats the previous round's: inspect each round's images afresh (ADR 0075).
 Then run:
 
 ```sh
@@ -222,10 +246,46 @@ Then run:
 ```
 
 This updates the same round's summary with detected visual errors. It rejects
-changed source/constraint bytes, changed renders/references, wrong packet hashes,
-contradictory findings and repeat submissions. Source edits start a new round;
+changed source/constraint bytes, changed renders/references/comparisons, wrong
+packet hashes, contradictory findings, missing differences below the floor, a
+copied observation and repeat submissions. Source edits start a new round;
 never rebind prior prose to new hashes. Manager self-review does not consume or
 replace the independent blind critic allowance.
+
+## Accept a stalled-out component image
+
+In Contract Mode a component round scores its sealed `geometry:<id>` image at
+the 0.90 floor (ADR 0074). An image below the floor is stalled out after three
+rounds that each changed the Component's geometry without raising IoU by more
+than 0.005. A rerun that changed no geometry neither counts nor resets the
+count (ADR 0075). The summary shows `stalled N/3` and the heights where the
+model's width misfits the reference most.
+
+A stalled-out image may be accepted only after an independent review. Spawn a
+fresh subagent that did not author the Component. Give it the latest round's
+`compare-NN.png` images and that geometry's contract lines, and ask whether
+the remaining differences are acceptable. Write its answer:
+
+```json
+{"round": 7, "comparisons": {"<path from the packet>": "<sha256>"},
+ "reviewer": "<subagent name>", "agrees": true, "reason": "<why>"}
+```
+
+Then rerun the same round without editing:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+    --component part_<role>.step.py --accept-likeness "<reason>" \
+    --acceptance-review <review.json>
+```
+
+The round refuses the acceptance when the image has not stalled out, the
+review names another round or other images, the reviewer is the Workshop
+Manager, the reviewer did not agree, or the geometry changed after the
+reviewed round. It cannot prove who the reviewer was; the Manager must not
+write the review itself.
+
+## Final review
 
 Final Make allows an initial independent blind review plus up to three focused
 repair-and-rereview cycles (four reviews total). After a passing hash-bound
@@ -234,10 +294,13 @@ blind review, the final `--record-visual` may also use
 the integrated verifier directly after blind review; never start a new round
 just to run it. The host alone performs the authoritative `--fresh` rebuild.
 
+## Summary
+
 The summary names, in order: the changed parts and their build verdicts, the
 likeness score per view with the change since
-the previous round and the pose it was scored at, the motion gate verdict,
-the native visual findings, and the `--full` verdict when requested. Everything the tools printed is kept
+the previous round, the pose it was scored at and, below the floor, the
+heights where the width misfits most, the motion gate verdict,
+the native visual findings and differences, and the `--full` verdict when requested. Everything the tools printed is kept
 under `measure/rounds/rNNNN/` beside `summary.json`.
 
 ## Tool card

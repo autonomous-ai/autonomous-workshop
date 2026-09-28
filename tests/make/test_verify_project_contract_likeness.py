@@ -66,7 +66,8 @@ class ContractLikenessTest(unittest.TestCase):
         self.assertIsNone(error)
         return make_round, sealed
 
-    def component_round(self, *, iou, ok, identity="brep-body", accepted=None, stalled=False):
+    def component_round(self, *, iou, ok, identity="brep-body", accepted=None, stalled=False,
+                        reviewer="fresh-reviewer"):
         root = self.project / "measure/component-rounds/body"
         (root / "r0001").mkdir(parents=True, exist_ok=True)
         (root / "make-round-state.json").write_text(json.dumps({
@@ -77,6 +78,8 @@ class ContractLikenessTest(unittest.TestCase):
                 "stalled_out": stalled}
         if accepted is not None:
             item["accepted"] = {"by": "workshop-manager", "reason": accepted}
+            if reviewer is not None:
+                item["accepted"]["review"] = {"reviewer": reviewer, "reason": "agreed", "round": 1}
         (root / "r0001/summary.json").write_text(json.dumps({
             "scope": "component:body", "entry": "part_body.step.py", "parts": ["body"],
             "ok": True, "refs": [["geometry:body", str(self.run_root / "wish-references/ref-02-body.png")]],
@@ -150,6 +153,16 @@ class ContractLikenessTest(unittest.TestCase):
             "label": "geometry:body", "scope": "component:body", "iou": 0.61,
             "floor": 0.9, "reason": reason, "accepted_by": "workshop-manager",
         }])
+
+    def test_an_acceptance_without_an_independent_review_does_not_count(self):
+        # ADR 0075: a Manager acceptance needs a second reader.
+        for reviewer in (None, "workshop-manager"):
+            with self.subTest(reviewer=reviewer):
+                self.component_round(iou=0.61, ok=False, accepted="close enough", stalled=True,
+                                     reviewer=reviewer)
+                failures, acceptances = self.coverage({"body": "brep-body"})
+                self.assertEqual(len(failures), 1)
+                self.assertEqual(acceptances, [])
 
     def test_an_acceptance_on_an_image_that_never_stalled_out_does_not_count(self):
         self.component_round(iou=0.61, ok=False, accepted="close enough", stalled=False)

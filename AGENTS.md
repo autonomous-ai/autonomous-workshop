@@ -130,7 +130,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0063-spark-component-first-make.md`, and
 `docs/adr/0063-print-gates-on-source.md`, and
 `docs/adr/0064-operator-selected-turn-boundary.md`, and
-`docs/adr/0074-every-component-scored-against-its-own-image.md` before changing the CLI, runtime,
+`docs/adr/0074-every-component-scored-against-its-own-image.md`, and
+`docs/adr/0075-component-review-compares-form-and-acceptance-needs-a-second-reader.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -190,6 +191,11 @@ ADR 0074 scores every Contract Mode Component against its own sealed
 makes the final verifier account for every sealed image. Below the floor the
 Workshop Manager may accept an image only after it stalls out, with a reason
 the run reports when it ends; it is never recorded as the person's decision.
+ADR 0075 amends that acceptance: a stall-out counts only rounds that changed
+the geometry, every scored image is composed beside the model for the review,
+feedback below the floor must list its differences from the image, and a
+component acceptance needs a recorded review by someone other than the
+Workshop Manager.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

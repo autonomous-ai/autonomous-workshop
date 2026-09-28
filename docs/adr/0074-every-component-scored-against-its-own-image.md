@@ -6,6 +6,8 @@
   finalizer (`stage_proposal.py`), Workshop host receipt and CLI
 - Relates to: ADR 0022 (blind review), ADR 0063 (component-first Make),
   ADR 0072 (a gate that verifies nothing refuses), ADR 0073 (B-rep identity)
+- Superseded in part by: ADR 0075 (stall-out counts only geometry changes;
+  a component acceptance needs an independent review)
 
 ## Context
 

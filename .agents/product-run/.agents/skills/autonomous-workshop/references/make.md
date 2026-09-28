@@ -162,8 +162,12 @@ are separate. Frozen older runs retain their materialized rules and tools.
    permission to skip the combined review. In Contract Mode (ADR 0074) name
    each component file after its Unique Geometry id, `part_<id>.step.py`: its
    round then scores the sealed `geometry:<id>` image automatically, puts that
-   image in the visual packet, and does not pass below the 0.90 floor. Compare
-   the packet's views with that image, not with the contract text. The
+   image in the visual packet, and does not pass below the 0.90 floor. The
+   packet also carries `compare-NN.png`: that image beside the model rendered
+   at the pose the gate matched, both at one height. Compare form there, not
+   with the contract text: thinner or blockier bodies, missing openings, merged
+   or missing members, simplified detail. Below the floor the feedback must
+   list every such difference under `differences` (ADR 0075). The
    assembly round never scores a component image against the whole object;
    one with no current component pass fails there as missing. Outside
    Contract Mode, score a sealed Wish reference that shows one component in
@@ -171,13 +175,22 @@ are separate. Frozen older runs retain their materialized rules and tools.
    assembly round scores every sealed reference no current component pass
    has scored, against the whole object.
 
-   When a component image stays below the floor after three rounds that did
-   not raise its IoU by more than 0.005 (`stalled 3/3` in the summary), the
-   Manager may accept it by rerunning that component round with
-   `--accept-likeness "<reason>"`. The reason names what the image shows and
-   why this geometry cannot follow it. An image that has not stalled out
-   cannot be accepted. Every acceptance is reported to the person when the
-   run ends; it is never recorded as the person's decision.
+   When a component image stays below the floor after three rounds that each
+   changed its geometry and did not raise its IoU by more than 0.005
+   (`stalled 3/3` in the summary), the Manager may ask for acceptance. A rerun
+   that changed no geometry does not count (ADR 0075). Before accepting, spawn
+   a fresh subagent that did not author the component. Give it only the latest
+   round's `compare-NN.png` images and the contract lines for that geometry,
+   and ask whether the remaining differences are acceptable. Record its answer
+   as `{"round", "comparisons", "reviewer", "agrees", "reason"}`: `comparisons`
+   maps each image path to its sha256 exactly as that round's packet lists
+   them. Then rerun the component round unchanged with
+   `--accept-likeness "<reason>" --acceptance-review <review.json>`. The
+   reason names what the image shows and why this geometry cannot follow it.
+   An image that has not stalled out, a review by the Manager, a review that
+   disagrees, and geometry changed after the review are all refused. Every
+   acceptance is reported to the person when the run ends; it is never
+   recorded as the person's decision.
 3. Only after every component passes, author the non-part combined `*.step.py`
    entry and begin assembled-object rounds with:
 

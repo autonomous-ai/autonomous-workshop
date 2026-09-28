@@ -214,6 +214,18 @@ the Wish or the concept, so that what the object actually shows is recorded
 separately from what it was meant to show.
 _Avoid_: QA, review pass, critique
 
+**Stalled Out**:
+A reference image still below the likeness floor after three rounds that each
+changed the geometry without raising its score. A rerun that changed nothing is
+not an attempt and does not count.
+_Avoid_: Stuck, plateaued
+
+**Acceptance Review**:
+A second reader's recorded agreement that a Stalled Out image may ship below
+the floor. The reader is never the Workshop Manager and judges the reference
+beside the model, not the model alone.
+_Avoid_: Sign-off, approval
+
 **Unique Geometry**:
 One distinct shape in a Design Contract, shared by every Component built to it.
 A chess set has six, not thirty-two. It is the unit a Design Contract names
