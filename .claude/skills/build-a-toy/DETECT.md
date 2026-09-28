@@ -53,6 +53,12 @@ contract's numbers are decisions, not estimates.
   using `part_<role>` names, `make/product.json` and the extents. Record the
   mapping and the evidence for it in `findings.json`. Compare every mapped
   Component. If nothing maps, raise `unmapped:<geometry>` instead.
+  When the contract grants a hidden-joint allowance (a section that lets
+  Make extend a part along a joint axis by at most N mm), a measured extent
+  may exceed its contract value by up to N on that one axis. Record the
+  excess and the joint from Make's `GEOMETRY-NOTES.md` as the evidence; a
+  larger excess, an excess on a second axis, or one the notes do not name is
+  still a finding.
 - `count:<geometry>`: the number of Components mapped to the geometry, against
   `count`. Say what the count was read from.
 - `wall:<geometry>`: read the thinnest wall from
