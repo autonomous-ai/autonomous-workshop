@@ -265,6 +265,21 @@ class ResumeInspectionTest(unittest.TestCase):
         self.assertEqual(self.launcher.resumes, [])
         self.assertEqual(self.launcher.rebindings, [])
 
+    def test_fresh_run_with_corrected_tools_is_not_told_to_preserve_work(self):
+        # A new run already has the marker but no earlier product; telling it
+        # to preserve missing sources made a live Codex Make stop and ask.
+        host.start_native_run(
+            Wish.create(self.product_id, "a complex lunar arcade", context={"inventor_id": "soren-voss"}),
+            effort="spark", max_tokens=100_000_000,
+        )
+        self.paths = host.native_run_paths(self.product_id)
+        checkpoint = host._open_budgeted_agent_run(self.paths).snapshot()
+        self.assertTrue(host._has_inspection_correction(self.paths, checkpoint))
+        self.assertFalse(host._inspection_correction_adopted(self.paths, checkpoint))
+        self.assertNotIn("Host geometry inspection correction", self.launcher.starts[0]["prompt"])
+        host.resume_native_run(self.product_id)
+        self.assertNotIn("Host geometry inspection correction", self.launcher.resumes[0]["prompt"])
+
     def test_status_is_read_only_and_does_not_adopt_correction(self):
         run = self.start_old()
         before = run.snapshot()

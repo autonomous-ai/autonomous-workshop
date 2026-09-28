@@ -6708,7 +6708,7 @@ def _launcher_call(
             "those checks manually or repeat a motion blocker. When true, apply the "
             "motion and animation requirements. Other checks still apply."
         )
-    if checkpoint.stage == "make" and _has_inspection_correction(paths, checkpoint):
+    if checkpoint.stage == "make" and _inspection_correction_adopted(paths, checkpoint):
         prompt += (
             "\n\nHost geometry inspection correction: use the materialized CAD tools "
             "described in .agents/skills/cad/references/inspection-and-validation.md. "
@@ -6719,7 +6719,7 @@ def _launcher_call(
             "prototype with GEOMETRY-NOTES.md instead of retrying the same stalled "
             "check. Measured failures still require repair. Do not claim print readiness."
         )
-    if checkpoint.stage in ("playtest", "release") and _has_inspection_correction(paths, checkpoint):
+    if checkpoint.stage in ("playtest", "release") and _inspection_correction_adopted(paths, checkpoint):
         prompt += (
             "\n\nGeometry disclosure policy: a Made product marked geometry-unverified "
             "is an accepted prototype, with no geometry or print-ready claim. Preserve "
@@ -10967,6 +10967,31 @@ def _has_inspection_correction(paths, checkpoint):
     if path.is_symlink() or _sha256(content) != expected:
         raise StateConflict("geometry inspection capability differs from its frozen input")
     return _INSPECTION_CAPABILITY_MARKER in content
+
+
+def _inspection_correction_adopted(paths, checkpoint):
+    """Whether this run's CAD tools were replaced by the resume migration.
+
+    A run created with the corrected tools carries the same marker but has no
+    earlier product to preserve, so only a recorded migration earns the
+    preserve-and-finish instruction. A fresh Make told to preserve missing
+    work stops and asks for it.
+    """
+    if not _has_inspection_correction(paths, checkpoint):
+        return False
+    ledger = paths.host_state / "host-corrections.jsonl"
+    if not ledger.exists():
+        return False
+    content = _read_stable_private_bytes(
+        ledger, label="host corrections", maximum_bytes=1024 * 1024)
+    for line in content.splitlines():
+        record = json.loads(line)
+        if (record.get("kind") == "autonomous-workshop.host-correction"
+                and record.get("schema_version") == 1
+                and record.get("reason") == _INSPECTION_REFRESH_REASON
+                and record.get("correction") == "geometry-inspection-refresh-complete"):
+            return True
+    return False
 
 
 def _adopt_resume_inspection_tools(paths, run, checkpoint):
