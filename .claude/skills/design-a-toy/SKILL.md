@@ -1,6 +1,6 @@
 ---
 name: design-a-toy
-description: Design any physical Workshop toy - a vehicle, a jointed robot, a bone dragon, a puzzle, a game - with an Inventor before any run starts - grill the idea into a frozen spec, draft the Design Contract, generate one reference image per unique geometry plus the assembly, reconcile them with the contract feature by feature, check that everything they show can be printed, then get the human's one visual review before handing off to `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
+description: Design any physical Workshop toy - a vehicle, a jointed robot, a bone dragon, a puzzle, a game - with an Inventor before any run starts - grill the idea into a frozen spec, draft the Design Contract, generate one reference image per unique geometry plus the assembly, reconcile them with the contract feature by feature, check that everything they show can be printed and that any mechanism can move, then get the human's one visual review before handing off to `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
 ---
 
 # Design a toy before the run
@@ -290,6 +290,71 @@ contract scale, minimum, verdict, resolution.
 Done when: every feature the images show meets its minimum, every form has a
 support-free stance, and every change is in both the contract and the images.
 
+## Stage 3d - Check that the mechanism can move
+
+Skip this stage when the toy has no moving part. Otherwise, the images and
+the print fixes of Stages 3b and 3c may have moved a gear, a hinge or a
+blade, so check the mechanism against the contract as it now stands.
+
+Compute the checks with a script from the contract's own numbers: axis
+positions, pitch and tip radii, face widths, part thicknesses, angles and
+travel. A 2D layout seen along each axis is enough, with shapely or plain
+geometry. The script calculates; it never draws an image or builds CAD, for
+the same reason as Stage 3.
+
+Check every item:
+
+1. **No gear ring.** List every pair of gears whose centre distance equals the
+   sum of their pitch radii and whose layers overlap: those mesh, whether the
+   contract meant them to or not. Gears that mesh in a closed ring cannot
+   turn. Broken God's pinion sat 24 from both wing sectors (16 + 8) in one
+   layer, and the two sectors mesh each other, so the train was locked.
+2. **Teeth fit the part.** Each gear's face width fits inside the thickness of
+   the part that carries it, and the part's extents include any boss that
+   carries teeth. Broken God declared 8 wide gears on a 5.3 thick wing.
+3. **Nothing collides through the travel.** Sweep every moving part through
+   its full travel, every 5 degrees or finer, against every other part in its
+   layer. It must keep the contract's clearance, and at least 0.5. Check the
+   teeth that turn away from their mesh too: a tooth at the mesh when closed
+   is 35 degrees round the gear when open, and may reach a third gear.
+4. **Teeth cover the travel.** Each toothed arc still engages at both ends of
+   the travel, with at least one tooth to spare.
+5. **The ratio agrees.** The tooth ratio times the input angle equals each
+   output angle the contract states, in the right direction, and mirrored
+   parts turn in mirror.
+6. **Axles are long enough.** Each purchased axle or pin covers the press depth
+   plus every layer it passes through, in a length the contract's supplier
+   actually stocks.
+
+A failed check is resolved in this order, keeping the look:
+
+1. **Separate the layers.** Put the gears that must not meet in different
+   layers, with 0.5 between them, and carry the one mesh that must cross
+   layers on a boss hidden inside the body.
+2. **Move an axis or change a tooth count**, then redo Stage 3b for the
+   landmarks it moves.
+3. **Shorten the travel**, only when nothing above works.
+
+A resolution that changes something the images show also changes the images,
+by AI editing, and redoes Stages 3b and 3c for them and the assembly image. A
+resolution hidden inside the body changes only the contract.
+
+Then write the motion plan into the contract's prose, because Make's motion
+check stops at its time limit and an unfinished sweep proves nothing:
+
+- `--check-motion true` on the wish and on every resume and correction;
+- one sweep of the full travel, at most 10 steps, against only the parts a
+  moving part can reach;
+- one one-tooth sweep per mesh, at most 10 steps, with no obstacles;
+- a skipped, killed or timed-out sweep fails the motion requirement, never
+  passes it. Add this to that requirement's own row.
+
+Record every check in the working notes as a table: check, parts, value,
+limit, verdict, resolution.
+
+Done when: every check passes on the contract as amended, and the motion plan
+is in the contract.
+
 ## Stage 4 - Visual review
 
 **Stop. This is the only approval gate.** Show the human every reference image
@@ -303,12 +368,14 @@ measurement table or millimetre lists unless the human asks.
 Also say, in plain words, anything the build will not match exactly, from
 Stage 3b or from the generation notes. List each Stage 3c change the same way:
 what grew, what was reshaped for printing, and what was dropped ("the rivets
-are drawn at 0.7 mm and will print as 1 mm bumps").
+are drawn at 0.7 mm and will print as 1 mm bumps"). A Stage 3d change hidden
+inside the body gets one line ("the heart gear sits in front of the wing
+gears so the train cannot jam; hidden in the back").
 
 Wait for explicit approval of the images. If the human wants a change - a
 different shape, proportion, count, pose or feature - fix the images by AI
 editing or regeneration, amend the contract so it says what the new images
-show, and redo Stages 3b and 3c for **every** image. Then update the same Artifact
+show, and redo Stages 3b, 3c and 3d for **every** image. Then update the same Artifact
 page and show only the images that changed, always with the assembly image,
 which is the one the likeness gate scores. Repeat until the human approves.
 

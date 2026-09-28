@@ -24,6 +24,7 @@ Every run this skill starts, whether `wish` or `fix`, uses:
 | `--turn-minutes` | `360` | The maximum. The clock is not the limit |
 | `--max-tokens` | `100000000` | **This is the real backstop.** With 360-minute turns and unlimited resume, a run stops when its tokens run out |
 | `--ref` | every contract reference, every run | The assembly round scores every sealed reference that no current component round already scored (ADR 0072). A description of an image is no substitute for the image |
+| `--check-motion` | `true` when the contract has any moving part, on **every** `wish`, `fix` and `resume` | `workshop resume` reselects this option and defaults it to `false`. Broken God v01 was resumed without it, and its final verification skipped the motion check and shipped with its wings unverified |
 | `--effort`, `--model` | only if the person passed them | Both are frozen for the run and cannot change on resume, so never raise them yourself |
 
 ## Step 1 - Load and validate the contract
@@ -59,7 +60,7 @@ Build the command:
 ```bash
 uv run workshop wish --contract build-a-toy/r00/CONTRACT.md --inventor <inventor> \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
-  --no-publish --turn-minutes 360 --max-tokens 100000000
+  --no-publish --turn-minutes 360 --max-tokens 100000000 [--check-motion true]
 ```
 
 **Show the person the exact command and wait for explicit approval.** Then run
@@ -82,7 +83,9 @@ Poll `uv run workshop status <wish-id> --json`. Its `status` is `active`,
   `status`, `stage` or token counts:
   - `transport` or `inspection-in-progress`: the stop is resumable and, for
     `inspection-in-progress`, still converging. Resume it:
-    `uv run workshop resume <wish-id> --turn-minutes 360 --json`. Leave
+    `uv run workshop resume <wish-id> --turn-minutes 360 --json`, adding
+    `--check-motion true` whenever the run was started with it, because a
+    resume without it turns the motion check off. Leave
     `--max-tokens` out, because a resume keeps the saved budget. Resumes are
     unlimited and never count as a round.
   - `budget`: report plainly that **the token budget, the run's only
@@ -150,7 +153,7 @@ archive, and it stays within `fix`'s 128 MiB source limit.
 uv run workshop fix "<previous-run-workspace>" --prompt-file build-a-toy/r<NN>/brief.md \
   --contract <contract-dir>/CONTRACT.md \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
-  --no-publish --turn-minutes 360 --max-tokens 100000000
+  --no-publish --turn-minutes 360 --max-tokens 100000000 [--check-motion true]
 ```
 
 Check the receipt's `References:` line against the contract's reference

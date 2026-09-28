@@ -76,6 +76,16 @@ reference image's mask is broken, not the model. Flatten the image with
 `image-to-cad/scripts/ref_silhouette.py` and score again. Record both scores,
 and do not raise the finding against the toy for a mask problem.
 
+## Motion (deterministic sweep)
+
+When the contract has a moving part, read the `check_motion` row of
+`<toy-dir>/make/verification/CAD-GATE.json`. Raise `motion` when that row is
+`skipped`, timed out, or anything other than a pass, and quote the row as the
+evidence. A skipped or unfinished sweep is *unverified*, never clear, and the
+requirement rows for the motion do not pass without it. Broken God v01
+recorded every mechanism requirement as matching while its sweep had timed out
+three times and its final check had been skipped.
+
 ## Requirements (already contract-bound review)
 
 Every round runs under `--contract`, so the host's finalizer already refused
