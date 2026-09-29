@@ -33,6 +33,10 @@ from workshop.errors import (
     TransitionError,
 )
 from workshop.make.revision import MAKE_INVENT_REVISION_CAPABILITY_PATH
+from workshop.make.role_agents import (
+    MAKE_ROLE_AGENT_NAMES,
+    parse_make_role_agent_bytes,
+)
 from workshop._validation import require_sha256
 from workshop.runtime.agent_assets import (
     InventorSkillBinding,
@@ -873,9 +877,23 @@ class AgentRun:
         carry_unchanged: bool = False,
         wish_reference_files: Optional[Mapping[str, bytes]] = None,
         revision_snapshot: Optional[bytes] = None,
+        make_role_agents: Optional[Mapping[str, bytes]] = None,
     ) -> "AgentRun":
         if type(check_motion) is not bool:
             raise ContractError("agent run check_motion must be boolean")
+        # The fixed Make roles (ADR 0077) sit beside the Inventor roster in
+        # ``.codex/agents``. A run created without them keeps the roster-only
+        # directory it always had.
+        if make_role_agents is None:
+            make_role_agents = {}
+        if not isinstance(make_role_agents, Mapping):
+            raise ContractError("Make role agents must be a mapping")
+        role_agent_files: list[tuple[PurePosixPath, bytes, int]] = []
+        for role_name, role_bytes in sorted(make_role_agents.items()):
+            parse_make_role_agent_bytes(role_name, role_bytes)
+            role_agent_files.append(
+                (PurePosixPath(".codex/agents") / (role_name + ".toml"), role_bytes, 0o400)
+            )
         if type(carry_unchanged) is not bool:
             raise ContractError("agent run carry_unchanged must be boolean")
         if carry_unchanged and revision_snapshot is None:
@@ -1169,6 +1187,7 @@ class AgentRun:
         all_input_files.extend(domain_files)
         all_input_files.extend(inventor_skill_files)
         all_input_files.extend(inventor_agent_files)
+        all_input_files.extend(role_agent_files)
         all_input_files.extend(wish_reference_inputs)
         all_input_files.extend(revision_inputs)
         all_input_files.sort(key=lambda item: item[0].as_posix())
@@ -1640,6 +1659,15 @@ class AgentRun:
         observed_agent_paths = {
             path for path in observed_paths if path.startswith(".codex/agents/")
         }
+        for role_name in MAKE_ROLE_AGENT_NAMES:
+            role_path = ".codex/agents/%s.toml" % role_name
+            if role_path not in observed_agent_paths or role_path in expected_agent_paths:
+                continue
+            try:
+                parse_make_role_agent_bytes(role_name, input_content[role_path])
+            except ContractError as exc:
+                raise StateConflict("materialized Make role agent is invalid") from exc
+            expected_agent_paths.add(role_path)
         if expected_agent_paths != observed_agent_paths:
             raise StateConflict(
                 "project-scoped Codex Inventor agents differ from the roster"

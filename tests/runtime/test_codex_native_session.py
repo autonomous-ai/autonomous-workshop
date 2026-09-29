@@ -18,6 +18,7 @@ import workshop.runtime.codex as codex_runtime
 from workshop.errors import ContractError
 from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
 from workshop.workflow.inventor_selection import INVENTOR_SELECTION_MARKER_NAME
+from workshop.make.role_agents import make_role_agent_files
 from workshop.runtime.codex import (
     DEFAULT_WORKSHOP_MODEL,
     CODEX_FAILURE_DIAGNOSTIC_FILENAME,
@@ -337,6 +338,25 @@ class CodexNativeSessionTest(unittest.TestCase):
                     "--config",
                     'agents."ferro-line".config_file=%s'
                     % json.dumps(str(agents / "ferro-line.toml")),
+                ),
+            )
+
+    def test_fixed_make_role_agents_register_as_codex_roles(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            agents = root / ".codex" / "agents"
+            agents.mkdir(parents=True)
+            for name, content in make_role_agent_files().items():
+                (agents / (name + ".toml")).write_bytes(content)
+
+            arguments = inventor_agent_config_arguments(root)
+
+            self.assertEqual(
+                arguments[1::2],
+                tuple(
+                    'agents."%s".config_file=%s'
+                    % (name, json.dumps(str(agents / (name + ".toml"))))
+                    for name in ("component-reviewer", "component-worker")
                 ),
             )
 

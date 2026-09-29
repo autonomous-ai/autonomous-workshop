@@ -1165,7 +1165,9 @@ def inventor_agent_config_arguments(run_root: Path) -> tuple[str, ...]:
     and the Manager could not dispatch the bound Inventor (ADR 0054). Each
     regular ``<id>.toml`` in the run's ``.codex/agents`` directory becomes one
     ``--config`` pair pointing at that exact file; symlinks and other names are
-    ignored, and a run without the directory registers nothing. The files are
+    ignored, and a run without the directory registers nothing. The fixed Make
+    role agents (ADR 0077) live in the same directory and register the same
+    way, which is how their declared reasoning effort reaches Codex. The files are
     already hash-bound in the run manifest, so these arguments are derived
     from sealed inputs rather than being part of the launch policy identity.
     """

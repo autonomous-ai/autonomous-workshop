@@ -12,6 +12,7 @@ from unittest.mock import patch
 import workshop.workflow.agent_run as agent_run_module
 from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.errors import ArtifactError, ContractError, StateConflict, TransitionError
+from workshop.make.role_agents import make_role_agent_files
 from workshop.runtime.agent_assets import parse_inventor_custom_agent_bytes
 from workshop.runtime.managers import manager_project_bytes, manager_spec
 from workshop.workflow import (
@@ -754,6 +755,94 @@ class AgentRunTest(unittest.TestCase):
         run_checker = run.run_root / ".agents/skills/cad/scripts/check_fit"
         run_checker.chmod(0o400)
         with self.assertRaisesRegex(StateConflict, "immutable input mode"):
+            run.snapshot()
+
+    def test_create_materializes_fixed_make_role_agents_beside_the_roster(self):
+        inventor_source = self.root / "inventors"
+        self.write_inventor(inventor_source, "alice")
+
+        run = self.create(
+            inventor_source_root=inventor_source,
+            make_role_agents=make_role_agent_files(),
+        )
+        checkpoint = run.snapshot()
+
+        for name, content in make_role_agent_files().items():
+            relative = ".codex/agents/%s.toml" % name
+            path = run.run_root / relative
+            self.assertEqual(path.read_bytes(), content)
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o400)
+            self.assertIn(relative, checkpoint.input_sha256s)
+        self.assertEqual(
+            [item["inventor_id"] for item in checkpoint.inventor_roster],
+            ["alice"],
+        )
+        reopened = AgentRun.open(
+            run.run_root,
+            host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+        )
+        self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_a_run_without_make_role_agents_keeps_its_inventor_only_roster(self):
+        inventor_source = self.root / "inventors"
+        self.write_inventor(inventor_source, "alice")
+
+        run = self.create(inventor_source_root=inventor_source)
+
+        self.assertEqual(
+            sorted(p.name for p in (run.run_root / ".codex" / "agents").iterdir()),
+            ["alice.toml"],
+        )
+        run.snapshot()
+
+    def test_creation_refuses_an_unknown_or_invalid_make_role_agent(self):
+        worker = make_role_agent_files()["component-worker"]
+        for roles, message in (
+            ({"alice": worker}, "not a Make role agent"),
+            ({"component-reviewer": worker}, "name differs"),
+            ({"component-worker": b"name = "}, "valid UTF-8 TOML"),
+            (["component-worker"], "mapping"),
+        ):
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ContractError, message):
+                    self.create(make_role_agents=roles)
+                self.assertFalse(self.run_root.exists())
+
+    def test_creation_refuses_an_inventor_that_collides_with_a_make_role(self):
+        inventor_source = self.root / "inventors"
+        self.write_inventor(inventor_source, "component-worker")
+
+        with self.assertRaisesRegex(ArtifactError, "collide"):
+            self.create(
+                inventor_source_root=inventor_source,
+                make_role_agents=make_role_agent_files(),
+            )
+        self.assertFalse(self.run_root.exists())
+
+    def test_snapshot_refuses_a_make_role_agent_the_run_did_not_seal(self):
+        inventor_source = self.root / "inventors"
+        self.write_inventor(inventor_source, "alice")
+        run = self.create(inventor_source_root=inventor_source)
+        agents = run.run_root / ".codex" / "agents"
+        agents.chmod(0o700)
+        (agents / "component-worker.toml").write_bytes(
+            make_role_agent_files()["component-worker"]
+        )
+
+        with self.assertRaises(StateConflict):
+            run.snapshot()
+
+    def test_snapshot_refuses_a_tampered_make_role_agent(self):
+        run = self.create(make_role_agents=make_role_agent_files())
+        agents = run.run_root / ".codex" / "agents"
+        agents.chmod(0o700)
+        path = agents / "component-reviewer.toml"
+        path.chmod(0o600)
+        path.write_bytes(path.read_bytes().replace(b'"low"', b'"high"'))
+        path.chmod(0o400)
+
+        with self.assertRaises(StateConflict):
             run.snapshot()
 
     def test_creation_rejects_legacy_schema_seven_inventor_source(self):
