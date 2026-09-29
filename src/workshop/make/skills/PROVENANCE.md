@@ -1,5 +1,165 @@
 # Shared skill provenance
 
+## Resync to upstream `bd1dcdc`: the wiki replaces `mechanisms`, three skills join (2026-09-29)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `bd1dcdc0426e562d3e09bdc3d61cf0868b9f26fa` (2026-09-29), resynced from
+  `facbc58` for `cad`, `design-reference`, `electromechanical-integration`,
+  `image-to-cad` and `step-parts`, and from `cf81f51` for `mechanisms` — 95
+  upstream commits. It was a three-way merge: base the locked upstream bytes,
+  one side the Workshop tree, the other upstream `HEAD`. `step-parts` came out
+  byte-identical; its lock moves to the new commit only. `cadgen` stays at
+  0.4.19.
+- **`mechanisms` is retired; `wiki` replaces it.** Upstream moved the design
+  knowledge out of the skills (`79241b6`) into `skills/wiki`: 178 pages under
+  `mechanisms/`, `modeling/`, `printing/`, `structures/`, `materials/`,
+  `fasteners/`, `electronics/`, `standards/`, `image-reading/`,
+  `product-design/` and `reverse-engineering/`, searched by a stdlib-only
+  `scripts/wiki` (BM25 over sections, synonym expansion, `lint`). The eight
+  `mechanisms` pages are wiki pages now, and the resynced `cad`,
+  `image-to-cad` and `electromechanical-integration` references point into
+  roughly forty of them for knowledge they used to carry themselves.
+- **New skills, materialized into every product run:** `wiki`,
+  `product-design` (an industrial-design pass for a prose request: survey,
+  direction, concept selection, sizing and recorded review rounds, ending in
+  the same `<name>_spec.md` `image-to-cad` writes), `step-to-source` (recover
+  or re-author build123d source from a STEP with no generator, then release
+  the references and assemble) and `stl-to-step` (convert a supplied mesh into
+  a verified reference STEP). Upstream's `toy-archive` is **not** adopted: its
+  `publish` wraps a Factory effect, which only the host may perform.
+- **What else upstream brought.** `cad`: `scripts/stdpart` and
+  `references/standard-elements.md`, standard fasteners, bearings, keys and
+  gears built by `bd_warehouse` and `py_gearworks` with the mating feature
+  derived from the element; `scripts/cadcache.py`, a content-hashed parallel
+  build cache; a `CARRIES = "ref/x.step"` declaration that exempts a carrier
+  entry's own body from the mount audit; `check_overhang` stops calling a cap
+  on a stem a bridge and scores a mirror image as the same overhang;
+  `cadmount.load` takes a named solid from a multi-solid catalog STEP;
+  Bambu Lab PLA Matte (25 colours) joins the palette, which retires the bare
+  `"PLA"` shorthand because two PLA stocks are now loaded; the STEP writer
+  drops pcurves when every face is planar (`626d798`); and a step 13 that
+  writes back what an edit taught. `image-to-cad`: a declared camera per
+  reference and a handedness check (`c1c3886`), one hole-scoring rule, a ruler
+  in every view, the pose settled at the resolution the gate scores, the
+  search's own score recorded and held, and a render that survives a face OCCT
+  will not triangulate.
+- **The camera is required, as upstream has it.** `verify_project
+  --image-derived` refuses a `--likeness-ref` without `@AZ,EL[,TOL]`, because
+  a pose search over every azimuth scores a model built the wrong way round
+  like the right one. `render_views` without `--camera` still searches freely
+  and says it is mirror-blind. Workshop adopted the refusal, and taught
+  `make_round` to carry a camera on `--ref LABEL=PATH@AZ,EL[,TOL]`, on a
+  `LABEL=ref/x@AZ,EL` ledger line and in the build spec's new camera column.
+  It passes the camera to `render_views --camera` and forwards it on `--full`.
+  A `--ref` that copies a sealed Wish image lends that image its camera, since
+  the Wish seals pixels, not where they were taken from. A replay that
+  `render_views` refuses because its stored pose lies outside the declared
+  window is re-searched inside it rather than failing every later round. The
+  product-run `make.md` and the `make-round` tool card say to declare a camera
+  from the first round.
+
+Merge decisions where both sides had changed the same lines:
+
+- `render_review`: upstream `a6747ce` walks nested assemblies so each solid
+  keeps its colour and placement. Workshop's placed-leaf walk already did that
+  and carries the ADR 0068 tessellation cache and the angular deflection, so
+  Workshop's hunk is kept and upstream's nested fixture is adopted beside it;
+  it passes against the Workshop implementation.
+- `verify_project`: both sides' additions are kept — Contract Mode likeness
+  (ADR 0074) and `CARRIES`. The camera refusal runs before the Contract Mode
+  checks, `_final` takes both `skip_gen` and `likeness_cameras`, and the
+  cameras are forwarded through Workshop's restructured final call.
+- `render_views.py`: upstream's match record plus Workshop's `worst_bands`.
+- `cadfilament.py`, `build123d-modeling.md`, `parameters.md`,
+  `organic-lofts.md`, `build123d-operations.md`: upstream's three-stock text,
+  with Workshop's two `$CAD_SKILL_ROOT` path adaptations re-applied. The PETG
+  Basic table Workshop added on 2026-09-15 is byte-identical to upstream's.
+- `likeness-gate.md`: upstream's condensed text, keeping Workshop's ADR 0074
+  wording — below 0.90 the Workshop Manager accepts with a reason the run
+  reports, rather than upstream's "the user's decision: stop and ask".
+- `cad/SKILL.md`: Workshop's tool listing with `stdpart` added, Workshop's
+  step 13 kept, and upstream's write-back step renumbered 14.
+
+Workshop adaptations of the new text:
+
+- **Paths.** Runnable command lines use the `$<NAME>_SKILL_ROOT` form the
+  earlier resyncs used, and `wiki search` becomes
+  `python "$(workshop skills path)/wiki/scripts/wiki" search`. Prose pointers
+  such as `skills/wiki/pages/printing/fit-derivation.md`, and the commands the
+  new skills' planners print, stay upstream's bytes. One note in each
+  `SKILL.md` resolves `skills/<name>/...` under `$(workshop skills path)`. No
+  script in `wiki`, `product-design`, `step-to-source` or `stl-to-step`
+  changed.
+- **Write-back.** Upstream now ends every edit by writing what it taught into
+  `skills/wiki`. A product run's skills are read-only (`0400`) and hash-bound
+  into its input manifest, so the wiki is consult-only there. The `cad` step 14
+  and the wiki's own `SKILL.md` send a new rule to the final response instead.
+  The Make lessons loop still carries gate failures into the design vault, and
+  a Workshop builder writes durable rules back here or upstream.
+- **`product-design`** fires only while the design is open: a prose Wish with
+  no sealed concept, Design Contract or reference image. It works inside the
+  Inventor's `TASTE.md` and treats the Wish's words as the user's. Its review
+  rounds spend Make's frozen round and review allowance and never replace the
+  blind signature review. Its spec lives in the run's CAD project, and it adds
+  no `--fresh`.
+- **`step-to-source`** may release (delete) only a reference the run itself
+  converted or copied into its project, never a sealed Wish reference or other
+  host input.
+- **`stl-to-step`** never runs `--install` in a product run: there is no user
+  to approve a 7.6 GB download or a build of outside code. A mesh that needs a
+  missing backend is reported as blocked.
+
+Host changes the new trees force:
+
+- **Run input caps.** A run now materializes about 480 inputs and 4.4 MiB
+  (about 300 and 3 MiB before). That crossed `MAX_AGENT_INPUT_BYTES` (4 MiB)
+  and left about 30 files under `MAX_AGENT_INPUT_FILES` (512) for Wish
+  references and an imported correction tree. The caps rise to 6 MiB and 768
+  files, restoring the headroom they had. The agent-run test that materializes
+  the complete installed inventory now holds it at least 1 MiB and 200 files
+  under both caps, so the next growth fails there by name instead of in every
+  end-to-end run.
+- **Host colour vocabulary.** `workshop.make.cad.filament_names` repeats the
+  palette's names for the occurrence-name gate and gains the 24 PLA Matte
+  names that are new (43 colours across 51 spools). Longest-first matching now
+  reads `arm_dark_blue` as `dark_blue`, the spool it names, not `blue`.
+
+Dependencies: `bd-warehouse>=0.3,<0.4` and `py-gearworks>=0.0.23,<0.1` join
+Workshop's own dependencies, exactly as `cad/requirements.txt` pins them, so
+`tools/verify_skill_locks.py` still finds every CAD requirement pinned
+identically. `uv.lock` resolves `bd-warehouse` 0.3.0 and `py-gearworks` 0.0.24
+without moving `build123d` 0.11.1 or `cadquery-ocp`. Both are Apache-2.0. The
+lock keeps its revision-3 format; only those two packages and the root entry
+changed.
+
+Verified here: every tree's self-check passes — `verify_project` (camera and
+`CARRIES` fixtures included), `render_review` (upstream's nested fixture
+against Workshop's walk), `render_views`, `check_likeness`, `measure_image`,
+`check_overhang`, `meshlib`, `printlib`, `repair_mesh`, `cadfits`,
+`cadmount`, `cadfilament` (all 51 colours round-trip), `cadcache`, `stdpart`,
+`check_power`, `download_step_part`, the three `stl-to-step` and six
+`step-to-source` tools, `make_round`, and `wiki lint` (178 pages, 0 errors).
+
+Consequences for existing runs:
+
+- **Materialized instruction bytes changed.** Every upstream fingerprint moves
+  except `step-parts`, `make-round`'s moves with its camera plumbing, four
+  trees are added and one is dropped, and the
+  product-run `make.md` and `make-playtest.md` change. A run parked before this
+  change must be restarted rather than resumed; resume fails closed on the
+  materialized-instruction-hash mismatch.
+- `workshop resume --refresh-tools` rewrites only the skills a run already
+  carries. A parked run gains the resynced trees and, for a token-budget run,
+  the new `make.md`. It never gains the four new trees and keeps its own
+  `mechanisms`. The resynced `cad` reaches the wiki through
+  `$(workshop skills path)`, which is the installed package. An
+  image-derived final in such a run now needs a camera per reference, and the
+  verifier's refusal names the fix.
+- An all-planar part now writes different STEP bytes (`626d798`). A
+  `workshop fix` correction whose source archive was made before this change
+  therefore re-measures such a part instead of carrying it, even when its
+  geometry did not move. That costs work, never correctness.
+
 ## Vendored cadgen installed into the Workshop venv (2026-09-26)
 
 A Workshop-local change to the vendored `cad` tree, not an upstream resync.

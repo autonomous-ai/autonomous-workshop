@@ -6,6 +6,8 @@ Read this file when converting a user's request — prose, reference images, tec
 
 Convert the request into an actionable modeling brief before writing source or running tools. Every input modality funnels into the same brief; the downstream workflow does not change.
 
+The brief records a design; it does not make one. A request that names a product and leaves its form, size, features or mechanism open ("a phone stand", "a walking toy") goes through `$product-design` first, and a reference image to reproduce through `$image-to-cad`; their `*_spec.md` is the input this brief is written from. Brief a request directly only when it already fixes the design — a dimensioned part, a drawing, an edit.
+
 The brief should answer:
 
 - What is being modeled, and is it a part, assembly, modification, inspection task, or secondary output request?
@@ -15,26 +17,23 @@ The brief should answer:
 - What output files are requested?
 - What must be validated before success is reported?
 
-When inputs conflict, dimensioned sources win over image proportions. When two dimensioned sources conflict — prose says one value, a drawing callout says another — flag the conflict instead of silently choosing.
+When inputs conflict, dimensioned sources win over image proportions; flag a
+conflict between two dimensioned sources instead of silently choosing.
 
-## Reference images
+## Reference images and technical drawings
 
-An image without stated dimensions is design intent, not a spec:
+An image without stated dimensions is design intent, not a spec; a drawing is
+a dimensioned contract. How to extract each — scale from one stated dimension
+or a known object (the one clarification question when neither exists and fit
+matters), reproduction versus inspiration, title block and projection first,
+section views as the truth for internal features, callouts (`4X`, `TYP.`,
+thread/counterbore/countersink) expanded into features plus checks, never
+scaling undimensioned geometry off the image — is in
+`skills/wiki/pages/image-reading/reading-technical-drawings.md`
+(`wiki show reading-technical-drawings`).
 
-- Establish scale from one stated dimension or a known object in frame; if neither exists and fit matters, that is the one clarification question to ask.
-- Estimate remaining proportions from the image and record them as assumptions like any other inferred value.
-- Distinguish reproduction ("model this part") from inspiration ("something like this") in the brief; reproduction raises fidelity expectations, inspiration leaves freedom.
-
-## Technical drawings
-
-A drawing is a dimensioned contract. Extract it systematically:
-
-- Read the title block and notes first: units, projection convention, revision, disclaimers.
-- Identify which view is which — front/top/side, sections, details, iso — and which model axes each maps to before extracting numbers. Trust callouts and view labels, not layout conventions. Section views are the source of truth for internal features: bores, counterbore and blind-hole depths, wall sections.
-- Convert every dimension callout into a named parameter and a validation target. Multiplicity (`4X`), `TYP.`, and thread/counterbore/countersink callouts expand into features plus checks.
-- Never scale undimensioned geometry off the image. Derive it from stated dimensions when constrained; otherwise assume and report.
-- Cross-check features across views; when views disagree, prefer the dimensioned view and flag the conflict.
-- Success for a drawing-driven model: every drawing dimension is either verified by `measure`/`refs` after generation or explicitly reported as not verified.
+Success for a drawing-driven model: every drawing dimension is either verified
+by `measure`/`refs` after generation or explicitly reported as not verified.
 
 ## Brief format
 
@@ -106,7 +105,7 @@ Ask one focused question only when the missing information affects fit, safety, 
 
 Ask when:
 
-- No dimensions are provided for a physical object, and no scale reference exists in the supplied images.
+- No dimensions are provided for a physical object that must fit something the request does not name, and no scale reference exists in the supplied images. A product whose size is merely open is sized by `$product-design` from its survey and anchors, not asked about.
 - A mating interface is described but the mating geometry is unspecified.
 - The part is safety-critical, load-bearing, pressure-bearing, medical, or compliance-bound.
 - The requested output depends on an absent source file or missing imported geometry.

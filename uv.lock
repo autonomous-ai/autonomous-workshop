@@ -29,11 +29,13 @@ name = "autonomous-workshop"
 version = "0.6.0"
 source = { editable = "." }
 dependencies = [
+    { name = "bd-warehouse" },
     { name = "build123d" },
     { name = "cadgen" },
     { name = "cadquery-ocp" },
     { name = "pillow" },
     { name = "psutil" },
+    { name = "py-gearworks" },
     { name = "pypdf" },
     { name = "pypdfium2" },
     { name = "reportlab" },
@@ -41,14 +43,29 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "bd-warehouse", specifier = ">=0.3,<0.4" },
     { name = "build123d", specifier = "==0.11.1" },
     { name = "cadgen", editable = "src/workshop/make/skills/cad/scripts/packages/cadgen" },
     { name = "cadquery-ocp", specifier = "==7.9.3.1.1" },
     { name = "pillow", specifier = ">=10,<13" },
     { name = "psutil", specifier = ">=7.2,<8" },
+    { name = "py-gearworks", specifier = ">=0.0.23,<0.1" },
     { name = "pypdf", specifier = ">=6.16.2,<7" },
     { name = "pypdfium2", specifier = ">=5.13,<6" },
     { name = "reportlab", specifier = ">=4.4" },
+]
+
+[[package]]
+name = "bd-warehouse"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "build123d" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8d/28/e8fa9fcd867db480ae7e109476c73310a5ca1ff7f246466709ad84f4f830/bd_warehouse-0.3.0.tar.gz", hash = "sha256:38f339909772770f7d211d7d25dd3572bdfb83d09eb65dee6380dea3a09ea49e", size = 8046603, upload-time = "2026-07-12T18:31:28.714Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d1/10/431fed58b4bccf7aed3f124442f2eeeecc3f83468eaa341aab9b31ff84e3/bd_warehouse-0.3.0-py3-none-any.whl", hash = "sha256:291c40f3ed04ac6dac2fbd7592eb0da3193a6aa93e3d3b741d915ca190dc99fc", size = 140511, upload-time = "2026-07-12T18:31:27.177Z" },
 ]
 
 [[package]]
@@ -1157,6 +1174,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/cd/05/0a34433a064256a578f1783a10da6df098ceaa4a57bbeaa96a6c0352786b/pure_eval-0.2.3.tar.gz", hash = "sha256:5f4e983f40564c576c7c8635ae88db5956bb2229d7e9237d03b3c0b0190eaf42", size = 19752, upload-time = "2024-07-21T12:58:21.801Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8e/37/efad0257dc6e593a18957422533ff0f87ede7c9c6ea010a2177d738fb82f/pure_eval-0.2.3-py3-none-any.whl", hash = "sha256:1db8e35b67b3d218d818ae653e27f06c3aa420901fa7b081ca98cbedc874e0d0", size = 11842, upload-time = "2024-07-21T12:58:20.04Z" },
+]
+
+[[package]]
+name = "py-gearworks"
+version = "0.0.24"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "build123d" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a6/80/7bd2b82b8244a7d4223dbc3c0ed560b4fcccc47e5038ef73d8b2153077db/py_gearworks-0.0.24.tar.gz", hash = "sha256:a8d3e44d9e91b45438c3c0b5ca5b886226fef31939fa8073eb11830e8a384768", size = 1038752, upload-time = "2026-09-24T21:43:45.002Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/67/15/8247c62b33d15c10790727367d1296ddf881fde670197d156d39b9004bc3/py_gearworks-0.0.24-py3-none-any.whl", hash = "sha256:c16ae7eb03ad8701373b655e34163648cc288b1740456304db2623a70c36d9b3", size = 86148, upload-time = "2026-09-24T21:43:43.433Z" },
 ]
 
 [[package]]

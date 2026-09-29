@@ -29,7 +29,7 @@ revolves, polar-patterned cuts, ~110 faces on its largest part, no lofts.
 | `check_fit` | 47 s | 4.1 s |
 | `check_motion` | 5 m 26 s (25 checks) | 10.0 s (8 checks) |
 | `check_mount` (1 mount) | 1.4 s | — |
-| `render_views` (4 views) | 7 s | 42.1 s with matches + `--compare-step` |
+| `render_views` (4 views) | 7 s | 42.1 s with matches + `--compare-step` (before the full-size refine replay; see below) |
 | **whole suite once** | **~23 m 25 s** | **1 m 53 s** |
 
 The suite totals were measured while the print gates ran off an exported STL.
@@ -72,6 +72,23 @@ On the prismatic model:
 | 1 `--match`, one FOV | 13.1 s | +6.8 s per reference |
 | 1 `--match`, `--search-fov 0,25,40` | 23.1 s | 2.6x — final run only |
 | 3 `--match` **with `--poses-from`** | **7.8 s** | the search skipped, same IoU |
+
+**A searched pose is scored twice, at two sizes.** The coarse sweep and its
+halvings run at `SEARCH_SIZE` (240 px) because the sweep is hundreds of
+renders; the halvings are then replayed at the size the gate scores
+(`--size`, 480 px by default), so the pose kept is the one that maximises the
+number the gate prints. The replay is `--refine` rounds of 27 renders at 4x
+the pixels, and it roughly doubles a search: measured on a synthetic
+three-box shape over a 15-degree grid, 1.25 s and 256 poses at 240 px
+throughout against 2.54 s and 338 poses with the replay — and IoU 0.9719
+against 0.9869, which is the point. Every `--match` row above predates the
+replay; scale the search part of each by about two, and use `--poses-from` on
+a rerun, which skips both.
+
+
+A declared `--camera` does not change that budget: the windowed search plus
+its two reflection searches (3 × 156 poses over three FOVs) took 2.37 s where
+one free search (585 poses) took 2.89 s on the same mesh.
 
 So the number of views is free and the size of the pose grid is not. One call
 with every `--view` and every `--match` costs about what a single match costs,
@@ -129,6 +146,18 @@ do not tell you when a round was wasted.
   writing the GLB package, and nothing reads it.
 - `CADGEN_WARM=1` on every call. It removes only a ~2 s import, but it is free.
 - One machine, one run. OCP booleans are CPU-bound.
+- **Do not rebuild a body whose inputs did not change.** A generator that
+  builds many independent bodies (station-stack sculpts, lofted segments,
+  inlay sets) pays for all of them on every `gen`, serially, and deleting
+  `__cadgen__/` does not make that cheaper. Build them through
+  `scripts/cadcache.py`: `cached_map("module:function", items, root=...,
+  inputs=..., sources=...)` keeps each body as a BREP under a hash of its code
+  and data, loads the unchanged ones in about a second, and builds the changed
+  ones at the same time, one process each, inside the same run. The key must
+  name every file and parameter the body reads; a dependency left out of it is
+  the one way the cache returns a stale body. Prove the switch once by
+  comparing volume, face count and bounding box per body against an uncached
+  build. `python "$CAD_SKILL_ROOT/scripts/cadcache.py"` is its self-check.
 
 ## Two things that quietly break a run
 

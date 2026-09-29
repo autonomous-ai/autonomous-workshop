@@ -71,6 +71,32 @@ a nonsense elevation has found the best available lie about a wrong shape; the
 recovered pose is printed for exactly that reason, and a pose far from the one
 the photograph plainly shows is a finding, not a pass.
 
+DECLARE THE CAMERA, OR THE SEARCH CANNOT SEE HANDEDNESS
+
+Looked at from behind, an orthographic silhouette is the mirror image of the
+same silhouette seen from in front: the view from (az + 180, -el) of a model is
+the view from (az, el) of its reflection. A search free to try every azimuth
+therefore scores a model built the wrong way round -- a post on the left that
+the photograph has on the right -- almost exactly as it scores the right model.
+On the self-check's chiral fixture, against an orthographic reference taken
+from (30, 20), the mirror-image model scored IoU 0.9859 and the right one
+0.9918; only the recovered pose, (-30, -20.6), said anything was wrong. Inside
+a declared window the mirror-image model scores 0.6443.
+
+`--camera AZ,EL[,TOL]`, one per `--match` in order, confines the search to
+that window (default +/-30 deg), which is where the photograph plainly was
+taken from, so the mirror pose is out of reach. Inside the window the model's
+two reflections are searched as well; when either beats the model by
+`HANDEDNESS_MARGIN` the run fails `HANDEDNESS SUSPECT` and names the axis to
+mirror, rather than leaving a shape loop to chase an IoU no shape edit can
+reach. A replayed camera outside its declared window fails too. A `--match`
+with no `--camera` still runs the unconstrained search, and says it is
+mirror-blind.
+
+A reference written by `ref_silhouette.py` has its holes filled, and carries
+a mark saying so; the search then fills the render's holes before scoring, so
+the pose it keeps is scored the way `check_likeness` will score it.
+
     --self-check   run the fixtures and exit
 
 Exit 0 when everything asked for succeeded, 1 when a --match fell below --min
@@ -103,6 +129,8 @@ for _runtime_path in (SCRIPTS_DIR, CAD_SCRIPTS_DIR, CAD_SCRIPTS_DIR / "packages"
 from check_likeness import (  # noqa: E402
     clipped_edges,
     compare,
+    fill_holes,
+    holes_filled,
     normalise,
     require_complete_reference,
     silhouette,
@@ -125,6 +153,16 @@ STALE_MIN_IOU = 0.999
 # mask rather than the shape -- see `mask_contradictions`.
 SAME_CAMERA_DEG = 20.0
 DIFFERENT_SILHOUETTE_IOU = 0.85
+# A declared camera is where the photograph was plainly taken from, give or
+# take this much. Wide enough for an eyeballed guess, far too narrow to reach
+# the (az + 180, -el) pose that makes a mirror-image model score like the
+# right one.
+DEFAULT_CAMERA_TOL = 30.0
+# How much better a reflection of the model must score, inside the declared
+# window, before the handedness is called wrong. Pose refinement alone moves a
+# near-symmetric model by well under this.
+HANDEDNESS_MARGIN = 0.02
+REFLECTIONS = {"x": np.array([-1.0, 1.0, 1.0]), "y": np.array([1.0, -1.0, 1.0])}
 
 # Z-up, right-handed. Azimuth is measured from +X toward +Y; elevation from the
 # XY plane. "front" looks from -Y, which puts +X to the right and +Z up -- the
@@ -200,6 +238,53 @@ def build_shape(source: Path):
     raise ValueError(f"{source} is neither a {ENTRY_SUFFIX} entry nor a .step")
 
 
+def _mesh_face_by_face(shape, tolerance: float):
+    """Vertices, triangles, and how many faces OCCT would and would not mesh.
+
+    The last resort, and the one that keeps a render possible at all. OCCT
+    will sometimes refuse a face that every other gate calls valid, and
+    `Shape.tessellate` raises on the first one it meets -- so a single bad
+    face anywhere in an assembly takes the whole silhouette down and the
+    likeness gate with it. Meshing one face at a time keeps everything that
+    did mesh and says what did not, because a silhouette short one interior
+    face is still a usable silhouette and no silhouette at all is not.
+
+    The count matters and is printed: a skipped interior face moves the
+    outline by nothing, a skipped large exterior one moves it a great deal,
+    and only the caller can tell which they have.
+    """
+    from OCP.BRep import BRep_Tool
+    from OCP.BRepMesh import BRepMesh_IncrementalMesh
+    from OCP.TopAbs import TopAbs_FACE
+    from OCP.TopExp import TopExp_Explorer
+    from OCP.TopLoc import TopLoc_Location
+    from OCP.TopoDS import TopoDS
+
+    BRepMesh_IncrementalMesh(shape.wrapped, tolerance, False, 0.3, True)
+    points: list[tuple[float, float, float]] = []
+    faces: list[tuple[int, int, int]] = []
+    skipped = meshed = 0
+    explorer = TopExp_Explorer(shape.wrapped, TopAbs_FACE)
+    while explorer.More():
+        face = TopoDS.Face_s(explorer.Current())
+        explorer.Next()
+        location = TopLoc_Location()
+        mesh = BRep_Tool.Triangulation_s(face, location)
+        if mesh is None:
+            skipped += 1
+            continue
+        transform = location.Transformation()
+        meshed += 1
+        base = len(points)
+        for i in range(1, mesh.NbNodes() + 1):
+            node = mesh.Node(i).Transformed(transform)
+            points.append((node.X(), node.Y(), node.Z()))
+        for i in range(1, mesh.NbTriangles() + 1):
+            a, b, c = mesh.Triangle(i).Get()
+            faces.append((base + a - 1, base + b - 1, base + c - 1))
+    return points, faces, skipped, meshed
+
+
 def tessellate(shape, tolerance: float = DEFAULT_TOLERANCE):
     """Vertices and triangles, once. Every pose after this is pure arithmetic.
 
@@ -211,8 +296,14 @@ def tessellate(shape, tolerance: float = DEFAULT_TOLERANCE):
     OCCT occasionally leaves one valid planar face with null triangulation on
     a source-built fused solid. build123d's compound tessellator then crashes
     while the same B-rep, after a STEP round-trip, triangulates normally. The
-    fallback is still source-derived geometry; it only asks OCCT to rebuild the
-    face representation before meshing it.
+    first fallback is still source-derived geometry; it only asks OCCT to
+    rebuild the face representation before meshing it.
+
+    When even that fails -- and it does, on assemblies where the face is bad
+    in the B-rep itself rather than in its representation -- the second
+    fallback meshes face by face and drops the ones that will not mesh. That
+    is the difference between a likeness score with a caveat and no likeness
+    score at all.
     """
     try:
         verts, tris = shape.tessellate(tolerance)
@@ -228,12 +319,23 @@ def tessellate(shape, tolerance: float = DEFAULT_TOLERANCE):
                 restored = import_step(step_path)
                 verts, tris = restored.tessellate(tolerance)
         except Exception as fallback_error:  # noqa: BLE001 - preserve both causes
-            raise RuntimeError(
-                "tessellation failed directly "
-                f"({type(direct_error).__name__}: {direct_error}) and after a "
-                "temporary STEP round-trip "
-                f"({type(fallback_error).__name__}: {fallback_error})"
-            ) from fallback_error
+            points, faces, skipped, meshed = _mesh_face_by_face(shape, tolerance)
+            if not faces:
+                raise RuntimeError(
+                    "tessellation failed directly "
+                    f"({type(direct_error).__name__}: {direct_error}), after a "
+                    "temporary STEP round-trip "
+                    f"({type(fallback_error).__name__}: {fallback_error}), and "
+                    "face by face, which meshed nothing"
+                ) from fallback_error
+            print(
+                f"render_views: {skipped} face(s) would not triangulate; meshed "
+                f"the other {meshed} into {len(faces)} triangle(s) face by face. "
+                "Check that nothing on the outline is missing before trusting "
+                "a likeness score from this render.",
+                file=sys.stderr,
+            )
+            return np.array(points, dtype=float), np.array(faces, dtype=int)
         print(
             "render_views: direct tessellation failed; recovered through a "
             "temporary STEP round-trip",
@@ -441,6 +543,21 @@ def part_colour(node, index: int):
     return PART_PALETTE[index % len(PART_PALETTE)]
 
 
+def compare_tolerance(points: np.ndarray, size: int, requested: float) -> float:
+    """Tessellation tolerance for the source-vs-STEP comparison.
+
+    The in-memory solid and its STEP round trip are two B-reps of one geometry,
+    and each tessellation strays from it by up to the chordal tolerance. When
+    that is coarser than a pixel of the fitted frame, the two meshes disagree
+    on the raster along every curved edge a few pixels wide -- a thin blade on
+    a small model -- and the comparison reports drift that is not there. A
+    quarter pixel of the largest extent keeps tessellation below what the
+    raster can show, so a remaining difference is the geometry's.
+    """
+    extent = float((points.max(axis=0) - points.min(axis=0)).max())
+    return min(requested, extent / (4 * size))
+
+
 def tessellate_parts(shape, tolerance: float = DEFAULT_TOLERANCE):
     """One mesh per labelled child, carrying a colour and an id per triangle."""
     nodes = list(getattr(shape, "children", None) or []) or [shape]
@@ -568,52 +685,183 @@ def search_pose(points: np.ndarray, faces: np.ndarray, reference: np.ndarray,
                 az_range: tuple[float, float, float],
                 el_range: tuple[float, float, float],
                 fovs: list[float], roll: float, refine: int,
-                size: int = SEARCH_SIZE) -> dict:
+                size: int = SEARCH_SIZE, fill: bool = False,
+                window: dict | None = None,
+                final_size: int | None = None) -> dict:
     """The pose whose silhouette best matches `reference`, coarse then local.
 
     Scored with check_likeness's own `normalise`/`compare`, not with a private
     metric, so the pose this keeps is the pose that maximises the number the
     gate will print. A second, differently-computed answer here would be the
-    kind of quiet disagreement the toolchain has been bitten by before.
+    kind of quiet disagreement the toolchain has been bitten by before. `fill`
+    is that same rule for a reference whose holes were filled.
+
+    With a `window` (see `camera_window`) the local refinement is clamped to
+    it too; otherwise a pose on the window's edge could walk out of it one
+    halving at a time.
+
+    `final_size` closes the gap between the two resolutions this function
+    otherwise straddles. The coarse sweep and the halvings run at `size`
+    (SEARCH_SIZE, 240) because the sweep is hundreds of renders; the gate then
+    scores the saved render at DEFAULT_SIZE (480). Those two do not rank poses
+    identically: two azimuths can sit within a thousandth of each other at 240
+    and an order of magnitude further apart at 480, and the search then returns
+    the one the gate scores *worse*. With `final_size` the same
+    halvings are replayed at the gate's own resolution, so the pose kept is
+    the pose that maximises the number the gate will print -- which is what
+    this docstring promised before the two sizes were ever different. The
+    returned `iou` is then that full-size score.
     """
-    def score(az, el, rl, fov):
-        mask = rasterise(points, faces, az, el, rl, fov, size=size)
-        if not mask.any():
-            return 0.0
-        return compare(normalise(mask), reference)["iou"]
+    def scorer(at_size):
+        def score(az, el, rl, fov):
+            mask = rasterise(points, faces, az, el, rl, fov, size=at_size)
+            if not mask.any():
+                return 0.0
+            if fill:
+                mask = fill_holes(mask)
+            return compare(normalise(mask), reference)["iou"]
+        return score
+
+    score = scorer(size)
+
+    def clamp(az, el):
+        if window is None:
+            return az, max(-90.0, min(90.0, el))
+        return (max(window["az_lo"], min(window["az_hi"], az)),
+                max(window["el_lo"], min(window["el_hi"], el)))
 
     az_lo, az_hi, az_step = az_range
     el_lo, el_hi, el_step = el_range
-    best = {"iou": -1.0, "az": 0.0, "el": 0.0, "roll": roll, "fov": fovs[0]}
     tried = 0
     az_values = np.arange(az_lo, az_hi + 1e-9, az_step)
     el_values = np.arange(el_lo, el_hi + 1e-9, el_step)
+    # The coarse winner is kept PER LENS and each is refined on its own.  One
+    # winner across every fov lets a lens that leads by a thousandth at 240 px
+    # take the refinement, and the search then returns a pose below what
+    # another lens reaches at the gate's size -- measured 0.908 at fov 25
+    # against 0.933 at fov 0 on one orthographic drawing, which also let a
+    # mirror image of the model win the handedness test.
+    per_fov = {}
     for fov in fovs:
+        lens_best = {"iou": -1.0, "az": 0.0, "el": 0.0, "roll": roll, "fov": fov}
         for az in az_values:
             for el in el_values:
                 iou = score(float(az), float(el), roll, fov)
                 tried += 1
-                if iou > best["iou"]:
-                    best = {"iou": iou, "az": float(az), "el": float(el),
-                            "roll": roll, "fov": fov}
+                if iou > lens_best["iou"]:
+                    lens_best = {"iou": iou, "az": float(az), "el": float(el),
+                                 "roll": roll, "fov": fov}
+        per_fov[fov] = lens_best
 
-    step_az, step_el, step_roll = az_step, el_step, 8.0
-    for _ in range(refine):
-        step_az, step_el, step_roll = step_az / 2, step_el / 2, step_roll / 2
-        centre = dict(best)
-        for d_az in (-step_az, 0.0, step_az):
-            for d_el in (-step_el, 0.0, step_el):
-                for d_roll in (-step_roll, 0.0, step_roll):
-                    az = centre["az"] + d_az
-                    el = max(-90.0, min(90.0, centre["el"] + d_el))
-                    rl = centre["roll"] + d_roll
-                    iou = score(az, el, rl, centre["fov"])
-                    tried += 1
-                    if iou > best["iou"]:
-                        best = {"iou": iou, "az": az, "el": el, "roll": rl,
-                                "fov": centre["fov"]}
+    def refined(best, score):
+        nonlocal tried
+        step_az, step_el, step_roll = az_step, el_step, 8.0
+        for _ in range(refine):
+            step_az, step_el, step_roll = step_az / 2, step_el / 2, step_roll / 2
+            centre = dict(best)
+            for d_az in (-step_az, 0.0, step_az):
+                for d_el in (-step_el, 0.0, step_el):
+                    for d_roll in (-step_roll, 0.0, step_roll):
+                        az, el = clamp(centre["az"] + d_az, centre["el"] + d_el)
+                        rl = centre["roll"] + d_roll
+                        iou = score(az, el, rl, centre["fov"])
+                        tried += 1
+                        if iou > best["iou"]:
+                            best = {"iou": iou, "az": az, "el": el, "roll": rl,
+                                    "fov": centre["fov"]}
+        return best
+
+    finals = []
+    for lens_best in per_fov.values():
+        best = refined(lens_best, score)
+        if final_size is not None and final_size != size:
+            full = scorer(final_size)
+            best = dict(best, iou=full(best["az"], best["el"], best["roll"], best["fov"]))
+            tried += 1
+            best = refined(best, full)
+        finals.append(best)
+    best = max(finals, key=lambda b: b["iou"])
+
     best["poses_tried"] = tried
     return best
+
+
+def parse_camera(text: str) -> dict:
+    """`AZ,EL` or `AZ,EL,TOL` -> the declared camera."""
+    parts = text.split(",")
+    if len(parts) not in (2, 3):
+        raise argparse.ArgumentTypeError(
+            f"--camera takes AZ,EL or AZ,EL,TOL in degrees, not {text!r}")
+    try:
+        values = [float(p) for p in parts]
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"bad --camera {text!r}: {exc}") from exc
+    az, el = values[0], values[1]
+    tol = values[2] if len(values) == 3 else DEFAULT_CAMERA_TOL
+    if not -90.0 <= el <= 90.0:
+        raise argparse.ArgumentTypeError(f"--camera elevation {el:g} is outside -90..90")
+    if not 0.0 < tol < 90.0:
+        raise argparse.ArgumentTypeError(
+            f"--camera tolerance {tol:g} must be above 0 and below 90: at 90 the "
+            "window reaches the mirror pose it exists to exclude")
+    return {"az": az, "el": el, "tol": tol}
+
+
+def camera_window(camera: dict, az_step: float, el_step: float) -> dict:
+    """The search grid inside a declared camera's window.
+
+    The step is shrunk to divide the tolerance, so the declared pose and both
+    edges are on the coarse grid whatever the two numbers are.
+    """
+    tol = camera["tol"]
+    az_s = tol / max(1, math.ceil(tol / az_step))
+    el_s = tol / max(1, math.ceil(tol / el_step))
+    el_lo = max(-90.0, camera["el"] - tol)
+    el_hi = min(90.0, camera["el"] + tol)
+    return {"az_lo": camera["az"] - tol, "az_hi": camera["az"] + tol,
+            "el_lo": el_lo, "el_hi": el_hi,
+            "az_range": (camera["az"] - tol, camera["az"] + tol, az_s),
+            "el_range": (el_lo, el_hi, el_s)}
+
+
+def angle_delta(a: float, b: float) -> float:
+    """Smallest absolute difference between two angles, in degrees."""
+    return abs((a - b + 180.0) % 360.0 - 180.0)
+
+
+def outside_window(pose: dict, camera: dict) -> bool:
+    slack = 1e-6
+    return (angle_delta(pose["az"], camera["az"]) > camera["tol"] + slack
+            or abs(pose["el"] - camera["el"]) > camera["tol"] + slack)
+
+
+def handedness(points: np.ndarray, faces: np.ndarray, reference: np.ndarray,
+               window: dict, fovs: list[float], roll: float, refine: int,
+               model_iou: float, fill: bool = False,
+               final_size: int | None = None) -> dict:
+    """Search both reflections of the model inside the declared window.
+
+    Reflecting in X and reflecting in Y differ by a half turn about Z, so only
+    the one whose half-turned twin is NOT what the camera sees can fit inside
+    the window -- which is why the axis this names is the one to mirror.
+
+    `final_size` must be whatever produced `model_iou`. The two numbers are
+    subtracted against HANDEDNESS_MARGIN, and a reflection scored at 240 px
+    against a model scored at 480 px is not a handedness measurement -- the
+    mismatch alone can clear the margin and fail a model for a defect its
+    geometry does not have. `self_check`'s whisker fixture is exactly that
+    model: mirror-symmetric, so there is no handedness to get wrong.
+    """
+    best_axis, best_iou = None, -1.0
+    for axis, sign in REFLECTIONS.items():
+        found = search_pose(points * sign, faces, reference,
+                            window["az_range"], window["el_range"], fovs, roll,
+                            refine, fill=fill, window=window,
+                            final_size=final_size)
+        if found["iou"] > best_iou:
+            best_axis, best_iou = axis, found["iou"]
+    return {"mirror_iou": round(best_iou, 4), "reflect": best_axis,
+            "suspect": best_iou - model_iou > HANDEDNESS_MARGIN}
 
 
 # --------------------------------------------------------------------------
@@ -658,6 +906,11 @@ def main(argv: list[str] | None = None) -> int:
                     help="a reference image to search a pose against; repeatable")
     ap.add_argument("--label", action="append", default=None,
                     help="name for each --match, in order")
+    ap.add_argument("--camera", action="append", default=None,
+                    help="AZ,EL[,TOL] degrees for each --match, in order: where the "
+                         "reference was taken from (TOL default "
+                         f"{DEFAULT_CAMERA_TOL:g}). Confines the search and checks "
+                         "handedness; negative AZ needs the --camera=-60,20 form")
     ap.add_argument("--min", type=float, default=0.90,
                     help="minimum IoU per matched view (default 0.90)")
     ap.add_argument("--size", type=int, default=DEFAULT_SIZE)
@@ -712,13 +965,30 @@ def main(argv: list[str] | None = None) -> int:
     # source. A crop is an input error; it should cost milliseconds, not a full
     # tessellation and pose search.
     matches = args.match or []
+    cameras: list[dict | None] = [None] * len(matches)
+    if args.camera:
+        if len(args.camera) != len(matches):
+            print(f"--camera was given {len(args.camera)} time(s) for {len(matches)} "
+                  "--match reference(s); give one per --match, in order",
+                  file=sys.stderr)
+            return 2
+        try:
+            cameras = [parse_camera(text) for text in args.camera]
+        except argparse.ArgumentTypeError as exc:
+            print(exc, file=sys.stderr)
+            return 2
     prepared_references: list[np.ndarray] = []
+    filled_references: list[bool] = []
     for ref_path in matches:
         try:
             reference_mask = silhouette(ref_path, args.threshold)
             if not args.allow_clipped_reference:
                 require_complete_reference(reference_mask, ref_path)
+            filled = holes_filled(ref_path)
+            if filled:
+                reference_mask = fill_holes(reference_mask)
             prepared_references.append(normalise(reference_mask))
+            filled_references.append(filled)
         except (OSError, ValueError) as exc:
             print(exc, file=sys.stderr)
             return 2
@@ -760,8 +1030,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     pairs: list[tuple[str, Path]] = []
     matched: list[dict] = []
+    handed: list[dict] = []
+    camera_violations: list[dict] = []
+    undeclared: list[str] = []
     for i, (ref_path, reference) in enumerate(zip(matches, prepared_references)):
         label = labels[i] if i < len(labels) else ref_path.stem
+        camera = cameras[i]
+        fill = filled_references[i]
+        window = (camera_window(camera, az_range[2], el_range[2])
+                  if camera else None)
         # --poses-from turns a match into a REPLAY: same camera, so the IoU
         # delta between two runs belongs to the shape, and the search -- which
         # is nearly all of this command's cost -- is skipped. Re-search once at
@@ -772,9 +1049,14 @@ def main(argv: list[str] | None = None) -> int:
             best = {"az": replayed["az"], "el": replayed["el"],
                     "roll": replayed.get("roll", 0.0),
                     "fov": replayed.get("fov", 0.0), "poses_tried": 0}
+        elif window:
+            best = search_pose(points, faces, reference, window["az_range"],
+                               window["el_range"], fovs, args.roll, args.refine,
+                               fill=fill, window=window, final_size=args.size)
         else:
             best = search_pose(points, faces, reference, az_range, el_range,
-                               fovs, args.roll, args.refine)
+                               fovs, args.roll, args.refine, fill=fill,
+                               final_size=args.size)
         mask = rasterise(points, faces, best["az"], best["el"], best["roll"],
                          best["fov"], size=args.size)
         render_path = out_dir / f"{label}.png"
@@ -783,18 +1065,41 @@ def main(argv: list[str] | None = None) -> int:
             save_image(shade_view(review_mesh, best["az"], best["el"], best["roll"],
                                   best["fov"], args.size),
                        out_dir / f"{label}-shaded.png")
-        final = compare(normalise(mask), reference)
+        final = compare(normalise(fill_holes(mask) if fill else mask), reference)
         pose = {"az": round(best["az"], 3), "el": round(best["el"], 3),
                 "roll": round(best["roll"], 3), "fov": best["fov"]}
-        poses[label] = pose
+        poses[label] = dict(pose, camera=camera) if camera else pose
         ok = final["iou"] >= args.min
+        record = {"label": label,
+                  "kind": "replay-match" if replayed else "match",
+                  "reference": str(ref_path),
+                  "iou": final["iou"], "search_iou": best.get("iou"),
+                  "aspect_delta": final["aspect_delta"],
+                  "worst_bands": worst_bands(final["bands"]),
+                  "holes": "filled" if fill else "measured",
+                  "camera": camera, "poses_tried": best["poses_tried"], **pose}
+        if camera is None:
+            undeclared.append(label)
+        elif replayed and outside_window(pose, camera):
+            # a stored camera from before the declaration, or from a different
+            # one: scoring it would be scoring a pose the photograph was not
+            # taken from
+            ok = False
+            camera_violations.append({"label": label, "az": pose["az"],
+                                      "el": pose["el"], "camera": camera})
+        elif not replayed:
+            # both hands on one instrument: final_size scores the reflections
+            # at the size final["iou"] was measured at; see handedness()
+            check = handedness(points, faces, reference, window, fovs, args.roll,
+                               args.refine, final["iou"], fill=fill,
+                               final_size=args.size)
+            record.update(mirror_iou=check["mirror_iou"], reflect=check["reflect"])
+            if check["suspect"]:
+                ok = False
+                handed.append({"label": label, "iou": final["iou"], **check})
+        record["ok"] = ok
         failed = failed or not ok
-        results.append({"label": label,
-                        "kind": "replay-match" if replayed else "match",
-                        "reference": str(ref_path),
-                        "iou": final["iou"], "aspect_delta": final["aspect_delta"],
-                        "worst_bands": worst_bands(final["bands"]),
-                        "poses_tried": best["poses_tried"], "ok": ok, **pose})
+        results.append(record)
         pairs.append((label, ref_path))
         matched.append({"label": label, "az": pose["az"], "el": pose["el"],
                         "mask": reference})
@@ -827,26 +1132,58 @@ def main(argv: list[str] | None = None) -> int:
         if step_path is None or not step_path.exists():
             print(f"--compare-step: no sibling .step for {source.name}", file=sys.stderr)
             return 2
-        step_points, step_faces = tessellate(build_shape(step_path), args.tolerance)
+        tol = compare_tolerance(points, args.size, args.tolerance)
+        src_points, src_faces = (points, faces) if tol >= args.tolerance else tessellate(shape, tol)
+        step_points, step_faces = tessellate(build_shape(step_path), tol)
         for label in ("front", "right", "top"):
             az, el = NAMED_VIEWS[label]
-            a = normalise(rasterise(points, faces, az, el, size=args.size))
+            a = normalise(rasterise(src_points, src_faces, az, el, size=args.size))
             b = normalise(rasterise(step_points, step_faces, az, el, size=args.size))
             iou = compare(a, b)["iou"]
-            entry = {"view": label, "iou": iou, "ok": iou >= STALE_MIN_IOU}
+            entry = {"view": label, "iou": iou, "ok": iou >= STALE_MIN_IOU, "tolerance": tol}
             failed = failed or not entry["ok"]
             drift.append(entry)
 
     payload = {"source": str(source), "out": str(out_dir), "poses": poses,
                "views": results, "step_drift": drift,
-               "mask_contradictions": suspect, "ok": not failed,
+               "mask_contradictions": suspect,
+               "handedness_suspect": handed,
+               "camera_violations": camera_violations,
+               "undeclared_camera": undeclared, "ok": not failed,
                "tolerance": args.tolerance, "size": args.size}
     if poses:
         (out_dir / "poses.json").write_text(json.dumps(
             {"source": str(source), "size": args.size,
              "tolerance": args.tolerance, "poses": poses}, indent=2))
 
+    def camera_findings() -> None:
+        if undeclared:
+            print(f"no --camera for {', '.join(undeclared)}: the pose search spanned "
+                  "every azimuth, where a mirror-image model scores exactly like the "
+                  "right one. Declare where each reference was taken from.",
+                  file=sys.stderr)
+        if handed:
+            print("HANDEDNESS SUSPECT -- inside the declared camera window a reflection "
+                  "of the model fits the reference better than the model does:",
+                  file=sys.stderr)
+            for h in handed:
+                print(f"  {h['label']}: model IoU {h['iou']:.4f}, mirrored in "
+                      f"{h['reflect'].upper()} {h['mirror_iou']:.4f}", file=sys.stderr)
+            print("  The model is probably built the wrong way round: mirror the "
+                  "source (not the camera) across that axis, or correct --camera if "
+                  "the reference was taken from elsewhere. No shape edit reaches this.",
+                  file=sys.stderr)
+        if camera_violations:
+            print("CAMERA OUTSIDE ITS DECLARED WINDOW -- a replayed pose is not where "
+                  "the reference was declared to be taken from:", file=sys.stderr)
+            for v in camera_violations:
+                c = v["camera"]
+                print(f"  {v['label']}: stored az {v['az']:g} el {v['el']:g}, declared "
+                      f"az {c['az']:g} el {c['el']:g} +/-{c['tol']:g}", file=sys.stderr)
+            print("  Search again without --poses-from.", file=sys.stderr)
+
     if args.json:
+        camera_findings()
         print(json.dumps(payload, separators=(",", ":"), ensure_ascii=False))
         return 1 if failed else 0
 
@@ -857,9 +1194,16 @@ def main(argv: list[str] | None = None) -> int:
             flag = " " if r["ok"] else "!"
             how = (f"({r['poses_tried']} poses)" if r["kind"] == "match"
                    else "(replayed camera -- not searched)")
+            if r.get("mirror_iou") is not None:
+                how += f"  mirror {r['mirror_iou']:.3f}"
+            elif r.get("camera") is None:
+                how += "  (no --camera: mirror-blind)"
             print(f"{r['label']:<14}{r['iou']:>7.3f} {flag} {pose}  {how}")
         else:
             print(f"{r['label']:<14}{'':>9}{pose}")
+    if undeclared or handed or camera_violations:
+        print()
+        camera_findings()
     if suspect:
         print()
         print("MASK SUSPECT -- these references were handed the same camera but "
@@ -1070,17 +1414,123 @@ def self_check() -> int:
 
         def run(extra):
             buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
+            with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(io.StringIO()):
                 main(base + extra)
             return json.loads(buf.getvalue())["views"][0]
 
         a = run(["-o", str(tmp / "one")])
         b = run(["-o", str(tmp / "two"), "--poses-from", str(tmp / "one" / "poses.json")])
+
+        # the same branch with a declared camera, end to end. The L has a
+        # mirror plane, so its reflection in Y IS the L: the check must score
+        # it level with the model and stay quiet rather than cry wolf.
+        declared = run(["-o", str(tmp / "three"), "--camera=-60,20"])
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(io.StringIO()):
+            moved_code = main(base + ["-o", str(tmp / "four"), "--camera=60,20,10",
+                                      "--poses-from", str(tmp / "three" / "poses.json")])
+        moved = json.loads(buf.getvalue())
+        with contextlib.redirect_stderr(io.StringIO()):
+            count_code = main(base + ["-o", str(tmp / "five"),
+                                      "--camera=-60,20", "--camera=0,0"])
+    check("a declared camera on a mirror-symmetric model is not suspect",
+          declared["ok"] and declared["mirror_iou"] is not None
+          and not outside_window(declared, declared["camera"]),
+          f"IoU {declared['iou']:.4f}, mirror {declared['mirror_iou']}, "
+          f"az {declared['az']:.1f} el {declared['el']:.1f}")
+    check("a replayed pose outside its declared window fails",
+          moved_code == 1 and len(moved["camera_violations"]) == 1,
+          f"exit {moved_code}, {moved['camera_violations']}")
+    check("one --camera per --match, or none", count_code == 2, f"exit {count_code}")
+    # A STEP ROUND TRIP IS NOT DRIFT. A thin swept blade on a model tens of
+    # millimetres long, written to STEP and read back, is the same geometry;
+    # at a chordal tolerance near a pixel its two meshes still disagree on the
+    # raster. The comparison has to tessellate below the pixel to say "same".
+    import tempfile
+    from build123d import Plane as _Plane, Solid as _Solid, Wire as _Wire, Edge as _Edge, Vector as _V
+    from build123d import export_step as _export_step
+
+    def _blade_section(y, chord, half):
+        pl = _Plane(origin=(0, y, 0), x_dir=(1, 0, 0), z_dir=(0, 1, 0))
+        up = [pl.from_local_coords(_V(chord * t, half * 4 * t * (1 - t) + 0.05, 0)) for t in np.linspace(0, 1, 9)]
+        lo = [pl.from_local_coords(_V(chord * t, -(half * 4 * t * (1 - t) + 0.05), 0)) for t in np.linspace(0, 1, 9)]
+        return _Wire([_Edge.make_spline(up[::-1]), _Edge.make_spline(lo), _Edge.make_line(lo[-1], up[-1])])
+
+    blade = _Solid.make_loft([_blade_section(0, 8, 0.45), _blade_section(28, 3, 0.45)], ruled=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        step = Path(tmp) / "blade.step"
+        _export_step(blade, str(step))
+        pts, fcs = tessellate(blade, 0.1)
+        tol = compare_tolerance(pts, 480, 0.1)
+        sp, sf = tessellate(blade, tol)
+        rp, rf = tessellate(build_shape(step), tol)
+        worst = min(compare(normalise(rasterise(sp, sf, *NAMED_VIEWS[v], size=480)),
+                            normalise(rasterise(rp, rf, *NAMED_VIEWS[v], size=480)))["iou"]
+                    for v in ("front", "right", "top"))
+    check("the comparison tessellates below a pixel", tol <= 28 / (4 * 480) + 1e-9, f"tolerance {tol:.4f}")
+    check("a STEP round trip of a thin blade reads as no drift", worst >= STALE_MIN_IOU, f"worst IoU {worst:.4f}")
+
     check("a replayed camera scores exactly what the search scored",
           a["iou"] == b["iou"] and b["poses_tried"] == 0
           and (a["az"], a["el"], a["fov"]) == (b["az"], b["el"], b["fov"]),
           f"searched {a['iou']:.6f} over {a['poses_tried']} poses, "
           f"replayed {b['iou']:.6f} over {b['poses_tried']}")
+
+    # A FEATURE TOO THIN FOR THE SEARCH'S OWN RASTER: the trap `handedness`
+    # can set for itself whenever its two numbers come off two rasters. A thin
+    # protrusion that survives at --size disappears at SEARCH_SIZE, taking the
+    # bounding box -- and with it the aspect ratio `normalise` keeps -- along
+    # with it. The first check below measures that gap and insists it is real,
+    # because a fixture that matches its reference at every raster proves
+    # nothing; the L fixture above is exactly that and cannot catch this.
+    # Read across two rasters the gap reads as a wrong-handed model, and this
+    # block's model has an XZ mirror plane, so its reflection in Y IS the model:
+    # there is no handedness to get wrong. `final_size` is what keeps the last
+    # two checks passing: the pose the search KEEPS is the one that maximises
+    # the reported number -- which is what `search_pose` promises, and what
+    # `search_iou` now records so the fixture can hold it to it -- and both
+    # hands are scored at that same gate-sized instrument.
+    with tempfile.TemporaryDirectory() as tmpname:
+        tmp = Path(tmpname)
+        body = ("from build123d import Box, Pos\n"
+                "def gen_step():\n"
+                "    s = Box(40, 30, 40)\n"
+                "{extra}"
+                "    return s\n")
+        (tmp / "whisker.step.py").write_text(
+            body.format(extra="    s += Pos(26, 0, 18) * Box(12, 0.7, 0.7)\n"))
+        (tmp / "plain.step.py").write_text(body.format(extra=""))
+        plain_points, plain_faces = tessellate(build_shape(tmp / "plain.step.py"), 0.05)
+        save_mask(rasterise(plain_points, plain_faces, -60.0, 20.0, 0.0, 0.0, size=900),
+                  tmp / "plain.png")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(io.StringIO()):
+            thin_code = main([str(tmp / "whisker.step.py"),
+                              "--match", str(tmp / "plain.png"), "--label", "thin",
+                              "--min", "0", "--json", "--camera=-60,20",
+                              "--size", "760", "-o", str(tmp / "thin")])
+        thin = json.loads(buf.getvalue())["views"][0]
+        w_points, w_faces = tessellate(build_shape(tmp / "whisker.step.py"), 0.05)
+        thin_ref = normalise(silhouette(tmp / "plain.png", 28.0))
+        # Measured at ONE pose, so what this compares is the two rasters and
+        # nothing else. Against the reported IoU it would compare two poses
+        # too: the search settles at `final_size` now, so the number the run
+        # prints is the best score at --size, not the same pose read coarsely.
+        def whisker_iou(size):
+            return compare(normalise(rasterise(w_points, w_faces, -60.0, 20.0,
+                                               0.0, 0.0, size=size)),
+                           thin_ref)["iou"]
+        coarse, fine = whisker_iou(SEARCH_SIZE), whisker_iou(760)
+    check("the whisker leaves the search's raster but not the gate's",
+          coarse - fine > HANDEDNESS_MARGIN,
+          f"one pose scores {coarse:.4f} at {SEARCH_SIZE} px, {fine:.4f} at 760")
+    check("the pose kept is the one that maximises the REPORTED number",
+          thin["search_iou"] is not None
+          and abs(thin["search_iou"] - thin["iou"]) < 1e-9,
+          f"search kept {thin['search_iou']}, run reports {thin['iou']:.6f}")
+    check("and that gap is not read as a wrong-handed model",
+          thin_code == 0 and thin["ok"],
+          f"exit {thin_code}, IoU {thin['iou']:.4f}, mirror {thin.get('mirror_iou')}")
 
     # The mask-contradiction detector. It must fire when two references share a
     # camera but not a silhouette, and stay silent when they share both --
@@ -1102,6 +1552,110 @@ def self_check() -> int:
           f"{fires}")
     check("same camera + same silhouette is not", quiet == [], f"{quiet}")
     check("different cameras are never flagged", apart == [], f"{apart}")
+
+    # Handedness. The L above has a mirror plane (XZ), so a reflection of it is
+    # a rotation of it and no handedness test can fail on it -- that is what
+    # makes it the false-alarm fixture below. This one has no mirror plane: a
+    # post on +X, an arm off the post toward -Y, a nub on -X.
+    chiral = (Pos(0, 0, 5) * Box(80, 40, 10) + Pos(32.5, 0, 45) * Box(15, 40, 70)
+              + Pos(32.5, -40, 65) * Box(15, 40, 10) + Pos(-35, 0, 20) * Box(10, 10, 20))
+    c_points, c_faces = tessellate(chiral, 0.05)
+    mirrored = c_points * REFLECTIONS["x"]
+    seen = normalise(rasterise(c_points, c_faces, 30.0, 20.0, 0.0, 0.0, size=400))
+
+    # the negative control: without a window the wrong hand is invisible
+    blind = search_pose(mirrored, c_faces, seen, (-180, 175, 15), (-30, 60, 15),
+                        [0.0], 0.0, refine=3)
+    check("unconstrained, a mirror-image model scores like the right one",
+          blind["iou"] > 0.98 and angle_delta(blind["az"], 30.0) > 45,
+          f"IoU {blind['iou']:.4f} at az {blind['az']:.1f} el {blind['el']:.1f}")
+
+    camera = parse_camera("30,20")
+    window = camera_window(camera, 15.0, 15.0)
+    right = search_pose(c_points, c_faces, seen, window["az_range"], window["el_range"],
+                        [0.0], 0.0, 3, window=window)
+    right_hand = handedness(c_points, c_faces, seen, window, [0.0], 0.0, 3, right["iou"])
+    check("inside the window the right model passes and is not suspect",
+          right["iou"] > 0.98 and not right_hand["suspect"],
+          f"IoU {right['iou']:.4f}, best reflection {right_hand['mirror_iou']:.4f}")
+    wrong = search_pose(mirrored, c_faces, seen, window["az_range"], window["el_range"],
+                        [0.0], 0.0, 3, window=window)
+    wrong_hand = handedness(mirrored, c_faces, seen, window, [0.0], 0.0, 3, wrong["iou"])
+    check("and the mirror-image model is caught, naming the axis to mirror",
+          wrong_hand["suspect"] and wrong_hand["reflect"] == "x"
+          and wrong_hand["mirror_iou"] > 0.98,
+          f"model {wrong['iou']:.4f}, mirrored in {wrong_hand['reflect']} "
+          f"{wrong_hand['mirror_iou']:.4f}")
+    check("the refinement never walks out of the window",
+          not outside_window(wrong, camera) and not outside_window(right, camera),
+          f"wrong at az {wrong['az']:.1f} el {wrong['el']:.1f}")
+
+    try:
+        parse_camera("30,20,90")
+    except argparse.ArgumentTypeError:
+        refused = True
+    else:
+        refused = False
+    check("a window wide enough to reach the mirror pose is refused", refused)
+    check("azimuth distance wraps", angle_delta(170.0, -170.0) == 20.0,
+          f"{angle_delta(170.0, -170.0)}")
+
+    # A FACE OCCT WILL NOT TRIANGULATE. The last-resort fallback only runs when
+    # the direct tessellation AND the STEP round-trip have both failed, which no
+    # healthy shape reaches -- so the path stayed dark while the likeness gate
+    # depended on it. These hold it to two things: that it draws the same
+    # silhouette as the tessellator it stands in for, and that the chain
+    # actually reaches it rather than raising.
+    stump = Box(20, 10, 6) + Pos(12, 0, 6) * Box(6, 6, 6)
+    fbf_points, fbf_faces, fbf_skipped, fbf_meshed = _mesh_face_by_face(stump, 0.05)
+    direct = tessellate(stump, 0.05)
+    same_pose = dict(az=-35.0, el=25.0, rl=0.0, fov=0.0, size=480)
+    fbf_mask = normalise(rasterise(np.array(fbf_points, dtype=float),
+                                   np.array(fbf_faces, dtype=int), *same_pose.values()))
+    direct_mask = normalise(rasterise(*direct, *same_pose.values()))
+    agreement = compare(fbf_mask, direct_mask)["iou"]
+    check("face by face draws the silhouette the tessellator would",
+          agreement > 0.999 and fbf_skipped == 0,
+          f"IoU {agreement:.4f}, {fbf_meshed} face(s) meshed, {fbf_skipped} skipped")
+
+    class Unmeshable:
+        """Neither tessellates nor round-trips -- the only state that reaches
+        the third fallback. The B-rep underneath is sound, which is the point:
+        the geometry is recoverable and only OCCT's meshers refuse it."""
+
+        def __init__(self, shape):
+            self.wrapped = shape.wrapped
+
+        def tessellate(self, tolerance):
+            raise RuntimeError("null triangulation on a face")
+
+    noise = io.StringIO()
+    with contextlib.redirect_stderr(noise):
+        recovered_points, recovered_faces = tessellate(Unmeshable(stump), 0.05)
+    recovered = compare(normalise(rasterise(recovered_points, recovered_faces,
+                                            *same_pose.values())), direct_mask)["iou"]
+    check("and the fallback chain reaches it instead of raising",
+          recovered > 0.999 and "face by face" in noise.getvalue(),
+          f"IoU {recovered:.4f}, said {noise.getvalue().strip()[:58]!r}")
+
+    class Empty(Unmeshable):
+        """No faces at all, so even meshing one at a time yields nothing."""
+
+        def __init__(self):
+            from OCP.BRep import BRep_Builder
+            from OCP.TopoDS import TopoDS_Compound
+
+            self.wrapped = TopoDS_Compound()
+            BRep_Builder().MakeCompound(self.wrapped)
+
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            tessellate(Empty(), 0.05)
+        nothing = ""
+    except RuntimeError as error:
+        nothing = str(error)
+    check("meshing nothing at all still raises, naming all three attempts",
+          "face by face, which meshed nothing" in nothing, nothing[-46:])
 
     print()
     if failures:

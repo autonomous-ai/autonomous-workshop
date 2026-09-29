@@ -23,6 +23,10 @@ Convert one or more reference images into a **build spec** precise enough that
 `cad` writes `<name>.step.py` and its `gen_step()` from it with no second look
 at the photo.
 
+No image, only words: this skill does not apply. A prose request whose design
+is open goes to `$product-design`, which writes the same spec from a product
+survey and a concept selection instead of a photograph.
+
 **You produce a document, not geometry.** No `.py`, no STEP, no STL. Fill
 `templates/build_spec.md` — plus `templates/build_spec_powered.md` when a load
 is functional or a part is driven — and hand off to `cad`.
@@ -83,6 +87,10 @@ STEP_PARTS_SKILL_ROOT="$(workshop skills path)/step-parts"
 CAD_SKILL_ROOT="$(workshop skills path)/cad"
 ```
 
+A path written `skills/<name>/...` in this skill or its references names a
+sibling Make skill — `skills/wiki/pages/...` is the `wiki` skill's pages — so
+read it under `"$(workshop skills path)/<name>/"`.
+
 Measuring needs `pillow`, `numpy`, `scipy` (`requirements.txt` beside this
 file) — not build123d or OCP. `render_views.py` is the exception: it builds the
 model, so it needs the kernel.
@@ -114,40 +122,24 @@ measuring. Every path in this skill assumes the reference lives there; a spec
 citing a temporary location cannot be re-verified, which retires the evidence
 behind every `[observed]` number.
 
-**A. What kind of image?**
+**A. What kind of image?** Orthographic/blueprint, studio render, photo in
+the wild, sketch/concept art, or CAD screenshot — each decides how far its
+ratios can be trusted and whether perspective must be corrected first.
 
-| Kind | Consequence |
-|---|---|
-| **Orthographic / blueprint** | Best case. Dimensions may be `[observed]`. Read the title block for units and scale. |
-| **Studio render** | Proportions trustworthy; run `measure_image.py`. |
-| **Photo in the wild** | Perspective distorts every ratio — correct per `references/view-inference.md` first. |
-| **Sketch / concept art** | Intent only. Almost every dimension `[assumed]`. Ask for one governing size. |
-| **Screenshot of CAD** | Read the orientation cube if present; treat as orthographic. |
+**B. How many views?** Count distinct viewpoints; one 3/4 hero shot is **one**
+view. With one view, say in the Overall read's first line that two views are
+`[inferred]`/`[assumed]`. Rank any extra views you ask for (bottom almost
+always, back usually, other side only for suspected asymmetry) rather than
+asking for all of them. **No number of views gives absolute scale**; scale
+comes only from Step 3. State the count and the ranking in the Overall read.
 
-**B. How many views?** Count distinct viewpoints. One 3/4 hero shot is **one**
-view — it foreshortens both horizontal axes at once.
+**C. Symmetric?** Establish the symmetry group once and reuse it: mirror
+symmetry makes half an unobserved view `[inferred]`, rotational symmetry the
+whole top view.
 
-- **1** → two views are `[inferred]`/`[assumed]`. Say so in the Overall read,
-  first line.
-- **2** → the third is `[inferred]`.
-- **3 aligned orthographic** → the outline is solved; nearly every proportion
-  `[observed]`.
-- **4–6** → no more outline; you buy **hidden surfaces** and **redundancy**.
-
-Rank the extra three rather than asking for all of them: **bottom** almost
-always (the only sight of the underside — without it the base, sill, chassis
-and fastener bosses are invented), **back** when the rear differs from the
-front (usually), **other side** only when you suspect asymmetry, since
-`symmetry.left_right` already settled bilateral symmetry. Detail:
-`references/view-inference.md`.
-
-**No number of views gives absolute scale.** Six views of an unlabelled object
-still leave every dimension a ratio; scale comes only from Step 3. State the
-count and the ranking in the Overall read.
-
-**C. Symmetric?** The cheapest inference you have. Mirror symmetry turns half
-an unobserved view into `[inferred]`; rotational symmetry turns the whole top
-view into `[inferred]`. Establish the group once and reuse it.
+What each image kind and view count gives, and what views four to six buy:
+`skills/wiki/pages/image-reading/image-types-and-views.md`
+(`wiki show image-types-and-views`).
 
 **D. A known object?** A named product or standard outranks anything measured
 from pixels. Web-search the spec, cite it, tag `[observed]` from the source.
@@ -218,11 +210,12 @@ distinct from the background *and* attached to the silhouette; when it fires,
 **Cast shadows are rejected by default** — pass `--no-reject-shadow` only when
 the subject's colour genuinely matches its ground.
 
-**Line art defeats the mask, and not obviously.** The denoise deletes 1–2 px
-strokes, so a white-interior sheet reports `no object found` on some panels and
-a plausible bbox on the ones it half-holds. Flood-fill the white background so
-each outline becomes a solid silhouette, then measure the filled images with
-this same tool. Anything about 2 px wide still needs a direct ink read.
+**Line art defeats the mask, and not obviously.** Flood-fill the white
+background so each outline becomes a solid silhouette, then measure the filled
+images with this same tool; anything about 2 px wide still needs a direct ink
+read. Why, and the other ways a silhouette lies:
+`skills/wiki/pages/image-reading/measuring-reference-photos.md`
+(`wiki show measuring-reference-photos`).
 
 **`--palette K` is how you measure anything inside the outline** — a stripe, a
 cockpit opening, a tyre against its fender, a lens, a panel line. Each cluster
@@ -296,17 +289,20 @@ average**: averaging a foreshortened view into a good one produces a spec that
 is confidently, uniformly wrong. Quote the solved ratio and the worst
 disagreement in the Overall read.
 
-With exactly three views the residual spreads evenly and **every view reports
-the same disagreement** — the gate says the set is bad without saying which
-member is. That is what a fourth to sixth view buys: duplicated pairs make the
-outlier identifiable.
-
-The gate does **not** catch shadow inflation: a contact shadow enlarges every
-view in the same proportion, so the views agree while all remain wrong.
+With exactly three views every view reports the same disagreement, and the
+gate never catches shadow inflation — see the wiki page above for why.
 
 **The gate assumes a plan view is drawn nose-left** — it reads a `top`/`bottom`
 view's *width* as the object's length. Rotate top/bottom images nose-left
 first, or it reports a disagreement that is not there.
+
+**EVERY VIEW CARRIES ITS OWN RULER, AND THEY ARE RARELY THE SAME.** Pick one
+length of the subject that both views show whole — usually its overall height
+— and divide each view's pixel counts by it before reading anything else off
+that view. Keep each view's readings in their own block, name the ruler in the
+block's header, and never let a width come out of an elevation that cannot see
+widths. No downstream gate catches a dimension read on the wrong ruler
+(`wiki show measuring-reference-photos#every-view-carries-its-own-ruler`).
 
 ---
 
@@ -325,12 +321,10 @@ first anchor that applies and **state which**:
    other as a ratio, and put it **first** in Assumptions: *"Everything scales
    with this — change it and the rest follows."*
 
-Then the sanity gate: does it fit a 200×200 mm FDM bed (if not, name the split
-or the scale-down)? Is any wall under 0.8 mm (2 × 0.4 mm nozzle) at this scale
-— walls do not scale below the nozzle, so a scaled-down model needs them
-re-thickened, which changes the look? Is any feature under ~1.5 mm? Flag each.
-
-Anchor lookup table: `references/scale-anchors.md`.
+Then the sanity gate: bed fit, minimum wall, minimum feature, overhang, order
+of magnitude. Flag each finding. Anchor rules and the reference-object table:
+`references/scale-anchors.md`, which points into the wiki
+(`wiki show scale-anchors`, `known-object-sizes`, `scaling-limits`).
 
 ---
 
@@ -492,8 +486,9 @@ For every **mechanism** — driven, hand-operated, gravity-loaded or purely
 retaining — first write a selection contract: required input and output motion,
 travel or angle, direction, load/torque/force, speed/duty, available envelope,
 fixed datums, assembly and service path, print constraints, and the evidence
-needed to accept a candidate. Search for applicable mechanism families and
-cited implementations; use `$design-reference` when a construction analogy
+needed to accept a candidate. Search `$wiki` first (`wiki show
+mechanism-design` holds the archetype chooser), then for applicable mechanism
+families and cited implementations; use `$design-reference` when a construction analogy
 would help. Compare the viable archetypes, select one, record why the nearest
 alternative was rejected. A hidden mechanism may be `[inferred]` or
 `[assumed]`, but it may not be unresearched.
@@ -597,31 +592,17 @@ One row per feature, six columns, so `cad` never has to invent an approach:
 
 Pick the construction family from the **form**, not from habit. This is the
 highest-consequence decision in the spec — a form authored in the wrong family
-cannot be rescued by parameter edits, only by re-authoring.
+cannot be rescued by parameter edits, only by re-authoring. The form → family
+→ build123d idiom table, and reading the family off the elevation profile:
+`skills/wiki/pages/image-reading/form-to-construction-family.md`
+(`wiki show form-to-construction-family`).
 
-| The image shows… | Author as | build123d idiom |
-|---|---|---|
-| Constant cross-section (box, tray, bracket, plate) | Extrude | `Box(w, d, h)`, or `extrude(amount=h)` over a `BuildSketch` |
-| Constant section + uniform draft | Tapered extrude | `extrude(amount=h, taper=3)` |
-| Rotationally symmetric (vase, knob, bottle, dome) | Revolve | `Polyline(...)` → `make_face()` → `revolve(axis=Axis.Z)` |
-| Section changes along the length — fuselage, hull, swoosh, grip | **Loft over ≥3 stations** | one wire per station from a shared `section_at(t)` helper → `Solid.make_loft(wires, ruled=True)` |
-| Constant-ish section following a curved path (tube, rail, strap) | Sweep | `sweep(is_frenet=True)` |
-| Planar arch — roll hoop, handle, bail | Extruded ellipse band | two concentric `Ellipse`s, clipped, `extrude(amount=d)` |
-| Hollow shell of uniform wall | Shell | `offset(body, -wall, openings=body.faces().sort_by(Axis.Z)[-1])` |
-| Non-trivial 2D outline | Sketch | `Rectangle()` → `fillet(sk.vertices(), r)` → `Circle(mode=Mode.SUBTRACT)` → `extrude()` |
-| Repeated feature on a line/grid | Array | `with GridLocations(dx, dy, nx, ny): Hole(r)` |
-| Repeated feature around an axis | Polar array | `with PolarLocations(r, n): ...` |
-| Painted stripe, inlay, or lens on a sculpted skin | Conformal skin patch | `(inflated_loft - raw_loft) & tool` |
-| Blended organic mass | Loft stack, bevels baked into the section | `Solid.make_loft()`; keep 3D `fillet()` off tangent chains |
-
-**Do not downgrade organic silhouette features to boxes.** On animals,
-figurines, toys, characters, vehicles and product shells, a crest, casque,
-horn, fin, brow, cheek, muzzle, fairing, canopy or raised colour lobe that is
-visibly rounded or tapered is part of the reference silhouette — author it as a
-loft, sweep, revolved cap or conformal skin patch. Use `Box()` only where the
-reference shows hard planar faces and square edges. If you simplify an organic
-feature, preserve its silhouette envelope and mark the row's risk a deliberate
-simplification.
+**Do not downgrade organic silhouette features to boxes.** A visibly rounded
+or tapered crest, casque, horn, fin, brow, cheek, muzzle, fairing, canopy or
+raised colour lobe is authored as a loft, sweep, revolved cap or conformal skin
+patch; `Box()` only where the reference shows hard planar faces and square
+edges. A simplified organic feature keeps its silhouette envelope and its row's
+risk says deliberate simplification.
 
 Then name the **selector** per feature — this is where image-derived specs most
 often fail to build. Never use `Plane.rotated()` on a non-global plane: it
@@ -630,8 +611,8 @@ after every boolean, since a face list captured earlier refers to faces that no
 longer exist. Selector cookbook, worked snippets and boolean-order rules:
 `references/build123d-operations.md`.
 
-Mixed objects decompose naturally: a lofted outer skin carrying the image, with
-extruded/booleaned interior carrying the engineering. Say which is which.
+Mixed objects: a lofted outer skin carrying the image, an extruded/booleaned
+interior carrying the engineering. Say which is which.
 
 **A high-likeness organic subject carries more rules than a family choice** —
 separating silhouette mass from surface decoration, the contact and clearance
@@ -643,7 +624,8 @@ the hidden axis: `references/high-likeness-organic.md`.
 
 Occlusion order is weak evidence and may conflict across views. Take lateral
 placement from near-orthographic elevations where offsets are measurable, and
-record unresolved conflicts in Assumptions.
+record unresolved conflicts in Assumptions
+(`wiki show perspective-and-hidden-views`).
 
 ## Step 7 — Prove the read, then self-critique
 
@@ -719,10 +701,16 @@ integrated form:
 ```bash
 CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> \
     --fresh --image-derived --unpowered \
-    --likeness-ref side=ref/03-side.png \
-    --likeness-ref front=ref/02-front.png \
-    --likeness-ref rear=ref/04-rear.png
+    --likeness-ref side=ref/03-side.png@0,0 \
+    --likeness-ref front=ref/02-front.png@-90,0 \
+    --likeness-ref rear=ref/04-rear.png@90,0
 ```
+
+`@AZ,EL[,TOL]` is the camera each reference was taken from (front -90,0, right
+0,0, iso -45,35; TOL defaults to 30). It is required: a pose search free over
+every azimuth scores a model built the wrong way round like the right one.
+Record it in the likeness handoff table, and give the landmark ledger at least
+one row that states a side.
 
 Use `--powered` whenever section 8a declares a functional electrical load.
 Image-derived final mode requires one of the two explicitly, so a missing
@@ -730,14 +718,11 @@ Image-derived final mode requires one of the two explicitly, so a missing
 model is meant to be printed — image-derived work is scored on likeness, and
 nothing in that scoring notices a wall too thin to extrude.
 
-**A silhouette is for the gate; look at the model with `--shaded`.** A
-machine's identity is interior — slots, pockets, bores, a pin on an arm, one
-part seated in another — and a filled outline shows none of it: an assembly
-renders as a single blob whose parts cannot be told apart at any resolution.
-`--shaded` writes `<label>-shaded.png` **beside** each mask, never instead of
-it, with frame and camera matching exactly. Use it for every appearance review,
-the mask for every score; neither replaces the other, and neither sees colour
-or material the way a person does.
+**A silhouette is for the gate; look at the model with `--shaded`.** A filled
+outline shows none of a machine's interior identity
+(`wiki show silhouette-likeness`). `--shaded` writes `<label>-shaded.png`
+**beside** each mask, never instead of it, with frame and camera matching
+exactly. Use it for every appearance review, the mask for every score.
 
 Three rules the gate enforces rather than advises: **the delivered round has to
 be the best round** (a run below the best that view ever recorded fails as
@@ -817,7 +802,7 @@ different name.
 | Assumptions | the assumptions bullets in `cad`'s final response |
 
 `cad` then runs `verify_project --image-derived` with every usable reference as
-`--likeness-ref LABEL=PATH`, and `--powered`/`--unpowered` per section 8a.
+`--likeness-ref LABEL=PATH@AZ,EL`, and `--powered`/`--unpowered` per section 8a.
 Geometry and manufacturing claims stay deterministic; the renderer supplies
 separate visual evidence and cannot substitute for validate, interference, fit,
 mesh, motion, mount or thickness checks. A source repair leaving this spec
@@ -840,6 +825,7 @@ Load only when the trigger fires.
 | `references/high-likeness-organic.md` | any animal, figurine or character; always for an explicit 90–95 % likeness target. |
 | `references/repeated-scene.md` | the reference shows repeated, individually visible pieces. |
 | `references/likeness-gate.md` | writing the verification checklist. |
+| `skills/wiki` `image-reading/` pages | the knowledge behind every step above — `wiki search <words>` (e.g. `wiki search perspective depth`, `wiki search scale coin`). |
 | `templates/build_spec_powered.md` | spec sections 6f, 8 and the powered checklist — a functional electrical load (1G) or a part driven under force (5d). |
 | `$cad`'s `references/organic-lofts.md` | the subject is an animal, figure, hull, or any body whose section changes along a curved spine. |
 | `$cad`'s `references/bought-parts.md` | the model must hold a motor, servo, LED module, bearing, board or any purchased part — every 1E/1G row modelled as a seat. |

@@ -144,30 +144,17 @@ It writes a hidden `__cadgen__/` cache directory next to each imported STEP — 
 
 Imported geometry was not authored here, so do not assume its origin or orientation. Derive mating frames from inspected geometry: run `refs --facts --planes --positioning` and `measure` against the imported part, then define `asm.rigid_frame(...)` locations from the measured faces, axes, and bolt patterns. Validate the resulting mate exactly like an authored one.
 
-## When to use build123d joints
+## When to use build123d joints, and which
 
-Use `AssemblyHelper`/build123d joints when assembly intent is clearer as a relationship between part datums than as a raw transform:
+When a joint beats a parameterised `Location`, and which of `RigidJoint`,
+`RevoluteJoint`, `LinearJoint`, `CylindricalJoint` or `BallJoint` (and the
+matching `asm.*_frame()` helper) expresses a relationship:
+`skills/wiki/pages/modeling/cad-joint-types.md` (`wiki show cad-joint-types`).
 
-- lid-to-base, cover-to-frame, bracket-to-rail, flange-to-pipe, pin-to-hole, shaft-to-bearing
-- hinge, slider, screw-like, cylindrical, ball/gimbal, or other motion-positioned assemblies
-- repeated or library components that already expose joints
-- source assemblies where a change to one dimension should recompute part placement
-
-Direct `Location(...)` transforms are acceptable for simple static layouts when they are parameterized and documented, such as a row of identical spacers or a visual exploded view.
-
-Raw build123d joints are acceptable for advanced cases not covered by `AssemblyHelper`, but preserve the same fixed-first directionality: call `connect_to()` on the fixed/root joint and pass the moving part's joint as `other`. `connect_to()` is a source-generation operation. It repositions the moving part for the generated model; it is not a persistent external constraint in the exported STEP file.
-
-## Joint type selection
-
-Use the simplest joint that expresses the source-level relationship:
-
-- `RigidJoint` / `asm.rigid_frame()`: fixed placement, face-to-face seating, mounting datums, imported components with known interfaces.
-- `RevoluteJoint` / `asm.revolute_frame()`: hinge or rotational pose; define with an `Axis` and drive with an angle parameter for a static STEP pose.
-- `LinearJoint` / `asm.linear_frame()`: slider, latch, telescoping component; define with an `Axis` and drive with a position parameter.
-- `CylindricalJoint` / `asm.cylindrical_frame()`: combined axial translation and rotation, such as screw-like or pin-in-slot relationships.
-- `BallJoint` / `asm.ball_frame()`: gimbal or spherical orientation relationship; define with a `Location` and angular ranges.
-
-When only final static placement matters and no meaningful joint datum exists, use explicit `Location` transforms and validate them.
+Whatever the joint, keep the fixed-first direction: call `connect_to()` on the
+fixed/root joint and pass the moving part's joint as `other`. `connect_to()` is
+a source-generation operation; it is not a persistent constraint in the
+exported STEP.
 
 ## Assembly positioning workflow
 

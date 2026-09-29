@@ -322,6 +322,20 @@ class AgentRunTest(unittest.TestCase):
         self.assertTrue(run.snapshot().inventor_roster)
         reopened = AgentRun.open(self.run_root, host_state_root=self.host_state_root)
         self.assertEqual(reopened.snapshot(), run.snapshot())
+        # The installed tree must leave the room the caps were sized for: Wish
+        # references, an imported correction tree and an old-run tool refresh
+        # all share them. Outgrowing it fails here, by name, instead of in
+        # every end-to-end run.
+        inputs = run.snapshot().input_sha256s
+        total = sum((self.run_root / path).stat().st_size for path in inputs)
+        self.assertLessEqual(
+            len(inputs), agent_run_module.MAX_AGENT_INPUT_FILES - 200,
+            "%d installed inputs leave under 200 files of headroom" % len(inputs),
+        )
+        self.assertLessEqual(
+            total, agent_run_module.MAX_AGENT_INPUT_BYTES - 1024 * 1024,
+            "%d installed input bytes leave under 1 MiB of headroom" % total,
+        )
 
     def test_input_file_limit_still_bounds_creation_and_refresh(self):
         cad = self.root / "cad"
@@ -372,7 +386,9 @@ class AgentRunTest(unittest.TestCase):
         self.assertFalse((run.run_root / ".agents/skills/cad/tool-000.txt").exists())
 
     def test_create_materializes_wish_references_read_only_with_their_own_budget(self):
-        big = b"\x89PNG" + b"\0" * (5 * 1024 * 1024)
+        # Larger than every other input may be together, so only the
+        # references' own budget can admit it.
+        big = b"\x89PNG" + b"\0" * (agent_run_module.MAX_AGENT_INPUT_BYTES + 1024 * 1024)
         small = b"\xff\xd8\xff" + b"\0" * 64
         references = (
             reference_fixture(1, "side", big),

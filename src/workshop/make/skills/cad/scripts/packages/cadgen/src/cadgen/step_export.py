@@ -260,6 +260,36 @@ def _create_bin_xcaf_doc(to_export: Any) -> Any:
     return doc
 
 
+def _all_faces_planar(doc: Any) -> bool:
+    """True when every face in the document lies on a plane.
+
+    That is the shape a converted mesh arrives as: tens of thousands of planar
+    facets. A pcurve on a plane is an exact projection any reader recomputes,
+    and writing two of them per edge more than doubles such a file for nothing.
+    Anything with a curved face keeps its pcurves.
+    """
+    from OCP.BRepAdaptor import BRepAdaptor_Surface
+    from OCP.GeomAbs import GeomAbs_Plane
+    from OCP.TDF import TDF_LabelSequence
+    from OCP.TopAbs import TopAbs_FACE
+    from OCP.TopExp import TopExp_Explorer
+    from OCP.TopoDS import TopoDS
+    from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ShapeTool
+
+    shape_tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
+    labels = TDF_LabelSequence()
+    shape_tool.GetFreeShapes(labels)
+    faces = 0
+    for index in range(1, labels.Length() + 1):
+        explorer = TopExp_Explorer(XCAFDoc_ShapeTool.GetShape_s(labels.Value(index)), TopAbs_FACE)
+        while explorer.More():
+            if BRepAdaptor_Surface(TopoDS.Face_s(explorer.Current())).GetType() != GeomAbs_Plane:
+                return False
+            faces += 1
+            explorer.Next()
+    return faces > 0
+
+
 def export_xcaf_doc_step_scene(
     doc: Any,
     output_path: Path,
@@ -332,7 +362,7 @@ def write_xcaf_doc_step_file(
     STEPCAFControl_Controller.Init_s()
     STEPControl_Controller.Init_s()
     IGESControl_Controller.Init_s()
-    Interface_Static.SetIVal_s("write.surfacecurve.mode", 1)
+    Interface_Static.SetIVal_s("write.surfacecurve.mode", 0 if _all_faces_planar(doc) else 1)
     Interface_Static.SetIVal_s("write.precision.mode", PrecisionMode.AVERAGE.value)
     with (logger.timed(f"transfer XCAF to STEP model {output_path.name}") if logger is not None else nullcontext()):
         writer.Transfer(doc, STEPControl_StepModelType.STEPControl_AsIs)

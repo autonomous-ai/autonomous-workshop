@@ -8,20 +8,12 @@ Create a valid STEP-ready BREP model, not a visual mesh. Prefer closed solids, e
 
 ## Design strategy
 
-Decide how the part is constructed before writing geometry code:
-
-- **Choose the construction that makes the spec's dimensions direct parameters.** Profile-driven shapes get one closed sketch plus `extrude`/`revolve`/`sweep`/`loft`; block-and-feature parts get a base solid plus subtractive features. Prefer whichever construction lets the user's controlling dimensions appear as named parameters instead of derived values.
-- **Decide part vs assembly before modeling.** Bodies that are separately manufactured, purchased, or movable belong in a labeled assembly (see `positioning.md`); monolithic manufacturing intent gets a single fused solid. Avoid unlabeled compounds of solids — multi-body output without occurrence labels loses traceability in inspection and viewer review.
-- **Pick the origin and orientation from the functional datum before sculpting.** Model on the mating interface, mounting plane, or symmetry axis; see `positioning.md` for part-type origin defaults.
-- **Order operations so fragile steps come last and failures localize.** Base solid → major additions → subtractive features → shell → through-wall holes → fillets and chamfers last. Fillets are the most failure-prone operation and every boolean invalidates selectors, so postpone them. Structure the source so each feature is a named step — a per-feature function or a distinct intermediate variable — so a failed operation points at exactly one feature and a parameter change touches one obvious place.
-- **Overshoot boolean tools.** Extend cutting tools past the faces they enter and exit; for through-cuts, go roughly 1 mm beyond both faces. Coincident or coplanar tool/target faces are a classic kernel failure. Cut repeated or patterned features in one combined operation.
-- **Sanity-check proportions before generating.** Compare the expected bounding box against the real-world object, wall thickness against overall size, and feature positions against edges and neighboring features. Order-of-magnitude and collision errors pass geometric validation but fail visual review.
-- **Prefer one revolved profile for axisymmetric soft forms.** A foam arrow tip,
-  rubber bumper, knob, pawn, or bottle-like cap built from overlapping spheres,
-  cones, and cylinders can mesh watertight while STEP validation reports
-  `invalidTopology` or `selfIntersecting`. Put the full radial silhouette in one
-  XZ-plane profile and `revolve(..., axis=Axis.Z)`; use stations in that profile
-  to retain the photographed bulge/taper without internal boolean seams.
+Decide how the part is constructed before writing geometry code: construction
+family, part vs assembly, origin from the functional datum, fragile operations
+last, overshooting boolean tools, and one revolved profile for axisymmetric soft
+forms. The rules and their reasons: `skills/wiki/pages/modeling/construction-strategy.md`
+(`wiki show construction-strategy`); the operation family for each form:
+`wiki show operation-families`.
 
 ## Topology stack
 
@@ -97,17 +89,9 @@ curves/paths → sketches/profiles → solids/features → labels → STEP
 
 ## Selection practices
 
-Avoid fragile topology order when possible. Select by:
-
-- axis or normal
-- location or bounding position
-- plane grouping
-- feature intent
-- stable construction plane
-- inspected local selector ref for downstream validation
-
-For source operations, prefer robust selectors such as top/bottom by axis or position rather than arbitrary list indexes.
-
+Select by axis, normal, position or plane grouping, never by an index that a
+boolean can reorder, and re-select after every boolean. Cookbook and rules:
+`skills/wiki/pages/modeling/build123d-selectors.md` (`wiki show build123d-selectors`).
 
 ## Assemblies and positioning
 
@@ -158,21 +142,24 @@ way to the screen, so `Color(0.5, 0.5, 0.5)` displays as roughly `#BCBCBC`, not
 `#808080`. Picking channel values off a hex palette by eye gives a washed-out,
 desaturated model. Never author a channel triple by hand.
 
-**Every printable part takes its colour by name from the filament palette.** Two
-stocks are loaded — Bambu Lab PLA Lite and Bambu Lab PETG Basic — so a model
+**Every printable part takes its colour by name from the filament palette.** Three
+stocks are loaded — Bambu Lab PLA Lite, PLA Matte and PETG Basic — so a model
 coloured from them shows spools that can actually be loaded; a free hex invents
-a filament nobody can buy. `scripts/cadfilament.py` owns both tables and does
+a filament nobody can buy. `scripts/cadfilament.py` owns the tables and does
 the sRGB conversion, and imports with no path setup wherever `cadfits` does:
 
 ```python
 from cadfilament import filament
 
 body.color = filament("sunflower yellow")                    # PLA Lite
+fin.color = filament("mandarin orange", material="PLA Matte") # PLA Matte
 shell.color = filament("misty blue", material="PETG Basic")  # PETG Basic
 lens.color = filament("cyan", 0.42)                          # with alpha
 ```
 
-`material` defaults to PLA Lite. Reach for PETG when a part flexes, takes an
+`material` defaults to PLA Lite. PLA Matte carries the pastels and muted tones
+PLA Lite lacks (a mint, a coral-peach, a pale pink, warm off-whites): reach for
+it before substituting a saturated Lite spool for a soft reference colour. Reach for PETG when a part flexes, takes an
 impact, or sits somewhere warm; it is tougher and less brittle than PLA. A
 print-in-place joint in it also needs `cadfits.print_in_place_gap(...,
 material="PETG")`, because PETG strings and oozes more than PLA does.
@@ -189,6 +176,25 @@ material="PETG")`, because PETG strings and oozes more than PLA does.
 | `dark gray` | `#6F6E6D` | `white` | `#FFFEF7` |
 | | | `yellow` | `#FFD834` |
 
+**PLA Matte** — `filament("<name>", material="PLA Matte")`, from Bambu's own
+hex table:
+
+| name | hex | name | hex |
+| --- | --- | --- | --- |
+| `apple green` | `#C2E189` | `ice blue` | `#A3D8E1` |
+| `ash gray` | `#9B9EA0` | `ivory white` | `#FFFFFF` |
+| `bone white` | `#CBC6B8` | `latte brown` | `#D3B7A7` |
+| `caramel` | `#AE835B` | `lemon yellow` | `#F7D959` |
+| `charcoal` | `#000000` | `lilac purple` | `#AE96D4` |
+| `dark blue` | `#042F56` | `mandarin orange` | `#F99963` |
+| `dark brown` | `#7D6556` | `marine blue` | `#0078BF` |
+| `dark chocolate` | `#4D3324` | `nardo gray` | `#757575` |
+| `dark green` | `#68724D` | `plum` | `#950051` |
+| `dark red` | `#BB3D43` | `sakura pink` | `#E8AFCF` |
+| `desert tan` | `#E8DBB7` | `scarlet red` | `#DE4343` |
+| `grass green` | `#61C680` | `sky blue` | `#56B7E6` |
+| | | `terracotta` | `#B15533` |
+
 **PETG Basic** — `filament("<name>", material="PETG")`:
 
 | name | hex | name | hex |
@@ -202,8 +208,9 @@ material="PETG")`, because PETG strings and oozes more than PLA does.
 | `navy blue` | `#0086D6` | | |
 
 Names match case- and separator-insensitively (`"Dark Gray"` = `"dark_gray"`),
-and so do stock names (`"PETG Basic"` = `"petg_basic"` = `"PETG"`). Seven names
-are in both tables and five of them are a **different** hex in each, so the
+and so do stock names (`"PETG Basic"` = `"petg_basic"` = `"PETG"`). A bare
+`"PLA"` raises: two PLA stocks are loaded, so name one. Seven names are in both
+PLA Lite and PETG Basic and five of them are a **different** hex in each, so the
 stock is what decides which spool `filament("red")` means, and it is PLA Lite
 unless you say otherwise. An unknown name raises with the list for the stock
 asked for rather than guessing a near colour; a PETG-only name asked for as PLA
@@ -229,331 +236,29 @@ into the render package, so a colour set on a `Compound` that has children never
 reaches the screen. It does reach the STEP file's XCAF label, which is why this
 looks like it worked if you only check the STEP. Colour every leaf.
 
-## Rotating a plane
+## Kernel gotchas
 
-`Plane.rotated()` composes its matrix in **WORLD axes, not the plane's own**.
-On a plane whose axes are not the global ones this is the single most expensive
-trap in the library, because the result is a valid solid of the wrong shape.
+Every trap below builds a valid-looking solid or fails far from its cause, and
+most pass `validate`. The measurements and fixes live in the wiki
+(`skills/wiki/pages/modeling/`, `wiki search <words>`):
 
-For a spanwise aerofoil section — `x_dir=(-1,0,0)`, `z_dir=(0,1,0)`, i.e. local
-+x rearward and the normal along +Y — `plane.rotated((0, 0, twist))` reads like
-a pitch and is actually a **yaw about world Z**. Measured on a 200 mm chord: a
-20 deg "twist" put the trailing edge at `(812.0, -68.4, 99.4)` when it should
-be at `(812.1, 0.0, 168.4)`. The section slid 68 mm sideways out of its own
-spanwise station and rose nothing.
-
-Nothing downstream catches it. The loft succeeds, the solid is closed,
-watertight and free of self-intersections, and `scripts/inspect refs --facts`
-passes it. Only looking at a render finds it.
-
-Build the frame from explicit direction vectors instead:
-
-```python
-# incidence about the span axis, then yaw the whole frame
-t, s = math.radians(twist_deg), math.radians(sweep_deg)
-x_dir  = Vector(-math.cos(t) * math.cos(s), -math.cos(t) * math.sin(s), math.sin(t))
-normal = Vector(-math.sin(s), math.cos(s), 0.0)
-plane = Plane(origin=Vector(*origin), x_dir=x_dir, z_dir=normal)
-```
-
-The same applies to rolling a section about a swept member's own axis: use a
-Rodrigues rotation about that axis rather than `Plane.rotated()`.
-
-**Write the inverse next to the forward map and assert the round trip.** A
-frame you derive by hand has two sign choices per axis and no feedback: a wrong
-one still builds, still validates, and only surfaces as a clash somewhere else.
-Measured on a rail placed by `Rot(0, -elev, 0)`: writing `+z*sin` where the
-rotation gives `-z*sin` buried the rail's rear face 6 mm inside the housing, and
-six downstream placements — a catch, a slot, two pins, a slider — had been
-positioned against the bad map before `inspect interfere` found it.
-
-```python
-def to_world(x, y): ...
-def to_local(X, Y): ...
-assert all(math.isclose(a, b, abs_tol=1e-9)
-           for a, b in zip((3.0, 5.0), to_local(*to_world(3.0, 5.0))))
-```
-
-Two lines, and they fail at import time instead of six features later.
-
-## Multi-section lofts match sections BY INDEX
-
-A loft interpolates its sections point index by point index. If you sample each
-station at fractions of THAT station's own width, a feature — a crest, a
-silhouette edge — sits at a different index at every station, and the surface
-twists between them to reconcile them. The result is valid, watertight,
-bilaterally symmetric, passes `inspect validate`, and renders as **crumpled
-foil** over every square metre. Nothing reports it; only a render finds it.
-
-Sample on **rails**: compute the lateral position of each feature line per
-station and allocate a fixed number of points to each rail-to-rail band, so
-index *i* means the same feature everywhere. Cluster samples toward the rails —
-that is where curvature is worst, so even spacing inside a band leaves the
-sharpest part of the curve least resolved.
-
-Two more ways a control curve silently ruins a lofted surface:
-
-- **`smoothstep` between control points makes a staircase.**
-  `lerp(v0, v1, smoothstep(x0, x1, x))` has zero derivative at BOTH ends of every
-  interval, so the curve is flat at each control point and steep between them.
-  Lofting through such curves puts a crease at every knot. Use a monotone cubic
-  (PCHIP) instead.
-- **Measurement noise becomes surface ripple.** Station data traced off a scan
-  carries ~a pixel of noise; a monotone interpolant reproduces it exactly and the
-  loft turns it into visible waves. Smooth the control curve before lofting.
-
-## Blending volumes: a closed lobe that ends inside the body is a cliff
-
-When sections are built by smooth-max/min over component volumes, any closed
-convex profile meets its own silhouette on a **vertical tangent**. Where such a
-lobe closes *inside* the body — against a neighbouring shelf or lobe — you get a
-near-vertical wall no blend width and no sample density can round off. Extra
-sampling does not help: the corner is in the function, not the sampling.
-
-- Widen the lobe until it OVERLAPS its neighbour and cut the real feature back in
-  afterwards, rather than letting it close between them.
-- Give a feature that needs its own width its own lobe. One half-width cannot
-  serve both a wide fuselage and a narrow canopy.
-- Prefer a **compact-support polynomial** smooth-max to the softplus/log-sum-exp
-  form: softplus perturbs the surface everywhere and its curvature is unbounded
-  as the blend narrows. Use the **cubic** (`h**3`) form, not the quadratic
-  (`h*(1-h)`) one — the quadratic is only C1, so curvature JUMPS at the edge of
-  the blend band, and a curvature jump on a specular surface draws a visible
-  line.
-
-## Validity is not positive volume
-
-`Shape.is_valid` (and `BRepCheck_Analyzer`) can return **True for a shell with a
-large negative volume** — an inverted orientation. Such a body exports and
-renders as a hole in the world. Check both:
-
-```python
-def is_valid_shape(shape):
-    return (shape is not None
-            and BRepCheck_Analyzer(shape.wrapped).IsValid()
-            and shape.volume > 0.0)
-```
-
-Related: a boolean can leave a body that is geometrically right but
-topologically invalid — correct bounds and volume, one bad face. It survives
-until the next boolean, which then fails with `Null TopoDS_Shape object` from a
-call nowhere near the cause. `ShapeFix_Shape` repairs many of these; gate every
-boolean result rather than trusting the last operation.
-
-`scripts/inspect validate` runs both of these gates plus closure and
-self-intersection over every occurrence, so this does not have to be hand-rolled
-per model. Note it measures volume **per solid**: an inverted member inside a
-compound cancels against a sound one, so anything reading a compound's aggregate
-volume sees nothing wrong.
-
-## A revolve puts its seam at +X
-
-A 360-degree `revolve` leaves a seam edge where its profile started, and
-sketching on `Plane.XZ` places that seam at **+X**. If the presentation camera
-looks down +X, every revolved casting renders with a thin panel line down its
-visible face — on parts whose whole point is a smooth, sealed surface.
-
-This is not limited to `revolve`: a plain `Cylinder` primitive seams at +X too,
-verified with a marker probe. Any large smooth camera-facing cylinder is
-affected.
-
-**As a cutting tool the same seam produces an INVALID SOLID, not a cosmetic
-line.** A `Sphere` subtracted to make a dimple carries its seam at local +X; if
-that seam ends up inside the remaining material the result fails
-`BRepCheck_Analyzer`, `BRepAlgoAPI_Check` and `inspect validate`
-(`invalidTopology`, `openShell`, `selfIntersecting`) while still reporting a
-plausible volume and a single solid. Measured on a 16 mm cube with 1.6 mm
-dimples: identical cuts passed on `+Z`, `+Y` and `-Y` and failed on `-X`. It is
-per-face, so cutting one pip at a time and checking after each is what localises
-it — the whole-die cut just fails.
-
-Turn the tool's seam OUT of the part before subtracting:
-
-```python
-_SEAM_OUT = {(0, 0, 1): (0, -90, 0), (0, 0, -1): (0, 90, 0),
-             (1, 0, 0): (0, 0, 0),   (-1, 0, 0): (0, 0, 180),
-             (0, 1, 0): (0, 0, 90),  (0, -1, 0): (0, 0, -90)}
-
-def dimple(radius, normal):          # normal = the face's outward direction
-    return Rot(*_SEAM_OUT[normal]) * Sphere(radius)
-```
-
-Rotate the finished body about Z so the seam lands away from the camera. Two
-cautions:
-
-- A body carrying discrete features (a bolt ring, a stud circle) must be rotated
-  by a whole number of feature pitches, or left alone and its *prototype*
-  rotated instead — `bolt_ring`-style helpers only translate their prototype, so
-  seam-hiding the prototype does not move the ring.
-- A body offset from the origin must be rotated about **its own** axis: build it
-  at the origin, rotate, then translate. Rotating in place about global Z flies
-  it across the model.
-
-Prove the fix with two renders — the seam absent from the camera face **and**
-present on the far side. Without the second render you cannot tell a hidden seam
-from one that was never visible at that angle.
-
-## Fillet retry ladders degrade silently
-
-The `pipe()`-style retry ladder (`[bend, .7, .5, .3, 20]` around
-`FilletPolyline`) exists for a good reason: one oversized corner otherwise kills
-an entire build with `BRep_API: command not done`. But it converts a hard
-failure into an invisible cosmetic regression.
-
-Where a profile cannot accept the nominal radius, the ladder silently falls back
-— a 6 mm rim fillet became ~2 mm on a 660 mm-diameter flange, which tessellates
-as a visible sawtooth. The build reports success; only a render cropped to ~5x
-shows it.
-
-Do not rely on the ladder for cosmetic radii. Reshape the profile so the
-intended radius genuinely fits (a knife-edged wafer cannot take any fillet;
-merge it into its neighbour), then verify by cropping the render.
-
-## Multi-tool booleans: one list operation, internally disjoint batches
-
-Never accumulate boolean tools pairwise — `body - a - b - c` re-runs the whole
-intersection network per step and decays O(n²). Pass every tool in one list
-operand: `body - [a, b, c, ...]`.
-
-Two caveats, both measured:
-
-- **Tools that overlap each other deep below the surface are pathological.**
-  ~200 shallow spherical dimples cut with full spheres (radii ~15 mm for
-  0.02 mm-deep stamps) ran >40 CPU-minutes with zero output; pre-clipping each
-  stamp to a small disjoint "lens cap" (`Sphere & Cylinder` prototype,
-  translated copies) cut the same field in 0.69 s. Keep tools small and
-  mutually disjoint.
-- **A single multi-tool cut whose tools overlap each other can emit wrong
-  results.** A bore cylinder crossing a stack of thin ring cutters returned
-  5 solids: the body, the bore's uncut PLUG kept as a detached solid, and
-  knife-edge slivers. Every tool was individually valid; splitting the same
-  tools into two staged subtracts (functional cuts, then finishing cuts)
-  yielded one clean solid. Batch tool FAMILIES so each batch is
-  internally disjoint-ish — still list-based, never pairwise.
-
-## Near-tangent booleans silently drop material
-
-Intersecting or subtracting nearly tangent surfaces (a huge shallow sphere
-kissing a small revolve, a flat dome tool grazing a face) can succeed with
-exit 0 and a validate-clean result while half a tool's material was simply not
-removed — or a stray disjoint sliver is left floating inside the part. Only
-visual review catches it. Build shallow domes as a single revolved profile
-(`RadiusArc` in the section) instead of near-tangent boolean stacks; it is
-also crisper.
-
-## Do not 3D-chamfer tangent chains or multi-arc outlines
-
-OCC `chamfer`/`fillet` on edges that belong to a tangent chain (a domed face
-meeting cap cylinders) or to a multi-arc "blob" outline behaves three ways
-depending only on exact dimensions: silent failure, minutes of CPU churn per
-attempt, or an **uncatchable SIGSEGV** that kills the whole build. Chamfering
-edges NEXT TO already-beveled arcs can also hard-crash. Retry ladders multiply
-the churn and hide the degradation.
-
-Bake the bevel into construction instead: put it in the extruded/lofted
-SECTION profile, or build the body straight-walled to `z_top - w` and cap it
-with `extrude(..., taper=45)` (or per-arc `Cone` caps when the draft prism
-itself fails). Constructive bevels also survive later booleans, which
-chamfered edges often do not.
-
-## 2D sketch algebra decays; winding decides extrude direction
-
-Chained 2D unions are fragile in three stacked ways, all silent:
-
-- `Circle + Circle` returns a fused `Face`, and the next `Face + Polygon`
-  falls into raw shape fuse returning an unregularized face pile; once any
-  step yields a `ShapeList`, later `+` is Python list concatenation, not
-  geometry. Build each profile as ONE multi-operand fuse:
-  `first + [rest...]`.
-- A CLOCKWISE-wound `Polygon` fuses as a reversed face: the union "succeeds"
-  but shatters into mixed-normal fragments and `extrude()` runs along the
-  reversed normals — solids appear mirrored below the plane. Wind every
-  polygon CCW. **Mirroring a point list reverses its winding**: mirror with
-  `[(-y, z) for y, z in reversed(pts)]`, or the extrude silently runs the
-  other way and the cutter lands off the part.
-- `ShapeList & Sketch` used as a regularizing clip returns an EMPTY list with
-  no error, and the following extrude quietly produces a zero-volume part.
-  Apply the `& clip` intersection exactly once, LAST, on the single fused
-  profile.
-
-**State the extrude direction rather than inheriting it.** `extrude(sketch,
-amount, dir=(0, 1, 0))` takes the sign out of the winding's hands, and that
-matters most on `Plane.XZ`, whose normal is **−Y**: `extrude(Plane.XZ * sk, +t)`
-runs *toward −Y*, so a barrel you meant to build rearward along a +Y bore axis
-lands in front of the cover instead — and a clockwise polygon in the same file
-then runs the opposite way again, so two prisms written identically end up in
-different half-spaces. Put it in one helper:
-
-```python
-def _prism(sketch, y0, length):
-    return Pos(0, y0, 0) * extrude(Plane.XZ * sketch, length, dir=(0, 1, 0))
-```
-
-The failure this prevents is quiet: each part builds, has positive volume and
-passes `validate`; only the assembly is wrong, and only where two parts happen
-to overlap does `interfere` notice.
-
-## `align=(None, None, None)` is the raw OCC datum, not "centered"
-
-`Cylinder`/`Cone` with `align=(None, None, None)` sit base-at-z=0 (XY
-centered); `Box` sits with its CORNER at the origin. Code written assuming
-"None means centered" produces silently wrong geometry — off-center slots,
-inverted countersinks, cutters that remove nothing because they sit entirely
-above the surface. Two independent modules shipped defects from this exact
-assumption. Default alignment IS centered; reserve `align=None` for when the
-raw datum is genuinely wanted.
-
-## Dense periodic spline profiles: kernel ops to avoid
-
-On faces bounded by one periodic `Spline` fit through hundreds of samples,
-several kernel operations fail or corrupt (verified on build123d 0.10 /
-OCP 7.9): `extrude(face, taper=...)` throws `BRepFill_TrimSurfaceTool:
-incoherent intersection`; kernel wire `offset` returns Null for some inward
-deltas; fusing two valid solids that share a coincident spline-bounded planar
-face can return an EMPTY result; and a ruled loft to an inward offset is
-analyzer-invalid where the outer wire's corner radius is smaller than the
-offset. Compute offsets NUMERICALLY on the sample loop (normal offset, prune
-points closer than |delta| to the source polyline, resample, smooth) and build
-beveled bodies as one multi-section ruled loft so no coincident-face fuse
-exists.
-
-## Gate boolean results with the BOP check, not volume
-
-`result.volume > 0` and even `BRepCheck_Analyzer.IsValid()` both accept
-chamfer and V-groove-cut results whose skinny faces are BOP-faulty
-(`BOPAlgo_SelfIntersect`, `BOPAlgo_TooSmallEdge`). The failure then surfaces
-only in `scripts/inspect validate` (`selfIntersecting`), with no pointer to
-the causing operation. After tangency-prone cuts and chamfers on wavy
-outlines, gate with the same check validation uses — `BRepAlgoAPI_Check` —
-and step the operation down or skip it when the check fails.
-
-Related wrap trap: re-wrapping a bare `Solid` as `Part(solid.wrapped)` yields
-a shape whose `.volume` is 0 (build123d 0.10), so volume-based guards silently
-discard real geometry. Use the `Solid` directly as a compound child (Shape
-carries `label`/`color`), or fuse before measuring.
+| trap | page |
+|---|---|
+| `Plane.rotated()` composes in world axes; write the inverse of a hand frame and assert the round trip | `frames-and-rotations` |
+| lofts match sections by index; smoothstep creases; smooth lofts overshoot; diagnosing a failed loft; blend lobes that close inside the body | `loft-pitfalls` |
+| `is_valid` passes inverted solids; BOP check after tangency-prone cuts; `Part(solid.wrapped)` has zero volume; control-hull bounding boxes | `kernel-validity` |
+| a revolve or `Cylinder` seams at +X; a seam inside the material makes an invalid solid | `revolve-seam` |
+| fillet retry ladders degrade silently; chamfers on tangent chains can SIGSEGV; dense periodic splines break taper, offset and fuse | `fillet-chamfer-pitfalls` |
+| pairwise tool accumulation decays O(n²); overlapping tools misbehave; near-tangent and near-coincident booleans | `boolean-pitfalls` |
+| 2D union decay, polygon winding, `Plane.XZ` extrude direction, `align=None` is the raw datum | `sketch-and-extrude-direction` |
+| fitting a B-spline through a height grid rings; use the grid as control net | `bspline-height-fields` |
+| one untriangulable face kills a whole-shape tessellation | `unmeshable-faces` |
 
 ## Common failure modes
 
-- Fillet radius larger than local edge geometry.
-- Open sketch profile produces invalid or missing face.
-- A loft whose SECTION WIRE self-intersects. `make_face` accepts a
-  self-intersecting periodic spline and reports a valid, positive-area face, so
-  each station looks fine in isolation; the loft then fails on whichever
-  adjacent pair is worst. Bisect by lofting adjacent pairs to find the station.
-  Common cause: two points straddling a crease offset along the corner's
-  TANGENT lines rather than placed on the curve, so the outline doubles back.
-- Smooth `loft()` failing with `BRep_API: command not done` even though every
-  section is individually valid and they all share one edge count. Try
-  `loft(..., ruled=True)`; with densely spaced sections the result is visually
-  equivalent.
-- `solid += helper()` where the helper returns a *list*: the accumulator becomes
-  a `ShapeList`, and the failure surfaces much later as an anytree
-  `Cannot add non-node object` from inside `Compound(children=...)`.
-- Face selector changes after a boolean or fillet.
-- Part origin is arbitrary and later alignment checks become ambiguous.
-- Source-level joints are treated as if they were persistent STEP constraints rather than one-time source placement operations.
-- Joint labels are missing, duplicated, or attached to the wrong local datum.
-- `.connect_to()` fixes the wrong side of the relationship, moving the part intended to remain fixed.
+The failure classes and what each usually means — open profiles, selector
+drift, `ShapeList` accumulators, joints treated as persistent constraints,
+`.connect_to()` fixing the wrong side — are `wiki show modeling-failure-modes`.
 
 When generation or validation fails, read the failing gate's own output and
 repair the source; `inspection-and-validation.md` covers how to read a

@@ -46,6 +46,14 @@ highlight is ground-like but enclosed by the subject, so it stays.  Nothing is
 drawn, moved or smoothed: the outline is exactly the set of pixels the image
 did not leave at ground colour.
 
+Filling holes has a price: a real through-opening (a handle loop, a window in a
+frame) is filled along with the highlights, because enclosure is all the rule
+can see.  So every file written here carries `check_likeness.HOLES_KEY` in its
+PNG text chunk, and the gate fills the render's holes too when it finds it.
+Without that mark the correct opening scored as missing material and deleting
+it raised the IoU.  The openings then leave the silhouette gate entirely; give
+each one a landmark-ledger row.
+
 This is the same remedy the skill already prescribes for line art -- make the
 reference measurable, then measure it with the *unchanged* instrument.  It is a
 script rather than a per-project probe so that every project flattens the same
@@ -78,7 +86,11 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
+from PIL.PngImagePlugin import PngInfo
 from scipy import ndimage
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_likeness import HOLES_FILLED, HOLES_KEY  # noqa: E402
 
 SAT_MAX = 20            # a ground pixel is neutral
 LUM_LO, LUM_HI = 66, 212
@@ -110,9 +122,15 @@ def flatten(rgb: np.ndarray, sat_max: float = SAT_MAX,
 
 def _tool_mask(path: Path, threshold: float):
     """The mask `check_likeness` would use, for the outline comparison."""
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
     import check_likeness as CL
     return CL.silhouette(path, threshold)
+
+
+def save_flattened(obj: np.ndarray, target: Path) -> None:
+    """Write the mask with the holes-filled mark the likeness gate reads."""
+    info = PngInfo()
+    info.add_text(HOLES_KEY, HOLES_FILLED)
+    Image.fromarray(np.where(obj, 0, 255).astype(np.uint8)).save(target, pnginfo=info)
 
 
 def verify(obj: np.ndarray, tool: np.ndarray) -> dict:
@@ -142,7 +160,7 @@ def run(paths, out_dir, suffix, sat_max, band, threshold):
         tool = _tool_mask(p, threshold)
         ty, tx = np.nonzero(tool)
         target = (Path(out_dir) if out_dir else p.parent) / f"{p.stem}{suffix}.png"
-        Image.fromarray(np.where(obj, 0, 255).astype(np.uint8)).save(target)
+        save_flattened(obj, target)
         records.append({
             "source": str(p), "output": str(target),
             "flattened": {"bbox": [int(xs.min()), int(ys.min()),
@@ -202,6 +220,21 @@ def self_check() -> int:
     print(f"{'ok  ' if tight else 'FAIL'} the outline is not moved: bbox "
           f"y{ys.min()}..{ys.max()} x{xs.min()}..{xs.max()} (want y50..149 x70..169)")
     ok &= tight
+
+    # the file must say its holes were filled, or the gate scores a filled
+    # reference against an unfilled render and pays for deleting openings
+    import tempfile
+    import check_likeness as CL
+    with tempfile.TemporaryDirectory() as tmp:
+        target = Path(tmp) / "fixture-sil.png"
+        save_flattened(obj, target)
+        marked = CL.holes_filled(target)
+        plain = Path(tmp) / "plain.png"
+        Image.fromarray(img).save(plain)
+        unmarked = not CL.holes_filled(plain)
+    print(f"{'ok  ' if marked and unmarked else 'FAIL'} the flattened file carries "
+          f"the holes-filled mark and an ordinary image does not")
+    ok &= marked and unmarked
 
     print("\nall fixtures pass" if ok else "\nself-check FAILED")
     return 0 if ok else 1
