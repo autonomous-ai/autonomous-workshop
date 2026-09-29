@@ -1203,3 +1203,23 @@ same verdicts; the subsequent repeat took 9.70 seconds. This is one complex
 model replay, not a new native Wish or validation of the reported machine.
 An earlier development run exposed native shape mutation causing cache misses;
 copying validity inputs and non-destructive Boolean operations corrected it.
+
+## Local change: the likeness gate leaves the Workshop pipeline (2026-09-29)
+
+A Workshop-local change to the vendored `cad` and `image-to-cad` trees and to
+Workshop's own `make-round`, not an upstream resync (ADR 0076). It supersedes
+the likeness parts of the resync notes above: `verify_project` no longer runs
+`check_likeness` and refuses `--likeness-ref`, `--likeness-min`,
+`--likeness-accept-mismatch`, `--likeness-accept-regression` and
+`--search-fov`; its `render_views` step keeps only the orthogonal renders and
+the source-vs-STEP drift check. In Contract Mode it requires a current
+component round that passed its checks and an independent review for every
+sealed `geometry:<id>` image, and writes `component-acceptance.json` in place
+of `likeness-acceptance.json`. `make_round` no longer calls `render_views
+--match`; it composes each reference beside a `render_review` view at the
+reference's declared camera and records a reviewer's judgement with
+`--record-review`. `cad/SKILL.md` and its references drop the likeness
+invocations, and `image-to-cad/SKILL.md` gains one note at Step 8 saying the
+gate is not used inside Workshop. `render_views.py`, `check_likeness.py` and
+`likeness-gate.md` keep their upstream bytes. This changes the `cad`,
+`image-to-cad` and `make-round` fingerprints.
