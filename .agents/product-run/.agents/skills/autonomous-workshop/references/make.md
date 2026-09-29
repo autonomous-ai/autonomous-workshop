@@ -154,43 +154,39 @@ are separate. Frozen older runs retain their materialized rules and tools.
      --component part_<role>.step.py
    ```
 
-   Inspect its front, top, and isometric packet, record feedback with the same
-   `--component` argument plus `--record-visual`, and repair/repeat until that
-   isolated component round passes. Use explicit `--ref` only when a reference
-   depicts that component by itself; project-level likeness and motion checks
-   belong to the assembled object. A pass is component-specific evidence, not
-   permission to skip the combined review. In Contract Mode (ADR 0074) name
-   each component file after its Unique Geometry id, `part_<id>.step.py`: its
-   round then scores the sealed `geometry:<id>` image automatically, puts that
-   image in the visual packet, and does not pass below the 0.90 floor. The
-   packet also carries `compare-NN.png`: that image beside the model rendered
-   at the pose the gate matched, both at one height. Compare form there, not
-   with the contract text: thinner or blockier bodies, missing openings, merged
-   or missing members, simplified detail. Below the floor the feedback must
-   list every such difference under `differences` (ADR 0075). The
-   assembly round never scores a component image against the whole object;
-   one with no current component pass fails there as missing. Outside
-   Contract Mode, score a sealed Wish reference that shows one component in
-   that component's round with `--ref LABEL=wish-references/<file>`; the
-   assembly round scores every sealed reference no current component pass
-   has scored, against the whole object.
+   A component passes on three things: it builds, its print gates pass, and
+   an independent reviewer agrees it looks like its reference (ADR 0076). Do
+   not judge your own component and do not use `--record-visual` for it. Spawn
+   a fresh subagent that did not author the component; give it the round's
+   visual packet (front, top, iso and every `compare-NN.png`) and the contract
+   lines for that geometry, and ask whether the model looks like its
+   reference. Write its answer with the exact packet hash from the summary as
+   `{"round", "packet_sha256", "reviewer", "agrees", "reason", "differences"}`;
+   `differences` lists `{"feature", "reference", "model"}` (at most 12) and is
+   required when it disagrees. Record it with the same `--component` argument
+   plus `--record-review <review.json>`. A disagreement is the repair list for
+   the next round. Use explicit `--ref` only when a reference depicts that
+   component by itself; motion checks belong to the assembled object. A pass
+   is component-specific evidence, not permission to skip the combined
+   review. In Contract Mode (ADR 0074) name each component file after its
+   Unique Geometry id, `part_<id>.step.py`: its round then shows the sealed
+   `geometry:<id>` image automatically. Each `compare-NN.png` is a reference
+   beside the model rendered at that reference's declared camera (`@AZ,EL` on
+   the `--ref`, else the front view), both at one height. Compare form there:
+   thinner or blockier bodies, missing openings, merged or missing members,
+   simplified detail. No silhouette score is computed. The assembly round
+   never shows a component image against the whole object; one with no
+   current component pass fails there as missing. Outside Contract Mode, show
+   a sealed Wish reference that depicts one component in that component's
+   round with `--ref LABEL=wish-references/<file>`.
 
-   When a component image stays below the floor after three rounds that each
-   changed its geometry and did not raise its IoU by more than 0.005
-   (`stalled 3/3` in the summary), the Manager may ask for acceptance. A rerun
-   that changed no geometry does not count (ADR 0075). Before accepting, spawn
-   a fresh subagent that did not author the component. Give it only the latest
-   round's `compare-NN.png` images and the contract lines for that geometry,
-   and ask whether the remaining differences are acceptable. Record its answer
-   as `{"round", "comparisons", "reviewer", "agrees", "reason"}`: `comparisons`
-   maps each image path to its sha256 exactly as that round's packet lists
-   them. Then rerun the component round unchanged with
-   `--accept-likeness "<reason>" --acceptance-review <review.json>`. The
-   reason names what the image shows and why this geometry cannot follow it.
-   An image that has not stalled out, a review by the Manager, a review that
-   disagrees, and geometry changed after the review are all refused. Every
-   acceptance is reported to the person when the run ends; it is never
-   recorded as the person's decision.
+   A shape round is a component round that changes the geometry after a round
+   that passed build and print; fixing build or print failures does not
+   count. You get five. After the fifth, `make_round` will not start another
+   round for that component until the latest passing round is reviewed. An
+   agreeing review then passes it; a disagreeing one is recorded as a
+   component acceptance. Every acceptance is reported to the person when the
+   run ends; it is never recorded as the person's decision.
 3. Only after every component passes, author the non-part combined `*.step.py`
    entry and begin assembled-object rounds with:
 
@@ -210,8 +206,8 @@ are separate. Frozen older runs retain their materialized rules and tools.
 5. Run `make_round` after each source repair and inspect its exact visual packet.
    The Manager records misplaced, missing or extra parts, size/proportion
    mismatches, visible intersections, and form defects with image evidence and
-   a concrete repair using `--record-visual`. Inspect the actual views even when
-   likeness passes or no reference image exists. Pending or inconclusive visual
+   a concrete repair using `--record-visual` on the assembly round. Inspect the
+   actual views and every `compare-NN.png`, even when no reference image exists. Pending or inconclusive visual
    feedback is not a pass. These self-checks do not replace independent review.
    Run only additional narrow checks affected by an edit. `make_round` gates
    every part that builds with `check_thickness` and `check_overhang` at the
@@ -235,24 +231,15 @@ are separate. Frozen older runs retain their materialized rules and tools.
    repairs, each followed by regenerated preflight, images and an independent
    rereview. Stop as soon as the review passes.
 8. Run the integrated final verifier once. Do not use it as an iteration loop.
-   Whenever the Wish has references, run it with `--image-derived` and a
-   `--likeness-ref LABEL=PATH@AZ,EL[,TOL]` for every one of them. The suffix
-   is the camera you judge each image was taken from (front `-90,0`, right
-   `0,0`, iso `-45,35`; TOL defaults to 30, wider below 90 when the viewpoint
-   is uncertain): the verifier refuses a reference without one, because a
-   pose search over every azimuth passes a model built the wrong way round.
-   Give `make_round` the same camera on its `--ref` from the first round, so
-   handedness fails early rather than at the final gate. The finalizer refuses a
-   toy with sealed references unless the current final report ran in that
-   mode (ADR 0072, Delivery 2); a plain final report cannot substitute for it,
-   no matter how cleanly it passed. In Contract Mode pass exactly the sealed
-   `assembly` images: the verifier refuses a component image there, and
-   itself fails unless every `geometry:<id>` image has a current component
-   round that passed or was accepted after stalling out (ADR 0074). A stalled
-   assembly image may be accepted with `--likeness-accept-mismatch
-   "<reason>"`; the finalizer copies every acceptance from the verifier's
-   `measure/likeness-acceptance.json` into `product.json`. Do not author
-   `likeness_acceptances` yourself.
+   Whenever the Wish has references, run it with `--image-derived`. The
+   finalizer refuses a toy with sealed references unless the current final
+   report ran in that mode (ADR 0072, Delivery 2); a plain final report cannot
+   substitute for it, no matter how cleanly it passed. In Contract Mode the
+   verifier fails unless every `geometry:<id>` image has a current component
+   round that passed its checks and its independent review (ADR 0076). It
+   writes `measure/component-acceptance.json` beside its report, and the
+   finalizer copies every component acceptance from it into `product.json`.
+   Do not author `component_acceptances` yourself.
 9. Write product metadata and invoke the Make finalizer immediately.
 
 Complete the blind signature review and, if needed, up to three focused repairs before

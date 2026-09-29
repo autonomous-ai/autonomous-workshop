@@ -677,6 +677,15 @@ layout can match its archetype while missing most of what defines it:
 
 ## Step 8 — Specify the likeness gate; CAD measures it
 
+> **Inside a Workshop run the likeness gate is not used (ADR 0076).** No IoU is
+> computed and no likeness floor passes or fails anything. `make_round` shows
+> each reference beside the model rendered at the reference's declared camera
+> (`@AZ,EL`), an independent reviewer judges each Component from those images,
+> and `verify_project --image-derived` takes no `--likeness-ref`. Keep the
+> reference ledger and its cameras; ignore the threshold, the scoring and the
+> `--likeness-ref` invocations below. The rest of this step describes the
+> upstream skill used outside Workshop.
+
 The proportion ledger is checked against the *model*. Nothing else in the
 toolchain checks the model against the *photograph* — the only question an
 image-derived model exists to answer. `validate`, `interfere`, `check_fit` and

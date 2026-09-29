@@ -131,7 +131,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0063-print-gates-on-source.md`, and
 `docs/adr/0064-operator-selected-turn-boundary.md`, and
 `docs/adr/0074-every-component-scored-against-its-own-image.md`, and
-`docs/adr/0075-component-review-compares-form-and-acceptance-needs-a-second-reader.md` before changing the CLI, runtime,
+`docs/adr/0075-component-review-compares-form-and-acceptance-needs-a-second-reader.md`, and
+`docs/adr/0076-component-passes-on-an-independent-review-not-a-likeness-score.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -196,6 +197,13 @@ the geometry, every scored image is composed beside the model for the review,
 feedback below the floor must list its differences from the image, and a
 component acceptance needs a recorded review by someone other than the
 Workshop Manager.
+ADR 0076 supersedes the likeness parts of ADRs 0072, 0074 and 0075: no IoU
+is computed anywhere in the pipeline. A Component passes on build, print gates
+and an independent reviewer's recorded agreement, judged from each reference
+beside the model at its declared camera. After five Shape Rounds a disagreeing
+review is recorded as a Component Acceptance, sealed as
+`component_acceptances` and reported when the run ends. Assembly rounds keep
+the Manager's visual feedback, the blind review and `--full`.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

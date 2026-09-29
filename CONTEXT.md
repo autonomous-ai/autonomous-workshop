@@ -214,17 +214,24 @@ the Wish or the concept, so that what the object actually shows is recorded
 separately from what it was meant to show.
 _Avoid_: QA, review pass, critique
 
-**Stalled Out**:
-A reference image still below the likeness floor after three rounds that each
-changed the geometry without raising its score. A rerun that changed nothing is
-not an attempt and does not count.
-_Avoid_: Stuck, plateaued
+**Component Review**:
+A reader other than the Workshop Manager judging whether one Component looks
+like its reference, from the reference beside the model at the reference's
+camera. Its recorded agreement, with passing build and print checks, is what
+passes a Component; its disagreement lists the differences to repair.
+_Avoid_: Likeness check, self-review, sign-off
 
-**Acceptance Review**:
-A second reader's recorded agreement that a Stalled Out image may ship below
-the floor. The reader is never the Workshop Manager and judges the reference
-beside the model, not the model alone.
-_Avoid_: Sign-off, approval
+**Shape Round**:
+A component round that changes the geometry of a Component whose previous
+round passed its build and print checks. A Component gets five; repairs of
+build or print failures and reruns that change nothing are not Shape Rounds.
+_Avoid_: Attempt, iteration
+
+**Component Acceptance**:
+A Component Review that disagreed after the Component used all its Shape
+Rounds, recorded instead of repaired again and reported to the person when
+the run ends. It is never the person's decision.
+_Avoid_: Waiver, override, Stalled Out
 
 **Unique Geometry**:
 One distinct shape in a Design Contract, shared by every Component built to it.
@@ -240,8 +247,8 @@ _Avoid_: Hero, signature piece, centrepiece
 
 **Display Pose**:
 The one arrangement of a toy's moving parts that its design fixes for
-presentation. The assembly reference image, the built toy and the likeness
-check all use it, so a jointed toy has one silhouette to match rather than many.
+presentation. The assembly reference image, the built toy and its comparison
+images all use it, so a jointed toy has one form to compare rather than many.
 _Avoid_: Default pose, rest pose, render pose
 
 **Requirement Scope**:
