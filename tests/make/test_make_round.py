@@ -922,6 +922,24 @@ class SealedReferenceTest(unittest.TestCase):
                 {"label": "ref-02-whole", "scored_by": "assembly"},
             ])
 
+    def test_a_component_round_with_pending_visual_feedback_is_not_a_pass(self):
+        # ADR 0077: a Component Worker never views images, so its round stays
+        # pending until the root records the Component Reviewer's visual check.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-body.png": b"body"})
+            module, calls = load_module(), []
+            scores = {"ref-01-body.png": 0.95}
+            argv = ["--component", "part_body.step.py", "--ref", "body=wish-references/ref-01-body.png"]
+            self._main(module, project, argv, scores, calls)
+            summary = json.loads((project / "measure/component-rounds/body/r0001/summary.json").read_text())
+            self.assertTrue(summary["checks_ok"])
+            self.assertEqual(summary["visual"]["status"], "pending")
+            self.assertEqual(module.current_passing_component_round(project, "body", "any")[1],
+                             "part_body.step.py latest component round did not pass")
+            self._main(module, project, ["--require-component-passes"], scores, calls)
+            refusal = (project / "measure/rounds/r0001/component-prerequisites.log").read_text()
+            self.assertIn("part_body.step.py latest component round did not pass", refusal)
+
     def test_a_component_changed_after_its_pass_no_longer_covers_its_reference(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._run_root(tmp, {"ref-01-body.png": b"body"})

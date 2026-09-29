@@ -94,11 +94,10 @@ early-proof or recovery turn, takes precedence over them.
   everything a finalizer error names before rerunning it, never on unchanged
   bytes.
 - Start a long command (`make_round`, `verify_project`, a multi-part `gen`, a
-  state or motion sheet) with `yield_time_ms: 30000`. If it is still running,
-  continue it with an empty `write_stdin` poll at `yield_time_ms: 30000` or
-  more. A measured empty poll returns after about 30 s whatever larger number
-  it asks for, so 30000 is the practical ceiling and anything above it is
-  harmless but pointless. The yield is an upper bound, not a sleep: the poll
+  state or motion sheet) with `yield_time_ms: 300000`. If it is still running,
+  continue it with an empty `write_stdin` poll at `yield_time_ms: 300000`.
+  The Codex 0.158.0 tool description allows an empty-poll yield from 5000 to
+  300000 ms (ADR 0077). The yield is an upper bound, not a sleep: the poll
   returns the moment the command exits, so a long yield never waits longer than
   the work actually takes, and a short one only buys another full-price
   request. When an `exec` cell yields with a cell id instead of finishing,
@@ -110,8 +109,8 @@ early-proof or recovery turn, takes precedence over them.
   default, and below the 5000 ms floor an empty poll enforces anyway. If the
   right yield is not obvious, omit `yield_time_ms` and take the default rather
   than writing a small number. Never put a `sleep` between polls. Wait for a
-  child with one `wait_agent` at a long timeout rather than repeated 10-second
-  waits.
+  child with one `wait_agent` at a long timeout (`timeout_ms: 300000`) rather
+  than repeated 10-second waits.
 - Keep tool output bounded: read round summaries, not full logs, and open a
   log only for the failure the summary cannot place.
 
@@ -154,19 +153,47 @@ are separate. Frozen older runs retain their materialized rules and tools.
      --component part_<role>.step.py
    ```
 
-   Inspect its front, top, and isometric packet, record feedback with the same
-   `--component` argument plus `--record-visual`, and repair/repeat until that
-   isolated component round passes. Use explicit `--ref` only when a reference
-   depicts that component by itself; project-level likeness and motion checks
+   Its visual packet is recorded with the same `--component` argument plus
+   `--record-visual`, and the round repeats until that isolated component
+   round passes. Delegate each component's loop (ADR 0077). Once the component
+   list is settled, spawn one worker per Component, in parallel, as a
+   `component-worker` agent. Give it only: the component id and its
+   `part_<id>.step.py`; its sealed `geometry:<id>` reference and declared
+   camera; only that Component's Design Contract rows; and the nozzle. The
+   worker repairs from the round summary until the round's checks pass or its
+   image stalls out, then reports in 10 lines or fewer. Neither you nor a
+   worker views a component's images. Only its reviewer does, and the worker
+   acts on the reviewer's text. If the runtime refuses a spawn at its thread
+   limit, spawn the next worker when one finishes.
+
+   Keep one reviewer thread per Component, spawned once as a
+   `component-reviewer` agent, and send each later request about that
+   Component to the same thread as a follow-up so its cached prefix survives.
+   When a worker reports a round whose checks pass (build, print and every
+   likeness item ok or accepted, visual feedback pending), you, not the
+   worker, ask the reviewer for its visual check: give it that round's visual
+   packet paths (front, top, iso and every `compare-NN.png`) and that
+   Component's contract rows, and say when an image is below the floor. Add
+   the round's `packet_sha256` to its answer and record it with
+   `--record-visual`. On a fail, forward its findings and differences to the
+   same worker: they are the repair list for its next rounds. Close the worker
+   once the component round passes.
+
+   Workers never edit a shared helper such as `features/forms.py`; they ask
+   you. Edit the helper yourself, then send every Component that uses it back
+   through a worker: the edit changes their B-rep identity, which invalidates
+   their passes (ADR 0073).
+
+   Use explicit `--ref` only when a reference depicts that component by itself; project-level likeness and motion checks
    belong to the assembled object. A pass is component-specific evidence, not
    permission to skip the combined review. In Contract Mode (ADR 0074) name
    each component file after its Unique Geometry id, `part_<id>.step.py`: its
    round then scores the sealed `geometry:<id>` image automatically, puts that
    image in the visual packet, and does not pass below the 0.90 floor. The
    packet also carries `compare-NN.png`: that image beside the model rendered
-   at the pose the gate matched, both at one height. Compare form there, not
-   with the contract text: thinner or blockier bodies, missing openings, merged
-   or missing members, simplified detail. Below the floor the feedback must
+   at the pose the gate matched, both at one height. The reviewer compares form
+   there, not with the contract text: thinner or blockier bodies, missing
+   openings, merged or missing members, simplified detail. Below the floor the feedback must
    list every such difference under `differences` (ADR 0075). The
    assembly round never scores a component image against the whole object;
    one with no current component pass fails there as missing. Outside
@@ -178,15 +205,18 @@ are separate. Frozen older runs retain their materialized rules and tools.
    When a component image stays below the floor after three rounds that each
    changed its geometry and did not raise its IoU by more than 0.005
    (`stalled 3/3` in the summary), the Manager may ask for acceptance. A rerun
-   that changed no geometry does not count (ADR 0075). Before accepting, spawn
-   a fresh subagent that did not author the component. Give it only the latest
-   round's `compare-NN.png` images and the contract lines for that geometry,
-   and ask whether the remaining differences are acceptable. Record its answer
-   as `{"round", "comparisons", "reviewer", "agrees", "reason"}`: `comparisons`
+   that changed no geometry does not count (ADR 0075). This is the only other
+   time you ask that Component's reviewer: give it only the latest round's
+   `compare-NN.png` images and the contract rows for that geometry, and ask
+   whether the remaining differences are acceptable. Record its answer as
+   `{"round", "comparisons", "reviewer", "agrees", "reason"}`: `comparisons`
    maps each image path to its sha256 exactly as that round's packet lists
-   them. Then rerun the component round unchanged with
-   `--accept-likeness "<reason>" --acceptance-review <review.json>`. The
-   reason names what the image shows and why this geometry cannot follow it.
+   them, and `reviewer` names that reviewer thread. Then have the worker rerun the component round unchanged with
+   `--accept-likeness "<reason>" --acceptance-review <review.json>`; that
+   round's checks pass, so it goes to the reviewer's visual check like any
+   other. If the reviewer disagrees, forward its differences to the same
+   worker for more repair rounds; ask again only after the image stalls out
+   again. The reason names what the image shows and why this geometry cannot follow it.
    An image that has not stalled out, a review by the Manager, a review that
    disagrees, and geometry changed after the review are all refused. Every
    acceptance is reported to the person when the run ends; it is never

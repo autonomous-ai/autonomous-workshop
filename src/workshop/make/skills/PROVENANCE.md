@@ -1048,3 +1048,15 @@ same verdicts; the subsequent repeat took 9.70 seconds. This is one complex
 model replay, not a new native Wish or validation of the reported machine.
 An earlier development run exposed native shape mutation causing cache misses;
 copying validity inputs and non-destructive Boolean operations corrected it.
+
+## Local change: make-round waits at a 300000 ms yield and names the Component Reviewer (2026-09-29)
+
+A Workshop-local change to Workshop's own `make-round`, not an upstream resync
+(ADR 0077). The Rules section now starts `make_round` and continues it with an
+empty `write_stdin` poll at `yield_time_ms: 300000` instead of 30000. Codex
+0.158.0 accepts an empty-poll yield from 5000 to 300000 ms and returns as soon
+as the process exits, so the longer yield only removes re-sent polling
+requests. Its first rule now says who inspects the visual packet: the Manager
+for an assembly round, the Component Reviewer for a component round once its
+checks pass. `make_round` itself is unchanged. This changes the `make-round`
+fingerprint.

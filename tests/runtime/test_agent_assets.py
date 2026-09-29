@@ -216,7 +216,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         section = make[start : make.index("## Ownership and pipeline", start)]
 
         for required in (
-            "yield_time_ms: 30000",
+            "`yield_time_ms: 300000`",
             "upper bound, not a",
             "continue that cell with `wait` at the same large yield",
             "`1000` is not a waiting value",
@@ -249,16 +249,56 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         )
         for required in (
             "Wait for a long command in as few requests as possible",
-            "yield_time_ms: 30000",
+            "`yield_time_ms: 300000`",
             "`1000` is not a waiting value",
             "Never sleep between polls",
             "one `wait_agent` at a long timeout",
         ):
             with self.subTest(constitution=required):
                 self.assertIn(required, constitution)
-        self.assertIn("yield_time_ms: 30000", make_round)
+        self.assertIn("`yield_time_ms: 300000`", make_round)
+        # ADR 0077 raised every wait to 300000 ms; no 30000 ms wait survives.
+        for text in (section, constitution, make_round):
+            self.assertNotIn("`yield_time_ms: 30000`", text)
         self.assertIn("continue a yielded `exec` cell with", make_round)
         self.assertIn("Omit `yield_time_ms` before writing a small one", make_round)
+
+    def test_make_hands_each_component_to_a_worker_and_a_root_owned_reviewer(self):
+        make = " ".join(
+            (
+                REPOSITORY
+                / ".agents/product-run/.agents/skills/autonomous-workshop"
+                / "references/make.md"
+            ).read_text(encoding="utf-8").split()
+        )
+        for required in (
+            "`component-worker`",
+            "`component-reviewer`",
+            "one worker per Component",
+            "only that Component's Design Contract rows",
+            "10 lines or fewer",
+            "one reviewer thread per Component",
+            "same worker",
+            "Neither you nor a worker views",
+            "Workers never edit a shared helper",
+            "ask the reviewer for its visual check",
+            "`--record-visual`",
+            "This is the only other time you ask that Component's reviewer",
+            "--accept-likeness \"<reason>\" --acceptance-review <review.json>",
+            "ADR 0077",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, make)
+        constitution = " ".join(
+            (REPOSITORY / ".agents/product-run/AGENTS.md").read_text(
+                encoding="utf-8"
+            ).split()
+        )
+        self.assertIn("`component-worker`", constitution)
+        self.assertIn("`component-reviewer`", constitution)
+        # Main keeps the likeness gate: no per-round review and no repair cap.
+        self.assertNotIn("--record-review", make)
+        self.assertNotIn("shape-repair limit", make)
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:

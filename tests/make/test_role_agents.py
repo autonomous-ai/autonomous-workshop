@@ -52,11 +52,16 @@ class MakeRoleAgentFilesTest(unittest.TestCase):
             "Do not view images",
             "yield_time_ms: 300000",
             "10 lines",
+            "stalled 3/3",
+            "--accept-likeness",
             "Do not spawn",
             "Do not advance",
             "external effect",
         ):
             self.assertIn(phrase, worker)
+        # Main has no shape-repair limit and no --record-review (ADR 0077).
+        self.assertNotIn("shape-repair limit", worker)
+        self.assertNotIn("--record-review", worker)
 
     def test_reviewer_is_the_only_image_reader_and_answers_in_the_review_shape(self):
         reviewer = tomllib.loads(
@@ -66,11 +71,16 @@ class MakeRoleAgentFilesTest(unittest.TestCase):
             "compare-NN.png",
             '"agrees"',
             '"differences"',
+            '"status": "pass"|"fail"',
+            '"decision"',
+            "stalled out below the 0.90 floor",
             "Do not edit",
             "Do not spawn",
             "external effect",
         ):
             self.assertIn(phrase, reviewer)
+        # Main keeps the silhouette likeness gate (ADR 0074).
+        self.assertNotIn("No silhouette score", reviewer)
 
 
 class ParseMakeRoleAgentBytesTest(unittest.TestCase):

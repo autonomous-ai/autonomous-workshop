@@ -89,12 +89,14 @@ calls were reassembling by hand.
 ## Rules
 
 - Run `make_round` once per repair round, after editing source and before
-  deciding what to repair next. Then inspect the visual packet and record the
-  Manager's findings using `--record-visual` without rebuilding. Read its summary; open a full report only
+  deciding what to repair next. Then have the visual packet inspected and
+  record the findings using `--record-visual` without rebuilding: for an
+  assembly round, inspect it yourself; for a component round, the Component
+  Reviewer inspects it once the round's checks pass (ADR 0077). Read its summary; open a full report only
   when the summary names a failure you cannot place.
-- A round can take minutes. Start `make_round` with `yield_time_ms: 30000` and,
-  while it runs, continue it with an empty `write_stdin` poll at
-  `yield_time_ms: 30000` or more, and continue a yielded `exec` cell with
+- A round can take minutes. Start `make_round` with `yield_time_ms: 300000`
+  and, while it runs, continue it with an empty `write_stdin` poll at
+  `yield_time_ms: 300000`, and continue a yielded `exec` cell with
   `wait` at the same large yield. The poll returns as soon as the round exits,
   so the long yield never costs waiting the round did not need. Do not copy the `1000` from the `exec` pragma example
   into a poll: it is an output budget there, and as a yield it is worse than
