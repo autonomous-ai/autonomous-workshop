@@ -1,0 +1,235 @@
+"""Contract Mode: the final verifier accounts for every sealed component image.
+
+No silhouette score is computed anywhere. A Component image is accounted for by
+that Component's current round: its checks passed and an independent reviewer
+recorded agreement, or the shape-repair allowance ran out and the reviewer's
+recorded disagreement became a component acceptance. make_round owns that rule
+and reports it through ``component_coverage(project, digests)``; these tests
+fake that function to its published contract. Every acceptance is written to
+``component-acceptance.json``, bound to the verification report, so the host
+can report it when the run ends.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+import runpy
+import tempfile
+import unittest
+
+
+VERIFIER = Path(__file__).resolve().parents[2] / "src/workshop/make/skills/cad/scripts/verify_project"
+CONTRACT = {
+    "design_contract": {
+        "title": "Broken God",
+        "references": [
+            {"file": "ref-01-whole.png", "shows": "assembly"},
+            {"file": "ref-02-body.png", "shows": "geometry:body"},
+        ],
+    }
+}
+IMAGES = {"ref-01-whole.png": b"whole", "ref-02-body.png": b"body"}
+REASON = "Claws are thinner than the nozzle can hold."
+
+
+def sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+class FakeCoverage:
+    """make_round's ``component_coverage(project, digests)`` for one passing body round.
+
+    It covers the body image only while the body's identity is the one its
+    round recorded, as the real function does through
+    ``current_passing_component_round``.
+    """
+
+    def __init__(self, *, identities=("brep-body", sha(b"body step")), accepted=None, passing=True):
+        self.identities = set(identities)
+        self.accepted = accepted
+        self.passing = passing
+        self.calls = []
+
+    def __call__(self, *args):
+        self.calls.append(args)
+        _project, digests = args
+        if not self.passing or digests.get("body") not in self.identities:
+            return {}
+        return {sha(IMAGES["ref-02-body.png"]): {"role": "body", "accepted": self.accepted}}
+
+
+class ContractReviewTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.verifier = runpy.run_path(str(VERIFIER))
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.run_root = Path(temporary.name).resolve()
+        (self.run_root / "wish-references").mkdir()
+        for name, content in IMAGES.items():
+            (self.run_root / "wish-references" / name).write_bytes(content)
+        self.write_wish(CONTRACT)
+        self.project = self.run_root / "artifacts/make/r0001/product/cad"
+        (self.project / "ref").mkdir(parents=True)
+        (self.project / "toy.step.py").write_text("def gen_step(): pass\n")
+        (self.project / "part_body.step.py").write_text("def gen_step(): pass\n")
+        (self.project / "part_body.step").write_bytes(b"body step")
+        for name, content in IMAGES.items():
+            (self.project / "ref" / name).write_bytes(content)
+
+    def write_wish(self, context):
+        wish = {"references": [{"name": n, "sha256": sha(c)} for n, c in IMAGES.items()]}
+        if context is not None:
+            wish["context"] = context
+        (self.run_root / "WISH.json").write_text(json.dumps(wish))
+
+    def sealed(self):
+        make_round, sealed, error = self.verifier["_contract_sealed_references"](self.project)
+        self.assertIsNone(error)
+        self.assertIsNotNone(make_round)
+        return sealed
+
+    # -- preflight ---------------------------------------------------------
+
+    def test_outside_contract_mode_nothing_changes(self):
+        self.write_wish(None)
+        make_round, sealed, error = self.verifier["_contract_sealed_references"](self.project)
+        self.assertEqual((make_round, sealed, error), (None, [], None))
+
+    def test_an_unreadable_wish_is_an_error_not_an_empty_list(self):
+        (self.run_root / "WISH.json").write_text("{nope")
+        _, _, error = self.verifier["_contract_sealed_references"](self.project)
+        self.assertIn("WISH.json", error)
+
+    def test_the_likeness_gate_is_gone(self):
+        for name in ("_contract_likeness_refusal", "_parse_likeness_ref", "_read_likeness_history",
+                     "_mismatch_acceptance_labels", "_accepted_likeness_summary",
+                     "LIKENESS_FLOOR", "LIKENESS_STALL_STREAK", "LIKENESS_ACCEPTANCE_NAME"):
+            self.assertNotIn(name, self.verifier)
+        self.assertNotIn("check_likeness.py", {p.name for p in self.verifier["_sweep_tool_paths"](image_derived=True)})
+        options = {o for a in self.verifier["build_parser"]()._actions for o in a.option_strings}
+        self.assertFalse({"--likeness-ref", "--likeness-min", "--likeness-accept-mismatch",
+                          "--likeness-accept-regression", "--search-fov"} & options)
+        self.assertIn("--image-derived", options)
+
+    # -- component coverage ------------------------------------------------
+
+    def coverage(self, identities, fake):
+        return self.verifier["_component_review_coverage"](
+            {"component_coverage": fake}, self.project, self.sealed(), identities)
+
+    def test_coverage_is_asked_without_a_floor(self):
+        fake = FakeCoverage()
+        self.coverage({"body": "brep-body"}, fake)
+        self.assertEqual(fake.calls, [(self.project, {"body": "brep-body"})])
+
+    def test_a_component_image_without_a_passing_round_fails_final_verification(self):
+        failures, acceptances = self.coverage({"body": "brep-body"}, FakeCoverage(passing=False))
+        self.assertEqual(acceptances, [])
+        self.assertEqual(failures, [
+            "geometry:body: no current component round passed its checks and independent "
+            "review; run make_round --component part_body.step.py"
+        ])
+
+    def test_a_reviewed_component_round_accounts_for_its_image(self):
+        self.assertEqual(self.coverage({"body": "brep-body"}, FakeCoverage()), ([], []))
+
+    def test_only_component_images_are_accounted_for(self):
+        # The assembly image is shown to the assembly's blind review, never scored here.
+        fake = FakeCoverage()
+        failures, _ = self.coverage({"body": "brep-body"}, fake)
+        self.assertEqual(failures, [])
+        self.assertEqual(list(fake.calls[0][1]), ["body"])
+
+    def test_a_component_found_current_by_gen_is_matched_by_its_step_bytes(self):
+        fake = FakeCoverage()
+        self.assertEqual(self.coverage({}, fake), ([], []))
+        self.assertEqual(fake.calls[0][1], {"body": sha(b"body step")})
+
+    def test_a_component_changed_since_its_round_fails(self):
+        failures, _ = self.coverage({"body": "brep-moved"}, FakeCoverage())
+        self.assertEqual(len(failures), 1)
+
+    def test_an_acceptance_at_the_shape_repair_limit_is_carried_as_a_record(self):
+        accepted = {"reviewer": "fresh-reviewer", "reason": REASON, "shape_rounds": 5}
+        failures, acceptances = self.coverage({"body": "brep-body"}, FakeCoverage(accepted=accepted))
+        self.assertEqual(failures, [])
+        self.assertEqual(acceptances, [{
+            "label": "geometry:body", "scope": "component:body", "reviewer": "fresh-reviewer",
+            "shape_rounds": 5, "reason": REASON, "accepted_by": "workshop-manager",
+        }])
+
+    def test_the_gate_records_its_row_and_the_acceptance_note(self):
+        accepted = {"reviewer": "fresh-reviewer", "reason": REASON, "shape_rounds": 5}
+        runner = self.verifier["Runner"](cwd=self.run_root, dry_run=False, verbose=False)
+        runner.component_acceptances = []
+        runner.last_stdout = json.dumps({"sourceRef": "part_body.step.py", "identitySha256": "brep-body"})
+        failed = self.verifier["_component_review_failed"](
+            runner, {"component_coverage": FakeCoverage(accepted=accepted)}, self.project, self.sealed())
+        self.assertFalse(failed)
+        self.assertEqual([r["status"] for r in runner.records], ["rc=0", "note"])
+        self.assertTrue(runner.records[0]["command"].startswith("component review"))
+        self.assertIn("accepted by the Workshop Manager", runner.records[1]["command"])
+        self.assertIn("fresh-reviewer", runner.records[1]["command"])
+        self.assertEqual([a["label"] for a in runner.component_acceptances], ["geometry:body"])
+
+    def test_the_gate_fails_the_run_when_a_component_image_is_unaccounted(self):
+        runner = self.verifier["Runner"](cwd=self.run_root, dry_run=False, verbose=False)
+        self.assertTrue(self.verifier["_component_review_failed"](
+            runner, {"component_coverage": FakeCoverage(passing=False)}, self.project, self.sealed()))
+        self.assertEqual(runner.records[-1]["status"], "rc=1")
+
+    # -- gen identities and the acceptance record --------------------------
+
+    def test_gen_json_lines_yield_each_built_part_identity(self):
+        stdout = "\n".join([
+            "building...",
+            json.dumps({"ok": True, "sourceRef": "cad/part_body.step.py", "identitySha256": "b1"}),
+            json.dumps({"ok": True, "sourceRef": "toy.step.py", "identitySha256": "t1"}),
+            json.dumps({"ok": True, "sourceRef": "part_arm.step.py", "outcome": "current"}),
+        ])
+        self.assertEqual(self.verifier["_gen_part_identities"](stdout), {"body": "b1"})
+
+    def test_the_acceptance_record_binds_the_verification_report(self):
+        report = self.project / "measure/verification-pipeline.md"
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text("# Verification pipeline record\n")
+        acceptances = [{"label": "geometry:body", "scope": "component:body", "reviewer": "fresh-reviewer",
+                        "shape_rounds": 5, "reason": "r", "accepted_by": "workshop-manager"}]
+        self.verifier["_write_component_acceptance"](report, acceptances)
+        record = json.loads((report.parent / "component-acceptance.json").read_text())
+        self.assertEqual(record, {
+            "schema_version": 1,
+            "verification_sha256": sha(report.read_bytes()),
+            "acceptances": acceptances,
+        })
+        self.assertFalse((report.parent / "likeness-acceptance.json").exists())
+
+    def test_the_final_report_writes_an_empty_record_in_an_image_derived_run(self):
+        report = self.project / "measure/verification-pipeline.md"
+        runner = self.verifier["Runner"](cwd=self.run_root, dry_run=False, verbose=False)
+        runner.component_acceptances = []
+        self.verifier["_write_report"](report, runner, mode="image-derived final", result=0,
+                                        elapsed=0.1, bed=(220.0, 220.0, 220.0))
+        record = json.loads((report.parent / "component-acceptance.json").read_text())
+        self.assertEqual(record["acceptances"], [])
+        self.assertEqual(record["verification_sha256"], sha(report.read_bytes()))
+
+    def test_no_record_outside_an_image_derived_run(self):
+        report = self.project / "measure/verification-pipeline.md"
+        runner = self.verifier["Runner"](cwd=self.run_root, dry_run=False, verbose=False)
+        self.verifier["_write_report"](report, runner, mode="final", result=0,
+                                        elapsed=0.1, bed=(220.0, 220.0, 220.0))
+        self.assertFalse((report.parent / "component-acceptance.json").exists())
+
+    def test_the_acceptance_note_names_the_manager_not_a_user(self):
+        source = VERIFIER.read_text(encoding="utf-8")
+        self.assertNotIn("accepted by user", source)
+        self.assertIn("accepted by the Workshop Manager", source)
+
+
+if __name__ == "__main__":
+    unittest.main()

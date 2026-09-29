@@ -149,10 +149,7 @@ class VerifyMotionOptionTest(unittest.TestCase):
                 motion_manifest=manifest, check_motion=True,
                 strict_fit=False, strict_mount=False, print_gates=False,
                 bed=(220, 220, 220), nozzle=0.4, skip_thickness=False,
-                overhang_angle=45, image_derived=False, likeness_refs=[],
-                likeness_min=0.9, likeness_accept_mismatch=None,
-                likeness_mismatch_labels=set(), likeness_accept_regression=None,
-                search_fov="20,40,60",
+                overhang_angle=45, image_derived=False,
             )
         self.assertEqual(result, 1)
         self.assertEqual(calls, ["gen", "check_motion"])
