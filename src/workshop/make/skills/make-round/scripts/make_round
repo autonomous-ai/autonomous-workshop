@@ -1174,7 +1174,7 @@ def make_round(args) -> int:
             return 2
         print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
         return 0 if summary["ok"] else 1
-    if args.record_review:
+    if getattr(args, "record_review", None):
         try:
             summary = record_review(project, args.record_review, args.component)
         except (ValueError, KeyError, OSError, TypeError) as exc:
