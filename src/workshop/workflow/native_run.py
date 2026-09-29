@@ -84,6 +84,7 @@ from workshop.release.renders import (
     verified_render_sources,
 )
 from workshop.make.native import NativeMade, validate_build_groups
+from workshop.make.role_agents import make_role_agent_files
 from workshop.make.revision import (
     MAKE_INVENT_REVISION_CAPABILITY_PATH,
     NativeMakeInventRevision,
@@ -10476,6 +10477,7 @@ def start_native_run(
                 turn_untimed=turn_untimed,
                 check_motion=check_motion,
                 carry_unchanged=carry_unchanged,
+                make_role_agents=make_role_agent_files(),
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.

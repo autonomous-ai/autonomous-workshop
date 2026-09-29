@@ -79,6 +79,7 @@ from workshop.runtime import (
     CodexInvocationError,
     CodexRecoverableInvocationError,
 )
+from workshop.make.role_agents import make_role_agent_files
 from workshop.runtime.codex import CodexNativeSessionLauncher
 from workshop.runtime.progress import (
     NativeRunProgress,
@@ -2884,10 +2885,17 @@ class NativeHostTest(unittest.TestCase):
             workspace = home / "runs" / receipt["product_id"] / "workspace"
             wish = json.loads((workspace / "WISH.json").read_text(encoding="utf-8"))
             self.assertEqual(wish["context"]["inventor_id"], "soren-voss")
+            # The pinned Inventor is the whole roster; the two fixed Make
+            # role agents (ADR 0077) sit beside it and are not Inventors.
             self.assertEqual(
-                [path.name for path in (workspace / ".codex/agents").iterdir()],
-                ["soren-voss.toml"],
+                sorted(path.name for path in (workspace / ".codex/agents").iterdir()),
+                ["component-reviewer.toml", "component-worker.toml", "soren-voss.toml"],
             )
+            for name, content in make_role_agent_files().items():
+                self.assertEqual(
+                    (workspace / ".codex/agents" / (name + ".toml")).read_bytes(),
+                    content,
+                )
             inventor_skills = sorted(
                 path.name
                 for path in (workspace / ".agents/skills").iterdir()
