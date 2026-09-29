@@ -236,7 +236,13 @@ are separate. Frozen older runs retain their materialized rules and tools.
    rereview. Stop as soon as the review passes.
 8. Run the integrated final verifier once. Do not use it as an iteration loop.
    Whenever the Wish has references, run it with `--image-derived` and a
-   `--likeness-ref LABEL=PATH` for every one of them. The finalizer refuses a
+   `--likeness-ref LABEL=PATH@AZ,EL[,TOL]` for every one of them. The suffix
+   is the camera you judge each image was taken from (front `-90,0`, right
+   `0,0`, iso `-45,35`; TOL defaults to 30, wider below 90 when the viewpoint
+   is uncertain): the verifier refuses a reference without one, because a
+   pose search over every azimuth passes a model built the wrong way round.
+   Give `make_round` the same camera on its `--ref` from the first round, so
+   handedness fails early rather than at the final gate. The finalizer refuses a
    toy with sealed references unless the current final report ran in that
    mode (ADR 0072, Delivery 2); a plain final report cannot substitute for it,
    no matter how cleanly it passed. In Contract Mode pass exactly the sealed

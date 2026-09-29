@@ -1,6 +1,6 @@
 ---
 name: design-reference
-description: Research Internet sources for analogous parametric CAD construction patterns and authoritative design specifications, recording URLs, revisions, licenses, claims, and evidence. Use when image-to-CAD or CAD work benefits from prior designs or sourced design facts. Do not use it for purchasable component geometry; use step-parts for that.
+description: Research Internet sources for analogous parametric CAD construction patterns and authoritative design specifications, recording URLs, revisions, licenses, claims, and evidence. Use when image-to-CAD, product-design or CAD work has a named construction question that prior designs or sourced design facts would answer. Not the product-level survey of what existing products of a kind look like; that is product-design. Do not use it for purchasable component geometry; use step-parts for that.
 ---
 
 # Design references
@@ -12,6 +12,11 @@ exterior with the nearest-looking result.
 
 ## Boundary
 
+- The product-level survey — what existing products of a kind look like, which
+  features they share, what size they are, what their reviews complain about —
+  is `$product-design`'s step 2, and it is the one place a product-category
+  query belongs. This skill starts after it, from one named construction
+  question.
 - Use this skill for shape archetypes, feature ordering, parametric CAD idioms,
   mechanism construction examples, and sourced design constraints.
 - Use manufacturer documentation, standards, or an official technical source
@@ -75,9 +80,9 @@ design. Project-local `measure/check_spec.py` checks that every selected design
 has the required source URL, claim/specification and license record; final CAD
 verification does not re-fetch the Internet.
 
-## Integration with image-to-cad
+## Integration with image-to-cad and product-design
 
-Research after the overall read and feature tree have named the construction
-question, and before section 6g selects the design or the feature-operation
+Research after the overall read (or, for `$product-design`, the concept
+selection) and the feature tree have named the construction question, and before section 6g selects the design or the feature-operation
 table is written. The research must leave enough sourced specifications and
 construction evidence for CAD to build without choosing among alternatives.

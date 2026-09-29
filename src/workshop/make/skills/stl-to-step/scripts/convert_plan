@@ -1,0 +1,355 @@
+#!/usr/bin/env python3
+"""Decide how to convert a set of STLs to STEP, from the files, without asking.
+
+Three questions a conversion raises are answerable from the meshes themselves:
+what unit each mesh is in, which backend to spend on it, and whether it is
+closed enough to convert at all. This reads the meshes, applies one stated rule
+per decision, and prints the conversion commands plus the assumptions to
+declare in the handover.
+
+    python skills/stl-to-step/scripts/convert_plan mesh/*.stl --project output/thing
+
+It converts only. What happens to the converted STEPs - recover, re-author,
+release the references, assemble - is `$step-to-source`'s `source_plan`, and
+the plan ends by printing that command.
+
+It is a planner: it measures and prints, and writes nothing.
+
+Exit 0 when a full plan came out, 1 when a decision is genuinely blocked (a
+mesh with holes and no repairing backend: the only case worth a question), 2 on
+bad usage.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+import meshstep  # noqa: E402
+
+# A part that a human deals with, in millimetres. Nothing in an STL says what
+# unit its numbers are in, so the only evidence available is that real parts
+# are not 0.2 mm across and not 40 m across; a file that reads that way was
+# written in some other unit. The band is deliberately wide: it exists to catch
+# the 25.4x mistake, not to second-guess a plausible reading.
+SIZE_BAND = (10.0, 5000.0)
+
+# Between the floor and the band a rescale is a guess: a 4 mm part and a
+# 101.6 mm inch export read identically, and nothing in the file separates
+# them. So the millimetre reading is kept -- it is what the rest of the
+# toolchain means by a number, and a wrong rescale mangles geometry that a kept
+# reading merely mislabels -- and the decision is stamped "assumed" with the
+# other reading named, to be declared rather than believed. Below the floor the
+# millimetre reading is not a part in any workshop and the rescale is the only
+# interpretation left.
+AMBIGUOUS_FLOOR = 1.0
+
+# Tried in this order, first reading that lands in the band wins. mm is first
+# because it is what the rest of this toolchain means by a number.
+UNIT_ORDER = ("mm", "in", "cm", "m", "ft")
+
+# Above this, the built-in sew is a gamble rather than a wait: cost per
+# triangle climbs with the count and the failure mode is a process that never
+# returns. See SKILL.md's measured curve.
+SEW_TRIANGLE_CEILING = 60_000
+
+
+# --------------------------------------------------------------------------
+# One rule per decision
+# --------------------------------------------------------------------------
+
+def decide_units(size):
+    """Pick the unit the mesh was written in, from the size it claims to be."""
+    largest = max(size) if size else 0.0
+    low, high = SIZE_BAND
+    if low <= largest <= high:
+        return {"units": "mm", "confidence": "measured",
+                "why": f"max dimension {largest:g} mm is a part-sized reading; "
+                       f"no rescale needed"}
+    if AMBIGUOUS_FLOOR <= largest < low:
+        return {"units": "mm", "confidence": "assumed",
+                "why": f"max dimension {largest:g} is small for a part but not "
+                       f"impossible; read as inches it would be "
+                       f"{largest * 25.4:g} mm. Kept as mm, because a wrong "
+                       f"rescale mangles the geometry and a kept reading only "
+                       f"mislabels it -- declare this"}
+    for unit in UNIT_ORDER[1:]:
+        scaled = largest * meshstep.UNIT_SCALE[unit]
+        if low <= scaled <= high:
+            return {"units": unit, "confidence": "measured",
+                    "why": f"max dimension {largest:g} as-written is not a part "
+                           f"in millimetres at all; read as {unit} it is "
+                           f"{scaled:g} mm"}
+    return {"units": "mm", "confidence": "unresolved",
+            "why": f"max dimension {largest:g} is outside {low:g}-{high:g} mm "
+                   f"in every unit tried; converting as mm and declaring it"}
+
+
+def reconcile_units(meshes):
+    """Let a set of meshes settle each other's ambiguous readings.
+
+    Parts exported from one assembly share a unit, so a 7 mm washer beside a
+    170 mm frame is a 7 mm washer. On its own that same file is ambiguous; in
+    the set it is not, and the set is the evidence.
+    """
+    decided = [m for m in meshes if m["units"]["confidence"] == "measured"]
+    if not decided:
+        return
+    units = {m["units"]["units"] for m in decided}
+    if len(units) > 1:
+        return
+    settled = units.pop()
+    for entry in meshes:
+        if entry["units"]["confidence"] != "assumed":
+            continue
+        others = ", ".join(sorted(m["file"].split("/")[-1] for m in decided))
+        entry["units"] = {
+            "units": settled, "confidence": "measured",
+            "why": f"ambiguous alone, settled by the set: {others} read as "
+                   f"{settled}, and parts exported from one assembly share a "
+                   f"unit"}
+
+
+def decide_backend(mesh_report, installed):
+    """Pick the backend, and say when the choice is actually blocked.
+
+    Fidelity first: only 2step restores analytic surfaces and only 2step
+    repairs, so it is the answer whenever it is present. When it is absent the
+    plan proceeds on what is installed rather than stopping to ask for 7.6 GB
+    of someone's disk -- except on a mesh with holes, where the other backends
+    do not produce a solid at all and proceeding would only reach the same
+    answer slower.
+    """
+    watertight = mesh_report["watertight"]
+    if "2step" in installed:
+        return {"backend": "2step", "blocked": False,
+                "why": "installed, and the only backend that repairs a mesh "
+                       "and restores complete primitives as analytic surfaces"}
+    if not watertight:
+        return {"backend": None, "blocked": True,
+                "why": f"{mesh_report['boundaryEdges']} boundary and "
+                       f"{mesh_report['nonManifoldEdges']} non-manifold edges: "
+                       f"only 2step repairs, and it is not installed. Either "
+                       f"install it (~7.6 GB, the user's disk) or go back for "
+                       f"a closed export"}
+    order = [name for name in ("stltostp", "sew") if name in installed] or ["sew"]
+    return {"backend": order[0], "blocked": False,
+            "why": "2step is not installed and the mesh is closed, so the "
+                   "conversion needs no repair; every face comes back a facet "
+                   "and no analytic surface is attempted"}
+
+
+# --------------------------------------------------------------------------
+# Reading the inputs
+# --------------------------------------------------------------------------
+
+def read_inputs(paths, crossings=True):
+    meshes, refused = [], []
+    for path in paths:
+        if path.suffix.lower() == ".stl":
+            report = meshstep.mesh_report(meshstep.read_stl(path), crossings=crossings)
+            meshes.append({"path": path, "report": report})
+        else:
+            refused.append(path)
+    return meshes, refused
+
+
+def plan(paths, project, name=None, crossings=True):
+    meshes, refused = read_inputs(paths, crossings)
+    installed = {tool for tool in meshstep.TOOLS if meshstep.tool_path(tool)}
+    installed.add("sew")
+    project = Path(project)
+    name = name or project.name
+    report = {"project": str(project), "name": name,
+              "refused": [str(p) for p in refused],
+              "backendsInstalled": sorted(installed),
+              "meshes": [], "commands": [],
+              "assumptions": [], "blocked": []}
+
+    for entry in meshes:
+        mesh = entry["report"]
+        report["meshes"].append(
+            {"file": str(entry["path"]), "triangles": mesh["triangles"],
+             "watertight": mesh["watertight"],
+             "crossingPairs": mesh["crossingPairs"],
+             "bboxSize": mesh["bbox"]["size"],
+             "units": decide_units(mesh["bbox"]["size"]),
+             "backend": decide_backend(mesh, installed)})
+    # The set settles what a single file cannot, so this runs before anything
+    # is written down: a unit reconciled away is not an assumption to declare.
+    reconcile_units(report["meshes"])
+
+    for entry, row in zip(meshes, report["meshes"]):
+        mesh, units, backend = entry["report"], row["units"], row["backend"]
+        if units["confidence"] != "measured" or units["units"] != "mm":
+            report["assumptions"].append(
+                f"{entry['path'].name}: converted with --units {units['units']} "
+                f"-- {units['why']}")
+        if mesh["crossingPairs"]:
+            report["assumptions"].append(
+                f"{entry['path'].name}: {mesh['crossingPairs']} crossing "
+                f"triangle pairs came in with the mesh, so the converted solid "
+                f"fails validate's self-intersection check and every boolean "
+                f"against it; the fix is upstream of this repository")
+        if backend["blocked"]:
+            report["blocked"].append(f"{entry['path'].name}: {backend['why']}")
+            continue
+        out = project / "ref" / f"{entry['path'].stem}.step"
+        command = ["python skills/stl-to-step/scripts/stl_to_step",
+                   str(entry["path"]), "-o", str(out)]
+        if units["units"] != "mm":
+            command += ["--units", units["units"]]
+        if backend["backend"] != "2step" and mesh["triangles"] > SEW_TRIANGLE_CEILING:
+            command += ["--timeout", "1800"]
+            report["assumptions"].append(
+                f"{entry['path'].name}: {mesh['triangles']} triangles through a "
+                f"sewing backend -- sewing is superlinear and can fail to "
+                f"converge, so the run is bounded rather than trusted")
+        report["commands"].append(" ".join(command))
+
+    if report["commands"]:
+        report["commands"].append(
+            f"python skills/step-to-source/scripts/source_plan {project}/ref/*.step "
+            f"--project {project}    # from here on: $step-to-source")
+    return report
+
+
+# --------------------------------------------------------------------------
+# Output
+# --------------------------------------------------------------------------
+
+def render(report):
+    out = [f"plan for {report['name']} -> {report['project']}",
+           f"  backends installed: {', '.join(report['backendsInstalled'])}"]
+    for path in report["refused"]:
+        out.append(f"  refused: {path} -- STL only; a STEP goes straight to $step-to-source's source_plan")
+    for row in report["meshes"]:
+        out.append(f"\n{Path(row['file']).name}: {row['triangles']} triangles, "
+                   f"bbox {row['bboxSize']}")
+        out.append(f"  closed:   {'yes' if row['watertight'] else 'NO'}"
+                   + ("" if row["crossingPairs"] in (0, None)
+                      else f", {row['crossingPairs']} crossing pairs"))
+        out.append(f"  units:    {row['units']['units']} "
+                   f"[{row['units']['confidence']}] -- {row['units']['why']}")
+        out.append(f"  backend:  {row['backend']['backend'] or 'BLOCKED'} -- "
+                   f"{row['backend']['why']}")
+    if report["commands"]:
+        out.append("\nrun, in order:")
+        out += [f"  {c}" for c in report["commands"]]
+    if report["assumptions"]:
+        out.append("\ndeclare these in the handover (they are decisions, not questions):")
+        out += [f"  - {a}" for a in report["assumptions"]]
+    if report["blocked"]:
+        out.append("\nblocked -- this is the only thing worth asking about:")
+        out += [f"  - {b}" for b in report["blocked"]]
+    return "\n".join(out)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        prog="convert_plan",
+        description="Decide how to convert STLs to STEP, from the files.")
+    parser.add_argument("inputs", type=Path, nargs="*",
+                        help="STL files.")
+    parser.add_argument("--project", type=Path,
+                        help="Project directory; converted STEPs go to its ref/.")
+    parser.add_argument("--name", help="Project name (default: the directory's).")
+    parser.add_argument("--no-crossings", action="store_true",
+                        help="Skip the crossing-pair count on large meshes.")
+    parser.add_argument("--json", action="store_true")
+    parser.add_argument("--self-check", action="store_true",
+                        help="Run the built-in fixtures and exit.")
+    args = parser.parse_args(argv)
+
+    if args.self_check:
+        return _self_check()
+    if not args.inputs or not args.project:
+        parser.error("give at least one input file and --project")
+    missing = [p for p in args.inputs if not p.exists()]
+    if missing:
+        parser.error(f"no such file: {missing[0]}")
+
+    report = plan(args.inputs, args.project, args.name,
+                  crossings=not args.no_crossings)
+    print(json.dumps(report, indent=2) if args.json else render(report))
+    return 1 if report["blocked"] else 0
+
+
+# --------------------------------------------------------------------------
+# Self-check
+# --------------------------------------------------------------------------
+
+def _self_check():
+    import tempfile  # noqa: PLC0415
+
+    results = []
+
+    def check(label, condition, detail):
+        results.append(condition)
+        print(f"{'ok  ' if condition else 'FAIL'} {label}: {detail}")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        block = meshstep.fixture_stl("block_with_bore", tmp)
+        opened = meshstep.fixture_stl("open_mesh", tmp)
+
+        mm = decide_units([30.0, 20.0, 10.0])
+        check("units mm", mm["units"] == "mm" and mm["confidence"] == "measured",
+              mm["why"])
+        inch = decide_units([20.0 / 25.4, 10.0 / 25.4, 5.0 / 25.4])
+        check("units in", inch["units"] == "in" and inch["confidence"] == "measured",
+              inch["why"])
+        small = decide_units([4.0, 2.0, 1.0])
+        check("units ambiguous keeps mm", small["units"] == "mm"
+              and small["confidence"] == "assumed", small["why"])
+        unresolved = decide_units([1e-4, 1e-4, 1e-4])
+        check("units unresolved", unresolved["confidence"] == "unresolved",
+              unresolved["why"])
+
+        # A 7 mm washer beside a 170 mm frame is a 7 mm washer, and the set is
+        # what says so: alone that file reads as ambiguous.
+        rows = [{"file": "frame.stl", "units": decide_units([170.0, 166.0, 5.7])},
+                {"file": "washer.stl", "units": decide_units([7.0, 7.0, 2.0])}]
+        reconcile_units(rows)
+        check("a set settles an ambiguous reading",
+              rows[1]["units"]["units"] == "mm"
+              and rows[1]["units"]["confidence"] == "measured",
+              rows[1]["units"]["why"])
+
+        closed = meshstep.mesh_report(meshstep.read_stl(block), crossings=False)
+        holed = meshstep.mesh_report(meshstep.read_stl(opened), crossings=False)
+        check("closed mesh converts without 2step",
+              decide_backend(closed, {"sew"})["blocked"] is False,
+              "a closed mesh needs no repair")
+        check("holed mesh without 2step is blocked",
+              decide_backend(holed, {"sew"})["blocked"] is True,
+              "no other backend repairs, so proceeding would write a shell")
+        check("2step wins when present",
+              decide_backend(holed, {"sew", "2step"})["backend"] == "2step",
+              "fidelity first: analytic surfaces and repair")
+
+        blocked = plan([opened], tmp / "proj")
+        check("a blocked plan says so rather than guessing",
+              bool(blocked["blocked"]) or "2step" in blocked["backendsInstalled"],
+              blocked["blocked"][0] if blocked["blocked"]
+              else "2step is installed here, so nothing is blocked")
+        ok_plan = plan([block], tmp / "proj", crossings=False)
+        check("a mesh plan hands the converted STEPs to source_plan",
+              any("source_plan" in c for c in ok_plan["commands"]),
+              "everything after conversion is $step-to-source's")
+        check("a STEP input is refused, not planned",
+              plan([tmp / "x.step"], tmp / "proj")["refused"] == [str(tmp / "x.step")],
+              "stl-to-step converts STLs only")
+
+    ok = all(results)
+    print(f"convert_plan self-check: {'ok' if ok else 'FAILED'}")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -2762,8 +2762,11 @@ class NativeHostTest(unittest.TestCase):
                 "electromechanical-integration",
                 "image-to-cad",
                 "manual-design",
-                "mechanisms",
+                "product-design",
                 "step-parts",
+                "step-to-source",
+                "stl-to-step",
+                "wiki",
             ):
                 self.assertTrue(
                     (

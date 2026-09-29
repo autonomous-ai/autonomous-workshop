@@ -1,0 +1,400 @@
+#!/usr/bin/env python3
+"""Convert a mesh into a STEP solid, and measure what came back.
+
+Use this when the user has only an STL and the work needs a solid: to measure
+it, cut against it, mount to it, or check it for interference. It does not
+produce source, and it does not restore the curves a mesh threw away. A bore in
+an STL is a ring of flat facets; after conversion it is a ring of flat faces,
+unless a backend recognised it as a complete cylinder and said so.
+
+Three backends are tried in order, and the first whose output passes
+verification wins:
+
+    2step      github.com/yaneony/2STEP-Converter -- repairs the mesh, merges
+               coplanar faces, and restores complete spheres, cylinders, cones
+               and straight holes as analytic surfaces. Needs a ~7.6 GB
+               install, so ask the user before running --install 2step.
+    stltostp   github.com/slugdev/stltostp -- small C++ tool, no dependencies,
+               a few seconds to build, coplanar merging, no analytic surfaces.
+    sew        built in, on the OCP the CAD skill already requires. Same class
+               of output as stltostp, always available.
+
+A backend that exits cleanly and writes an unusable STEP counts as failed, so
+the verification runs inside the chain: solid count, kernel validity, volume
+against the mesh's own volume, and bounding box.
+
+The conversion the chain keeps is then counted for self-intersection with the
+same BOP check `inspect validate` uses, because kernel validity is not that
+check and a solid can pass one and fail the other. It is reported rather than
+failed on: the defect is usually inherited from the mesh, where no backend
+choice removes it, and a faceted reference with the defect recorded beats an
+hour spent proving that and writing nothing.
+
+    python skills/stl-to-step/scripts/stl_to_step part.stl -o ref/part.step
+    python skills/stl-to-step/scripts/stl_to_step part.stl -o ref/part.step --units in
+    python skills/stl-to-step/scripts/stl_to_step --install stltostp
+
+Exit 0 when a backend produced a verified solid, 1 when none did, 2 on bad usage.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import meshstep  # noqa: E402
+from meshstep import (  # noqa: E402
+    BACKENDS, ORDER, TOOLS, UNIT_SCALE, convert, fixture_stl, install, options,
+    tool_path,
+)
+
+
+def _self_intersection_line(found):
+    """What the BOP check found, in the words the caller has to act on.
+
+    "well-formed" above is deliberately no longer the word "valid": it is
+    ``BRepCheck_Analyzer``, which never looks for faces passing through one
+    another, and printing "valid" for it is what let a conversion be handed
+    over and then rejected by the ``validate`` gate a pipeline round later.
+    This line carries the check that gate actually runs.
+    """
+    if found is None:
+        return ("self-intersection  NOT CHECKED -- 'well-formed' above is "
+                "BRepCheck_Analyzer, which does not look for it")
+    bad, total = found["selfIntersecting"], found["total"]
+    where = f"{bad} of {total} solid(s)"
+    if not found["complete"]:
+        return (f"self-intersection  {where} so far, GAVE UP after "
+                f"{found['seconds']}s with {total - found['checked'] - found['unchecked']} "
+                f"unchecked -- raise --self-intersection-budget for the rest")
+    if found["unchecked"]:
+        where += f" ({found['unchecked']} the checker could not read)"
+    if bad or found["unchecked"]:
+        return (f"self-intersection  {where} FAIL the kernel's BOP check -- "
+                f"this will not pass `inspect validate`, and booleans, fillets "
+                f"and offsets against those bodies should be expected to fail")
+    return f"self-intersection  none in {total} solid(s), {found['seconds']}s"
+
+
+def render(result, stl_name):
+    mesh = result["mesh"]
+    lines = [f"{stl_name}: {mesh['triangles']} triangles, "
+             f"{'closed' if mesh['watertight'] else 'NOT closed'}, "
+             f"volume {mesh['volume']}"]
+    for attempt in result["attempts"]:
+        mark = ("used   " if attempt["ok"]
+                else "skipped" if attempt["stage"] == "skip" else "failed ")
+        lines.append(f"  {mark} {attempt['backend']:9} {attempt['stage']}: "
+                     f"{attempt['detail'] or 'ok'}")
+    report = result["report"]
+    if report is None:
+        lines.append("  no backend produced a usable solid")
+        return "\n".join(lines)
+    lines += [f"wrote {result['output']}",
+              f"  solids            {report['solids']}"
+              f"   {'well-formed' if report['valid'] else 'MALFORMED'}",]
+    lines += [f"  {_self_intersection_line(report.get('selfIntersection'))}",
+              f"  faces             {report['faces']}  {report['faceKinds']}",
+              f"  volume            {report['volumeMesh']} (mesh)  ->  "
+              f"{report['volumeStep']} (step)   ({report['volumeDeltaPct']:+.4f}%)",
+              f"  bbox              {report['bboxMesh']} -> {report['bboxStep']}"]
+    if result["scale"] != 1.0:
+        lines.append(f"  scaled            x{result['scale']:g} into millimetres")
+    for repair in report.get("repairs", []):
+        lines.append(f"  repaired          {repair}")
+    if report["analyticSurfaces"]:
+        lines.append(f"  analytic surfaces {report['analyticSurfaces']} restored -- those "
+                     f"are measurable; the rest is faceted")
+    else:
+        lines.append("  analytic surfaces none: every face is a facet of the mesh, so no "
+                     "radius or axis can be read off this solid")
+    return "\n".join(lines)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        prog="stl_to_step", description="Convert a mesh to a verified STEP solid.")
+    parser.add_argument("stl", type=Path, nargs="?", help="STL file, binary or ASCII.")
+    parser.add_argument("-o", "--out", type=Path,
+                        help="STEP to write (default <stem>.step beside the STL).")
+    parser.add_argument("--backend", choices=sorted(BACKENDS),
+                        help="Use only this backend instead of the chain.")
+    parser.add_argument("--order", help="Comma-separated backend order "
+                                        f"(default {','.join(ORDER)}).")
+    parser.add_argument("--units", choices=sorted(UNIT_SCALE), default="mm",
+                        help="Units the STL numbers are in; the STEP is written in mm.")
+    parser.add_argument("--tolerance", type=float,
+                        help="Sewing/merge tolerance in model units (default 1e-06).")
+    parser.add_argument("--schema", default="AP214", choices=("AP203", "AP214"))
+    parser.add_argument("--volume-tolerance", type=float,
+                        help="Percent of mesh volume the solid may differ by (default 1.0).")
+    parser.add_argument("--timeout", type=int, help="Seconds per backend (default 900).")
+    parser.add_argument("--self-intersection-budget", type=float,
+                        help="Seconds for the BOP self-intersection count on the "
+                             "winning conversion (default 120). 0 skips it, which "
+                             "forfeits the answer rather than passing the check.")
+    parser.add_argument("--install", dest="install_backend", choices=sorted(TOOLS),
+                        help="Fetch and build a backend into the tool cache.")
+    parser.add_argument("--list-backends", action="store_true",
+                        help="Show each backend, where it is, and what it costs.")
+    parser.add_argument("--json", action="store_true")
+    parser.add_argument("--self-check", action="store_true")
+    args = parser.parse_args(argv)
+
+    if args.self_check:
+        return _self_check()
+    if args.list_backends:
+        for name in ORDER:
+            found = tool_path(name)
+            print(f"{name:9} {'installed' if found else 'not installed':14} "
+                  f"{TOOLS[name]['gives']}")
+            print(f"{'':9} {'':14} cost to install: {TOOLS[name]['cost']}")
+            if found and name != "sew":
+                print(f"{'':9} {'':14} at {found}")
+        print(f"\ntool cache: {meshstep.CACHE}")
+        return 0
+    if args.install_backend:
+        print(f"installing {args.install_backend}: {TOOLS[args.install_backend]['cost']}",
+              file=sys.stderr)
+        ok, detail = install(args.install_backend,
+                             args.timeout if args.timeout else 3600)
+        print(f"{'installed' if ok else 'FAILED'} {args.install_backend}: {detail}")
+        return 0 if ok else 1
+    if not args.stl:
+        parser.error("an STL file is required unless --self-check, --list-backends "
+                     "or --install is given")
+
+    destination = args.out or args.stl.with_suffix(".step")
+    order = ((args.backend,) if args.backend
+             else tuple(args.order.split(",")) if args.order else ORDER)
+    result = convert(args.stl, destination,
+                     options(tolerance=args.tolerance, schema=args.schema,
+                             units=args.units, volume_tolerance=args.volume_tolerance,
+                             timeout=args.timeout,
+                             self_intersection_budget=args.self_intersection_budget),
+                     order)
+
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print(render(result, args.stl.name))
+    if result["backend"] is None:
+        print("no backend produced a verified solid; the attempts above say why. "
+              "If every backend reports 'not installed', the built-in one should "
+              "still have run -- check the STL with mesh_probe first.",
+              file=sys.stderr)
+        return 1
+    return 0
+
+
+def _self_check():
+    ok = True
+
+    def case(label, condition, detail):
+        nonlocal ok
+        ok &= bool(condition)
+        print(f"{'ok  ' if condition else 'FAIL'} {label}: {detail}")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        block = fixture_stl("block_with_bore", tmp)
+
+        # The built-in backend alone, so the self-check is the same everywhere
+        # whether or not the external tools happen to be installed.
+        result = convert(block, tmp / "block.step", options(), order=("sew",))
+        report = result["report"] or {}
+        case("a closed mesh converts to one valid solid",
+             result["backend"] == "sew" and report.get("solids") == 1
+             and report.get("valid"),
+             f"{report.get('solids')} solid(s), valid={report.get('valid')}")
+        case("and holds exactly the volume the mesh held",
+             report and abs(report["volumeDeltaPct"]) < 1e-6,
+             f"{report.get('volumeDeltaPct')}% against the mesh")
+
+        # The invariant that stops this skill being oversold: converting a mesh
+        # does not give curved surfaces back. The bore went in as facets and
+        # comes out as facets, and no tolerance changes that.
+        case("a tessellated bore stays faceted, not a cylinder",
+             report and report["analyticSurfaces"] == 0
+             and set(report["faceKinds"]) == {"plane"},
+             f"surface kinds {report.get('faceKinds')}")
+
+        case("a clean solid reports no self-intersection",
+             (report.get("selfIntersection") or {}).get("selfIntersecting") == 0,
+             f"{report.get('selfIntersection')}")
+
+        two = convert(fixture_stl("two_bodies", tmp), tmp / "two.step",
+                      options(), order=("sew",))
+        case("two disjoint bodies convert to two solids",
+             two["report"] and two["report"]["solids"] == 2,
+             f"{two['report']['solids'] if two['report'] else 'none'} solid(s)")
+
+        # The gap this check exists to close, stated as a fixture: bodies that
+        # pass through each other sew into a shape BRepCheck_Analyzer is happy
+        # with, so the conversion used to print "valid" for geometry that
+        # `inspect validate` rejects. Both halves are asserted -- the kernel
+        # calling it well-formed, and the BOP check calling it what it is --
+        # because the finding is the disagreement, not either number alone.
+        crossed = convert(fixture_stl("dented_box", tmp), tmp / "crossed.step",
+                          options(), order=("sew",))
+        crossed_report = crossed["report"] or {}
+        found = crossed_report.get("selfIntersection") or {}
+        case("a body that passes through itself is caught, though the kernel calls it well-formed",
+             crossed_report.get("valid") and found.get("selfIntersecting", 0) > 0,
+             f"valid={crossed_report.get('valid')}, "
+             f"self-intersecting {found.get('selfIntersecting')} of {found.get('total')}")
+
+        # Skipping the check must not read as having passed it.
+        skipped = convert(fixture_stl("dented_box", tmp), tmp / "skipped.step",
+                          options(self_intersection_budget=0), order=("sew",))
+        case("and a skipped check reports as unknown, not as clean",
+             (skipped["report"] or {}).get("selfIntersection") is None
+             and "NOT CHECKED" in _self_intersection_line(None),
+             f"{(skipped['report'] or {}).get('selfIntersection')}")
+
+        # A mesh with holes has no inside. Whatever the backend writes, this
+        # must not be reported as a converted solid.
+        holed = convert(fixture_stl("open_mesh", tmp), tmp / "holed.step",
+                        options(), order=("sew",))
+        case("a mesh with holes does not pass as a solid",
+             holed["backend"] is None,
+             (holed["attempts"][-1]["detail"][:90] if holed["attempts"]
+              else "no attempt recorded"))
+
+        # STL is the only container read here. A 3MF used to reach the reader
+        # and come back as "premature end of file", which reads as a corrupt
+        # STL rather than as the wrong format, so it is refused by name and
+        # before any backend is tried -- no backend in the chain reads one.
+        renamed = tmp / "block.3mf"
+        renamed.write_bytes(block.read_bytes())
+        try:
+            convert(renamed, tmp / "renamed.step", options(), order=("sew",))
+            refusal = ""
+        except SystemExit as exc:
+            refusal = str(exc)
+        case("a 3MF is refused as the wrong format, not as a broken STL",
+             "STL only" in refusal,
+             refusal[:80] or "converted it instead")
+
+        # Units. An STL carries none, so the scale is the caller's claim and the
+        # gate has to apply it to the solid it verifies, not afterwards.
+        inches = convert(block, tmp / "inches.step", options(units="in"), order=("sew",))
+        expected = result["report"]["volumeStep"] * 25.4 ** 3
+        case("--units scales the solid before it is verified",
+             inches["report"] and abs(inches["report"]["volumeStep"] - expected)
+             / expected < 1e-6,
+             f"{inches['report']['volumeStep'] if inches['report'] else 'none'} mm3")
+
+        # The budget has to reach the in-process backend as well. It used to
+        # apply only to the two that shell out, so --timeout was a promise the
+        # built-in sew could not keep: a mesh whose sewing did not converge ran
+        # until somebody noticed and killed it.
+        bounded = convert(block, tmp / "bounded.step", options(timeout=0.001),
+                          order=("sew",))
+        case("--timeout bounds the in-process backend too",
+             bounded["backend"] is None and bounded["attempts"]
+             and "timed out" in bounded["attempts"][-1]["detail"],
+             bounded["attempts"][-1]["detail"][:80] if bounded["attempts"]
+             else "no attempt recorded")
+
+        # The bounding box is held to the same percentage as the volume, and
+        # for the same reason: a facet is a chord, so a restored cylinder
+        # stands outside the polygon that approximated it and the box grows by
+        # the sagitta. Held to a rounding epsilon instead, the check rejected
+        # every conversion that restored an analytic surface -- the one thing
+        # only the dearest backend does.
+        probe = meshstep.mesh_report(meshstep.read_stl(block))
+        step = tmp / "boxtol.step"
+        convert(block, step, options(), order=("sew",))
+
+        def against(size):
+            claim = json.loads(json.dumps(probe))
+            claim["bbox"]["size"] = size
+            return meshstep.verify_conversion(claim, step, 1.0)
+
+        true_size = probe["bbox"]["size"]
+        restored = against([round(v * 1.004, 4) for v in true_size])
+        case("a box that moved by less than the volume tolerance is accepted",
+             restored["ok"],
+             "; ".join(restored["problems"]) or "no problems")
+
+        # What the check is actually for. An STL carries no units, so a wrong
+        # --units claim is the error worth catching, and 25.4x clears any
+        # percentage by three orders of magnitude.
+        rescaled = against([round(v * 25.4, 4) for v in true_size])
+        case("and a units error is still caught",
+             any("bounding box" in p for p in rescaled["problems"]),
+             "; ".join(rescaled["problems"])[:100] or "accepted it")
+
+        # The 2step backend is the only one that runs from its own checkout,
+        # so a relative path from the caller resolved against the tool cache:
+        # the input came back "File not found" and the output would have been
+        # written into the cache. Nothing here installs it -- the launcher is
+        # stubbed, and the argv it would have been handed is the subject.
+        launcher = tmp / "2STEP-Converter.sh"
+        launcher.write_text("#!/bin/sh\nexit 0\n")
+        (tmp / "out").mkdir()
+        seen = {}
+
+        def capture(command, timeout, cwd=None):
+            seen["command"] = list(command)
+            Path(command[command.index("--output") + 1]).write_text("")
+            return True, ""
+
+        saved = meshstep.tool_path, meshstep._run
+        meshstep.tool_path = lambda name: launcher if name == "2step" else None
+        meshstep._run = capture
+        meshstep._HELP_CACHE[str(launcher)] = "--no-pause --no-preview --force --output --tolerance"
+        here = os.getcwd()
+        try:
+            os.chdir(tmp)
+            meshstep.backend_2step(block.name, "out/relative.step", options())
+        finally:
+            os.chdir(here)
+            meshstep.tool_path, meshstep._run = saved
+            meshstep._HELP_CACHE.pop(str(launcher), None)
+        handed = [a for a in seen.get("command", [])[1:]
+                  if a.endswith((".stl", ".step"))]
+        case("the 2step backend is handed absolute paths, not the caller's",
+             len(handed) == 2 and all(Path(a).is_absolute() for a in handed),
+             f"{handed or 'no command captured'}")
+
+        # The chain itself. A backend that errors, and a backend that exits
+        # cleanly while writing the wrong solid, must both hand over to the next
+        # one -- the second is the case a return code cannot catch.
+        def broken(stl, out, opts):
+            raise RuntimeError("deliberate backend failure")
+
+        def plausible_but_wrong(stl, out, opts):
+            from meshstep import read_stl, scale_shape, sew_solid, write_step
+            shape, _ = sew_solid(read_stl(stl), opts["tolerance"])
+            write_step(scale_shape(shape, 0.5), out, opts["schema"])
+            return True, "wrote a solid at half scale"
+
+        BACKENDS["_broken"] = broken
+        BACKENDS["_wrong"] = plausible_but_wrong
+        try:
+            chained = convert(block, tmp / "chained.step", options(),
+                              order=("_broken", "_wrong", "sew"))
+        finally:
+            del BACKENDS["_broken"], BACKENDS["_wrong"]
+        stages = [(a["backend"], a["ok"], a["stage"]) for a in chained["attempts"]]
+        case("a failing backend hands over to the next",
+             chained["backend"] == "sew" and stages[0] == ("_broken", False, "convert"),
+             f"{stages}")
+        case("and so does one that writes a wrong solid cleanly",
+             len(stages) > 1 and stages[1] == ("_wrong", False, "verify"),
+             chained["attempts"][1]["detail"][:80] if len(stages) > 1 else "not reached")
+
+    print("stl_to_step self-check:", "ok" if ok else "FAILED")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

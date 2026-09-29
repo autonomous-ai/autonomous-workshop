@@ -25,6 +25,46 @@ wheels = [
 ]
 
 [[package]]
+name = "autonomous-workshop"
+version = "0.6.0"
+source = { editable = "." }
+dependencies = [
+    { name = "bd-warehouse" },
+    { name = "cadgen" },
+    { name = "pillow" },
+    { name = "psutil" },
+    { name = "py-gearworks" },
+    { name = "pypdf" },
+    { name = "pypdfium2" },
+    { name = "reportlab" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bd-warehouse", specifier = ">=0.3,<0.4" },
+    { name = "cadgen", specifier = "==0.4.19" },
+    { name = "pillow", specifier = ">=10,<13" },
+    { name = "psutil", specifier = ">=7.2,<8" },
+    { name = "py-gearworks", specifier = ">=0.0.23,<0.1" },
+    { name = "pypdf", specifier = ">=6.16.2,<7" },
+    { name = "pypdfium2", specifier = ">=5.13,<6" },
+    { name = "reportlab", specifier = ">=4.4" },
+]
+
+[[package]]
+name = "bd-warehouse"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "build123d" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8d/28/e8fa9fcd867db480ae7e109476c73310a5ca1ff7f246466709ad84f4f830/bd_warehouse-0.3.0.tar.gz", hash = "sha256:38f339909772770f7d211d7d25dd3572bdfb83d09eb65dee6380dea3a09ea49e", size = 8046603 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d1/10/431fed58b4bccf7aed3f124442f2eeeecc3f83468eaa341aab9b31ff84e3/bd_warehouse-0.3.0-py3-none-any.whl", hash = "sha256:291c40f3ed04ac6dac2fbd7592eb0da3193a6aa93e3d3b741d915ca190dc99fc", size = 140511 },
+]
+
+[[package]]
 name = "build123d"
 version = "0.11.1"
 source = { registry = "https://pypi.org/simple" }
@@ -503,29 +543,6 @@ wheels = [
 ]
 
 [[package]]
-name = "autonomous-workshop"
-version = "0.6.0"
-source = { editable = "." }
-dependencies = [
-    { name = "cadgen" },
-    { name = "pillow" },
-    { name = "psutil" },
-    { name = "pypdf" },
-    { name = "pypdfium2" },
-    { name = "reportlab" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "cadgen", specifier = "==0.4.19" },
-    { name = "pillow", specifier = ">=10,<13" },
-    { name = "psutil", specifier = ">=7.2,<8" },
-    { name = "pypdf", specifier = ">=6.16.2,<7" },
-    { name = "pypdfium2", specifier = ">=5.13,<6" },
-    { name = "reportlab", specifier = ">=4.4" },
-]
-
-[[package]]
 name = "ipython"
 version = "9.16.1"
 source = { registry = "https://pypi.org/simple" }
@@ -675,6 +692,10 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/07/18/43a5f24608d8c313dd189cf838c8e68d75b115567c6279de7796197cfb6a/kiwisolver-1.5.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:e7a116ae737f0000343218c4edf5bd45893bfeaff0993c0b215d7124c9f77646", size = 2394403 },
     { url = "https://files.pythonhosted.org/packages/3b/b5/98222136d839b8afabcaa943b09bd05888c2d36355b7e448550211d1fca4/kiwisolver-1.5.0-cp314-cp314t-win_amd64.whl", hash = "sha256:1dd9b0b119a350976a6d781e7278ec7aca0b201e1a9e2d23d9804afecb6ca681", size = 79687 },
     { url = "https://files.pythonhosted.org/packages/99/a2/ca7dc962848040befed12732dff6acae7fb3c4f6fc4272b3f6c9a30b8713/kiwisolver-1.5.0-cp314-cp314t-win_arm64.whl", hash = "sha256:58f812017cd2985c21fbffb4864d59174d4903dd66fa23815e74bbc7a0e2dd57", size = 70032 },
+    { url = "https://files.pythonhosted.org/packages/1c/fa/2910df836372d8761bb6eff7d8bdcb1613b5c2e03f260efe7abe34d388a7/kiwisolver-1.5.0-graalpy312-graalpy250_312_native-macosx_10_13_x86_64.whl", hash = "sha256:5ae8e62c147495b01a0f4765c878e9bfdf843412446a247e28df59936e99e797", size = 130262 },
+    { url = "https://files.pythonhosted.org/packages/0f/41/c5f71f9f00aabcc71fee8b7475e3f64747282580c2fe748961ba29b18385/kiwisolver-1.5.0-graalpy312-graalpy250_312_native-macosx_11_0_arm64.whl", hash = "sha256:f6764a4ccab3078db14a632420930f6186058750df066b8ea2a7106df91d3203", size = 138036 },
+    { url = "https://files.pythonhosted.org/packages/fa/06/7399a607f434119c6e1fdc8ec89a8d51ccccadf3341dee4ead6bd14caaf5/kiwisolver-1.5.0-graalpy312-graalpy250_312_native-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c31c13da98624f957b0fb1b5bae5383b2333c2c3f6793d9825dd5ce79b525cb7", size = 194295 },
+    { url = "https://files.pythonhosted.org/packages/b5/91/53255615acd2a1eaca307ede3c90eb550bae9c94581f8c00081b6b1c8f44/kiwisolver-1.5.0-graalpy312-graalpy250_312_native-win_amd64.whl", hash = "sha256:1f1489f769582498610e015a8ef2d36f28f505ab3096d0e16b4858a9ec214f57", size = 75987 },
     { url = "https://files.pythonhosted.org/packages/e9/eb/5fcbbbf9a0e2c3a35effb88831a483345326bbc3a030a3b5b69aee647f84/kiwisolver-1.5.0-pp311-pypy311_pp73-macosx_10_15_x86_64.whl", hash = "sha256:ec4c85dc4b687c7f7f15f553ff26a98bfe8c58f5f7f0ac8905f0ba4c7be60232", size = 59532 },
     { url = "https://files.pythonhosted.org/packages/c3/9b/e17104555bb4db148fd52327feea1e96be4b88e8e008b029002c281a21ab/kiwisolver-1.5.0-pp311-pypy311_pp73-macosx_11_0_arm64.whl", hash = "sha256:12e91c215a96e39f57989c8912ae761286ac5a9584d04030ceb3368a357f017a", size = 57420 },
     { url = "https://files.pythonhosted.org/packages/48/44/2b5b95b7aa39fb2d8d9d956e0f3d5d45aef2ae1d942d4c3ffac2f9cfed1a/kiwisolver-1.5.0-pp311-pypy311_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:be4a51a55833dc29ab5d7503e7bcb3b3af3402d266018137127450005cdfe737", size = 79892 },
@@ -1145,6 +1166,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/cd/05/0a34433a064256a578f1783a10da6df098ceaa4a57bbeaa96a6c0352786b/pure_eval-0.2.3.tar.gz", hash = "sha256:5f4e983f40564c576c7c8635ae88db5956bb2229d7e9237d03b3c0b0190eaf42", size = 19752 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8e/37/efad0257dc6e593a18957422533ff0f87ede7c9c6ea010a2177d738fb82f/pure_eval-0.2.3-py3-none-any.whl", hash = "sha256:1db8e35b67b3d218d818ae653e27f06c3aa420901fa7b081ca98cbedc874e0d0", size = 11842 },
+]
+
+[[package]]
+name = "py-gearworks"
+version = "0.0.24"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "build123d" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a6/80/7bd2b82b8244a7d4223dbc3c0ed560b4fcccc47e5038ef73d8b2153077db/py_gearworks-0.0.24.tar.gz", hash = "sha256:a8d3e44d9e91b45438c3c0b5ca5b886226fef31939fa8073eb11830e8a384768", size = 1038752 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/67/15/8247c62b33d15c10790727367d1296ddf881fde670197d156d39b9004bc3/py_gearworks-0.0.24-py3-none-any.whl", hash = "sha256:c16ae7eb03ad8701373b655e34163648cc288b1740456304db2623a70c36d9b3", size = 86148 },
 ]
 
 [[package]]

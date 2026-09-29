@@ -100,10 +100,13 @@ _READABLE_AGENT_RUN_STAGES = (*AGENT_RUN_STAGES, "deliver")
 AGENT_OUTCOME_STATUSES = ("ready", "waiting", "failed")
 MAX_AGENT_OUTCOME_BYTES = 64 * 1024
 MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
-MAX_AGENT_INPUT_BYTES = 4 * 1024 * 1024
-# The complete installed tool tree and Inventor roster already need 257
-# inputs. Allow growth and old-run tool refresh within the same byte budget.
-MAX_AGENT_INPUT_FILES = 512
+# The complete installed tool tree and Inventor roster need about 4.4 MiB in
+# about 500 inputs since the design wiki and the reverse-engineering and
+# product-design skills were materialized (about 3 MiB in 300 before). Both
+# caps keep the headroom they had then for Wish references, an imported
+# correction tree and old-run tool refresh.
+MAX_AGENT_INPUT_BYTES = 6 * 1024 * 1024
+MAX_AGENT_INPUT_FILES = 768
 MAX_AGENT_ARTIFACT_BYTES = MAX_FILE_BYTES
 # A four-round physical-product run may retain several immutable CAD, mesh,
 # slicer, and Playtest revisions. Keep a cumulative host budget while allowing

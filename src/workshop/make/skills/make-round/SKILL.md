@@ -131,7 +131,7 @@ calls were reassembling by hand.
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
-    --ref hero=<project>/cad/ref/hero.png [--ref side=...] \
+    --ref hero=<project>/cad/ref/hero.png@-60,20 [--ref side=...@0,0] \
     [--min 0.90] [--nozzle 0.4] [--overhang-angle 45] \
     [--all-parts] [--check-motion true|false] [--json]
 ```
@@ -159,9 +159,14 @@ component geometry.
 
 - `<project>/cad` is the directory holding the generator sources: exactly one
   entry `<name>.step.py` and any number of `part_<role>.step.py`.
-- `--ref LABEL=PATH` repeats once per reference view. Omitted, the labels are
-  read from the project's `*_spec.md`: a `LABEL=ref/<file>` line or a row of
-  the build spec's Likeness handoff table.
+- `--ref LABEL=PATH@AZ,EL[,TOL]` repeats once per reference view. The suffix
+  is the camera the image was taken from (degrees; front `-90,0`, right `0,0`,
+  iso `-45,35`; TOL defaults to 30): `render_views` searches only inside that
+  window and flags a model built the wrong way round, and `--full` passes it to
+  `verify_project --image-derived`, which refuses a reference without one.
+  Omitted, the labels are read from the project's `*_spec.md`: a
+  `LABEL=ref/<file>@AZ,EL` line or a row of the build spec's Likeness handoff
+  table, whose camera column supplies the camera.
 - Every reference the Wish sealed under `wish-references/` is scored in the
   assembly round without being named anywhere (ADR 0072). It is labelled by
   its file stem, for example `ref-01-hero`. The one exception is a sealed
@@ -171,6 +176,12 @@ component geometry.
   round. Otherwise the reference is scored against the whole object and
   fails there. A sealed reference that is missing or has changed fails the
   round. The ledger only needs to list references you found yourself.
+- The Wish seals a reference's pixels, not the camera it was taken from. To
+  give a sealed reference its camera, pass a `--ref` (or ledger entry) that
+  points at that file, or a byte-identical copy of it, with the camera
+  suffix: the sealed image is still scored once, under its sealed label, now
+  from that camera. `--full` fails in `verify_project` while any scored
+  reference still has no camera.
 - `--nozzle` is the diameter the print will use and sets the minimum wall;
   `--overhang-angle` is the slope from vertical the printer bridges unsupported.
 - Only parts whose written STEP bytes changed since the previous round are
@@ -311,10 +322,10 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | Step | Invocation | Reads |
 |---|---|---|
 | build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
-| likeness | `"$WORKSHOP_PYTHON" $I/render_views.py <entry>.step.py --match <ref.png> --label <L> --min 0.90 -o <dir> --shaded --json [--poses-from <prev poses.json>]` | `results[].iou`, `.ok`, `.az/.el/.roll/.fov` |
+| likeness | `"$WORKSHOP_PYTHON" $I/render_views.py <entry>.step.py --match <ref.png> --label <L> --min 0.90 -o <dir> --shaded --json [--camera=AZ,EL[,TOL]] [--poses-from <prev poses.json>]` | `results[].iou`, `.ok`, `.az/.el/.roll/.fov` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
 | inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view front --view top --view iso -o <round>/visual` | exact shaded PNGs for native Manager inspection of one component or the assembly |
-| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit [--image-derived --likeness-ref L=PATH ...] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
+| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit [--image-derived --likeness-ref L=PATH@AZ,EL[,TOL] ...] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
 | motion sheet | `"$WORKSHOP_PYTHON" $C/motion_presentation.py` (see the cad skill) | presentation only, not a gate |
 
 `render_views.py --match` searches the camera pose and scores with the
@@ -323,7 +334,7 @@ pose so consecutive rounds measure the model, not the camera. Each reference
 keeps its own pose file; the summary records the selected file as
 `poses_path`. A bounded search writes separate evidence, and its pose is
 retained only when its score is better than the replay. A reference
-with a transparent background is read from its alpha channel. When the replay scores under the floor, `make_round` re-searches a +/-30 degree window around that camera and keeps the better score, marked `(re-searched)` in the summary; a moved part is otherwise scored under a stale camera.
+with a transparent background is read from its alpha channel. When the replay scores under the floor, `make_round` re-searches a +/-30 degree window around that camera and keeps the better score, marked `(re-searched)` in the summary; a moved part is otherwise scored under a stale camera. A replay that `render_views` refuses because its stored pose sits outside the declared camera window is re-searched the same way, inside that window.
 
 ## What this is not
 

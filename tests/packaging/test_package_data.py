@@ -69,8 +69,11 @@ class PackageDataTest(unittest.TestCase):
                 "image-to-cad",
                 "make-round",
                 "manual-design",
-                "mechanisms",
+                "product-design",
                 "step-parts",
+                "step-to-source",
+                "stl-to-step",
+                "wiki",
             },
         )
         expected_owners = {
@@ -81,8 +84,11 @@ class PackageDataTest(unittest.TestCase):
             "image-to-cad": "make",
             "make-round": "make",
             "manual-design": "release",
-            "mechanisms": "make",
+            "product-design": "make",
             "step-parts": "make",
+            "step-to-source": "make",
+            "stl-to-step": "make",
+            "wiki": "make",
         }
         for name, root in roots.items():
             self.assertEqual(root.name, name)

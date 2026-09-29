@@ -30,32 +30,22 @@ re-verified once that directory is cleaned out.
 
 ## Never offset the imported solid
 
-`offset(component, +clearance)` is the obvious way to grow a part into its
-clearance envelope, and on a real catalog STEP it is a trap. Measured on
-step.parts `sg90_micro_servo`:
-
-| | bbox Z |
-|---|---|
-| the servo as imported | 0.00 .. **29.90** |
-| `offset(servo, +0.3)` | -0.30 .. **27.00** |
-
-OCC grew it in X and Y, dropped the output hub and all 24 spline teeth, and
-returned a solid 2.9 mm *shorter* than its input with no error. A pocket cut
-from that envelope is a pocket the servo's spline crashes into — and it
-validates, because the bracket is a perfectly sound solid.
-
-`cadmount` therefore never offsets the component. It sections the raw solid
+`offset(component, +clearance)` on a real catalog STEP silently drops features
+and can return a *shorter* solid (the step.parts SG90 loses its hub and spline
+and 2.9 mm of height, with no error), and the pocket cut from it validates.
+`cadmount` therefore never offsets the component: it sections the raw solid
 along the insertion axis, unions the sections, applies clearance as a **2D**
-offset of that outline where OCC is reliable, and extrudes. Then it verifies
-that the seat contains the component it came from, doubles the section count
-until it does, and raises rather than returning a cavity that misses material.
+offset of that outline, and extrudes. Then it verifies that the seat contains
+the component it came from, doubles the section count until it does, and raises
+rather than returning a cavity that misses material. The measurement and the
+design reasoning behind seats: `skills/wiki/pages/printing/seating-bought-parts.md`
+(`wiki show seating-bought-parts`).
 
 ## `seat_for` is a prism, and that is the point
 
 `seat_for` returns the component's silhouette along `insert`, swept straight
-through. An exact offset would hug the part more closely and could not be
-assembled at all: any component wider somewhere than it is at its mouth has an
-undercut, and rigid parts do not bend into one.
+through, because an exact offset would leave an undercut the rigid part cannot
+pass (`wiki show seating-bought-parts#a-seat-is-a-prism-along-the-insertion-direction`).
 
 - `insert` — the direction the component travels in. The seat is prismatic
   along it.
@@ -82,18 +72,11 @@ the catalog:
     bolt_holes(servo)    -> [1.7, 2.0, 2.0]
     bolt_pattern(servo)  -> two Ø2.000 holes, 27.20 mm apart   (datasheet: 27.2)
 
-Two things about imported bores that a naive reader gets wrong, both learned
-from that file:
-
-- **A bore is often not a full cylindrical face.** The SG90's flange holes are
-  single faces sweeping 77.5 % of a turn; other importers split a bore at its
-  seam into halves. `cadmount` groups faces by axis line and radius and sums
-  their sweeps, requiring 60 % of a turn between them — enough to keep a
-  trimmed bore and to reject a slot end, which is exactly half.
-- **The centroid of a trimmed cylindrical face is not on its axis.** On those
-  flange holes it sits 1.00 mm off. Reading a hole position from
-  `face.center()` drills the screw hole a millimetre from where the screw is.
-  Every position `cadmount` reports is derived from the axis.
+`cadmount` groups bore faces by axis line and radius and sums their sweeps
+(requiring 60 % of a turn), and derives every position from the axis, never
+from `face.center()` — imported bores are often trimmed or split faces whose
+centroid sits off the axis
+(`wiki show seating-bought-parts#reading-holes-off-an-imported-step`).
 
 `bolt_cutter` sizes the clearance holes through `cadfits.slot_for`, so a screw
 clearance obeys the same table as every other mate in the project.
@@ -142,7 +125,24 @@ checked exactly as closely as a derived one.
 | `min_clearance` | mm, default `snug` (0.10). Below it fails: a bought part does not compress. |
 | `bolt_axis` | constrain hole detection to one axis. Omitted searches any. |
 | `bolts` | `false` for a strapped, glued or captive-screwed component. |
+| `solid` | which solid of a multi-solid STEP is the part: `"largest"`, `"all"`, or an index. Omitted refuses a multi-solid file. |
 | `assembly` | top-level: name the entry when a project has several. |
+
+A catalog STEP that imports as several solids is refused by default, because a
+seat derived from all of them at once is a seat for a **pose** rather than for a
+part: the servo's horn and the motor's output shaft turn, and a socket cut
+around them where they happen to sit fits nothing after the first revolution.
+`solid` is how the manifest overrides that, and each value is a different claim
+the gate then records:
+
+- `"largest"` — the rest of the solids are the parts that move. A DC gearmotor
+  whose file carries body, hub and lead stub seats on its body.
+- an integer — that index of `solids()`. Read the index from the file in the
+  same session; import order is not a contract, so a number carried over from
+  another machine or another vendor revision is a guess.
+- `"all"` — nothing in this component moves relative to anything else in it at
+  the pose being checked. True of a cell holder's shell and contacts, false of
+  anything with an output shaft.
 
 Failures are `component-source`, `seat-clash`, `seat-clearance` and
 `bolt-access`. Notes, which `--strict` promotes, are `component-checksum`,
@@ -160,6 +160,14 @@ layout: it hides the source file from the preflight and lets a reduced envelope
 stand in for the very geometry the seat is meant to prove. This keeps the
 standalone gate useful while authoring a mount, but prevents a final PASS when
 a catalog file changed beneath an already-derived seat.
+
+One STEP under `ref/` is not a component: the one an entry declares it
+`CARRIES = "ref/<name>.step"`. That is the mesh route's carrier entry, whose
+body *is* the converted file it imports and returns, so a mount row would have
+to say where the part sits inside itself, and every geometry gate already
+measures it through the entry. The declaration is literal and read statically,
+like `PRINTABLE`; it must name a file that exists and is under `ref/`, and it
+exempts nothing else. Seating a purchased part stays exactly as strict.
 
 `bolt-access` tries each hole **both ways** along its axis and passes if either
 is clear, because a screw only ever needs one open side. A bracket with a back

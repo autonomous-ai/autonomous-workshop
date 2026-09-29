@@ -366,9 +366,9 @@ prioritize the remaining deterministic checks and current-stage finalizer.
 - understanding the Wish and selecting an Inventor inside the first active stage;
 - native search and source provenance;
 - concept exploration and design decisions;
-- use of CAD, image-to-CAD, design-reference, STEP-parts,
-  electromechanical-integration, mechanisms, rendering, and other materialized
-  skills;
+- use of CAD, image-to-CAD, product-design, design-reference, STEP-parts,
+  STEP-to-source, STL-to-STEP, electromechanical-integration, the design wiki,
+  rendering, and other materialized skills;
 - creation and repair of product files;
 - the printable `MANUAL.pdf`, truthful omission record, and bounded Release facts;
 - a compact proposal for the next host transition.

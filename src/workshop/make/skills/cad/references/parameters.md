@@ -68,17 +68,17 @@ body.color = filament("sunflower yellow")                    # a spool, not a he
 shell.color = filament("misty blue", material="PETG Basic")  # the other stock
 ```
 
-`scripts/cadfilament.py` holds the two palettes this repository prints — Bambu
-Lab PLA Lite (13 names, the `material` default) and Bambu Lab PETG Basic (13
-names, for a part that flexes, takes an impact, or sits somewhere warm) — and
+`scripts/cadfilament.py` holds the three palettes this repository prints — Bambu
+Lab PLA Lite (13 names, the `material` default), Bambu Lab PLA Matte (25 names,
+the pastels and muted tones Lite lacks) and Bambu Lab PETG Basic (13 names, for
+a part that flexes, takes an impact, or sits somewhere warm) — and
 converts each to the linear channels the renderer wants. It imports with no
 setup wherever `cadfits` does, and an unknown name raises with the whole list
 instead of resolving to something close. Seven names are in both stocks, five
 of them a different hex in each, so `material` is what says which spool. A
-colour that is not
-printed filament (a purchased part, a reference surface) stays on
-`cadgen.srgb()`. Run `python "$CAD_SKILL_ROOT/scripts/cadfilament.py"` for its
-self-check. The full rules, and both tables, are **Colour** in
+colour that is not printed filament (a purchased part, a reference surface)
+stays on `cadgen.srgb()`. Run `python "$CAD_SKILL_ROOT/scripts/cadfilament.py"`
+for its self-check. The full rules, and all three tables, are **Colour** in
 `references/build123d-modeling.md`.
 
 ## Derive The Second Half Of A Mate — `cadfits`
@@ -99,19 +99,13 @@ An audit launched directly by the interpreter still adds the scripts directory
 to `sys.path` itself. Run
 `python "$CAD_SKILL_ROOT/scripts/cadfits.py"` for its self-check.
 
-**Write the mate as a derivation, not as an assertion.** A mating pair sized by
-hand — `hole = PIN_D + 2 * PIN_CLEAR` in one file, the pin in another — cannot
-be audited afterwards, because the only check available restates the arithmetic:
-
-```python
-assert math.isclose((PIN_D + 2 * PIN_CLEAR) - PIN_D, 2 * PIN_CLEAR)   # 2C == 2C
-```
-
-That reduces to `True` and passes whatever the geometry does. Use derivations
-through `cadfits`, and have the project's fit audit recompute module-level
-results *independently*, band-check every per-side clearance, and grep the
-library for the `± 2 * SOME_CLEAR` idiom so a hand-written mate cannot come
-back. Both new forms fail when broken on purpose; the old ones could not.
+**Write the mate as a derivation, not as an assertion.** A hand-sized pair can
+only be audited by a check that restates its own arithmetic (`2C == 2C`), which
+passes whatever the geometry does. Derive through `cadfits`, have the project's
+fit audit recompute module-level results independently and band-check every
+per-side clearance, and grep the library for the `± 2 * SOME_CLEAR` idiom. Why,
+with the worked failure: `skills/wiki/pages/printing/fit-derivation.md`
+(`wiki show fit-derivation`).
 
 Migrating an existing project to this form must not move any geometry. Prove it:
 fingerprint every entry's volume, body count and bbox straight from source
@@ -124,37 +118,12 @@ read from two different files depending on how the process started.
 
 ### Clearance comes off the largest feature, not the nearest one
 
-A running gap is derived like any other mate, and the derivation picks a
-dimension. Pick the wrong one and the arithmetic is flawless about the wrong
-part. A cross pin retaining a gear:
-
-```python
-GEAR_PIN_Z = GEAR_HUB_TOP + RETAINER_GAP + RETAINER_PIN_D / 2.0   # wrong
-```
-
-reads correctly, derives from a real diameter, and clears the hub by exactly
-the gap it names — with the Ø8 head on that Ø3 pin hanging 2 mm *into* the
-pointer sweeping underneath it. The shaft is the feature nearest the hub; the
-head is the feature that decides.
-
-```python
-RETAINER_SWEEP_D = max(RETAINER_PIN_D, RETAINER_HEAD_D)
-GEAR_PIN_Z = GEAR_HUB_TOP + RETAINER_GAP + RETAINER_SWEEP_D / 2.0
-```
-
-The `max` is the whole fix, and it is worth writing even where the two are
-equal today, because it says which envelope the gap is against. Whenever a
-clearance is derived from a part that has a head, a collar, a flange, a boss or
-a chamfered end, derive it from that part's *envelope* at the radius in
-question. Then check the float the choice costs: raising the pin by half the
-head's excess opens the retention gap by the same amount, and shrinking the
-head is usually cheaper than accepting it — 8 mm to 5 mm here took the gear's
-axial float from 3.0 mm back to 1.5 while leaving 0.8 mm of shoulder over the
-hole the head has to stop against.
-
-Neither a single-pose `interfere` nor a sweep that omits the retainer can see
-this: the moving part is only under the head for part of a turn. It needs
-`coupled_motion_collision` with the retainer named in `obstacle_parts`.
+Derive a running gap from the moving part's *envelope* at the radius in
+question — `max(pin_d, head_d)` for a headed pin, likewise for a collar, flange,
+boss or chamfered end — never from the feature nearest the gap. Only a
+`coupled_motion_collision` with the retainer in `obstacle_parts` can see the
+error. Worked example and the float trade-off:
+`wiki show fit-derivation#clearance-comes-off-the-largest-feature-not-the-nearest-one`.
 
 ## Features And Refs
 

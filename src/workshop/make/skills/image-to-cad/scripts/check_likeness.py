@@ -76,6 +76,21 @@ And it does not know about colour. On a multi-material reference, colour is a
 large part of the likeness a human sees, and this gate is blind to it: a
 correct silhouette in one flat colour scores the same as the real thing. Read
 the score as a floor on the disagreement, never as a ceiling on the quality.
+
+HOLES ARE SCORED THE SAME WAY ON BOTH SIDES, OR NOT AT ALL.
+
+`ref_silhouette.py` fills every enclosed hole in the reference, because a
+threshold cannot tell a specular highlight from a window. The render mask was
+never filled, so against a flattened reference a through-opening the model
+has RIGHT counted as missing material: a frame whose window is half its area
+scored IoU 0.50, and the same frame with the window deleted scored 1.00. The
+gate rewarded removing the feature. `ref_silhouette.py` now marks the file it
+writes (`HOLES_KEY` in the PNG text chunk), and a reference carrying that mark
+has the render's holes filled too before either is compared. Enclosed openings
+are then outside what this gate measures -- they belong in the landmark ledger
+-- and every row records `holes: filled` so that is never a silent change. A
+reference without the mark (a raw photo, a hand-drawn mask) still has its
+holes compared as they are.
 """
 
 from __future__ import annotations
@@ -88,6 +103,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
+from PIL.PngImagePlugin import PngInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from measure_image import _flood_components, alpha_mask, object_mask  # noqa: E402
@@ -100,6 +116,32 @@ HISTORY_SHOWN = 20
 STALL_DELTA = 0.005
 MIN_ROUNDS_BEFORE_MISMATCH = 2
 STALL_STREAK = 3
+# Written into the PNG text chunk by ref_silhouette.py. Its presence is the
+# only thing that says a reference's holes were filled by a rule rather than
+# absent from the object, so the render has to be filled to match.
+HOLES_KEY = "image-to-cad:holes"
+HOLES_FILLED = "filled"
+
+
+def holes_filled(path: Path) -> bool:
+    """True when `path` was written by ref_silhouette.py with its holes filled."""
+    with Image.open(path) as image:
+        return image.info.get(HOLES_KEY) == HOLES_FILLED
+
+
+def fill_holes(mask: np.ndarray) -> np.ndarray:
+    """Every background region not connected to the frame border becomes object.
+
+    The same definition as `scipy.ndimage.binary_fill_holes`, which is what
+    ref_silhouette.py applies: background is flooded 4-connected from the
+    border, and whatever that flood cannot reach is a hole.
+    """
+    labels, count = _flood_components(~mask)
+    if count == 0:
+        return mask.copy()
+    border = np.unique(np.concatenate(
+        [labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
+    return ~np.isin(labels, border[border > 0])
 
 
 def clipped_edges(mask: np.ndarray) -> list[str]:
@@ -440,12 +482,14 @@ def history_table(rows: list[dict], path: Path) -> str:
 
 
 def _box(path: Path, w: int, h: int, top: int | None = None,
-         chip: bool = False, waist: int = 0) -> Path:
+         chip: bool = False, waist: int = 0, window: tuple[int, int] | None = None,
+         marked: bool = False) -> Path:
     """A synthetic silhouette: dark rectangle, light ground.
 
     `waist` narrows the bottom half by that many pixels per side, which is how
     the band fixture asks the gate WHERE the shape is wrong rather than only
-    whether it is.
+    whether it is. `window` cuts a centred (w, h) through-opening, and `marked`
+    writes the file the way ref_silhouette.py does, holes-filled mark and all.
     """
     canvas = np.full((400, 400, 3), 250, dtype=np.uint8)
     x0 = 200 - w // 2
@@ -455,9 +499,17 @@ def _box(path: Path, w: int, h: int, top: int | None = None,
         mid = y0 + h // 2
         canvas[mid:y0 + h, x0:x0 + waist] = 250
         canvas[mid:y0 + h, x0 + w - waist:x0 + w] = 250
+    if window:
+        ww, wh = window
+        cy = y0 + h // 2
+        canvas[cy - wh // 2:cy - wh // 2 + wh, 200 - ww // 2:200 - ww // 2 + ww] = 250
     if chip:                       # the burnt-in "ISO" view label, in a corner
         canvas[8:28, 360:392] = 30
-    Image.fromarray(canvas).save(path)
+    info = None
+    if marked:
+        info = PngInfo()
+        info.add_text(HOLES_KEY, HOLES_FILLED)
+    Image.fromarray(canvas).save(path, pnginfo=info)
     return path
 
 
@@ -555,6 +607,45 @@ def self_check() -> int:
             hit = True
         print(f"{'ok  ' if hit else 'FAIL'} a reference that touches the frame "
               f"is refused rather than scored")
+        ok &= hit
+
+        # Through-openings. A frame whose window is half its area, scored
+        # against a flattened reference (holes filled, and marked as such).
+        # Before the render was filled to match, the correct frame scored about
+        # 0.50 and the frame with its window deleted scored 1.00: the gate paid
+        # for removing the feature. Both must now score the same, and the
+        # unmarked reference must still see the window.
+        import contextlib
+        import io
+        framed = _box(d / "frame.png", 160, 240, window=(113, 170))
+        solid_ref = _box(d / "frame-sil.png", 160, 240, marked=True)
+        raw_ref = _box(d / "frame-raw.png", 160, 240, window=(113, 170))
+
+        def gate(render, reference):
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                main(["--pair", str(render), str(reference), "--json"])
+            return json.loads(out.getvalue())["views"][0]
+
+        naive = score(framed, solid_ref)["iou"]
+        hit = naive < 0.55 and holes_filled(solid_ref) and not holes_filled(raw_ref)
+        print(f"{'ok  ' if hit else 'FAIL'} unfilled, a correct opening scores as "
+              f"missing material against a flattened reference  - IoU {naive:.4f}")
+        ok &= hit
+
+        right, deleted = gate(framed, solid_ref), gate(ref, solid_ref)
+        hit = (right["iou"] == deleted["iou"] == 1.0
+               and right["holes"] == deleted["holes"] == "filled")
+        print(f"{'ok  ' if hit else 'FAIL'} against a marked reference the render "
+              f"is filled too, so deleting the opening buys nothing  - "
+              f"with {right['iou']:.4f}, without {deleted['iou']:.4f}")
+        ok &= hit
+
+        kept, lost = gate(framed, raw_ref), gate(ref, raw_ref)
+        hit = (kept["iou"] == 1.0 and lost["iou"] < 0.55
+               and kept["holes"] == "measured")
+        print(f"{'ok  ' if hit else 'FAIL'} an unmarked reference still scores "
+              f"the opening  - with {kept['iou']:.4f}, without {lost['iou']:.4f}")
         ok &= hit
 
         # lowering the floor is the cheapest way to change this gate's output,
@@ -942,6 +1033,12 @@ def main(argv: list[str] | None = None) -> int:
             reference_mask = silhouette(Path(ref_path), args.threshold, keep_largest)
             if not args.allow_clipped_reference:
                 require_complete_reference(reference_mask, Path(ref_path))
+            # a flattened reference has lost its openings to a rule; score the
+            # render under the same rule or the gate pays for deleting them
+            filled = holes_filled(Path(ref_path))
+            if filled:
+                render_mask = fill_holes(render_mask)
+                reference_mask = fill_holes(reference_mask)
             r = normalise(render_mask)
             f = normalise(reference_mask)
         except (OSError, ValueError) as exc:
@@ -949,6 +1046,7 @@ def main(argv: list[str] | None = None) -> int:
             continue
         rec = compare(r, f)
         rec.update({"label": label, "render": render_path, "reference": ref_path,
+                    "holes": "filled" if filled else "measured",
                     "ok": rec["iou"] >= args.min})
         results.append(rec)
 
@@ -1072,6 +1170,11 @@ def main(argv: list[str] | None = None) -> int:
             for i, line in enumerate(told):
                 # the first rows are per view; the rest is the shared advice
                 print(f"STALLED OUT  {line}" if i < len(stalled_out) else line)
+        filled_labels = [r["label"] for r in results if r.get("holes") == "filled"]
+        if filled_labels:
+            print(f"holes filled on both sides for {', '.join(filled_labels)} "
+                  "(flattened reference): enclosed openings are not scored here, "
+                  "so each one needs a landmark-ledger row.")
         print("bands run top (0.00) to bottom (0.92); ratio > 1 means the model "
               "is too wide there, < 1 too narrow.")
         if hist_file is None:
@@ -1109,11 +1212,17 @@ def main(argv: list[str] | None = None) -> int:
         lines.append("\nBands run from the top of the silhouette (0.00) to the "
                      "bottom (0.92). A ratio above 1 means the model is too wide "
                      "at that height, below 1 too narrow.\n")
+        filled_labels = [r["label"] for r in results if r.get("holes") == "filled"]
+        if filled_labels:
+            lines.append(f"Holes filled on both sides for {', '.join(filled_labels)}: "
+                         "the reference was flattened, so enclosed openings are not "
+                         "scored by this gate and belong in the landmark ledger.\n")
 
         fresh = [{"run": run, "time": stamp, "label": r["label"],
                   "iou": r.get("iou"), "delta": r["delta"], "trend": r["trend"],
                   "aspect": r.get("aspect_delta"), "min": args.min,
                   "best": r.get("best"), "from_best": r.get("from_best"),
+                  "holes": r.get("holes"),
                   "ok": r["ok"], "failed_because": r["failed_because"],
                   "stall_streak": r.get("stall_streak"),
                   "accepted_mismatch": args.accept_mismatch,

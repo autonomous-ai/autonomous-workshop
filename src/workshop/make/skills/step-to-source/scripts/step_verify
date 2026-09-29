@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""Prove how far a rebuilt solid is from the one it claims to reproduce.
+
+Two shapes, either of them a STEP file or a `<name>.step.py` entry this
+repository builds, measured against each other by symmetric difference: the
+material in one and not the other, both ways round, as a fraction of the
+original's volume.
+
+Volume agreement is not evidence. A hole moved 3 mm changes no volume at all,
+a boss grown and a pocket deepened cancel exactly, and both pass any check that
+compares one number against another. The symmetric difference cannot be
+cancelled that way, so it is the number this gate exits on.
+
+    python skills/step-to-source/scripts/step_verify ref/part.step part.step.py
+    python skills/step-to-source/scripts/step_verify a.step b.step --tolerance 0.05
+
+Exit 0 when the difference is within tolerance, 1 when it is not or the
+booleans could not answer, 2 on bad usage.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from steplib import (  # noqa: E402
+    compare, fixture_step, load_shape, read_step, render, verdict,
+)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        prog="step_verify",
+        description="Measure how closely one solid reproduces another.")
+    parser.add_argument("original", type=Path, nargs="?",
+                        help="STEP/STP file, or a <name>.step.py entry.")
+    parser.add_argument("rebuilt", type=Path, nargs="?",
+                        help="STEP/STP file, or a <name>.step.py entry.")
+    parser.add_argument("--tolerance", type=float, default=0.01,
+                        help="Symmetric difference in percent allowed (default 0.01).")
+    parser.add_argument("--digits", type=int, default=4)
+    parser.add_argument("--json", action="store_true", help="Full report as JSON.")
+    parser.add_argument("--self-check", action="store_true",
+                        help="Run this gate's own fixtures; omit both shapes.")
+    args = parser.parse_args(argv)
+
+    if args.self_check:
+        return _self_check()
+    if not args.original or not args.rebuilt:
+        parser.error("two shapes are required unless --self-check is given")
+
+    report = compare(load_shape(args.original), load_shape(args.rebuilt), args.digits)
+    ok, message = verdict(report, args.tolerance)
+    if args.json:
+        print(json.dumps({**report, "pass": ok, "verdict": message}, indent=2))
+    else:
+        print(render(report, args.original.name, args.rebuilt.name))
+        print(message, file=sys.stdout if ok else sys.stderr)
+    return 0 if ok else 1
+
+
+def _self_check():
+    import tempfile
+
+    ok = True
+
+    def case(label, original, rebuilt, want_pass, tolerance=0.01):
+        nonlocal ok
+        report = compare(read_step(original), read_step(rebuilt))
+        passed, _ = verdict(report, tolerance)
+        hit = passed == want_pass
+        ok &= hit
+        print(f"{'ok  ' if hit else 'FAIL'} {label}: "
+              f"volume {report['volumeDeltaPct']:+.4f}%, "
+              f"symmetric difference {report['symmetricDifferencePct']:.4f}%")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        plate = fixture_step("plate", tmp)
+        moved = fixture_step("moved_hole", tmp)
+        chamfered = fixture_step("chamfered", tmp)
+
+        # A shape against itself is the only case that must read exactly zero.
+        case("a solid matches itself exactly", plate, plate, True)
+
+        # The point of the whole gate: same volume, different part. Anything
+        # that compares volumes calls this pair identical.
+        case("a bore moved 3 mm fails despite identical volume", plate, moved, False)
+
+        # And a difference far too large to be a tolerance artefact.
+        case("a different part fails outright", plate, chamfered, False)
+
+        # A loose tolerance is allowed to pass the moved bore -- the gate
+        # reports the number, the caller sets what counts.
+        case("the same pair passes at a tolerance that admits it",
+             plate, moved, True, tolerance=5.0)
+
+    print("step_verify self-check:", "ok" if ok else "FAILED")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

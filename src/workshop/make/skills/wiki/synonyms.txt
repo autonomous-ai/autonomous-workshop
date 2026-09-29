@@ -1,0 +1,294 @@
+# One group per line, members separated by |. A query that contains any member
+# (case and accents ignored, whole words) also searches every other member.
+# Add a group whenever a search misses a page that exists. Avoid members that
+# are common words in unrelated senses, or every query containing them expands.
+
+shaft | axle | spindle | arbor
+joint | pivot | kinematic pair
+revolute | hinge | pivot
+prismatic | slide | slider | rail | guide
+hinge | knuckle | living hinge
+ball joint | socket joint
+pin | dowel
+key | keyway | d-flat | d-shaft
+ball bearing | bearing | roller bearing
+bushing | journal | plain bearing | sleeve bearing
+circlip | e-clip | snap ring | retaining ring | collar
+deflection | stiffness | bending
+stress | strength
+torque | moment
+gear | cog | gearing | spur
+rack | pinion
+worm | worm wheel | worm gear
+bevel | miter gear | mitre gear
+module | diametral pitch
+ratio | reduction | gear train | gearbox
+backlash | play | lash
+mesh | meshing | engagement
+linkage | link | bar linkage
+four-bar | four bar | grashof
+crank | crankshaft | crank pin
+coupler | connecting rod | con rod
+slider-crank | slider crank
+dead centre | dead center | dead point | toggle
+rocker | lever | oscillating arm
+follower | push rod | tappet
+geneva | maltese cross | indexing
+ratchet | pawl | one-way
+spring | flexure
+rubber band | elastic band | band
+motor | servo | gearmotor | actuator
+flywheel | inertia
+tolerance | fit | clearance | cadfits
+latch | snap | detent | clip
+walking | walker | gait | leg
+kinematics | motion | pose
+verification | check_motion | manifest | motion sweep
+fdm | printed | printing
+overhang | teardrop
+
+# printing and part design
+wall | wall thickness | minimum wall | thin wall
+hollow | shell | shelling | infill
+knife edge | sliver | feather edge | taper
+bridge | ledge | unsupported | support material
+orientation | print pose | build direction
+split | part count | decomposition | parting line | seam
+print-in-place | print in place | captive
+purchased part | bought part | off-the-shelf | cots
+seat | pocket | cavity | mount
+feature tree | build order | base solid | operation order
+
+# modeling and the geometry kernel
+loft | lofted | make_loft | station
+seam | panel line
+selector | sort_by | group_by | filter_by
+winding | clockwise | counterclockwise
+bspline | b-spline | nurbs | control net
+tessellate | tessellation | triangulate
+bd_warehouse | py_gearworks | gear library
+
+# reading reference images
+likeness | iou | silhouette score
+perspective | foreshortening | three-quarter | 3/4 view | hero shot
+scale anchor | reference object | mm per pixel
+mirror image | handedness | chirality | reflection
+technical drawing | blueprint | engineering drawing | callout
+mask | silhouette | segmentation
+plan view | top view
+
+# electronics
+lamp | bulb | emitter
+socket | receiver | lamp holder
+twist-lock | bayonet | quarter turn
+coupon | test print | fit test
+wire | cable | loom | harness
+stall current | start current | inrush
+datasheet | mpn | part number
+
+# reverse engineering
+stl | mesh | tessellation | facets
+step file | brep | b-rep
+sew | sewing | stitch
+sldprt | sldasm | solidworks
+re-author | rebuild | reverse engineer
+pose | placement | transform
+
+# materials
+creep | cold flow | stress relaxation | loosening
+fatigue | cyclic load | endurance limit | s-n curve
+hdt | heat deflection | glass transition | softening
+anisotropy | layer adhesion | z strength | interlayer | delamination
+hygroscopic | moisture | wet filament | drying
+uv | weathering | outdoor | sunlight
+annealing | heat treatment | anneal
+perimeter | wall count | shell | infill density
+food safe | food contact | fda
+choking hazard | small parts | 16 cfr 1501 | small parts cylinder | choke test
+nylon | polyamide | pa6 | pa12
+tpu | flexible filament | shore 95a
+carbon fiber | carbon fibre | fibre filled | fiber filled
+lubricant | grease | ester oil
+
+# fasteners
+heat-set insert | threaded insert | brass insert | heat staking | insert
+self-tapping | thread forming | self tapper | plastite
+clearance hole | through hole | bolt hole
+counterbore | spotface | cap screw pocket
+countersink | csk | flat head
+nut trap | captive nut | nut pocket
+snap-fit | snap fit | snap hook | clip
+glue | adhesive | cyanoacrylate | epoxy | solvent weld
+magnet | neodymium | n52
+cable tie | zip tie | tie wrap
+dowel | locating pin | parallel pin
+
+# more mechanisms
+belt | timing belt | synchronous belt | gt2 | htd | pulley
+lead screw | leadscrew | acme | trapezoidal screw | ball screw | power screw
+planetary | epicyclic | sun gear | ring gear | planet carrier
+cycloidal | cycloid drive | cycloidal reducer
+harmonic drive | strain wave | flexspline
+differential | limited slip
+spring rate | spring constant | spring stiffness
+flexure | living hinge | compliant mechanism | integral hinge
+coupling | shaft coupler | u-joint | universal joint | cardan | oldham
+straight-line linkage | watt linkage | chebyshev | peaucellier | hoecken
+toggle | over-centre | over-center | knee joint
+freewheel | one-way clutch | sprag | overrunning clutch
+torque limiter | slip clutch | overload clutch | ball detent
+pendulum | escapement | deadbeat
+rolling resistance | tractive force | traction | wheel slip
+self-locking | back-drive | backdrive | irreversible
+
+# more printing
+polyhole | horihole | hole compensation | undersized hole
+elephant foot | elephants foot | first layer squish
+warping | curling | corner lifting
+brim | mouse ears | brim ears | raft
+bridging | sacrificial layer | sacrificial bridge
+nozzle | nozzle diameter | line width | extrusion width
+z seam | scarf seam
+ironing | top surface finish
+fuzzy skin | textured wall
+purge | wipe tower | prime tower | tool change
+multi-material | multicolor | multi colour | mmu | ams
+emboss | deboss | engrave | lettering
+
+# more electronics
+led | light emitting diode | indicator
+resistor | current limiting | ballast
+neopixel | ws2812 | addressable led | rgb pixel
+battery | cell | battery pack
+coin cell | button cell | cr2032
+lipo | lipoly | lithium polymer | li-ion | pouch cell
+servo | rc servo | sg90 | mg996r
+stepper | stepper motor | 28byj-48 | nema 17
+h-bridge | motor driver | drv8833 | tb6612 | l298n
+flyback | freewheel diode | back emf
+awg | wire gauge | wire size
+jst | jst-ph | jst-xh | dupont | pin header
+microcontroller | arduino | pico | esp32 | xiao
+level shifter | logic level | voltage divider
+buzzer | piezo | speaker | dfplayer
+ultrasonic | hc-sr04 | pir | ir receiver
+enclosure | housing | project box | standoff
+
+# modeling and standards
+fit | limits and fits | h7 | hole basis | shaft basis
+it grade | tolerance grade | tolerance band
+general tolerance | iso 2768 | title block tolerance
+gdt | gd&t | geometric tolerance | feature control frame | datum
+first angle | third angle | projection symbol | multiview
+ap203 | ap214 | ap242 | step schema | application protocol
+fuzzy | fuzzy value | glue option | argument analyzer | bop check
+healing | shapefix | unifysamedomain | sew shape
+topological naming | toponaming | tnp | design intent
+knot | knot vector | continuity | g1 | g2
+preferred number | renard | r10 | r20
+inch | thou | imperial
+
+# image reading and product design
+delta e | colour difference | color difference | cielab | ciede2000
+focal length | angle of view | field of view | fov
+vanishing point | vanishing line | horizon line
+distortion | barrel distortion | pincushion
+visual hull | shape from silhouette
+photogrammetry | structure from motion | sfm
+anthropometry | percentile | body dimensions
+dfa | design for assembly | boothroyd
+parting line | split line
+snail cam | drop cam
+
+# joints, slides and latches
+friction hinge | torque hinge | free-stop hinge | hold-open hinge
+ball plunger | spring plunger | index plunger | click stop
+push latch | touch latch | push-push latch | draw latch | catch
+drawer | drawer slide
+binding | racking | jamming | sticky drawer
+stick-slip | stiction
+linear bearing | linear bushing | lm8uu | profile rail | mgn rail
+
+# printing processes and estimates
+resin | sla | msla | dlp | stereolithography | photopolymer
+drain hole | vent hole | escape hole
+cupping | suction cup effect
+vase mode | spiral vase | spiralize | single wall
+volumetric flow | max volumetric speed | mvs
+print time | print duration
+filament usage | filament weight | spool length
+
+# structures and tolerances
+rib | stiffener | gusset
+second moment of area | area moment of inertia | section modulus
+buckling | euler column
+stress concentration | kt | notch factor
+tolerance stack | stack-up | tolerance chain | dimension chain
+rss | root sum square | statistical tolerancing
+
+# modeling measurement and detail
+helix | coil | helical
+sweep | swept | pipe shell | helical sweep
+centre of mass | center of mass | centre of gravity | center of gravity | cog
+moment of inertia | inertia tensor | radius of gyration
+min distance | closest points | clearance measurement
+lettering | engraving | embossing | font | glyph
+linear pattern | circular pattern | polar array | grid array
+knurl | knurling | grip texture
+
+# enclosures, panels and heat
+thermal | heat dissipation | overheating | junction temperature
+ventilation | vent slot | louver | grille | chimney effect | stack effect
+heatsink | heat sink | thermal pad | gap pad
+tactile switch | tact switch | pushbutton | keycap | plunger cap
+knob | encoder | potentiometer | d-shaft
+light pipe | lightpipe | light guide
+bezel | display window | oled | lcd | viewing area | active area
+panel mount | panel cutout
+
+# sealing, stability and mounting
+seal | gasket | o-ring | oring | gland | watertight | waterproof
+ip rating | ingress protection | iec 60529 | ip67 | ip68 | ip65
+tipping | topple | overturn | tip-over | stability
+wall plug | drywall anchor | plasterboard plug | toggle bolt
+wall mount | keyhole slot | french cleat | picture hook | sawtooth hanger
+
+# round two: cords, constraint, arms, balance, noise
+capstan | euler-eytelwein | wrap angle
+tendon | pull cord | pull string | puppet string
+bowden | bowden cable | cable housing | barrel adjuster
+dyneema | spectra | uhmwpe | hmpe | braided line
+sheave | cable pulley | rope drum
+kinematic coupling | kinematic mount | maxwell coupling | kelvin coupling | kelvin clamp
+over-constrained | overconstrained | redundant constraint | exact constraint
+diamond pin | relieved pin | locating pin
+counterweight | counterbalance | equilibrator | gravity compensation
+gas spring | gas strut | lift support | lid stay
+zero free length | zero-length spring | anglepoise | carwardine
+gripper | claw | end effector
+fin ray | finray | compliant finger
+rattle | buzz | whine | squeak | gear noise
+vibration isolation | anti-vibration mount | rubber grommet | damper
+natural frequency | resonance | eigenfrequency
+
+# round two: finishing, expansion, moulds, fluids, lightweighting, straps
+cte | thermal expansion | coefficient of thermal expansion
+vapor smoothing | vapour smoothing | acetone smoothing
+filler primer | high build primer | primer surfacer
+post-processing | post processing | painting | sanding
+slotted hole | expansion slot | floating mount
+mould | mold | moulding | molding | silicone mould
+sprue | pour spout | mould vent
+cure inhibition | tacky silicone | uncured silicone
+hose barb | barbed fitting | tube stub
+push fit | push-to-connect | one-touch fitting | pneumatic fitting
+pneunet | soft actuator | soft gripper
+pneumatic | pneumatics | compressed air | air line
+lattice | gyroid | tpms | strut lattice | octet truss
+lightweighting | lightening hole | weight reduction | mass reduction
+sandwich panel | honeycomb core | sandwich core
+topology optimisation | topology optimization | generative design
+webbing | strap | strapping
+side release buckle | quick release buckle | ladder lock | tri-glide | cam buckle
+hook and loop | velcro
+cord lock | cord stopper

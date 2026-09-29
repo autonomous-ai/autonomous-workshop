@@ -1,0 +1,139 @@
+---
+title: Shafts and bearings
+tags: [shaft, axle, bearing, bushing, deflection, stress, collar, circlip, support, axial-location]
+aliases: [spindle, journal, plain bearing, ball bearing, sleeve bearing, retaining ring, e-clip, set screw, beam deflection]
+sources:
+  - Shigley's Mechanical Engineering Design, ch. 4 (beam deflection) and ch. 7 (shafts and shaft components)
+  - ISO 15 (radial bearing boundary dimensions)
+  - Roark's Formulas for Stress and Strain, beams table (simply supported and cantilever cases)
+  - skills/cad/scripts/stdpart (bearings and snap rings from bd_warehouse)
+related: [joints, gears, mechanism-design, beam-and-plate-stiffness, exact-constraint-and-kinematic-mounts, noise-and-vibration]
+updated: 2026-09-23
+---
+
+# Shafts and bearings
+
+A shaft layout answers four questions for every axis before any part around
+it is drawn: what the shaft is made of, what supports it, what stops it
+sliding along its axis, and how torque gets onto and off it. Each answer is a
+parameter and most of them owe an `assert`.
+
+## Printed shaft or bought rod
+
+| shaft | use when | notes |
+|---|---|---|
+| **printed, lying flat** | slow toy drives, short spans, parts keyed to the shaft | strong along the extrusion lines; print with a D-flat on the bed so it is not a round overhang ([[joints#keyed-joints]]) |
+| **printed, standing up** | never for a shaft that carries a bending load | its layers are cross-sections: it snaps at a layer line under bending |
+| **steel rod / dowel pin** | long spans, motor speeds, anything that must stay straight | about 60–80 × stiffer than printed PLA at the same diameter; buy standard diameters (2, 3, 4, 5, 6, 8 mm) and derive the printed bore with `cadfits` |
+| **brass / aluminium tube** | light, long, or wiring through the axis | check the wall against the set screw or pin that drives it |
+
+Printed shafts below about 5 mm are fragile; below 3 mm use metal.
+
+## Stiffness: deflection decides before strength does
+
+A printed shaft almost always bends too much long before it breaks. Model it
+as a beam, `I = π d⁴ / 64`:
+
+```text
+simply supported, load F at mid-span L:    δ = F L³ / (48 E I)
+cantilever (overhung) load F at length a:  δ = F a³ / (3 E I)
+```
+
+Elastic modulus `E` (order of magnitude — printed parts vary with infill,
+orientation and temperature): printed PLA ≈ 2.5–3.5 GPa, printed PETG ≈
+1.8–2.2 GPa, aluminium ≈ 69 GPa, brass ≈ 100 GPa, steel ≈ 200 GPa.
+
+Where a gear sits on the shaft, the deflection under the tooth load
+separates the mesh and eats backlash. Keep deflection at a gear under half the
+designed backlash ([[gears#printed-tooth-choices]]):
+
+```python
+import math
+I = math.pi * SHAFT_D**4 / 64
+delta = F_TOOTH * SPAN**3 / (48 * E_SHAFT * I)
+assert delta <= 0.5 * BACKLASH, f"shaft bends {delta:.3f} mm at the gear"
+```
+
+Deflection scales with `L³ / d⁴`: halving the span buys 8×, one size up in
+diameter buys ~2× — shorten the span first.
+
+Other load cases and sections, plates, torsion and buckling:
+[[beam-and-plate-stiffness]].
+
+## Strength
+
+Bending stress `σ = 32 M / (π d³)`, torsion `τ = 16 T / (π d³)`, combined
+(von Mises) `σ' = sqrt(σ² + 3 τ²)`. For printed shafts use the strength
+*across* layers when the layers are not along the axis, and a safety factor
+of 3 or more: printed strength scatters and creeps under a steady load.
+
+## Supports and spans
+
+- **Two supports, spaced apart.** Space them at least 2–3 × the shaft
+  diameter; one long bore is a worse bearing than two short ones far apart.
+- **Each support ≥ 1.5 d long** for a printed journal ([[joints#revolute-joints]]).
+- **Keep overhung loads short.** A gear or crank outboard of the last support
+  at distance `a` loads that support by roughly `F (1 + a / span)`; keep
+  `a` well under the span.
+- **Put loads next to supports**, not mid-span, when the layout allows.
+
+## Bushing or ball bearing
+
+| bearing | when | notes |
+|---|---|---|
+| printed journal (bore `slot_for(d, RUN)`) | hand cranks, automata, tens of rpm, light load | the default for toys; PLA on PLA squeaks and wears — PETG or a steel shaft in a PLA bore runs better |
+| bronze / sintered bushing | moderate speed, dirt, higher load | a bought part: search `$step-parts`, seat with `cadmount` |
+| deep-groove ball bearing | motor speeds, low friction, precise location | search `stdpart` first: `bd_warehouse` builds it with the housing bore derived, never typed |
+
+Common deep-groove sizes (ISO 15, bore × OD × width, mm): MR63 3×6×2.5,
+MR85 5×8×2.5, MR105 5×10×4, 623 3×10×4, 624 4×13×5, 625 5×16×5,
+626 6×19×6, 688 8×16×5, 608 8×22×7, 6000 10×26×8. The number is a lookup key
+for the catalog, not a dimension to type into the model.
+
+A printed housing for a ball bearing: a `snug` or `press` seat from `cadfits`,
+a shoulder on one side for axial location, a chamfered lead-in, and the
+housing wall at least 2 extrusion widths — a thin press seat splits along a
+layer line.
+
+Bushing squeak and bearing noise: [[noise-and-vibration]].
+
+## Axial location: fixed and floating
+
+Locate the shaft axially at **one** support only (the fixed bearing) and let
+the other float. Locating at both supports fights every print error and
+thermal change and preloads the bearings or binds the journal.
+
+Ways to stop a shaft (or a part on it) moving along the axis:
+
+| stop | notes |
+|---|---|
+| shoulder on the shaft | printed shafts; the cheapest and most exact |
+| head of a shoulder pin | [[joints#revolute-joints]] |
+| e-clip / circlip in a groove | metal shafts; the groove comes from `stdpart` snap rings, never typed |
+| collar with set screw | M3 grub screw into a captive nut; tighten on a flat |
+| the next part in the stack | legitimate only if that part is itself proven held |
+
+Every axial stop is a `blocked` condition in the motion manifest.
+
+The general rule behind fixed-and-floating — count the constraints:
+[[exact-constraint-and-kinematic-mounts]].
+
+## Getting torque on and off
+
+Single D-flat for any phased part; pin through the shaft for high torque with
+exact phase; press fit only for parts that never come off. The whole list is
+[[joints#keyed-joints]]. A set screw on a round shaft slips — always drive it
+onto a flat.
+
+## Checks
+
+```python
+assert SUPPORT_SPACING >= 2 * SHAFT_D, "supports too close: the shaft rocks"
+assert JOURNAL_LEN >= 1.5 * SHAFT_D, "journal too short: the shaft wobbles"
+assert OVERHANG < SUPPORT_SPACING, "overhung load longer than the span"
+assert delta <= 0.5 * BACKLASH  # at every gear, from the section above
+```
+
+In the motion manifest: every shaft `clear` along its insertion axis from the
+open side and `blocked` at its axial stop, with the retention chain closed at
+a fixed root ([[mechanism-verification]]).

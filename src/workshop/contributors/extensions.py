@@ -48,8 +48,13 @@ _RESERVED_SKILL_NAMES = frozenset(
         "design-reference",
         "electromechanical-integration",
         "image-to-cad",
+        # Retired for new runs; older frozen runs still materialize it.
         "mechanisms",
+        "product-design",
         "step-parts",
+        "step-to-source",
+        "stl-to-step",
+        "wiki",
     )
 )
 

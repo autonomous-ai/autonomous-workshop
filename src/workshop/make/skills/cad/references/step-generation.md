@@ -78,8 +78,8 @@ CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fr
 # Image-derived final: add every usable reference viewpoint
 CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh \
   --image-derived --unpowered \
-  --likeness-ref hero=ref/hero.png \
-  --likeness-ref side=ref/side.png
+  --likeness-ref hero=ref/hero.png@-45,25 \
+  --likeness-ref side=ref/side.png@0,0
 ```
 
 Replace `--unpowered` with `--powered` in the image-derived command when the
@@ -102,7 +102,9 @@ forfeits any print-ready claim.
 
 `--image-derived` is an explicit completion mode rather than an inferred one.
 It requires exactly one `*_spec.md`, both `measure/check_spec.py` and
-`measure/check_landmarks.py`, and at least one `--likeness-ref LABEL=PATH`.
+`measure/check_landmarks.py`, and at least one `--likeness-ref LABEL=PATH@AZ,EL[,TOL]` — every reference
+declares the camera it was taken from, or the pose search cannot see a
+mirror-image model.
 Before the expensive validation batch it writes clean front/right/top/iso
 views, searches the camera for every reference, compares the source with the
 fresh STEP, and runs the 0.90 likeness gate. Read
