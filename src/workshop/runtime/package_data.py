@@ -62,8 +62,6 @@ _PRODUCT_RUN_DOMAIN_SKILL_PATHS = (
     ("manual-design", Path("release/skills/manual-design")),
     ("product-design", Path("make/skills/product-design")),
     ("step-parts", Path("make/skills/step-parts")),
-    ("step-to-source", Path("make/skills/step-to-source")),
-    ("stl-to-step", Path("make/skills/stl-to-step")),
     ("wiki", Path("make/skills/wiki")),
 )
 PRODUCT_RUN_DOMAIN_SKILLS = tuple(

@@ -1,3 +1,0 @@
-# OCP arrives with build123d and is all the built-in backend needs. The other
-# two backends are external programs: see references/backends.md.
-build123d>=0.9

@@ -2813,8 +2813,6 @@ class NativeHostTest(unittest.TestCase):
                 "manual-design",
                 "product-design",
                 "step-parts",
-                "step-to-source",
-                "stl-to-step",
                 "wiki",
             ):
                 self.assertTrue(

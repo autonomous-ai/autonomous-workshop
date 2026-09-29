@@ -6,8 +6,8 @@ required materials retain their own licenses.
 ## Peter's product-to-CAD tools
 
 The `cad`, `design-reference`, `electromechanical-integration`,
-`image-to-cad`, `product-design`, `step-parts`, `step-to-source`,
-`stl-to-step`, and `wiki` skills under `src/workshop/make/skills/` derive from
+`image-to-cad`, `product-design`, `step-parts`, and `wiki` skills under
+`src/workshop/make/skills/` derive from
 [`autonomous-ai/autonomous-product-to-cad`](https://github.com/autonomous-ai/autonomous-product-to-cad).
 Their exact reviewed revisions and local adaptations are recorded in
 `src/workshop/make/skills/PROVENANCE.md` and their installed byte identities in
@@ -28,16 +28,13 @@ sources is included, and the names are used to identify the stock a part is
 printed in.
 
 The pinned upstream `design-reference`, `electromechanical-integration`,
-`image-to-cad`, `product-design`, `step-to-source`, `stl-to-step`, and `wiki`
-trees do not contain standalone license files. Their inclusion does not imply
-that the MIT license above applies to them. `design-reference` bundles no
-dataset and downloads nothing; it directs Internet research whose results are
-cited by URL, revision and license in the build spec rather than fetched into
-the repository. The `wiki` pages summarise engineering knowledge in their own
-words and cite each outside source in their front matter; they bundle no copy
-of a standard's tables. `stl-to-step` can install two external converters on
-request (`2step`, MIT; `stltostp`, BSD); neither is bundled, Workshop installs
-neither, and a product run never installs one.
+`image-to-cad`, `product-design`, and `wiki` trees do not contain standalone
+license files. Their inclusion does not imply that the MIT license above
+applies to them. `design-reference` bundles no dataset and downloads nothing;
+it directs Internet research whose results are cited by URL, revision and
+license in the build spec rather than fetched into the repository. The `wiki`
+pages summarise engineering knowledge in their own words and cite each outside
+source in their front matter; they bundle no copy of a standard's tables.
 
 The `cad` skill's `scripts/stdpart` builds standard elements through two
 required dependencies that Workshop pins and does not vendor:

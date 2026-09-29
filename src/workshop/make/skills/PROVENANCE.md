@@ -1,6 +1,6 @@
 # Shared skill provenance
 
-## Resync to upstream `bd1dcdc`: the wiki replaces `mechanisms`, three skills join (2026-09-29)
+## Resync to upstream `bd1dcdc`: the wiki replaces `mechanisms`, `product-design` joins (2026-09-29)
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
   `bd1dcdc0426e562d3e09bdc3d61cf0868b9f26fa` (2026-09-29), resynced from
@@ -19,14 +19,18 @@
   `mechanisms` pages are wiki pages now, and the resynced `cad`,
   `image-to-cad` and `electromechanical-integration` references point into
   roughly forty of them for knowledge they used to carry themselves.
-- **New skills, materialized into every product run:** `wiki`,
+- **New skills, materialized into every product run:** `wiki` and
   `product-design` (an industrial-design pass for a prose request: survey,
   direction, concept selection, sizing and recorded review rounds, ending in
-  the same `<name>_spec.md` `image-to-cad` writes), `step-to-source` (recover
-  or re-author build123d source from a STEP with no generator, then release
-  the references and assemble) and `stl-to-step` (convert a supplied mesh into
-  a verified reference STEP). Upstream's `toy-archive` is **not** adopted: its
-  `publish` wraps a Factory effect, which only the host may perform.
+  the same `<name>_spec.md` `image-to-cad` writes).
+- **Not adopted:** upstream's `toy-archive`, whose `publish` wraps a Factory
+  effect only the host may perform, and its reverse-engineering pair,
+  `step-to-source` (recover or re-author build123d source from a STEP with no
+  generator) and `stl-to-step` (convert a supplied mesh into a reference STEP).
+  A Wish supplies reference images, not meshes or STEPs to rebuild, so neither
+  has input in a run. The wiki's `reverse-engineering/` pages still cite them;
+  the wiki's `SKILL.md` says they are not Workshop skills, and
+  `product-design`'s says a supplied STL or STEP still does not fire it.
 - **What else upstream brought.** `cad`: `scripts/stdpart` and
   `references/standard-elements.md`, standard fasteners, bearings, keys and
   gears built by `bd_warehouse` and `py_gearworks` with the mating feature
@@ -85,11 +89,9 @@ Workshop adaptations of the new text:
 - **Paths.** Runnable command lines use the `$<NAME>_SKILL_ROOT` form the
   earlier resyncs used, and `wiki search` becomes
   `python "$(workshop skills path)/wiki/scripts/wiki" search`. Prose pointers
-  such as `skills/wiki/pages/printing/fit-derivation.md`, and the commands the
-  new skills' planners print, stay upstream's bytes. One note in each
-  `SKILL.md` resolves `skills/<name>/...` under `$(workshop skills path)`. No
-  script in `wiki`, `product-design`, `step-to-source` or `stl-to-step`
-  changed.
+  such as `skills/wiki/pages/printing/fit-derivation.md` stay upstream's
+  bytes. One note in each `SKILL.md` resolves `skills/<name>/...` under
+  `$(workshop skills path)`. No script in `wiki` or `product-design` changed.
 - **Write-back.** Upstream now ends every edit by writing what it taught into
   `skills/wiki`. A product run's skills are read-only (`0400`) and hash-bound
   into its input manifest, so the wiki is consult-only there. The `cad` step 14
@@ -102,18 +104,12 @@ Workshop adaptations of the new text:
   rounds spend Make's frozen round and review allowance and never replace the
   blind signature review. Its spec lives in the run's CAD project, and it adds
   no `--fresh`.
-- **`step-to-source`** may release (delete) only a reference the run itself
-  converted or copied into its project, never a sealed Wish reference or other
-  host input.
-- **`stl-to-step`** never runs `--install` in a product run: there is no user
-  to approve a 7.6 GB download or a build of outside code. A mesh that needs a
-  missing backend is reported as blocked.
 
 Host changes the new trees force:
 
-- **Run input caps.** A run now materializes about 480 inputs and 4.4 MiB
+- **Run input caps.** A run now materializes about 460 inputs and 4.2 MiB
   (about 300 and 3 MiB before). That crossed `MAX_AGENT_INPUT_BYTES` (4 MiB)
-  and left about 30 files under `MAX_AGENT_INPUT_FILES` (512) for Wish
+  and left about 55 files under `MAX_AGENT_INPUT_FILES` (512) for Wish
   references and an imported correction tree. The caps rise to 6 MiB and 768
   files, restoring the headroom they had. The agent-run test that materializes
   the complete installed inventory now holds it at least 1 MiB and 200 files
@@ -137,20 +133,20 @@ Verified here: every tree's self-check passes — `verify_project` (camera and
 against Workshop's walk), `render_views`, `check_likeness`, `measure_image`,
 `check_overhang`, `meshlib`, `printlib`, `repair_mesh`, `cadfits`,
 `cadmount`, `cadfilament` (all 51 colours round-trip), `cadcache`, `stdpart`,
-`check_power`, `download_step_part`, the three `stl-to-step` and six
-`step-to-source` tools, `make_round`, and `wiki lint` (178 pages, 0 errors).
+`check_power`, `download_step_part`, `make_round`, and `wiki lint` (178
+pages, 0 errors).
 
 Consequences for existing runs:
 
 - **Materialized instruction bytes changed.** Every upstream fingerprint moves
-  except `step-parts`, `make-round`'s moves with its camera plumbing, four
-  trees are added and one is dropped, and the
-  product-run `make.md` and `make-playtest.md` change. A run parked before this
+  except `step-parts`, `make-round`'s moves with its camera plumbing, two
+  trees are added and one is dropped, and the product-run `make.md` and
+  `make-playtest.md` change. A run parked before this
   change must be restarted rather than resumed; resume fails closed on the
   materialized-instruction-hash mismatch.
 - `workshop resume --refresh-tools` rewrites only the skills a run already
   carries. A parked run gains the resynced trees and, for a token-budget run,
-  the new `make.md`. It never gains the four new trees and keeps its own
+  the new `make.md`. It never gains the two new trees and keeps its own
   `mechanisms`. The resynced `cad` reaches the wiki through
   `$(workshop skills path)`, which is the installed package. An
   image-derived final in such a run now needs a camera per reference, and the

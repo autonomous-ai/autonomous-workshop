@@ -32,7 +32,9 @@ recorded back in the spec.
 `CAD_SKILL_ROOT="$(workshop skills path)/cad"` and
 `IMAGE_TO_CAD_SKILL_ROOT="$(workshop skills path)/image-to-cad"`, and read a
 `skills/<name>/...` path in these pages under
-`"$(workshop skills path)/<name>/"`. Five things change there:
+`"$(workshop skills path)/<name>/"`. Upstream's `$stl-to-step` and
+`$step-to-source` are not Workshop skills; a supplied STL or STEP still does
+not fire this one. Five things change there:
 
 - **It fires only while the design is open**: a prose Wish with no sealed
   Invent concept, Design Contract or reference image. A sealed concept or

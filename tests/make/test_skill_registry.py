@@ -54,8 +54,6 @@ class SkillFingerprintTest(unittest.TestCase):
                 "make-round",
                 "product-design",
                 "step-parts",
-                "step-to-source",
-                "stl-to-step",
                 "wiki",
             },
         )

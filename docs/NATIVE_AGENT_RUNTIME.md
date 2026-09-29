@@ -922,8 +922,7 @@ Canonical product-run sources live at:
 .agents/product-run/AGENTS.md
 .agents/product-run/.agents/skills/autonomous-workshop/**
 src/workshop/make/skills/{cad,design-reference,electromechanical-integration,
-                          image-to-cad,product-design,step-parts,
-                          step-to-source,stl-to-step,wiki}/**
+                          image-to-cad,product-design,step-parts,wiki}/**
 src/workshop/release/skills/manual-design/**
 inventors/<id>/{inventor.json,TASTE.md,skills/**}
 ```
