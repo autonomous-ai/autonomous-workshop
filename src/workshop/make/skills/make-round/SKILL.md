@@ -1,6 +1,6 @@
 ---
 name: make-round
-description: Run isolated component or assembled-object Make repair rounds with deterministic CAD checks and native visual inspection. Render the selected scope, inspect form and proportions, and record visual errors alongside likeness, build and motion results. Does not replace independent blind review or final verification.
+description: Run isolated component or assembled-object Make repair rounds with deterministic CAD checks and visual comparison. Render the selected scope beside each reference at its declared camera; an independent reviewer judges each component, the Manager records assembly findings alongside build, print and motion results. Does not replace independent blind review or final verification.
 ---
 
 **Motion verification is opt-in.** Standalone `make_round` and `verify_project`
@@ -89,8 +89,10 @@ calls were reassembling by hand.
 ## Rules
 
 - Run `make_round` once per repair round, after editing source and before
-  deciding what to repair next. Then inspect the visual packet and record the
-  Manager's findings using `--record-visual` without rebuilding. Read its summary; open a full report only
+  deciding what to repair next. For a component round, have an independent
+  reviewer judge the visual packet and record it with `--record-review`; for
+  an assembly round, inspect the packet yourself and record your findings
+  with `--record-visual`. Neither rebuilds. Read its summary; open a full report only
   when the summary names a failure you cannot place.
 - A round can take minutes. Start `make_round` with `yield_time_ms: 30000` and,
   while it runs, continue it with an empty `write_stdin` poll at
@@ -100,22 +102,22 @@ calls were reassembling by hand.
   into a poll: it is an output budget there, and as a yield it is worse than
   the 10000 ms default. Omit `yield_time_ms` before writing a small one. Never
   put a `sleep` between polls: each poll re-sends the whole session.
-- Do not read the cad or image-to-cad scripts to learn their flags. The
+- Do not read the cad scripts to learn their flags. The
   exact invocations are below; they are the same programs the host gates
   run, unchanged.
 - View each image at most once per round. Always inspect the front, top and iso
   views in `visual-packet.json`, together with the Wish, concept, dimensions and
   reference images when present. Look for misplaced, missing or extra parts,
   size/proportion mismatch, visible intersections, wrong orientation, floating
-  geometry and incorrect form. A high likeness score cannot establish visual
-  correctness. Use a targeted additional view if a part is hidden; record
+  geometry and incorrect form. Use a targeted additional view if a part is hidden; record
   unresolved visibility as inconclusive rather than claiming a pass.
-- For every scored reference the packet also holds `compare-NN.png`: the
-  reference beside the model rendered at the pose the likeness gate matched,
-  both at one height. Judge form there. Look for bodies thinner or blockier
-  than the reference, openings or gaps it shows that the model fills, members
-  merged or missing, and detail simplified away. Silhouette IoU cannot see
-  any of these.
+- For every reference the packet also holds `compare-NN.png`: the reference
+  beside the model rendered at the reference's declared camera (`@AZ,EL`, or
+  the front view when none is declared), both at one height. Judge form
+  there. Look for bodies thinner or blockier than the reference, openings or
+  gaps it shows that the model fills, members merged or missing, and detail
+  simplified away. No silhouette score is computed anywhere in the Make
+  loop (ADR 0076).
 - `make_round` never lowers a threshold, never edits source, and never
   replaces the final `verify_project` run the Make gate requires. It writes
   round reports under `<project>/measure/rounds/`, component histories under
@@ -132,7 +134,7 @@ calls were reassembling by hand.
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
     --ref hero=<project>/cad/ref/hero.png@-60,20 [--ref side=...@0,0] \
-    [--min 0.90] [--nozzle 0.4] [--overhang-angle 45] \
+    [--nozzle 0.4] [--overhang-angle 45] \
     [--all-parts] [--check-motion true|false] [--json]
 ```
 
@@ -159,29 +161,29 @@ component geometry.
 
 - `<project>/cad` is the directory holding the generator sources: exactly one
   entry `<name>.step.py` and any number of `part_<role>.step.py`.
-- `--ref LABEL=PATH@AZ,EL[,TOL]` repeats once per reference view. The suffix
-  is the camera the image was taken from (degrees; front `-90,0`, right `0,0`,
-  iso `-45,35`; TOL defaults to 30): `render_views` searches only inside that
-  window and flags a model built the wrong way round, and `--full` passes it to
-  `verify_project --image-derived`, which refuses a reference without one.
-  Omitted, the labels are read from the project's `*_spec.md`: a
+- `--ref LABEL=PATH@AZ,EL` repeats once per reference view. The suffix is
+  the camera the image was taken from (degrees; front `-90,0`, right `0,0`,
+  iso `-45,35`); the model is rendered at that camera beside the reference.
+  Without a suffix the model is shown from the front. A trailing `,TOL` is
+  accepted and ignored. Omitted, the labels are read from the project's `*_spec.md`: a
   `LABEL=ref/<file>@AZ,EL` line or a row of the build spec's Likeness handoff
   table, whose camera column supplies the camera.
-- Every reference the Wish sealed under `wish-references/` is scored in the
+- Every reference the Wish sealed under `wish-references/` is shown in the
   assembly round without being named anywhere (ADR 0072). It is labelled by
-  its file stem, for example `ref-01-hero`. The one exception is a sealed
-  reference that a current, passing component round already scored at or
-  above the floor. To use that exception for a reference that shows a single
-  Component, pass `--ref LABEL=wish-references/<file>` to that Component's
-  round. Otherwise the reference is scored against the whole object and
-  fails there. A sealed reference that is missing or has changed fails the
-  round. The ledger only needs to list references you found yourself.
+  its file stem, for example `ref-01-hero`, or in Contract Mode by the
+  contract's `shows` label. The exception is a sealed reference that a
+  current, passing component round already showed its reviewer. In Contract
+  Mode a component round shows its own `geometry:<id>` image automatically;
+  outside it, pass `--ref LABEL=wish-references/<file>` to that Component's
+  round. A `geometry:<id>` image with no current passing component round fails
+  the assembly round; the assembly never shows it against the whole object.
+  A reference that is missing or has changed fails the round. The ledger only
+  needs to list references you found yourself.
 - The Wish seals a reference's pixels, not the camera it was taken from. To
   give a sealed reference its camera, pass a `--ref` (or ledger entry) that
   points at that file, or a byte-identical copy of it, with the camera
-  suffix: the sealed image is still scored once, under its sealed label, now
-  from that camera. `--full` fails in `verify_project` while any scored
-  reference still has no camera.
+  suffix: the sealed image is still shown once, under its sealed label, now
+  from that camera.
 - `--nozzle` is the diameter the print will use and sets the minimum wall;
   `--overhang-angle` is the slope from vertical the printer bridges unsupported.
 - Only parts whose written STEP bytes changed since the previous round are
@@ -201,15 +203,59 @@ component geometry.
   (parts with a fresh build verdict, including build failures), `print` (the
   per-part wall and overhang verdicts with their measurements) and `reused`
   (parts whose gate evidence was carried forward).
-- The initial command returns exit 1 with visual status `pending` until native
-  feedback is recorded, even if all numeric checks pass. A renderer failure
-  produces visual status `error`; never fabricate feedback for missing images.
-- Exit 0 means numeric checks and recorded visual feedback pass; 1 means failed,
-  inconclusive or pending; 2 means invalid input or the round could not run.
+- The initial command returns exit 1 with visual status `pending` until the
+  review (component) or native feedback (assembly) is recorded, even if all
+  numeric checks pass. A renderer failure produces visual status `error`;
+  never fabricate a review or feedback for missing images.
+- Exit 0 means numeric checks and the recorded review or visual feedback
+  pass; 1 means failed, inconclusive or pending; 2 means invalid input, a
+  refused review, or the round could not run.
 
-## Record visual feedback
+## Review a component round
 
-The native Manager performs the visual judgment. Python renders and hashes
+A component passes when it builds, its print gates pass and an independent
+reviewer agrees that it looks like its reference (ADR 0076). The Workshop
+Manager does not judge its own component: spawn a fresh subagent that did not
+author the Component. Give it the round's `visual-packet.json` images (front,
+top, iso and every `compare-NN.png`) and that geometry's contract lines, and
+ask whether the model looks like its reference. Write its answer with the
+exact packet hash from the summary:
+
+```json
+{"round": 3, "packet_sha256": "<visual packet hash from summary>",
+ "reviewer": "<subagent name>", "agrees": false,
+ "reason": "The arm reads half as thick as the reference.",
+ "differences": [{"feature": "upper arm", "reference": "as thick as the leg",
+                  "model": "half the leg's thickness"}]}
+```
+
+`differences` (at most 12) is required when `agrees` is false and is the
+repair list for the next round. Then record it without rebuilding:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+    --component part_<role>.step.py --record-review <review.json>
+```
+
+It refuses a review of a round that is not the latest, a different packet
+hash, changed sources, packet, renders, references or comparisons, a round
+whose build or print checks failed, a second review of the same round, and a
+reviewer named as the Workshop Manager. It cannot prove who the reviewer was;
+the Manager must not write the review itself.
+
+A **shape round** is a component round that changes the geometry of a
+component whose previous round passed its checks. Repairs of build or print
+failures and reruns without a geometry change do not count; the summary shows
+`shape N/5`. After five shape rounds, a round that passed its checks must be
+reviewed before another may start (`make_round` exits 2 until then). At that
+point an agreeing review passes the component; a disagreeing one is recorded
+as a **component acceptance** that the run reports when it ends, so the loop
+cannot run on without end. Once that review is recorded, a later round may
+still run, for example when the assembly needs the part changed.
+
+## Record assembly visual feedback
+
+The native Manager performs the assembly's visual judgment. Python renders and hashes
 evidence; it never calls a vision model, diagnoses an image or chooses repairs.
 After inspecting the packet, write this JSON with the exact packet hash from
 the summary. Each defect names the affected part, visible error, view/location
@@ -232,8 +278,8 @@ evidence, and proposed source correction. Keep observations short and concrete.
 Use `pass` with an empty findings list only after inspection finds no errors;
 use `inconclusive` and describe the missing evidence when a verdict is impossible.
 
-When a scored reference is below the floor, add `differences`: every way the
-model's form differs from that reference in `compare-NN.png`, at most 12.
+Add `differences` for every way the model's form differs from a reference in
+`compare-NN.png`, at most 12.
 
 ```json
 "differences": [{
@@ -247,54 +293,21 @@ model's form differs from that reference in `compare-NN.png`, at most 12.
 
 `decision` is `repair` or `keep`. A difference to `repair` cannot pass; it
 needs a matching finding and a new round. A kept difference names what forces
-it. An empty list below the floor is refused, and so is an observation that
-repeats the previous round's: inspect each round's images afresh (ADR 0075).
+it. An observation that repeats the previous round's is refused: inspect each
+round's images afresh (ADR 0075).
 Then run:
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
-    [--component part_<role>.step.py] --record-visual <feedback.json>
+    --record-visual <feedback.json>
 ```
 
 This updates the same round's summary with detected visual errors. It rejects
 changed source/constraint bytes, changed renders/references/comparisons, wrong
-packet hashes, contradictory findings, missing differences below the floor, a
-copied observation and repeat submissions. Source edits start a new round;
+packet hashes, contradictory findings, a copied observation and repeat
+submissions. A component round does not take `--record-visual`. Source edits start a new round;
 never rebind prior prose to new hashes. Manager self-review does not consume or
 replace the independent blind critic allowance.
-
-## Accept a stalled-out component image
-
-In Contract Mode a component round scores its sealed `geometry:<id>` image at
-the 0.90 floor (ADR 0074). An image below the floor is stalled out after three
-rounds that each changed the Component's geometry without raising IoU by more
-than 0.005. A rerun that changed no geometry neither counts nor resets the
-count (ADR 0075). The summary shows `stalled N/3` and the heights where the
-model's width misfits the reference most.
-
-A stalled-out image may be accepted only after an independent review. Spawn a
-fresh subagent that did not author the Component. Give it the latest round's
-`compare-NN.png` images and that geometry's contract lines, and ask whether
-the remaining differences are acceptable. Write its answer:
-
-```json
-{"round": 7, "comparisons": {"<path from the packet>": "<sha256>"},
- "reviewer": "<subagent name>", "agrees": true, "reason": "<why>"}
-```
-
-Then rerun the same round without editing:
-
-```sh
-"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
-    --component part_<role>.step.py --accept-likeness "<reason>" \
-    --acceptance-review <review.json>
-```
-
-The round refuses the acceptance when the image has not stalled out, the
-review names another round or other images, the reviewer is the Workshop
-Manager, the reviewer did not agree, or the geometry changed after the
-reviewed round. It cannot prove who the reviewer was; the Manager must not
-write the review itself.
 
 ## Final review
 
@@ -307,40 +320,31 @@ just to run it. The host alone performs the authoritative `--fresh` rebuild.
 
 ## Summary
 
-The summary names, in order: the changed parts and their build verdicts, the
-likeness score per view with the change since
-the previous round, the pose it was scored at and, below the floor, the
-heights where the width misfits most, the motion gate verdict,
-the native visual findings and differences, and the `--full` verdict when requested. Everything the tools printed is kept
+The summary names, in order: the changed parts with their build and print
+verdicts, any reference that could not be shown, which round each sealed
+reference was shown to, a component's shape-round count, the motion gate
+verdict, the visual findings and differences, the component review and any
+acceptance at the shape-repair limit, and the `--full` verdict when requested. Everything the tools printed is kept
 under `measure/rounds/rNNNN/` beside `summary.json`.
 
 ## Tool card
 
 Every gate `make_round` runs, exactly as it runs it. `$C` is
-`.agents/skills/cad/scripts`, `$I` is `.agents/skills/image-to-cad/scripts`.
+`.agents/skills/cad/scripts`.
 
 | Step | Invocation | Reads |
 |---|---|---|
 | build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
-| likeness | `"$WORKSHOP_PYTHON" $I/render_views.py <entry>.step.py --match <ref.png> --label <L> --min 0.90 -o <dir> --shaded --json [--camera=AZ,EL[,TOL]] [--poses-from <prev poses.json>]` | `results[].iou`, `.ok`, `.az/.el/.roll/.fov` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
-| inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view front --view top --view iso -o <round>/visual` | exact shaded PNGs for native Manager inspection of one component or the assembly |
-| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit [--image-derived --likeness-ref L=PATH@AZ,EL[,TOL] ...] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
+| inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view front --view top --view iso [--view=AZ,EL ...] -o <round>/visual` | exact shaded PNGs, one per reference camera, composed into `compare-NN.png` beside each reference |
+| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit --print-gates [--image-derived] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
 | motion sheet | `"$WORKSHOP_PYTHON" $C/motion_presentation.py` (see the cad skill) | presentation only, not a gate |
-
-`render_views.py --match` searches the camera pose and scores with the
-likeness gate's own comparison; `--poses-from` replays the previous round's
-pose so consecutive rounds measure the model, not the camera. Each reference
-keeps its own pose file; the summary records the selected file as
-`poses_path`. A bounded search writes separate evidence, and its pose is
-retained only when its score is better than the replay. A reference
-with a transparent background is read from its alpha channel. When the replay scores under the floor, `make_round` re-searches a +/-30 degree window around that camera and keeps the better score, marked `(re-searched)` in the summary; a moved part is otherwise scored under a stale camera. A replay that `render_views` refuses because its stored pose sits outside the declared camera window is re-searched the same way, inside that window.
 
 ## What this is not
 
 It batches deterministic tools and records native judgment. Numeric verdicts
-come from the original tools; visual findings come from the Manager's actual
-image inspection. It cannot independently verify the truth of those findings.
+come from the original tools; visual judgments come from the reviewer's or
+the Manager's actual image inspection. It cannot independently verify the truth of those findings.
 The thresholds are the tools' defaults unless you pass them, and the
 final Make proposal still requires the integrated `verify_project` run the
 cad skill describes.

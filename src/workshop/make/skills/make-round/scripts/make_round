@@ -1,32 +1,35 @@
 #!/usr/bin/env python3
-"""One Make iteration: build, print gates, likeness, motion, visual feedback.
+"""One Make iteration: build, print gates, motion, comparison images, review.
 
     make_round <project>/cad [--component part_<role>.step.py]
                [--require-component-passes] [--ref LABEL=PATH[@AZ,EL[,TOL]] ...]
-               [--min 0.90]
-               [--accept-likeness REASON --acceptance-review REVIEW.json]
                [--nozzle 0.4] [--overhang-angle 45] [--all-parts] [--no-motion]
                [--full] [--out DIR] [--json] [--record-visual FEEDBACK.json]
-               [--self-check]
+               [--record-review REVIEW.json] [--self-check]
 
-Every verdict comes from the original cad and image-to-cad tools, run
-unchanged; this script only sequences them, remembers what changed between
-rounds, and prints a summary short enough to read instead of the logs. It
-never lowers a threshold or edits source. An assembly round scores every
-reference the Wish sealed, unless a current component round already scored it;
-it never passes on an empty reference list when the Wish has references.
-In Contract Mode a component round scores the sealed image of its own Unique
-Geometry, and the assembly never scores that image against the whole object
-(ADR 0074).
-Every scored reference is also composed beside the model, rendered at the
-pose the likeness gate matched, so the native review compares form rather than
-three views of the model alone; below the floor that review must list the
-differences it sees (ADR 0075).
-Native Manager visual observations are recorded against exact evidence; this
-tool makes no model calls.
+Every verdict comes from the original cad tools, run unchanged; this script
+only sequences them, remembers what changed between rounds, and prints a
+summary short enough to read instead of the logs. It never lowers a threshold
+or edits source. No silhouette score is computed: every reference is composed
+beside the model, rendered at the camera the reference declares, and a reader
+compares their form (ADR 0076).
 
-Exit 0: all checks and native visual feedback passed. Exit 1: failed or pending. Exit 2: the
-round could not run.
+An assembly round shows every reference the Wish sealed, unless a current
+component round already showed it; it never passes on an empty reference list
+when the Wish has references. In Contract Mode a component round shows the
+sealed image of its own Unique Geometry, and the assembly never shows that
+image against the whole object.
+
+A component round passes on build, print gates and an independent reviewer's
+recorded agreement (--record-review). A round that changes the geometry of a
+component whose previous round passed its checks is a shape round; after
+SHAPE_REPAIR_LIMIT of them a disagreeing review is recorded as a component
+acceptance the run reports when it ends. The assembly round keeps the
+Workshop Manager's --record-visual, the blind review and --full.
+This tool makes no model calls.
+
+Exit 0: all checks and the recorded review passed. Exit 1: failed or pending.
+Exit 2: the round could not run.
 """
 
 from __future__ import annotations
@@ -51,21 +54,18 @@ COMPONENT_ROUNDS_DIR = "component-rounds"
 TOOL_TIMEOUT_SECONDS = 900
 FULL_TIMEOUT_SECONDS = 1800
 MAX_TAIL_CHARS = 600
-# Keep these in step with check_likeness.STALL_DELTA and STALL_STREAK: a round
-# that moves IoU by no more than the delta did not move it, and that many such
-# rounds in a row is a stalled-out image the Manager may accept (ADR 0074).
-# Only a round whose geometry changed counts toward the streak (ADR 0075).
-STALL_DELTA = 0.005
-STALL_STREAK = 3
+# A component gets this many shape rounds before a disagreeing review becomes
+# a recorded component acceptance instead of another repair (ADR 0076).
+SHAPE_REPAIR_LIMIT = 5
 GEOMETRY_LABEL = "geometry:"
-MAX_ACCEPT_REASON = 1000
+MAX_REASON = 1000
 MAX_DIFFERENCES = 12
 # An observation that repeats the previous round's at least this long was
 # copied, not made (ADR 0075).
 COPIED_OBSERVATION_CHARS = 40
 COMPARISON_HEIGHT = 480
-# Names that identify the Workshop Manager; an acceptance review must come
-# from someone else (ADR 0075).
+# Names that identify the Workshop Manager; a component review must come from
+# someone else (ADR 0075, ADR 0076).
 MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
 _GEOMETRY_DEADLINES = {}
 
@@ -88,9 +88,9 @@ def source_hashes(project):
 
 
 def compose_comparison(reference: Path, render: Path, out_path: Path, caption: str) -> None:
-    """The reference beside the model at the matched pose, both scaled to one
-    height as the likeness gate normalises them, so a thinner limb, a blockier
-    body or a missing opening shows as a difference of form (ADR 0075)."""
+    """The reference beside the model at the reference's camera, both scaled to
+    one height, so a thinner limb, a blockier body or a missing opening shows
+    as a difference of form (ADR 0075)."""
 
     from PIL import Image, ImageDraw
 
@@ -110,39 +110,55 @@ def compose_comparison(reference: Path, render: Path, out_path: Path, caption: s
     canvas.save(out_path)
 
 
-def prepare_comparisons(project, out, refs, likeness):
-    """``(comparisons, error)``: one composed image per scored reference."""
+def reference_view(ref: str) -> tuple[str, str, str]:
+    """``(render_review --view value, output stem, caption camera)`` for one
+    reference: its declared ``@AZ,EL`` camera, else the front view. A declared
+    tolerance only mattered to the removed pose search."""
 
-    paths = dict(refs)
+    camera = split_camera(ref)[1]
+    if camera is None:
+        return "front", "front", "front (no declared camera)"
+    az, el = (float(v) for v in camera.split(",")[:2])
+    # render_review names an AZ,EL view az{:g}_el{:g}.
+    return "%g,%g" % (az, el), "az%g_el%g" % (az, el), "%g,%g" % (az, el)
+
+
+def prepare_comparisons(project, out, refs):
+    """``(comparisons, error)``: one composed image per shown reference."""
+
+    views = out / "visual"
     comparisons = {}
-    for index, item in enumerate(likeness):
-        if "iou" not in item:
-            continue
-        reference = resolve_reference(paths.get(item["label"], ""), project) if item["label"] in paths else None
-        render = Path(item["shaded"]) if item.get("shaded") else None
-        if reference is None or render is None or not render.is_file():
-            return {}, "no shaded render at the matched pose for %s" % item["label"]
-        target = out / "visual" / ("compare-%02d.png" % index)
-        caption = "%s  reference | model at the matched pose  IoU %.3f" % (item["label"], item["iou"])
+    for index, (label, ref) in enumerate(refs):
+        reference = resolve_reference(ref, project)
+        _view, stem, caption_camera = reference_view(ref)
+        render = views / (stem + ".png")
+        if reference is None or not render.is_file():
+            return {}, "no model render at the declared camera for %s" % label
+        target = views / ("compare-%02d.png" % index)
+        caption = "%s  reference | model at declared camera %s" % (label, caption_camera)
         try:
             compose_comparison(reference, render, target, caption)
         except Exception as exc:  # noqa: BLE001 - any unreadable image leaves no evidence
-            return {}, "could not compose the comparison for %s: %s" % (item["label"], exc)
-        comparisons[str(target.resolve())] = {"label": item["label"], "sha256": file_hash(target)}
+            return {}, "could not compose the comparison for %s: %s" % (label, exc)
+        comparisons[str(target.resolve())] = {"label": label, "sha256": file_hash(target)}
     return comparisons, None
 
 
-def prepare_visual(project, entry, out, cad, refs, likeness=()):
+def prepare_visual(project, entry, out, cad, refs, component=False):
     """Render evidence for native inspection; never infer a visual verdict."""
     before = source_hashes(project)
     views = out / "visual"
-    done = run([sys.executable, str(cad / "render_review"), str(entry),
-                "--view", "front", "--view", "top", "--view", "iso", "-o", str(views)],
-               cwd=project, log=out / "visual-render.log")
+    command = [sys.executable, str(cad / "render_review"), str(entry),
+               "--view", "front", "--view", "top", "--view", "iso"]
+    for view in dict.fromkeys(reference_view(ref)[0] for _label, ref in refs):
+        if view not in ("front", "top", "iso"):
+            # the = form: argparse reads a leading "-" as a new option
+            command.append("--view=%s" % view)
+    done = run(command + ["-o", str(views)], cwd=project, log=out / "visual-render.log")
     paths = [views / (v + ".png") for v in ("front", "top", "iso")]
     if done.returncode or not all(p.is_file() for p in paths) or before != source_hashes(project):
         return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}
-    comparisons, error = prepare_comparisons(project, out, refs, likeness)
+    comparisons, error = prepare_comparisons(project, out, refs)
     if error is not None:
         return {"status": "error", "findings": [], "detail": error}
     references = {}
@@ -150,15 +166,19 @@ def prepare_visual(project, entry, out, cad, refs, likeness=()):
         path = resolve_reference(ref, project)
         if path is not None:
             references[str(path.resolve())] = file_hash(path)
-    packet = {"schema_version": 2, "sources": before,
+    packet = {"schema_version": 3, "sources": before,
               "images": {str(p.resolve()): file_hash(p) for p in paths},
               "references": references,
               "comparisons": comparisons}
     packet_path = out / "visual-packet.json"
     packet_path.write_text(json.dumps(packet, sort_keys=True, indent=2) + "\n", encoding="utf-8")
-    detail = "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"
-    if comparisons:
-        detail += "; compare each reference with the model beside it and list every difference of form"
+    if component:
+        detail = ("An independent reviewer (not the Workshop Manager) compares each reference with the model "
+                  "beside it and all views; record the review with --record-review <review.json>")
+    else:
+        detail = "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"
+        if comparisons:
+            detail += "; compare each reference with the model beside it and list every difference of form"
     return {"status": "pending", "findings": [], "packet": str(packet_path),
             "packet_sha256": file_hash(packet_path), "detail": detail}
 
@@ -186,47 +206,39 @@ def state_and_round_root(project: Path, component: str | None) -> tuple[Path, Pa
     return root / STATE_NAME, root
 
 
-def record_visual(project, feedback_path, full=False, component=None, check_motion=None):
-    """Attach native observations to the last round without rebuilding it."""
-    if component is not None and full:
-        raise ValueError("--full is only valid for the assembled-object round")
-    state_path, _ = state_and_round_root(project, component)
-    state = json.loads(state_path.read_text())
-    if component is None:
-        out = Path(state["last_out"])
-    else:
-        role, source = component_role(project, component)
-        round_value = state.get("round")
-        if (
-            type(round_value) is not int
-            or round_value < 1
-            or state.get("scope") != "component:%s" % role
-        ):
-            raise ValueError("component round state is invalid")
-        out = state_path.parent / ("r%04d" % round_value)
-    summary_path = out / "summary.json"
-    summary = json.loads(summary_path.read_text())
-    if component is not None and (
-        summary.get("scope") != "component:%s" % role
-        or summary.get("entry") != source.name
-        or summary.get("parts") != [role]
-    ):
-        raise ValueError("component round summary is invalid")
-    visual = summary["visual"]
-    if visual["status"] != "pending":
-        raise ValueError("visual feedback is only accepted once for a pending round")
+def packet_error(visual: dict, project: Path) -> str | None:
+    """Why a round's visual packet no longer shows the current evidence, or None."""
+
     packet_path = Path(visual["packet"])
     if file_hash(packet_path) != visual["packet_sha256"]:
-        raise ValueError("visual packet changed")
+        return "visual packet changed"
     packet = json.loads(packet_path.read_text())
     if packet["sources"] != source_hashes(project):
-        raise ValueError("visual feedback has stale CAD sources or design constraints")
+        return "stale CAD sources or design constraints"
     comparisons = packet.get("comparisons") or {}
     bound = {**packet["images"], **packet["references"],
              **{path: item["sha256"] for path, item in comparisons.items()}}
     for path, digest in bound.items():
-        if file_hash(path) != digest:
-            raise ValueError("visual feedback has stale images or references")
+        if not Path(path).is_file() or file_hash(path) != digest:
+            return "stale images or references"
+    return None
+
+
+def record_visual(project, feedback_path, full=False, component=None, check_motion=None):
+    """Attach native observations to the last assembly round without rebuilding it."""
+    if component is not None:
+        raise ValueError("a component round is judged by an independent reviewer: use --record-review")
+    state_path, _ = state_and_round_root(project, None)
+    state = json.loads(state_path.read_text())
+    out = Path(state["last_out"])
+    summary_path = out / "summary.json"
+    summary = json.loads(summary_path.read_text())
+    visual = summary["visual"]
+    if visual["status"] != "pending":
+        raise ValueError("visual feedback is only accepted once for a pending round")
+    stale = packet_error(visual, project)
+    if stale is not None:
+        raise ValueError("visual packet changed" if stale == "visual packet changed" else "visual feedback has %s" % stale)
     feedback = json.loads(Path(feedback_path).read_text())
     required = {"packet_sha256", "status", "findings", "observation"}
     if not required <= set(feedback) or not set(feedback) <= required | {"differences"}:
@@ -247,7 +259,7 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
         raise ValueError("visual status contradicts findings")
     if not isinstance(feedback["observation"], str) or not 1 <= len(feedback["observation"].strip()) <= 2000:
         raise ValueError("visual feedback needs a bounded observation, including uncertainty")
-    check_differences(feedback, summary, comparisons)
+    check_differences(feedback)
     previous = previous_observation(out, summary)
     if previous is not None and " ".join(previous.split()) in " ".join(feedback["observation"].split()):
         raise ValueError("visual feedback repeats the previous round's observation; inspect this round's images")
@@ -264,10 +276,8 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
         motion_option = summary.get("check_motion") if check_motion is None else check_motion
         if motion_option is not None:
             command += ["--check-motion", str(motion_option).lower()]
-        if summary["refs"]:
+        if summary["refs"] or summary.get("sealed"):
             command.append("--image-derived")
-            for label, ref in summary["refs"]:
-                command += ["--likeness-ref", "%s=%s" % (label, ref)]
         done = run(command, cwd=project, log=out / "verify.log", timeout=FULL_TIMEOUT_SECONDS)
         summary["full"] = {"ok": done.returncode == 0, "returncode": done.returncode, "tail": tail(done.stdout or done.stderr)}
         summary["ok"] = done.returncode == 0
@@ -281,9 +291,9 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
     return summary
 
 
-def check_differences(feedback: dict, summary: dict, comparisons: dict) -> None:
-    """Below the floor, the review must say how the model differs from its
-    reference; a difference to repair cannot pass (ADR 0075)."""
+def check_differences(feedback: dict) -> None:
+    """Differences from a reference are named, and one still to repair cannot
+    pass (ADR 0075)."""
 
     differences = feedback.get("differences", [])
     if not isinstance(differences, list) or len(differences) > MAX_DIFFERENCES:
@@ -297,12 +307,89 @@ def check_differences(feedback: dict, summary: dict, comparisons: dict) -> None:
             raise ValueError("a difference is either repaired or kept with a reason")
     if feedback["status"] == "pass" and any(item["decision"] == "repair" for item in differences):
         raise ValueError("a difference still to repair cannot pass")
-    compared = {item["label"] for item in comparisons.values()}
-    below = [item["label"] for item in summary.get("likeness") or []
-             if "iou" in item and not item.get("ok") and item["label"] in compared]
-    if below and not differences:
-        raise ValueError(
-            "%s is below the floor: list how the model differs from its reference" % ", ".join(below))
+
+
+def record_review(project: Path, review_path, component: str) -> dict:
+    """Attach an independent reviewer's judgement to the latest component
+    round without rebuilding it (ADR 0076).
+
+    The reviewer saw the round's packet, so the packet, its images and the
+    sources must be exactly what it saw. Agreement passes the component. A
+    disagreement at the shape-repair limit is recorded as a component
+    acceptance the run reports when it ends; before the limit it is the
+    repair list for the next shape round.
+    """
+
+    role, source = component_role(project, component)
+    state_path, round_root = state_and_round_root(project, component)
+    state = json.loads(state_path.read_text())
+    latest = state.get("round")
+    if type(latest) is not int or latest < 1 or state.get("scope") != "component:%s" % role:
+        raise ValueError("component round state is invalid")
+    out = round_root / ("r%04d" % latest)
+    summary_path = out / "summary.json"
+    summary = json.loads(summary_path.read_text())
+    if (
+        summary.get("scope") != "component:%s" % role
+        or summary.get("entry") != source.name
+        or summary.get("parts") != [role]
+    ):
+        raise ValueError("component round summary is invalid")
+    review = json.loads(Path(review_path).read_text(encoding="utf-8"))
+    required = {"round", "packet_sha256", "reviewer", "agrees", "reason"}
+    if not isinstance(review, dict) or not required <= set(review) or not set(review) <= required | {"differences"}:
+        raise ValueError("a review needs round, packet_sha256, reviewer, agrees and reason, and optional differences")
+    if type(review["round"]) is not int or review["round"] != latest:
+        raise ValueError("a review must judge the latest round, r%04d" % latest)
+    if summary.get("review") is not None:
+        raise ValueError("r%04d already has a recorded review" % latest)
+    if not summary.get("checks_ok"):
+        raise ValueError("r%04d did not pass its build and print checks; repair them before review" % latest)
+    visual = summary.get("visual") or {}
+    if visual.get("status") != "pending" or not visual.get("packet"):
+        raise ValueError("r%04d has no visual packet to review" % latest)
+    if review["packet_sha256"] != visual["packet_sha256"]:
+        raise ValueError("the review belongs to a different visual packet")
+    stale = packet_error(visual, project)
+    if stale is not None:
+        raise ValueError("the reviewed round has %s" % stale if stale != "visual packet changed" else stale)
+    reviewer = review["reviewer"]
+    if not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= 200:
+        raise ValueError("a review needs the reviewer's name")
+    if reviewer.strip().lower() in MANAGER_NAMES:
+        raise ValueError("the Workshop Manager cannot review its own component")
+    if type(review["agrees"]) is not bool:
+        raise ValueError("a review's agrees must be true or false")
+    if not isinstance(review["reason"], str) or not 1 <= len(review["reason"].strip()) <= MAX_REASON:
+        raise ValueError("a review needs a reason of 1 to %d characters" % MAX_REASON)
+    differences = review.get("differences", [])
+    if not isinstance(differences, list) or len(differences) > MAX_DIFFERENCES:
+        raise ValueError("a review lists at most %d differences" % MAX_DIFFERENCES)
+    for item in differences:
+        if not isinstance(item, dict) or set(item) != {"feature", "reference", "model"}:
+            raise ValueError("a difference needs feature, reference and model")
+        if any(not isinstance(v, str) or not 1 <= len(v.strip()) <= 1000 for v in item.values()):
+            raise ValueError("difference text must be nonempty and bounded")
+    if not review["agrees"] and not differences:
+        raise ValueError("a disagreeing review must list how the model differs from its reference")
+    recorded = {
+        "reviewer": reviewer.strip(), "agrees": review["agrees"], "reason": review["reason"].strip(),
+        "round": latest, "differences": differences,
+    }
+    summary["review"] = recorded
+    visual["status"] = "reviewed"
+    shape_rounds = int(summary.get("shape_rounds", 0))
+    if review["agrees"]:
+        summary["ok"] = True
+    elif shape_rounds >= SHAPE_REPAIR_LIMIT:
+        summary["accepted"] = {"reviewer": recorded["reviewer"], "reason": recorded["reason"],
+                               "shape_rounds": shape_rounds}
+        summary["ok"] = True
+    else:
+        summary["ok"] = False
+    (out / "review.json").write_text(json.dumps(review, sort_keys=True, indent=2) + "\n")
+    summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
+    return summary
 
 
 def previous_observation(out: Path, summary: dict) -> str | None:
@@ -602,36 +689,12 @@ def render_summary(summary: dict) -> str:
         lines.append("  build skip %d unchanged part(s): %s" % (len(unchecked), ", ".join(unchecked[:6]) + (" ..." if len(unchecked) > 6 else "")))
         if summary.get("reused"):
             lines[-1] += "  (retained PASS evidence)"
-    for item in summary["likeness"]:
-        if "error" in item:
-            lines.append("  like  FAIL %-10s %s" % (item["label"], item["error"][:70]))
-            continue
-        delta = "" if item.get("delta") is None else "  %+.3f" % item["delta"]
-        verdict = "ok" if item["ok"] else "ACCEPTED" if accepted_likeness(item) else "FAIL"
-        stalled = "  stalled %d/%d" % (item["stall_streak"], STALL_STREAK) if not item["ok"] and "stall_streak" in item else ""
-        lines.append(
-            "  like  %-4s %-10s IoU %.3f vs %.2f%s  pose az %.1f el %.1f fov %s%s%s"
-            % (verdict, item["label"], item["iou"], summary["min"], delta, item["az"], item["el"], item["fov"], "  (re-searched)" if item.get("searched") else "", stalled)
-        )
-        if not item["ok"] and item.get("worst_bands"):
-            lines.append("        widest misfit (from top: model/reference width) %s" % ", ".join(
-                "%.2f: %s" % (b["from_top"], b["ratio"]) for b in item["worst_bands"]
-                if isinstance(b.get("from_top"), (int, float))))
-        if accepted_likeness(item):
-            lines.append("        accepted by the Workshop Manager after review by %s: %s" % (
-                accepted_likeness(item)["reviewer"], item["accepted"]["reason"][:200]))
-        elif item.get("acceptance_refused"):
-            lines.append("        acceptance refused: %s" % item["acceptance_refused"])
-    failed = {item["label"] for item in summary["likeness"] if not item.get("ok")}
+    for item in summary.get("reference_errors") or []:
+        lines.append("  ref   FAIL %-14s %s" % (item["label"], item["error"][:160]))
     for item in summary.get("sealed") or []:
-        accepted = item.get("accepted")
-        note = "  ACCEPTED by the Workshop Manager at IoU %.3f: %s" % (accepted["iou"], accepted["reason"][:160]) if accepted else ""
-        lines.append("  seal  %-14s scored by %s%s" % (item["label"], item["scored_by"], note))
-    if any(item["scored_by"] == "assembly" and item["label"] in failed for item in summary.get("sealed") or []):
-        lines.append(
-            "  hint  a sealed reference that shows one Component is scored in that Component's round: "
-            "--component part_<role>.step.py --ref LABEL=wish-references/<file>"
-        )
+        lines.append("  seal  %-14s shown to %s" % (item["label"], item["scored_by"]))
+    if summary.get("shape_limit") is not None:
+        lines.append("  shape %d/%d shape round(s)" % (summary.get("shape_rounds", 0), summary["shape_limit"]))
     if summary.get("motion_status") == "not-run":
         lines.append("  move  SKIP motion unverified")
     if summary.get("motion") is not None:
@@ -647,10 +710,19 @@ def render_summary(summary: dict) -> str:
         for item in visual.get("differences") or []:
             lines.append("    differs %s: reference %s | model %s | %s: %s" % (
                 item["feature"], item["reference"], item["model"], item["decision"], item["reason"]))
-        if visual["status"] == "pending":
+        if visual["status"] == "pending" and summary.get("shape_limit") is not None:
+            lines.append("    reviewer inspects %s; record it with --record-review <review.json>" % visual["packet"])
+        elif visual["status"] == "pending":
             lines.append("    inspect %s then use --record-visual <feedback.json>" % visual["packet"])
+    review = summary.get("review")
+    if review is not None:
+        lines.append("  review %s by %s: %s" % ("AGREES" if review["agrees"] else "DISAGREES", review["reviewer"], review["reason"][:160]))
+        for item in review.get("differences") or []:
+            lines.append("    differs %s: reference %s | model %s" % (item["feature"], item["reference"], item["model"]))
+        if summary.get("accepted"):
+            lines.append("    ACCEPTED at the shape-repair limit (%d shape rounds); reported when the run ends" % summary["accepted"]["shape_rounds"])
     verdict = ("UNVERIFIED" if summary.get("geometry_status") == "unverified" else "PASS") if summary["ok"] else "FAIL"
-    if summary.get("visual", {}).get("status") == "pending" and summary.get("checks_ok"):
+    if (summary.get("visual") or {}).get("status") == "pending" and summary.get("checks_ok"):
         verdict = "PENDING"
     lines.append("  %s  reports under %s" % (verdict, summary["out"]))
     return "\n".join(lines)
@@ -765,31 +837,6 @@ def parse_motion(stdout: str | bytes, returncode: int, stderr: str | bytes = "")
         verdict, detail = "fail", "check_motion exit %d; %s" % (returncode, detail)
     result.update(verdict=verdict, detail=detail)
     return result
-
-
-def parse_render_views(stdout: str, label: str):
-    """The matching view from render_views --json output, or None.
-
-    render_views prints one pretty-printed object (its ``views`` list carries
-    the per-label IoU); an older shape used ``results`` on one line. Both are
-    read from the first line that opens an object to the end of the output.
-    """
-
-    lines = stdout.splitlines()
-    for index, line in enumerate(lines):
-        if not line.lstrip().startswith("{"):
-            continue
-        try:
-            payload = json.loads("\n".join(lines[index:]))
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(payload, dict):
-            continue
-        for item in payload.get("views") or payload.get("results") or []:
-            if isinstance(item, dict) and item.get("label") == label and "iou" in item:
-                return item
-        return None
-    return None
 
 
 def resolve_reference(ref: str, project: Path):
@@ -934,16 +981,17 @@ def current_passing_component_round(project: Path, role: str, digest: str | None
     return summary, ""
 
 
-def component_coverage(project: Path, digests: dict, floor: float) -> dict[str, dict]:
+def component_coverage(project: Path, digests: dict) -> dict[str, dict]:
     """Reference sha256 -> ``{"role", "accepted"}``, for every reference a
-    current, passing component round scored at or above the floor, or whose
-    stalled-out failure the Manager accepted with a reason (ADR 0074).
+    current, passing component round showed its reviewer (ADR 0076).
 
-    A reference that depicts one Component is scored in that Component's round
-    (ADR 0063); this is how the assembly knows not to score it again against
-    the whole object. A Component whose identity moved since its pass covers
-    nothing, exactly as --require-component-passes treats it: both read
-    ``current_passing_component_round``.
+    ``accepted`` is None when the reviewer agreed, else the component
+    acceptance recorded at the shape-repair limit: ``{"reviewer", "reason",
+    "shape_rounds"}``. A reference that depicts one Component is shown in
+    that Component's round (ADR 0063); this is how the assembly knows not to
+    show it again against the whole object. A Component whose identity moved
+    since its pass covers nothing, exactly as --require-component-passes
+    treats it: both read ``current_passing_component_round``.
     """
 
     covered = {}
@@ -951,86 +999,18 @@ def component_coverage(project: Path, digests: dict, floor: float) -> dict[str, 
     for state_path in sorted(rounds.glob("*/" + STATE_NAME)) if rounds.is_dir() else ():
         role = state_path.parent.name
         # A Component that does not qualify covers nothing. That is never a
-        # silent pass: the sealed reference is then scored against the
-        # assembly, which is the strict outcome.
+        # silent pass: its sealed image is then missing at assembly.
         summary, reason = current_passing_component_round(project, role, digests.get(role))
         if reason:
             continue
-        paths = {label: path for label, path in summary.get("refs") or []}
-        for item in summary.get("likeness") or []:
-            accepted = accepted_likeness(item)
-            passed = item.get("ok") is True and float(item.get("iou", 0.0)) >= floor
-            if not (passed or accepted) or item.get("label") not in paths:
-                continue
-            path = resolve_reference(paths[item["label"]], project)
+        accepted = summary.get("accepted")
+        if accepted is not None:
+            accepted = {key: accepted[key] for key in ("reviewer", "reason", "shape_rounds")}
+        for _label, ref in summary.get("refs") or []:
+            path = resolve_reference(ref, project)
             if path is not None:
-                covered.setdefault(file_hash(path), {
-                    "role": role,
-                    "accepted": None if passed else {**accepted, "iou": float(item["iou"])},
-                })
+                covered.setdefault(file_hash(path), {"role": role, "accepted": accepted})
     return covered
-
-
-def accepted_likeness(item: dict) -> dict | None:
-    """A Manager acceptance recorded on a stalled-out likeness item, else None."""
-
-    accepted = item.get("accepted")
-    review = accepted.get("review") if isinstance(accepted, dict) else None
-    if (
-        isinstance(accepted, dict)
-        and accepted.get("by") == "workshop-manager"
-        and isinstance(accepted.get("reason"), str)
-        and accepted["reason"].strip()
-        and item.get("stalled_out") is True
-        and "iou" in item
-        and isinstance(review, dict)
-        and isinstance(review.get("reviewer"), str)
-        and review["reviewer"].strip()
-        and review["reviewer"].strip().lower() not in MANAGER_NAMES
-    ):
-        return {"by": "workshop-manager", "reason": accepted["reason"], "reviewer": review["reviewer"]}
-    return None
-
-
-def acceptance_review(path, state: dict, round_root: Path, identity) -> tuple[dict | None, str]:
-    """An independent reviewer's agreement to accept the latest round's image
-    below the floor, or why there is none (ADR 0075).
-
-    The reviewer judged the latest round's composed comparisons, so the
-    geometry being accepted must be exactly the geometry it saw.
-    """
-
-    try:
-        review = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        return None, "acceptance review unreadable: %s" % exc
-    if not isinstance(review, dict) or set(review) != {"round", "comparisons", "reviewer", "agrees", "reason"}:
-        return None, "acceptance review needs round, comparisons, reviewer, agrees and reason"
-    latest = state.get("round")
-    if type(review["round"]) is not int or review["round"] != latest:
-        return None, "acceptance review must judge the latest round, r%04d" % (latest or 0)
-    try:
-        summary = json.loads((round_root / ("r%04d" % latest) / "summary.json").read_text(encoding="utf-8"))
-        packet = json.loads(Path(summary["visual"]["packet"]).read_text(encoding="utf-8"))
-    except (OSError, ValueError, KeyError, TypeError):
-        return None, "the reviewed round has no visual packet"
-    shown = {p: item["sha256"] for p, item in (packet.get("comparisons") or {}).items()}
-    if not shown or review["comparisons"] != shown:
-        return None, "acceptance review must name the reviewed round's comparison images and their hashes"
-    if any(not Path(p).is_file() or file_hash(p) != digest for p, digest in shown.items()):
-        return None, "the reviewed comparison images changed"
-    reviewer = review["reviewer"]
-    if not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= 200:
-        return None, "acceptance review needs the reviewer's name"
-    if reviewer.strip().lower() in MANAGER_NAMES:
-        return None, "the Workshop Manager cannot review its own acceptance"
-    if review["agrees"] is not True:
-        return None, "the reviewer did not agree to accept the image"
-    if not isinstance(review["reason"], str) or not 1 <= len(review["reason"].strip()) <= MAX_ACCEPT_REASON:
-        return None, "acceptance review needs a reason of 1 to %d characters" % MAX_ACCEPT_REASON
-    if identity is None or state.get("identity") != identity:
-        return None, "the geometry changed after the reviewed round"
-    return {"reviewer": reviewer.strip(), "reason": review["reason"].strip(), "round": latest}, ""
 
 
 def sealed_file_error(item: dict) -> dict | None:
@@ -1096,36 +1076,14 @@ def split_sealed_copies(refs: list, hashes: set, project: Path) -> tuple[list, d
     return kept, cameras
 
 
-def stall_streak(history: list, identities: list | None = None) -> int:
-    """Consecutive latest rounds that changed the geometry without raising IoU
-    by more than STALL_DELTA.
-
-    A rerun whose geometry did not change tried nothing, so it neither counts
-    nor breaks the streak (ADR 0075). A round with no recorded identity counts
-    as changed, as every round did before identities were recorded.
-    """
-
-    identities = list(identities or [])
-    identities = [None] * (len(history) - len(identities)) + identities[-len(history):] if history else []
-    streak = 0
-    pairs = zip(reversed(history[:-1]), reversed(history), reversed(identities[:-1]), reversed(identities))
-    for before, after, was, now in pairs:
-        if was is not None and was == now:
-            continue
-        if after - before > STALL_DELTA:
-            break
-        streak += 1
-    return streak
-
-
-def with_sealed_references(project: Path, refs: list, digests: dict, floor: float):
-    """The assembly round's references: every sealed one not already scored by
-    a Component, plus the ledger's references the Wish did not seal.
+def with_sealed_references(project: Path, refs: list, digests: dict):
+    """The assembly round's references: every sealed one not already shown to
+    a Component's reviewer, plus the ledger's references the Wish did not seal.
 
     Returns ``(refs, sealed_report, errors)``. A sealed reference that is
     missing or no longer matches its hash is an error the round fails on,
     never a reference quietly dropped. A ledger entry that is a copy of a
-    sealed image is not scored twice.
+    sealed image is not shown twice.
     """
 
     sealed, error = sealed_references(project)
@@ -1135,8 +1093,8 @@ def with_sealed_references(project: Path, refs: list, digests: dict, floor: floa
         return refs, [], []
     sealed_hashes = {item["sha256"] for item in sealed}
     kept, cameras = split_sealed_copies(refs, sealed_hashes, project)
-    covered = component_coverage(project, digests, floor)
-    to_score, report, errors = [], [], []
+    covered = component_coverage(project, digests)
+    to_show, report, errors = [], [], []
     for item in sealed:
         problem = sealed_file_error(item)
         if problem is not None:
@@ -1144,48 +1102,22 @@ def with_sealed_references(project: Path, refs: list, digests: dict, floor: floa
             continue
         cover = covered.get(item["sha256"])
         if cover is not None:
-            entry = {"label": item["label"], "scored_by": "component:%s" % cover["role"]}
-            if cover["accepted"] is not None:
-                entry["accepted"] = cover["accepted"]
-            report.append(entry)
+            report.append({"label": item["label"], "scored_by": "component:%s" % cover["role"]})
             continue
         if item["label"].startswith(GEOMETRY_LABEL):
-            # ADR 0074: an image of one Component scored against the whole
-            # object fails every run and measures nothing, so it is never
-            # scored here. Without a current component pass it is missing.
+            # ADR 0074: an image of one Component is never judged against the
+            # whole object. Without a current component pass it is missing.
             role = item["label"][len(GEOMETRY_LABEL):]
             errors.append({
                 "label": item["label"],
-                "error": "no current passing component round scored this image; run "
+                "error": "no current component round passed its checks and independent review; run "
                          "--component part_%s.step.py" % role,
             })
             report.append({"label": item["label"], "scored_by": "missing"})
             continue
-        to_score.append((item["label"], str(item["path"]) + cameras.get(item["sha256"], "")))
+        to_show.append((item["label"], str(item["path"]) + cameras.get(item["sha256"], "")))
         report.append({"label": item["label"], "scored_by": "assembly"})
-    return to_score + kept, report, errors
-
-
-SEARCH_HALF_WINDOW_DEG = 30.0
-SEARCH_STEP_DEG = 10.0
-SEARCH_REFINE_ROUNDS = 2
-
-
-def search_window(az: float, el: float) -> list[str]:
-    """render_views arguments for a bounded pose search around one camera.
-
-    A +/-30 degree window at 10 degree steps is 49 coarse poses plus two
-    halving rounds, a fifth of the full grid; elevation is clamped to the
-    renderer's range so a low camera never asks for -95.
-    """
-
-    lo_el = max(-90.0, el - SEARCH_HALF_WINDOW_DEG)
-    hi_el = min(90.0, el + SEARCH_HALF_WINDOW_DEG)
-    return [
-        "--search-az=%g,%g,%g" % (az - SEARCH_HALF_WINDOW_DEG, az + SEARCH_HALF_WINDOW_DEG, SEARCH_STEP_DEG),
-        "--search-el=%g,%g,%g" % (lo_el, hi_el, SEARCH_STEP_DEG),
-        "--refine", str(SEARCH_REFINE_ROUNDS),
-    ]
+    return to_show + kept, report, errors
 
 
 def tail(text: str) -> str:
@@ -1194,6 +1126,28 @@ def tail(text: str) -> str:
 
 def motion_policy():
     return runpy.run_path(str(Path(__file__).resolve().parents[2] / "cad/scripts/motion_policy.py"))
+
+
+def shape_limit_refusal(state: dict, round_root: Path) -> str | None:
+    """Why no further component round may start, or None.
+
+    At the shape-repair limit a round that passed its checks is reviewed, not
+    repaired again: the review then passes the component or becomes its
+    recorded acceptance, so the run cannot loop on its shape (ADR 0076).
+    """
+
+    latest = state.get("round")
+    if int(state.get("shape_rounds", 0)) < SHAPE_REPAIR_LIMIT or state.get("checks_ok") is not True:
+        return None
+    try:
+        summary = json.loads((round_root / ("r%04d" % latest) / "summary.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return None
+    if isinstance(summary, dict) and summary.get("review") is not None:
+        return None
+    return ("the component used its %d shape rounds and r%04d passed its checks; have an independent "
+            "reviewer judge r%04d and record it with --record-review <review.json>"
+            % (SHAPE_REPAIR_LIMIT, latest, latest))
 
 
 def make_round(args) -> int:
@@ -1220,6 +1174,14 @@ def make_round(args) -> int:
             return 2
         print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
         return 0 if summary["ok"] else 1
+    if args.record_review:
+        try:
+            summary = record_review(project, args.record_review, args.component)
+        except (ValueError, KeyError, OSError, TypeError) as exc:
+            print("make_round: %s" % exc, file=sys.stderr)
+            return 2
+        print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
+        return 0 if summary["ok"] else 1
     if args.full:
         print("make_round: --full requires --record-visual after inspection and independent blind review", file=sys.stderr)
         return 2
@@ -1228,7 +1190,6 @@ def make_round(args) -> int:
         print("make_round: cannot locate the cad and image-to-cad skills", file=sys.stderr)
         return 2
     cad = roots / "cad" / "scripts"
-    i2c = roots / "image-to-cad" / "scripts"
     python = sys.executable
     generators = sorted(project.glob("*.step.py"))
     all_parts = [g for g in generators if g.name.startswith("part_")]
@@ -1260,6 +1221,11 @@ def make_round(args) -> int:
         return 2
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
+    if component is not None:
+        refusal = shape_limit_refusal(state, round_root)
+        if refusal is not None:
+            print("make_round: %s" % refusal, file=sys.stderr)
+            return 2
     round_index = int(state.get("round", 0)) + 1
     out = Path(args.out) if args.out else round_root / ("r%04d" % round_index)
     out.mkdir(parents=True, exist_ok=True)
@@ -1388,120 +1354,32 @@ def make_round(args) -> int:
             "logs": {},
         }
 
-    # 3. likeness per reference, replaying the previous pose when one exists.
+    # 3. the references this round shows its reader, each composed beside the
+    # model at the reference's declared camera. Nothing is scored (ADR 0076).
     refs = parse_refs(args.refs, [] if component is not None else sorted(project.glob("*_spec.md")))
-    likeness = []
-    sealed = []
     if component is not None:
-        refs, sealed, errors = with_component_reference(project, component, refs)
-        likeness.extend(errors)
+        refs, sealed, reference_errors = with_component_reference(project, component, refs)
     else:
-        # ADR 0072: the Wish's sealed references are scored whether or not any
-        # ledger names them. A component round still scores only what it is
-        # explicitly given (ADR 0063).
-        refs, sealed, errors = with_sealed_references(project, refs, digests, args.min)
-        likeness.extend(errors)
-    previous_pose_paths = state.get("pose_paths")
-    legacy_poses = state.get("poses_path") if previous_pose_paths is None else None
-    pose_paths = {}
-    for ref_index, (label, ref) in enumerate(refs):
-        previous_poses = (previous_pose_paths or {}).get(label, legacy_poses)
-        ref_path = resolve_reference(ref, project)
-        if ref_path is None:
-            likeness.append({"label": label, "error": "reference missing: %s" % ref})
-            continue
-        # Each render invocation writes poses.json. Separate reference outputs
-        # so a later reference cannot erase an earlier reference's camera.
-        view_dir = out / "likeness" / ("ref-%03d" % ref_index)
-        command = [python, str(i2c / "render_views.py"), str(entry), "--match", str(ref_path), "--label", label, "--min", str(args.min), "-o", str(view_dir), "--shaded", "--json"]
-        camera = split_camera(ref)[1]
-        if camera is not None:
-            # the = form: argparse reads a leading "-" as a new option
-            command.append("--camera=%s" % camera)
-        if previous_poses and Path(previous_poses).is_file():
-            command += ["--poses-from", str(previous_poses)]
-        done = run(command, cwd=project, log=out / ("likeness-%s.log" % label))
-        result = parse_render_views(done.stdout, label)
-        selected_poses = view_dir / "poses.json"
-        searched = False
-        if result is not None and "--poses-from" in command and (
-            float(result["iou"]) < args.min or result.get("ok") is False
-        ):
-            # Replay scores the OLD camera. A part that moved (a neck that now
-            # leans, a head that turned) can only lose under it, and the loop
-            # then sees a wall that is the camera's, not the shape's (goose,
-            # 2026-09-08: replay 0.49, fresh search 0.75). When the replay is
-            # under the floor, search a window around it and keep the better.
-            # A replay render_views refused because the stored pose sits
-            # outside a declared camera's window is searched again too; with
-            # --camera the search stays inside that window.
-            window = search_window(float(result.get("az", 0.0)), float(result.get("el", 0.0)))
-            # Keep replay evidence intact if the bounded search does worse.
-            search_dir = view_dir / "search"
-            search_command = command[:command.index("--poses-from")] + window
-            search_command[search_command.index("-o") + 1] = str(search_dir)
-            again = run(search_command, cwd=project, log=out / ("likeness-%s-search.log" % label))
-            better = parse_render_views(again.stdout, label)
-            if better is not None and float(better["iou"]) > float(result["iou"]):
-                result, searched = better, True
-                selected_poses = search_dir / "poses.json"
-        if result is None:
-            likeness.append({"label": label, "error": "render_views exit %d: %s" % (done.returncode, tail(done.stderr or done.stdout)[:80])})
-            continue
-        if selected_poses.is_file():
-            pose_paths[label] = str(selected_poses.resolve())
-        shaded = selected_poses.parent / ("%s-shaded.png" % label)
-        prior = (state.get("likeness") or {}).get(label)
-        likeness.append(
-            {
-                "label": label,
-                "iou": float(result["iou"]),
-                "ok": bool(result.get("ok", float(result["iou"]) >= args.min)),
-                "delta": None if prior is None else round(float(result["iou"]) - float(prior), 4),
-                "az": float(result.get("az", 0.0)),
-                "el": float(result.get("el", 0.0)),
-                "fov": result.get("fov", 0),
-                "searched": searched,
-                "poses_path": pose_paths.get(label),
-                "worst_bands": [
-                    {"from_top": b.get("from_top"), "ratio": b.get("ratio")}
-                    for b in result.get("worst_bands") or [] if isinstance(b, dict)
-                ],
-                "shaded": str(shaded.resolve()) if shaded.is_file() else None,
-            }
-        )
-    poses_path = next(reversed(pose_paths.values()), state.get("poses_path"))
+        # ADR 0072: the Wish's sealed references are shown whether or not any
+        # ledger names them. A component round shows only its own sealed image
+        # and what it is explicitly given (ADR 0063, ADR 0074).
+        refs, sealed, reference_errors = with_sealed_references(project, refs, digests)
+    shown = []
+    for label, ref in refs:
+        if resolve_reference(ref, project) is None:
+            reference_errors.append({"label": label, "error": "reference missing: %s" % ref})
+        else:
+            shown.append((label, ref))
+    refs = shown
 
-    # ADR 0074: remember every score, so a failing image that three rounds of
-    # repair did not move is stalled out, and only a stalled-out image may be
-    # accepted below the floor -- by the Manager, with a reason, on the record.
-    previous_history = state.get("likeness_history") or {}
-    previous_identities = state.get("likeness_identities") or {}
-    likeness_history = {}
-    likeness_identities = {}
-    for item in likeness:
-        if "iou" not in item:
-            continue
-        history = [float(v) for v in previous_history.get(item["label"]) or []] + [item["iou"]]
-        identities = list(previous_identities.get(item["label"]) or []) + [round_identity]
-        likeness_history[item["label"]] = history
-        likeness_identities[item["label"]] = identities
-        item["stall_streak"] = stall_streak(history, identities)
-        item["stalled_out"] = item["stall_streak"] >= STALL_STREAK
-    accept_reason = getattr(args, "accept_likeness", None)
-    if accept_reason is not None:
-        failing = [item for item in likeness if "iou" in item and not item["ok"]]
-        review, refusal = acceptance_review(args.acceptance_review, state, round_root, round_identity)
-        for item in failing:
-            if not item["stalled_out"]:
-                item["acceptance_refused"] = "not stalled out: %d/%d rounds that changed the geometry without improving it" % (
-                    item["stall_streak"], STALL_STREAK)
-            elif review is None:
-                item["acceptance_refused"] = refusal
-            else:
-                item["accepted"] = {"by": "workshop-manager", "reason": accept_reason, "review": review}
-        if not failing:
-            print("make_round: warning: --accept-likeness was not needed; no image is below the floor", file=sys.stderr)
+    # A shape round changes the geometry of a component whose previous round
+    # passed its checks; repairs of build or print failures are not counted.
+    shape_rounds = int(state.get("shape_rounds", 0))
+    if (
+        component is not None and state.get("checks_ok") is True
+        and round_identity is not None and round_identity != state.get("identity")
+    ):
+        shape_rounds += 1
 
     # 4. motion gate when the project declares a manifest.
     motion = None
@@ -1510,14 +1388,14 @@ def make_round(args) -> int:
         done = run([python, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"], cwd=project, log=out / "motion.log")
         motion = parse_motion(done.stdout, done.returncode, done.stderr)
 
-    # 5. Native visual inspection is a separate evidence submission, not a model call.
-    visual = prepare_visual(project, entry, out, cad, refs, likeness)
+    # 5. Visual inspection is a separate evidence submission, not a model call.
+    visual = prepare_visual(project, entry, out, cad, refs, component is not None)
     full = None
 
     ok = (
         all(item["verdict"] == "PASS" for item in build.values())
         and all(item["verdict"] in ("PASS", "UNVERIFIED") for item in printing.values())
-        and all(item.get("ok") or accepted_likeness(item) for item in likeness)
+        and not reference_errors
         and (motion is None or motion["verdict"] in ("pass", "unverified"))
         and (full is None or full["ok"])
     )
@@ -1534,8 +1412,7 @@ def make_round(args) -> int:
         "reused": sorted(role for role in printing if printing[role].get("measured_round") != round_index),
         "nozzle": args.nozzle,
         "overhang_angle": args.overhang_angle,
-        "likeness": likeness,
-        "min": args.min,
+        "reference_errors": reference_errors,
         "motion": motion,
         "check_motion": check_motion,
         "motion_status": (motion["verdict"] if motion is not None else "not-run"),
@@ -1547,6 +1424,8 @@ def make_round(args) -> int:
         "ok": False,
         "out": str(out),
     }
+    if component is not None:
+        summary.update(review=None, shape_rounds=shape_rounds, shape_limit=SHAPE_REPAIR_LIMIT)
     if any(item["verdict"] == "UNVERIFIED" for item in printing.values()) or (motion and motion["verdict"] == "unverified"):
         summary["geometry_status"] = "unverified"
         summary["print_ready_claim"] = False
@@ -1557,9 +1436,6 @@ def make_round(args) -> int:
         "parts": digests,
         "print": printing,
         "print_context": context,
-        "likeness": {item["label"]: item["iou"] for item in likeness if "iou" in item},
-        "likeness_history": {**previous_history, **likeness_history},
-        "likeness_identities": {**previous_identities, **likeness_identities},
         "identity": round_identity,
         "steps": {
             role: file_hash(part.with_name(part.name[:-len(".py")]))
@@ -1567,8 +1443,8 @@ def make_round(args) -> int:
             for role in [part.name.removeprefix("part_").removesuffix(".step.py")]
             if role in digests and part.with_name(part.name[:-len(".py")]).is_file()
         },
-        "poses_path": poses_path,
-        "pose_paths": pose_paths,
+        "checks_ok": ok,
+        "shape_rounds": shape_rounds,
         "last_out": str(out),
     }
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
@@ -1657,16 +1533,8 @@ def self_check() -> int:
             check(False, "an unusable camera is refused before any render: %s" % bad)
         except ValueError:
             check(True, "an unusable camera is refused before any render: %s" % bad)
-    pretty = (
-        'rendering hero...\n{\n  "source": "/p/cad/duck.step.py",\n  "poses": {"hero": {"az": -82.5}},\n'
-        '  "views": [\n    {\n      "label": "hero",\n      "kind": "replay-match",\n      "iou": 0.9029,\n'
-        '      "ok": true,\n      "az": -82.5,\n      "el": -1.875\n    }\n  ],\n  "ok": true\n}\n'
-    )
-    view = parse_render_views(pretty, "hero")
-    check(view is not None and view["iou"] == 0.9029 and view["az"] == -82.5, "render_views' pretty-printed views block yields the labelled IoU")
-    check(parse_render_views(pretty, "side") is None, "a label the render did not score yields nothing")
-    check(parse_render_views('{"results": [{"label": "hero", "iou": 0.5}]}\n', "hero")["iou"] == 0.5, "the one-line results shape still parses")
-    check(parse_render_views("Traceback (most recent call last):\n  boom\n", "hero") is None, "a crash yields nothing")
+    check(reference_view("ref/hero.png@-60,20,15") == ("-60,20", "az-60_el20", "-60,20"), "a reference is compared at its declared camera, without the search tolerance")
+    check(reference_view("ref/hero.png")[:2] == ("front", "front"), "a reference without a declared camera is compared from the front")
     with tempfile.TemporaryDirectory() as tmp:
         workspace = Path(tmp); project = workspace / "artifacts" / "make" / "r0001" / "product" / "goose"
         (project / "ref").mkdir(parents=True); (workspace / "WISH.json").write_text("{}", encoding="utf-8")
@@ -1675,8 +1543,6 @@ def self_check() -> int:
         check(resolve_reference("artifacts/make/r0001/product/goose/ref/hero.jpg", project) == project / "ref" / "hero.jpg", "a workspace-relative reference resolves through WISH.json")
         check(resolve_reference("ref/missing.jpg", project) is None, "a missing reference stays missing")
         check(resolve_reference("ref/hero.jpg@-60,20", project) == project / "ref" / "hero.jpg", "a declared camera is not part of the path")
-    window = search_window(-118.125, -75.0)
-    check(window[0] == "--search-az=-148.125,-88.125,10" and window[1] == "--search-el=-90,-45,10" and window[-2:] == ["--refine", "2"], "the search window brackets the replayed camera and clamps elevation")
     with tempfile.TemporaryDirectory() as tmp:
         spec = Path(tmp) / "duck_spec.md"
         spec.write_text("# spec\n- `hero=ref/hero.png`\nfront=ref/front.png\nnot a ref line\n", encoding="utf-8")
@@ -1710,23 +1576,34 @@ def self_check() -> int:
         check(error is None and [s["label"] for s in sealed] == ["ref-01-hero", "ref-02-side", "ref-03-gone"], "a sealed reference is labelled by its file stem")
         (project / "ref").mkdir()
         (project / "ref" / "copy.png").write_bytes(b"hero")
-        refs, report, errors = with_sealed_references(project, [("copy", "ref/copy.png")], {}, 0.9)
-        check([label for label, _ in refs] == ["ref-01-hero"], "a ledger copy of a sealed image is scored once, under its sealed label")
-        check(report == [{"label": "ref-01-hero", "scored_by": "assembly"}], "an uncovered sealed reference is scored against the assembly")
+        refs, report, errors = with_sealed_references(project, [("copy", "ref/copy.png")], {})
+        check([label for label, _ in refs] == ["ref-01-hero"], "a ledger copy of a sealed image is shown once, under its sealed label")
+        check(report == [{"label": "ref-01-hero", "scored_by": "assembly"}], "an uncovered sealed reference is shown to the assembly review")
         check([e["label"] for e in errors] == ["ref-02-side", "ref-03-gone"] and "sealed hash" in errors[0]["error"] and "missing" in errors[1]["error"], "a changed or missing sealed reference is an error, never a silent drop")
-        refs, _, _ = with_sealed_references(project, [("copy", "ref/copy.png@-60,20")], {}, 0.9)
+        refs, _, _ = with_sealed_references(project, [("copy", "ref/copy.png@-60,20")], {})
         check(refs == [("ref-01-hero", str(run_dir / "wish-references" / "ref-01-hero.png") + "@-60,20")], "a copy of a sealed image lends it the camera it declared")
         (run_dir / "WISH.json").write_text("{not json", encoding="utf-8")
-        _, _, errors = with_sealed_references(project, [], {}, 0.9)
-        check(len(errors) == 1 and "WISH.json unreadable" in errors[0]["error"], "an unreadable Wish fails the round instead of scoring nothing")
+        _, _, errors = with_sealed_references(project, [], {})
+        check(len(errors) == 1 and "WISH.json unreadable" in errors[0]["error"], "an unreadable Wish fails the round instead of showing nothing")
     text = render_summary({
         "round": 1, "project": "/p", "parts": ["a"], "changed": ["a"], "checked": ["a"],
         "build": {"a": {"verdict": "PASS", "failures": []}},
-        "likeness": [{"label": "ref-01-body", "iou": 0.31, "ok": False, "delta": None, "az": 0.0, "el": 0.0, "fov": 0}],
-        "sealed": [{"label": "ref-01-body", "scored_by": "assembly"}],
-        "min": 0.9, "motion": None, "full": None, "ok": False, "out": "/p/measure/rounds/r0001",
+        "reference_errors": [{"label": "geometry:body", "error": "no current component round passed its checks and independent review; run --component part_body.step.py"}],
+        "sealed": [{"label": "geometry:body", "scored_by": "missing"}],
+        "motion": None, "full": None, "ok": False, "out": "/p/measure/rounds/r0001",
     })
-    check("seal  ref-01-body" in text and "--component part_<role>.step.py" in text, "a sealed reference that failed against the assembly points at the component round")
+    check("seal  geometry:body" in text and "--component part_body.step.py" in text, "a sealed component image missing at assembly points at the component round")
+    text = render_summary({
+        "round": 6, "scope": "component:body", "project": "/p", "parts": ["body"], "changed": ["body"], "checked": ["body"],
+        "build": {"body": {"verdict": "PASS", "failures": []}}, "reference_errors": [], "sealed": [],
+        "motion": None, "full": None, "ok": True, "checks_ok": True, "out": "/p/measure/component-rounds/body/r0006",
+        "shape_rounds": 5, "shape_limit": 5, "visual": {"status": "reviewed", "findings": [], "detail": "d"},
+        "review": {"reviewer": "fresh-reviewer", "agrees": False, "reason": "arms thinner", "round": 6,
+                   "differences": [{"feature": "arm", "reference": "thick", "model": "thin"}]},
+        "accepted": {"reviewer": "fresh-reviewer", "reason": "arms thinner", "shape_rounds": 5},
+    })
+    check("shape 5/5" in text and "DISAGREES" in text and "differs arm" in text and "ACCEPTED at the shape-repair limit" in text,
+          "a component accepted at the shape-repair limit says so with the reviewer's differences")
     summary = {
         "round": 3, "scope": "assembly", "project": "/p/cad", "parts": ["frame", "knob", "lens"], "changed": ["frame"], "checked": ["frame"],
         "build": {"frame": {"verdict": "PASS", "failures": []}},
@@ -1736,11 +1613,11 @@ def self_check() -> int:
             "overhang": {"verdict": "PASS", "overhang_mm2": None, "failures": []},
         }},
         "reused": ["knob"],
-        "likeness": [{"label": "hero", "iou": 0.901, "ok": True, "delta": 0.023, "az": -90.0, "el": -16.9, "fov": 0}],
-        "min": 0.9, "motion": {"verdict": "pass", "detail": "47 conditions"}, "full": None, "ok": False, "out": "/p/cad/measure/rounds/r0003",
+        "reference_errors": [],
+        "motion": {"verdict": "pass", "detail": "47 conditions"}, "full": None, "ok": False, "out": "/p/cad/measure/rounds/r0003",
     }
     text = render_summary(summary)
-    check("build PASS frame" in text and "IoU 0.901 vs 0.90  +0.023" in text and "skip 2 unchanged" in text and text.splitlines()[-1].startswith("  FAIL"), "the summary names the changed part, the score delta, and the verdict")
+    check("build PASS frame" in text and "skip 2 unchanged" in text and text.splitlines()[-1].startswith("  FAIL"), "the summary names the changed part and the verdict")
     check("wall  FAIL" in text and "thinnest 0.42 mm" in text, "a failing wall gate reaches the summary with its measurement")
     check("over  PASS" in text, "the overhang gate reports beside the wall gate")
     check("(retained PASS evidence)" in text, "reused gate evidence is named rather than implied")
@@ -1755,17 +1632,15 @@ def main(argv=None) -> int:
     parser.add_argument("--entry", help="entry generator name when more than one non-part *.step.py exists")
     parser.add_argument("--component", help="review one isolated part_<role>.step.py using its own round history")
     parser.add_argument("--require-component-passes", action="store_true", help="before assembly review, require current passing isolated rounds for every part")
-    parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH[@AZ,EL[,TOL]]", help="reference view and the camera it was taken from; repeatable; default from the spec ledger. The Wish's sealed references are always scored at assembly scope; a --ref that copies one lends it its camera. --full needs a camera on every reference")
-    parser.add_argument("--min", type=float, default=0.90, help="likeness floor passed to render_views (default 0.90)")
-    parser.add_argument("--accept-likeness", metavar="REASON", help="with --component: accept an image still below the floor after %d rounds that changed the geometry without moving it; the reason is reported when the run ends" % STALL_STREAK)
-    parser.add_argument("--acceptance-review", metavar="REVIEW.json", help="with --accept-likeness: the independent reviewer's agreement, judged on the latest round's comparison images")
+    parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH[@AZ,EL[,TOL]]", help="reference view and the camera it was taken from; repeatable; default from the spec ledger. The model is rendered beside it at that camera, else from the front. The Wish's sealed references are always shown at assembly scope; a --ref that copies one lends it its camera")
     parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle diameter for the wall gate (default 0.4 mm)")
     parser.add_argument("--overhang-angle", type=float, default=45.0, help="slope from vertical the printer bridges unsupported (default 45 deg)")
     parser.add_argument("--all-parts", action="store_true", help="report every built part, not only the changed ones")
     parser.add_argument("--check-motion", type=motion_policy()["boolean"], default=None,
                         metavar="true|false", help="enable motion checks (default: false, or frozen Make option)")
     parser.add_argument("--no-motion", action="store_true", help="skip check_motion even when measure/motion.json exists")
-    parser.add_argument("--record-visual", help="record native Manager feedback for the last round without rebuilding")
+    parser.add_argument("--record-visual", help="record native Manager feedback for the last assembly round without rebuilding")
+    parser.add_argument("--record-review", metavar="REVIEW.json", help="with --component: record an independent reviewer's judgement of the latest round without rebuilding")
     parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
@@ -1781,16 +1656,12 @@ def main(argv=None) -> int:
         parser.error("--component and --entry are mutually exclusive")
     if args.component and args.out:
         parser.error("--out is not supported for canonical component round evidence")
-    if args.accept_likeness is not None:
-        if not args.component:
-            parser.error("--accept-likeness requires --component; the assembly image is accepted by the final verifier")
-        args.accept_likeness = args.accept_likeness.strip()
-        if not 1 <= len(args.accept_likeness) <= MAX_ACCEPT_REASON:
-            parser.error("--accept-likeness requires a reason of 1 to %d characters" % MAX_ACCEPT_REASON)
-        if not args.acceptance_review:
-            parser.error("--accept-likeness requires --acceptance-review from a reviewer who is not the Workshop Manager")
-    elif args.acceptance_review:
-        parser.error("--acceptance-review is only used with --accept-likeness")
+    if args.record_review and not args.component:
+        parser.error("--record-review requires --component; the assembly is reviewed with --record-visual")
+    if args.record_review and (args.record_visual or args.full):
+        parser.error("--record-review cannot be combined with --record-visual or --full")
+    if args.component and args.record_visual:
+        parser.error("a component round is judged by an independent reviewer: use --record-review")
     return make_round(args)
 
 
