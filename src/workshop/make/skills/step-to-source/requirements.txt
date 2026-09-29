@@ -1,3 +1,0 @@
-# OCP arrives with build123d, and the recovered entries are build123d, so this
-# one line covers both the measuring and the round trip that proves it.
-build123d>=0.9

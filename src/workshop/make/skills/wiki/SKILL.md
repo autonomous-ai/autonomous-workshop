@@ -30,9 +30,12 @@ with its evidence, in the final response; the host's Make lessons loop carries
 gate failures into the design vault, and a Workshop builder writes durable
 rules back into this tree (or upstream). Paths written `skills/<name>/...` in
 these pages name a sibling Make skill: read them under
-`"$(workshop skills path)/<name>/"`. Machines and fixtures the pages cite by
-name live in the upstream `autonomous-product-to-cad` repository, not in a
-product run; the numbers quoted are the whole example.
+`"$(workshop skills path)/<name>/"`. Upstream's `step-to-source` and
+`stl-to-step` are not Workshop skills: a `reverse-engineering/` page that
+names them describes tooling a run does not have, and its rules stand without
+it. Machines and fixtures the pages cite by name live in the upstream
+`autonomous-product-to-cad` repository, not in a product run; the numbers
+quoted are the whole example.
 
 ## The loop: search, think, design, write back
 

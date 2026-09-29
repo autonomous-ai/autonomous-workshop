@@ -100,11 +100,11 @@ _READABLE_AGENT_RUN_STAGES = (*AGENT_RUN_STAGES, "deliver")
 AGENT_OUTCOME_STATUSES = ("ready", "waiting", "failed")
 MAX_AGENT_OUTCOME_BYTES = 64 * 1024
 MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
-# The complete installed tool tree and Inventor roster need about 4.4 MiB in
-# about 500 inputs since the design wiki and the reverse-engineering and
-# product-design skills were materialized (about 3 MiB in 300 before). Both
-# caps keep the headroom they had then for Wish references, an imported
-# correction tree and old-run tool refresh.
+# The complete installed tool tree and Inventor roster need about 4.2 MiB in
+# about 460 inputs since the design wiki and the product-design skill were
+# materialized (about 3 MiB in 300 before). Both caps keep the headroom they
+# had then for Wish references, an imported correction tree and old-run tool
+# refresh.
 MAX_AGENT_INPUT_BYTES = 6 * 1024 * 1024
 MAX_AGENT_INPUT_FILES = 768
 MAX_AGENT_ARTIFACT_BYTES = MAX_FILE_BYTES

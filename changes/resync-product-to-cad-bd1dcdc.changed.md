@@ -1,12 +1,12 @@
 - Resync the vendored `cad`, `design-reference`,
   `electromechanical-integration`, `image-to-cad` and `step-parts` skills to
-  `autonomous-ai/autonomous-product-to-cad` `bd1dcdc`, and materialize four
+  `autonomous-ai/autonomous-product-to-cad` `bd1dcdc`, and materialize two
   more upstream skills into every product run: `wiki` (a searchable design
-  knowledge base, read-only in a run) replaces the retired `mechanisms`,
-  `product-design` designs a prose Wish whose design is still open, and
-  `step-to-source` and `stl-to-step` rebuild a supplied STEP or STL as source.
-  Upstream's `toy-archive` is not adopted, because Factory publication is a host
-  effect. `cad` gains `stdpart` standard elements, which adds the
+  knowledge base, read-only in a run) replaces the retired `mechanisms`, and
+  `product-design` designs a prose Wish whose design is still open. Upstream's
+  `toy-archive` (a Factory effect only the host may perform) and its
+  `step-to-source` and `stl-to-step` reverse-engineering skills are not
+  adopted. `cad` gains `stdpart` standard elements, which adds the
   `bd-warehouse` and `py-gearworks` dependencies. It also gains the
   `cadcache.py` build cache, the `CARRIES` declaration and the PLA Matte stock;
   a bare `"PLA"` material now raises, so name `PLA Lite` or `PLA Matte`.
@@ -21,7 +21,7 @@
   correction's imported tree. The occurrence-name colour vocabulary gains the
   PLA Matte colours.
 - **Materialized instruction bytes changed**: five skill fingerprints move
-  (`step-parts` does not), four trees are added, one is dropped, and the
+  (`step-parts` does not), two trees are added, one is dropped, and the
   product-run `make.md` and `make-playtest.md` change. A run parked before this
   change must be restarted rather than resumed. `workshop resume
   --refresh-tools` brings a parked run the resynced trees but none of the new

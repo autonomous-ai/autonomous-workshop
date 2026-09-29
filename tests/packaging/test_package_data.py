@@ -71,8 +71,6 @@ class PackageDataTest(unittest.TestCase):
                 "manual-design",
                 "product-design",
                 "step-parts",
-                "step-to-source",
-                "stl-to-step",
                 "wiki",
             },
         )
@@ -86,8 +84,6 @@ class PackageDataTest(unittest.TestCase):
             "manual-design": "release",
             "product-design": "make",
             "step-parts": "make",
-            "step-to-source": "make",
-            "stl-to-step": "make",
             "wiki": "make",
         }
         for name, root in roots.items():
