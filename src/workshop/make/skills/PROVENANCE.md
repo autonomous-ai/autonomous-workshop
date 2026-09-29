@@ -1223,3 +1223,12 @@ invocations, and `image-to-cad/SKILL.md` gains one note at Step 8 saying the
 gate is not used inside Workshop. `render_views.py`, `check_likeness.py` and
 `likeness-gate.md` keep their upstream bytes. This changes the `cad`,
 `image-to-cad` and `make-round` fingerprints.
+
+## Local change: make-round waits at a 300000 ms yield (2026-09-29)
+
+A Workshop-local change to Workshop's own `make-round`, not an upstream resync
+(ADR 0077). The Rules section now starts `make_round` and continues it with an
+empty `write_stdin` poll at `yield_time_ms: 300000` instead of 30000. Codex
+0.158.0 accepts an empty-poll yield from 5000 to 300000 ms and returns as soon
+as the process exits, so the longer yield only removes re-sent polling
+requests. This changes the `make-round` fingerprint.

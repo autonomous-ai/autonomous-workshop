@@ -94,9 +94,9 @@ calls were reassembling by hand.
   an assembly round, inspect the packet yourself and record your findings
   with `--record-visual`. Neither rebuilds. Read its summary; open a full report only
   when the summary names a failure you cannot place.
-- A round can take minutes. Start `make_round` with `yield_time_ms: 30000` and,
-  while it runs, continue it with an empty `write_stdin` poll at
-  `yield_time_ms: 30000` or more, and continue a yielded `exec` cell with
+- A round can take minutes. Start `make_round` with `yield_time_ms: 300000`
+  and, while it runs, continue it with an empty `write_stdin` poll at
+  `yield_time_ms: 300000`, and continue a yielded `exec` cell with
   `wait` at the same large yield. The poll returns as soon as the round exits,
   so the long yield never costs waiting the round did not need. Do not copy the `1000` from the `exec` pragma example
   into a poll: it is an output budget there, and as a yield it is worse than

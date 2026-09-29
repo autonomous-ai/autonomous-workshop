@@ -94,14 +94,12 @@ early-proof or recovery turn, takes precedence over them.
   everything a finalizer error names before rerunning it, never on unchanged
   bytes.
 - Start a long command (`make_round`, `verify_project`, a multi-part `gen`, a
-  state or motion sheet) with `yield_time_ms: 30000`. If it is still running,
-  continue it with an empty `write_stdin` poll at `yield_time_ms: 30000` or
-  more. A measured empty poll returns after about 30 s whatever larger number
-  it asks for, so 30000 is the practical ceiling and anything above it is
-  harmless but pointless. The yield is an upper bound, not a sleep: the poll
-  returns the moment the command exits, so a long yield never waits longer than
-  the work actually takes, and a short one only buys another full-price
-  request. When an `exec` cell yields with a cell id instead of finishing,
+  state or motion sheet) with `yield_time_ms: 300000`. If it is still running,
+  continue it with an empty `write_stdin` poll at `yield_time_ms: 300000`.
+  Codex accepts an empty-poll yield from 5000 to 300000 ms (ADR 0077). The
+  yield is an upper bound, not a sleep: the poll returns the moment the command
+  exits, so a long yield never waits longer than the work actually takes, and a
+  short one only buys another full-price request. When an `exec` cell yields with a cell id instead of finishing,
   continue that cell with `wait` at the same large yield; `wait` at 1000 or
   10000 is the same waste as a short `write_stdin` poll.
 - `1000` is not a waiting value. It appears in the `exec` pragma example
@@ -110,8 +108,8 @@ early-proof or recovery turn, takes precedence over them.
   default, and below the 5000 ms floor an empty poll enforces anyway. If the
   right yield is not obvious, omit `yield_time_ms` and take the default rather
   than writing a small number. Never put a `sleep` between polls. Wait for a
-  child with one `wait_agent` at a long timeout rather than repeated 10-second
-  waits.
+  child with one `wait_agent` at a long timeout (`timeout_ms: 300000`) rather
+  than repeated 10-second waits.
 - Keep tool output bounded: read round summaries, not full logs, and open a
   log only for the failure the summary cannot place.
 
@@ -156,16 +154,40 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    A component passes on three things: it builds, its print gates pass, and
    an independent reviewer agrees it looks like its reference (ADR 0076). Do
-   not judge your own component and do not use `--record-visual` for it. Spawn
-   a fresh subagent that did not author the component; give it the round's
-   visual packet (front, top, iso and every `compare-NN.png`) and the contract
-   lines for that geometry, and ask whether the model looks like its
-   reference. Write its answer with the exact packet hash from the summary as
+   not use `--record-visual` for a component.
+
+   Delegate each component's loop (ADR 0077). Once the component list is
+   settled, spawn one worker per Component, in parallel, as a
+   `component-worker` agent. Give it only: the component id and its
+   `part_<id>.step.py`; its sealed `geometry:<id>` reference and declared
+   camera; only that Component's Design Contract rows; the nozzle; and the
+   shape-repair limit (5). The worker runs the round above until build and
+   print pass, then reports in 10 lines or fewer. Neither you nor a worker views
+   a component's images. Only its reviewer does, and the worker acts on the
+   reviewer's text. If the runtime refuses a spawn at its thread limit, spawn
+   the next worker when one finishes.
+
+   When a worker reports build and print passing, you, not the worker, ask the
+   reviewer. Keep one reviewer thread per Component, spawned once as a
+   `component-reviewer` agent, and send each later review of that Component
+   to the same thread as a follow-up so its cached prefix survives. Give it the
+   round's visual packet paths (front, top, iso and every `compare-NN.png`)
+   and that Component's contract rows. Write its answer with the exact packet
+   hash from the worker's report as
    `{"round", "packet_sha256", "reviewer", "agrees", "reason", "differences"}`;
    `differences` lists `{"feature", "reference", "model"}` (at most 12) and is
    required when it disagrees. Record it with the same `--component` argument
-   plus `--record-review <review.json>`. A disagreement is the repair list for
-   the next round. Use explicit `--ref` only when a reference depicts that
+   plus `--record-review <review.json>`. On a disagreement, forward the
+   reviewer's text to the same worker: it is the repair list for the next
+   shape round. Close the worker once the reviewer agrees or the cap below is
+   reached.
+
+   Workers never edit a shared helper such as `features/forms.py`; they ask
+   you. Edit the helper yourself, then send every Component that uses it back
+   through a worker: the edit changes their B-rep identity, which invalidates
+   their passes (ADR 0073).
+
+   Use explicit `--ref` only when a reference depicts that
    component by itself; motion checks belong to the assembled object. A pass
    is component-specific evidence, not permission to skip the combined
    review. In Contract Mode (ADR 0074) name each component file after its
