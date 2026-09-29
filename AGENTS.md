@@ -46,7 +46,9 @@ All implementation and product-run work must preserve these boundaries:
   a separate Match Goal or product gate. Older runs retain their frozen
   selection protocol and accepted inventor.
 - Codex runs freeze their selected model, reasoning effort, and total token
-  allowance across stages, descendants, and resumes. Token-budget runs have
+  allowance across stages, descendants, and resumes. The one exception is the
+  fixed Component Reviewer role of new runs, which runs at `low` (ADR 0077).
+  Token-budget runs have
   no Workshop wall-clock, native-turn, proposal-retry, or lifecycle-round spending cap.
   Make retains its own frozen engineering checks and review allowance.
   Pending usage is not subject to a first-report timer; completed usage must
@@ -88,7 +90,9 @@ All implementation and product-run work must preserve these boundaries:
   prompt loop, lifecycle engine, or effect path.
 - The host materializes every eligible Inventor as an official project-scoped
   Codex custom agent under `.codex/agents/`, bound to its exact identity, Taste,
-  and skill bytes. That directory is the sole Inventor roster in a run. Codex
+  and skill bytes. That directory is the sole Inventor roster in a run; in new
+  runs it also holds the two fixed Make role agents, `component-worker` and
+  `component-reviewer`, which are not Inventors (ADR 0077). Codex
   owns native spawning, routing, and synthesis. The root session alone receives
   host stage authority and submits a stage proposal; child agents cannot
   advance gates or perform external effects.
@@ -132,7 +136,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0064-operator-selected-turn-boundary.md`, and
 `docs/adr/0074-every-component-scored-against-its-own-image.md`, and
 `docs/adr/0075-component-review-compares-form-and-acceptance-needs-a-second-reader.md`, and
-`docs/adr/0076-component-passes-on-an-independent-review-not-a-likeness-score.md` before changing the CLI, runtime,
+`docs/adr/0076-component-passes-on-an-independent-review-not-a-likeness-score.md`, and
+`docs/adr/0077-component-workers-and-a-root-owned-reviewer.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -204,6 +209,12 @@ beside the model at its declared camera. After five Shape Rounds a disagreeing
 review is recorded as a Component Acceptance, sealed as
 `component_acceptances` and reported when the run ends. Assembly rounds keep
 the Manager's visual feedback, the blind review and `--full`.
+ADR 0077 moves each Component's repair loop out of the root Manager for new
+runs: one Component Worker per Component, with only that Component's inputs,
+and one reused Component Reviewer thread per Component that the root, not the
+worker, asks. Only the reviewer views component images. The host materializes
+both as declarative custom agents; Codex owns spawning. Waits use 300000 ms.
+Assembly rounds, the blind review and final verification stay with the root.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

@@ -227,6 +227,21 @@ round passed its build and print checks. A Component gets five; repairs of
 build or print failures and reruns that change nothing are not Shape Rounds.
 _Avoid_: Attempt, iteration
 
+**Component Worker**:
+A short-lived agent that repairs one Component's own source until it builds
+and passes its print gates, then applies its Component Reviewer's text as
+Shape Rounds. It sees only that Component's inputs, never its images, and
+never edits a shared helper. Its context is discarded when the Component is
+done.
+_Avoid_: Builder, sub-Manager, part agent
+
+**Component Reviewer**:
+The reader who performs every Component Review of one Component, kept as one
+thread and asked again for each later review. The Workshop Manager, not the
+Component Worker, asks it. It is the only agent that views that Component's
+images.
+_Avoid_: Critic, judge
+
 **Component Acceptance**:
 A Component Review that disagreed after the Component used all its Shape
 Rounds, recorded instead of repaired again and reported to the person when
