@@ -817,6 +817,15 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaises(StateConflict):
             run.snapshot()
 
+    def test_snapshot_refuses_a_deleted_make_role_agent(self):
+        run = self.create(make_role_agents=make_role_agent_files())
+        agents = run.run_root / ".codex" / "agents"
+        agents.chmod(0o700)
+        (agents / "component-worker.toml").unlink()
+
+        with self.assertRaises((StateConflict, ArtifactError)):
+            run.snapshot()
+
     def test_snapshot_refuses_a_tampered_make_role_agent(self):
         run = self.create(make_role_agents=make_role_agent_files())
         agents = run.run_root / ".codex" / "agents"
