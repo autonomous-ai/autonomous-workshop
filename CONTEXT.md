@@ -174,7 +174,23 @@ _Avoid_: Part, piece, module
 
 **Make Round**:
 One build-and-repair cycle over a component or an assembly, driven by both
-numeric checks and the Manager's own inspection of the rendered result.
+numeric checks and an inspection of the rendered result: the Manager's own
+for an assembly, its Component Reviewer's for a Component.
+
+**Component Worker**:
+A short-lived agent that repairs one Component's own source from its Make
+Round summaries until the round's checks pass or its image stalls out, then
+applies its Component Reviewer's text. It sees only that Component's inputs,
+never its images, and never edits a shared helper. Its context is discarded
+when the Component is done.
+_Avoid_: Builder, sub-Manager, part agent
+
+**Component Reviewer**:
+The one reader, kept as one thread per Component, who views that Component's
+images: it gives the visual check of each round whose checks pass and judges
+whether an image that stalled out below the floor may be accepted. The
+Workshop Manager, not the Component Worker, asks it.
+_Avoid_: Critic, judge
 
 **Carry Forward**:
 The permission for a Correction Run to keep a Component's existing evidence
