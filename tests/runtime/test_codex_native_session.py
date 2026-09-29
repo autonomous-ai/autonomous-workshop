@@ -18,7 +18,7 @@ import workshop.runtime.codex as codex_runtime
 from workshop.errors import ContractError
 from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
 from workshop.workflow.inventor_selection import INVENTOR_SELECTION_MARKER_NAME
-from workshop.make.role_agents import make_role_agent_files
+from workshop.make.role_agents import MAKE_ROLE_AGENT_NAMES, make_role_agent_files
 from workshop.runtime.codex import (
     DEFAULT_WORKSHOP_MODEL,
     CODEX_FAILURE_DIAGNOSTIC_FILENAME,
@@ -356,7 +356,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 tuple(
                     'agents."%s".config_file=%s'
                     % (name, json.dumps(str(agents / (name + ".toml"))))
-                    for name in ("component-reviewer", "component-worker")
+                    for name in sorted(MAKE_ROLE_AGENT_NAMES)
                 ),
             )
 

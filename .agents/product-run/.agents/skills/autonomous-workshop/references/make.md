@@ -96,7 +96,8 @@ early-proof or recovery turn, takes precedence over them.
 - Start a long command (`make_round`, `verify_project`, a multi-part `gen`, a
   state or motion sheet) with `yield_time_ms: 300000`. If it is still running,
   continue it with an empty `write_stdin` poll at `yield_time_ms: 300000`.
-  Codex accepts an empty-poll yield from 5000 to 300000 ms (ADR 0077). The
+  The Codex 0.158.0 tool description allows an empty-poll yield from 5000 to
+  300000 ms (ADR 0077). The
   yield is an upper bound, not a sleep: the poll returns the moment the command
   exits, so a long yield never waits longer than the work actually takes, and a
   short one only buys another full-price request. When an `exec` cell yields with a cell id instead of finishing,
@@ -194,9 +195,9 @@ are separate. Frozen older runs retain their materialized rules and tools.
    Unique Geometry id, `part_<id>.step.py`: its round then shows the sealed
    `geometry:<id>` image automatically. Each `compare-NN.png` is a reference
    beside the model rendered at that reference's declared camera (`@AZ,EL` on
-   the `--ref`, else the front view), both at one height. Compare form there:
-   thinner or blockier bodies, missing openings, merged or missing members,
-   simplified detail. No silhouette score is computed. The assembly round
+   the `--ref`, else the front view), both at one height. The reviewer
+   compares form there: thinner or blockier bodies, missing openings, merged
+   or missing members, simplified detail. No silhouette score is computed. The assembly round
    never shows a component image against the whole object; one with no
    current component pass fails there as missing. Outside Contract Mode, show
    a sealed Wish reference that depicts one component in that component's

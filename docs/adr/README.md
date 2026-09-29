@@ -35,3 +35,4 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0074: Every Component is scored against its own sealed image](0074-every-component-scored-against-its-own-image.md)
 - [0075: Component review compares form, and acceptance needs a second reader](0075-component-review-compares-form-and-acceptance-needs-a-second-reader.md)
 - [0076: A Component passes on an independent review, not a likeness score](0076-component-passes-on-an-independent-review-not-a-likeness-score.md)
+- [0077: Component Workers and a root-owned Component Reviewer](0077-component-workers-and-a-root-owned-reviewer.md)

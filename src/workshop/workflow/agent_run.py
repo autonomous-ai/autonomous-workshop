@@ -35,6 +35,7 @@ from workshop.errors import (
 from workshop.make.revision import MAKE_INVENT_REVISION_CAPABILITY_PATH
 from workshop.make.role_agents import (
     MAKE_ROLE_AGENT_NAMES,
+    make_role_agent_path,
     parse_make_role_agent_bytes,
 )
 from workshop._validation import require_sha256
@@ -892,7 +893,7 @@ class AgentRun:
         for role_name, role_bytes in sorted(make_role_agents.items()):
             parse_make_role_agent_bytes(role_name, role_bytes)
             role_agent_files.append(
-                (PurePosixPath(".codex/agents") / (role_name + ".toml"), role_bytes, 0o400)
+                (PurePosixPath(make_role_agent_path(role_name)), role_bytes, 0o400)
             )
         if type(carry_unchanged) is not bool:
             raise ContractError("agent run carry_unchanged must be boolean")
@@ -1660,7 +1661,7 @@ class AgentRun:
             path for path in observed_paths if path.startswith(".codex/agents/")
         }
         for role_name in MAKE_ROLE_AGENT_NAMES:
-            role_path = ".codex/agents/%s.toml" % role_name
+            role_path = make_role_agent_path(role_name)
             if role_path not in observed_agent_paths or role_path in expected_agent_paths:
                 continue
             try:
@@ -1670,7 +1671,8 @@ class AgentRun:
             expected_agent_paths.add(role_path)
         if expected_agent_paths != observed_agent_paths:
             raise StateConflict(
-                "project-scoped Codex Inventor agents differ from the roster"
+                "project-scoped Codex agents differ from the Inventor roster "
+                "and sealed Make roles"
             )
         immutable_trees = (
             (self.run_root / ".agents", ".agents/", "skill"),

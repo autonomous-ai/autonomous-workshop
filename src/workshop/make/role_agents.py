@@ -25,6 +25,14 @@ _OPTIONAL_FIELDS = frozenset({"model_reasoning_effort"})
 _ROLE_REASONING_EFFORTS = ("low", "medium", "high", "xhigh")
 
 
+def make_role_agent_path(name: str) -> str:
+    """Return the run-relative path of one fixed role agent."""
+
+    if name not in MAKE_ROLE_AGENT_NAMES:
+        raise ContractError("%r is not a Make role agent" % (name,))
+    return ".codex/agents/%s.toml" % name
+
+
 def parse_make_role_agent_bytes(name: str, content: bytes) -> Mapping[str, Any]:
     """Validate one role agent's exact bytes against its fixed file name."""
 

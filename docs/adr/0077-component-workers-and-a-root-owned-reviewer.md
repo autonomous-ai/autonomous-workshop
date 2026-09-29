@@ -88,6 +88,10 @@ roster in the checkpoint is unchanged and never includes these roles; a run
 snapshot admits the two role files only when the run sealed them, and refuses
 a role file that does not parse as its role.
 
+Every new run receives both files, whatever its lifecycle. Only the
+component-first Spark Make protocol uses them; in Forge and Quest they sit
+unused, which keeps run creation independent of the lifecycle.
+
 Frozen runs keep what they materialized. A run created before this change has
 no role agents and its own `references/make.md`, so it keeps building
 Components in the root.
