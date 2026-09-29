@@ -215,8 +215,9 @@ are separate. Frozen older runs retain their materialized rules and tools.
    `--accept-likeness "<reason>" --acceptance-review <review.json>`; that
    round's checks pass, so it goes to the reviewer's visual check like any
    other. If the reviewer disagrees, forward its differences to the same
-   worker for more repair rounds; ask again only after the image stalls out
-   again. The reason names what the image shows and why this geometry cannot follow it.
+   worker for more repair rounds; ask again only after it has applied every
+   difference in rounds that changed the geometry and the summary still shows
+   the image stalled out. The reason names what the image shows and why this geometry cannot follow it.
    An image that has not stalled out, a review by the Manager, a review that
    disagrees, and geometry changed after the review are all refused. Every
    acceptance is reported to the person when the run ends; it is never

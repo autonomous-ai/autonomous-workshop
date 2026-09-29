@@ -1,4 +1,4 @@
-# ADR 0077: Component Workers, a root-owned Component Reviewer, and cost-ranked levers
+# ADR 0077: Component Workers and a root-owned Component Reviewer
 
 - Status: Accepted; implemented and deterministically tested; not yet
   validated by a live run
@@ -77,8 +77,9 @@ context is and how many requests carry it; waiting is a small one.
      rerun the round unchanged with `--accept-likeness` and
      `--acceptance-review`. That round's checks then pass, so it goes to the
      visual check like any other. A disagreement goes back to the same worker
-     for more repair rounds; the root asks again only after the image stalls
-     out again.
+     for more repair rounds; the root asks again only after the worker has
+     applied every difference in rounds that changed the geometry and the
+     image is still stalled out.
 3. **Only the reviewer sees component images.** Neither the root nor a
    worker views them; workers act on the round summary and the reviewer's
    text.
@@ -91,7 +92,16 @@ context is and how many requests carry it; waiting is a small one.
 6. **Longer waits.** `make_round` polls and `wait_agent` use 300000 ms instead
    of 30000 ms, in `references/make.md`, the product-run `AGENTS.md` and
    `make-round`.
-7. **Unchanged.** `make_round` and its pass rule are unchanged. Assembly
+7. **Parallel component packets.** `make_round` refuses visual feedback
+   whose packet's sources no longer match the project. It hashed every
+   source and STEP in the project, so a sibling worker's edit staled a
+   pending review and a Component could never pass while others were being
+   repaired. A component round's packet now binds its own source and STEP
+   and every shared file (helpers, the combined entry, design constraints),
+   but not another Component's own `part_<id>.step.py` or STEP. A shared
+   helper edit still stales every pending component packet. The assembly
+   packet still binds everything.
+8. **Unchanged.** `make_round`'s pass rule is unchanged. Assembly
    rounds, their visual feedback, the blind review and final verification
    stay with the root. Skill files are not trimmed or restructured. The
    auto-compaction threshold stays and is re-measured after the first run
@@ -116,28 +126,7 @@ Every new run receives both files, whatever its lifecycle. Only the
 component-first Spark Make protocol uses them; in Forge and Quest they sit
 unused, which keeps run creation independent of the lifecycle.
 
-Frozen runs keep what they materialized. A run created before this change has
-no role agents and its own `references/make.md`, so it keeps building
-Components in the root.
-
-## Consequences
-
-- The root's context no longer grows with every component round, its logs or
-  its images. Each worker's context is short-lived and discarded.
-- More threads run at once. A run with many Components may hit the runtime's
-  thread limit; the root then spawns the next worker when one finishes.
-- Each Component that passes costs at least one reviewer request, because
-  `make_round` keeps a round pending until its visual feedback is recorded
-  and a worker cannot record what it has not seen. Dropping that requirement
-  for component rounds was considered and rejected: it would change a gate
-  to save one low-effort request per Component.
-- Worker reports are the root's only view of component work, so a worker that
-  misreports can mislead it. The recorded visual feedback, the acceptance
-  review and the B-rep identity check still bind what passes.
-- Whether this lowers cost without lowering quality is not yet shown. It
-  needs a live run, which should also re-measure the compaction threshold.
-
-## Rejected alternatives
+## Alternatives considered
 
 - **Pass a component round on its checks alone, without visual feedback.**
   Would let the reviewer be asked only at stall-out, but changes
@@ -156,3 +145,48 @@ Components in the root.
   moves to short-lived workers instead.
 - **Choose effort per spawn call.** The spawn tool offers no reliable
   per-call effort; a custom agent file fixes it declaratively.
+
+## Consequences
+
+- The root's context no longer grows with every component round, its logs or
+  its images. Each worker's context is short-lived and discarded.
+- More threads run at once. A run with many Components may hit the runtime's
+  thread limit; the root then spawns the next worker when one finishes.
+- Each Component that passes costs at least one reviewer request, because
+  `make_round` keeps a round pending until its visual feedback is recorded
+  and a worker cannot record what it has not seen. Dropping that requirement
+  for component rounds was considered and rejected: it would change a gate
+  to save one low-effort request per Component.
+- Worker reports are the root's only view of component work, so a worker that
+  misreports can mislead it. The recorded visual feedback, the acceptance
+  review and the B-rep identity check still bind what passes.
+- Whether this lowers cost without lowering quality is not yet shown. It
+  needs a live run, which should also re-measure the compaction threshold.
+
+## Compatibility and migration
+
+Frozen runs keep what they materialized. A run created before this change has
+no role agents and its own `references/make.md`, so it keeps building
+Components in the root. A host tool refresh of such a run may bring the new
+`make-round/SKILL.md`; its component rule defers to the run's own
+`references/make.md`, so the old run still inspects in the root. A pending
+component packet written before the refresh bound every source, so the new
+tool refuses its feedback as stale; rerunning that component round writes a
+packet in the new form.
+
+## Verification
+
+- `tests/make/test_role_agents.py`: both role files parse, the reviewer runs at
+  `low`, the worker inherits the root's effort, and each role's instructions
+  keep their confinement.
+- `tests/workflow/test_agent_run.py`, `tests/workflow/test_native_host.py` and
+  `tests/runtime/test_codex_native_session.py`: new runs seal and register both
+  roles, and a missing or altered role file is refused.
+- `tests/runtime/test_agent_assets.py`: `references/make.md`, the product-run
+  `AGENTS.md` and `make-round` carry the worker, reviewer and 300000 ms rules.
+- `tests/make/test_make_round.py`: a component round whose checks pass stays
+  pending, and does not satisfy `--require-component-passes`, until its visual
+  feedback is recorded; another Component's own source or STEP does not stale
+  its packet, while its own source, a shared helper or the combined entry
+  does.
+- No live run has exercised the roles yet.

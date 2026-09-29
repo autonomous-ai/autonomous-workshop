@@ -8,6 +8,8 @@ out below the 0.90 floor (ADR 0075); disagreements go back to the same worker.
 Workers never edit shared helpers. The host materializes both roles as sealed
 custom agents in `.codex/agents/`; the reviewer runs at `low` reasoning effort
 and the worker inherits the root's. `make_round` polls and `wait_agent` now
-wait at 300000 ms. `make_round` itself is unchanged. Assembly rounds, the blind
+wait at 300000 ms. `make_round` keeps its pass rule; a component round's
+visual packet no longer binds other Components' own source and STEP, so
+parallel workers cannot stale each other's pending review. Assembly rounds, the blind
 review and final verification stay with the root. Frozen runs keep their
 materialized protocol. Not yet validated by a live run.

@@ -1058,5 +1058,10 @@ empty `write_stdin` poll at `yield_time_ms: 300000` instead of 30000. Codex
 as the process exits, so the longer yield only removes re-sent polling
 requests. Its first rule now says who inspects the visual packet: the Manager
 for an assembly round, the Component Reviewer for a component round once its
-checks pass. `make_round` itself is unchanged. This changes the `make-round`
-fingerprint.
+checks pass; in a run without one, it defers to that run's
+`references/make.md`. `make_round` keeps its pass rule. One change lets
+Component Workers run in parallel: a component round's visual packet binds its
+own `part_<id>.step.py` and STEP and every shared file, but no longer another
+Component's own source or STEP, so a sibling's repair cannot stale a pending
+review. The assembly packet still binds everything. This changes the
+`make-round` fingerprint.

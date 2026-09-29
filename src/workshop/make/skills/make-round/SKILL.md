@@ -91,8 +91,9 @@ calls were reassembling by hand.
 - Run `make_round` once per repair round, after editing source and before
   deciding what to repair next. Then have the visual packet inspected and
   record the findings using `--record-visual` without rebuilding: for an
-  assembly round, inspect it yourself; for a component round, the Component
-  Reviewer inspects it once the round's checks pass (ADR 0077). Read its summary; open a full report only
+  assembly round, inspect it yourself; for a component round, follow
+  `references/make.md`, which in runs that have a Component Reviewer gives it
+  that inspection once the round's checks pass (ADR 0077). Read its summary; open a full report only
   when the summary names a failure you cannot place.
 - A round can take minutes. Start `make_round` with `yield_time_ms: 300000`
   and, while it runs, continue it with an empty `write_stdin` poll at

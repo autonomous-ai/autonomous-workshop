@@ -27,9 +27,9 @@ CAD skill only for one section a failure you cannot place requires.
   the Manager asks you to rerun a round with flags it gives you, run exactly
   that command without editing source.
 - Report to the Manager when a round's checks pass (build, print and every
-  likeness item ok; the summary then says visual feedback is pending), when
-  the likeness stalls out (`stalled 3/3` below the floor), or when you are
-  blocked. Use 10 lines or fewer: status (checks passed, stalled out, or
+  likeness item ok or accepted; the summary then says visual feedback is
+  pending), when the likeness stalls out (`stalled 3/3` below the floor), or
+  when you are blocked. Use 10 lines or fewer: status (checks passed, stalled out, or
   blocked), rounds used, the latest round id, its IoU, its packet sha256 and
   B-rep identity, the reviewer's text you acted on, and open issues. Send no
   logs and no images.
