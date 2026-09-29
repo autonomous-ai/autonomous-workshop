@@ -52,6 +52,8 @@ from workshop.workflow.native_run import (
     _phase_design_vault,
     _likeness_acceptance_history,
     _made_likeness_acceptances,
+    _component_acceptance_history,
+    _made_component_acceptances,
     _playtest_score_history,
     _record_playtest_evidence,
     _record_make_evidence,
@@ -3337,6 +3339,70 @@ class NativeHostTest(unittest.TestCase):
         ):
             with self.assertRaises(ContractError):
                 _made_likeness_acceptances({"likeness_acceptances": bad})
+
+    COMPONENT_ACCEPTANCE = {
+        "label": "geometry:arm-right", "scope": "component:arm-right", "reviewer": "blind-critic",
+        "shape_rounds": 5, "reason": "Claws still read as paddles.", "accepted_by": "workshop-manager",
+    }
+
+    def test_component_acceptances_are_read_from_the_latest_make_gate_receipt(self):
+        accepted = dict(self.COMPONENT_ACCEPTANCE)
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary).resolve()
+            self.assertEqual(_component_acceptance_history(host), [])
+            gates = host / "gates"
+            gates.mkdir()
+
+            def receipt(name, checks):
+                (gates / name).write_text(json.dumps({"evidence": {"checks": checks}}), encoding="utf-8")
+
+            receipt("0003-make.json", {"round": 1, "component_acceptances": [accepted]})
+            receipt("0004-playtest.json", {"round": 1, "verdict": "block"})
+            self.assertEqual(_component_acceptance_history(host), [accepted])
+            # A frozen older receipt that carries only likeness acceptances
+            # reports no component acceptance, and vice versa.
+            self.assertEqual(_likeness_acceptance_history(host), [])
+            receipt("0006-make.json", {"round": 2})
+            self.assertEqual(_component_acceptance_history(host), [])
+            receipt("0007-make.json", {"component_acceptances": "nope"})
+            with self.assertRaisesRegex(StateConflict, "malformed: 0007-make.json"):
+                _component_acceptance_history(host)
+            (gates / "0008-make.json").write_text("{nope", encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "unreadable: 0008-make.json"):
+                _component_acceptance_history(host)
+
+    def test_made_component_acceptances_are_validated_before_the_host_seals_them(self):
+        accepted = dict(self.COMPONENT_ACCEPTANCE)
+        self.assertEqual(_made_component_acceptances({"title": "t"}), [])
+        self.assertEqual(_made_component_acceptances({"component_acceptances": [accepted]}), [accepted])
+        self.assertEqual(
+            _made_component_acceptances({"component_acceptances": [dict(accepted, shape_rounds=9)]}),
+            [dict(accepted, shape_rounds=9)],
+        )
+        for bad in (
+            "nope",
+            {"label": "geometry:x"},
+            [accepted] * 65,
+            ["not a mapping"],
+            [dict(accepted, accepted_by="user")],
+            [dict(accepted, scope="assembly")],
+            [dict(accepted, scope="component:")],
+            [dict(accepted, label="assembly")],
+            [dict(accepted, reviewer="Workshop-Manager")],
+            [dict(accepted, reviewer=" manager ")],
+            [dict(accepted, reviewer="")],
+            [dict(accepted, reviewer=3)],
+            [dict(accepted, shape_rounds=4)],
+            [dict(accepted, shape_rounds=True)],
+            [dict(accepted, shape_rounds=5.0)],
+            [dict(accepted, reason="")],
+            [dict(accepted, reason="x" * 1001)],
+            [dict(accepted, iou=0.4)],
+            [{k: v for k, v in accepted.items() if k != "reviewer"}],
+        ):
+            with self.subTest(bad=bad if not isinstance(bad, list) or len(bad) < 5 else "65 items"):
+                with self.assertRaises(ContractError):
+                    _made_component_acceptances({"component_acceptances": bad})
 
     def test_repair_base_names_the_best_sealed_round_only_when_the_last_is_worse(self):
         with tempfile.TemporaryDirectory() as temporary:

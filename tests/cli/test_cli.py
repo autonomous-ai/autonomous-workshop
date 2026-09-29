@@ -879,6 +879,30 @@ class NativeCommandTest(unittest.TestCase):
             stdout.getvalue(),
         )
 
+    def test_run_text_reports_every_component_accepted_at_the_shape_limit(self):
+        stdout = StringIO()
+        receipt = native_receipt(status="completed", stage="release")
+        receipt["component_acceptances"] = [
+            {"label": "geometry:arm-right", "scope": "component:arm-right", "reviewer": "blind-critic",
+             "shape_rounds": 5, "reason": "Claws still read as paddles.", "accepted_by": "workshop-manager"},
+            "not a mapping",
+            {"label": "geometry:tail", "reviewer": "critic-2", "shape_rounds": "5", "reason": "Tail is short."},
+        ]
+        with mock.patch("cli.main.native_run_status", return_value=receipt), redirect_stdout(stdout):
+            main(("status", "wish-one"))
+        text = stdout.getvalue()
+        self.assertIn(
+            "Component accepted at the shape-repair limit: geometry:arm-right "
+            "(reviewer blind-critic, 5 shape rounds) — Claws still read as paddles.",
+            text,
+        )
+        self.assertIn(
+            "Component accepted at the shape-repair limit: geometry:tail "
+            "(reviewer critic-2, ? shape rounds) — Tail is short.",
+            text,
+        )
+        self.assertNotIn("Likeness accepted", text)
+
     def test_status_text_surfaces_actionable_publication_need(self):
         stdout = StringIO()
         receipt = native_receipt(status="waiting", stage="release")

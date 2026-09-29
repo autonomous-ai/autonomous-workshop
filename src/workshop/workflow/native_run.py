@@ -2693,6 +2693,74 @@ def _likeness_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]:
     return acceptances
 
 
+_COMPONENT_ACCEPTANCE_FIELDS = frozenset(
+    {"label", "scope", "reviewer", "shape_rounds", "reason", "accepted_by"}
+)
+_COMPONENT_SHAPE_REPAIR_LIMIT = 5
+_WORKSHOP_MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
+
+
+def _made_component_acceptances(product: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Components accepted at the shape-repair limit, from sealed product metadata.
+
+    The Make finalizer copies them from the final verifier's hash-bound
+    ``component-acceptance.json``. Each one is a Component whose independent
+    reviewer still disagreed after the shape-repair allowance was spent. The
+    host checks their shape again before sealing them into its own receipt,
+    so a report never repeats an unbounded, self-reviewed or self-labelled
+    "user" acceptance.
+    """
+
+    raw = product.get("component_acceptances", ())
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence) or len(raw) > 64:
+        raise ContractError("Made component acceptances are invalid")
+    acceptances: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, Mapping) or set(item) != _COMPONENT_ACCEPTANCE_FIELDS:
+            raise ContractError("Made component acceptance fields are invalid")
+        label, scope, reason = item["label"], item["scope"], item["reason"]
+        reviewer, shape_rounds = item["reviewer"], item["shape_rounds"]
+        if (
+            not isinstance(label, str) or not 1 <= len(label.strip()) <= 200
+            or not label.startswith("geometry:")
+            or not isinstance(scope, str) or len(scope) > 200
+            or not scope.startswith("component:")
+            or not scope[len("component:"):].strip()
+            or not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= 200
+            or reviewer.strip().lower() in _WORKSHOP_MANAGER_NAMES
+            or type(shape_rounds) is not int
+            or shape_rounds < _COMPONENT_SHAPE_REPAIR_LIMIT
+            or not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 1000
+            or item["accepted_by"] != "workshop-manager"
+        ):
+            raise ContractError("Made component acceptance is invalid")
+        acceptances.append({key: item[key] for key in sorted(_COMPONENT_ACCEPTANCE_FIELDS)})
+    return acceptances
+
+
+def _component_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The accepted Components of the current Make, from the host's own receipt."""
+
+    gates = Path(host_state_root) / "gates"
+    if not gates.is_dir():
+        return []
+    receipts = sorted(
+        path for path in gates.iterdir()
+        if path.name.endswith("-make.json") and not path.is_symlink()
+    )
+    if not receipts:
+        return []
+    latest = receipts[-1]
+    try:
+        checks = json.loads(latest.read_bytes().decode("utf-8"))["evidence"]["checks"]
+        acceptances = checks.get("component_acceptances") or []
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        raise StateConflict("Make gate receipt is unreadable: %s" % latest.name) from exc
+    if not isinstance(acceptances, list):
+        raise StateConflict("Make gate receipt is malformed: %s" % latest.name)
+    return acceptances
+
+
 def _best_round(history: Sequence[Mapping[str, Any]]) -> Optional[Mapping[str, Any]]:
     """The round a repair should start from: fewest machine failures first.
 
@@ -7347,6 +7415,9 @@ def _evaluate_make_stage(
         likeness_acceptances = _made_likeness_acceptances(made.product)
         if likeness_acceptances:
             product_checks["likeness_acceptances"] = likeness_acceptances
+        component_acceptances = _made_component_acceptances(made.product)
+        if component_acceptances:
+            product_checks["component_acceptances"] = component_acceptances
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -9973,6 +10044,9 @@ def _native_receipt(
     likeness_acceptances = (
         _likeness_acceptance_history(paths.host_state) if paths is not None else []
     )
+    component_acceptances = (
+        _component_acceptance_history(paths.host_state) if paths is not None else []
+    )
     local_release_run = False
     if paths is not None:
         try:
@@ -10189,6 +10263,7 @@ def _native_receipt(
         "kind": "native-agent-run",
         "rounds": rounds,
         "likeness_acceptances": likeness_acceptances,
+        "component_acceptances": component_acceptances,
         "product_id": checkpoint.product_id,
         "status": visible_status,
         "stage": visible_stage,

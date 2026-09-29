@@ -457,6 +457,23 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                     item.get("reason", ""),
                 )
             )
+    components = receipt.get("component_acceptances")
+    if isinstance(components, (list, tuple)):
+        # Components accepted when the shape-repair allowance ran out while
+        # the independent reviewer still disagreed, with the recorded reason.
+        for item in components:
+            if not isinstance(item, Mapping):
+                continue
+            rounds = item.get("shape_rounds")
+            print(
+                "Component accepted at the shape-repair limit: %s (reviewer %s, %s shape rounds) — %s"
+                % (
+                    item.get("label", "?"),
+                    item.get("reviewer", "?"),
+                    rounds if type(rounds) is int else "?",
+                    item.get("reason", ""),
+                )
+            )
     publication = receipt.get("publication")
     publication_reason = None
     if isinstance(publication, Mapping):

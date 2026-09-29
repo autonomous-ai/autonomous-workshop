@@ -218,7 +218,7 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
 - A Make session's cost is the number of model requests times the context
   each carries. Run each repair round through the materialized `make-round`
   skill (`scripts/make_round`) and read its summary, instead of calling
-  export, thickness, render, likeness, and motion tools one by one. Its
+  export, thickness, render, and motion tools one by one. Its
   `SKILL.md` is the tool card: the exact invocations of every cad and
   image-to-cad gate. Do not `cat`, `rg`, or `sed` through skill scripts to
   learn their flags, and open a full report only when a summary names a
