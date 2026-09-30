@@ -52,6 +52,9 @@ _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _SESSION_ID = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
 _MODEL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 _MAX_CLAUDE_FAILURE_MESSAGE_CHARS = 4 * 1024
+CLAUDE_TOKEN_BUDGET_STOP_MESSAGE = (
+    "product token budget stopped native execution; inspect Workshop status"
+)
 # A failed turn keeps its classification, never the prose that carried it.
 _CLAUDE_TERMINAL_ERROR_SIGNATURES = (
     (
@@ -249,8 +252,8 @@ def _native_token_usage(event: Mapping[str, Any]) -> Optional[NativeTokenUsage]:
 
     Claude Code repeats a non-final ``usage`` on every ``assistant`` event of
     a multi-block message and forwards subagent requests only behind an
-    opt-in flag this adapter does not pass, so per-message usage is never
-    summed here.  The result's ``modelUsage`` is the CLI's own
+    opt-in flag this adapter passes solely for a token budget's running
+    estimate, so per-message usage is never summed here.  The result's ``modelUsage`` is the CLI's own
     per-invocation total for every model call (main loop, subagents,
     compaction).  One ``--print`` invocation is one host turn and a resumed
     session starts that total fresh, so the latest result is the whole
@@ -298,6 +301,83 @@ def _native_token_usage(event: Mapping[str, Any]) -> Optional[NativeTokenUsage]:
     if not reasoning_measured:
         return (gross_input, None, None, output, None)
     return (gross_input, cached_input, cache_write_input, output, reasoning)
+
+
+def _request_usage(event: Mapping[str, Any]) -> Optional[tuple[str, dict[str, int]]]:
+    """One model request's usage as the stream reports it, keyed by message id.
+
+    Claude Code repeats a request's ``usage`` on every block of the same
+    message, so the latest value per id replaces, never adds to, an earlier
+    one. Forwarded subagent requests carry their own ids. The input counters
+    are exact per request; ``output_tokens`` is the value at the time the block
+    was streamed and may undercount, which the terminal result corrects.
+    """
+
+    if event.get("type") != "assistant":
+        return None
+    message = event.get("message")
+    if not isinstance(message, Mapping):
+        return None
+    message_id = message.get("id")
+    usage = message.get("usage")
+    if not isinstance(message_id, str) or not message_id or not isinstance(usage, Mapping):
+        return None
+    counts = [
+        _bounded_token_count(usage.get(name))
+        for name in (
+            "input_tokens",
+            "cache_read_input_tokens",
+            "cache_creation_input_tokens",
+            "output_tokens",
+        )
+    ]
+    if any(count is None for count in counts):
+        return None
+    uncached, cache_read, cache_write, output = counts
+    return message_id, {
+        "input_tokens": uncached + cache_read + cache_write,
+        "cached_input_tokens": cache_read,
+        "cache_write_input_tokens": cache_write,
+        "output_tokens": output,
+        "reasoning_output_tokens": 0,
+    }
+
+
+_INVOCATION_COUNTERS = (
+    "input_tokens",
+    "cached_input_tokens",
+    "cache_write_input_tokens",
+    "output_tokens",
+    "reasoning_output_tokens",
+)
+
+
+def _invocation_counters(
+    requests: Mapping[str, Mapping[str, int]],
+    terminal: Optional[NativeTokenUsage],
+) -> dict[str, int]:
+    """The invocation's running total: streamed requests, raised by the result.
+
+    The result's ``modelUsage`` also counts compaction and final output, so
+    each counter takes the larger of the two; neither source can lower what
+    the other already observed.
+    """
+
+    totals = {name: 0 for name in _INVOCATION_COUNTERS}
+    for counters in requests.values():
+        for name in _INVOCATION_COUNTERS:
+            totals[name] += counters[name]
+    if terminal is not None:
+        for name, value in zip(_INVOCATION_COUNTERS, terminal):
+            if value is not None:
+                totals[name] = max(totals[name], value)
+    if totals["cached_input_tokens"] + totals["cache_write_input_tokens"] > totals["input_tokens"]:
+        totals["input_tokens"] = (
+            totals["cached_input_tokens"] + totals["cache_write_input_tokens"]
+        )
+    if totals["reasoning_output_tokens"] > totals["output_tokens"]:
+        totals["output_tokens"] = totals["reasoning_output_tokens"]
+    return totals
 
 
 @dataclass(frozen=True)
@@ -406,6 +486,9 @@ class ClaudeNativeSessionLauncher:
         self._popen_factory = popen_factory
         self._version_runner = version_runner
         self._uuid_factory = uuid_factory
+        # The host sets this per turn for a token-budgeted run. It receives the
+        # invocation's running counters and raises to stop the turn.
+        self.token_budget_observer: Optional[Callable[..., None]] = None
         self.cli_version = cli_version or self._read_cli_version()
         if self.binary and not claude_supports_native_workshop(self.cli_version):
             raise ClaudeInvocationError(
@@ -589,6 +672,10 @@ class ClaudeNativeSessionLauncher:
             command.extend(
                 ("--model", self.model, "--effort", self.reasoning_effort)
             )
+        if self.token_budget_observer is not None:
+            # Subagent requests reach the stream, and so the budget, only
+            # when forwarded.
+            command.append("--forward-subagent-text")
         if session_id is not None:
             command.extend(("--resume", session_id))
         command.append(prompt)
@@ -661,6 +748,20 @@ class ClaudeNativeSessionLauncher:
         stream_error: Optional[str] = None
         terminal_signature: Optional[str] = None
         token_usage: Optional[NativeTokenUsage] = None
+        budget_observer = self.token_budget_observer
+        requests: dict[str, dict[str, int]] = {}
+        observed_counters: Optional[dict[str, int]] = None
+        budget_stopped = False
+        stream_finished = False
+
+        def _observe_budget(*, final: bool) -> None:
+            nonlocal observed_counters
+            counters = _invocation_counters(requests, token_usage)
+            if not final and counters == observed_counters:
+                return
+            observed_counters = counters
+            budget_observer(counters, final=final)
+
         stdout = process.stdout
         try:
             if stdout is not None:
@@ -702,6 +803,19 @@ class ClaudeNativeSessionLauncher:
                         # The latest result carries the invocation's running
                         # total; it replaces, never adds to, an earlier one.
                         token_usage = _native_token_usage(event)
+                    if budget_observer is not None:
+                        request = _request_usage(event)
+                        if request is not None:
+                            requests[request[0]] = request[1]
+                        if request is not None or event.get("type") == "result":
+                            try:
+                                _observe_budget(final=False)
+                            except Exception:
+                                budget_stopped = True
+                                process.kill()
+                                raise ClaudeInvocationError(
+                                    CLAUDE_TOKEN_BUDGET_STOP_MESSAGE
+                                ) from None
                     activity = _classify_event(event)
                     if activity is not None and activity_observer is not None:
                         activity_observer(activity)
@@ -709,11 +823,24 @@ class ClaudeNativeSessionLauncher:
             returncode = process.wait(
                 timeout=max(0.1, remaining) if math.isfinite(remaining) else None
             )
+            stream_finished = True
         except subprocess.TimeoutExpired as exc:
             process.kill()
             raise ClaudeRecoverableInvocationError(
                 "Claude native session timed out"
             ) from exc
+        finally:
+            if budget_observer is not None and not budget_stopped:
+                # Charge what the stream reported even when the turn ended
+                # early; a stop raised here outranks a normal return.
+                try:
+                    _observe_budget(final=True)
+                except Exception:
+                    process.kill()
+                    if stream_finished:
+                        raise ClaudeInvocationError(
+                            CLAUDE_TOKEN_BUDGET_STOP_MESSAGE
+                        ) from None
         stderr_thread.join(timeout=1.0)
         if stream_error is not None:
             raise ClaudeInvocationError(stream_error)
@@ -740,6 +867,7 @@ class ClaudeNativeSessionLauncher:
 
 __all__ = [
     "CLAUDE_SESSION_CHECKPOINT_NAME",
+    "CLAUDE_TOKEN_BUDGET_STOP_MESSAGE",
     "ClaudeInvocationError",
     "ClaudeNativeSessionLauncher",
     "ClaudeNativeSessionOutcome",

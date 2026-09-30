@@ -1,7 +1,7 @@
 # Product token budget v1
 
-The Codex host enforces one input-plus-output token allowance for the entire
-product, default thirty million. Cached input counts and is reported separately;
+The host enforces one input-plus-output token allowance for the entire
+product, default thirty million, for a Codex or Claude Code Manager. Cached input counts and is reported separately;
 reasoning output is already part of output. Children, retries and resumes share
 the allowance. Explicit resume never resets usage. The host may explicitly
 authorize a different total limit; only the host changes the private budget.
@@ -21,4 +21,5 @@ drop required evidence. Every existing finalizer and product gate still applies.
 Finish the same product from its existing artifacts. Report concrete failed
 checks and the repair performed; do not restart broad exploration on resume.
 Other Manager adapters retain their frozen policies until equivalent measured
-usage enforcement is implemented.
+usage enforcement is implemented. A Claude Code run created before its
+allowance keeps its unbudgeted policy.

@@ -1023,7 +1023,7 @@ private Wish demonstrate that:
 | Manager runtime | Status |
 |---|---|
 | Codex | Implemented default |
-| Claude Code | Experimental adapter; native token usage measured |
+| Claude Code | Experimental adapter; native token usage measured and budgeted |
 | Grok Build | Experimental adapter; no token usage reported |
 
 The stable seam is the persistent toy project, stage objective and proof
@@ -1055,12 +1055,23 @@ breakdown unavailable, exactly as a base-only Codex turn does. An error
 result, whose totals Claude Code zeroes, is a failed turn, not a zero-token
 measurement. `workshop status --json`, checkpoints and the public
 `TOKENS.json` then say `measured`, `partial` or `unavailable` for a
-Claude-managed run with the same schema-v3 shape as a Codex run. This is
-telemetry only: Claude Code runs still have no host token budget.
+Claude-managed run with the same schema-v3 shape as a Codex run.
+
+Claude Code runs created from ADR 0078 on also carry the product token
+allowance described below, enforced while the turn streams. The adapter then
+passes `--forward-subagent-text`, so subagent requests reach the stream, and
+reports a running total per invocation to the host. Each request counts once,
+by message id, and the terminal `modelUsage` raises (never lowers) that total,
+which adds compaction and final output. Each invocation is one observed thread
+of the ledger. The host kills the turn as soon as the total reaches the cap,
+records `token-budget-stop.json`, and keeps the session resumable. A request
+that streams no event cannot be stopped midway, so a turn may overshoot the
+cap by its last requests. Claude runs created before ADR 0078 keep their
+unbudgeted policy on resume.
 
 ## Product budgets and legacy timeouts
 
-New Codex runs freeze `token-budget-v1.md`: `--max-tokens` defaults to
+New Codex and Claude Code runs freeze `token-budget-v1.md`: `--max-tokens` defaults to
 30,000,000 input-plus-output tokens across all stages, native children and
 resumes. Cached input is included once; reasoning is already part of output.
 The host persists completed-request usage from a Codex 0.153.4-or-newer rollout
@@ -1087,7 +1098,9 @@ observed cap.
 Normal twenty-minute splits and aggregate time/turn allowances are superseded;
 there is no wall-clock launch watchdog or native-turn, proposal-retry, or
 lifecycle-round execution cap for token-budget products. Daydream is outside each product
-allowance. Other runtime adapters retain their frozen policy. See
+allowance. The rollout and reconciliation details above are Codex's; a Claude
+Code run meters its streamed invocations instead (ADR 0078). Other runtime
+adapters retain their frozen policy. See
 [ADR 0049](adr/0049-product-wide-token-budget.md). Quiet Arc completed a live
 Spark/Codex/Astra/medium trial with same-session recovery and verified Factory
 publication within its 10M-token allowance; physical manufacture is untested.

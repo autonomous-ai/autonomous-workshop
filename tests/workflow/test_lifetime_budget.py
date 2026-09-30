@@ -49,8 +49,10 @@ def test_legacy_run_does_not_acquire_budget(tmp_path):
     assert not list(tmp_path.iterdir())
 
 
-def test_other_adapter_does_not_claim_an_unenforced_budget(tmp_path):
+@pytest.mark.parametrize("manager_id", ["claude", "grok"])
+def test_other_adapter_does_not_claim_an_unenforced_budget(tmp_path, manager_id):
+    """Only a product token allowance is metered outside Codex."""
     paths, checkpoint = context(tmp_path)
-    checkpoint.manager_id = "claude"
+    checkpoint.manager_id = manager_id
     assert _load_lifetime_budget(paths, checkpoint, initialize=True) is None
     assert not list(tmp_path.iterdir())

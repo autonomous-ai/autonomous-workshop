@@ -10,7 +10,9 @@ from workshop.runtime.managers import (
     NATIVE_TOKEN_USAGE_FIELDS,
 )
 from workshop.runtime.claude import (
+    CLAUDE_TOKEN_BUDGET_STOP_MESSAGE,
     DEFAULT_CLAUDE_TIMEOUT_SECONDS,
+    ClaudeInvocationError,
     ClaudeNativeSessionLauncher,
     ClaudeNativeSessionOutcome,
     claude_subprocess_environment,
@@ -696,6 +698,128 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         self.assertFalse(
             [key for key in payload if "cost" in key or "usd" in key or "total" in key]
         )
+
+    def _budgeted_launcher(self, lines, observer, commands=None):
+        processes = []
+
+        def popen(command, **kwargs):
+            del kwargs
+            if commands is not None:
+                commands.append(command)
+            processes.append(_FakeProcess(lines))
+            return processes[-1]
+
+        launcher = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.1.285",
+            popen_factory=popen,
+            uuid_factory=lambda: "initial-session-id",
+        )
+        launcher.token_budget_observer = observer
+        return launcher, processes
+
+    def test_a_budget_observes_each_request_once_and_the_result_last(self):
+        """Repeated blocks of one request count once; forwarded subagent
+        requests count; the terminal totals raise, never lower, the count."""
+
+        reports = []
+        commands = []
+        subagent = _assistant_line("msg_sub", PER_BLOCK_USAGE)
+        subagent = json.dumps(
+            {**json.loads(subagent), "parent_tool_use_id": "toolu_01"}
+        ) + "\n"
+        launcher, unused = self._budgeted_launcher(
+            [
+                _init_line(),
+                _assistant_line("msg_01A", PER_BLOCK_USAGE),
+                _assistant_line("msg_01A", PER_BLOCK_USAGE),
+                subagent,
+                _result_line({"claude-opus-5": OPUS_TOTALS}),
+            ],
+            lambda counters, *, final: reports.append((dict(counters), final)),
+            commands,
+        )
+        self._turn(launcher, "start")
+        self.assertIn("--forward-subagent-text", commands[0])
+        request_input = 2 + 13_227 + 10_010
+        self.assertEqual(
+            [(counters["input_tokens"], final) for counters, final in reports],
+            [
+                (request_input, False),
+                (2 * request_input, False),
+                (OPUS_GROSS_INPUT, False),
+                (OPUS_GROSS_INPUT, True),
+            ],
+        )
+        final = reports[-1][0]
+        self.assertEqual(final["output_tokens"], 245_325)
+        self.assertEqual(final["reasoning_output_tokens"], 181_276)
+        self.assertEqual(final["cached_input_tokens"], 16_463_646)
+
+    def test_an_unbudgeted_turn_forwards_no_subagent_text(self):
+        commands = []
+        launcher, unused = self._budgeted_launcher(
+            [_init_line(), _result_line({"claude-opus-5": OPUS_TOTALS})],
+            None,
+            commands,
+        )
+        self._turn(launcher, "start")
+        self.assertNotIn("--forward-subagent-text", commands[0])
+
+    def test_a_budget_stop_kills_the_turn_at_the_crossing_request(self):
+        seen = []
+
+        def observer(counters, *, final):
+            seen.append(final)
+            if counters["input_tokens"] > 30_000:
+                raise RuntimeError("limit")
+
+        launcher, processes = self._budgeted_launcher(
+            [
+                _init_line(),
+                _assistant_line("msg_01A", PER_BLOCK_USAGE),
+                _assistant_line("msg_01B", PER_BLOCK_USAGE),
+                _assistant_line("msg_01C", PER_BLOCK_USAGE),
+                _result_line({"claude-opus-5": OPUS_TOTALS}),
+            ],
+            observer,
+        )
+        with self.assertRaisesRegex(
+            ClaudeInvocationError, CLAUDE_TOKEN_BUDGET_STOP_MESSAGE
+        ):
+            self._turn(launcher, "start")
+        self.assertEqual(processes[0].returncode, -9)
+        # The crossing report is the last one; no final report repeats it.
+        self.assertEqual(seen, [False, False])
+
+    def test_a_limit_reached_by_the_final_totals_stops_a_finished_turn(self):
+        def observer(counters, *, final):
+            if final:
+                raise RuntimeError("limit")
+
+        launcher, unused = self._budgeted_launcher(
+            [_init_line(), _result_line({"claude-opus-5": OPUS_TOTALS})],
+            observer,
+        )
+        with self.assertRaisesRegex(
+            ClaudeInvocationError, CLAUDE_TOKEN_BUDGET_STOP_MESSAGE
+        ):
+            self._turn(launcher, "start")
+
+    def test_a_turn_that_ends_early_still_charges_what_streamed(self):
+        reports = []
+        launcher, unused = self._budgeted_launcher(
+            [_init_line(), _assistant_line("msg_01A", PER_BLOCK_USAGE)],
+            lambda counters, *, final: reports.append((dict(counters), final)),
+        )
+        launcher_error = None
+        try:
+            self._turn(launcher, "start")
+        except Exception as exc:  # the missing finalizer is not this test's subject
+            launcher_error = exc
+        del launcher_error
+        self.assertEqual(reports[-1][1], True)
+        self.assertEqual(reports[-1][0]["input_tokens"], 2 + 13_227 + 10_010)
 
     def test_a_stream_without_terminal_totals_is_truthfully_unmeasured(self):
         """No per-model totals means an unmeasured turn, never a guessed one.
