@@ -45,6 +45,12 @@ one the photograph shows is a finding, not a pass.
 other whose own silhouettes score below IoU 0.85 stop the run — the same camera
 cannot produce two different outlines, so a reference mask has failed.
 
+**A reference of one part scores that part.** When the references are of the
+separate pieces of a set rather than of the assembled whole, name the piece each
+one shows in the handoff table; the CAD phase passes it to `verify_project` as
+`--likeness-entry LABEL=part_<role>.step.py`, and the piece, not the combined
+lineup, is rendered and scored.
+
 ### Declare the camera, or the gate cannot see handedness
 
 `--camera` confines the search to the declared window, where the mirror pose

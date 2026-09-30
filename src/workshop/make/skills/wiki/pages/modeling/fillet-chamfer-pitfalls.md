@@ -8,8 +8,9 @@ sources:
   - skills/image-to-cad/references/build123d-operations.md (sketch fillet order; before the move)
   - "toolchain: build123d 0.10-0.11 on OCP 7.9"
   - "experience: chamfer and section-offset both failed on the bed edges of a lofted flexi chain"
+  - "experience: a bevel round a flat-faced limb failed on the fused limb and on one mirrored side"
 related: [construction-strategy, operation-families, kernel-validity, modeling-failure-modes, flexi-chain-joints]
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # Fillet and chamfer pitfalls
@@ -118,3 +119,18 @@ further back, and `extrude(face, amount, taper=)` draws it. Keep the taper off
 45 deg (0.3 mm over 0.4 mm is 37 deg). A plain step two layers tall is not the
 same thing: its ceiling is a flat ledge that the overhang gate reads as needing
 support.
+
+## Bevel the pieces, then fuse
+
+A chamfer round the outline of a fused union — a limb of bones and knobs
+cut flat on one face — failed at every length: the outline has concave
+corners where one piece meets the next, and the chamfer cannot close there.
+Each piece's own outline is a single smooth curve that takes the full
+chamfer. Chamfer every piece on its own and fuse the chamfered pieces; the
+bevels meet in the union's concave corners by themselves.
+
+The kernel can also refuse a chamfer on one side of a symmetric piece and
+take it on the other. A loft centred on Y = 0 and cut on its −Y half refused
+a chamfer at any length that the same loft cut on its +Y half took at full
+size. When mirror pairs are built from symmetric pieces, build every one on
+the side that works and `mirror` the result for the other side.

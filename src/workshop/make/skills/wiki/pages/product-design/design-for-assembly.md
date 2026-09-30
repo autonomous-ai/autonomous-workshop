@@ -6,8 +6,9 @@ sources:
   - https://en.wikipedia.org/wiki/Design_for_assembly
   - https://www.fabflow.app/blog/design-for-assembly-dfa-complete-engineering-guide
   - https://www.denix.osd.mil/soh/denix-files/sites/21/2016/03/02_MIL-STD-1472F-Human-Engineering.pdf
-related: [printed-part-count, joints, feature-build-order, handheld-ergonomics]
-updated: 2026-09-23
+  - "experience: a shell split at a reference image's foot seam could not be lifted over the core inside it; check_motion's service path found it"
+related: [printed-part-count, joints, feature-build-order, handheld-ergonomics, mechanism-verification]
+updated: 2026-09-29
 ---
 
 # Design for assembly
@@ -82,3 +83,14 @@ too many.
    part.
 4. Put the chamfer on the socket or the pin as a feature in the source, not
    left to post-processing.
+
+## A shell parts where its opening clears what it covers
+
+A shell that lifts off over an internal part must part at a height where its
+opening is wider than everything that passes through it: the part's widest
+section plus clearance, plus any lip or spigot that the joint puts round it.
+On a body that narrows toward its ends (an egg, a bottle, a figure), that rules
+out the ends. A line in the reference image at the foot may only be decoration;
+keep it as a groove and put the real part line where the section allows. Prove
+it with a clear motion condition that lifts the shell off in its unlocked pose
+-- no other gate asks whether the shell can come off at all.

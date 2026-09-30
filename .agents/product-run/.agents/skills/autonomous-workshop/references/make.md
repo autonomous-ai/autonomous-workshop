@@ -97,10 +97,10 @@ early-proof or recovery turn, takes precedence over them.
   state or motion sheet) with `yield_time_ms: 300000`. If it is still running,
   continue it with an empty `write_stdin` poll at `yield_time_ms: 300000`.
   The Codex 0.158.0 tool description allows an empty-poll yield from 5000 to
-  300000 ms (ADR 0077). The
-  yield is an upper bound, not a sleep: the poll returns the moment the command
-  exits, so a long yield never waits longer than the work actually takes, and a
-  short one only buys another full-price request. When an `exec` cell yields with a cell id instead of finishing,
+  300000 ms (ADR 0077). The yield is an upper bound, not a sleep: the poll
+  returns the moment the command exits, so a long yield never waits longer than
+  the work actually takes, and a short one only buys another full-price
+  request. When an `exec` cell yields with a cell id instead of finishing,
   continue that cell with `wait` at the same large yield; `wait` at 1000 or
   10000 is the same waste as a short `write_stdin` poll.
 - `1000` is not a waiting value. It appears in the `exec` pragma example

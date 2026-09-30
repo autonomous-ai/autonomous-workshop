@@ -36,6 +36,7 @@ import ast
 import contextlib
 import importlib.util
 import io
+import math
 import sys
 from pathlib import Path
 
@@ -76,6 +77,25 @@ IGNORED_DIR_NAMES = {
 # discovery scan treats any worktree file carrying these bytes as a generator
 # candidate, and would log a spurious "invalid CAD source" on every gen run.
 GEN_FUNC = "gen_" + "step"
+
+# A multi-colour print entry returns its colour regions as separate solids --
+# what a multi-material slicer loads -- and they share every face they meet on.
+# Tessellated as one mesh, those shared faces read as non-manifold edges and
+# flip every inside/outside count, so the mesh gates would measure the plate,
+# not the object. Such an entry also defines this function, returning the
+# printed object as one solid (the union built from the primitives, not by
+# re-fusing the regions: see `wiki show fdm-multi-material-design`), and the
+# mesh gates measure that. `gen_step()` stays the colour plate.
+PRINT_UNION_FUNC = "gen_print_union"
+
+# Workshop: the mesh gates measure that union in place of the plate `gen_step()`
+# exports, so it has to be the plate's own material -- the regions' summed
+# volume inside the regions' bounding box. A stand-in that prints more easily (a
+# region left out, a wall thickened, the body moved) would otherwise pass every
+# print gate, the host's print-ready rerun included, for an object nobody ships.
+PRINT_UNION_VOLUME_MM3 = 1e-3
+PRINT_UNION_VOLUME_RELATIVE = 1e-5
+PRINT_UNION_BOX_MM = 0.01
 
 
 def declared_printable(path: Path) -> bool | None:
@@ -199,18 +219,70 @@ def purge_project_modules(project: Path) -> None:
             sys.modules.pop(name, None)
 
 
-def build_entry(path: Path, namespace: str):
-    """Build one entry and return its shape, with generator stdout swallowed."""
+def build_entry(path: Path, namespace: str, *, printed: bool = False):
+    """Build one entry and return its shape, with generator stdout swallowed.
+
+    `printed=True` is the mesh gates' view: the entry's `gen_print_union()` when
+    it defines one (a multi-colour plate), otherwise `gen_step()`.
+    """
     sink = io.StringIO()
     with project_on_path(path.parent), contextlib.redirect_stdout(sink):
         module = load_entry(path, namespace)
-        builder = getattr(module, GEN_FUNC, None)
+        name = GEN_FUNC
+        if printed and callable(getattr(module, PRINT_UNION_FUNC, None)):
+            name = PRINT_UNION_FUNC
+        builder = getattr(module, name, None)
         if builder is None:
-            raise AttributeError(f"{path.name} defines no {GEN_FUNC}()")
+            raise AttributeError(f"{path.name} defines no {name}()")
         shape = builder()
+        plate = None
+        if name == PRINT_UNION_FUNC and shape is not None:
+            exported = getattr(module, GEN_FUNC, None)
+            if exported is None:
+                raise AttributeError(f"{path.name} defines no {GEN_FUNC}()")
+            plate = exported()
     if shape is None:
-        raise ValueError(f"{path.name} {GEN_FUNC}() returned None")
+        raise ValueError(f"{path.name} {name}() returned None")
+    if name == PRINT_UNION_FUNC:
+        if plate is None:
+            raise ValueError(f"{path.name} {GEN_FUNC}() returned None")
+        check_print_union(path, plate, shape)
     return shape
+
+
+def check_print_union(path: Path, plate, union) -> None:
+    """Refuse a `gen_print_union()` that is not the material `gen_step()` exports.
+
+    Volume and bounding box, not a Boolean difference: two integrations and two
+    boxes cost nothing beside the gates they guard, and together they catch a
+    region left out, material added, or the body moved or resized.
+    """
+    plate_solids, union_solids = list(plate.solids()), list(union.solids())
+    if not plate_solids or not union_solids:
+        raise ValueError(
+            f"{path.name}: {GEN_FUNC}() and {PRINT_UNION_FUNC}() must both return solids"
+        )
+    plate_volume = math.fsum(float(solid.volume) for solid in plate_solids)
+    union_volume = math.fsum(float(solid.volume) for solid in union_solids)
+    tolerance = max(PRINT_UNION_VOLUME_MM3, PRINT_UNION_VOLUME_RELATIVE * plate_volume)
+    if not math.isfinite(union_volume) or abs(union_volume - plate_volume) > tolerance:
+        raise ValueError(
+            f"{path.name}: {PRINT_UNION_FUNC}() holds {union_volume:.4f} mm3 but the "
+            f"regions {GEN_FUNC}() exports hold {plate_volume:.4f} mm3. The print gates "
+            f"measure the union in place of the plate, so it must be the plate's own "
+            "material: build it from the primitives the regions were cut from"
+        )
+    a, b = plate.bounding_box(), union.bounding_box()
+    drift = max(
+        abs(a.min.X - b.min.X), abs(a.min.Y - b.min.Y), abs(a.min.Z - b.min.Z),
+        abs(a.max.X - b.max.X), abs(a.max.Y - b.max.Y), abs(a.max.Z - b.max.Z),
+    )
+    if drift > PRINT_UNION_BOX_MM:
+        raise ValueError(
+            f"{path.name}: {PRINT_UNION_FUNC}() sits {drift:.4f} mm off the bounding box "
+            f"of the regions {GEN_FUNC}() exports. The print gates measure the union in "
+            "place of the plate, so it must occupy the plate's own place"
+        )
 
 
 def tessellate(shape, *, deviation: float = MESH_DEVIATION,
@@ -234,8 +306,9 @@ def tessellate(shape, *, deviation: float = MESH_DEVIATION,
 
 def entry_mesh(path: Path, namespace: str, *, deviation: float = MESH_DEVIATION,
                angular: float = MESH_ANGULAR):
-    """Build one printable entry from source and tessellate it in one step."""
-    return tessellate(build_entry(path, namespace), deviation=deviation,
+    """Build one printable entry from source -- its printed object, see
+    PRINT_UNION_FUNC -- and tessellate it in one step."""
+    return tessellate(build_entry(path, namespace, printed=True), deviation=deviation,
                       angular=angular)
 
 
@@ -328,6 +401,67 @@ def _self_check() -> int:
     print(f"{'ok  ' if empty else 'FAIL'} a shape that tessellates to no triangles "
           f"raises instead of returning an empty mesh")
     ok &= empty
+
+    # A colour plate (a block with an inlay cut into it) is two solids sharing
+    # faces: as one mesh it is non-manifold. With gen_print_union() the mesh
+    # gates measure the block instead, and gen_step() still returns the plate.
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        entry = Path(tmp) / "part_plate.step.py"
+        entry.write_text(
+            "from build123d import Box, Compound, Pos\n"
+            "PRINTABLE = True\n"
+            "def _parts():\n"
+            "    block = Pos(0, 0, 5) * Box(20, 20, 10)\n"
+            "    inlay = Pos(0, 0, 9.5) * Box(6, 6, 1)\n"
+            "    return block, inlay\n"
+            f"def {GEN_FUNC}():\n"
+            "    block, inlay = _parts()\n"
+            "    return Compound(children=[block - inlay, inlay])\n"
+            f"def {PRINT_UNION_FUNC}():\n"
+            "    return _parts()[0]\n",
+            encoding="utf-8",
+        )
+        plate = build_entry(entry, "selfcheck_plate")
+        two = len(plate.solids()) == 2
+        print(f"{'ok  ' if two else 'FAIL'} gen_step() of a colour plate returns its regions")
+        ok &= two
+        v, f = weld(entry_mesh(entry, "selfcheck_plate"))
+        m = summarize(v, f)
+        union = m["nonmanifold_edges"] == 0 and m["shells"] == 1 and abs(m["volume"] - 4000) < 1
+        print(f"{'ok  ' if union else 'FAIL'} the mesh gates measure gen_print_union(), "
+              f"the printed object, not the plate")
+        ok &= union
+
+        # Workshop: a union that is not the plate's own material is refused, so
+        # the gates cannot measure a stand-in that prints more easily.
+        stand_ins = {
+            "leaves the inlay out": "_parts()[0] - _parts()[1]",
+            "is the block moved 1 mm": "Pos(1, 0, 0) * _parts()[0]",
+        }
+        for index, (what, body) in enumerate(stand_ins.items()):
+            entry.write_text(
+                "from build123d import Box, Compound, Pos\n"
+                "PRINTABLE = True\n"
+                "def _parts():\n"
+                "    block = Pos(0, 0, 5) * Box(20, 20, 10)\n"
+                "    inlay = Pos(0, 0, 9.5) * Box(6, 6, 1)\n"
+                "    return block, inlay\n"
+                f"def {GEN_FUNC}():\n"
+                "    block, inlay = _parts()\n"
+                "    return Compound(children=[block - inlay, inlay])\n"
+                f"def {PRINT_UNION_FUNC}():\n"
+                f"    return {body}\n",
+                encoding="utf-8",
+            )
+            refused = False
+            try:
+                entry_mesh(entry, f"selfcheck_stand_in_{index}")
+            except ValueError as error:
+                refused = PRINT_UNION_FUNC in str(error)
+            print(f"{'ok  ' if refused else 'FAIL'} a print union that {what} is refused")
+            ok &= refused
 
     print("PASS" if ok else "FAIL")
     return 0 if ok else 1

@@ -8,8 +8,9 @@ sources:
   - .venv/lib/python3*/site-packages/build123d/topology/one_d.py (Edge.make_helix)
   - https://occt3d.com/dev/doc/refman/html/class_b_rep_offset_a_p_i___make_pipe_shell.html
   - "toolchain: build123d 0.11.1 on OCP, every number below measured with small shapes"
-related: [build123d-operations-and-export, operation-families, frames-and-rotations, kernel-validity, printed-threads, element-libraries, springs, boolean-pitfalls]
-updated: 2026-09-23
+  - "experience: helicoidal crown teeth built as ruled faces between helix edges, extruded and cut, meshed exactly by subtraction"
+related: [build123d-operations-and-export, operation-families, frames-and-rotations, kernel-validity, printed-threads, element-libraries, springs, boolean-pitfalls, push-to-turn-indexer]
+updated: 2026-09-29
 ---
 
 # Sweeps and helices
@@ -141,6 +142,20 @@ in algebra mode. It wraps a 2D line onto a cylindrical (or conical, with
 at `(radius, 0, height)` when height is a whole number of pitches.
 `Edge.make_helix` has the same signature (`normal`, `angle`) and returns an
 `Edge`.
+
+## An exact helicoid ramp
+
+A cam ramp whose height grows linearly with angle (a crown tooth, a helical
+face) is a helicoid: a ruled surface between two helices of the same lead on
+the ring's inner and outer cylinders. Build each helix as a 2D line wrapped on
+a `Geom_CylindricalSurface` (`BRepBuilderAPI_MakeEdge(Geom2d_Line, surface,
+0, length)`, then `BRepLib.BuildCurves3d_s`), join them with
+`BRepFill.Face_s(inner, outer)`, extrude that face straight down past the
+tooth's base and intersect with a slab above the base. The sides come out as
+true cylinders and the ends as radial planes, and the same function makes the
+mating crown by subtraction. A loft through radial sections only approximates
+the cylinders between sections, and a Frenet sweep of a radial rectangle tilts
+its end faces off the radial planes.
 
 ## Swept springs and coils
 

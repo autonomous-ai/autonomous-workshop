@@ -41,6 +41,10 @@ def reference_render(tool, occurrences, azimuth, elevation, size, pad, framing=N
         for a, b, c in faces:
             corners = points[[a, b, c]]
             normal = np.cross(corners[1] - corners[0], corners[2] - corners[0])
+            # Both sides are lit: a normal facing away is a reversed winding.
+            if (normal[0] * toward_viewer[0] + normal[1] * toward_viewer[1]
+                    + normal[2] * toward_viewer[2]) < 0.0:
+                normal = -normal
             xs, ys = px[[a, b, c]], py[[a, b, c]]
             denominator = ((ys[1] - ys[2]) * (xs[0] - xs[2])
                            + (xs[2] - xs[1]) * (ys[0] - ys[2]))
@@ -138,14 +142,16 @@ class RasterEquivalenceTests(unittest.TestCase):
             [(points, faces, (190, 65, 85)), (twin, faces, (80, 110, 140))], -90.0, 90.0, 160
         )
 
-    def test_coplanar_faces_in_one_batch_keep_the_first_shading(self):
-        # Same triangles, opposite winding: the normals flip, so the two sets
-        # shade differently and every pixel is an exact depth tie between them.
+    def test_reversed_winding_shades_like_the_front(self):
+        # Same triangles, opposite winding: every pixel is an exact depth tie
+        # between the two sets, and both sides are lit, so the plane draws one
+        # shade whichever set wins it.
         points, faces = plane(5)
-        self.assert_matches_reference(
-            [(points, np.concatenate([faces, faces[:, ::-1]]), (190, 65, 85))],
-            -90.0, 90.0, 160,
-        )
+        occurrences = [(points, np.concatenate([faces, faces[:, ::-1]]), (190, 65, 85))]
+        self.assert_matches_reference(occurrences, -90.0, 90.0, 160)
+        pixels = np.asarray(self.tool["render"](occurrences, -90.0, 90.0, 160, 0.07))
+        shades = {tuple(pixel) for pixel in pixels.reshape(-1, 3)} - {BACKGROUND}
+        self.assertEqual(len(shades), 1)
 
     def test_faces_clipped_by_the_frame_edge(self):
         # Framing on the near square pushes the plane off every edge, so a

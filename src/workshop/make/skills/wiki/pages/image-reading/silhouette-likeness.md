@@ -128,6 +128,34 @@ enclosed, so it stays. Nothing is drawn, moved or smoothed. It cannot separate
 a subject from a *cluttered* background: the rule rests on the ground being one
 flat colour, which a render gives and a photo in the wild does not.
 
+**A CAD screenshot usually sits on a gradient backdrop** — FreeCAD's default
+runs blue at the top to teal at the bottom, and many viewers do the same. One
+colour for the whole border ring then lands between the two ends, and every
+plate near the top or the bottom whose luma and hue fall inside the band around
+that one colour becomes background: on a 15-leg linkage screenshot the mask
+lost 12 % of the object (every lilac and pale link near the blue top), and even
+the designer's own geometry, drawn straight from its source file, scored 0.849.
+The flattener cannot help (its ground must be unsaturated). The mask now
+recognises a vertical-gradient backdrop — the two side columns agree row by
+row, the top and bottom bands are each flat across the width, and top and
+bottom differ — and measures each pixel against its own row's backdrop colour;
+a flat ground and a radial vignette fail the test and keep the single-colour
+path. The same render then scored 0.938 against 0.788, with no model edit.
+
+Two things that look like a shape problem on such a reference and are not:
+
+- **An off-axis pose for an orthographic view.** A CAD screenshot is taken
+  along an axis. When the camera search returns az −91.88 for a view that is
+  plainly −90, it is fitting the mask's losses, not the model — the fixed mask
+  brought the search back to −90.00 exactly. Check the mask before editing.
+- **A clipped extremity after cleaning.** Paint out a logo or a ground line by
+  its own pixels (its connected blob, the line's own rows), never by a whole
+  band of columns or rows: a band clips the subject's tip, and because the gate
+  normalises by the bounding box, 3 px off the feet (0.75 % of the height)
+  rescales the whole silhouette and cost this lacy subject 1.6 points of IoU.
+  Where a line is drawn *over* the subject (a ground plane edge-on across the
+  feet), the pixels under it are gone; say so in the README.
+
 The flattener's ground is a luminance band (default 66-212) plus a
 saturation ceiling, flooded from the border. **On a light studio ground above
 the band** — a concept sheet at luma ~235 — nothing qualifies as ground, and
