@@ -17,9 +17,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import shlex
 import stat
-import sys
 import zipfile
 from importlib import resources
 from pathlib import Path
@@ -28,12 +26,13 @@ from typing import Optional
 from workshop.errors import ContractError, StateConflict
 from workshop.make.make_round_guard import NONCE_TABLE_NAME
 from workshop.make.role_agents import COMPONENT_WORKER
+from workshop.runtime.make_round_hook import (
+    MAKE_ROUND_GUARD_DIRECTORY,
+    MAKE_ROUND_GUARD_MANAGER_IDS,
+    MAKE_ROUND_GUARD_SCRIPT,
+    installed_make_round_guard,
+)
 
-MAKE_ROUND_GUARD_DIRECTORY = "make-round-guard"
-MAKE_ROUND_GUARD_SCRIPT = "make_round_guard.py"
-HOOK_TIMEOUT_SECONDS = 10
-# Managers whose PreToolUse hook names the calling subagent (ADR 0080).
-MAKE_ROUND_GUARD_MANAGER_IDS = frozenset({"codex", "claude"})
 MAX_NONCE_TABLE_BYTES = 8 * 1024 * 1024
 # Kept in step with ``REVISION_INPUT`` in ``workshop.workflow.revision``; the
 # make package does not import the workflow package.
@@ -69,15 +68,6 @@ def install_make_round_guard(host_state_root: Path) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-def installed_make_round_guard(host_state_root: Path) -> Optional[Path]:
-    """The installed guard script, or None for a run created without one."""
-
-    script = Path(host_state_root) / MAKE_ROUND_GUARD_DIRECTORY / MAKE_ROUND_GUARD_SCRIPT
-    if script.is_symlink() or not script.is_file():
-        return None
-    return script
-
-
 def verify_make_round_guard(host_state_root: Path, expected_sha256: str) -> Path:
     """Refuse a guard that is missing or differs from the bytes the run sealed."""
 
@@ -87,12 +77,6 @@ def verify_make_round_guard(host_state_root: Path, expected_sha256: str) -> Path
     if hashlib.sha256(script.read_bytes()).hexdigest() != expected_sha256:
         raise StateConflict("the run's make_round guard differs from its sealed bytes")
     return script
-
-
-def make_round_guard_command(script: Path) -> str:
-    """The shell command a runtime registers to run the installed guard."""
-
-    return shlex.join([str(Path(sys.executable).absolute()), str(script)])
 
 
 def _issued_worker_nonces(host_state_root: Path) -> dict[str, str]:
@@ -209,7 +193,6 @@ __all__ = [
     "MAKE_ROUND_GUARD_DIRECTORY",
     "MAKE_ROUND_GUARD_MANAGER_IDS",
     "MAKE_ROUND_GUARD_SCRIPT",
-    "make_round_guard_command",
     "install_make_round_guard",
     "installed_make_round_guard",
     "make_round_guard_bytes",

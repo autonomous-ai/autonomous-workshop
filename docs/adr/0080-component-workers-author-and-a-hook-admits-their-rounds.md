@@ -6,7 +6,7 @@
 - Owners: product-run Make instructions (`references/make.md`, product-run
   `AGENTS.md`, `SKILL.md`), Make role agents (`src/workshop/make/agents/`),
   `make-round` skill, the make_round guard (`make/make_round_guard.py`,
-  `make/role_guard.py`), Workshop host run creation and Make acceptance
+  `make/role_guard.py`, `runtime/make_round_hook.py`), Workshop host run creation and Make acceptance
   (`agent_run.py`, `native_run.py`), native launchers (`runtime/claude.py`,
   `runtime/codex.py`), `design-a-toy` skill
 - Amends: ADR 0077 (who authors a Component, who views which image) and

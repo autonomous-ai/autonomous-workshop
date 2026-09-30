@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping, Optional
 
 from workshop.errors import ContractError
-from workshop.make.role_guard import (
+from workshop.runtime.make_round_hook import (
     HOOK_TIMEOUT_SECONDS,
     installed_make_round_guard,
     make_round_guard_command,
