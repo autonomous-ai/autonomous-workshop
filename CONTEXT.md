@@ -174,7 +174,8 @@ _Avoid_: Part, piece, module
 
 **Make Round**:
 One build-and-repair cycle over a component or an assembly, driven by both
-numeric checks and the Manager's own inspection of the rendered result.
+numeric checks and an inspection of the rendered result: the Manager's own
+for an assembly, its Component Reviewer's for a Component.
 
 **Carry Forward**:
 The permission for a Correction Run to keep a Component's existing evidence
