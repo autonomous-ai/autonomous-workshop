@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import importlib.metadata
 import importlib.util
 import json
 import math
@@ -1185,6 +1186,22 @@ def _built_shape_identity(result: object) -> str | None:
     return shape_identity(wrapped)
 
 
+def _installed_toolchain_versions() -> dict[str, str]:
+    """The exact `build123d`/`cadquery-ocp` versions this process built with.
+
+    `shape_identity`'s hash is a hash of OCCT's B-rep sampling, not of the
+    geometry alone -- ADR 0073's amendment found it toolchain-sensitive, so a
+    sealed identity is only comparable against a hash taken under the same
+    pair (issue #64, "Update from #60"). Reads the pinned distributions'
+    installed metadata rather than a hardcoded string, so a seal never claims
+    a version this process did not actually run.
+    """
+    return {
+        "build123d": importlib.metadata.version("build123d"),
+        "cadquery_ocp": importlib.metadata.version("cadquery-ocp"),
+    }
+
+
 def generate_step_targets(
     targets: Sequence[str],
     *,
@@ -1221,6 +1238,7 @@ def generate_step_targets(
         identity = _built_shape_identity(result)
         if identity is not None:
             entry["identitySha256"] = identity
+            entry["toolchainVersions"] = _installed_toolchain_versions()
         reported.append(entry)
 
     def _emit_contended(spec: EntrySpec) -> None:

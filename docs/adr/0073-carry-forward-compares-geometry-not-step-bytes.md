@@ -78,3 +78,48 @@ round-off parts can ever be carried; this ADR does not depend on it.
   a carried pass is refused as "changed after its component pass".
 - Glossary: `CONTEXT.md` **Carry Forward** already reads "identity is
   established on the shape itself rather than on the exported file".
+
+## Amendment (2026-09-25, issue #74)
+
+The parallel-boolean experiment this ADR named (issue #60) ran:
+`docs/PARALLEL_BOOLEAN_EXPERIMENT.md`. Result: the round-off did not
+reproduce in a controlled same-host A/B, on or off (0 of 24 parts, either
+setting), so it settles nothing about whether the six round-off parts named
+above are carriable, and is **not wired into Make** -- it cost 2.6x the
+build time in that measurement for an effect it could not reproduce there.
+
+Re-measured directly on the dev host instead (`cadquery-ocp==7.9.3.1.1`,
+`build123d==0.11.1`, matching what a real Make run installs): all 24 printed
+parts of `toys/ad-astra-antisol-companion`, three builds each, one process
+per run. 23 of 24 -- including all six parts this ADR's baseline flagged as
+"round-off" -- hash identically every time under this toolchain pin. Only
+`part_belt_cell` hashed differently on every build, including twice within
+one process; its volume stayed bit-identical across every hash.
+
+**Root cause**: `shape_identity`'s hash (`OCP.BinTools.BinTools.Write_s` +
+sha256) is not a hash of the geometry -- it is a hash of OCCT's internal
+B-rep container, including the order edges' curve representations get
+appended to their owning `BRep_TEdge`. A many-tool boolean fuse (the belt
+cell's `rubble_field` unions dozens of rock solids in one `+` call, which
+crosses OCCT's threshold for parallel dispatch) populates that order from
+whichever worker finishes first, so two builds of the identical script
+serialise the same geometry to different bytes. Exact per-face and per-edge
+geometric sampling (surface/curve type, sampled points at fixed parameter
+fractions) was bit-identical across repeated builds of every belt-cell
+sample checked, including full double precision with no rounding --
+confirming the geometry itself is deterministic and only the container
+order was leaking into the hash.
+
+**Fix**: `shape_identity` no longer calls `BinTools.Write_s`. It walks each
+vertex/edge/face via `TopExp_Explorer`, samples each edge's curve and each
+face's surface at fixed parameter fractions (`BRepAdaptor_Curve`/
+`BRepAdaptor_Surface`), and hashes those samples sorted by content --
+never by traversal order, so allocation-dependent container order cannot
+reach the hash. Still exact, not tolerance-based: two builds of the same
+design produce byte-identical samples, and a genuinely different shape
+still samples differently. Two prior consequences of this section follow
+automatically, without new migration code: because the hash's bytes
+changed, every archive's previously sealed `made.json` B-rep hash and every
+tessellation-cache key computed under the old `shape_identity` now simply
+fails to match the new one -- a miss, never a false match, exactly as
+"unchanged" must fail safe.

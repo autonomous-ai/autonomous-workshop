@@ -169,6 +169,36 @@ def test_rigid_copies_reuse_validity_but_interference_keeps_placement():
     assert shape_identity(shape.wrapped, rigid_placement_invariant=True) != shape_identity(shape.wrapped.Reversed(), rigid_placement_invariant=True)
 
 
+def test_identity_is_stable_across_repeated_builds_of_a_boolean_result():
+    """A many-tool boolean fuse, shaped like `part_belt_cell` (issue #74):
+    OCCT's B-rep container order for this depends on allocation, not geometry,
+    so a raw-bytes identity varies run to run on bit-identical geometry; this
+    hashes sampled analytic geometry instead and must not vary."""
+    from build123d import Align, Box, Pos, RegularPolygon, extrude
+    shape_identity = cad_module("inspection_runtime").shape_identity
+
+    def build_rubble_like_solid():
+        rng = random.Random(7)
+        base = Box(20, 20, 4, align=(Align.CENTER, Align.CENTER, Align.MIN))
+        tools = []
+        for _ in range(60):
+            x, y = rng.uniform(-8, 8), rng.uniform(-8, 8)
+            radius = rng.uniform(0.4, 1.2)
+            sides = rng.choice((5, 6, 7, 8))
+            rise = rng.uniform(1, 3)
+            taper = rng.uniform(30, 44)
+            rock = extrude(RegularPolygon(radius, sides, rotation=rng.uniform(0, 60)), rise, taper=taper)
+            tools.append(Pos(x, y, 4) * rock)
+        body = base + tools
+        envelope = Box(18, 18, 10, align=(Align.CENTER, Align.CENTER, Align.MIN))
+        return (body & envelope).wrapped
+
+    identities = {shape_identity(build_rubble_like_solid()) for _ in range(6)}
+    assert len(identities) == 1
+    # A genuinely different shape still hashes differently -- exact, not tolerance-based.
+    assert shape_identity(build_rubble_like_solid()) != shape_identity(Box(2, 3, 4).wrapped)
+
+
 def test_sweep_matches_naive_candidate_set_including_touching():
     module = cad_module("interference")
     Occurrence, _candidate_pairs, _boxes_overlap = module.Occurrence, module._candidate_pairs, module._boxes_overlap

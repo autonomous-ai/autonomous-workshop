@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "observation": "Front: one sphere seated centrally on a drafted disc that flares outward as it rises, with the hoop seen nearly edge-on as a narrow tab above the ball and its two feet meeting the disc top. Top: the disc's rim is concentric with the ball and the hoop crosses the globe as a single upright line through the middle. Iso: the hoop is a narrow band standing over the ball and leaning toward +X, springing from the globe all the way round with no gap and no unsupported air. Nothing is drawn on the sphere -- the surface is one unbroken curve in all three views, which is what a bare globe should look like. Proportion \u00d822.02 globe on a \u00d833.87 disc reads correctly; no extra or missing bodies, no interpenetration, no floating geometry.",
+  "packet_sha256": "c65723bca4dfe581d7b722c5dbcf52a118e1d1c7c70240f1a79d9ac54729367e",
+  "status": "pass"
+}

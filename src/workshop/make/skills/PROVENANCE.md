@@ -1,5 +1,59 @@
 # Shared skill provenance
 
+## Vendored cadgen installed into the Workshop venv (2026-09-26)
+
+A Workshop-local change to the vendored `cad` tree, not an upstream resync.
+`cad/scripts/packages/cadgen` has declared version 0.4.19 since it was
+vendored, the same number as the unrelated `earthtojake/text-to-cad` release on
+PyPI that the root `cadgen==0.4.19` pin installed. The two are different code:
+the PyPI wheel lacks `cadgen.inspection_runtime` (added here in 6716bf26) and
+carries modules this copy never had. A process that imported `cadgen` before
+putting the vendored path first got the PyPI copy, and a later
+`cadgen.inspection_runtime` import could not be found. The #65 Correction Run
+lost an assembled-round render to it: `render_review` put the path first only
+after the entry it was rendering had imported `cadgen`.
+
+Two changes:
+
+- The root `pyproject.toml` installs this tree through `[tool.uv.sources]`
+  (editable), so the uv venv holds the vendored code under the same pin. A plain
+  pip install of the Workshop wheel still resolves the pinned PyPI release.
+- `render_review.build_shape` puts the vendored path first before it runs the
+  entry, as `gen`, `snap_frames` and the other skill entry points already do.
+
+The vendored `pyproject.toml` now builds with `uv_build` instead of setuptools.
+setuptools writes `src/cadgen.egg-info/` and `build/` into the source tree,
+which here is a fingerprinted skill: they would drift this `LOCK.json`
+fingerprint on every synced checkout and be copied into every run. It also
+drops the `readme = "README.md"` line, since no README was ever vendored, and
+the setuptools package-data for `.mjs` files that do not exist here. **The `cad`
+fingerprint changed**: a frozen run keeps its materialized skills, and a parked
+one picks the fix up through `workshop resume --refresh-tools`.
+
+## Pin build123d and cadquery-ocp for cadgen (2026-09-25)
+
+A Workshop-local change to the vendored `cad` tree, not an upstream resync.
+`cadgen/pyproject.toml` declared `build123d` and `cadquery-ocp` with no
+version, so two installs of the same `cadgen==0.4.19` could resolve
+different OCCT builds. #60's parallel-boolean experiment
+(`docs/PARALLEL_BOOLEAN_EXPERIMENT.md`, Finding 3) found a fresh resolve can
+land on a pair that does not work together at all -- `cadquery-ocp` 8.0.1
+drops `OCP.TDF.TDF_LabelSequence`, which `cadgen`'s STEP scene loader needs,
+while the newest `cadquery-ocp` release old enough to keep it is too old for
+newer `build123d`'s `OCP.collections` use -- and is the simplest explanation
+for two Carry Forward builds hashing a part differently under no geometry
+change.
+
+`cadgen/pyproject.toml`, the CAD skill's `requirements.txt` and the root
+`pyproject.toml` now all pin `build123d==0.11.1` and
+`cadquery-ocp==7.9.3.1.1` -- the pair `uv.lock` already resolved and the one
+`docs/PARALLEL_BOOLEAN_EXPERIMENT.md`'s own experiment ran against. This
+follows the existing `Pillow>=10,<13` precedent: `tools/verify_skill_locks.py`
+requires the Workshop to pin every CAD skill requirement exactly as the skill
+declares it, so the root dependency list carries the same two specifiers.
+This changes the `cad` fingerprint only; no script, gate or geometry
+algorithm changed.
+
 ## Corrections carry unchanged parts forward by default (2026-09-21)
 
 A Workshop-local change to the vendored `cad` and `make-round` trees, not an

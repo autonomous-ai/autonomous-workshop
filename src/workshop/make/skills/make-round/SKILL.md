@@ -38,10 +38,29 @@ not hash like the one that was built):
 - Its per-part measure reports are carried forward the same way, unchanged.
 
 `gen --write --json` reports each part's B-rep identity as `identitySha256`,
-computed on the shape it just built, never on an import. For a source archive
-sealed before `made.json` carried this hash (every archive today -- see issue
-#64), get the source side by rebuilding the source's own `part_<role>.step.py`
-in a scratch copy of its `make/` tree with the same `gen --write --json` and
+alongside the exact installed `build123d`/`cadquery-ocp` versions it was
+computed under as `toolchainVersions`, computed on the shape it just built,
+never on an import. Before finalizing a round, write
+`<cad_project_path>/component-identities.json` naming, for every sealed
+`.step` Component, `{"component_identities": {"<path>": "<identitySha256>",
+...}, "toolchain": {"build123d": "<version>", "cadquery_ocp": "<version>"}}`
+(paths relative to the product root, e.g. `cad/part_belt_cell.step`, the
+`toolchainVersions` object's own keys). The Make finalizer seals this into
+`made.json` as `schema_version: 2`'s `component_identities`/`toolchain`
+fields -- this is what lets a later Correction Run skip rebuilding this
+archive's own Components (issue #64, ADR 0073's "Update from #60"). Leave the
+sidecar file unwritten for a round with no `identitySha256` to report (an
+imported/committed STEP target only, or the DXF pipeline): the finalizer
+seals plain `schema_version: 1`, exactly as before.
+
+For the source side of a Correction Run's comparison: read the source
+archive's `make/made.json` first. If it is `schema_version: 2` and its
+`toolchain` matches this run's own installed `build123d`/`cadquery-ocp`
+versions exactly, use its `component_identities[path]` directly -- no
+rebuild. Otherwise (schema 1, sealed before this change, or a toolchain that
+does not match -- a sealed hash from a different OCCT is not comparable),
+get the source side by rebuilding the source's own `part_<role>.step.py` in a
+scratch copy of its `make/` tree with the same `gen --write --json` and
 reading its `identitySha256` there; the source's own generator sources and
 shared helpers are already inside the revision snapshot, so this needs no new
 input. There is no tolerance on this comparison: two hashes either match or
