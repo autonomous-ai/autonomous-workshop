@@ -8,6 +8,9 @@ from workshop.workflow.budgets import LifetimeBudget, LifetimeTurnBudget
 
 TOKEN_BUDGET_CAPABILITY_PATH = ".agents/skills/autonomous-workshop/references/token-budget-v1.md"
 DEFAULT_PRODUCT_TOKENS = 30_000_000
+# Codex usage is read back from its rollout files; Claude Code usage is
+# streamed per invocation, one observed thread per ``--print`` call.
+OBSERVATION_SOURCES = ("codex-native-rollout-v1", "claude-native-stream-v1")
 MAX_PRODUCT_TOKENS = 1_000_000_000
 
 
@@ -34,7 +37,7 @@ class ProductTokenBudget(LifetimeBudget):
         }
 
     def observe(self, value):
-        if (not isinstance(value, dict) or value.get("source") != "codex-native-rollout-v1"
+        if (not isinstance(value, dict) or value.get("source") not in OBSERVATION_SOURCES
                 or type(value.get("schema_version")) is not int or value["schema_version"] != 1
                 or value.get("status") != "observed"):
             raise ContractError("product token observation source is invalid")
@@ -66,6 +69,8 @@ class ProductTokenBudget(LifetimeBudget):
         if value.get("tokens") != totals or type(value.get("total_tokens")) is not int or value["total_tokens"] != total or value.get("root_thread_id") not in seen:
             raise ContractError("product token total is inconsistent")
         if self.observation is not None:
+            if value["source"] != self.observation["source"]:
+                raise ContractError("product token observation source changed")
             if value["root_thread_id"] != self.observation["root_thread_id"]:
                 raise ContractError("product token root session changed")
             current = {t["thread_id"]: t["tokens"] for t in threads}

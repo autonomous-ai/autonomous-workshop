@@ -1023,7 +1023,7 @@ private Wish demonstrate that:
 | Manager runtime | Status |
 |---|---|
 | Codex | Implemented default |
-| Claude Code | Experimental adapter; native token usage measured |
+| Claude Code | Experimental adapter; native token usage measured and budgeted |
 | Grok Build | Experimental adapter; no token usage reported |
 
 The stable seam is the persistent toy project, stage objective and proof
@@ -1032,6 +1032,17 @@ bounded native-specialist delegation—not Codex prompt syntax or one vendor's
 custom-agent file format. Every future adapter must preserve the root Manager
 role, exact Inventor binding, host-owned gates, sandbox, checkpoint, and effect
 authority.
+
+Every Inventor and Make role agent is sealed once as a Codex custom agent under
+`.codex/agents/`, which stays the identity binding. A Claude Code run also
+receives each one under `.claude/agents/<name>.md`, rendered deterministically
+from those bytes (`runtime/agent_projection.py`): the model is inherited, an
+explicit effort such as the Component Reviewer's `low` carries over, and the
+Codex-only wait sentence becomes Claude Code's. A source that still names a
+Codex-only wait fails closed. The projections are run inputs; reopening a run
+refuses one that differs from its Codex source, or an extra one. Before this,
+a Claude run had no spawnable Component Worker or Reviewer, so its root built
+every Component itself. Grok Build receives no projection yet.
 
 The Claude Code adapter reports native token usage to the host through the
 same per-turn contract as Codex: gross input and gross output, plus a
@@ -1055,12 +1066,30 @@ breakdown unavailable, exactly as a base-only Codex turn does. An error
 result, whose totals Claude Code zeroes, is a failed turn, not a zero-token
 measurement. `workshop status --json`, checkpoints and the public
 `TOKENS.json` then say `measured`, `partial` or `unavailable` for a
-Claude-managed run with the same schema-v3 shape as a Codex run. This is
-telemetry only: Claude Code runs still have no host token budget.
+Claude-managed run with the same schema-v3 shape as a Codex run.
+
+Claude Code runs created from ADR 0078 on also carry the product token
+allowance described below, enforced while the turn streams. The adapter then
+passes `--forward-subagent-text`, so subagent requests reach the stream, and
+reports a running total per invocation to the host. Each request counts once,
+by message id, and the terminal `modelUsage` raises (never lowers) that total,
+which adds compaction and final output. Each invocation is one observed thread
+of the ledger. The host kills the turn as soon as the total reaches the cap,
+records `token-budget-stop.json`, and keeps the session resumable. A request
+that streams no event cannot be stopped midway, so a turn may overshoot the
+cap by its last requests. Claude runs created before ADR 0078 keep their
+unbudgeted policy on resume.
+
+A Claude Code run that freezes `context-compaction-v1.md` passes
+`--autocompact 256000`, so the session compacts in a 256k window instead of
+growing toward the model's 1M context; the window is bound in the session
+checkpoint and cannot change on resume. Codex keeps its profile's ceiling,
+because 256k sits at the edge of Astra's window (ADR 0051). See
+[ADR 0079](adr/0079-claude-runs-compact-in-a-256k-window.md).
 
 ## Product budgets and legacy timeouts
 
-New Codex runs freeze `token-budget-v1.md`: `--max-tokens` defaults to
+New Codex and Claude Code runs freeze `token-budget-v1.md`: `--max-tokens` defaults to
 30,000,000 input-plus-output tokens across all stages, native children and
 resumes. Cached input is included once; reasoning is already part of output.
 The host persists completed-request usage from a Codex 0.153.4-or-newer rollout
@@ -1087,7 +1116,9 @@ observed cap.
 Normal twenty-minute splits and aggregate time/turn allowances are superseded;
 there is no wall-clock launch watchdog or native-turn, proposal-retry, or
 lifecycle-round execution cap for token-budget products. Daydream is outside each product
-allowance. Other runtime adapters retain their frozen policy. See
+allowance. The rollout and reconciliation details above are Codex's; a Claude
+Code run meters its streamed invocations instead (ADR 0078). Other runtime
+adapters retain their frozen policy. See
 [ADR 0049](adr/0049-product-wide-token-budget.md). Quiet Arc completed a live
 Spark/Codex/Astra/medium trial with same-session recovery and verified Factory
 publication within its 10M-token allowance; physical manufacture is untested.

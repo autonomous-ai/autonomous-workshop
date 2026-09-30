@@ -180,7 +180,9 @@ This design follows Codex's official patterns for
 ## Use the native Inventor roster
 
 `.codex/agents/*.toml` remains the host identity binding for every Inventor.
-`MANAGER.json` names this runtime and its native agent directory. During the
+`MANAGER.json` names this runtime and its native agent directory; when that
+directory differs, the host writes the same agents there in the runtime's own
+format, and you spawn them from it. During the
 first enabled creative stage, use the host-provided roster. New marked Spark
 runs select at Workshop's setup boundary before Make; the handoff supplies
 Make's exact selected inventor. Forge and Quest select during Invent. Frozen

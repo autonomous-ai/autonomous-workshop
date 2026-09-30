@@ -694,7 +694,7 @@ def _start_run(
         file=progress,
         flush=True,
     )
-    if runtime.spec.manager_id == "codex":
+    if runtime.spec.manager_id in ("codex", "claude"):
         print("Product token cap: %s (all stages and resumes)" % format(max_tokens, ","), file=progress, flush=True)
     if turn_minutes == UNTIMED_TURN:
         print(
@@ -2158,7 +2158,7 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
                       help="enable Make motion checks and animation review (default: false)")
     wish.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS, metavar="N",
-                      help="Codex input-plus-output token cap for the whole product (default: %(default)s)")
+                      help="Codex or Claude Code input-plus-output token cap for the whole product (default: %(default)s)")
 
     fix = subcommands.add_parser("fix", help="clone a published toy into a new Spark correction run")
     fix.add_argument("source", type=Path, metavar="TOY_DIRECTORY")
@@ -2247,7 +2247,7 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
                         help="enable Make motion checks and animation review on resume, including older runs (default: false)")
     resume.add_argument("--max-tokens", type=_token_budget, default=None, metavar="N",
-                        help="explicit total Codex token cap; prior usage remains charged; omitted keeps the saved budget")
+                        help="explicit total Codex or Claude Code token cap; prior usage remains charged; omitted keeps the saved budget")
     resume.add_argument(
         "--turn-budget", action="store_true",
         help="explicitly adopt persistent 6-turn/stage, 12-turn/product accounting during the first creative stage; prior turns remain charged",

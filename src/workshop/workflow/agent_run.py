@@ -39,6 +39,11 @@ from workshop.make.role_agents import (
     parse_make_role_agent_bytes,
 )
 from workshop._validation import require_sha256
+from workshop.runtime.agent_projection import (
+    CLAUDE_AGENT_DIRECTORY,
+    project_agents,
+    projected_agent_path,
+)
 from workshop.runtime.agent_assets import (
     InventorSkillBinding,
     inventor_custom_agent_bytes,
@@ -1189,6 +1194,22 @@ class AgentRun:
         all_input_files.extend(inventor_skill_files)
         all_input_files.extend(inventor_agent_files)
         all_input_files.extend(role_agent_files)
+        # A Manager with its own agent directory receives the same agents
+        # there, rendered from these exact bytes; ``.codex/agents`` stays the
+        # identity binding.
+        all_input_files.extend(
+            (PurePosixPath(path), content, 0o400)
+            for path, content in project_agents(
+                selected_manager.agent_directory,
+                {
+                    relative.as_posix(): content
+                    for relative, content, _ in (
+                        *inventor_agent_files,
+                        *role_agent_files,
+                    )
+                },
+            ).items()
+        )
         all_input_files.extend(wish_reference_inputs)
         all_input_files.extend(revision_inputs)
         all_input_files.sort(key=lambda item: item[0].as_posix())
@@ -1294,6 +1315,11 @@ class AgentRun:
             ):
                 os.chmod(directory, 0o500)
             os.chmod(codex_input_root, 0o500)
+        projected_agent_root = selected.joinpath(*CLAUDE_AGENT_DIRECTORY.split("/"))
+        if projected_agent_root.exists():
+            # Only the agents directory is sealed; Claude Code may keep its own
+            # project state beside it.
+            os.chmod(projected_agent_root, 0o500)
         references_root = selected / WISH_REFERENCES_DIRECTORY
         if references_root.exists():
             os.chmod(references_root, 0o500)
@@ -1674,9 +1700,28 @@ class AgentRun:
                 "project-scoped Codex agents differ from the Inventor roster "
                 "and sealed Make roles"
             )
+        projected_prefix = CLAUDE_AGENT_DIRECTORY + "/"
+        observed_projections = {
+            path for path in observed_paths if path.startswith(projected_prefix)
+        }
+        if observed_projections and observed_projections != {
+            projected_agent_path(CLAUDE_AGENT_DIRECTORY, path)
+            for path in observed_agent_paths
+        }:
+            # A run created before projections has none and keeps that shape.
+            # Each projection's bytes are bound by the input manifest, so a
+            # later renderer never re-judges a sealed run.
+            raise StateConflict(
+                "projected Claude agents differ from the sealed Codex agents"
+            )
         immutable_trees = (
             (self.run_root / ".agents", ".agents/", "skill"),
             (self.run_root / ".codex", ".codex/", "Codex agent"),
+            (
+                self.run_root.joinpath(*CLAUDE_AGENT_DIRECTORY.split("/")),
+                projected_prefix,
+                "Claude agent",
+            ),
         )
         for tree_root, prefix, label in immutable_trees:
             expected_files = {path for path in observed_paths if path.startswith(prefix)}

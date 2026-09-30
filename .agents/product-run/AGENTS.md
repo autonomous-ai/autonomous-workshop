@@ -154,7 +154,10 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   second identity tree, or invent an undeclared specialist. The same directory
   may also hold two fixed Make roles that are not Inventors:
   `component-worker` and `component-reviewer`. Use them only as
-  `references/make.md` describes (ADR 0077).
+  `references/make.md` describes (ADR 0077). When `MANAGER.json` names a
+  different agent directory, the host also writes each of these agents there
+  in that runtime's own format, from the same bytes. Spawn them from that
+  directory by the same name; `.codex/agents/` stays the identity binding.
 - An Inventor is a standard Codex custom subagent with Workshop-specific Taste
   and craft. New marked Spark runs receive Workshop's selected inventor before
   Make; use that assignment without reranking. Without that setup packet,

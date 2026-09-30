@@ -274,6 +274,8 @@ from workshop.workflow.effort import (
     SPARK_ECONOMICS_V3_CAPABILITY_PATH,
     SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
     SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
+    CONTEXT_COMPACTION_CAPABILITY_PATH,
+    WIDE_AUTO_COMPACT_TOKEN_LIMIT,
     workshop_effort,
 )
 from workshop.workflow.proposals import (
@@ -2084,6 +2086,7 @@ def materialized_agent_instructions_sha256(
         if path == "AGENTS.md"
         or path.startswith(".agents/skills/")
         or path.startswith(".codex/agents/")
+        or path.startswith(".claude/agents/")
     }
     required = {
         "AGENTS.md",
@@ -5066,6 +5069,9 @@ def _uses_dynamic_deep_profile(checkpoint: AgentRunCheckpoint) -> bool:
 # The concrete class is patched by host tests, so keep the real type for the
 # identity check below.
 _CODEX_LAUNCHER_TYPE = CodexNativeSessionLauncher
+CLAUDE_MANAGER_ID = "claude"
+# Managers whose usage the host can meter against one product token allowance.
+TOKEN_BUDGET_MANAGER_IDS = (DEFAULT_MANAGER_ID, CLAUDE_MANAGER_ID)
 
 
 def _command_budget() -> CommandBudget:
@@ -5096,7 +5102,9 @@ def _load_lifetime_budget(
     paths: NativeRunPaths, checkpoint: AgentRunCheckpoint, *, initialize: bool = False
 ) -> Optional[LifetimeBudget]:
     # Only Codex exposes the host-rebindable timeout used to enforce a smaller
-    # remaining allowance. Other adapters retain their historical policy.
+    # remaining allowance. Claude Code streams per-request usage, so it keeps
+    # only the product token allowance. Other adapters retain their historical
+    # policy.
     capability = (
         TOKEN_BUDGET_CAPABILITY_PATH
         if TOKEN_BUDGET_CAPABILITY_PATH in checkpoint.input_sha256s
@@ -5104,9 +5112,19 @@ def _load_lifetime_budget(
         if TURN_BUDGETS_CAPABILITY_PATH in checkpoint.input_sha256s
         else LIFETIME_BUDGETS_CAPABILITY_PATH
     )
-    if checkpoint.manager_id != DEFAULT_MANAGER_ID or capability not in checkpoint.input_sha256s:
+    if capability not in checkpoint.input_sha256s:
         return None
     path = paths.host_state / "native-budget.json"
+    if checkpoint.manager_id != DEFAULT_MANAGER_ID:
+        if (
+            checkpoint.manager_id != CLAUDE_MANAGER_ID
+            or capability != TOKEN_BUDGET_CAPABILITY_PATH
+        ):
+            return None
+        if not path.exists() and not path.is_symlink() and not initialize:
+            # A Claude run created before its allowance keeps its unbudgeted
+            # policy on resume.
+            return None
     budget = ProductTokenBudget() if capability == TOKEN_BUDGET_CAPABILITY_PATH else LifetimeTurnBudget() if capability == TURN_BUDGETS_CAPABILITY_PATH else LifetimeBudget()
     if not path.exists() and not path.is_symlink() and initialize:
         _save_lifetime_budget(paths, checkpoint, budget)
@@ -5191,11 +5209,18 @@ def _read_product_token_usage(paths, checkpoint):
 
 def _adopt_token_budget(paths, checkpoint, limit):
     validate_limit(limit)
-    if checkpoint.manager_id != DEFAULT_MANAGER_ID or checkpoint.status == "complete":
-        raise ContractError("token budgeting requires an unfinished Codex product")
+    if checkpoint.manager_id not in TOKEN_BUDGET_MANAGER_IDS or checkpoint.status == "complete":
+        raise ContractError("token budgeting requires an unfinished Codex or Claude Code product")
     previous = _load_lifetime_budget(paths, checkpoint)
     if previous is None:
         raise ContractError("this frozen run lacks a supported persistent budget")
+    if checkpoint.manager_id != DEFAULT_MANAGER_ID:
+        # A Claude allowance exists from its first turn, so only its limit moves.
+        if not isinstance(previous, ProductTokenBudget):
+            raise ContractError("this frozen run lacks a supported persistent budget")
+        previous.limit = limit
+        _save_lifetime_budget(paths, checkpoint, previous)
+        return
     budget = previous if isinstance(previous, ProductTokenBudget) else ProductTokenBudget(limit)
     if budget is not previous:
         budget.previous_budget = previous.to_dict()
@@ -5392,6 +5417,63 @@ def _product_token_observer(paths, checkpoint, budget):
 
     observe.reconcile_completed_turn = reconcile_completed_turn
     return observe
+
+
+_CLAUDE_TOKEN_SOURCE = "claude-native-stream-v1"
+
+
+def _claude_token_observer(paths, checkpoint, budget):
+    """Charge one Claude invocation's streamed usage to the product allowance.
+
+    Each ``--print`` invocation starts its own count, so it is recorded as one
+    more observed thread beside every earlier invocation of the product. The
+    launcher reports running counters as requests stream in and the final
+    counters once the invocation ends; the ledger is durable per report.
+    """
+
+    previous = [] if budget.observation is None else budget.observation["threads"]
+    thread_id = "claude-invocation-%06d" % (len(previous) + 1)
+    root_thread_id = previous[0]["thread_id"] if previous else thread_id
+
+    def observe(counters, *, final=False):
+        threads = [*previous, {"thread_id": thread_id, "status": "observed", "tokens": dict(counters)}]
+        totals = {key: sum(thread["tokens"][key] for thread in threads) for key in counters}
+        try:
+            budget.observe({
+                "schema_version": 1, "source": _CLAUDE_TOKEN_SOURCE, "status": "observed",
+                "root_thread_id": root_thread_id, "threads": threads, "tokens": totals,
+                "total_tokens": totals["input_tokens"] + totals["output_tokens"],
+            })
+            _save_lifetime_budget(paths, checkpoint, budget)
+        except (WorkshopError, OSError, ValueError):
+            _write_private_json(paths.host_state / "token-budget-stop.json", {
+                "reason": "native token usage unavailable or inconsistent",
+                "product_id": checkpoint.product_id,
+            })
+            raise
+        if budget.exhausted(checkpoint.stage):
+            _write_private_json(paths.host_state / "token-budget-stop.json", {
+                "reason": "product token limit reached", "product_id": checkpoint.product_id,
+            })
+            try:
+                _queue_make_budget_lesson(paths, checkpoint, budget)
+            except (WorkshopError, OSError):
+                pass  # the stop record above is the authority; the lesson is enrichment
+            raise ContractError("product token limit reached")
+
+    return observe
+
+
+def _meter_claude_turn(paths, checkpoint, launcher, budget):
+    """Bind one Claude turn to the product allowance instead of a wall clock.
+
+    Tokens bound a budgeted turn (ADR 0049), so the adapter's one-hour default
+    boundary is lifted; an operator-selected boundary still applies.
+    """
+
+    launcher.token_budget_observer = _claude_token_observer(paths, checkpoint, budget)
+    if _turn_override(checkpoint) is _NO_TURN_OVERRIDE:
+        launcher.timeout_seconds = None
 
 
 def _adopt_turn_budget(paths: NativeRunPaths, checkpoint: AgentRunCheckpoint) -> None:
@@ -5746,6 +5828,11 @@ def _native_launcher(
         launcher_kwargs["model"] = checkpoint.manager_model
     if checkpoint.manager_reasoning_effort is not None:
         launcher_kwargs["reasoning_effort"] = checkpoint.manager_reasoning_effort
+    if (
+        checkpoint.manager_id == CLAUDE_MANAGER_ID
+        and CONTEXT_COMPACTION_CAPABILITY_PATH in checkpoint.input_sha256s
+    ):
+        launcher_kwargs["autocompact_tokens"] = WIDE_AUTO_COMPACT_TOKEN_LIMIT
     override = _turn_override(checkpoint)
     if override is not _NO_TURN_OVERRIDE:
         launcher_kwargs["timeout_seconds"] = override
@@ -9624,6 +9711,12 @@ def _run_native_session(
                 turn_launcher = _token_budget_launcher(
                     paths, checkpoint, turn_launcher, budget, reasoning_override,
                 )
+            elif (
+                isinstance(budget, ProductTokenBudget)
+                and checkpoint.manager_id == CLAUDE_MANAGER_ID
+                and getattr(turn_launcher, "manager_id", None) == CLAUDE_MANAGER_ID
+            ):
+                _meter_claude_turn(paths, checkpoint, turn_launcher, budget)
             else:
                 turn_launcher = _budgeted_turn_launcher(
                 checkpoint,
@@ -10485,8 +10578,8 @@ def start_native_run(
         reasoning_effort=manager_reasoning_effort,
     )
     selected_manager = selected_runtime.spec
-    if selected_manager.manager_id != DEFAULT_MANAGER_ID and max_tokens != DEFAULT_PRODUCT_TOKENS:
-        raise ContractError("custom token budgets are currently supported only for Codex")
+    if selected_manager.manager_id not in TOKEN_BUDGET_MANAGER_IDS and max_tokens != DEFAULT_PRODUCT_TOKENS:
+        raise ContractError("custom token budgets are supported only for Codex and Claude Code")
     if publish_requested is not None and type(publish_requested) is not bool:
         raise ContractError("legacy publication option must be boolean")
     if type(github_publish_requested) is not bool:
@@ -10572,7 +10665,7 @@ def start_native_run(
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
-        if TOKEN_BUDGET_CAPABILITY_PATH in checkpoint.input_sha256s and checkpoint.manager_id == DEFAULT_MANAGER_ID:
+        if TOKEN_BUDGET_CAPABILITY_PATH in checkpoint.input_sha256s and checkpoint.manager_id in TOKEN_BUDGET_MANAGER_IDS:
             _save_lifetime_budget(paths, checkpoint, ProductTokenBudget(max_tokens))
         launcher = (
             None

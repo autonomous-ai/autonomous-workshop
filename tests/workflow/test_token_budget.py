@@ -12,7 +12,7 @@ from workshop.errors import ContractError, StateConflict
 from workshop.runtime.codex_usage import UsageUnavailable, UsageNotReady, read_product_usage
 from workshop.workflow.native_run import (
     _load_lifetime_budget, _save_lifetime_budget, _product_token_observer,
-    _adopt_token_budget,
+    _adopt_token_budget, _claude_token_observer, _meter_claude_turn,
     _reconcile_refreshed_token_budget,
     _reconcile_token_accounting_need, _run_native_session,
 )
@@ -489,3 +489,106 @@ def test_malformed_large_compaction_still_stops_host(tmp_path):
 def test_preserved_explicit_large_budget(limit):
     assert validate_limit(limit) == limit
     assert parser().parse_args(("resume", "wish-id", "--max-tokens", str(limit))).max_tokens == limit
+
+
+def claude_counters(input_tokens, output_tokens=0):
+    return {"input_tokens": input_tokens, "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0, "output_tokens": output_tokens,
+            "reasoning_output_tokens": 0}
+
+
+def claude_context(tmp_path):
+    paths, checkpoint = context(tmp_path)
+    checkpoint.manager_id = "claude"
+    return paths, checkpoint
+
+
+def test_claude_budget_exists_only_for_runs_created_with_it(tmp_path):
+    paths, checkpoint = claude_context(tmp_path)
+    assert _load_lifetime_budget(paths, checkpoint) is None
+    assert not list(tmp_path.iterdir())
+    created = _load_lifetime_budget(paths, checkpoint, initialize=True)
+    assert isinstance(created, ProductTokenBudget)
+    assert _load_lifetime_budget(paths, checkpoint).to_dict() == created.to_dict()
+
+
+def test_claude_invocations_accumulate_across_resumes_and_survive_reload(tmp_path):
+    paths, checkpoint = claude_context(tmp_path)
+    budget = _load_lifetime_budget(paths, checkpoint, initialize=True)
+    first = _claude_token_observer(paths, checkpoint, budget)
+    first(claude_counters(400), final=False)
+    first(claude_counters(600, 50), final=True)
+    budget = _load_lifetime_budget(paths, checkpoint)
+    second = _claude_token_observer(paths, checkpoint, budget)
+    second(claude_counters(300, 10), final=True)
+    loaded = _load_lifetime_budget(paths, checkpoint)
+    value = loaded.to_dict()
+    assert value["used_tokens"] == 960
+    assert value["observation"]["source"] == "claude-native-stream-v1"
+    assert [t["thread_id"] for t in value["observation"]["threads"]] == [
+        "claude-invocation-000001", "claude-invocation-000002",
+    ]
+    assert value["observation"]["root_thread_id"] == "claude-invocation-000001"
+
+
+def test_claude_observer_stops_at_the_cap_and_records_why(tmp_path):
+    paths, checkpoint = claude_context(tmp_path)
+    budget = ProductTokenBudget(1000)
+    _save_lifetime_budget(paths, checkpoint, budget)
+    observe = _claude_token_observer(paths, checkpoint, budget)
+    observe(claude_counters(900), final=False)
+    with pytest.raises(ContractError, match="product token limit reached"):
+        observe(claude_counters(1000), final=False)
+    stop = json.loads((tmp_path / "token-budget-stop.json").read_text())
+    assert stop["reason"] == "product token limit reached"
+    assert _load_lifetime_budget(paths, checkpoint).to_dict()["used_tokens"] == 1000
+
+
+def test_claude_observer_refuses_regressing_usage(tmp_path):
+    paths, checkpoint = claude_context(tmp_path)
+    budget = ProductTokenBudget(10_000)
+    observe = _claude_token_observer(paths, checkpoint, budget)
+    observe(claude_counters(900), final=False)
+    with pytest.raises(ContractError, match="lost prior usage"):
+        observe(claude_counters(800), final=False)
+    stop = json.loads((tmp_path / "token-budget-stop.json").read_text())
+    assert stop["reason"] == "native token usage unavailable or inconsistent"
+
+
+def test_a_ledger_never_switches_between_codex_and_claude_accounting(tmp_path):
+    budget = ProductTokenBudget(10_000)
+    budget.observe(observation(100))
+    paths, checkpoint = claude_context(tmp_path)
+    with pytest.raises(ContractError, match="source changed"):
+        _claude_token_observer(paths, checkpoint, budget)(claude_counters(1), final=True)
+
+
+def test_claude_resume_moves_only_the_limit(tmp_path):
+    paths, checkpoint = claude_context(tmp_path)
+    budget = ProductTokenBudget(1000)
+    _save_lifetime_budget(paths, checkpoint, budget)
+    _claude_token_observer(paths, checkpoint, budget)(claude_counters(900), final=True)
+    _adopt_token_budget(paths, checkpoint, 5000)
+    loaded = _load_lifetime_budget(paths, checkpoint)
+    assert (loaded.limit, loaded.to_dict()["used_tokens"]) == (5000, 900)
+
+
+def test_an_unbudgeted_claude_run_cannot_adopt_a_cap_on_resume(tmp_path):
+    paths, checkpoint = claude_context(tmp_path)
+    with pytest.raises(ContractError, match="lacks a supported persistent budget"):
+        _adopt_token_budget(paths, checkpoint, 5000)
+
+
+@pytest.mark.parametrize("turn_seconds, expected", [(None, None), (21_600, 21_600)])
+def test_a_metered_claude_turn_has_no_default_wall_clock(tmp_path, turn_seconds, expected):
+    from workshop.runtime.claude import ClaudeNativeSessionLauncher
+    paths, checkpoint = claude_context(tmp_path)
+    checkpoint.turn_seconds = turn_seconds
+    checkpoint.turn_untimed = False
+    launcher = ClaudeNativeSessionLauncher(
+        binary="/bin/claude", cli_version="2.1.285",
+        **({} if turn_seconds is None else {"timeout_seconds": turn_seconds}),
+    )
+    _meter_claude_turn(paths, checkpoint, launcher, ProductTokenBudget(1000))
+    assert launcher.timeout_seconds == expected
+    assert launcher.token_budget_observer is not None
