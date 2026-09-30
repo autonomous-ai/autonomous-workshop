@@ -14,7 +14,7 @@ sources:
   - https://law.resource.org/pub/eu/toys/en.71.1.2014.html
   - https://www.cpsc.gov/Business--Manufacturing/Business-Education/Business-Guidance/Magnets
 related: [handheld-ergonomics, printed-part-count, automata-patterns, joints, stability-and-tipping]
-updated: 2026-09-23
+updated: 2026-09-29
 ---
 
 # Toy safety as design constraints
@@ -98,6 +98,13 @@ not something a rigid sweep can check; record it as an open item.
 Apply these to every moving joint of a printed mechanism a child can reach:
 linkages, gear meshes, crank arms against the frame. Either close the gap
 below 5 mm, open it to 12 mm or more, or enclose it.
+
+Two that are easy to miss on a wheeled toy: a wheel whose face has
+through-windows turns a millimetre from the chassis, so each window is a
+shear against the frame — make the windows blind pockets; and a slot or well
+under the chassis that admits a 5 mm rod needs a cover plate once whatever
+runs in it is assembled. Neighbouring tyres on one side are a nip: keep
+their gap under 5 mm.
 
 ## Magnets
 

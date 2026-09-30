@@ -81,7 +81,7 @@ the underside.
 
 | Property | Value | Note |
 |---|---|---|
-| Electrical loads / driven output | <DC motor \| servo \| solenoid \| LED/lamp/module \| linkage \| other> `[tag]` | every bought electrical load also gets a 6c row |
+| Electrical loads / driven output | <DC motor \| servo \| solenoid \| LED/lamp/module \| linkage \| other> `[tag]` | every bought electrical load also gets a 6c row and a 6h row |
 | Energy source | <battery chemistry + cell count \| external supply \| supercapacitor \| rubber band #<size> \| printed spring \| catalog spring \| gravity \| hand> `[tag]` | a purchasable source also gets a 6c row |
 | Power boundary | <onboard \| external/tethered \| N/A mechanical> `[tag]` | external still needs an inlet/lead, connector and strain relief |
 | Switching / control | <SPST switch \| PWM + MOSFET \| H-bridge \| ESC \| servo controller \| mechanical release> `[tag]` | name the device that actually interrupts or controls power |

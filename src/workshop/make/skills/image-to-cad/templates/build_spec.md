@@ -255,6 +255,20 @@ other domain is research-first, per Skill 5f.>
 alternatives | incomplete — name the unresolved domain and repeat it in Open
 question>
 
+### 6h. Not 3D printed — bought parts and materials
+
+<Everything the object needs that does not come off the printer, in one place:
+every 6c hit that is used, every fastener, shaft, pin, bearing, magnet, spring,
+board, battery, wire, lamp and switch, and the consumables — glue, lubricant,
+paint. One row each, with the count the source builds. Name what to order by
+its standard designation or MPN, never by dimensions read off a datasheet. If
+everything is printed and nothing is glued, say so in one line; keep the
+heading.>
+
+| # | Item | Qty | Order as | Where it sits | Held by | In the model | Why it is not printed |
+|---|---|---|---|---|---|---|---|
+| 1 | <> | <count> | <standard designation or MPN> | <part and feature> | <glue / press fit / screw / captured> | <`ref/<file>.step` + label, or not modelled> | <> |
+
 ---
 
 ## 7. Feature detail + build123d operation
@@ -347,6 +361,8 @@ Each item pairs a SANITY check with a VISUAL check, per `cad`'s build loop.
 - [ ] no component dimension is typed into this spec or into a generator
 - [ ] every seated component has a 6e row, and `check_mount <project-dir>`
       exits 0 — clash, clearance and screw access are measured, not asserted
+- [ ] every part and material that is not printed has a 6h row, at the count
+      the source builds — `measure/check_spec.py`
 
 **Per functional electrical load** <the block is in `templates/build_spec_powered.md`; delete this line when nothing is powered>
 

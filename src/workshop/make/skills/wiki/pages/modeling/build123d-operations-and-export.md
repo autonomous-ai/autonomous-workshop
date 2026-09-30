@@ -3,12 +3,14 @@ title: build123d operations, joints and STEP export
 tags: [build123d, operations, extrude, revolve, loft, sweep, offset, export, step, joints, color, label]
 aliases: [export_step, import_step, operation parameters, RigidJoint, RevoluteJoint, connect_to, step colours, step labels]
 sources:
+  - "experience: an extruded offset-curve band vanished from its STEP on re-import; a sampled periodic spline survived"
   - https://build123d.readthedocs.io/en/latest/operations.html
   - https://build123d.readthedocs.io/en/latest/import_export.html
   - https://build123d.readthedocs.io/en/latest/joints.html
   - "experience: an assembly measured through a new Compound of its parts exported with its part names gone"
+  - "experience: a revolved offset() envelope lost its offset-curve face in the STEP; the drum cut by it read back as an open shell"
 related: [build123d-builder-and-algebra, operation-families, cad-joint-types, step-file-format, sweeps-and-helices, mass-properties-and-measurement]
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # build123d operations, joints and STEP export
@@ -106,6 +108,28 @@ import_step(filename) -> Compound
   `write.precision.mode` ([[step-file-format#what-the-translator-writes]]).
 - `import_step` returns one `Compound`. Its children are the solids, and
   labels come back when the file carried them.
+
+### A solid on an offset curve is written and not read back
+
+A face bounded by `offset()`'s 2D result -- offset curves -- extruded into a
+solid exports without error, and `import_step` returns the file one solid
+short: the offset band was the only part missing, while every spline, cone
+and torus solid beside it came back to the cubic millimetre. Nothing but a
+round trip shows it. Rebuild such an outline before extruding: sample the
+offset wire (`position_at` every ~0.5 mm) and pass the points to
+`Edge.make_spline(..., periodic=True)`. Round-trip any entry that uses a new
+construction: `export_step`, `import_step`, and compare solid count and volume.
+
+Revolved, the same edges fail differently: the solid is written, but the face
+swept by the offset curve is dropped, and the solid reads back as an open
+*shell* one face short (a clearance envelope made by shrinking an (r, z) region
+with `offset()`, then revolving it, lost its whole barrel top). Anything cut
+with that envelope inherits the face and the defect. `inspect validate` on the
+generator checks the in-memory solid and passes; only the source-versus-STEP
+drift render (`render_views --compare-step`) sees the missing area. Convert
+the offset face before using it -- `Face(BRepBuilderAPI_NurbsConvert(face.wrapped,
+True).Shape())` -- which turns every offset curve into a plain B-spline; the
+round trip then returns the solid with every face.
 
 ## A Compound takes the children it is given
 

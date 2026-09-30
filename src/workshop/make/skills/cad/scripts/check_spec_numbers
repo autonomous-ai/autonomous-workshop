@@ -18,6 +18,7 @@ claim about the module-level constant of that name.
     `SWING_DEG` +/-18.6629   a claim, sign ignored -- checked
     | `PLATE_T` | 6 |        a claim across a table cell -- checked
     `slot_for(POST_D, ...)`  not a bare identifier -- ignored
+    | `L` x `W` | 164 x 52 |  names listed in one cell, values in the next -- paired in order
     `LEVER_Z0` is derived    no number -- ignored
 
 Tolerance comes from how the number was written: "10" is checked to +/-0.5 and
@@ -56,7 +57,8 @@ def load_constants(project: Path) -> tuple[dict[str, float], list[str]]:
         path for path in project.glob("*.py")
         if not path.name.endswith(".step.py") and not path.name.startswith("_")
     )
-    modules += sorted(project.glob("params.py")) + sorted(project.glob("*/params.py"))
+    modules += sorted(project.glob("*/params.py"))
+    modules = list(dict.fromkeys(modules))      # a root params.py is already in the first glob
 
     values: dict[str, float] = {}
     clashing: set[str] = set()
@@ -92,13 +94,44 @@ def tolerance(written: str) -> float:
     return 0.5 * 10.0 ** -decimals
 
 
+NAME = re.compile(r"`([A-Z][A-Z0-9_]*)`")
+NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+
+
+def paired_cells(text: str) -> tuple[str, list[tuple[str, str]]]:
+    """Claims from table rows that list several names in one cell and their values in the next.
+
+    `| `LENGTH` x `WIDTH` | 164 x 52 |` is two claims, in order.  Read one name at a time it
+    is one wrong claim -- `WIDTH` 164 -- because the only number after the last name is the
+    first number of the next cell.  Such a cell is paired only when it carries no number of its
+    own and the next cell holds exactly as many numbers as it holds names; its names are then
+    taken out of the text the one-name rule reads."""
+    claims: list[tuple[str, str]] = []
+    lines = []
+    for line in text.splitlines():
+        if line.lstrip().startswith("|"):
+            cells = line.split("|")
+            for i in range(len(cells) - 1):
+                names = NAME.findall(cells[i])
+                if len(names) < 2 or NUMBER.search(re.sub(r"`[^`]*`", "", cells[i])):
+                    continue
+                numbers = NUMBER.findall(re.sub(r"`[^`]*`", "", cells[i + 1]))
+                if len(numbers) != len(names):
+                    continue
+                claims += list(zip(names, numbers))
+                cells[i] = cells[i].replace("`", "")
+            line = "|".join(cells)
+        lines.append(line)
+    return "\n".join(lines), claims
+
+
 def scan(text: str, values: dict[str, float]):
     """(name, written, actual, ok) for every claim that names a known constant."""
-    for match in CLAIM.finditer(text):
-        name = match.group("name")
+    text, paired = paired_cells(text)
+    single = [(m.group("name"), m.group("value")) for m in CLAIM.finditer(text)]
+    for name, written in paired + single:
         if name not in values:
             continue
-        written = match.group("value")
         claimed = abs(float(written))
         actual = values[name]
         yield name, written, actual, abs(claimed - abs(actual)) <= tolerance(written)
@@ -159,6 +192,10 @@ def self_check() -> int:
             ("a percentage is not a value", "`TEETH` 18% of the run", 0),
             # One good claim and one name ending a row: without the same-line
             # rule the second reads "5.1" off the next paragraph and fails.
+            ("names listed in one cell pair with the next cell's values, in order",
+             "| plate `POST_D` x `BORE_D` | 10.0 x 10.8 | derived |", 0),
+            ("... and a stale one of them still fails",
+             "| plate `POST_D` x `BORE_D` | 10.0 x 4.4 | derived |", 1),
             ("a name ending a table row does not reach the next line",
              "| `POST_D` | 10.0 |\n| 41.4 | `BORE_D` |\n\n5.1 the next section\n", 0),
         ]

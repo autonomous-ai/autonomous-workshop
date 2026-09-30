@@ -6,8 +6,9 @@ sources:
   - skills/image-to-cad/scripts/measure_image.py (mask, shadow rejection, cross_check)
   - "toolchain: a contact shadow inflates every view by the same proportion, so a cross-view check still agrees (reproducible)"
   - "experience: dimensions read on the wrong view's ruler, which no downstream gate caught"
+  - "experience: a cream egg on a cream ground defeated both toolchain masks; red-minus-blue after a median filter separated it"
 related: [image-types-and-views, perspective-and-hidden-views, silhouette-likeness]
-updated: 2026-09-23
+updated: 2026-09-29
 ---
 
 # Measuring reference photos
@@ -38,6 +39,15 @@ the image, trust your eyes and say the tool disagreed.
 - **Dark object on a dark ground, or light on light.** Symptom: an error or a
   nonsense bbox. Invert, or move the threshold (roughly 12–45 on 8-bit
   luminance).
+- **A cream subject on a cream ground.** Neither luminance nor saturation
+  separates them: the ground is brighter than a "mid-luminance" band and the
+  subject's lit flank is as neutral as the ground. Warmth does -- red minus blue
+  after a 7 px median filter (the median removes print-line texture): a neutral
+  ground reads near 10, a cream or tan subject 15-40. The contact shadow picks
+  up warm bounce light from the subject and reads 16-26, so give the shadowed
+  band under the subject a higher threshold than the lit side, and cut below
+  the lowest point the grid overlay shows. Keep such a probe as a documented
+  script beside the reference.
 - **Line art defeats the mask, and not obviously.** A denoise pass deletes
   1–2 px strokes, so a white-interior sheet reports no object on some panels
   and a plausible bbox on the ones it half-holds. Flood-fill the white

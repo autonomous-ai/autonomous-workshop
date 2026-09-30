@@ -43,6 +43,14 @@ that the flag was unnecessary and records no acceptance note. It also runs
 `render_views.py --compare-step`; a drift finding means the exported STEP is
 not the geometry the source currently builds.
 
+A reference that shows one part rather than the whole assembly -- one piece of
+a chess set, one tool of a kit -- is scored against that part:
+`--likeness-entry LABEL=part_<role>.step.py` names the entry for the reference
+of that label. The runner renders each such entry into `snap/<entry>/` (so every
+render keeps its own `poses.json`) and still renders the combined entry's
+orthogonal review views; references without a `--likeness-entry` keep the
+combined entry. The entry must be one of the project's own entries.
+
 A usable whole-object viewpoint must contain the whole extracted silhouette.
 If the subject touches an image boundary, the likeness tools reject it (why:
 `wiki show silhouette-likeness#clipped-references-and-burnt-in-labels`).

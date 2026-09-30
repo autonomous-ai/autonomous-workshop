@@ -3,11 +3,14 @@ title: Overhangs and print orientation
 tags: [overhang, orientation, bridge, ledge, support, teardrop, chamfer, build-direction, fdm]
 aliases: [print pose, which way up, unsupported, droop, sag, 45 degree rule, support material]
 sources:
+  - "experience: support-free figurines: a horse chin, raised chest emblems and stacked arm segments all failed check_overhang"
   - skills/cad/scripts/check_overhang
   - "experience: parts that were sound, watertight and thick enough but could not print unsupported"
   - "toolchain: tessellated 45 degree cones land facets at 44.7 degrees (reproducible)"
+  - "experience: a flat-topped egg crown, bayonet grooves in a rim band and a chamfered rim all failed the overhang gate until reshaped as described"
+  - "experience: lever pockets beside a pushrod in a carved figure's split halves joined the socket's and channel's ceilings into one over-long bridge"
 related: [wall-thickness-and-hollowing, joints, printed-part-count]
-updated: 2026-09-28
+updated: 2026-09-30
 ---
 
 # Overhangs and print orientation
@@ -57,7 +60,14 @@ mating face and its key points at the bed, that is this shape; flip it.
   pin. Invisible to every other gate and common in cranks and webs.
 - **Taper it.** A cone under a collar, a 45° buttress under a shelf.
 - **Chamfer, don't fillet, at the bed.** A bed-side fillet is itself an
-  overhang; a chamfer is not.
+  overhang; a chamfer is not — unless it is exactly 45°: tessellated, some of
+  its facets measure just under the limit and the gate fails them. Make a bed
+  chamfer steeper than it is wide (0.6 across by 0.9 up is 56°).
+- **Roof a slot that crosses the bed face.** A plate or pin seated in a groove
+  across a split print's bed face leaves each half a recess whose ceiling is
+  parallel to the bed, and where the plate leaves the part that ceiling hangs
+  from one side only. Roof it: a draft of the groove's outline rising at 50°
+  from its edges ([[carved-figures-on-split-prints#a-plate-across-the-split]]).
 
 ## A fan standing on its edge
 
@@ -82,6 +92,89 @@ with both marked as originals (manifold3d `as_original`, then the mesh's
 footing, the rest is its surface. Group the downward faces into connected
 patches and let a patch under about 1 mm across pass as a ledge — the round
 end of a groove is one.
+
+## Low points, leaning reliefs and stacked rounds
+
+Three shapes fail the overhang gate however their slopes are drawn:
+
+- **A low point in mid-air.** A horse's chin over its throat notch is the
+  lowest point of the head with air below it: whatever the jaw's angle, the
+  first layer of the chin prints on nothing. Printed upright, the underside has
+  to run downhill all the way to the body — the jaw at 40° down and back to a
+  notch below the chin, the neck leaning forward under it. The notch survives as
+  a V; the undercut does not.
+- **A raised relief on a surface that leans back as it goes down.** A 0.5 mm
+  emblem on a chest narrowing toward the waist read as 1-2 mm of reach:
+  the relief's lower edge stands out from a surface that is itself receding
+  below it. A flush colour inlay shows the same emblem and hangs nothing.
+- **A rounded top under a narrower piece.** A forearm whose top is filleted
+  into a dome, with a thinner upper arm standing on it, leaves the upper arm's
+  rim over the dome's shoulder: a 1.2 mm ring with air under it. Cap the
+  rounding at the difference of the two radii.
+
+## A flat-topped dome: fill the crown, funnel underneath
+
+Printed upright, a dome's inside is its ceiling, and near a flat crown it is
+far past 45 deg. A ceiling cone rising inward from the wall cannot fix it: from
+any wall point low enough to leave the window or cavity below it clear, a
+52 deg cone reaches the outside of a flat crown before it reaches the axis.
+Fill the crown instead, and give the fill an underside that rises **outward**:
+a funnel from the foot of the central boss (the socket, bore or well that
+passes through the crown) up to where the dome's own inside is still steeper
+than about 45 deg. Each layer then grows outward by less than its height, and
+the boss's mouth needs only a ledge under 1 mm.
+
+## A slot's roof reaches to its far wall
+
+Reach is measured to the nearest point with material under it at its own
+level. For a groove cut outward from a bore -- a bayonet groove, a keyway -- that
+is the groove's far wall, so a level strip at the mouth counts the groove's
+whole depth, not its own width, and the gate's voxel grid can put identical
+grooves either side of 1 mm. Keep such a roof under 1 mm deep, or slope all of
+it: falling toward the far wall at 52 deg (rising toward the mouth), which
+leaves nothing level and meets the bore at an obtuse corner.
+
+## A break on an edge that already leans out hangs flatter
+
+A part printed on an edge whose surface leans outward -- an egg's rim, a bowl's
+lip -- already overhangs by that lean. Any chamfer or round across that edge is
+flatter than the surface it replaces, so it turns a passing 39 deg surface into
+a failing 20-30 deg one. Leave such an edge sharp and put the visible break on
+the mating part's edge, which faces up.
+
+## Pockets inside a split print: one ceiling, one bridge
+
+A part printed on its split face carries every internal pocket as a recess
+with a flat ceiling -- a socket, a rod channel, the room a lever swings in --
+and the slicer bridges each ceiling across its shorter plan dimension, between
+walls. Where several pockets meet, their ceilings join into one bridge area,
+and one bridge direction then has to serve all of it: a tall narrow pocket
+(bridged across its width) opening into a long low strip (bridged across its
+height) leaves one of them spanning its long way or ending in air.
+`check_overhang` sees the same thing: it groups ceiling samples in cells of
+four voxels (1.6 mm at a 0.4 nozzle) and spans each group by its bounding
+box's shorter side, so two ceilings within about two cells of each other in
+height and in plan are one region, and a T of two short spans reads as one
+long one.
+
+Part them, and give each part walls at both ends of its span:
+
+- **A step of at least two cells** (3.2 mm; use 3.3) in ceiling height, or
+  **a gap of at least two cells** in plan (3.4), separates two ceilings. A
+  smaller step or gap joins them.
+- **Step down, not up.** The shallower pocket is the one whose neighbour must
+  be deeper: a ceiling next to a *taller* void has nothing at its own level
+  at that edge and hangs there, while a ceiling next to a *lower* one has the
+  material above the lower one as its wall. A pocket that is raised beside a
+  socket to part their bridges leaves the socket's ceiling hanging along that
+  side; the gate may still call it a bridge if its flank probe happens to hit
+  material, so reason it out rather than trusting one half that passed.
+- **Keep what must pass the centre thin and low.** A lever reaching a
+  pushrod in the middle of the part turns in a long pocket, and the socket and
+  rod channel there are tall: make the lever a flat plate on its inner face
+  where it enters the centre, under a ceiling a step lower than both, and
+  thicken it only where its pocket stands two cells clear of them
+  ([[automata-patterns#pattern-legs-that-swing-with-the-wings]]).
 
 ## Do not design at the limit
 

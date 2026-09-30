@@ -3,13 +3,14 @@ title: Boolean pitfalls
 tags: [boolean, cut, fuse, union, intersect, occ, near-tangent, coincident, tool, performance]
 aliases: [subtract, boolean failure, multi-tool cut, coincident faces, tangent surfaces, symmetric difference, relief cut, slow boolean, polygon arc, shapely buffer]
 sources:
+  - "experience: a multi-colour figure's torso vanished in a pairwise fuse; a web self-intersected after a group cut; a shared cone left open edges"
   - skills/cad/references/build123d-modeling.md (boolean sections; before the move)
   - skills/cad/references/repair-loop.md (large lofted surface section; before the move)
   - "toolchain: OCC booleans on near-coincident B-spline faces collapse to zero intersection (reproducible)"
   - "toolchain: fusing rotated copies of one loft returns a null shape (reproducible)"
   - "experience: polygon-approximated arc prisms against lofted segments ran minutes; true cylinders seconds"
 related: [kernel-validity, construction-strategy, loft-pitfalls, feature-recipes, text-patterns-and-surface-detail]
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # Boolean pitfalls
@@ -51,6 +52,36 @@ Two caveats, both measured:
 
 Timed comparison of one list boolean against pairwise ones for a pattern:
 [[text-patterns-and-surface-detail]].
+
+## Fusing pieces that share faces
+
+Parts built as colour regions (an arm trimmed to the torso, an inlay cut out of
+its host) meet on faces they share exactly, and OCC handles that badly in three
+measured ways:
+
+- **Folding a fuse pairwise loses solids.** `u = u.fuse(s)` over a figure's
+  body pieces dropped the whole torso once a forearm trimmed by it was added:
+  the volume halved in one step, with no error. One multi-argument
+  `fuse(a, *rest)` returned the right volume.
+- **Cutting a fused multi-solid group self-intersects.** Two disjoint arm webs
+  fused first and then cut by the arm pieces came back `selfIntersecting`; the
+  same cut applied to each web on its own was valid. Cut each primitive, then
+  fuse the survivors of one role in a single call.
+- **A surface carried on by a second solid breaks the union.** A neck cone
+  continued upward as the clipping cone of the helmet above it (one conical
+  surface, two solids, or just their shared end disc) left open edges in the
+  fused part. Nest instead: the second surface 0.3 mm inside the first and
+  starting 0.2 mm below its end, so the solids overlap rather than touch.
+
+Seat a trimmed piece into its host by a few tenths (trim it by the host shrunk
+0.3 mm) rather than exactly to its skin: the later cut then has overlap to work
+with instead of a coincident face.
+
+A filler cut down to whatever is left between two nearly touching faces (a web
+between an arm and a waist it almost meets) ends as a sliver bounded by
+near-coincident surfaces and comes back `selfIntersecting`, while the same
+filler across a real gap is valid. Leave the filler out where the gap it fills
+is under about 1.5 mm.
 
 ## Near-tangent booleans silently drop material
 
@@ -170,6 +201,11 @@ and a volume larger than before:
 grown = fan + leaf
 assert len(grown.solids()) == 1 and grown.volume > fan.volume, "fuse came back empty"
 ```
+
+It need not come back empty. Two lofts that met at a single near-tangent
+point fused into **one valid solid of 56 mm³ from operands of 50 000 and
+5 400**: the one-solid half of the guard passed it, and only the volume half
+catches it. A union is never smaller than its larger operand — assert that.
 
 A model assembled from many roles wants the same guard once, where the roles
 are labelled: every role holds material, or the build stops.

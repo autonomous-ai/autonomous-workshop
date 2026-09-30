@@ -8,9 +8,9 @@ sources:
   - https://www.sfp-tw.com/en/post/iso-2338-dowel-pins-differences-and-relationships-with-din-7-iso-8734-and-din-6325 (unhardened vs hardened; via search excerpt)
   - https://tools.creative3dp.com/blog/press-fit-tolerances-3d-printing/ (FDM fit ladder, hole undersize, 608 seat, TPU, coupon)
   - https://meshra.ai/blog/magnet-pockets-3d-printing (press-fit pocket practice)
-  - "toolchain: step.parts dowel STEP files measured at double their named length"
+  - "toolchain: step.parts dowel and precision-shaft STEP files measured at double their named length"
 related: [fit-derivation, joints, shafts-and-bearings, iso-286-fits, magnets-and-strap-slots, thermal-expansion-and-hybrid-parts, exact-constraint-and-kinematic-mounts]
-updated: 2026-09-23
+updated: 2026-09-29
 ---
 
 # Dowel pins and press fits in printed parts
@@ -30,8 +30,10 @@ An m6 pin is slightly **over** nominal: a hardened Ø6 m6 dowel measures
 6.004–6.012 mm. ISO 2338 suits parts without high impact or wear; ISO 8734
 is for precision location. The ISO fit system itself is in [[iso-286-fits]].
 Find the part with `step-parts` or `stdpart` and derive its hole, never type
-it. Some catalog dowel files are modelled at double length; pick by measured
-geometry.
+it. Some catalog files are modelled at double length -- step.parts ISO 2338
+dowels and its precision shafts alike (the `d006_l0200` shaft is 400 long, the
+`d006_l025` dowel 50); pick the id by measured geometry and name the real part
+in the bill of materials.
 
 Locating with one round pin and one slot:
 [[exact-constraint-and-kinematic-mounts]].

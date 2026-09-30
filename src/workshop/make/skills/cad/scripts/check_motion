@@ -1349,8 +1349,51 @@ def _self_check() -> int:
     del parts["frame"]
     parts["__toplevel__"] = ["drive", "output"]
 
+    # 7. An inlaid mover: two solids sharing a face, pushed into a wall. The
+    #    common of the whole group comes back empty in OCC; summed per leaf it
+    #    is the overlap it is, and the push reads blocked.
+    from build123d import Compound
+    host = Pos(0, 0, 0) * Box(10, 10, 10)
+    inlay = Pos(0, 0, 4.5) * Box(4, 4, 1)
+    group = Compound(children=[host.cut(inlay), inlay])
+    group.label = "inlaid"
+    wall = Pos(8, 0, 0) * Box(4, 10, 10)
+    wall.label = "wall"
+    inlaid_parts = {"inlaid": group, "wall": wall,
+                    "__ambiguous__": [], "__toplevel__": ["inlaid", "wall"]}
+    got = run_condition({"id": "inlaid-push", "check": "linear_motion_collision",
+                         "expect": "blocked",
+                         "inputs": {"moving_part": "inlaid", "obstacle_parts": ["wall"],
+                                    "translation": [2.0, 0, 0], "steps": 4}},
+                        inlaid_parts, 0)
+    hit = got["status"] == "pass" and not got.get("clear")
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} an inlaid mover pushed into a wall reads blocked: "
+          f"{got.get('detail', got)}")
+
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        project = Path(tmp) / "proj"
+        (project / "measure").mkdir(parents=True)
+        (project / "measure" / "motion.json").write_text("{}")
+        found = resolve_manifest(project, "measure/motion.json")
+        hit = found == str(project / "measure" / "motion.json")
+        ok &= hit
+        print(f"{'ok  ' if hit else 'FAIL'} a project-relative manifest resolves under the project: {found}")
     print("check_motion coupled-motion fixtures:", "ok" if ok else "FAILED")
     return 0 if ok else 1
+
+
+def resolve_manifest(project: Path, source: str) -> str:
+    """The manifest path as given, or relative to the project when that is where it is.
+
+    The documented form is `check_motion <project-dir> --manifest measure/motion.json`: the
+    path is the project's own `measure/motion.json`, not one under the shell's directory.
+    A path that exists as given still wins, so an explicit path is never second-guessed."""
+    if source == "-" or Path(source).exists():
+        return source
+    candidate = project / source
+    return str(candidate) if candidate.exists() else source
 
 
 def load_manifest(source: str) -> dict:
@@ -1719,7 +1762,7 @@ def main() -> int:
         return 2
 
     try:
-        manifest = load_manifest(args.manifest)
+        manifest = load_manifest(resolve_manifest(project, args.manifest))
         entry = find_assembly_entry(project, manifest.get("assembly"))
         with progresslib.phase(f"check_motion: building {entry.name}"):
             parts = index_parts(build_assembly(entry))

@@ -206,17 +206,25 @@ removed.
   correction. Never write "about".
 - A fit dimension names the value both halves derive from; `$cad` derives the
   second half with `cadfits`. The declared bed goes here as `--bed WxDxH`.
+- **Sketch the side view in 2D before any 3D**: the figure's outline, the
+  mechanism's fixed points (axles, column, pivots) and the base on one plot.
+  Balance, overhang and clearance show there in seconds — a drive axle under
+  one end of the figure, a hoof over a wheel. For an organic figure with no
+  photograph that outline is also where the loft's stations come from
+  (`wiki show loft-organic-bodies`).
 
 ### Step 7 — Decompose, source, operations (spec §6–§8)
 
-From here the spec is the image-to-cad build spec. Fill §6a–§6g, §7 and, when
+From here the spec is the image-to-cad build spec. Fill §6a–§6h, §7 and, when
 a load is functional or a part is driven, §8, with the table shapes and rules of
 `skills/image-to-cad/templates/build_spec.md` and `build_spec_powered.md`:
 one printed part unless the split test fails (a split lands on an edge or a
 reveal, never mid-surface), a catalog search on the governing numbers for every
 standard element with misses recorded (6c), seats derived from the supplier
 STEP (6e), `$design-reference` only for a real construction question (6d), one
-selected design per active domain (6g), an operation and a selector for every
+selected design per active domain (6g), everything that is not printed — bought
+parts and consumables such as glue — with quantity and order name (6h), an
+operation and a selector for every
 feature (§7), and a feasibility `assert` for every driven mechanism (§8).
 
 ### Step 8 — Self-critique
@@ -261,6 +269,19 @@ table.
    at least two rounds unless the first finds nothing. When the same finding
    survives three rounds of detail edits, the fault is in the primary form or
    the concept: change that, not the detail.
+
+Two habits the rounds need:
+
+- **Look at the figure alone, close.** On a whole-model render a figure's head
+  and limbs are a few dozen pixels, and ears that read as a crown or a limb
+  end that stands out as a blade do not show. Render the figure without its
+  base from a scratch entry outside the worktree that imports the project's
+  part builders, at the front, the side and both three-quarters, and crop the
+  head and each limb.
+- **"Ugly" asks for craft, not a new subject.** When the user dislikes the
+  figure, keep the subject they recognised and raise its craft — anatomy,
+  ornament, colour (`wiki show product-aesthetics#making-a-figure-splendid`).
+  Offer a different subject only when they ask for one.
 
 Review renders are visual evidence, not a gate; report them as such. They
 never replace validate, interference, fit, mesh or thickness, which run on the

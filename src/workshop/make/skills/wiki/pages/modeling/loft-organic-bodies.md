@@ -5,8 +5,10 @@ aliases: [animal body, figure, hull, freeform body, curved spine, lofted segment
 sources:
   - skills/cad/references/organic-lofts.md (before the move)
   - "experience: a tail resting against a body passed validate and interfere as two solids"
-related: [loft-pitfalls, frames-and-rotations, operation-families]
-updated: 2026-09-23
+  - "experience: a figure designed from prose, lofted from hand-typed pairs, then from a drawn silhouette"
+  - "experience: a carved carousel figure printed as midplane halves with flat-faced legs"
+related: [loft-pitfalls, frames-and-rotations, operation-families, carved-figures-on-split-prints]
+updated: 2026-09-29
 ---
 
 # Organic bodies from lofts
@@ -35,6 +37,42 @@ Twelve to sixteen stations carry a body. A tight spiral needs a station every
 
 Build each station's frame from a lateral reference, never from Z
 ([[frames-and-rotations#a-loft-station-frame-from-a-lateral-reference-never-from-z]]).
+
+## No photograph: draw the silhouette, cut the stations from it
+
+A figure designed from words has no image to read rows off, and typing
+(top, bottom) pairs by hand gives a sausage: nothing holds the side view to
+a line anybody drew. Draw the side outline instead — a top curve and a
+bottom curve through a dozen control points each (a Catmull-Rom spline is
+enough) — and derive every station from it, so the side view *is* the
+drawing:
+
+- **A barrel-like span:** each station is a point inside the silhouette and a
+  chord angle; the chord ends where that ray meets each outline.
+- **A sharp bend** (a neck rising off a body): perpendicular chords from a
+  tightly curving spine cross inside the body and the loft folds through
+  itself. Pair the two outlines by equal arc-length fraction instead — crest
+  point *i* with throat point *i* — and the chords fan out without crossing.
+  Where even that crosses (a throatlatch tucked tight under a jowl), set the
+  few pairs through the bend by hand and keep arc length for the rest.
+- **An appendage at an angle** (a head, a hand): draw it in its own frame
+  with its axis level, cut its stations there, then rotate the pairs into
+  place.
+- **Check that a part's defining bulge lies outside its neighbour's
+  silhouette.** A jowl drawn under a steeply angled head ended inside the
+  neck's outline, so the loft hid it and the head read as a tube; carrying
+  the head forward uncovered it. Plot both outlines together before lofting:
+  a 2D plot takes a second, a loft and a render a minute.
+- **Bury the joining section.** A neck whose crest ended exactly where the
+  head's surface also passed fused into a valid fragment of a fraction of a
+  percent ([[boolean-pitfalls#a-fuse-can-come-back-empty-assert-every-step]]).
+  End it a millimetre or two inside the other loft.
+- **A head is carved, not intersected.** Two outlines extruded across each
+  other (side profile ∩ plan) give a box with knife edges, and filleting that
+  intersection failed at every radius. Loft the head instead through sections
+  whose height comes from the side profile and whose width comes from a plan
+  outline (broad cheeks, a narrow nose, flared nostrils), each section a
+  rounded box rather than an ellipse.
 
 ## Consecutive segments must overlap, not meet
 
@@ -114,6 +152,12 @@ State the section family in the spec next to the station table; it is a
 construction-family decision, and a body authored in the wrong section family
 cannot be rescued by editing numbers.
 
+## A carved figure on a split print
+
+Limbs of bones and knobs, limbs let into the flank, bevelled flat faces,
+carved relief, ears across the split and split slivers are
+[[carved-figures-on-split-prints]].
+
 ## Colour regions on one fused body
 
 For a model reconstructed from a photograph of a multi-material print, the
@@ -152,3 +196,9 @@ round every region of it against the same table and pass that stock to
 `filament(..., material=...)`. A region in a colour outside its palette cannot
 be printed as drawn, so record the substitution in the spec instead of passing
 the sampled hex through `Color()` or `srgb()`.
+
+Build every tool in the frame of the body it cuts. A tool built in the world
+and passed through the figure's placement a second time lands off the body,
+the intersection is empty, and the region silently takes the base colour.
+Assert that every colour region holds material, the same guard as every role
+holding material ([[boolean-pitfalls#a-fuse-can-come-back-empty-assert-every-step]]).

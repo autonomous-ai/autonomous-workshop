@@ -247,8 +247,18 @@ def _size_matches(size: str, needle: str, loose: bool) -> bool:
     return any(token.lower() == needle for token in size.split("-"))
 
 
-def cmd_find(rows: list[dict], query: str, as_json: bool) -> int:
+def _squash(text: str) -> str:
+    """Letters and digits only, lower case: `o-ring`, `O ring` and `ORing` compare equal."""
+    return re.sub(r"[^a-z0-9]", "", text.lower())
+
+
+def find_hits(rows: list[dict], query: str) -> tuple[list[dict], bool]:
+    """Families matching `query` by size token, family or standard name; and whether the
+    match had to fall back to a substring.  Names compare squashed, because a family is
+    CamelCase (`ORing`, `SpurGear`) and a person types `o-ring` or `spur gear`."""
     needle = query.lower()
+    squashed = _squash(query)
+    hits: list[dict] = []
     for loose in (False, True):
         hits = []
         for row in rows:
@@ -257,13 +267,18 @@ def cmd_find(rows: list[dict], query: str, as_json: bool) -> int:
                 for standard, sizes in row["sizes"].items()
             }
             matched = {k: v for k, v in matched.items() if v}
-            named = needle in row["family"].lower() or any(
-                needle in standard.lower() for standard in row["standards"]
-            )
+            named = bool(squashed) and (squashed in _squash(row["family"]) or any(
+                squashed in _squash(standard) for standard in row["standards"]
+            ))
             if matched or named:
                 hits.append({**row, "matched": matched})
         if hits:
-            break
+            return hits, loose
+    return hits, False
+
+
+def cmd_find(rows: list[dict], query: str, as_json: bool) -> int:
+    hits, loose = find_hits(rows, query)
 
     if as_json:
         # The matches, not the tables they came from: `sizes <family> --json`
@@ -293,7 +308,7 @@ def cmd_find(rows: list[dict], query: str, as_json: bool) -> int:
 
 
 def cmd_sizes(rows: list[dict], family: str, standard: str | None, as_json: bool) -> int:
-    matches = [r for r in rows if r["family"].lower() == family.lower()]
+    matches = [r for r in rows if _squash(r["family"]) == _squash(family)]
     if not matches:
         print(f"no family named {family!r}; run `stdpart` for the list", file=sys.stderr)
         return 1
@@ -329,6 +344,13 @@ def _self_check() -> int:
         print(f"  {'PASS' if ok else 'FAIL'}  {label:<44} {detail}")
         if not ok:
             failures.append(label)
+
+    # 0. A family is found by the words a person types, not only its CamelCase name.
+    rows = survey()
+    for typed, family in (("o-ring", "ORing"), ("O ring", "ORing"), ("spur gear", "SpurGear"),
+                          ("socket head cap screw", "SocketHeadCapScrew")):
+        found = [row["family"] for row in find_hits(rows, typed)[0]]
+        check(f"find {typed!r} reaches {family}", family in found, ", ".join(found[:4]) or "no hit")
 
     # 1. A component built inside a builder context joins the part being built.
     with BuildPart() as loose:

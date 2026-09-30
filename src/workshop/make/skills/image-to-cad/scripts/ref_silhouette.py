@@ -236,8 +236,35 @@ def self_check() -> int:
           f"the holes-filled mark and an ordinary image does not")
     ok &= marked and unmarked
 
+    # --json has to serialise what run() really returns: numpy ints in every
+    # bbox made it crash on the first real image it met
+    import contextlib
+    import io
+    with tempfile.TemporaryDirectory() as tmp:
+        source = Path(tmp) / "fixture.png"
+        Image.fromarray(img).save(source)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+            try:
+                main([str(source), "-o", tmp, "--json"])
+                parsed = json.loads(out.getvalue())
+                emitted = bool(parsed.get("images"))
+            except (TypeError, ValueError) as error:
+                emitted, parsed = False, error
+    print(f"{'ok  ' if emitted else 'FAIL'} --json emits parseable JSON for a real run"
+          + ("" if emitted else f": {parsed}"))
+    ok &= emitted
+
     print("\nall fixtures pass" if ok else "\nself-check FAILED")
     return 0 if ok else 1
+
+
+def _plain(value):
+    """numpy scalars and arrays as the JSON numbers and lists they hold: a
+    bbox of numpy ints made `--json` crash on every real image."""
+    if hasattr(value, "tolist"):
+        return value.tolist()
+    raise TypeError(f"{type(value).__name__} is not JSON serializable")
 
 
 def main(argv=None):
@@ -272,6 +299,7 @@ def main(argv=None):
              "images": records},
             separators=(",", ":"),
             ensure_ascii=False,
+            default=_plain,
         ))
     else:
         for r in records:

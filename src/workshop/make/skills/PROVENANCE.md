@@ -1,5 +1,108 @@
 # Shared skill provenance
 
+## Resync to upstream `b149710`: per-piece likeness, bought parts in 6h, print unions (2026-09-30)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `b149710749317fca5ae359f40fb17a362525b1de` (2026-09-30), resynced from
+  `bd1dcdc` — 11 upstream commits touching 42 files. Same three-way merge as
+  before: base the locked `bd1dcdc` bytes, one side the Workshop tree, the
+  other upstream `HEAD`. `design-reference`, `electromechanical-integration`
+  and `step-parts` came out byte-identical; their locks move to the new commit
+  only. `make-round` is unchanged. Adoption is unchanged too: `toy-archive`
+  (changed upstream in this range) and the reverse-engineering pair stay out.
+- **What upstream brought.** `cad`: `verify_project --likeness-entry
+  LABEL=ENTRY` scores a reference that shows one piece of a set against that
+  piece's entry, rendered into its own `snap/<entry>/`; `printlib` builds an
+  entry's optional `gen_print_union()` for `check_mesh`, `check_overhang`,
+  `check_thickness` and `repair_mesh`, so a multi-colour plate's shared faces
+  stop reading as non-manifold; `check_spec_format` gains
+  `missing-not-printed`; `check_spec_numbers` pairs names and values across
+  table cells and reads each module once; `check_motion` resolves a
+  project-relative `--manifest`; `stdpart` folds punctuation in queries
+  (`o-ring` finds `ORing`); `render_review` lights both sides of a face; and
+  the references gain staged paths as one coupled condition, pose tables from
+  the project's own kinematic solution, and the cost of a coupled cycle.
+  `image-to-cad`: spec section **6h, "Not 3D printed"** — every bought part,
+  fastener and consumable, with quantity and order name — in the template,
+  the decomposition step and the handoff table; `measure_image` measures a
+  vertical-gradient backdrop (a CAD viewer's default) row by row;
+  `render_views`' source-vs-STEP drift check keeps every body instead of the
+  largest blob; `ref_silhouette --json` serialises numpy values.
+  `product-design`: sketch the side view in 2D first, review the figure alone
+  and close, and treat "ugly" as a request for craft. `wiki`: two new pages
+  (`mechanisms/push-to-turn-indexer`, `modeling/carved-figures-on-split-prints`)
+  and additions to twenty others; 180 pages.
+
+Merge decisions where both sides had changed the same lines:
+
+- `check_motion`: upstream rewrote `overlap_volume` to sum leaf-solid pairs,
+  because the Common of a group whose members share faces came back empty, and
+  let a thrown Boolean propagate as inconclusive. Workshop's `overlap_volume`
+  (the 2026-09-08 to 09-10 consistency entries below) already fuses each
+  operand's solids before the Common and raises on an unusable Boolean, so it
+  is kept. Upstream's fixture 7 (a face-sharing inlaid mover pushed into a wall)
+  and `resolve_manifest` are adopted; the fixture passes against Workshop's
+  measurement (50 mm3 at step 3).
+- `render_review`: upstream replaced its painter's sort with a per-triangle
+  depth buffer and flips a normal that faces away. Workshop's batched per-pixel
+  rasteriser is kept and the flip is ported into it, ahead of `shade_faces`.
+  Upstream's two fixtures (tiles over a covered plate, a square with mixed
+  windings) pass against it. The raster-equivalence test's reference renderer
+  lights both sides too; its opposite-winding case now asserts one shade, since
+  the two windings no longer shade differently.
+- `verify_project`: upstream's `_final` call site collides with Workshop's
+  restructured final call behind the ADR 0070 verdict reuse; `likeness_entries`
+  is threaded into Workshop's. The reuse closure already hashes the raw argv,
+  so a changed `--likeness-entry` never reuses a verdict.
+- `measure_image.py`: both sides added a mask path — Workshop's CIELAB
+  pale-subject admission, upstream's gradient backdrop. Both are kept with
+  their fixtures; the gradient path returns before the single-colour path the
+  pale admission extends.
+- `motion-manifests.md`: upstream's two subsections close the coupled-motion
+  section, ahead of Workshop's section on sampling cost and the deadline.
+
+Workshop adaptations of the new text:
+
+- **A print union must be the plate's own material.** The print gates, and
+  the host's print-ready rerun of `verify_project --print-gates` (ADR 0063),
+  would otherwise measure whatever `gen_print_union()` returns in place of the
+  plate `gen_step()` exports, so a region left out or a wall thickened would
+  pass for an object nobody ships. `printlib.check_print_union` refuses a
+  union whose volume differs from the regions' summed volume by more than
+  1e-5 of it (or 0.001 mm3), or whose bounding box sits more than 0.01 mm off
+  theirs. Volume and box rather than a Boolean difference: two integrations
+  cost nothing beside the gates they guard. Two self-check fixtures (inlay
+  left out; block moved 1 mm) pin it, and `print-optimisation.md` says so.
+- **`make_round` does not forward `--likeness-entry`.** Its `--full` scores
+  the Wish's sealed references at assembly scope and each Component's own
+  image through `--component` rounds (ADR 0074), so `make-round` is
+  unchanged. A Manager running `verify_project` directly can pass the flag.
+- No path adaptation was needed: the new command lines already use
+  `$CAD_SKILL_ROOT`, and new prose uses the `wiki show` form each `SKILL.md`
+  resolves.
+
+Verified here: `verify_skill_locks` matches eight trees; the self-checks of
+every changed script pass — `check_motion`, `check_spec_format`,
+`check_spec_numbers`, `printlib`, `render_review`, `stdpart`,
+`verify_project`, `measure_image`, `ref_silhouette` and `render_views` — and
+`wiki lint` reports 180 pages, 0 errors.
+
+Consequences for existing runs:
+
+- **Materialized instruction bytes changed.** Four fingerprints move (`cad`,
+  `image-to-cad`, `product-design`, `wiki`). A run parked before this change
+  must be restarted rather than resumed; resume fails closed on the
+  materialized-instruction-hash mismatch. `workshop resume --refresh-tools`
+  rewrites the skills a run already carries.
+- **A spec with a section 6 now needs a 6h.** `verify_project` runs
+  `check_spec_format` in every mode whenever a `*_spec.md` exists, so a
+  refreshed parked run or a `workshop fix` of an older archive whose spec
+  predates 6h fails preflight until it gains the subsection — one line when
+  everything is printed and nothing is glued. The finding names the fix.
+- Review renders change pixels only where a face's winding points away from
+  the camera; no gate reads them. `render_review`'s bytes changed, so its
+  tessellation cache, keyed on them, misses once per project.
+
 ## Resync to upstream `bd1dcdc`: the wiki replaces `mechanisms`, `product-design` joins (2026-09-29)
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at

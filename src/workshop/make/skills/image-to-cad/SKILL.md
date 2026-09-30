@@ -577,6 +577,13 @@ without choosing among alternatives. If research cannot support a selection,
 leave the spec incomplete and put the decision in Open questions; do not hide
 it behind a generic motor, lamp, box or mechanism.
 
+Then list in spec **6h** everything the selection does not print: each used 6c
+hit, every fastener, shaft, pin, bearing, magnet, spring and electrical part,
+and the consumables (glue, lubricant, paint), with quantity, what to order,
+where it sits and what holds it. 6c records a search; 6h is what the builder
+buys. A fully printed, unglued object says so in one line under the heading;
+`check_spec_format` fails a decomposition with no 6h.
+
 ---
 
 ## Step 6 — Map every feature to a build123d operation
@@ -645,8 +652,9 @@ drifted.
 **`check_spec_format` now owns the mechanical half of this review** — untagged
 dimensions, leftover template placeholders, a scaffold project directory, a
 functional load with no section 8, a section 8 with no feasibility `assert`, a
-joint declared in only one direction, and a likeness floor pre-discounted below
-0.90. Run it on the spec you just wrote; it is static and costs milliseconds:
+joint declared in only one direction, a likeness floor pre-discounted below
+0.90, and a decomposition with no 6h list of what is not printed. Run it on the
+spec you just wrote; it is static and costs milliseconds:
 
 ```bash
 python "$CAD_SKILL_ROOT/scripts/check_spec_format" <project-dir>
@@ -795,6 +803,7 @@ different name.
 | Removable-light interfaces (6f) | schema 3 `measure/power.json`, the purchased socket seat or `cadfits`-derived receiver, five linked conditions in `measure/motion.json`, and the coupon status |
 | Design-reference log (6d) | URL-cited construction evidence only; `cad` may reuse the named idiom but does not import or execute external reference code or geometry |
 | Design selection (6g) | the construction family, mechanism, topology, lighting strategy and bought-device choices `cad` implements; CAD does not reopen selection |
+| Not printed (6h) | the README's bought-parts table, and `measure/check_spec.py` holding every 6h quantity to the count the source builds |
 | Feature table (Step 6), in order | the body of `gen_step()` |
 | Mechanism (spec 8) | the kinematic parameters and feasibility `assert` in `<name>_lib.py`, and `measure/motion.json` for `check_motion` |
 | Approved spec vs repaired source | `measure/check_spec.py`; every repair changing a parameter, landmark, part count or construction family is reconciled back into the spec |

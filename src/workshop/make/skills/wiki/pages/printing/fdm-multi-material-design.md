@@ -3,12 +3,14 @@ title: Designing for multi-material and multi-colour printing
 tags: [multi-material, multi-colour, mmu, ams, purge, wipe-tower, color-change, filament-change]
 aliases: [multicolor, multi color, colour change, color print, tool change, purge volume, prime tower, wipe tower, filament swap, inlay, colour region, shared face]
 sources:
+  - "experience: re-fused colour regions of a flush inlay left one open edge; the union of primitives was watertight"
   - https://forum.prusa3d.com/forum/original-prusa-i3-mmu2s-mmu2-general-discussion-announcements-and-releases/tips-for-faster-prints-and-less-purge/
   - https://help.prusa3d.com/article/wipe-tower_125010
   - https://help.prusa3d.com/article/colorprint-with-the-mmu_124861
   - "experience: a multi-colour plate of inlays failed overhang and thickness on shared faces; its fused union passed"
+  - "skills/cad/scripts/printlib.py"
 related: [printed-part-count, fdm-surface-finish, fdm-layer-height-and-nozzle, overhangs-and-print-orientation, wall-thickness-and-hollowing]
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # Designing for multi-material and multi-colour printing
@@ -74,9 +76,17 @@ walls. `check_mesh` also sees the shared edges as non-manifold (pass
 `--assembly` for a plate of touching colour regions).
 
 Measure the printed object on the union: fuse each group of touching solids,
-run overhang and thickness on that, and keep the per-region numbers only for
+run overhang and thickness on that (a print entry that also defines
+`gen_print_union()` returning that union is what the mesh gates build, so the
+colour plate and the gated object come from one entry), and keep the per-region numbers only for
 what they do say, that a colour region thinner than two lines prints badly as
 its own colour. Two rules keep regions sound:
+
+Build that union from the primitives, not by fusing the resolved regions back
+together: the resolver only moves volume between colours, so the printed object
+is every primitive united, less the grooves. Re-fusing the regions re-joins each
+inlay along the face it shares with its host, and a flush six-link emblem left a
+sliver (one open edge) that failed `check_mesh` on geometry that was sound.
 
 - **An inlay is its host's material and no one else's.** A claw cut from the
   tip of a toe that overlaps the next toe takes in that toe's side, and two

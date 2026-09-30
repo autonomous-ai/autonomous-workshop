@@ -22,6 +22,10 @@ claims about the *analysis*, not about geometry:
     A likeness floor written below 0.90.   The spec phase sets a threshold; it
                                            does not get to pre-discount one for
                                            a model nobody has built yet.
+    A decomposition with no 6h.            The bought parts and the glue are
+                                           what the builder has to buy; spread
+                                           over 6c search rows and assembly
+                                           prose, one is always missed.
 
 Scope is deliberate. Section 4b is prose whose sizes are ranges by instruction,
 angle-bracket text is template guidance, and a range ("5-8 mm") is not a hard
@@ -52,6 +56,7 @@ FUNCTIONAL = re.compile(
     r"drives?|turns?|moves?|lighting|light)\b",
     re.I,
 )
+NOT_PRINTED = re.compile(r"\bnot\s+(?:3d[- ]?)?printed\b", re.I)
 IOU = re.compile(r"(?:minimum iou|min(?:imum)? likeness|threshold)\D{0,24}?(0\.\d+)", re.I)
 
 
@@ -165,6 +170,21 @@ def find(text: str, name: str) -> list[tuple[int, str]]:
                 out.append((a, "motion group(s) " + ", ".join(repr(item) for item in missing)
                             + " have clear travel but no blocked retention direction"))
 
+    elif name == "missing-not-printed":
+        if not any(t.startswith("6.") or t.startswith("6 ") for t, _, _ in sections(text)):
+            return out                         # no decomposition, nothing to buy yet
+        lines = list(readable_lines(text))
+        heads = [i for i, (_, line, _) in enumerate(lines) if line.lstrip().startswith("#")]
+        hits = [i for i in heads if NOT_PRINTED.search(lines[i][1])]
+        if not hits:
+            out.append((0, "the decomposition has no 'Not 3D printed' subsection (6h): "
+                           "list every bought part and consumable, or say that "
+                           "everything is printed"))
+        for i in hits:
+            nxt = next((j for j in heads if j > i), len(lines))
+            if not any(l.strip() and l.strip() != "---" for _, l, _ in lines[i + 1:nxt]):
+                out.append((lines[i][0], "the 'Not 3D printed' subsection is empty"))
+
     elif name == "discounted-likeness-floor":
         for n, line, _ in readable_lines(text):
             for m in IOU.finditer(line):
@@ -187,6 +207,7 @@ CHECKS = [
     "no-feasibility-assert",
     "motion-one-direction",
     "discounted-likeness-floor",
+    "missing-not-printed",
 ]
 
 
@@ -280,6 +301,20 @@ def self_check() -> int:
          "| side | ref/s.png | Minimum IoU 0.80 |\n", "discounted-likeness-floor", 1),
         ("the 0.90 floor passes",
          "| side | ref/s.png | Minimum IoU 0.90 |\n", "discounted-likeness-floor", 0),
+        ("a decomposition with no not-printed list fails",
+         "## 6. Decomposition\n\n### 6a. Printed parts\n\none part\n",
+         "missing-not-printed", 1),
+        ("a filled not-printed list passes",
+         "## 6. Decomposition\n\n### 6h. Not 3D printed - bought parts\n\n"
+         "| 1 | axle | 2 | ISO 2338 6 x 50 |\n", "missing-not-printed", 0),
+        ("an explicit 'everything is printed' passes",
+         "## 6. Decomposition\n\n### 6h. Not printed\n\nNothing: every part is "
+         "printed and nothing is glued.\n", "missing-not-printed", 0),
+        ("an empty not-printed heading fails",
+         "## 6. Decomposition\n\n### 6h. Not 3D printed\n\n---\n\n## 7. Features\n",
+         "missing-not-printed", 1),
+        ("a spec with no decomposition yet is not asked for one",
+         "## 5. Size\n\n| Length | 120 mm | `[observed]` |\n", "missing-not-printed", 0),
     ]
     with tempfile.TemporaryDirectory() as raw:
         doc = Path(raw) / "demo_spec.md"
