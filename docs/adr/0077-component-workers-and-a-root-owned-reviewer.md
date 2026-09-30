@@ -68,7 +68,16 @@ context is and how many requests carry it; waiting is a small one.
 6. **Longer waits.** `make_round` polls and `wait_agent` use 300000 ms instead
    of 30000 ms, in `references/make.md`, the product-run `AGENTS.md` and
    `make-round`.
-7. **Unchanged.** Assembly rounds, the blind review and final verification
+7. **Parallel component packets.** `make_round` refuses a review whose
+   packet's sources no longer match the project. It hashed every source and
+   STEP in the project, so a sibling worker's edit staled a pending review
+   and a Component could never pass while others were being repaired. A
+   component round's packet now binds its own source and STEP and every
+   shared file (helpers, the combined entry, design constraints), but not
+   another Component's own `part_<id>.step.py` or STEP. A shared helper edit
+   still stales every pending component packet. The assembly packet still
+   binds everything.
+8. **Unchanged.** Assembly rounds, the blind review and final verification
    stay with the root. Skill files are not trimmed or restructured. The
    auto-compaction threshold stays and is re-measured after the first run
    with workers. The host resume prompt stays; Codex keeps past user messages

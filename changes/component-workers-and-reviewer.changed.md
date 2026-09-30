@@ -7,6 +7,8 @@ to the same worker. Only the reviewer views component images, and workers
 never edit shared helpers. The host materializes both roles as sealed custom
 agents in `.codex/agents/`; the reviewer runs at `low` reasoning effort and
 the worker inherits the root's. `make_round` polls and `wait_agent` now wait
-at 300000 ms. Assembly rounds, the blind review and final verification stay
+at 300000 ms. A component round's visual packet no longer binds other
+Components' own source and STEP, so parallel workers cannot stale each
+other's pending review. Assembly rounds, the blind review and final verification stay
 with the root. Frozen runs keep their materialized protocol. Not yet validated
 by a live run.

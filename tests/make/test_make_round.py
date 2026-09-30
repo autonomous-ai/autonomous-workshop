@@ -940,6 +940,45 @@ class SealedReferenceTest(unittest.TestCase):
                 {"label": "ref-02-whole", "scored_by": "assembly"},
             ])
 
+    def _pending_body_review(self, module, project):
+        argv = ["--component", "part_body.step.py", "--ref", "body=wish-references/ref-01-body.png"]
+        self._main(module, project, argv, [])
+        summary = json.loads((project / "measure/component-rounds/body/r0001/summary.json").read_text())
+        return write_review(project, summary)
+
+    def test_another_components_own_files_do_not_stale_a_pending_component_packet(self):
+        # ADR 0077: Component Workers run in parallel, so another Component's
+        # source and STEP change while this Component's review is pending.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-body.png": b"body"})
+            (project / "part_wheel.step.py").write_text("def gen_step(): return 'wheel'\n")
+            module = load_module()
+            review = self._pending_body_review(module, project)
+            (project / "part_wheel.step.py").write_text("def gen_step(): return 'wheel v2'\n")
+            (project / "part_wheel.step").write_text("wheel v2 step\n")
+            self.assertTrue(module.record_review(project, review, "part_body.step.py")["ok"])
+
+    def test_a_shared_helper_or_own_source_change_stales_a_pending_component_packet(self):
+        for changed in ("features/forms.py", "part_body.step.py", "toy.step.py"):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                project = self._run_root(tmp, {"ref-01-body.png": b"body"})
+                (project / "features").mkdir()
+                (project / "features/forms.py").write_text("WIDTH = 1\n")
+                module = load_module()
+                review = self._pending_body_review(module, project)
+                (project / changed).write_text("# changed\n")
+                with self.assertRaisesRegex(ValueError, "stale CAD sources"):
+                    module.record_review(project, review, "part_body.step.py")
+
+    def test_the_assembly_packet_still_binds_every_component_source(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            (project / "part_body.step.py").write_text("body\n")
+            (project / "part_wheel.step.py").write_text("wheel\n")
+            self.assertEqual(sorted(module.source_hashes(project)), ["part_body.step.py", "part_wheel.step.py"])
+            self.assertEqual(sorted(module.source_hashes(project, "body")), ["part_body.step.py"])
+
     def test_a_component_changed_after_its_pass_no_longer_covers_its_reference(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._run_root(tmp, {"ref-01-body.png": b"body"})

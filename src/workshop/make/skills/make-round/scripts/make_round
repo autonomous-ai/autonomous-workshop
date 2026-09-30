@@ -74,12 +74,29 @@ def file_hash(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def source_hashes(project):
-    """Bind helpers and design constraints as well as entry generators."""
+def other_component_file(name: str, role: str | None) -> bool:
+    """Whether ``name`` is another Component's own source or STEP.
+
+    Component Workers repair Components in parallel (ADR 0077), so a component
+    round binds its own source and every shared file, never a sibling's.
+    """
+
+    if role is None or not name.startswith("part_"):
+        return False
+    for suffix in (".step.py", ".step", ".stp"):
+        if name.endswith(suffix):
+            return name[len("part_"):-len(suffix)] != role
+    return False
+
+
+def source_hashes(project, role=None):
+    """Bind helpers and design constraints as well as entry generators; a
+    component round (``role``) leaves out other Components' own files."""
     return {
         p.relative_to(project).as_posix(): file_hash(p)
         for p in sorted(project.rglob("*"))
         if p.is_file() and p.suffix in (".py", ".md", ".json", ".step", ".stp")
+        and not other_component_file(p.name, role)
         and not any(v in ("rounds", "__cadgen__", "__pycache__", ".git", ".venv")
                     for v in p.relative_to(project).parts)
         and (p.suffix in (".py", ".step", ".stp") or not any(
@@ -144,9 +161,10 @@ def prepare_comparisons(project, out, refs):
     return comparisons, None
 
 
-def prepare_visual(project, entry, out, cad, refs, component=False):
-    """Render evidence for native inspection; never infer a visual verdict."""
-    before = source_hashes(project)
+def prepare_visual(project, entry, out, cad, refs, component=None):
+    """Render evidence for native inspection; never infer a visual verdict.
+    ``component`` is the role of a component round, else None."""
+    before = source_hashes(project, component)
     views = out / "visual"
     command = [sys.executable, str(cad / "render_review"), str(entry),
                "--view", "front", "--view", "top", "--view", "iso"]
@@ -156,7 +174,7 @@ def prepare_visual(project, entry, out, cad, refs, component=False):
             command.append("--view=%s" % view)
     done = run(command + ["-o", str(views)], cwd=project, log=out / "visual-render.log")
     paths = [views / (v + ".png") for v in ("front", "top", "iso")]
-    if done.returncode or not all(p.is_file() for p in paths) or before != source_hashes(project):
+    if done.returncode or not all(p.is_file() for p in paths) or before != source_hashes(project, component):
         return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}
     comparisons, error = prepare_comparisons(project, out, refs)
     if error is not None:
@@ -206,14 +224,15 @@ def state_and_round_root(project: Path, component: str | None) -> tuple[Path, Pa
     return root / STATE_NAME, root
 
 
-def packet_error(visual: dict, project: Path) -> str | None:
-    """Why a round's visual packet no longer shows the current evidence, or None."""
+def packet_error(visual: dict, project: Path, role: str | None = None) -> str | None:
+    """Why a round's visual packet no longer shows the current evidence, or
+    None. ``role`` names a component round's Component."""
 
     packet_path = Path(visual["packet"])
     if file_hash(packet_path) != visual["packet_sha256"]:
         return "visual packet changed"
     packet = json.loads(packet_path.read_text())
-    if packet["sources"] != source_hashes(project):
+    if packet["sources"] != source_hashes(project, role):
         return "stale CAD sources or design constraints"
     comparisons = packet.get("comparisons") or {}
     bound = {**packet["images"], **packet["references"],
@@ -350,7 +369,7 @@ def record_review(project: Path, review_path, component: str) -> dict:
         raise ValueError("r%04d has no visual packet to review" % latest)
     if review["packet_sha256"] != visual["packet_sha256"]:
         raise ValueError("the review belongs to a different visual packet")
-    stale = packet_error(visual, project)
+    stale = packet_error(visual, project, role)
     if stale is not None:
         raise ValueError("the reviewed round has %s" % stale if stale != "visual packet changed" else stale)
     reviewer = review["reviewer"]
@@ -1389,7 +1408,7 @@ def make_round(args) -> int:
         motion = parse_motion(done.stdout, done.returncode, done.stderr)
 
     # 5. Visual inspection is a separate evidence submission, not a model call.
-    visual = prepare_visual(project, entry, out, cad, refs, component is not None)
+    visual = prepare_visual(project, entry, out, cad, refs, component)
     full = None
 
     ok = (

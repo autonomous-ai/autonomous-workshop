@@ -1232,3 +1232,14 @@ empty `write_stdin` poll at `yield_time_ms: 300000` instead of 30000. Codex
 0.158.0 accepts an empty-poll yield from 5000 to 300000 ms and returns as soon
 as the process exits, so the longer yield only removes re-sent polling
 requests. This changes the `make-round` fingerprint.
+
+## Local change: a component packet binds only its own and shared files (2026-09-30)
+
+A Workshop-local change to Workshop's own `make_round` (ADR 0077). Component
+Workers repair Components in parallel, and `--record-review` refused a review
+as stale whenever any source or STEP in the project had changed since the
+packet, including another Component's. A component round's visual packet now
+binds its own `part_<id>.step.py` and STEP and every shared file, but no
+longer another Component's own source or STEP. A shared helper edit still
+stales every pending component packet, and the assembly packet still binds
+everything. This changes the `make-round` fingerprint.
