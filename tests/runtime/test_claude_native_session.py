@@ -6,7 +6,6 @@ from pathlib import Path
 
 from workshop.errors import ContractError
 from workshop.make.role_guard import (
-    claude_hook_settings,
     install_make_round_guard,
     installed_make_round_guard,
 )
@@ -16,6 +15,7 @@ from workshop.runtime.managers import (
 )
 from workshop.runtime.claude import (
     CLAUDE_TOKEN_BUDGET_STOP_MESSAGE,
+    claude_hook_settings,
     DEFAULT_CLAUDE_TIMEOUT_SECONDS,
     ClaudeInvocationError,
     ClaudeNativeSessionLauncher,
@@ -427,6 +427,12 @@ class ClaudeNativeSessionTest(unittest.TestCase):
                 with self.assertRaisesRegex(ContractError, "runtime binding"):
                     self._turn(launcher(window), "resume")
         self.assertEqual(len(commands), 2)
+
+    def test_guard_settings_run_the_installed_script_for_bash(self):
+        script = Path("/state/make-round-guard/make_round_guard.py")
+        hook = json.loads(claude_hook_settings(script))["hooks"]["PreToolUse"][0]
+        self.assertEqual(hook["matcher"], "Bash")
+        self.assertIn(str(script), hook["hooks"][0]["command"])
 
     def test_an_installed_make_round_guard_is_registered_on_every_turn(self):
         commands = []

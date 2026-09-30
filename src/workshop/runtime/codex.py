@@ -23,7 +23,11 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping, Optional
 
 from workshop.errors import ContractError
-from workshop.make.role_guard import codex_hook_arguments, installed_make_round_guard
+from workshop.make.role_guard import (
+    HOOK_TIMEOUT_SECONDS,
+    installed_make_round_guard,
+    make_round_guard_command,
+)
 from workshop.runtime.execution import (
     CODEX_SUBPROCESS_ENVIRONMENT_ALLOWLIST,
     codex_subprocess_environment,
@@ -2292,6 +2296,23 @@ def _diagnosed_codex_failure(
         terminal_error=stats.terminal_error,
     )
     return failure
+
+
+def codex_hook_arguments(script: Path) -> tuple[str, ...]:
+    """The ``codex exec`` arguments registering the make_round guard.
+
+    Workshop launches Codex with ``--ignore-user-config``, so a project hooks
+    file is never read; the hook is passed at launch instead. The host wrote
+    the script itself, which is what the hook-trust bypass requires. Live
+    acceptance of this registration is not yet verified (ADR 0080).
+    """
+
+    return (
+        "--config",
+        "hooks.PreToolUse=[{hooks=[{type=\"command\",command=%s,timeout=%d}]}]"
+        % (json.dumps(make_round_guard_command(script)), HOOK_TIMEOUT_SECONDS),
+        "--dangerously-bypass-hook-trust",
+    )
 
 
 def _make_round_guard_arguments(

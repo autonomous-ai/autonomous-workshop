@@ -26,16 +26,23 @@ from pathlib import Path
 from typing import Optional
 
 from workshop.errors import ContractError, StateConflict
-from workshop.make.make_round_guard import COMPONENT_WORKER, NONCE_TABLE_NAME
+from workshop.make.make_round_guard import NONCE_TABLE_NAME
+from workshop.make.role_agents import COMPONENT_WORKER
 
 MAKE_ROUND_GUARD_DIRECTORY = "make-round-guard"
 MAKE_ROUND_GUARD_SCRIPT = "make_round_guard.py"
 HOOK_TIMEOUT_SECONDS = 10
+# Managers whose PreToolUse hook names the calling subagent (ADR 0080).
+MAKE_ROUND_GUARD_MANAGER_IDS = frozenset({"codex", "claude"})
 MAX_NONCE_TABLE_BYTES = 8 * 1024 * 1024
 # Kept in step with ``REVISION_INPUT`` in ``workshop.workflow.revision``; the
 # make package does not import the workflow package.
 REVISION_SOURCE = "revision-source.zip"
 _COMPONENT_ROUNDS = ("measure", "component-rounds")
+
+
+def _component_source(role: str) -> str:
+    return "part_%s.step.py" % role
 
 
 def make_round_guard_bytes() -> bytes:
@@ -82,49 +89,10 @@ def verify_make_round_guard(host_state_root: Path, expected_sha256: str) -> Path
     return script
 
 
-def _hook_command(script: Path) -> str:
+def make_round_guard_command(script: Path) -> str:
+    """The shell command a runtime registers to run the installed guard."""
+
     return shlex.join([str(Path(sys.executable).absolute()), str(script)])
-
-
-def claude_hook_settings(script: Path) -> str:
-    """The ``--settings`` JSON registering the guard for a Claude Code session."""
-
-    return json.dumps(
-        {
-            "hooks": {
-                "PreToolUse": [
-                    {
-                        "matcher": "Bash",
-                        "hooks": [
-                            {
-                                "type": "command",
-                                "command": _hook_command(script),
-                                "timeout": HOOK_TIMEOUT_SECONDS,
-                            }
-                        ],
-                    }
-                ]
-            }
-        },
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-
-
-def codex_hook_arguments(script: Path) -> tuple[str, ...]:
-    """The ``codex exec`` arguments registering the guard for every tool call.
-
-    Workshop launches Codex with ``--ignore-user-config``, so a project hooks
-    file is never read; the hook is passed at launch instead. The host wrote
-    the script itself, which is what the hook-trust bypass requires.
-    """
-
-    return (
-        "--config",
-        "hooks.PreToolUse=[{hooks=[{type=\"command\",command=%s,timeout=%d}]}]"
-        % (json.dumps(_hook_command(script)), HOOK_TIMEOUT_SECONDS),
-        "--dangerously-bypass-hook-trust",
-    )
 
 
 def _issued_worker_nonces(host_state_root: Path) -> dict[str, str]:
@@ -164,7 +132,7 @@ def _carried_summaries(run_root: Path) -> set[str]:
                 parts = info.filename.split("/")
                 if (
                     parts[-1] == "summary.json"
-                    and "component-rounds" in parts
+                    and _COMPONENT_ROUNDS[-1] in parts
                     and not info.is_dir()
                 ):
                     digests.add(hashlib.sha256(archive.read(info)).hexdigest())
@@ -174,20 +142,36 @@ def _carried_summaries(run_root: Path) -> set[str]:
 
 
 def verify_component_round_nonces(
-    project: Path, host_state_root: Path, *, run_root: Path
+    project: Path,
+    host_state_root: Path,
+    *,
+    run_root: Path,
+    require_every_component: bool = False,
 ) -> None:
     """Refuse a Component round no ``component-worker`` ran (ADR 0080).
 
     Every round summary under ``measure/component-rounds`` must carry a nonce
     the guard issued to a worker for that Component, each used by one round
     only. A summary whose exact bytes the revision source sealed was carried
-    forward by a correction and keeps the evidence it already had.
+    forward by a correction and keeps the evidence it already had. With
+    ``require_every_component`` (component-first Spark Make) every
+    ``part_<id>.step.py`` must also have at least one such round.
     """
 
     rounds = Path(project).joinpath(*_COMPONENT_ROUNDS)
-    if not rounds.is_dir():
-        return
-    summaries = sorted(rounds.glob("*/r[0-9][0-9][0-9][0-9]/summary.json"))
+    summaries = (
+        sorted(rounds.glob("*/r[0-9][0-9][0-9][0-9]/summary.json"))
+        if rounds.is_dir() else []
+    )
+    if require_every_component:
+        covered = {path.parent.parent.name for path in summaries}
+        for source in sorted(Path(project).glob("part_*.step.py")):
+            role = source.name[len("part_"):-len(".step.py")]
+            if role not in covered:
+                raise ContractError(
+                    "%s has no component round; have its component-worker run one"
+                    % source.name
+                )
     if not summaries:
         return
     issued = _issued_worker_nonces(host_state_root)
@@ -202,7 +186,7 @@ def verify_component_round_nonces(
         except ValueError as exc:
             raise ContractError("Component round %s summary is not JSON" % label) from exc
         nonce = summary.get("worker_nonce") if isinstance(summary, dict) else None
-        if isinstance(nonce, str) and issued.get(nonce) == "part_%s.step.py" % role:
+        if isinstance(nonce, str) and issued.get(nonce) == _component_source(role):
             if nonce in used:
                 raise ContractError(
                     "Component round %s reuses the worker nonce of %s" % (label, used[nonce])
@@ -215,16 +199,17 @@ def verify_component_round_nonces(
             continue
         raise ContractError(
             "Component round %s was not run by a component-worker: its worker "
-            "nonce is missing or was not issued for part_%s.step.py. Have a "
-            "component-worker rerun that Component's round." % (label, role)
+            "nonce is missing or was not issued for %s. Have a "
+            "component-worker rerun that Component's round."
+            % (label, _component_source(role))
         )
 
 
 __all__ = [
     "MAKE_ROUND_GUARD_DIRECTORY",
+    "MAKE_ROUND_GUARD_MANAGER_IDS",
     "MAKE_ROUND_GUARD_SCRIPT",
-    "claude_hook_settings",
-    "codex_hook_arguments",
+    "make_round_guard_command",
     "install_make_round_guard",
     "installed_make_round_guard",
     "make_round_guard_bytes",

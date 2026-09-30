@@ -210,7 +210,8 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    When two Design Contract statements cannot both hold, for example two
    Components that print on a mating face that also carries a peg, stop and
-   return a `need` that quotes both statements. Do not choose between them.
+   return a `waiting` need that quotes both statements (`SKILL.md`). Do not
+   choose between them.
    A freedom the contract explicitly grants stays yours to decide.
 
    Use explicit `--ref` only when a reference depicts that

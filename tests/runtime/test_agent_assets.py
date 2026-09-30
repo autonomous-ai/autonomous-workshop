@@ -290,7 +290,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "may view its own sealed reference image once",
             "Only a `component-worker` runs a component round",
             "an Inventor never runs `make_round`",
-            "return a `need` that quotes both statements",
+            "return a `waiting` need that quotes both statements",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, make)

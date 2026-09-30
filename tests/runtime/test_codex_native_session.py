@@ -20,12 +20,12 @@ from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
 from workshop.workflow.inventor_selection import INVENTOR_SELECTION_MARKER_NAME
 from workshop.make.role_agents import MAKE_ROLE_AGENT_NAMES, make_role_agent_files
 from workshop.make.role_guard import (
-    codex_hook_arguments,
     install_make_round_guard,
     installed_make_round_guard,
 )
 from workshop.runtime.codex import (
     DEFAULT_WORKSHOP_MODEL,
+    codex_hook_arguments,
     CODEX_FAILURE_DIAGNOSTIC_FILENAME,
     CODEX_PERMISSION_PROFILE,
     DEFAULT_CODEX_TIMEOUT_SECONDS,
@@ -387,6 +387,14 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(command[index - 3 : index - 1], ["--config", "x=1"])
         self.assertEqual(start[start.index(roles[1]) + 1], "-C")
         self.assertEqual(resume[resume.index(roles[1]) + 1], "--model")
+
+    def test_guard_arguments_run_the_installed_script(self):
+        script = Path("/state/make-round-guard/make_round_guard.py")
+        arguments = codex_hook_arguments(script)
+        self.assertEqual(arguments[0], "--config")
+        self.assertTrue(arguments[1].startswith('hooks.PreToolUse=[{hooks=[{type="command"'))
+        self.assertIn(str(script), arguments[1])
+        self.assertEqual(arguments[2], "--dangerously-bypass-hook-trust")
 
     def test_an_installed_make_round_guard_is_registered_at_launch(self):
         launcher = CodexNativeSessionLauncher(

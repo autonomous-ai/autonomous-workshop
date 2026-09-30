@@ -131,6 +131,22 @@ class DecideTest(unittest.TestCase):
         output = decide(_event("python3 scripts/make_round 'cad", "component-worker"), issue=_Issuer())
         self.assertEqual(_decision(output), "deny")
 
+    def test_a_quoted_script_path_is_refused_rather_than_mis_rewritten(self):
+        for command in (
+            "bash -c 'python3 .agents/skills/make-round/scripts/make_round cad --component part_wing.step.py'",
+            'python3 ".agents/skills/make-round/scripts/make_round" cad --component part_wing.step.py',
+        ):
+            issuer = _Issuer()
+            output = decide(_event(command, "component-worker"), issue=issuer)
+            if "bash -c" in command:
+                updated = output["hookSpecificOutput"]["updatedInput"]["command"]
+                self.assertEqual(
+                    make_round_calls(updated)[0][:2], ["--worker-nonce", issuer.issued[0][0]]
+                )
+            else:
+                self.assertEqual(_decision(output), "deny")
+                self.assertEqual(issuer.issued, [])
+
     def test_self_check_and_help_run_for_anyone(self):
         for flag in ("--self-check", "--help"):
             self.assertIsNone(decide(_event(SCRIPT + " " + flag, "rowan-vale"), issue=_Issuer()))

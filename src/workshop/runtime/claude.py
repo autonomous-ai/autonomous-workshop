@@ -27,7 +27,11 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
 from workshop.errors import ContractError
-from workshop.make.role_guard import claude_hook_settings, installed_make_round_guard
+from workshop.make.role_guard import (
+    HOOK_TIMEOUT_SECONDS,
+    installed_make_round_guard,
+    make_round_guard_command,
+)
 from workshop.runtime.managers import (
     MAX_NATIVE_TOKEN_COUNT,
     MAX_NATIVE_TURN_SECONDS,
@@ -105,6 +109,31 @@ CLAUDE_SUBPROCESS_ENVIRONMENT_ALLOWLIST = (
     "SSL_CERT_FILE",
     "SSL_CERT_DIR",
 )
+
+
+def claude_hook_settings(script: Path) -> str:
+    """The ``--settings`` JSON registering the make_round guard (ADR 0080)."""
+
+    return json.dumps(
+        {
+            "hooks": {
+                "PreToolUse": [
+                    {
+                        "matcher": "Bash",
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": make_round_guard_command(script),
+                                "timeout": HOOK_TIMEOUT_SECONDS,
+                            }
+                        ],
+                    }
+                ]
+            }
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
 
 
 class ClaudeInvocationError(NativeManagerInvocationError):

@@ -86,6 +86,7 @@ from workshop.release.renders import (
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.role_agents import make_role_agent_files
 from workshop.make.role_guard import (
+    MAKE_ROUND_GUARD_MANAGER_IDS,
     verify_component_round_nonces,
     verify_make_round_guard,
 )
@@ -2712,7 +2713,9 @@ def _verify_make_round_workers(
     run_root: Path,
     host_state_root: Path,
     guard_sha256: Optional[str],
-    made: Any,
+    made: NativeMade,
+    *,
+    require_every_component: bool = False,
 ) -> None:
     """Refuse Make output holding a Component round no worker ran (ADR 0080).
 
@@ -2730,7 +2733,12 @@ def _verify_make_round_workers(
         .joinpath(*PurePosixPath(made.product_root).parts)
         .joinpath(*PurePosixPath(made.cad_project_path).parts)
     )
-    verify_component_round_nonces(project, host_state_root, run_root=Path(run_root))
+    verify_component_round_nonces(
+        project,
+        host_state_root,
+        run_root=Path(run_root),
+        require_every_component=require_every_component,
+    )
 
 
 def _made_component_acceptances(product: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -7521,6 +7529,8 @@ def _evaluate_make_stage(
             run.host_state_root,
             checkpoint.make_round_guard_sha256,
             made,
+            # Component-first Spark Make builds every Component in a round.
+            require_every_component=checkpoint.effort == "spark",
         )
         # Spark consumes Make's accepted output, not another engineering
         # acceptance pass. Keep only exact-byte and upstream identity checks.
@@ -10683,7 +10693,7 @@ def start_native_run(
                 make_role_agents=make_role_agent_files(),
                 # ADR 0080: only runtimes whose hooks name the calling
                 # subagent can admit Component rounds by role.
-                make_round_guard=selected_manager.manager_id in ("codex", "claude"),
+                make_round_guard=selected_manager.manager_id in MAKE_ROUND_GUARD_MANAGER_IDS,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.

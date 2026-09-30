@@ -41,9 +41,9 @@ _PYTHON = re.compile(r"^python[0-9.]*$")
 _PYTHON_VARIABLES = frozenset({"$WORKSHOP_PYTHON", "${WORKSHOP_PYTHON}"})
 _SHELLS = frozenset({"bash", "sh", "zsh", "dash"})
 _WRAPPERS = frozenset({"exec", "nohup", "time", "command", "builtin"})
-# The script token, optionally closed by a quote, followed by the end of the
-# token. The nonce goes right after it, before the call's own arguments.
-_SCRIPT_TOKEN = re.compile(r"make_round([\"']?)(?=[\s;&|)]|$)")
+# The script name at the end of its token. The nonce goes right after it,
+# before the call's own arguments; the rewrite is re-parsed before it is used.
+_SCRIPT_TOKEN = re.compile(r"make_round(?=[\s;&|)\"']|$)")
 
 Issuer = Callable[[Mapping[str, Any], str], str]
 
@@ -185,10 +185,15 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
             )
         if len(_SCRIPT_TOKEN.findall(command)) != 1:
             return _deny("name make_round exactly once in the command")
-        nonce = issue(event, os.path.basename(component))
         rewritten = _SCRIPT_TOKEN.sub(
-            lambda match: match.group(0) + " %s %s" % (NONCE_FLAG, nonce), command, count=1
+            lambda match: match.group(0) + " %s %s" % (NONCE_FLAG, "0" * 32), command, count=1
         )
+        # A quoted script path would swallow the nonce into the path; refuse
+        # it rather than issue a nonce the round never records.
+        if make_round_calls(rewritten) != [[NONCE_FLAG, "0" * 32, *arguments]]:
+            return _deny("run make_round with an unquoted script path, as one plain command")
+        nonce = issue(event, os.path.basename(component))
+        rewritten = rewritten.replace("%s %s" % (NONCE_FLAG, "0" * 32), "%s %s" % (NONCE_FLAG, nonce), 1)
         return {
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",

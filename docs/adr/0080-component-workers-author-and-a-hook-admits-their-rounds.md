@@ -55,15 +55,17 @@ tokens. Three causes showed in its transcript and notes:
    from `agent_type == component-worker`. `--record-review`,
    `--record-visual` and assembly rounds run only from the root, which has no
    `agent_type`. Anything else naming `make_round` passes unchanged, except a
-   command the hook cannot parse, with two calls, or with a caller-supplied
-   `--worker-nonce`, which it refuses.
+   command the hook cannot parse, with two calls, with a caller-supplied
+   `--worker-nonce`, or with a quoted script path the nonce cannot follow,
+   which it refuses.
 4. **A nonce binds each component round to a worker.** For an admitted
    worker call the hook appends a one-time nonce, the Component and the
    caller to a host-side nonce table and rewrites the command to pass
    `--worker-nonce`. `make_round` records it in the round's `summary.json`.
    At Make acceptance the host refuses output holding any component round
    whose nonce it did not issue to a worker for that Component, or that
-   reuses a nonce. This catches calls the hook cannot see, such as
+   reuses a nonce. In Spark every `part_<id>.step.py` must also have at
+   least one such round. This catches calls the hook cannot see, such as
    `python -c`. A round whose exact summary bytes the revision source sealed
    was carried forward by a correction and keeps its evidence.
 5. **Both runtimes, one script.** Claude Code receives the hook with

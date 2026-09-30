@@ -12,8 +12,6 @@ from workshop.errors import ContractError, StateConflict
 from workshop.make import make_round_guard
 from workshop.make.role_guard import (
     MAKE_ROUND_GUARD_DIRECTORY,
-    claude_hook_settings,
-    codex_hook_arguments,
     install_make_round_guard,
     installed_make_round_guard,
     make_round_guard_bytes,
@@ -67,18 +65,6 @@ class GuardInstallTest(unittest.TestCase):
             script.unlink()
             with self.assertRaisesRegex(StateConflict, "guard"):
                 verify_make_round_guard(host, digest)
-
-    def test_runtime_registrations_run_the_installed_script(self):
-        script = Path("/state/make-round-guard/make_round_guard.py")
-        settings = json.loads(claude_hook_settings(script))
-        hook = settings["hooks"]["PreToolUse"][0]
-        self.assertEqual(hook["matcher"], "Bash")
-        self.assertIn(str(script), hook["hooks"][0]["command"])
-        arguments = codex_hook_arguments(script)
-        self.assertEqual(arguments[:2], ("--config", arguments[1]))
-        self.assertTrue(arguments[1].startswith("hooks.PreToolUse=[{hooks=[{type=\"command\""))
-        self.assertIn(str(script), arguments[1])
-
 
 class ComponentNonceTest(unittest.TestCase):
     def setUp(self):
@@ -145,6 +131,17 @@ class ComponentNonceTest(unittest.TestCase):
             self._verify()
 
     def test_a_project_without_component_rounds_has_nothing_to_check(self):
+        self._verify()
+
+    def test_spark_requires_a_worker_round_for_every_component(self):
+        (self.project / "part_wing.step.py").write_text("x")
+        (self.project / "part_tail.step.py").write_text("x")
+        _issue(self.host, NONCE, "part_wing.step.py")
+        _summary(self.project, "wing", 1, NONCE)
+        with self.assertRaisesRegex(ContractError, "part_tail.step.py has no component round"):
+            verify_component_round_nonces(
+                self.project, self.host, run_root=self.run_root, require_every_component=True
+            )
         self._verify()
 
     def test_an_unreadable_nonce_table_is_a_host_conflict(self):

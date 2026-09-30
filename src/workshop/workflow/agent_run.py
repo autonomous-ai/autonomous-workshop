@@ -41,6 +41,7 @@ from workshop.make.role_agents import (
 )
 from workshop._validation import require_sha256
 from workshop.make.role_guard import (
+    MAKE_ROUND_GUARD_MANAGER_IDS,
     install_make_round_guard,
     verify_make_round_guard,
 )
@@ -947,7 +948,7 @@ class AgentRun:
             reasoning_effort=manager_reasoning_effort,
         )
         selected_manager = selected_runtime.spec
-        if make_round_guard and selected_manager.manager_id not in ("codex", "claude"):
+        if make_round_guard and selected_manager.manager_id not in MAKE_ROUND_GUARD_MANAGER_IDS:
             raise ContractError(
                 "the make_round guard needs a Codex or Claude Code Workshop Manager"
             )
