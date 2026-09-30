@@ -34,11 +34,16 @@ from workshop.errors import (
 )
 from workshop.make.revision import MAKE_INVENT_REVISION_CAPABILITY_PATH
 from workshop.make.role_agents import (
+    COMPONENT_WORKER,
     MAKE_ROLE_AGENT_NAMES,
     make_role_agent_path,
     parse_make_role_agent_bytes,
 )
 from workshop._validation import require_sha256
+from workshop.make.role_guard import (
+    install_make_round_guard,
+    verify_make_round_guard,
+)
 from workshop.runtime.agent_projection import (
     CLAUDE_AGENT_DIRECTORY,
     project_agents,
@@ -837,6 +842,9 @@ class AgentRunCheckpoint:
     # with an exact number. Neither set means the run keeps its frozen policy.
     turn_seconds: Optional[int] = None
     turn_untimed: bool = False
+    # The sha256 of the make_round guard hook sealed in host state (ADR 0080);
+    # None for a run created without one.
+    make_round_guard_sha256: Optional[str] = None
 
     @property
     def complete(self) -> bool:
@@ -884,9 +892,12 @@ class AgentRun:
         wish_reference_files: Optional[Mapping[str, bytes]] = None,
         revision_snapshot: Optional[bytes] = None,
         make_role_agents: Optional[Mapping[str, bytes]] = None,
+        make_round_guard: bool = False,
     ) -> "AgentRun":
         if type(check_motion) is not bool:
             raise ContractError("agent run check_motion must be boolean")
+        if type(make_round_guard) is not bool:
+            raise ContractError("agent run make_round_guard must be boolean")
         # The fixed Make roles (ADR 0077) sit beside the Inventor roster in
         # ``.codex/agents``. A run created without them keeps the roster-only
         # directory it always had.
@@ -899,6 +910,12 @@ class AgentRun:
             parse_make_role_agent_bytes(role_name, role_bytes)
             role_agent_files.append(
                 (PurePosixPath(make_role_agent_path(role_name)), role_bytes, 0o400)
+            )
+        # The guard (ADR 0080) admits Component rounds only from the Component
+        # Worker, so it needs that role and a runtime whose hooks name it.
+        if make_round_guard and COMPONENT_WORKER not in make_role_agents:
+            raise ContractError(
+                "the make_round guard needs the Component Worker role agent"
             )
         if type(carry_unchanged) is not bool:
             raise ContractError("agent run carry_unchanged must be boolean")
@@ -930,6 +947,10 @@ class AgentRun:
             reasoning_effort=manager_reasoning_effort,
         )
         selected_manager = selected_runtime.spec
+        if make_round_guard and selected_manager.manager_id not in ("codex", "claude"):
+            raise ContractError(
+                "the make_round guard needs a Codex or Claude Code Workshop Manager"
+            )
         if required_inventor_id is not None and (
             not isinstance(required_inventor_id, str)
             or _AGENT_SKILL_NAME.fullmatch(required_inventor_id) is None
@@ -1356,6 +1377,9 @@ class AgentRun:
         if turn_untimed or turn_seconds is not None:
             # Absent means the frozen policy decides; ``null`` means no wall clock.
             core["turn_seconds"] = None if turn_untimed else turn_seconds
+        if make_round_guard:
+            # Host state, never the workspace, holds the hook and its nonces.
+            core["make_round_guard_sha256"] = install_make_round_guard(selected_host)
         checkpoint_sha256 = cls._write_checkpoint_file(
             selected_host / "agent-run.json", core
         )
@@ -1511,6 +1535,8 @@ class AgentRun:
             expected_fields.add("needs")
         if "turn_seconds" in payload:
             expected_fields.add("turn_seconds")
+        if "make_round_guard_sha256" in payload:
+            expected_fields.add("make_round_guard_sha256")
         if set(payload) != expected_fields:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
@@ -1575,6 +1601,16 @@ class AgentRun:
                 or not MIN_AGENT_TURN_SECONDS <= boundary <= MAX_NATIVE_TURN_SECONDS
             ):
                 raise StateConflict("agent run native turn boundary is invalid")
+        if "make_round_guard_sha256" in payload:
+            try:
+                require_sha256(
+                    payload["make_round_guard_sha256"], "make_round guard sha256"
+                )
+            except ContractError as exc:
+                raise StateConflict("agent run make_round guard binding is invalid") from exc
+            verify_make_round_guard(
+                self.host_state_root, payload["make_round_guard_sha256"]
+            )
         _identifier(payload["product_id"], "agent run product_id")
         _positive_int(payload["max_rounds"], "agent run max_rounds", 100)
         expected_root = _sha256(str(self.run_root).encode("utf-8"))
@@ -2162,6 +2198,7 @@ class AgentRun:
             token_budgeted=_uses_token_budget(payload, self._budget_authority),
             turn_seconds=payload.get("turn_seconds"),
             turn_untimed="turn_seconds" in payload and payload["turn_seconds"] is None,
+            make_round_guard_sha256=payload.get("make_round_guard_sha256"),
         )
 
     def expected_gate_subject_sha256(self) -> str:

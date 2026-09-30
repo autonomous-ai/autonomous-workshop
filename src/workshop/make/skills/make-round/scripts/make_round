@@ -5,7 +5,7 @@
                [--require-component-passes] [--ref LABEL=PATH[@AZ,EL[,TOL]] ...]
                [--nozzle 0.4] [--overhang-angle 45] [--all-parts] [--no-motion]
                [--full] [--out DIR] [--json] [--record-visual FEEDBACK.json]
-               [--record-review REVIEW.json] [--self-check]
+               [--record-review REVIEW.json] [--worker-nonce HEX] [--self-check]
 
 Every verdict comes from the original cad tools, run unchanged; this script
 only sequences them, remembers what changed between rounds, and prints a
@@ -26,6 +26,9 @@ component whose previous round passed its checks is a shape round; after
 SHAPE_REPAIR_LIMIT of them a disagreeing review is recorded as a component
 acceptance the run reports when it ends. The assembly round keeps the
 Workshop Manager's --record-visual, the blind review and --full.
+In a run with the make_round guard (ADR 0080) only a Component Worker runs a
+component round: the guard hook passes --worker-nonce, the round records it,
+and the host refuses a component round whose nonce it did not issue.
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded review passed. Exit 1: failed or pending.
@@ -1444,7 +1447,8 @@ def make_round(args) -> int:
         "out": str(out),
     }
     if component is not None:
-        summary.update(review=None, shape_rounds=shape_rounds, shape_limit=SHAPE_REPAIR_LIMIT)
+        summary.update(review=None, shape_rounds=shape_rounds, shape_limit=SHAPE_REPAIR_LIMIT,
+                       worker_nonce=getattr(args, "worker_nonce", None))
     if any(item["verdict"] == "UNVERIFIED" for item in printing.values()) or (motion and motion["verdict"] == "unverified"):
         summary["geometry_status"] = "unverified"
         summary["print_ready_claim"] = False
@@ -1663,6 +1667,7 @@ def main(argv=None) -> int:
     parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
+    parser.add_argument("--worker-nonce", help=argparse.SUPPRESS)  # issued by the Workshop guard hook only
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args(argv)
     if args.self_check:
@@ -1681,6 +1686,11 @@ def main(argv=None) -> int:
         parser.error("--record-review cannot be combined with --record-visual or --full")
     if args.component and args.record_visual:
         parser.error("a component round is judged by an independent reviewer: use --record-review")
+    if args.worker_nonce is not None:
+        if not args.component or args.record_review:
+            parser.error("--worker-nonce belongs only to a component build round")
+        if not re.fullmatch(r"[0-9a-f]{32}", args.worker_nonce):
+            parser.error("--worker-nonce is invalid")
     return make_round(args)
 
 

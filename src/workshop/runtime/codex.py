@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping, Optional
 
 from workshop.errors import ContractError
+from workshop.make.role_guard import codex_hook_arguments, installed_make_round_guard
 from workshop.runtime.execution import (
     CODEX_SUBPROCESS_ENVIRONMENT_ALLOWLIST,
     codex_subprocess_environment,
@@ -2293,6 +2294,23 @@ def _diagnosed_codex_failure(
     return failure
 
 
+def _make_round_guard_arguments(
+    host_state_root: Optional[Path],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """The feature flag and ``exec`` arguments registering a run's guard.
+
+    ADR 0080: a run created with the make_round guard keeps its hook in host
+    state; a run without one launches exactly as before.
+    """
+
+    guard = (
+        None if host_state_root is None else installed_make_round_guard(host_state_root)
+    )
+    if guard is None:
+        return (), ()
+    return ("--enable", "hooks"), codex_hook_arguments(guard)
+
+
 class CodexNativeSessionLauncher:
     """Launch or resume the one native Codex session for an entire Wish."""
 
@@ -2468,7 +2486,7 @@ class CodexNativeSessionLauncher:
 
         try:
             used_web_search, observed_thread_id, token_usage = self._stream(
-                command=self._start_command(root, run_policy),
+                command=self._start_command(root, run_policy, state_root),
                 prompt=prompt,
                 run_root=root,
                 run_policy=run_policy,
@@ -2703,7 +2721,9 @@ class CodexNativeSessionLauncher:
         )
         try:
             used_web_search, unused_observed_thread_id, token_usage = self._stream(
-                command=self._resume_command(thread_id, root, run_policy),
+                command=self._resume_command(
+                    thread_id, root, run_policy, state_root
+                ),
                 prompt=prompt,
                 run_root=root,
                 run_policy=run_policy,
@@ -3010,7 +3030,9 @@ class CodexNativeSessionLauncher:
         self,
         run_root: Path,
         run_policy: _CodexRunPolicy,
+        host_state_root: Optional[Path] = None,
     ) -> list[str]:
+        features, hook_arguments = _make_round_guard_arguments(host_state_root)
         return [
             self.binary,
             "--search",
@@ -3018,6 +3040,7 @@ class CodexNativeSessionLauncher:
             "goals",
             "--enable",
             "multi_agent",
+            *features,
             "--ask-for-approval",
             "never",
             "exec",
@@ -3032,6 +3055,7 @@ class CodexNativeSessionLauncher:
             *self._auto_compact_config_arguments(),
             *run_policy.permission_config_arguments,
             *inventor_agent_config_arguments(run_root),
+            *hook_arguments,
             "-C",
             str(run_root),
             "--model",
@@ -3044,7 +3068,9 @@ class CodexNativeSessionLauncher:
         thread_id: str,
         run_root: Path,
         run_policy: _CodexRunPolicy,
+        host_state_root: Optional[Path] = None,
     ) -> list[str]:
+        features, hook_arguments = _make_round_guard_arguments(host_state_root)
         return [
             self.binary,
             "--search",
@@ -3052,6 +3078,7 @@ class CodexNativeSessionLauncher:
             "goals",
             "--enable",
             "multi_agent",
+            *features,
             "--ask-for-approval",
             "never",
             "-C",
@@ -3067,6 +3094,7 @@ class CodexNativeSessionLauncher:
             *self._auto_compact_config_arguments(),
             *run_policy.permission_config_arguments,
             *inventor_agent_config_arguments(run_root),
+            *hook_arguments,
             "--model",
             self.model,
             thread_id,

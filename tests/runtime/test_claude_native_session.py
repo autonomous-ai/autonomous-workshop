@@ -5,6 +5,11 @@ import unittest
 from pathlib import Path
 
 from workshop.errors import ContractError
+from workshop.make.role_guard import (
+    claude_hook_settings,
+    install_make_round_guard,
+    installed_make_round_guard,
+)
 from workshop.runtime.managers import (
     MAX_NATIVE_TURN_SECONDS,
     NATIVE_TOKEN_USAGE_FIELDS,
@@ -422,6 +427,31 @@ class ClaudeNativeSessionTest(unittest.TestCase):
                 with self.assertRaisesRegex(ContractError, "runtime binding"):
                     self._turn(launcher(window), "resume")
         self.assertEqual(len(commands), 2)
+
+    def test_an_installed_make_round_guard_is_registered_on_every_turn(self):
+        commands = []
+
+        def popen(command, **kwargs):
+            del kwargs
+            commands.append(command)
+            return _FakeProcess([_init_line()])
+
+        launcher = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.1.285",
+            popen_factory=popen,
+            uuid_factory=lambda: "initial-session-id",
+        )
+        self._turn(launcher, "start")
+        self.assertNotIn("--settings", commands[0])
+        install_make_round_guard(self.host_state)
+        self._turn(launcher, "resume")
+        settings = commands[1][commands[1].index("--settings") + 1]
+        self.assertEqual(
+            settings,
+            claude_hook_settings(installed_make_round_guard(self.host_state)),
+        )
+        self.assertLess(commands[1].index("--settings"), commands[1].index("--resume"))
 
     def test_a_session_without_a_window_passes_none_and_refuses_one(self):
         commands = []

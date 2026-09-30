@@ -1296,3 +1296,13 @@ binds its own `part_<id>.step.py` and STEP and every shared file, but no
 longer another Component's own source or STEP. A shared helper edit still
 stales every pending component packet, and the assembly packet still binds
 everything. This changes the `make-round` fingerprint.
+
+## Local change: component rounds record a worker nonce (2026-09-30)
+
+A Workshop-local change to Workshop's own `make-round` (ADR 0080). `make_round`
+accepts a hidden `--worker-nonce <32 hex>` on a component build round only and
+records it as `worker_nonce` in that round's `summary.json`; any other use is a
+usage error. The Workshop guard hook passes the nonce to a
+`component-worker`'s call; the host refuses a component round whose nonce it
+did not issue. The Rules section says who runs which call. This changes the
+`make-round` fingerprint.

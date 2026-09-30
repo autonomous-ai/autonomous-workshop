@@ -1198,6 +1198,28 @@ class ContractComponentReviewTest(unittest.TestCase):
                 {"label": "geometry:body", "scored_by": "component:body"},
             ])
 
+    def test_a_component_round_records_the_worker_nonce_it_was_given(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls, extra=("--worker-nonce", "ab" * 16))
+            self.assertEqual(summary["worker_nonce"], "ab" * 16)
+            result = self._review(module, project, summary)
+            self.assertEqual(result["worker_nonce"], "ab" * 16)
+            _, unguarded = self._component(module, project, calls)
+            self.assertIsNone(unguarded["worker_nonce"])
+
+    def test_a_worker_nonce_belongs_only_to_a_component_build_round(self):
+        module = load_module()
+        nonce = "ab" * 16
+        with contextlib.redirect_stderr(io.StringIO()):
+            for argv in (["/tmp", "--worker-nonce", nonce],
+                         ["/tmp", "--component", "part_body.step.py", "--record-review", "r.json",
+                          "--worker-nonce", nonce],
+                         ["/tmp", "--component", "part_body.step.py", "--worker-nonce", "not-hex"]):
+                with self.subTest(argv=argv), self.assertRaises(SystemExit):
+                    module.main(argv)
+
     def test_a_component_round_takes_no_manager_visual(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._contract_root(tmp)

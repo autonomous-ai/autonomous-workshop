@@ -54,6 +54,7 @@ from workshop.workflow.native_run import (
     _made_likeness_acceptances,
     _component_acceptance_history,
     _made_component_acceptances,
+    _verify_make_round_workers,
     _playtest_score_history,
     _record_playtest_evidence,
     _record_make_evidence,
@@ -82,6 +83,11 @@ from workshop.runtime import (
     CodexRecoverableInvocationError,
 )
 from workshop.make.role_agents import make_role_agent_files
+from workshop.make.role_guard import (
+    install_make_round_guard,
+    installed_make_round_guard,
+    make_round_guard_bytes,
+)
 from workshop.runtime.codex import CodexNativeSessionLauncher
 from workshop.runtime.progress import (
     NativeRunProgress,
@@ -2953,6 +2959,13 @@ class NativeHostTest(unittest.TestCase):
                 if path.name.endswith("-inventor")
             )
             self.assertEqual(inventor_skills, ["soren-voss-inventor"])
+            # ADR 0080: the make_round guard lives in host state, not the
+            # workspace, and the checkpoint binds its exact bytes.
+            with mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(home)}, clear=True):
+                host_state = native_run_paths(receipt["product_id"]).host_state
+            guard = installed_make_round_guard(host_state)
+            self.assertEqual(guard.read_bytes(), make_round_guard_bytes())
+            self.assertFalse(any(workspace.rglob("make_round_guard.py")))
 
     def test_wish_runs_without_the_vault_when_it_is_unreachable(self):
         launcher = _FakeLauncher()
@@ -3426,6 +3439,25 @@ class NativeHostTest(unittest.TestCase):
             (gates / "0008-make.json").write_text("{nope", encoding="utf-8")
             with self.assertRaisesRegex(StateConflict, "unreadable: 0008-make.json"):
                 _component_acceptance_history(host)
+
+    def test_a_guarded_make_refuses_a_component_round_no_worker_ran(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            host = root / "host"
+            host.mkdir()
+            run_root = root / "run"
+            project = run_root / "artifacts/make/r0001/product/cad"
+            rounds = project / "measure/component-rounds/wing/r0001"
+            rounds.mkdir(parents=True)
+            (rounds / "summary.json").write_text(json.dumps({"worker_nonce": None}))
+            made = mock.Mock(product_root="artifacts/make/r0001/product", cad_project_path="cad")
+            # A run created without the guard keeps its frozen behaviour.
+            _verify_make_round_workers(run_root, host, None, made)
+            digest = install_make_round_guard(host)
+            with self.assertRaisesRegex(ContractError, "not run by a component-worker"):
+                _verify_make_round_workers(run_root, host, digest, made)
+            with self.assertRaisesRegex(StateConflict, "make_round guard"):
+                _verify_make_round_workers(run_root, host, "0" * 64, made)
 
     def test_made_component_acceptances_are_validated_before_the_host_seals_them(self):
         accepted = dict(self.COMPONENT_ACCEPTANCE)

@@ -19,6 +19,11 @@ from workshop.errors import ContractError
 from workshop.runtime.managers import MAX_NATIVE_TURN_SECONDS
 from workshop.workflow.inventor_selection import INVENTOR_SELECTION_MARKER_NAME
 from workshop.make.role_agents import MAKE_ROLE_AGENT_NAMES, make_role_agent_files
+from workshop.make.role_guard import (
+    codex_hook_arguments,
+    install_make_round_guard,
+    installed_make_round_guard,
+)
 from workshop.runtime.codex import (
     DEFAULT_WORKSHOP_MODEL,
     CODEX_FAILURE_DIAGNOSTIC_FILENAME,
@@ -382,6 +387,42 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(command[index - 3 : index - 1], ["--config", "x=1"])
         self.assertEqual(start[start.index(roles[1]) + 1], "-C")
         self.assertEqual(resume[resume.index(roles[1]) + 1], "--model")
+
+    def test_an_installed_make_round_guard_is_registered_at_launch(self):
+        launcher = CodexNativeSessionLauncher(
+            model="gpt-6-astra",
+            reasoning_effort="high",
+            binary=TEST_CODEX_BINARY,
+            cli_version="0.150.0",
+        )
+        with tempfile.TemporaryDirectory() as tmp, mock.patch(
+            "workshop.runtime.codex.inventor_agent_config_arguments", return_value=()
+        ), mock.patch.object(
+            CodexNativeSessionLauncher, "_auto_compact_config_arguments", return_value=()
+        ):
+            host = Path(tmp)
+            policy = mock.Mock(permission_config_arguments=("--config", "x=1"))
+            unguarded = (
+                launcher._start_command(Path("/run"), policy, host),
+                launcher._resume_command(THREAD_ID, Path("/run"), policy, host),
+            )
+            install_make_round_guard(host)
+            hook = codex_hook_arguments(installed_make_round_guard(host))
+            guarded = (
+                launcher._start_command(Path("/run"), policy, host),
+                launcher._resume_command(THREAD_ID, Path("/run"), policy, host),
+            )
+        for command in unguarded:
+            self.assertNotIn("hooks", command)
+            self.assertNotIn(hook[1], command)
+        for command in guarded:
+            exec_index = command.index("exec")
+            enable = command.index("hooks")
+            self.assertEqual(command[enable - 1], "--enable")
+            self.assertLess(enable, exec_index)
+            start = command.index(hook[1]) - 1
+            self.assertEqual(tuple(command[start : start + len(hook)]), hook)
+            self.assertGreater(start, exec_index)
 
     def launcher(
         self,

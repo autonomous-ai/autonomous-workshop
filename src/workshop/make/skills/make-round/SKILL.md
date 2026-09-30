@@ -113,6 +113,13 @@ calls were reassembling by hand.
   an assembly round, inspect the packet yourself and record your findings
   with `--record-visual`. Neither rebuilds. Read its summary; open a full report only
   when the summary names a failure you cannot place.
+- In a run with the make_round guard (ADR 0080), only a `component-worker`
+  runs a component round; the root Workshop Manager alone runs
+  `--record-review`, `--record-visual` and assembly rounds. A Workshop hook
+  refuses a call from the wrong agent and gives each worker round a one-time
+  `--worker-nonce`; never pass one yourself. The host refuses a component
+  round without a nonce it issued, so run `make_round` only as one plain
+  command.
 - A round can take minutes. Start `make_round` with `yield_time_ms: 300000`
   and, while it runs, continue it with an empty `write_stdin` poll at
   `yield_time_ms: 300000`, and continue a yielded `exec` cell with

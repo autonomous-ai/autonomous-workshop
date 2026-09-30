@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
 from workshop.errors import ContractError
+from workshop.make.role_guard import claude_hook_settings, installed_make_round_guard
 from workshop.runtime.managers import (
     MAX_NATIVE_TOKEN_COUNT,
     MAX_NATIVE_TURN_SECONDS,
@@ -558,7 +559,12 @@ class ClaudeNativeSessionLauncher:
         if path.exists() or path.is_symlink():
             raise ContractError("Claude native session checkpoint already exists")
         # Refuse an unusable command before any session identity is written.
-        command = self._command(Path(run_root), prompt, session_id=None)
+        command = self._command(
+            Path(run_root),
+            prompt,
+            session_id=None,
+            host_state_root=Path(host_state_root),
+        )
         digest = hashlib.sha256(_canonical_json(identity)).hexdigest()
         _write_private_checkpoint(path, {**identity, "checkpoint_sha256": digest})
         bound = {"session_id": session_id, "digest": digest}
@@ -632,7 +638,12 @@ class ClaudeNativeSessionLauncher:
             raise ContractError("Claude native session checkpoint schema is invalid")
         session_id = _canonical_session_id(payload.get("session_id"))
         unused_session, token_usage = self._stream(
-            command=self._command(Path(run_root), prompt, session_id=session_id),
+            command=self._command(
+                Path(run_root),
+                prompt,
+                session_id=session_id,
+                host_state_root=Path(host_state_root),
+            ),
             run_root=Path(run_root),
             activity_observer=activity_observer,
             finalization_marker=finalization_marker,
@@ -688,6 +699,7 @@ class ClaudeNativeSessionLauncher:
         prompt: str,
         *,
         session_id: Optional[str],
+        host_state_root: Optional[Path] = None,
     ) -> list[str]:
         prompt = _validated_prompt(prompt)
         if not self.binary:
@@ -718,6 +730,14 @@ class ClaudeNativeSessionLauncher:
             # Subagent requests reach the stream, and so the budget, only
             # when forwarded.
             command.append("--forward-subagent-text")
+        guard = (
+            None if host_state_root is None
+            else installed_make_round_guard(host_state_root)
+        )
+        if guard is not None:
+            # ADR 0080: the hook lives in host state and is registered from
+            # there, never from a settings file in the workspace.
+            command.extend(("--settings", claude_hook_settings(guard)))
         if session_id is not None:
             command.extend(("--resume", session_id))
         command.append(prompt)
