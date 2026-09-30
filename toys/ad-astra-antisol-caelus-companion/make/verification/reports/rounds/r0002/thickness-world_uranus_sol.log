@@ -1,0 +1,20 @@
+$ <HOME>/harnesses/worktrees/autonomous-workshop/sandcastle/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_uranus_sol.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-world_uranus_sol.md
+(7.7s, exit 0)
+--- stdout
+part_world_uranus_sol.step.py: 9.97 cm3 solid, grid 0.140 mm (246x247x190), 174888 surface samples, thickness resolved to 0.070 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.0% of surface below (14 of 174888 samples); thinnest 0.14 mm at (1.1, 3.5, 25.4) in 11 region(s); no region is a wall, 11 taper(s) at feature edges (0.01% of surface, budget 2%); 2 more within measurement error of the limit
+  PASS  thickness distribution         median 21.84 mm, p95 33.39 mm, max 33.74 mm
+  WARN  hollowable at 1.20 mm wall     6.08 of 9.97 cm3 (61%) in 1 pocket(s)
+  PASS  filament that would save       0.91 cm3, 1.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.35 mm at (1.5, 9.0, 21.8)      2 samples, 0.1 mm2, runs 0.0 mm, band 0.37 mm
+        2. [taper] 0.63 mm at (1.0, 11.4, 17.7)      2 samples, 0.1 mm2, runs 0.0 mm, band 0.37 mm
+        3. [taper] 0.63 mm at (-0.6, -8.6, 5.6)      1 samples, 0.1 mm2, runs 0.0 mm, band 0.37 mm
+        4. [taper] 0.35 mm at (1.5, -9.0, 21.9)      2 samples, 0.0 mm2, runs 0.1 mm, band 0.33 mm
+        5. [taper] 0.28 mm at (1.9, 6.3, 24.1)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.21 mm
+        6. [taper] 0.70 mm at (1.1, -0.0, 25.9)      1 samples, 0.0 mm2, runs 0.0 mm, band 0.20 mm
+        ... and 5 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/rounds/r0002/thickness-world_uranus_sol.md
+
+--- stderr

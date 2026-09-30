@@ -1,0 +1,54 @@
+{
+ "build": {},
+ "changed": [],
+ "check_motion": false,
+ "checked": [],
+ "checks_ok": true,
+ "entry": "part_world_earth_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_earth_anti"
+ ],
+ "print": {
+  "world_earth_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0002/overhang-world_earth_anti.log": "5f1f1dab8284487eac1f6c4568d91e53a626a7a950696ce93d1877da973f42a3",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0002/thickness-world_earth_anti.log": "feec987962468baa91498f74dad48a213e3dc499a1bce749b50bc8613b72a62d"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:world_earth_anti",
+ "sealed": [],
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Small sphere on a narrow seat collar over a disc that tapers inward as it rises (Anti-Sol); sphere centred.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0002/visual-packet.json",
+  "packet_sha256": "d5a7d7a1b67d425aa1a8565149e3206428b3a899d0a648aaeb15368325a67f33",
+  "status": "pass"
+ }
+}

@@ -1,0 +1,63 @@
+{
+ "build": {
+  "world_saturn_sol": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_saturn_sol"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_saturn_sol"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_saturn_sol.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0002",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_saturn_sol"
+ ],
+ "print": {
+  "world_saturn_sol": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0002/overhang-world_saturn_sol.log": "e3ae8817cf226f17b4ce3104387fe5182246f619c17dd96ecdcec8e04a8869fd",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0002/thickness-world_saturn_sol.log": "3117c8ef0628bd8ed69fa23b96d5c4157856f223fe9a71020cc14d55328c6a94"
+   },
+   "measured_round": 2,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.15,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 2,
+ "scope": "component:world_saturn_sol",
+ "sealed": [],
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Front, top and iso inspected. Sphere with the thin tilted ring plate leaning the opposite (Sol) way, low side webbed to the disc; coherent.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_saturn_sol/r0002/visual-packet.json",
+  "packet_sha256": "12b70f0336bd8d30bf0ebf08fdcaf61a80346a720cb88395ac2a386e1cb532e4",
+  "status": "pass"
+ }
+}

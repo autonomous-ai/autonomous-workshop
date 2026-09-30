@@ -1,0 +1,20 @@
+$ <HOME>/Documents/ai-chain/_hardware/autonomous-workshop/.venv/bin/python3 <WORKSHOP_RUN>/.agents/skills/cad/scripts/check_thickness <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/part_world_uranus_anti.step.py --nozzle 0.4 --report <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/thickness-world_uranus_anti.md
+(7.1s, exit 0)
+--- stdout
+part_world_uranus_anti.step.py: 9.97 cm3 solid, grid 0.140 mm (247x248x190), 175538 surface samples, thickness resolved to 0.070 mm
+  PASS  wall >= 0.80 mm (+/-0.07)      0.1% of surface below (189 of 175538 samples); thinnest 0.14 mm at (-2.1, 16.9, 0.0) in 55 region(s); no region is a wall, 55 taper(s) at feature edges (0.14% of surface, budget 2%); 3 more within measurement error of the limit
+  PASS  thickness distribution         median 21.84 mm, p95 33.46 mm, max 33.81 mm
+  WARN  hollowable at 1.20 mm wall     6.08 of 9.97 cm3 (61%) in 1 pocket(s)
+  PASS  filament that would save       0.91 cm3, 1.1 g at 15% infill -- the slicer already leaves most of that space empty
+        every thin region, worst first -- repair them in one round, not one per run:
+        1. [taper] 0.14 mm at (-10.3, 13.4, 0.0)     10 samples, 0.4 mm2, runs 2.6 mm, band 0.14 mm
+        2. [taper] 0.14 mm at (-16.5, -4.2, 0.0)     16 samples, 0.3 mm2, runs 3.2 mm, band 0.10 mm
+        3. [taper] 0.21 mm at (0.7, 8.9, 5.3)      6 samples, 0.3 mm2, runs 0.5 mm, band 0.50 mm
+        4. [taper] 0.14 mm at (15.3, -7.2, 0.0)     13 samples, 0.3 mm2, runs 3.6 mm, band 0.07 mm
+        5. [taper] 0.28 mm at (8.3, 14.7, 0.0)      6 samples, 0.2 mm2, runs 1.1 mm, band 0.20 mm
+        6. [taper] 0.14 mm at (-2.1, 16.9, 0.0)      8 samples, 0.2 mm2, runs 1.4 mm, band 0.15 mm
+        ... and 49 smaller region(s)
+RESULT: printable at this wall
+  wrote <WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_uranus_anti/r0001/thickness-world_uranus_anti.md
+
+--- stderr

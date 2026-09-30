@@ -14,7 +14,7 @@ from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import Any, Mapping
 
-from workshop._validation import copy_json_mapping, require_sha256
+from workshop._validation import copy_json_mapping, require_exact_version, require_sha256
 from workshop.artifacts import (
     ArtifactManifest,
     artifact_manifest_from_mapping,
@@ -177,13 +177,15 @@ class NativeMade:
     product_json_sha256: str
     cad_verification_path: str
     cad_verification_sha256: str
+    component_identities: Mapping[str, str] = field(default_factory=dict)
+    toolchain: Mapping[str, str] = field(default_factory=dict)
     schema_version: int = 1
     kind: str = NATIVE_MADE_KIND
     made_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
-            raise ContractError("native Made schema_version must be 1")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
+            raise ContractError("native Made schema_version must be 1 or 2")
         if self.kind != NATIVE_MADE_KIND:
             raise ContractError("native Made kind is invalid")
         if type(self.round) is not int or not 1 <= self.round <= 100:
@@ -223,14 +225,57 @@ class NativeMade:
                 "native Made manifest must not contain a mesh artifact; STEP "
                 "is the only geometry format the toolchain writes"
             )
+        self._validate_component_identities(paths)
         object.__setattr__(
             self,
             "made_sha256",
             hashlib.sha256(_canonical_json(self._identity_dict())).hexdigest(),
         )
 
+    def _validate_component_identities(self, paths: set[str]) -> None:
+        """Seal each Component's B-rep hash beside its STEP sha256 (issue #64, ADR 0073).
+
+        Schema 1 is the pre-seal document and carries neither field, so an
+        archive sealed before this change keeps its original bytes and identity
+        untouched. Schema 2 seals a B-rep hash (`cadgen.inspection_runtime.
+        shape_identity`, computed on the shape a build just produced, never on
+        one reloaded from STEP) for at least one Component, plus the exact
+        `build123d`/`cadquery-ocp` versions it was computed under: the hash
+        format itself is toolchain-sensitive (ADR 0073's amendment), so a
+        Correction Run must only trust a seal made under its own toolchain.
+        """
+        if self.schema_version == 1:
+            if self.component_identities or self.toolchain:
+                raise ContractError(
+                    "native Made schema_version 1 must not carry component identities"
+                )
+            object.__setattr__(self, "component_identities", MappingProxyType({}))
+            object.__setattr__(self, "toolchain", MappingProxyType({}))
+            return
+        identities = copy_json_mapping(
+            self.component_identities, "native Made component identities", nonempty=True
+        )
+        for path, identity_sha256 in identities.items():
+            if path not in paths or not path.endswith(".step"):
+                raise ContractError(
+                    "native Made component identity names a path outside the "
+                    "sealed STEP manifest: %s" % path
+                )
+            require_sha256(identity_sha256, "native Made component identity %s" % path)
+        toolchain = copy_json_mapping(
+            self.toolchain, "native Made toolchain", nonempty=True
+        )
+        if set(toolchain) != {"build123d", "cadquery_ocp"}:
+            raise ContractError(
+                "native Made toolchain must record build123d and cadquery_ocp"
+            )
+        for tool, version in toolchain.items():
+            require_exact_version(version, "native Made toolchain %s version" % tool)
+        object.__setattr__(self, "component_identities", MappingProxyType(identities))
+        object.__setattr__(self, "toolchain", MappingProxyType(toolchain))
+
     def _identity_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "schema_version": self.schema_version,
             "kind": self.kind,
             "round": self.round,
@@ -247,6 +292,10 @@ class NativeMade:
             "cad_verification_path": self.cad_verification_path,
             "cad_verification_sha256": self.cad_verification_sha256,
         }
+        if self.schema_version == 2:
+            payload["component_identities"] = dict(self.component_identities)
+            payload["toolchain"] = dict(self.toolchain)
+        return payload
 
     def to_dict(self) -> dict[str, Any]:
         payload = self._identity_dict()
@@ -255,6 +304,8 @@ class NativeMade:
 
     @classmethod
     def from_mapping(cls, value: Any) -> "NativeMade":
+        if not isinstance(value, Mapping):
+            raise ContractError("native Made fields are invalid")
         expected = {
             "schema_version",
             "kind",
@@ -273,7 +324,9 @@ class NativeMade:
             "cad_verification_sha256",
             "made_sha256",
         }
-        if not isinstance(value, Mapping) or set(value) != expected:
+        if value.get("schema_version") == 2:
+            expected = expected | {"component_identities", "toolchain"}
+        if set(value) != expected:
             raise ContractError("native Made fields are invalid")
         made = cls(
             schema_version=value["schema_version"],
@@ -291,6 +344,8 @@ class NativeMade:
             product_json_sha256=value["product_json_sha256"],
             cad_verification_path=value["cad_verification_path"],
             cad_verification_sha256=value["cad_verification_sha256"],
+            component_identities=value.get("component_identities", {}),
+            toolchain=value.get("toolchain", {}),
         )
         if dict(value) != made.to_dict():
             raise ContractError("native Made hashes or canonical identity are invalid")

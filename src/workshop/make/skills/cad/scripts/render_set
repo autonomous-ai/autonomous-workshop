@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""The reference whole-set render: build scenes to STEP, then render them.
+
+Every toy that has needed a whole-set render so far has copied the previous
+toy's frame script (the Antisol Companion's `snap_frames.py`/`world_views.py`
+are byte-identical to v11's). Some of those scripts tessellate through their
+own private routine instead of `render_review`'s, which reads and writes no
+cache -- every camera on every scene, and every board state that repeats an
+unmoved occurrence, retessellates the same triangles from nothing. Start a new
+whole-set render from this script instead of from the previous toy's copy.
+
+This is two phases, matching what those scripts already do, kept separate on
+purpose: `write_scenes` builds an Evidence Scene or board state and writes it
+to STEP once, and `render_scenes` renders each written STEP from a list of
+cameras through `render_review.build_shape`/`tessellate_occurrences` -- the
+same cached routine `render_review`'s own CLI uses, with the angular tolerance
+named explicitly since build123d's 0.1 radian default facets a curved cap.
+Tessellating a scene once and rendering it from several cameras, and rendering
+an unmoved occurrence that already has a cache entry from a previous scene or
+a previous process, are both cache hits through that one shared routine.
+
+This script chooses no frame and builds no scene: `--scene` and `--view` name
+exactly what the toy wants rendered, from wherever the toy's own generator or
+state export already put it. Frame choice and Evidence Scene construction
+stay the agent's.
+
+Examples:
+
+    # Build two `.step.py` entries to STEP under <out>/scenes/, then render
+    # each from the iso and front cameras.
+    render_set <out> --scene opening=board_opening.step.py \\
+        --scene endgame=board_endgame.step.py --view iso --view front
+
+    # Render already-exported board states (e.g. from a previous run) --
+    # no build phase, since each is already a STEP.
+    render_set <out> --scene opening=snapshots/board-opening.step \\
+        --scene endgame=snapshots/board-endgame.step --view iso
+
+    render_set --self-check
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib.machinery
+import importlib.util
+import sys
+import tempfile
+from pathlib import Path
+
+
+ENTRY_SUFFIX = ".step.py"
+STEP_SUFFIXES = {".step", ".stp"}
+
+
+def _load_render_review():
+    path = Path(__file__).resolve().parent / "render_review"
+    loader = importlib.machinery.SourceFileLoader("render_review", str(path))
+    spec = importlib.util.spec_from_loader("render_review", loader)
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def parse_scene(text: str) -> tuple[str, Path]:
+    name, separator, source = text.partition("=")
+    if not separator or not name or not source:
+        raise argparse.ArgumentTypeError(f"scene must be NAME=SOURCE, not {text!r}")
+    return name, Path(source)
+
+
+def write_scenes(render_review, scenes: list[tuple[str, Path]], export_dir: Path) -> dict[str, Path]:
+    """Build every `.step.py` scene once and write it to STEP under `export_dir`.
+
+    A scene already exported to STEP (a previous run's board-state snapshot,
+    an assembled product STEP) is used exactly where it sits and is not
+    copied: the cache keys off the resolved source path, so re-exporting an
+    unchanged STEP would only relocate the cache entry, never add coverage.
+    """
+    from build123d import export_step
+
+    written: dict[str, Path] = {}
+    for name, source in scenes:
+        if source.suffix.lower() in STEP_SUFFIXES:
+            written[name] = source
+            continue
+        if not source.name.endswith(ENTRY_SUFFIX):
+            raise ValueError(f"{source} is neither a {ENTRY_SUFFIX} entry nor STEP")
+        _resolved, shape = render_review.build_shape(source)
+        export_dir.mkdir(parents=True, exist_ok=True)
+        out = export_dir / f"{name}.step"
+        export_step(shape, str(out))
+        written[name] = out
+    return written
+
+
+def render_scenes(
+    render_review,
+    scenes: dict[str, Path],
+    views: list[tuple[str, float, float]],
+    *,
+    tolerance: float,
+    angular: float | None,
+    size: int,
+    pad: float,
+    out_dir: Path,
+) -> list[Path]:
+    """Render every scene from every camera, tessellating each scene once.
+
+    `tessellate_occurrences` is handed the STEP path as `cache_entry`
+    explicitly -- reloading a STEP through `build_shape` stamps that same
+    path on the shape, so this is only naming what `render_review`'s own CLI
+    already does implicitly, not a different cache key.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    written = []
+    for name, source in scenes.items():
+        _resolved, shape = render_review.build_shape(source)
+        occurrences = render_review.tessellate_occurrences(
+            shape, tolerance, angular, cache_entry=source
+        )
+        for label, azimuth, elevation in views:
+            path = out_dir / f"{name}-{label}.png"
+            render_review.render(occurrences, azimuth, elevation, size, pad).save(path)
+            written.append(path)
+    return written
+
+
+def self_check() -> int:
+    render_review = _load_render_review()
+    with tempfile.TemporaryDirectory(prefix="render-set-") as tmp:
+        root = Path(tmp)
+        entry = root / "scene.step.py"
+        entry.write_text(
+            "from build123d import Box, Cylinder, Pos\n"
+            "def gen_step():\n"
+            "    return Box(20, 14, 6) + Pos(4, 0, 3) * Cylinder(3, 12)\n",
+            encoding="utf-8",
+        )
+        scenes = write_scenes(render_review, [("scene", entry)], root / "scenes")
+        if not scenes["scene"].is_file():
+            print("render_set self-check failed: scene STEP was not written", file=sys.stderr)
+            return 1
+        views = [render_review.parse_view("iso"), render_review.parse_view("front")]
+        paths = render_scenes(
+            render_review, scenes, views,
+            tolerance=0.1, angular=None, size=200, pad=render_review.DEFAULT_PAD,
+            out_dir=root / "out",
+        )
+        if len(paths) != 2 or not all(path.stat().st_size > 500 for path in paths):
+            print("render_set self-check failed: expected two non-trivial PNGs", file=sys.stderr)
+            return 1
+    print("render_set self-check: ok")
+    return 0
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("out", nargs="?", type=Path)
+    parser.add_argument("--scene", action="append", default=[], type=parse_scene, dest="scenes")
+    parser.add_argument("--view", action="append", default=[], dest="views")
+    parser.add_argument("--tolerance", type=float, default=None)
+    parser.add_argument(
+        "--angular-tolerance",
+        type=float,
+        default=None,
+        help="angular deflection in radians; build123d's 0.1 facets curved caps visibly",
+    )
+    parser.add_argument("--size", type=int, default=None)
+    parser.add_argument("--pad", type=float, default=None)
+    parser.add_argument("--export-dir", type=Path, default=None)
+    parser.add_argument("--self-check", action="store_true")
+    args = parser.parse_args(argv)
+    if args.self_check:
+        return self_check()
+
+    render_review = _load_render_review()
+    tolerance = render_review.DEFAULT_TOLERANCE if args.tolerance is None else args.tolerance
+    size = render_review.DEFAULT_SIZE if args.size is None else args.size
+    pad = render_review.DEFAULT_PAD if args.pad is None else args.pad
+
+    if args.out is None:
+        parser.error("out is required unless --self-check is used")
+    if not args.scenes:
+        parser.error("at least one --scene NAME=SOURCE is required")
+    if not args.views:
+        parser.error("at least one --view is required: this script chooses no frame")
+    if size < 128:
+        parser.error("--size must be at least 128")
+    if not 0.0 <= pad < 0.4:
+        parser.error("--pad must be in [0, 0.4)")
+    if args.angular_tolerance is not None and not 0.0 < args.angular_tolerance <= 1.0:
+        parser.error("--angular-tolerance must be in (0, 1] radians")
+
+    views = [render_review.parse_view(value) for value in args.views]
+    export_dir = args.export_dir or (args.out / "scenes")
+    scenes = write_scenes(render_review, args.scenes, export_dir)
+    paths = render_scenes(
+        render_review, scenes, views,
+        tolerance=tolerance, angular=args.angular_tolerance, size=size, pad=pad,
+        out_dir=args.out,
+    )
+    for path in paths:
+        print(path)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

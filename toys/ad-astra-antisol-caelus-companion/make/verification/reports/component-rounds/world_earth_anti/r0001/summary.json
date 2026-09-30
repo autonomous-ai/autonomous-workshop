@@ -1,0 +1,62 @@
+{
+ "build": {
+  "world_earth_anti": {
+   "failures": [],
+   "verdict": "PASS"
+  }
+ },
+ "changed": [
+  "world_earth_anti"
+ ],
+ "check_motion": false,
+ "checked": [
+  "world_earth_anti"
+ ],
+ "checks_ok": true,
+ "entry": "part_world_earth_anti.step.py",
+ "full": null,
+ "likeness": [],
+ "min": 0.9,
+ "motion": null,
+ "motion_status": "not-run",
+ "nozzle": 0.4,
+ "ok": true,
+ "out": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001",
+ "overhang_angle": 45.0,
+ "parts": [
+  "world_earth_anti"
+ ],
+ "print": {
+  "world_earth_anti": {
+   "logs": {
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001/overhang-world_earth_anti.log": "8784929c94ff8650536faad2e1a22cdfa8e8f86571d098fd9e359e9ec4265e23",
+    "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001/thickness-world_earth_anti.log": "8fce58fb4cb34c4c3a0d1d36c9620ebc27b687bc1f96a02a2f764ea8b318122d"
+   },
+   "measured_round": 1,
+   "overhang": {
+    "failures": [],
+    "overhang_mm2": null,
+    "verdict": "PASS"
+   },
+   "thickness": {
+    "failures": [],
+    "thinnest_mm": 0.13,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  }
+ },
+ "project": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad",
+ "refs": [],
+ "reused": [],
+ "round": 1,
+ "scope": "component:world_earth_anti",
+ "visual": {
+  "detail": "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections",
+  "findings": [],
+  "observation": "Mirror of the Sol piece. Sphere smooth, disc drafted the other way, no defects.",
+  "packet": "<WORKSHOP_RUN>/artifacts/make/r0001/product/cad/measure/component-rounds/world_earth_anti/r0001/visual-packet.json",
+  "packet_sha256": "5a0a77486d64fe1051d70364f6c494d77792820f4aed77bcc1fc80a5dfd4ba21",
+  "status": "pass"
+ }
+}
