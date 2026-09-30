@@ -1033,6 +1033,17 @@ custom-agent file format. Every future adapter must preserve the root Manager
 role, exact Inventor binding, host-owned gates, sandbox, checkpoint, and effect
 authority.
 
+Every Inventor and Make role agent is sealed once as a Codex custom agent under
+`.codex/agents/`, which stays the identity binding. A Claude Code run also
+receives each one under `.claude/agents/<name>.md`, rendered deterministically
+from those bytes (`runtime/agent_projection.py`): the model is inherited, an
+explicit effort such as the Component Reviewer's `low` carries over, and the
+Codex-only wait sentence becomes Claude Code's. A source that still names a
+Codex-only wait fails closed. The projections are run inputs; reopening a run
+refuses one that differs from its Codex source, or an extra one. Before this,
+a Claude run had no spawnable Component Worker or Reviewer, so its root built
+every Component itself. Grok Build receives no projection yet.
+
 The Claude Code adapter reports native token usage to the host through the
 same per-turn contract as Codex: gross input and gross output, plus a
 cached-input, cache-write-input and reasoning-output detail that travels

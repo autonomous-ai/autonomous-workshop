@@ -14,6 +14,7 @@ from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.errors import ArtifactError, ContractError, StateConflict, TransitionError
 from workshop.make.role_agents import make_role_agent_files
 from workshop.runtime.agent_assets import parse_inventor_custom_agent_bytes
+from workshop.runtime.agent_projection import claude_agent_bytes
 from workshop.runtime.managers import manager_project_bytes, manager_spec
 from workshop.workflow import (
     AgentArtifact,
@@ -767,6 +768,82 @@ class AgentRunTest(unittest.TestCase):
             expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
         )
         self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_a_claude_run_also_gets_every_agent_in_its_own_format(self):
+        inventor_source = self.root / "inventors"
+        self.write_inventor(inventor_source, "alice")
+
+        run = self.create(
+            inventor_source_root=inventor_source,
+            make_role_agents=make_role_agent_files(),
+            manager_id="claude",
+        )
+        checkpoint = run.snapshot()
+        claude_agents = run.run_root / ".claude" / "agents"
+        self.assertEqual(
+            sorted(p.name for p in claude_agents.iterdir()),
+            ["alice.md", "component-reviewer.md", "component-worker.md"],
+        )
+        self.assertEqual(stat.S_IMODE(claude_agents.stat().st_mode), 0o500)
+        for name in ("alice", "component-reviewer", "component-worker"):
+            relative = ".claude/agents/%s.md" % name
+            source = (run.run_root / ".codex" / "agents" / (name + ".toml")).read_bytes()
+            self.assertEqual(
+                (run.run_root / relative).read_bytes(), claude_agent_bytes(source)
+            )
+            self.assertIn(relative, checkpoint.input_sha256s)
+        self.assertIn(
+            "effort: low", (claude_agents / "component-reviewer.md").read_text()
+        )
+        reopened = AgentRun.open(
+            run.run_root,
+            host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+        )
+        self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_a_codex_run_gets_no_claude_agents(self):
+        run = self.create(make_role_agents=make_role_agent_files())
+        self.assertFalse((run.run_root / ".claude").exists())
+        self.assertFalse(
+            [path for path in run.snapshot().input_sha256s if path.startswith(".claude/")]
+        )
+
+    def _claude_agents_opened_for_edit(self):
+        run = self.create(make_role_agents=make_role_agent_files(), manager_id="claude")
+        agents = run.run_root / ".claude" / "agents"
+        agents.chmod(0o700)
+        return run, agents
+
+    def test_snapshot_refuses_a_tampered_claude_agent(self):
+        run, agents = self._claude_agents_opened_for_edit()
+        path = agents / "component-reviewer.md"
+        path.chmod(0o600)
+        path.write_bytes(path.read_bytes().replace(b"effort: low", b"effort: high"))
+        path.chmod(0o400)
+        agents.chmod(0o500)
+        with self.assertRaises((StateConflict, ArtifactError)):
+            run.snapshot()
+
+    def test_a_sealed_claude_agent_outlives_a_later_renderer(self):
+        run = self.create(make_role_agents=make_role_agent_files(), manager_id="claude")
+        checkpoint = run.snapshot()
+        with patch.object(
+            agent_run_module, "project_agents", side_effect=AssertionError("re-rendered")
+        ):
+            reopened = AgentRun.open(
+                run.run_root,
+                host_state_root=run.host_state_root,
+                expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+            )
+            self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_snapshot_refuses_an_extra_claude_agent(self):
+        run, agents = self._claude_agents_opened_for_edit()
+        (agents / "helper.md").write_bytes(b"---\nname: helper\n---\n")
+        agents.chmod(0o500)
+        with self.assertRaises((StateConflict, ArtifactError)):
+            run.snapshot()
 
     def test_a_run_without_make_role_agents_keeps_its_inventor_only_roster(self):
         inventor_source = self.root / "inventors"

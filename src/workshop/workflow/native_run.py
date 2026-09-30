@@ -2086,6 +2086,7 @@ def materialized_agent_instructions_sha256(
         if path == "AGENTS.md"
         or path.startswith(".agents/skills/")
         or path.startswith(".codex/agents/")
+        or path.startswith(".claude/agents/")
     }
     required = {
         "AGENTS.md",
