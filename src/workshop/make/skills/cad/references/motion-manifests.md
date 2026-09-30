@@ -320,6 +320,29 @@ past a post. Writing it down also records *what the condition is for*: a full
 turn declared at one tooth is honest about being a bulk-clearance sweep with the
 mesh checked separately, and reads as such to whoever comes next.
 
+### A path in stages is one coupled condition
+
+Every step of an `assembly_sequence` starts from the assembly pose: nothing a
+step moved stays moved for the next. "Turn to unlock, then lift" written as two
+steps lifts the part from its *locked* pose and reads as blocked. Write a
+staged path as one `coupled_motion_collision` whose pose tables hold each
+stage in turn -- the part's angle ramps over the first steps and then holds,
+its offset holds and then ramps -- with every part that moves in any stage
+as a mover and the fixed root as the obstacle. A part that rides along for one
+stage (the core turned by the shell's crown while unlocking) is a mover with a
+table that ramps and then stops. Give it a `maxStepMm` that fits the stage
+that matters: an axial lift past radial clearances tolerates coarse steps.
+
+### A mechanism's cycle comes from the project's own solution
+
+When the project already solves its kinematics numerically (a walk through a
+cam, a linkage solver), generate the pose tables from that solution with a
+small script beside the manifest rather than typing them, and densify them:
+wherever one solved step moves a part further than the declared `maxStepMm`
+(a spring lifting a part the moment a finger comes off), insert straight-line
+states between. Leave compliant parts (springs) out of the obstacles; a rigid
+spring reads every compression as a collision.
+
 ## What the sampling costs, and the budget that stops it
 
 Every sample is Boolean geometry: a condition costs roughly `steps + 1` times

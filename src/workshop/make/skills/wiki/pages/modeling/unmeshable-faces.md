@@ -6,8 +6,9 @@ sources:
   - "toolchain: build123d Shape.tessellate() raises when OCC leaves a face untriangulated (reproducible)"
   - skills/image-to-cad/scripts/render_views.py (_mesh_face_by_face, the reference implementation)
   - "experience: a cone fused 0.01 mm into a loft left a 0.013 mm2 face no gate could mesh"
+  - "experience: a window-outline fillet on a revolved spline shell left two planar faces unmeshed in the whole shape; another radius segfaulted"
 related: [kernel-validity, modeling-failure-modes]
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # Faces the mesher declines
@@ -38,6 +39,17 @@ died on it. Meet a flat end exactly (same radius, same plane), or stop short
 and leave a ledge the print can carry; do not overlap by a hair. After any
 change, tessellate each built solid once at the gate's tolerance and find the
 face that raises before the gate does.
+
+## A fillet along a cut's outline on a revolved surface
+
+Filleting the outer edges of a window cut through a revolved spline shell (the
+cut's flat sides meeting the shell's surface) returned a valid solid whose two
+flat side faces the whole-shape mesher (relative deflection, as
+`Shape.tessellate` calls it) left untriangulated, while meshing each face on
+its own succeeded; at other radii the same fillet crashed the process outright.
+Give such an edge its thickness by construction instead: splay the cut's sides
+(a ruled loft between a narrower inner outline and a wider outer one) so they
+meet the surface at a larger angle.
 
 ## Mesh face by face and count the skips
 

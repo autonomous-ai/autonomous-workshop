@@ -458,6 +458,13 @@ def render(occurrences, azimuth: float, elevation: float, size: int, pad: float,
         depth = points @ toward_viewer
         corners = points[faces]
         normals = np.cross(corners[:, 1] - corners[:, 0], corners[:, 2] - corners[:, 0])
+        # Light both sides. The depth buffer only lets a triangle show where it
+        # faces the viewer, so a normal pointing away is a reversed winding, not
+        # a back face: shaded as it came it painted dark streaks across flat
+        # faces that had nothing wrong.
+        facing = (normals[:, 0] * toward_viewer[0] + normals[:, 1] * toward_viewer[1]
+                  + normals[:, 2] * toward_viewer[2])
+        normals = np.where((facing < 0.0)[:, None], -normals, normals)
         fills = shade_faces(colour, normals, light, toward_viewer)
 
         xs, ys, zs = px[faces], py[faces], depth[faces]
@@ -548,6 +555,34 @@ def self_check() -> int:
     if not np.allclose(drawn[(0, 0, 255)].mean(axis=0), (10, 0, 20), atol=1e-6):
         print("render_review self-check failed: a moved module's solid lost its placement",
               file=sys.stderr)
+        return 1
+    # Occlusion is per pixel. A red plate under a blue one made of many small
+    # tiles: seen from above, no red may show on top. Sorted by centroid depth,
+    # the red plate's two big top triangles were painted over most of the blue.
+    from build123d import GridLocations, Solid
+    base = Box(120, 120, 2)
+    base.color = Color(1, 0, 0)
+    tiles = [Solid.make_box(9.8, 9.8, 2).moved(loc * Location((-4.9, -4.9, 1)))
+             for loc in GridLocations(10, 10, 12, 12).locations]
+    for tile in tiles:
+        tile.color = Color(0, 0, 1)
+    plates = tessellate_occurrences(Compound(children=[base, *tiles]), 0.1)
+    top = np.asarray(render(plates, -45.0, 35.264, 240, DEFAULT_PAD)).astype(int)
+    reddish = int(((top[..., 0] > 80) & (top[..., 2] < 60)).sum())
+    bluish = int(((top[..., 2] > 80) & (top[..., 0] < 60)).sum())
+    if reddish > 0.1 * bluish:
+        print(f"render_review self-check failed: a covered plate shows through "
+              f"({reddish} red px against {bluish} blue)", file=sys.stderr)
+        return 1
+    # A flat square whose two triangles are wound opposite ways shades as one colour: a
+    # reversed winding on a visible face must not read as a dark streak.
+    square = np.asarray([[0, 0, 0], [10, 0, 0], [10, 10, 0], [0, 10, 0]], dtype=float)
+    mixed = [(square, np.asarray([[0, 1, 2], [0, 3, 2]]), (200, 150, 100))]
+    flat = np.asarray(render(mixed, 0.0, 90.0, 120, DEFAULT_PAD)).reshape(-1, 3)
+    shades = {tuple(px) for px in flat if tuple(px) != tuple(BACKGROUND)}
+    if len(shades) != 1:
+        print(f"render_review self-check failed: one flat face drew {len(shades)} shades "
+              "(a reversed triangle is lit from behind)", file=sys.stderr)
         return 1
     print(f"render_review self-check: ok foreground={foreground} colours={colour_count}")
     return 0

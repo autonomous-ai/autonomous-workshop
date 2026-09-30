@@ -3,12 +3,14 @@ title: Wall thickness and hollowing
 tags: [wall, thickness, nozzle, hollow, shell, infill, knife-edge, taper, flute, web, fdm, resin]
 aliases: [minimum wall, thin wall, shelling, offset shrink, sliver, feather edge, rib spacing]
 sources:
+  - "experience: 0.25 mm walls at every end of a base's segment grooves"
   - skills/cad/scripts/cadprint.py (min_wall, shell_wall, hollow, open_shell, savings)
   - skills/cad/scripts/check_thickness
   - "toolchain: build123d offset(solid, -wall) returns a smaller solid, not a shell (reproducible: Box 20 -> 4096 mm3)"
   - "experience: sub-nozzle walls, knife edges and over-hollowed parts that passed validate, interfere, check_fit and check_mesh"
-related: [overhangs-and-print-orientation, printed-part-count, joints, resin-printing-design, print-time-and-material-estimation, ribs-and-stiffening, lightweighting-and-lattices]
-updated: 2026-09-23
+  - "experience: sawtooth tips, a D-flat key and a sloped rib foot each failed the thickness gate as walls; lands, a square rib and a reversed slope cleared them"
+related: [overhangs-and-print-orientation, printed-part-count, joints, resin-printing-design, print-time-and-material-estimation, ribs-and-stiffening, lightweighting-and-lattices, push-to-turn-indexer]
+updated: 2026-09-29
 ---
 
 # Wall thickness and hollowing
@@ -150,6 +152,16 @@ than the infill it replaces: [[lightweighting-and-lattices]].
 Resin hollowing — shell thickness, drain and vent holes, cupping — is in
 [[resin-printing-design]].
 
+## A groove through a rounded rim leaves a sliver
+
+A constant-depth groove (0.8 × 0.4 mm segment lines on a drum) fails the
+thickness gate where it meets a filleted rim, both ways: stopped short of the
+fillet it leaves a thin shelf between its end and the rim, and cut through it it
+leaves a sliver between the fillet's curve and the groove floor. Either drop the
+groove where it meets a round (it is texture at that size) or end it in a
+flat-walled face well clear of the fillet. A ring groove on a curved chest adds
+an overhang too: its inner wall along the lower arc is a roof.
+
 ## Knife edges are walls too
 
 A boolean can leave a mathematically valid solid whose material tapers to zero:
@@ -170,6 +182,20 @@ Repair the construction, not the mesh and not the threshold:
 A stepped mouth merely moves the defect from the outer rim to the step. Keep
 the guide region at its derived `cadfits` width, start the flare with that same
 width, and widen only toward the opening. Re-measure after every such repair.
+
+Three constructions make the same acute corner and are easy to miss because
+each looks like a sensible feature:
+
+- **A sawtooth tip.** A ramp meeting a wall is a wedge between two flat faces,
+  and that is always a wall to the gate however long the tooth. Cut the tip
+  level (a land) as wide as the mechanism allows ([[push-to-turn-indexer#lands-on-the-tips]]).
+- **A D-flat inside a bore.** The flat meets the bore at a few degrees, so the
+  key it leaves is a crescent that tapers to nothing at both ends. Key with a
+  square-sided rib standing out of the bore instead; its corners are 90 deg.
+- **A sloped underside meeting a vertical face.** A 52 deg underside (sloped so
+  it prints) that rises *away* from a vertical face meets it at 38 deg. Slope it
+  the other way -- rising *toward* the face, 142 deg -- or give it a level land
+  under 1 mm at the face first.
 
 ## A fix for a knife edge must clear the minimum wall itself
 

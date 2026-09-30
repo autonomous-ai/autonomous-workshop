@@ -156,7 +156,7 @@ Ranges are allowed here; §5 fixes the values.>
 
 ## 6. Decomposition
 
-<Fill 6a–6g with the table shapes and rules in
+<Fill 6a–6h with the table shapes and rules in
 `skills/image-to-cad/templates/build_spec.md` §6. The exterior-construction row
 of 6g cites §4a's selection; the mechanism row cites it too when the object
 moves. `N/A` with a one-line reason for a subsection that does not apply.>
@@ -168,6 +168,7 @@ moves. `N/A` with a one-line reason for a subsection that does not apply.>
 ### 6e. Mount declarations
 ### 6f. Removable-light mating interfaces
 ### 6g. Design selection
+### 6h. Not 3D printed — bought parts and materials
 
 ---
 

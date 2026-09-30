@@ -146,6 +146,14 @@ do not tell you when a round was wasted.
   writing the GLB package, and nothing reads it.
 - `CADGEN_WARM=1` on every call. It removes only a ~2 s import, but it is free.
 - One machine, one run. OCP booleans are CPU-bound.
+- **A coupled motion cycle is paid twice.** Final `verify_project` runs
+  `check_motion` again, so a standalone run is worth it only while the
+  manifest is still changing. Its cost is the exact booleans between parts
+  whose boxes overlap at every sample (a pin inside its running holes,
+  same-layer plates), not the mover count: parts in disjoint bands along an
+  axis fail the box test and cost nothing. Measured on a plate linkage — 43
+  movers, 21 obstacles, 180 samples plus three driven passes — 38 min and
+  about 8 GB resident, the largest single gate of its suite.
 - **Do not rebuild a body whose inputs did not change.** A generator that
   builds many independent bodies (station-stack sculpts, lofted segments,
   inlay sets) pays for all of them on every `gen`, serially, and deleting

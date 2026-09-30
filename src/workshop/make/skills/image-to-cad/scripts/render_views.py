@@ -399,8 +399,14 @@ def project(points: np.ndarray, az: float, el: float, roll: float, fov: float):
 
 def rasterise(points: np.ndarray, faces: np.ndarray, az: float, el: float,
               roll: float = 0.0, fov: float = 0.0, size: int = DEFAULT_SIZE,
-              pad: float = DEFAULT_PAD) -> np.ndarray:
-    """A boolean silhouette mask: True where the object covers the frame."""
+              pad: float = DEFAULT_PAD, every_body: bool = False) -> np.ndarray:
+    """A boolean silhouette mask: True where the object covers the frame.
+
+    By default the mask goes through `gate_mask`, which keeps the largest blob
+    as the likeness gate does. `every_body` keeps every blob: a comparison of
+    one CAD shape with another (source against its STEP) must see a whole body
+    the other one lost, and must not pick between two equal bodies by
+    tessellation noise."""
     sx, sy = project(points, az, el, roll, fov)
     width, height = sx.max() - sx.min(), sy.max() - sy.min()
     span = max(width, height)
@@ -410,7 +416,23 @@ def rasterise(points: np.ndarray, faces: np.ndarray, az: float, el: float,
     px = (sx - sx.min()) * scale + (size - width * scale) / 2
     py = size - ((sy - sy.min()) * scale + (size - height * scale) / 2)
 
-    return gate_mask(fill_triangles(px, py, faces, size))
+    filled = fill_triangles(px, py, faces, size)
+    return _open_mask(filled) if every_body else gate_mask(filled)
+
+
+def step_drift(src_points, src_faces, step_points, step_faces,
+               size: int = DEFAULT_SIZE) -> list[tuple[str, float]]:
+    """(view, IoU) of the source against its STEP in the three named views,
+    every body kept: two rows of equal pieces seen end-on are two equal blobs,
+    and keeping only the larger one compared one row of the source with the
+    other row of the STEP."""
+    out = []
+    for label in ("front", "right", "top"):
+        az, el = NAMED_VIEWS[label]
+        a = normalise(rasterise(src_points, src_faces, az, el, size=size, every_body=True))
+        b = normalise(rasterise(step_points, step_faces, az, el, size=size, every_body=True))
+        out.append((label, compare(a, b)["iou"]))
+    return out
 
 
 def fill_triangles(px, py, faces: np.ndarray, size: int) -> np.ndarray:
@@ -1135,11 +1157,7 @@ def main(argv: list[str] | None = None) -> int:
         tol = compare_tolerance(points, args.size, args.tolerance)
         src_points, src_faces = (points, faces) if tol >= args.tolerance else tessellate(shape, tol)
         step_points, step_faces = tessellate(build_shape(step_path), tol)
-        for label in ("front", "right", "top"):
-            az, el = NAMED_VIEWS[label]
-            a = normalise(rasterise(src_points, src_faces, az, el, size=args.size))
-            b = normalise(rasterise(step_points, step_faces, az, el, size=args.size))
-            iou = compare(a, b)["iou"]
+        for label, iou in step_drift(src_points, src_faces, step_points, step_faces, args.size):
             entry = {"view": label, "iou": iou, "ok": iou >= STALE_MIN_IOU, "tolerance": tol}
             failed = failed or not entry["ok"]
             drift.append(entry)
@@ -1464,11 +1482,20 @@ def self_check() -> int:
         tol = compare_tolerance(pts, 480, 0.1)
         sp, sf = tessellate(blade, tol)
         rp, rf = tessellate(build_shape(step), tol)
-        worst = min(compare(normalise(rasterise(sp, sf, *NAMED_VIEWS[v], size=480)),
-                            normalise(rasterise(rp, rf, *NAMED_VIEWS[v], size=480)))["iou"]
-                    for v in ("front", "right", "top"))
+        worst = min(iou for _v, iou in step_drift(sp, sf, rp, rf, 480))
     check("the comparison tessellates below a pixel", tol <= 28 / (4 * 480) + 1e-9, f"tolerance {tol:.4f}")
     check("a STEP round trip of a thin blade reads as no drift", worst >= STALE_MIN_IOU, f"worst IoU {worst:.4f}")
+
+    # Drift must see every body. A source of two separate bodies against a
+    # STEP that lost the smaller one reads as drift only when both masks keep
+    # every blob; kept to its largest blob, as the likeness gate keeps a
+    # photograph's, the comparison is left to rescaling noise to notice.
+    from build123d import Box as _Box, Compound as _Compound, Pos as _Pos
+    big, small = _Box(20, 20, 30), _Pos(30, 0, 0) * _Box(10, 10, 20)
+    two_p, two_f = tessellate(_Compound([big, small]), 0.1)
+    one_p, one_f = tessellate(_Compound([big]), 0.1)
+    lost = min(iou for _v, iou in step_drift(two_p, two_f, one_p, one_f, 480))
+    check("a STEP that lost a whole body reads as drift", lost < STALE_MIN_IOU, f"worst IoU {lost:.4f}")
 
     check("a replayed camera scores exactly what the search scored",
           a["iou"] == b["iou"] and b["poses_tried"] == 0

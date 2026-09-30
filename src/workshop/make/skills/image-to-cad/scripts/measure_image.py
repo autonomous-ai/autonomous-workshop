@@ -101,6 +101,15 @@ TWO_SIDED_TOUCH_PX = 7         # how close a bright region must sit to the silho
 PALE_LAB_CHROMA_MIN = 4.0      # a*b* distance from the background colour
 PALE_MIN_SHARE = 0.004         # same floor as the off-hue admission
 
+# A vertical-gradient backdrop (a CAD viewer's default: FreeCAD, many others).
+# Recognised only when the frame's two side columns agree row by row, the top
+# and bottom border bands are each flat across the width, and top and bottom
+# differ -- a flat ground and a radial vignette both fail it and keep the
+# single-colour path.
+GRADIENT_MIN_SPAN = 30.0       # |RGB| summed, top band to bottom band
+GRADIENT_SIDE_TOL = 18.0       # |RGB| summed, left column to right column in one row
+GRADIENT_ROW_FRACTION = 0.6    # share of rows whose two sides must agree
+
 # Which two of (L, W, H) each canonical view name measures, as
 # (bbox width -> dim, bbox height -> dim).
 VIEW_AXES = {
@@ -160,6 +169,52 @@ def _background_rgb(rgb: np.ndarray) -> np.ndarray:
         ]
     )
     return np.median(pixels, axis=0)
+
+
+def _row_background(rgb: np.ndarray) -> np.ndarray | None:
+    """The backdrop colour of every row when the frame is a vertical gradient, else None.
+
+    One colour for the whole border ring sits halfway between the top and the
+    bottom of a gradient, so a plate near either end whose luma and hue fall
+    inside the band around that one colour reads as background -- measured on a
+    FreeCAD screenshot of a 15-leg walker, the mask dropped 12 % of the object
+    (every lilac and pale link near the blue top) and the likeness gate scored
+    the source geometry at 0.84 instead of 0.88. A per-row backdrop fitted to the
+    frame's own side columns removes it. Returns a (rows, 3) array.
+    """
+    h, w, _ = rgb.shape
+    band_w = max(1, int(round(w * BORDER_FRACTION)))
+    band_h = max(1, int(round(h * BORDER_FRACTION)))
+    left = np.median(rgb[:, :band_w], axis=1)
+    right = np.median(rgb[:, -band_w:], axis=1)
+    agree = np.abs(left - right).sum(axis=1) < GRADIENT_SIDE_TOL
+    if agree.mean() < GRADIENT_ROW_FRACTION or agree.sum() < 8:
+        return None
+    for band in (rgb[:band_h], rgb[-band_h:]):
+        across = np.median(band, axis=0)                       # (w, 3) one colour per column
+        spread = np.abs(across - np.median(across, axis=0)).sum(axis=1)
+        if np.percentile(spread, 75) > GRADIENT_SIDE_TOL:      # a vignette or a scene, not a backdrop
+            return None
+    rows = (left + right) / 2.0
+    y = np.arange(h, dtype=float)
+    fit = np.stack([np.polyval(np.polyfit(y[agree], rows[agree, c], 3), y) for c in range(3)],
+                   axis=1)
+    if float(np.abs(fit[:band_h].mean(axis=0) - fit[-band_h:].mean(axis=0)).sum()) < GRADIENT_MIN_SPAN:
+        return None
+    return fit
+
+
+def _gradient_mask(rgb: np.ndarray, gray: np.ndarray, rows_bg: np.ndarray,
+                   threshold: float, reject_shadow: bool):
+    """Object = far enough from its own row's backdrop colour; shadows keep that row's hue."""
+    field = rows_bg[:, None, :]
+    mask = np.linalg.norm(rgb - field, axis=-1) > threshold
+    lum_rows = rows_bg @ np.array([0.299, 0.587, 0.114])
+    if reject_shadow:
+        same_hue = np.linalg.norm(_chromaticity(rgb) - _chromaticity(field), axis=-1) <= CHROMA_TOLERANCE
+        ratio = gray / np.maximum(lum_rows[:, None], 1.0)
+        mask &= ~(same_hue & (ratio >= SHADOW_DARK_FLOOR) & (ratio <= 1.0))
+    return mask, float(lum_rows.mean())
 
 
 def _chromaticity(rgb: np.ndarray) -> np.ndarray:
@@ -290,7 +345,20 @@ def object_mask(
     carries `bright_region_share` and a `note`
     whenever this admitted a region, so the decision is visible rather than
     silent.
+
+    A vertical-gradient backdrop (see `_row_background`) is measured against
+    each row's own backdrop colour instead, and says so in the notes.
     """
+    rows_bg = None if invert else _row_background(rgb)
+    if rows_bg is not None:
+        mask, bg = _gradient_mask(rgb, gray, rows_bg, threshold, reject_shadow)
+        notes: dict[str, Any] = {
+            "two_sided": bool(two_sided),
+            "background": "vertical gradient",
+            "note": ("the frame is a top-to-bottom gradient backdrop; every pixel "
+                     "was measured against its own row's backdrop colour"),
+        }
+        return _open_mask(mask), bg, notes
     bg = _background_level(gray)
     delta = gray - bg
     mask = (delta < -threshold) if not invert else (delta > threshold)
@@ -1069,6 +1137,47 @@ def self_check() -> int:
         print(f"{'ok  ' if lit_out else 'FAIL'} a lighter neutral patch stays ground "
               f"- w {lit['bbox_px']['w']} (want 120)")
         ok &= lit_out
+
+        # ---- the mask: a CAD viewer's gradient backdrop ----
+        # blue at the top, teal at the bottom; a lilac block near the top and a
+        # pale block near the bottom each sit inside the band around the ring's
+        # one median colour, which is what dropped them before
+        grad = np.zeros((400, 300, 3))
+        t = np.linspace(0.0, 1.0, 400)[:, None]
+        grad[:] = ((1 - t) * np.array([122.0, 166.0, 216.0]) + t * np.array([104.0, 200.0, 182.0]))[:, None, :]
+        grad[60:340, 110:190] = (211, 168, 118)          # tan body, 80 x 280
+        grad[40:90, 70:230] = (170, 176, 232)             # lilac bar near the blue top
+        grad[320:370, 60:240] = (150, 214, 200)           # pale teal-grey bar near the bottom
+        gray_g = grad @ np.array([0.299, 0.587, 0.114])
+        found, _bg, notes = object_mask(grad, gray_g, float(DEFAULT_THRESHOLD), False)
+        ys, xs = np.nonzero(found)
+        box = (int(xs.min()), int(xs.max()), int(ys.min()), int(ys.max()))
+        whole = box == (60, 239, 40, 369) and notes.get("background") == "vertical gradient"
+        print(f"{'ok  ' if whole else 'FAIL'} a gradient backdrop keeps parts at "
+              f"either end  - box {box} (want (60, 239, 40, 369)), "
+              f"{notes.get('background', 'single colour')}")
+        ok &= whole
+
+        global GRADIENT_MIN_SPAN
+        saved_span, GRADIENT_MIN_SPAN = GRADIENT_MIN_SPAN, float("inf")
+        try:
+            single, _bg, _n = object_mask(grad, gray_g, float(DEFAULT_THRESHOLD), False)
+        finally:
+            GRADIENT_MIN_SPAN = saved_span
+        lost = int(found.sum() - (single & found).sum())
+        print(f"{'ok  ' if lost > 0 else 'FAIL'} and one ring colour for the "
+              f"whole frame loses part of it  - {lost} px dropped")
+        ok &= lost > 0
+
+        flat_grad = _row_background(_sc_rect(120, 240).astype(float)) is None
+        vignette = np.zeros((300, 300, 3)) + 200.0
+        yy, xx = np.mgrid[:300, :300]
+        vignette -= (((yy - 150) ** 2 + (xx - 150) ** 2) / 150.0 ** 2)[..., None] * 40.0
+        not_vignette = _row_background(vignette) is None
+        print(f"{'ok  ' if flat_grad and not_vignette else 'FAIL'} and neither a "
+              f"flat ground nor a radial vignette is taken for one  - "
+              f"flat {flat_grad}, vignette {not_vignette}")
+        ok &= flat_grad and not_vignette
 
         # ---- interrogating the mask: a row that breaks into two parts ----
         split = _sc_rect(120, 240)

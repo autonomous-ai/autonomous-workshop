@@ -77,6 +77,31 @@ markdown record next to the other verification artifacts, and a project that
 ships a hollowed part should say the wall it was shelled at, beside the
 `check_thickness` result that measured it.
 
+## A multi-colour entry is gated as its union — `gen_print_union()`
+
+A print entry whose `gen_step()` returns colour regions as separate solids (an
+inlaid face, a two-colour emblem) is a plate the slicer wants and the mesh
+gates cannot read: the shared faces are non-manifold edges to `check_mesh` and
+flip the inside/outside count in `check_overhang` and `check_thickness`.
+Define a second module-level function in the same entry,
+
+```python
+def gen_print_union():
+    return the_part_as_one_solid()     # built from the primitives, not by fusing the regions
+```
+
+and `printlib` builds that for every mesh gate (`check_mesh`,
+`check_overhang`, `check_thickness`, `repair_mesh`), while `gen_step()` stays
+what `gen --write` exports. Build the union from the primitives -- the body
+before its inlay cuts -- not by fusing the regions back together, which can
+leave a sliver (`wiki show fdm-multi-material-design`).
+
+In Workshop the union must also be the plate's own material: `printlib`
+refuses a `gen_print_union()` whose volume differs from the regions' summed
+volume (beyond 1e-5 of it, or 0.001 mm3) or whose bounding box sits more than
+0.01 mm off theirs. The mesh gates, and the host's print-ready rerun, then
+never measure a stand-in that prints more easily than the object that ships.
+
 ## Which way is up — `check_overhang`
 
 Every other gate in this toolchain is blind to the build direction. `check_fit`

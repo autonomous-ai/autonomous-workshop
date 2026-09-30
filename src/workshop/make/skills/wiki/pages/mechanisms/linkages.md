@@ -5,10 +5,11 @@ aliases: [linkage, bar linkage, crank-rocker, connecting rod, toggle, dead point
 sources:
   - Norton, Design of Machinery, ch. 2 (Grashof condition) and ch. 4 (position analysis)
   - Theo Jansen, Strandbeest linkage; Klann linkage (US patent 6,260,862)
+  - https://codeberg.org/Zolko/Asm4_documentation Resources/Tutorial3 (FreeCAD Jansen walker: link lengths x10 mm, layer offsets, 15-leg phasing)
   - "experience: walkers whose legs were posed once for every phase, and axles driven by one rod"
   - "experience: an eccentric-driven rocker whose pin was placed for a 90 deg mid-swing transmission"
 related: [mechanism-design, automata-patterns, mechanism-verification]
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # Linkages
@@ -125,6 +126,41 @@ collide with each other and walk a pace, not a trot.
 Stance feet must be **lower** than swing feet through mid-stride or the body
 rocks instead of walking; set the foot sole so its lowest point lands on
 Z = 0 in the reference pose.
+
+### The Jansen leg
+
+Jansen's published lengths, in his units: crank m 15; crank axis to fixed
+pivot A, a 38 horizontal and l 7.8 vertical (the crank axis above A); b 41.5
+(A–B), c 39.3 (A–D), d 40.1 (A–E), e 55.8 (B–E), f 39.4 (E–F), g 36.7 (D–F),
+h 65.7 (F–G), i 49 (D–G), j 50 (crank–B), k 61.9 (crank–D). A–B–E and D–F–G
+are rigid triangles; G is the foot. Solve in order, one circle intersection
+each, with a fixed branch: B above (j, b), D below (k, c), E outboard of A–B
+(d, e), F outboard (f, g), G below (i, h). Every intersection exists at every
+crank angle, and over a third of the turn the foot path stays flat to under
+1 % of the leg's height (0.3–0.5 units), so the body barely bobs. A well-known FreeCAD model draws k as 61
+rather than 61.9: the lift drops from 22.4 to 16.3 units and the stance stays
+flat — check a reference's own numbers before assuming the published set.
+
+Building one as plates:
+
+- **Layers, not clearance, keep a leg from hitting itself.** Put the two
+  triangles in the centre plane, the j, c and f pairs one layer out each side,
+  and the k pair outermost. Plates in different layers are separated along the
+  axle and cannot meet at any crank angle; only same-layer parts need an
+  in-plane gap over the full turn (the tightest, k sweeping past the fixed
+  pivot, is about 0.2 of a leg's A–D length). That is a band argument, so a
+  motion sweep only needs one leg's same-layer parts, not every leg.
+- **The fixed pivots of one group lie on one line**, so a straight axle
+  through every A carries that group, and spacer tubes between the legs set
+  each leg's station. The other group's axle crosses every slab of this group
+  far from any of its plates.
+- **Mirror groups share crank pins.** The opposite group is the same leg turned
+  180° about the vertical; its crank sees 180° minus the world angle. Placing
+  each mirrored leg beside the leg of the same phase lets one crank pin carry
+  both, and a 45° step between stations makes a crankshaft of identical webs,
+  each with two pin seats 45° apart, so a web fits only in phase.
+- **A long crankshaft between two end frames is carried only at its ends**:
+  printed pins in series bend; steel pins glued into printed webs do not.
 
 Straight-line and toggle linkages (Watt, Chebyshev, Hoecken,
 Peaucellier–Lipkin, over-centre latches): [[straight-line-and-toggle-linkages]].

@@ -614,6 +614,27 @@ def _parse_likeness_ref(raw: str) -> tuple[str, str, str | None]:
     return label, path, camera
 
 
+def _parse_likeness_entry(raw: str) -> tuple[str, str]:
+    """`LABEL=ENTRY` -> (label, entry path): the entry a reference is scored
+    against when it shows one part rather than the combined assembly."""
+    if "=" not in raw:
+        raise argparse.ArgumentTypeError(
+            "likeness entry must be LABEL=ENTRY, for example "
+            "lid=part_lid.step.py"
+        )
+    label, entry = (part.strip() for part in raw.split("=", 1))
+    if not SAFE_LABEL.fullmatch(label):
+        raise argparse.ArgumentTypeError(
+            "likeness label must start with a letter or digit and contain only "
+            "letters, digits, dot, underscore, or hyphen"
+        )
+    if not entry.endswith(".step.py"):
+        raise argparse.ArgumentTypeError(
+            f"likeness entry must be a *.step.py entry generator: {raw!r}"
+        )
+    return label, entry
+
+
 def _documented_assembly_claims(project: Path) -> list[str]:
     """Assembly-path claims that make a missing motion manifest observable.
 
@@ -2020,6 +2041,7 @@ def _final(
     search_fov: str,
     skip_gen: bool = False,
     likeness_cameras: dict[str, str | None] | None = None,
+    likeness_entries: dict[str, Path] | None = None,
 ) -> int:
     entries = [assembly, *parts]
     entry_args = [_path_arg(path, runner.cwd) for path in entries]
@@ -2125,37 +2147,47 @@ def _final(
 
     if image_derived:
         snap_dir = project / "snap"
-        render_args: list[str | Path] = [
-            sys.executable,
-            IMAGE_SCRIPTS_DIR / "render_views.py",
-            _path_arg(assembly, runner.cwd),
-            "--view", "front",
-            "--view", "right",
-            "--view", "top",
-            "--view", "iso",
-        ]
+        # One render per entry that references are scored against: the combined
+        # assembly always (it carries the orthogonal review views), then every
+        # part entry a --likeness-entry names, each into its own folder so its
+        # poses.json survives the next render.
+        groups: dict[Path, list[tuple[str, Path]]] = {assembly: []}
         for label, reference in likeness_refs:
-            render_args.extend(
-                ["--match", _path_arg(reference, runner.cwd), "--label", f"match-{label}"]
-            )
-            camera = (likeness_cameras or {}).get(label)
-            if camera:
-                # the = form: argparse reads a leading "-" as a new option
-                render_args.append(f"--camera={camera}")
-        render_args.extend(
-            [
-                "--search-fov", search_fov,
-                # check_likeness is the acceptance gate below.  Zero here lets
-                # the renderer finish writing every view even when likeness is
-                # poor; a non-zero exit still catches source-vs-STEP drift.
-                "--min", "0",
-                "--compare-step",
-                "--json",
-                "-o", _path_arg(snap_dir, runner.cwd),
+            target = (likeness_entries or {}).get(label, assembly)
+            groups.setdefault(target, []).append((label, reference))
+        match_dirs: dict[str, Path] = {}
+        for target, refs in groups.items():
+            out_dir = snap_dir if target == assembly else snap_dir / target.name.removesuffix(".step.py")
+            render_args: list[str | Path] = [
+                sys.executable,
+                IMAGE_SCRIPTS_DIR / "render_views.py",
+                _path_arg(target, runner.cwd),
             ]
-        )
-        if not _run_or_stop(runner, render_args):
-            return 1
+            if target == assembly:
+                render_args += ["--view", "front", "--view", "right", "--view", "top", "--view", "iso"]
+            for label, reference in refs:
+                render_args.extend(
+                    ["--match", _path_arg(reference, runner.cwd), "--label", f"match-{label}"]
+                )
+                camera = (likeness_cameras or {}).get(label)
+                if camera:
+                    # the = form: argparse reads a leading "-" as a new option
+                    render_args.append(f"--camera={camera}")
+                match_dirs[label] = out_dir
+            render_args.extend(
+                [
+                    "--search-fov", search_fov,
+                    # check_likeness is the acceptance gate below.  Zero here lets
+                    # the renderer finish writing every view even when likeness is
+                    # poor; a non-zero exit still catches source-vs-STEP drift.
+                    "--min", "0",
+                    "--compare-step",
+                    "--json",
+                    "-o", _path_arg(out_dir, runner.cwd),
+                ]
+            )
+            if not _run_or_stop(runner, render_args):
+                return 1
 
         likeness_args: list[str | Path] = [
             sys.executable,
@@ -2164,7 +2196,7 @@ def _final(
         for label, reference in likeness_refs:
             likeness_args.extend(
                 [
-                    "--pair", _path_arg(snap_dir / f"match-{label}.png", runner.cwd),
+                    "--pair", _path_arg(match_dirs.get(label, snap_dir) / f"match-{label}.png", runner.cwd),
                     _path_arg(reference, runner.cwd),
                     "--label", label,
                 ]
@@ -2616,6 +2648,52 @@ def self_check() -> int:
                     "--likeness-ref requires --image-derived")
 
             _sc_project(root)
+            fixture("a likeness entry without --image-derived is refused",
+                    ["proj", "--likeness-entry", "hero=part_a.step.py"],
+                    "--likeness-entry requires --image-derived")
+
+            _sc_project(root, {"part_a.step.py": "PRINTABLE = True\n\n\ndef gen_step():\n    return None\n"})
+            fixture("a likeness entry for a label no reference has is refused",
+                    ["proj", "--image-derived", "--unpowered",
+                     "--likeness-ref", "hero=ref/hero.png@-60,20",
+                     "--likeness-entry", "side=part_a.step.py"],
+                    "names no --likeness-ref label")
+
+            _sc_project(root, {"part_a.step.py": "PRINTABLE = True\n\n\ndef gen_step():\n    return None\n"})
+            fixture("a likeness entry that is not a project entry is refused",
+                    ["proj", "--image-derived", "--unpowered",
+                     "--likeness-ref", "hero=ref/hero.png@-60,20",
+                     "--likeness-entry", "hero=part_b.step.py"],
+                    "is not an entry of this project")
+
+            # a reference routed to a part is rendered from that part, into
+            # its own folder, and scored from there
+            _sc_project(root, {"part_a.step.py": "PRINTABLE = True\n\n\ndef gen_step():\n    return None\n"})
+            import contextlib as _route_ctx
+            import io as _route_io
+            route_out = _route_io.StringIO()
+            with _route_ctx.redirect_stdout(route_out), _route_ctx.redirect_stderr(_route_io.StringIO()):
+                try:
+                    main(["proj", "--dry-run", "--image-derived", "--unpowered",
+                          "--likeness-ref", "hero=ref/hero.png@-60,20",
+                          "--likeness-entry", "hero=part_a.step.py"])
+                except SystemExit:
+                    pass
+            route_lines = route_out.getvalue().splitlines()
+            part_render = next((line for line in route_lines if "render_views.py" in line
+                                and "part_a.step.py" in line), "")
+            asm_render = next((line for line in route_lines if "render_views.py" in line
+                               and "widget.step.py" in line), "")
+            score = next((line for line in route_lines if "check_likeness.py" in line), "")
+            hit = ("match-hero" in part_render and "match-hero" not in asm_render
+                   and "--view" in asm_render and "snap/part_a/match-hero.png" in score)
+            print(f"{'ok  ' if hit else 'FAIL'} a reference routed to a part entry is "
+                  "rendered and scored from that part")
+            if not hit:
+                print(f"       part={part_render!r}\n       asm={asm_render!r}\n       score={score!r}")
+            ok &= hit
+
+            _sc_project(root)
             fixture("a regression waiver without --image-derived is refused",
                     ["proj", "--likeness-accept-regression", "fixture"],
                     "requires --image-derived")
@@ -2956,6 +3034,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="reference image inside the project and the camera it was taken from "
              "(degrees; TOL default 30); repeat for every usable viewpoint",
     )
+    parser.add_argument(
+        "--likeness-entry",
+        action="append",
+        type=_parse_likeness_entry,
+        default=[],
+        metavar="LABEL=ENTRY",
+        help="score the --likeness-ref of that label against this project entry "
+             "instead of the combined assembly: a reference that shows one part "
+             "(one piece of a set, one tool of a kit) is compared with that part",
+    )
     parser.add_argument("--likeness-min", type=float, default=0.90, help="minimum IoU for every likeness pair; final delivery cannot set it below 0.90")
     parser.add_argument("--likeness-accept-mismatch", metavar="REASON", help="accept a raw sub-0.90 likeness failure after the same view/reference has stalled out; preserves the failing score and records the Workshop Manager's reason, which the run reports when it ends")
     parser.add_argument("--likeness-accept-regression", metavar="REASON", help="record why a final score below the best prior run is accepted; passed through to check_likeness")
@@ -3073,6 +3161,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--unpowered is only needed with --image-derived")
     if args.likeness_ref and not args.image_derived:
         parser.error("--likeness-ref requires --image-derived")
+    if args.likeness_entry and not args.image_derived:
+        parser.error("--likeness-entry requires --image-derived")
     if args.likeness_accept_mismatch and not args.image_derived:
         parser.error("--likeness-accept-mismatch requires --image-derived")
     if args.likeness_accept_regression and not args.image_derived:
@@ -3119,6 +3209,23 @@ def main(argv: Sequence[str] | None = None) -> int:
     labels = [label for label, _reference in likeness_refs]
     if len(labels) != len(set(labels)):
         refuse("--likeness-ref labels must be unique within one final run")
+
+    # A reference that shows one part is scored against that part's entry;
+    # every other reference keeps the combined assembly.
+    likeness_entries: dict[str, Path] = {}
+    known_entries = {path.resolve(): path for path in (assembly, *parts)}
+    for label, raw_entry in args.likeness_entry:
+        if label not in labels:
+            refuse(f"--likeness-entry {label}= names no --likeness-ref label")
+        if label in likeness_entries:
+            refuse(f"--likeness-entry gives {label} more than one entry")
+        try:
+            entry = _resolve_inside_project(raw_entry, project, cwd)
+        except (OSError, ValueError) as exc:
+            refuse(str(exc))
+        if entry is None or entry.resolve() not in known_entries:
+            refuse(f"--likeness-entry {label}={raw_entry} is not an entry of this project")
+        likeness_entries[label] = known_entries[entry.resolve()]
 
     if args.print_gates and not printables:
         refuse(
@@ -3373,6 +3480,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     likeness_accept_regression=args.likeness_accept_regression,
                     search_fov=str(args.search_fov),
                     likeness_cameras={label: camera for label, _path, camera in args.likeness_ref},
+                    likeness_entries=likeness_entries,
                     skip_gen=True,
                 )
     elapsed = time.perf_counter() - workflow_started

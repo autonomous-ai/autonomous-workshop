@@ -1,7 +1,7 @@
 ---
 title: Designing a product to look good
 tags: [aesthetics, industrial-design, form, proportion, silhouette, hierarchy, cmf, surface]
-aliases: [beautiful product, good looking design, form language, design language, visual hierarchy, primary secondary tertiary forms, proportion, visual weight, stance, silhouette test, design direction, mood board, precedent, cmf, colour material finish, surface continuity, g2 continuity, highlight, design critique, cad default look]
+aliases: [splendid, ornate, carousel horse, harness ornament, jewels, stylised wing, feathers, mane, tail plume, beautiful product, good looking design, form language, design language, visual hierarchy, primary secondary tertiary forms, proportion, visual weight, stance, silhouette test, design direction, mood board, precedent, cmf, colour material finish, surface continuity, g2 continuity, highlight, design critique, cad default look]
 sources:
   - https://www.core77.com/posts/12752/a-periodic-table-of-form-the-secret-language-of-surface-and-meaning-in-product-design-by-gray-holland-12752 (G0 / G1 / G2 surfaces and what each reads as)
   - http://www.neilblevins.com/art_lessons/composition_primary_secondary_and_tertiary_shapes/composition_primary_secondary_and_tertiary_shapes.htm (primary, secondary and tertiary shapes; 70/30 rather than 50/50 divisions)
@@ -10,6 +10,8 @@ sources:
   - https://www.designcouncil.org.uk/resources/framework-for-innovation/ (Double Diamond: diverge then converge, twice)
   - https://resources.rand3d.com/insights-from-within/catia-v5-surface-continuity-explained (curvature continuity is what polished surfaces need)
   - https://formlabs.com/blog/what-is-cmf-color-material-finish-opportunities-for-3d-printing/ (CMF decides whether a product feels cheap or premium)
+  - https://www.kidsamusementrides.com/the-carousel-horse-a-complete-guide-to-history-design-amusement-ride-magic/ (carousel figures: jumpers, the carved romance side, jewels, armour and drapery)
+  - https://carouselworkshop.com/illion-s-jumper-carousel-horse-roached-mane-inner-row.html (a carved jumper: harness, rosettes, deeply carved mane)
 related: [form-and-finish-heuristics, fdm-surface-finish, colour-matching, fdm-multi-material-design, stability-and-tipping, handheld-ergonomics, printed-part-count, fillet-chamfer-pitfalls]
 updated: 2026-09-29
 ---
@@ -141,6 +143,55 @@ CMF decides whether an object reads cheap or premium as much as its shape does.
   faces people look at (the A-surfaces) on top or side faces, never on
   support-contact faces, and give every round visible part a designed seam line.
 
+## Stylising feathers, manes and tails
+
+A stylised figure's plates are where its character is won or lost, and the
+first construction is usually wrong in a recognisable way:
+
+- **Rows on the lead feathers' own lines.** Build each covering row of a wing
+  on the primaries themselves — same base, same direction, cut short at a
+  fraction of each primary — so the row ends form parallel scallops. Feathers
+  clustered in their own directions read as a gloved hand, most of all from
+  above.
+- **Closed, then grooved.** Feathers that taper to thin tips with open gaps
+  read as a comb. Keep the tips wide enough that neighbours touch, and part
+  them with a groove at least two lines wide.
+- **Strands run together.** Tail and mane strands fanning from one root read
+  as fingers; run them parallel and let them part only at the tips.
+- **One lean.** Feathers, strands and fins lean back at the direction's one
+  repeated angle.
+- **A bone along the leading edge.** A flat wing with no raised leading
+  element reads as a sail.
+
+## Making a figure splendid
+
+A figure can pass every rule above and still look plain: a clean body in one
+colour. "More splendid" is almost never a different subject; it is more
+craft on the same one. The carousel figure is the proven precedent — a calm,
+muscular body carrying a harness of carved ornament, painted in a few strong
+colours and jewelled where the straps cross:
+
+- **Ornament follows a structure the subject already has.** On a horse that
+  is the harness: bridle, breast collar, saddle cloth with a braided border,
+  rosettes where straps meet, a medallion on the chest. Ornament that follows
+  no structure reads as stickers.
+- **Carve it proud of the body**, a strap about 1 mm, a border or rosette
+  more, so it catches light and casts an edge; painted-flat ornament on a
+  print reads as a decal.
+- **Hair and feathers in the metal colour**, parted into locks and strands,
+  are ornament too, and cost nothing in a two-half print.
+- **A restrained palette with one metal**: a pale dominant body (bone white),
+  a gold for everything carved and every lock, one deep accent for cloth and
+  jewels (dark red), and a dark ground for the base. Gold on white on dark
+  reads rich; five equal colours read as a toy box.
+- **Detail at the head and the saddle, rest on the flank and haunch.** The
+  areas-of-rest rule still holds: splendour concentrated reads as luxury,
+  spread evenly it reads as noise.
+- **Anatomy is part of the splendour.** Rounded shoulders and haunches,
+  knobby knees and fetlocks, slim cannons, a carved eye with a lid line, ears
+  a third of the head's length. A bare, correct body in a harness looks
+  finished; a tube body in the same harness looks dressed up.
+
 ## Failure classes
 
 | Failure | What it looks like | Rule that prevents it |
@@ -153,6 +204,8 @@ CMF decides whether an object reads cheap or premium as much as its shape does.
 | Blob silhouette | the black-filled view does not say what it is | a defining secondary form in the main views |
 | Timid radius | fillets too small to read at viewing distance | radius sized to the object and the finish |
 | Ugly bed face | support scars or the seam on the side people see | A-surfaces up or sideways; designed seam line |
+| Glove wing, finger tail | feathers or strands fanning each their own way from one root | rows on the lead feathers' lines; strands parallel |
+| Plain figure | a correct body in one colour, judged ugly | a carved harness in a metal colour, jewels at the crossings, one accent |
 
 No gate catches any of these. They are caught by a design review of shaded
 renders and silhouettes against the direction, done as rounds with the finding
