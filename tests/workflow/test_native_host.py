@@ -132,6 +132,8 @@ from workshop.workflow.effort import (
     SPARK_ECONOMICS_V2_CAPABILITY_PATH,
     SPARK_ECONOMICS_V3_CAPABILITY_PATH,
     SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
+    CONTEXT_COMPACTION_CAPABILITY_PATH,
+    WIDE_AUTO_COMPACT_TOKEN_LIMIT,
     SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
 )
 
@@ -1000,6 +1002,52 @@ class NativeHostTest(unittest.TestCase):
             auto_compact_token_limit=SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
             timeout_seconds=SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
         )
+
+    def test_the_compaction_marker_leaves_codex_ceilings_as_frozen(self):
+        """256k sits at the edge of Astra's window (ADR 0051); only Claude widens."""
+        for capability, frozen in (
+            ("v4", SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT),
+            ("deep-v14", DEEP_AUTO_COMPACT_TOKEN_LIMIT),
+        ):
+            with self.subTest(capability=capability):
+                checkpoint = self._launcher_checkpoint(
+                    effort="forge" if capability.startswith("deep") else "spark",
+                    economics_capability=capability,
+                )
+                checkpoint.input_sha256s[CONTEXT_COMPACTION_CAPABILITY_PATH] = "e" * 64
+                with mock.patch(
+                    "workshop.workflow.native_run.CodexNativeSessionLauncher"
+                ) as launcher_type:
+                    _native_launcher(checkpoint)
+                self.assertEqual(
+                    launcher_type.call_args.kwargs["auto_compact_token_limit"], frozen
+                )
+
+    def test_a_marked_claude_run_compacts_in_a_256k_window(self):
+        for marked in (False, True):
+            with self.subTest(marked=marked):
+                checkpoint = self._launcher_checkpoint(
+                    effort="spark",
+                    economics_capability="v4",
+                    manager_id="claude",
+                    manager_model="claude-opus-5",
+                    manager_reasoning_effort="medium",
+                )
+                if marked:
+                    checkpoint.input_sha256s[CONTEXT_COMPACTION_CAPABILITY_PATH] = (
+                        "e" * 64
+                    )
+                with mock.patch(
+                    "workshop.workflow.native_run.manager_launcher"
+                ) as registry:
+                    _native_launcher(checkpoint)
+                kwargs = registry.call_args.kwargs
+                if marked:
+                    self.assertEqual(
+                        kwargs["autocompact_tokens"], WIDE_AUTO_COMPACT_TOKEN_LIMIT
+                    )
+                else:
+                    self.assertNotIn("autocompact_tokens", kwargs)
 
     def test_v4_spark_keeps_the_twenty_minute_budgeted_turn_boundary(self):
         for capability in ("v3", "v4"):

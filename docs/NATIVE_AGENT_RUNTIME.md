@@ -1069,6 +1069,13 @@ that streams no event cannot be stopped midway, so a turn may overshoot the
 cap by its last requests. Claude runs created before ADR 0078 keep their
 unbudgeted policy on resume.
 
+A Claude Code run that freezes `context-compaction-v1.md` passes
+`--autocompact 256000`, so the session compacts in a 256k window instead of
+growing toward the model's 1M context; the window is bound in the session
+checkpoint and cannot change on resume. Codex keeps its profile's ceiling,
+because 256k sits at the edge of Astra's window (ADR 0051). See
+[ADR 0079](adr/0079-claude-runs-compact-in-a-256k-window.md).
+
 ## Product budgets and legacy timeouts
 
 New Codex and Claude Code runs freeze `token-budget-v1.md`: `--max-tokens` defaults to

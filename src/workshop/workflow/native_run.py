@@ -274,6 +274,8 @@ from workshop.workflow.effort import (
     SPARK_ECONOMICS_V3_CAPABILITY_PATH,
     SPARK_NATIVE_TURN_TIMEOUT_SECONDS,
     SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT,
+    CONTEXT_COMPACTION_CAPABILITY_PATH,
+    WIDE_AUTO_COMPACT_TOKEN_LIMIT,
     workshop_effort,
 )
 from workshop.workflow.proposals import (
@@ -5757,6 +5759,11 @@ def _native_launcher(
         launcher_kwargs["model"] = checkpoint.manager_model
     if checkpoint.manager_reasoning_effort is not None:
         launcher_kwargs["reasoning_effort"] = checkpoint.manager_reasoning_effort
+    if (
+        checkpoint.manager_id == CLAUDE_MANAGER_ID
+        and CONTEXT_COMPACTION_CAPABILITY_PATH in checkpoint.input_sha256s
+    ):
+        launcher_kwargs["autocompact_tokens"] = WIDE_AUTO_COMPACT_TOKEN_LIMIT
     override = _turn_override(checkpoint)
     if override is not _NO_TURN_OVERRIDE:
         launcher_kwargs["timeout_seconds"] = override

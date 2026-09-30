@@ -83,6 +83,14 @@ SPARK_AUTO_COMPACT_TOKEN_LIMIT = 64_000
 # lowered by 274ac4d8), so Spark never exceeds the deeper workflow.
 SPARK_V4_AUTO_COMPACT_TOKEN_LIMIT = DEEP_AUTO_COMPACT_TOKEN_LIMIT = 192_000
 SPARK_NATIVE_TURN_TIMEOUT_SECONDS = 60 * 60
+# A Claude Code run that materializes this marker compacts in a
+# 256,000-token window instead of the model's whole context (ADR 0079). Codex
+# keeps the ceilings above: 256,000 sits at the edge of Astra's window, which
+# ADR 0051 lowered it from. Runs frozen without the marker keep their policy.
+CONTEXT_COMPACTION_CAPABILITY_PATH = (
+    ".agents/skills/autonomous-workshop/references/context-compaction-v1.md"
+)
+WIDE_AUTO_COMPACT_TOKEN_LIMIT = 256_000
 DEEP_V1_AUTO_COMPACT_TOKEN_LIMIT = 32_000
 DEEP_LEGACY_AUTO_COMPACT_TOKEN_LIMIT = 24_000
 DEEP_MAKE_AUTO_COMPACT_TOKEN_LIMIT = 16_000
@@ -201,6 +209,7 @@ def workshop_effort(value: Any) -> WorkshopEffort:
 
 
 __all__ = [
+    "CONTEXT_COMPACTION_CAPABILITY_PATH",
     "DEFAULT_WORKSHOP_EFFORT",
     "DEEP_AUTO_COMPACT_TOKEN_LIMIT",
     "DEEP_ECONOMICS_CAPABILITY_PATH",
@@ -235,6 +244,7 @@ __all__ = [
     "DEEP_V13_INITIAL_FINAL_MAKE_TIMEOUT_SECONDS",
     "EFFORT_ROUTE_CAPABILITY_PATH",
     "SPARK_AUTO_COMPACT_TOKEN_LIMIT",
+    "WIDE_AUTO_COMPACT_TOKEN_LIMIT",
     "SPARK_ECONOMICS_CAPABILITY_PATH",
     "SPARK_ECONOMICS_V1_CAPABILITY_PATH",
     "SPARK_ECONOMICS_V2_CAPABILITY_PATH",

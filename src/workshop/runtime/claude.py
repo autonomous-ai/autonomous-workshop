@@ -40,6 +40,9 @@ from workshop.runtime.managers import (
 
 
 MINIMUM_CLAUDE_NATIVE_RUNTIME_VERSION = (2, 0, 0)
+# The oldest release verified to accept --autocompact and
+# --forward-subagent-text; a budgeted or windowed turn needs both.
+MINIMUM_CLAUDE_METERED_RUNTIME_VERSION = (2, 1, 285)
 CLAUDE_SESSION_CHECKPOINT_KIND = "autonomous-workshop-native-claude-session"
 CLAUDE_SESSION_CHECKPOINT_NAME = "claude-session.json"
 CLAUDE_PERMISSION_MODE = "bypassPermissions"
@@ -48,6 +51,9 @@ MAX_CLAUDE_STDERR_BYTES = 256 * 1024
 MAX_CLAUDE_EVENT_BYTES = 1 * 1024 * 1024
 MAX_CLAUDE_PROMPT_BYTES = 1 * 1024 * 1024
 MAX_CLAUDE_SESSION_CHECKPOINT_BYTES = 32 * 1024
+# Claude Code accepts an automatic-compaction window from 100k to 1M tokens.
+MIN_CLAUDE_AUTOCOMPACT_TOKENS = 100_000
+MAX_CLAUDE_AUTOCOMPACT_TOKENS = 1_000_000
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _SESSION_ID = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
 _MODEL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
@@ -108,12 +114,14 @@ class ClaudeRecoverableInvocationError(NativeManagerRecoverableError):
     """A typed Claude timeout that may resume the same session."""
 
 
-def claude_supports_native_workshop(version: str) -> bool:
+def _parsed_version(version: str) -> Optional[tuple[int, ...]]:
     match = re.search(r"(\d+)\.(\d+)\.(\d+)", version or "")
-    if match is None:
-        return False
-    parsed = tuple(int(part) for part in match.groups())
-    return parsed >= MINIMUM_CLAUDE_NATIVE_RUNTIME_VERSION
+    return None if match is None else tuple(int(part) for part in match.groups())
+
+
+def claude_supports_native_workshop(version: str) -> bool:
+    parsed = _parsed_version(version)
+    return parsed is not None and parsed >= MINIMUM_CLAUDE_NATIVE_RUNTIME_VERSION
 
 
 def claude_subprocess_environment(
@@ -453,6 +461,7 @@ class ClaudeNativeSessionLauncher:
         model: Optional[str] = None,
         reasoning_effort: Optional[str] = None,
         timeout_seconds: Optional[int] = DEFAULT_CLAUDE_TIMEOUT_SECONDS,
+        autocompact_tokens: Optional[int] = None,
         popen_factory: Any = subprocess.Popen,
         version_runner: Any = subprocess.run,
         cli_version: Optional[str] = None,
@@ -477,9 +486,19 @@ class ClaudeNativeSessionLauncher:
                 "Claude timeout_seconds must be from 1 to %d or None"
                 % MAX_NATIVE_TURN_SECONDS
             )
+        if autocompact_tokens is not None and (
+            type(autocompact_tokens) is not int
+            or not MIN_CLAUDE_AUTOCOMPACT_TOKENS
+            <= autocompact_tokens
+            <= MAX_CLAUDE_AUTOCOMPACT_TOKENS
+        ):
+            raise ContractError(
+                "Claude autocompact window must be from 100,000 to 1,000,000 tokens"
+            )
         self.binary = (
             binary or os.environ.get("WORKSHOP_CLAUDE_BIN") or shutil.which("claude")
         )
+        self.autocompact_tokens = autocompact_tokens
         self.model = model
         self.reasoning_effort = reasoning_effort
         self.timeout_seconds = timeout_seconds
@@ -538,6 +557,8 @@ class ClaudeNativeSessionLauncher:
         path = Path(host_state_root) / self.session_checkpoint_name
         if path.exists() or path.is_symlink():
             raise ContractError("Claude native session checkpoint already exists")
+        # Refuse an unusable command before any session identity is written.
+        command = self._command(Path(run_root), prompt, session_id=None)
         digest = hashlib.sha256(_canonical_json(identity)).hexdigest()
         _write_private_checkpoint(path, {**identity, "checkpoint_sha256": digest})
         bound = {"session_id": session_id, "digest": digest}
@@ -560,7 +581,7 @@ class ClaudeNativeSessionLauncher:
             bound["digest"] = fresh
 
         unused_session, token_usage = self._stream(
-            command=self._command(Path(run_root), prompt, session_id=None),
+            command=command,
             run_root=Path(run_root),
             activity_observer=activity_observer,
             finalization_marker=finalization_marker,
@@ -594,12 +615,17 @@ class ClaudeNativeSessionLauncher:
             raise ContractError("Claude native session checkpoint binding is invalid")
         schema_version = payload.get("schema_version")
         if schema_version == 1:
-            if self.model is not None or self.reasoning_effort is not None:
+            if (
+                self.model is not None
+                or self.reasoning_effort is not None
+                or self.autocompact_tokens is not None
+            ):
                 raise ContractError("Claude native session runtime binding is invalid")
         elif schema_version == 2:
             if (
                 payload.get("model") != self.model
                 or payload.get("reasoning_effort") != self.reasoning_effort
+                or payload.get("autocompact_tokens") != self.autocompact_tokens
             ):
                 raise ContractError("Claude native session runtime binding is invalid")
         else:
@@ -634,7 +660,11 @@ class ClaudeNativeSessionLauncher:
         _require_sha256(wish_sha256, "Claude Wish sha256")
         _require_sha256(constitution_sha256, "Claude constitution sha256")
         identity = {
-            "schema_version": 2 if self.model is not None else 1,
+            "schema_version": (
+                2
+                if self.model is not None or self.autocompact_tokens is not None
+                else 1
+            ),
             "kind": CLAUDE_SESSION_CHECKPOINT_KIND,
             "product_id": product_id,
             "wish_sha256": wish_sha256,
@@ -647,6 +677,9 @@ class ClaudeNativeSessionLauncher:
         if self.model is not None:
             identity["model"] = self.model
             identity["reasoning_effort"] = self.reasoning_effort
+        if self.autocompact_tokens is not None:
+            # The window is frozen with the session, like the model.
+            identity["autocompact_tokens"] = self.autocompact_tokens
         return identity
 
     def _command(
@@ -659,6 +692,13 @@ class ClaudeNativeSessionLauncher:
         prompt = _validated_prompt(prompt)
         if not self.binary:
             raise ClaudeInvocationError("Claude Code is not installed or on PATH")
+        if self.autocompact_tokens is not None or self.token_budget_observer is not None:
+            parsed = _parsed_version(self.cli_version)
+            if parsed is None or parsed < MINIMUM_CLAUDE_METERED_RUNTIME_VERSION:
+                raise ClaudeInvocationError(
+                    "a budgeted or windowed Workshop turn requires Claude Code %s or newer"
+                    % ".".join(str(part) for part in MINIMUM_CLAUDE_METERED_RUNTIME_VERSION)
+                )
         command = [
             self.binary,
             "--print",
@@ -672,6 +712,8 @@ class ClaudeNativeSessionLauncher:
             command.extend(
                 ("--model", self.model, "--effort", self.reasoning_effort)
             )
+        if self.autocompact_tokens is not None:
+            command.extend(("--autocompact", str(self.autocompact_tokens)))
         if self.token_budget_observer is not None:
             # Subagent requests reach the stream, and so the budget, only
             # when forwarded.

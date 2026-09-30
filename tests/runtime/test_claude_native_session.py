@@ -387,6 +387,92 @@ class ClaudeNativeSessionTest(unittest.TestCase):
             )
         self.assertEqual(len(commands), 2)
 
+    def test_the_compaction_window_reaches_every_turn_and_is_frozen(self):
+        commands = []
+
+        def popen(command, **kwargs):
+            del kwargs
+            commands.append(command)
+            return _FakeProcess([_init_line()])
+
+        def launcher(window):
+            return ClaudeNativeSessionLauncher(
+                binary="/bin/claude",
+                cli_version="2.1.285",
+                model="claude-opus-5",
+                reasoning_effort="medium",
+                autocompact_tokens=window,
+                popen_factory=popen,
+                uuid_factory=lambda: "initial-session-id",
+            )
+
+        frozen = launcher(256_000)
+        self._turn(frozen, "start")
+        self._turn(frozen, "resume")
+        for command in commands:
+            self.assertEqual(
+                command[command.index("--autocompact") + 1], "256000"
+            )
+        payload = json.loads(
+            (self.host_state / "claude-session.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(payload["autocompact_tokens"], 256_000)
+        for window in (None, 300_000):
+            with self.subTest(window=window):
+                with self.assertRaisesRegex(ContractError, "runtime binding"):
+                    self._turn(launcher(window), "resume")
+        self.assertEqual(len(commands), 2)
+
+    def test_a_session_without_a_window_passes_none_and_refuses_one(self):
+        commands = []
+
+        def popen(command, **kwargs):
+            del kwargs
+            commands.append(command)
+            return _FakeProcess([_init_line()])
+
+        plain = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.1.285",
+            popen_factory=popen,
+            uuid_factory=lambda: "initial-session-id",
+        )
+        self._turn(plain, "start")
+        self.assertNotIn("--autocompact", commands[0])
+        widened = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.1.285",
+            autocompact_tokens=256_000,
+            popen_factory=popen,
+        )
+        with self.assertRaisesRegex(ContractError, "runtime binding"):
+            self._turn(widened, "resume")
+
+    def test_an_older_cli_refuses_a_metered_turn_up_front(self):
+        for options in ({"autocompact_tokens": 256_000}, {}):
+            with self.subTest(options=options):
+                launcher = ClaudeNativeSessionLauncher(
+                    binary="/bin/claude",
+                    cli_version="2.1.284",
+                    popen_factory=lambda command, **kwargs: self.fail("started"),
+                    **options,
+                )
+                if not options:
+                    launcher.token_budget_observer = lambda counters, *, final: None
+                with self.assertRaisesRegex(ClaudeInvocationError, "2.1.285 or newer"):
+                    self._turn(launcher, "start")
+                self.assertFalse((self.host_state / "claude-session.json").exists())
+
+    def test_an_out_of_range_compaction_window_is_refused(self):
+        for window in (99_999, 1_000_001, 256_000.0, True):
+            with self.subTest(window=window):
+                with self.assertRaisesRegex(ContractError, "autocompact window"):
+                    ClaudeNativeSessionLauncher(
+                        binary="/bin/claude",
+                        cli_version="2.1.285",
+                        autocompact_tokens=window,
+                    )
+
     def test_every_supported_effort_reaches_claude_command(self):
         observed = 0
         for effort in ("low", "medium", "high", "xhigh"):
