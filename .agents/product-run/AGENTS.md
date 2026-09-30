@@ -154,7 +154,11 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   second identity tree, or invent an undeclared specialist. The same directory
   may also hold two fixed Make roles that are not Inventors:
   `component-worker` and `component-reviewer`. Use them only as
-  `references/make.md` describes (ADR 0077). When `MANAGER.json` names a
+  `references/make.md` describes (ADR 0077, ADR 0080). In Spark Make a
+  Component Worker authors and repairs each Component, and only a Component
+  Worker runs a Component's `make_round` rounds: a Workshop hook refuses them
+  from you, an Inventor or any other agent. You write only the shared
+  `params.py` and `features/` files and run assembly. When `MANAGER.json` names a
   different agent directory, the host also writes each of these agents there
   in that runtime's own format, from the same bytes. Spawn them from that
   directory by the same name; `.codex/agents/` stays the identity binding.
@@ -215,7 +219,9 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   failed or is unavailable, explicitly reconcile its saved work and reassign
   the unfinished design before proceeding; do not treat failure as completion.
   An already reviewed, sealed Invent contract satisfies this dependency for
-  Forge/Quest Make without repeating Invent.
+  Forge/Quest Make without repeating Invent. In Spark Make a delegated
+  Inventor design is optional notes for the Component Workers; an Inventor
+  never authors a Component or runs `make_round`.
 
 ## Product work
 

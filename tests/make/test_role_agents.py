@@ -41,15 +41,19 @@ class MakeRoleAgentFilesTest(unittest.TestCase):
         self.assertNotIn("model", worker)
         self.assertNotIn("model", reviewer)
 
-    def test_worker_is_confined_to_its_component_and_never_views_images(self):
+    def test_worker_authors_its_component_and_never_views_rendered_rounds(self):
         worker = tomllib.loads(
             make_role_agent_files()[COMPONENT_WORKER].decode("utf-8")
         )["developer_instructions"]
         for phrase in (
             "part_<id>.step.py",
+            "Write the first",
+            "own sealed `geometry:<id>` reference",
             "--component",
-            "shared helper",
-            "Do not view images",
+            "--worker-nonce",
+            "shared file",
+            "Do not view the rendered round images",
+            "cannot both hold",
             "yield_time_ms: 300000",
             "10 lines",
             "Do not spawn",

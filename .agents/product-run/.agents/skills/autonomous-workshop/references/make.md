@@ -145,6 +145,16 @@ are separate. Frozen older runs retain their materialized rules and tools.
    only: every distinct physical component, including the sole component of a
    one-piece object, gets its own `part_<role>.step.py`. Do not author the
    combined entry yet or hide component construction inside the assembly file.
+
+   In Spark you author no Component (ADR 0080). Settle the component list and
+   write only the shared files: `params.py` and anything under `features/`.
+   Fix every interface there before you spawn a worker: each joint's peg,
+   socket or collar dimensions, its position on both mating Components, and
+   each Component's print stance, taken from the Design Contract. A Component
+   Worker then writes that Component's first `part_<id>.step.py` against
+   those shared values. Spawn no Inventor or other agent to author a
+   Component; an Inventor's optional design notes may inform the worker's
+   brief, but an Inventor never runs `make_round`.
 2. For Spark, review and repair every component separately before assembly.
    For each `part_<role>.step.py`, run:
 
@@ -157,16 +167,26 @@ are separate. Frozen older runs retain their materialized rules and tools.
    an independent reviewer agrees it looks like its reference (ADR 0076). Do
    not use `--record-visual` for a component.
 
-   Delegate each component's loop (ADR 0077). Once the component list is
-   settled, spawn one worker per Component, in parallel, as a
-   `component-worker` agent. Give it only: the component id and its
-   `part_<id>.step.py`; its sealed `geometry:<id>` reference and declared
-   camera; only that Component's Design Contract rows; the nozzle; and the
-   shape-repair limit (5). The worker runs the round above until build and
-   print pass, then reports in 10 lines or fewer. Neither you nor a worker views
-   a component's images. Only its reviewer does, and the worker acts on the
-   reviewer's text. If the runtime refuses a spawn at its thread limit, spawn
-   the next worker when one finishes.
+   Only a `component-worker` runs a component round (ADR 0080). A Workshop
+   hook refuses the command above from you or any other agent, and passes
+   each worker call a one-time nonce that the round records. The host refuses
+   Make output holding a component round without a nonce it issued to a
+   worker for that Component, so do not run one another way (for example
+   through `python -c`); it will only have to be rerun.
+
+   Delegate each Component's authoring and loop (ADR 0077, ADR 0080). Once the
+   shared files are written, spawn one worker per Component, in parallel, as
+   a `component-worker` agent. Give it only: the component id and the
+   `part_<id>.step.py` path it writes; the shared files it builds on; its
+   sealed `geometry:<id>` reference and declared camera; only that
+   Component's Design Contract rows; the nozzle; and the shape-repair limit
+   (5). The worker writes the first draft, runs the round above until build
+   and print pass, then reports in 10 lines or fewer. The worker may view its
+   own sealed reference image once. Neither you nor a worker views a
+   Component's rendered rounds (front, top, iso and `compare-NN.png`); only its
+   reviewer does, and the worker acts on the reviewer's text. If the runtime
+   refuses a spawn at its thread limit, spawn the next worker when one
+   finishes.
 
    When a worker reports build and print passing, you, not the worker, ask the
    reviewer. Keep one reviewer thread per Component, spawned once as a
@@ -183,10 +203,15 @@ are separate. Frozen older runs retain their materialized rules and tools.
    shape round. Close the worker once the reviewer agrees or the cap below is
    reached.
 
-   Workers never edit a shared helper such as `features/forms.py`; they ask
-   you. Edit the helper yourself, then send every Component that uses it back
-   through a worker: the edit changes their B-rep identity, which invalidates
-   their passes (ADR 0073).
+   Workers never edit a shared file such as `params.py` or
+   `features/forms.py`; they ask you. Edit it yourself, then send every
+   Component that uses it back through a worker: the edit changes their B-rep
+   identity, which invalidates their passes (ADR 0073).
+
+   When two Design Contract statements cannot both hold, for example two
+   Components that print on a mating face that also carries a peg, stop and
+   return a `need` that quotes both statements. Do not choose between them.
+   A freedom the contract explicitly grants stays yours to decide.
 
    Use explicit `--ref` only when a reference depicts that
    component by itself; motion checks belong to the assembled object. A pass
