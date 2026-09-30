@@ -1044,6 +1044,17 @@ refuses one that differs from its Codex source, or an extra one. Before this,
 a Claude run had no spawnable Component Worker or Reviewer, so its root built
 every Component itself. Grok Build receives no projection yet.
 
+A new Codex or Claude Code run also seals a `make_round` guard (ADR 0080): a
+`PreToolUse` hook script in host state, outside the workspace, whose sha256
+the checkpoint binds. Claude Code receives it through `--settings` and Codex
+through `--enable hooks` and a launch-time `--config`, because Codex runs with
+`--ignore-user-config`. The hook admits a component round only from a
+`component-worker`, passing it a one-time nonce, and admits review records and
+assembly rounds only from the root. The host refuses Make output holding a
+component round whose nonce it did not issue. Frozen and Grok runs have no
+guard. On Claude Code, which has no sandbox, the guard is tamper-resistant,
+not tamper-proof.
+
 The Claude Code adapter reports native token usage to the host through the
 same per-turn contract as Codex: gross input and gross output, plus a
 cached-input, cache-write-input and reasoning-output detail that travels

@@ -31,8 +31,9 @@ asked for. It binds shared checks, never creative scope.
 
 **Design Contract**:
 The person's approved enumeration of one toy's decided form — its unique
-geometries, their dimensions, its visual requirements, and its references —
-sealed inside the Wish. Unlike the Toy Blueprint it belongs to one toy; unlike
+geometries, their dimensions, their joints and print stances, its visual
+requirements, and its references — sealed inside the Wish. No two of its
+statements may be impossible to satisfy together. Unlike the Toy Blueprint it belongs to one toy; unlike
 the Wish's prose it is exact enough to check.
 _Avoid_: Spec, design spec, concept
 
@@ -229,18 +230,19 @@ build or print failures and reruns that change nothing are not Shape Rounds.
 _Avoid_: Attempt, iteration
 
 **Component Worker**:
-A short-lived agent that repairs one Component's own source until it builds
-and passes its print gates, then applies its Component Reviewer's text as
-Shape Rounds. It sees only that Component's inputs, never its images, and
-never edits a shared helper. Its context is discarded when the Component is
-done.
+A short-lived agent that authors one Component's own source, repairs it until
+it builds and passes its print gates, then applies its Component Reviewer's
+text as Shape Rounds. It sees only that Component's inputs, including its
+sealed reference image, but never the Component's rendered rounds, and never
+edits a shared helper. Only a Component Worker runs a Component's rounds. Its
+context is discarded when the Component is done.
 _Avoid_: Builder, sub-Manager, part agent
 
 **Component Reviewer**:
 The reader who performs every Component Review of one Component, kept as one
 thread and asked again for each later review. The Workshop Manager, not the
 Component Worker, asks it. It is the only agent that views that Component's
-images.
+rendered rounds.
 _Avoid_: Critic, judge
 
 **Component Acceptance**:

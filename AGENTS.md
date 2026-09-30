@@ -137,7 +137,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0074-every-component-scored-against-its-own-image.md`, and
 `docs/adr/0075-component-review-compares-form-and-acceptance-needs-a-second-reader.md`, and
 `docs/adr/0076-component-passes-on-an-independent-review-not-a-likeness-score.md`, and
-`docs/adr/0077-component-workers-and-a-root-owned-reviewer.md` before changing the CLI, runtime,
+`docs/adr/0077-component-workers-and-a-root-owned-reviewer.md`, and
+`docs/adr/0080-component-workers-author-and-a-hook-admits-their-rounds.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -215,6 +216,13 @@ and one reused Component Reviewer thread per Component that the root, not the
 worker, asks. Only the reviewer views component images. The host materializes
 both as declarative custom agents; Codex owns spawning. Waits use 300000 ms.
 Assembly rounds, the blind review and final verification stay with the root.
+ADR 0080 amends ADR 0077 and ADR 0063 step 1 for new runs: the root writes
+only shared `params.py`/`features/` files with every joint fixed, and each
+Component Worker authors its Component. The worker may view its own sealed
+reference but never rendered rounds. A host-state `PreToolUse` hook admits a
+component round only from a `component-worker` and passes it a one-time
+nonce; the host refuses a component round without an issued nonce. Two
+contradicting Design Contract statements are a `need`.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 
