@@ -1,0 +1,483 @@
+#!/usr/bin/env python3
+"""Index of the standard elements this toolchain can generate procedurally.
+
+Step 4 of SKILL.md stops you before authoring a gear, bearing, screw, nut,
+washer, snap ring, o-ring or key by hand. `$step-parts` answers it for a
+**vendor's** part, whose dimensions live in that vendor's file. This script
+answers it for a **standard's** part, whose dimensions live in the standard,
+from the two libraries `requirements.txt` pins:
+
+* `bd_warehouse` ships the published tables (ISO 4762, ISO 4032, ISO 7089,
+  ISO 3601, DIN 471/472, DIN 6885-1, metric bearing boundary dimensions) and
+  builds the element from them;
+* `py_gearworks` generates the gear geometry `bd_warehouse` does not — helical,
+  bevel, cycloid, internal ring and planetary — and meshes a pair from the
+  pair itself.
+
+Either way the element arrives as build123d source rather than as a foreign
+STEP.
+
+Ask it what exists before you type a diameter:
+
+    scripts/stdpart                          every family, one line each
+    scripts/stdpart find M3                  families and standards carrying an M3 size
+    scripts/stdpart find bearing
+    scripts/stdpart sizes SocketHeadCapScrew
+    scripts/stdpart sizes PlainWasher --standard iso7089
+    scripts/stdpart --self-check
+
+Add `--json` for machine-readable output. Listings are deliberately compact:
+every byte printed here is re-sent on every later model round
+(`references/run-cost.md`).
+
+The catalogue is read from the installed library, never from this file, so a
+`bd_warehouse` upgrade cannot make the listing wrong. `--self-check` is the
+part that can go stale: it asserts the four behaviours
+`references/standard-elements.md` tells you to rely on, and fails if an upgrade
+changes any of them.
+
+Exit 0 on success, 1 when a query matches nothing or a self-check fails.
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib
+import inspect
+import json
+import re
+import sys
+
+MODULES = (
+    "fastener",
+    "bearing",
+    "gear",
+    "thread",
+    "retaining_ring",
+    "o_rings",
+    "shaft_key",
+    "sprocket",
+    "pipe",
+    "flange",
+    "open_builds",
+)
+
+# Families whose geometry is computed from the caller's numbers rather than
+# looked up in a table, with the parameters that drive them.
+COMPUTED = {
+    "SpurGear": "module, tooth_count, pressure_angle, thickness",
+    "InvoluteToothProfile": "module, tooth_count, pressure_angle",
+    "SpurGearPlan": "module, tooth_count, pressure_angle",
+    "Sprocket": "num_teeth, chain_pitch, roller_diameter, thickness",
+    "Thread": "apex/root radius, pitch, length",
+    "IsoThread": "major_diameter, pitch, length",
+    "TrapezoidalThread": "size, length",
+    "PlasticBottleThread": "size",
+    "Keyway": "key=ShaftKey(...), keyway_type, fit",
+    "ClearanceHole": "fastener=<Screw|Nut>, fit",
+    "TapHole": "fastener=<Screw|Nut>, material",
+    "ThreadedHole": "fastener=<Screw|Nut>, material, fit",
+    "InsertHole": "fastener=HeatSetNut(...), fit",
+    "PressFitHole": "bearing=<Bearing>, interference, fit",
+    "RetainingRingGroove": "ring=<RetainingRing>",
+}
+
+
+# `py_gearworks` gear generators, with the parameters that drive each one and a
+# note on what it is for. Every parameter named here is checked against the
+# installed constructor, so a renamed argument fails the survey instead of
+# silently producing a listing nobody can act on.
+GEARWORKS = {
+    "SpurGear": ("number_of_teeth, module, height", "straight teeth, parallel shafts"),
+    "HelicalGear": (
+        "number_of_teeth, module, height, helix_angle, herringbone",
+        "quieter parallel-shaft mesh; herringbone cancels the axial thrust",
+    ),
+    "BevelGear": (
+        "number_of_teeth, module, height, cone_angle",
+        "intersecting shafts; needs support printed axis-up",
+    ),
+    "CycloidGear": ("number_of_teeth, module, height", "cycloidal flanks, clock trains"),
+    "SpurRingGear": ("number_of_teeth, module, height", "internal teeth, straight"),
+    "HelicalRingGear": ("number_of_teeth, module, height, helix_angle", "internal teeth, helical"),
+    "InvoluteRack": ("number_of_teeth, module, height", "rotation to straight travel"),
+    "HelicalRack": ("number_of_teeth, module, height, helix_angle", "helical rack"),
+    "PlanetaryGearset": ("n_sun, n_ring, n_planet, num_planets", "sun/planet/ring train"),
+}
+
+
+def _gearworks_rows() -> list[dict]:
+    import py_gearworks
+
+    rows = []
+    for name, (params, note) in GEARWORKS.items():
+        obj = getattr(py_gearworks, name, None)
+        if obj is None:
+            continue
+        try:
+            declared = inspect.signature(obj.__init__).parameters
+        except (TypeError, ValueError):
+            declared = {}
+        missing = [p for p in params.split(", ") if p not in declared]
+        rows.append(
+            {
+                "family": name,
+                "module": "py_gearworks",
+                "standards": [],
+                "sizes": {},
+                "computed": f"{params} -- {note}"
+                + (f"  [STALE: {', '.join(missing)} no longer declared]" if missing else ""),
+                "choices": {},
+            }
+        )
+    return rows
+
+
+def _classes(module_name: str):
+    module = importlib.import_module(f"bd_warehouse.{module_name}")
+    for name, obj in vars(module).items():
+        if not inspect.isclass(obj) or obj.__module__ != module.__name__:
+            continue
+        if name.startswith("_") or inspect.isabstract(obj):
+            continue
+        yield name, obj
+
+
+def _sorted(sizes) -> list[str]:
+    """Size labels as strings, ordered so M3 comes before M10."""
+
+    def key(label: str):
+        return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", label)]
+
+    return sorted((str(s) for s in sizes), key=key)
+
+
+def _catalogue(obj) -> dict[str, list[str]]:
+    """`{standard: [size, ...]}` for a table-driven family, `{}` otherwise.
+
+    Abstract bases expose `types`/`sizes` too and raise on them; a family whose
+    geometry is computed exposes neither.
+    """
+    types_fn, sizes_fn = getattr(obj, "types", None), getattr(obj, "sizes", None)
+    if not callable(sizes_fn):
+        return {}
+    try:
+        if callable(types_fn):
+            return {str(t): _sorted(sizes_fn(t)) for t in sorted(types_fn())}
+        return {"": _sorted(sizes_fn())}
+    except (AttributeError, TypeError, KeyError):
+        return {}
+
+
+def _literals(obj) -> dict[str, list[str]]:
+    """Choice parameters declared as `Literal[...]` in the constructor."""
+    out: dict[str, list[str]] = {}
+    try:
+        params = inspect.signature(obj.__init__).parameters
+    except (TypeError, ValueError):
+        return out
+    for name, param in params.items():
+        choices = getattr(param.annotation, "__args__", None)
+        if choices and all(isinstance(c, (str, int)) for c in choices):
+            out[name] = [str(c) for c in choices]
+    return out
+
+
+def survey() -> list[dict]:
+    rows = []
+    for module_name in MODULES:
+        for name, obj in _classes(module_name):
+            catalogue = _catalogue(obj)
+            if not catalogue and name not in COMPUTED and not _literals(obj):
+                continue  # an abstract base or a helper, not an element
+            rows.append(
+                {
+                    "family": name,
+                    "module": f"bd_warehouse.{module_name}",
+                    "standards": sorted(k for k in catalogue if k),
+                    "sizes": {k: v for k, v in catalogue.items()},
+                    "computed": COMPUTED.get(name),
+                    "choices": _literals(obj) if not catalogue else {},
+                }
+            )
+    return rows + _gearworks_rows()
+
+
+def _summary(row: dict) -> str:
+    if row["computed"]:
+        return f"computed from {row['computed']}"
+    total = sum(len(v) for v in row["sizes"].values())
+    if not total and row["choices"]:
+        picked = ", ".join(f"{k}({len(v)})" for k, v in row["choices"].items())
+        return f"chosen by  {picked}"
+    standards = ", ".join(row["standards"]) or "-"
+    return f"{total:>4} sizes  {standards}"
+
+
+def _label(row: dict, duplicated: set[str]) -> str:
+    """Two libraries both ship a `SpurGear`, so an ambiguous name carries its module."""
+    if row["family"] in duplicated:
+        return f"{row['family']} ({row['module']})"
+    return row["family"]
+
+
+def cmd_list(rows: list[dict], as_json: bool) -> int:
+    if as_json:
+        print(json.dumps(rows, separators=(",", ":")))
+        return 0
+    seen: dict[str, int] = {}
+    for row in rows:
+        seen[row["family"]] = seen.get(row["family"], 0) + 1
+    duplicated = {name for name, n in seen.items() if n > 1}
+    for row in rows:
+        print(f"{_label(row, duplicated):<46} {_summary(row)}")
+    print(f"\n{len(rows)} families. `stdpart sizes <family>` for one family's table.")
+    return 0
+
+
+def _size_matches(size: str, needle: str, loose: bool) -> bool:
+    """Exact on a `-`-separated token, so `M3` does not drag in `M30`.
+
+    Sizes are dash-joined fields (`M3-0.5`, `M8-22-7`, `M3-0.5-Standard`), so a
+    token test is the one that answers "do you have an M3". `loose` falls back
+    to a substring, which is what a partial designation such as `4762` needs.
+    """
+    if loose:
+        return needle in size.lower()
+    return any(token.lower() == needle for token in size.split("-"))
+
+
+def cmd_find(rows: list[dict], query: str, as_json: bool) -> int:
+    needle = query.lower()
+    for loose in (False, True):
+        hits = []
+        for row in rows:
+            matched = {
+                standard: [s for s in sizes if _size_matches(s, needle, loose)]
+                for standard, sizes in row["sizes"].items()
+            }
+            matched = {k: v for k, v in matched.items() if v}
+            named = needle in row["family"].lower() or any(
+                needle in standard.lower() for standard in row["standards"]
+            )
+            if matched or named:
+                hits.append({**row, "matched": matched})
+        if hits:
+            break
+
+    if as_json:
+        # The matches, not the tables they came from: `sizes <family> --json`
+        # is where a whole table belongs, and a family can carry hundreds.
+        compact = [
+            {**row, "sizes": {k: len(v) for k, v in row["sizes"].items()}} for row in hits
+        ]
+        print(json.dumps(compact, separators=(",", ":")))
+        return 0 if hits else 1
+
+    for row in hits:
+        if row["matched"]:
+            for standard, sizes in row["matched"].items():
+                shown = ", ".join(sizes[:8]) + (" ..." if len(sizes) > 8 else "")
+                print(f"{row['family']:<38} {standard or '-':<16} {shown}")
+        else:
+            print(f"{row['family']:<38} {_summary(row)}")
+    if not hits:
+        print(
+            f"no standard element matches {query!r} -- try $step-parts for a vendor "
+            "part, and record the miss in the brief if both come back empty",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"\n{len(hits)} families match {query!r}{' (substring)' if loose else ''}.")
+    return 0
+
+
+def cmd_sizes(rows: list[dict], family: str, standard: str | None, as_json: bool) -> int:
+    matches = [r for r in rows if r["family"].lower() == family.lower()]
+    if not matches:
+        print(f"no family named {family!r}; run `stdpart` for the list", file=sys.stderr)
+        return 1
+    if as_json:
+        print(json.dumps(matches, separators=(",", ":")))
+        return 0
+    for row in matches:
+        print(f"{row['family']}  ({row['module']})")
+        if row["computed"]:
+            print(f"  computed from {row['computed']}")
+        for name, choices in row["choices"].items():
+            print(f"  {name}: {', '.join(choices)}")
+        for name, sizes in row["sizes"].items():
+            if standard and name != standard:
+                continue
+            print(f"  {name or 'sizes'} ({len(sizes)}): {', '.join(sizes)}")
+    if len(matches) > 1:
+        print(f"\n{len(matches)} libraries ship a {matches[0]['family']!r}; import the one you mean.")
+    return 0
+
+
+def _self_check() -> int:
+    """Assert the four behaviours `references/standard-elements.md` relies on."""
+    from build123d import Align, Box, BuildPart, Mode, Solid
+    from bd_warehouse.bearing import SingleRowDeepGrooveBallBearing
+    from bd_warehouse.fastener import SocketHeadCapScrew
+    from bd_warehouse.gear import SpurGear
+    from bd_warehouse.thread import IsoThread
+
+    failures: list[str] = []
+
+    def check(label: str, ok: bool, detail: str) -> None:
+        print(f"  {'PASS' if ok else 'FAIL'}  {label:<44} {detail}")
+        if not ok:
+            failures.append(label)
+
+    # 1. A component built inside a builder context joins the part being built.
+    with BuildPart() as loose:
+        Box(30, 20, 6, align=(Align.CENTER, Align.CENTER, Align.MIN))
+        SocketHeadCapScrew("M3-0.5", 16)
+    with BuildPart() as private:
+        Box(30, 20, 6, align=(Align.CENTER, Align.CENTER, Align.MIN))
+        SocketHeadCapScrew("M3-0.5", 16, mode=Mode.PRIVATE)
+    check(
+        "default mode fuses into the built part",
+        loose.part.volume > private.part.volume,
+        f"{private.part.volume:.1f} -> {loose.part.volume:.1f} mm3 -- pass mode=Mode.PRIVATE",
+    )
+
+    # 2. A modelled thread is a compound whose body and thread overlap on
+    #    purpose, so `validate` reports selfIntersecting and `interfere` clashes.
+    modelled = SocketHeadCapScrew("M3-0.5", 16, simple=False, mode=Mode.PRIVATE)
+    body = next(c for c in modelled.children if c.label == "body")
+    thread = next(c for c in modelled.children if c.label == "thread")
+    shared = body.intersect(thread)
+    overlap = sum(part.volume for part in (shared if isinstance(shared, list) else [shared]))
+    check(
+        "simple=False overlaps its own thread",
+        len(modelled.solids()) > 1 and overlap > 0,
+        f"{len(modelled.solids())} solids, body/thread share {overlap:.2f} mm3",
+    )
+    check(
+        "simple=True (the default) is one solid",
+        len(SocketHeadCapScrew("M3-0.5", 16, mode=Mode.PRIVATE).solids()) == 1,
+        "1 solid -- keep the default",
+    )
+
+    # 3. A `simple` Thread is a calculator, not geometry: it nullifies itself.
+    calc = IsoThread(major_diameter=6, pitch=1, length=12, simple=True)
+    check(
+        "IsoThread(simple=True) carries no geometry",
+        calc._wrapped is None or calc._wrapped.IsNull(),
+        f"null shape, min_radius {calc.min_radius:.3f} mm -- numbers only",
+    )
+
+    # 4. The mating feature derives from the element, and the element carries
+    #    the datum to place it by.
+    screw = SocketHeadCapScrew("M3-0.5", 16, mode=Mode.PRIVATE)
+    bearing = SingleRowDeepGrooveBallBearing("M8-22-7")
+    clearances = screw.clearance_hole_diameters
+    check(
+        "clearance table matches the SKILL.md default",
+        clearances["Normal"] == 3.4,
+        f"M3 Close/Normal/Loose {clearances['Close']}/{clearances['Normal']}/{clearances['Loose']} mm",
+    )
+    check(
+        "elements carry joints to place them by",
+        "a" in screw.joints and {"a", "b"} <= set(bearing.joints),
+        f"screw {sorted(screw.joints)}, bearing {sorted(bearing.joints)}",
+    )
+    gear = SpurGear(module=1.5, tooth_count=20, pressure_angle=20, thickness=6, mode=Mode.PRIVATE)
+    check(
+        "gear reports its pitch radius",
+        abs(gear.pitch_radius - 1.5 * 20 / 2) < 1e-9,
+        f"{gear.pitch_radius:.3f} mm -- centre distance derives from the pair",
+    )
+
+    # 5. py_gearworks: the two `backlash` arguments do opposite things, and only
+    #    one of them leaves the pair at the nominal centre distance.
+    import numpy as np
+    import py_gearworks as pgw
+
+    module, z1, z2, face = 1.5, 12, 23, 6.0
+    nominal = module * (z1 + z2) / 2
+
+    def meshed(tooth_backlash, **mesh_kwargs):
+        a = pgw.SpurGear(number_of_teeth=z1, module=module, height=face, backlash=tooth_backlash)
+        b = pgw.SpurGear(number_of_teeth=z2, module=module, height=face, backlash=tooth_backlash)
+        a.mesh_to(b, target_dir=pgw.UP, **mesh_kwargs)
+        centre = float(np.linalg.norm(np.asarray(a.center) - np.asarray(b.center)))
+        shared = a.build_part().intersect(b.build_part())
+        items = [] if shared is None else (shared if isinstance(shared, list) else [shared])
+        return centre, sum(i.volume for i in items if i is not None)
+
+    right_centre, right_overlap = meshed(0.2)
+    check(
+        "thinned teeth mesh at the nominal centre",
+        abs(right_centre - nominal) < 1e-6 and right_overlap < 1e-3,
+        f"{right_centre:.4f} mm (nominal {nominal:.4f}), flanks clear",
+    )
+    trap_centre, trap_overlap = meshed(0.2, backlash=0.0)
+    check(
+        "mesh_to(backlash=0.0) is not the default",
+        trap_centre < nominal - 0.5 and trap_overlap > 1.0,
+        f"{trap_centre:.4f} mm ({trap_centre - nominal:+.4f}), {trap_overlap:.2f} mm3 of clash",
+    )
+    check(
+        "a generated gear is one valid solid",
+        len(pgw.SpurGear(number_of_teeth=z1, module=module, height=face).build_part().solids()) == 1,
+        "1 solid",
+    )
+
+    # 6. `from py_gearworks import *` silently rebinds build123d names.
+    from build123d import IN as BD_IN
+
+    check(
+        "py_gearworks shadows build123d names",
+        not np.isscalar(pgw.IN) and BD_IN == 25.4,
+        f"build123d IN = {BD_IN} mm, py_gearworks IN = {pgw.IN} -- never star-import it",
+    )
+
+    print()
+    if failures:
+        print(f"stdpart --self-check: {len(failures)} behaviour(s) changed: {', '.join(failures)}")
+        print("a library has drifted from references/standard-elements.md; reconcile the page.")
+        return 1
+    print("stdpart --self-check: ok")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="stdpart",
+        description="Index of procedurally generated standard elements (bd_warehouse).",
+    )
+    parser.add_argument("command", nargs="?", default="list", choices=["list", "find", "sizes"])
+    parser.add_argument("query", nargs="?", help="search text, or a family name for `sizes`")
+    parser.add_argument("--standard", help="restrict `sizes` to one standard, e.g. iso4762")
+    parser.add_argument("--json", action="store_true", help="machine-readable output")
+    parser.add_argument("--self-check", action="store_true", help="run the behaviour fixtures")
+    args = parser.parse_args(argv)
+
+    # One guard over both, because `--self-check` is the command ADOPTING.md
+    # tells a fresh checkout to run: on a venv missing the library it must
+    # print the line that fixes it, not a traceback from the first fixture.
+    try:
+        if args.self_check:
+            return _self_check()
+        rows = survey()
+    except ModuleNotFoundError as exc:
+        print(
+            f"{exc.name} is not installed; `pip install -r skills/cad/requirements.txt`",
+            file=sys.stderr,
+        )
+        return 1
+
+    if args.command == "list":
+        return cmd_list(rows, args.json)
+    if not args.query:
+        parser.error(f"`{args.command}` needs an argument")
+    if args.command == "find":
+        return cmd_find(rows, args.query, args.json)
+    return cmd_sizes(rows, args.query, args.standard, args.json)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

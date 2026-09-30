@@ -5,32 +5,15 @@ functional LED, lamp, beacon, strobe, headlight, light strip, illuminated
 control, light pipe or backlight. Do not wait for the user to ask for component
 research separately.
 
-## First separate what the image conflates
+## What a light is, and what must be recorded
 
-A visible light usually has four different objects:
-
-1. the emitter or bought light module;
-2. its driver/controller and connector;
-3. the lens, light pipe or diffuser that owns the visible exterior;
-4. the printed seat, bezel, wire channel and service feature.
-
-Do not model one coloured primitive and call all four complete. Inventory each
-visible light with:
-
-| Field | Record |
-|---|---|
-| function | position/navigation, head/landing/work, brake/indicator, beacon/strobe, status, decorative/ambient, backlight, IR/UV, or an explicit project term |
-| position | part, face and assembly pose |
-| colour | observed/requested colour; wavelength only from a datasheet |
-| behavior | steady, dimmed, blink, pulse, strobe pattern, addressable animation |
-| optical direction | viewing direction, beam/viewing angle if sourced, and which surface is luminous |
-| implementation | discrete LED, addressable pixel, strip, COB/module, lamp, light pipe or unresolved |
-| evidence | `[observed]`, `[inferred]` or `[assumed]` for image-derived work |
-
-A lens colour and glow in a render may identify function, but never an exact
-manufacturer part number. Treat compliance terms such as “navigation light” or
-“warning beacon” as a design convention until an applicable standard and its
-photometric requirements are explicitly in scope.
+A visible light is four objects (emitter, driver/connector, visible optic,
+printed seat and service features), and each gets an inventory row: function,
+position, colour, behaviour, optical direction, implementation, evidence. The
+inventory table, why a lens colour never identifies an MPN, and when
+compliance terms are only a convention:
+`skills/wiki/pages/electronics/lighting-design.md`
+(`wiki show lighting-design#a-visible-light-is-four-objects`).
 
 ## Automatic discovery sequence
 
@@ -80,12 +63,10 @@ login, or accept terms on the user's behalf. A service that requires unavailable
 credentials is `unavailable`; continue searching and record it separately from
 a genuine `miss`.
 
-KiCad package geometry is useful for PCB rendering, board-envelope checks and a
-documented generic package stand-in. It is not evidence that a lamp mates with
-a socket, and it does not authorize a drilled hole, bayonet path or twist-lock
-receiver. Unless the library model can be traced to the exact selected MPN and
-drawing revision, label it `validation_envelope`; obtain mating dimensions from
-the lamp/socket manufacturer or a measured exact sample.
+What a generic package model proves (and does not) about mating geometry:
+`wiki show lighting-design#what-a-generic-package-model-proves`. Unless a
+library model traces to the exact selected MPN and drawing revision, label it
+`validation_envelope`.
 
 The service's model is mechanical evidence only. Electrical and optical facts
 still come from the manufacturer or an applicable standard. Record each query
@@ -95,30 +76,14 @@ license or terms that cover use of the downloaded artifact.
 
 ### 3. Required authoritative facts
 
-Before selection, obtain as applicable:
-
-- accepted supply or forward-voltage range;
-- continuous current and worst-case pulse/peak current;
-- whether a resistor, constant-current driver, level shifter or controller is
-  required;
-- wavelength/colour, luminous intensity or flux, viewing/beam angle and maximum
-  duty cycle when these affect the requested function;
-- package drawing, emitting-surface datum, lead/connector orientation, bend
-  limits and thermal constraints.
-
-If a required rating cannot be sourced, leave compatibility unresolved. Do not
-fill it with a value from a similar-looking part or from the GitHub analogy.
+Obtain the manufacturer facts listed in
+`wiki show lighting-design#facts-that-must-come-from-the-manufacturer` before
+selection. If a required rating cannot be sourced, leave compatibility
+unresolved.
 
 ## Selection and CAD handoff
 
-Select against the whole product, in this order:
-
-1. exact requested function and colour/behavior;
-2. full source-voltage compatibility and worst-case current;
-3. exact lamp MPN, its exact mating socket/contact system, geometry and a
-   serviceable assembly path;
-4. optical direction and visible optic;
-5. driver heat, wire bend, connector access and replacement access.
+Select in the order given by `wiki show lighting-design#selection-order`.
 
 Download a chosen STEP into `<project-dir>/ref/` and derive its seat with
 `cadmount`; never type its dimensions into the generator. Third-party artifacts
@@ -136,71 +101,31 @@ room, connector insertion/removal and strain relief.
 
 ## Removable lamp mating hardware
 
-A removable lamp is not selected until the receiver and electrical contacts
-are selected too. Treat the following as separate bought parts with separate
-component rows, evidence, search records and mounts:
+A removable lamp is not selected until its receiver and bought contacts are
+selected too. The design rules (three bought parts, prefer a purchased socket,
+when a printed receiver is allowed, why each motion phase is needed, why a
+real-hardware coupon is required) are in
+`skills/wiki/pages/electronics/removable-lamp-interfaces.md`
+(`wiki show removable-lamp-interfaces`). What this skill requires:
 
-- the exact lamp/emitter MPN;
-- the exact purchased socket MPN, when one exists;
-- a separate contact or connector MPN when it is not included in the socket.
-
-Prefer a purchased socket whose manufacturer documentation explicitly names
-the lamp family or mating interface. The printed product then seats the socket;
-it does not recreate uncertain spring contacts, terminal geometry or an
-undocumented proprietary lamp base. If no authoritative drawing or verified
-physical sample defines the mate, do not invent a twist-lock channel, drill a
-nominal hole, or claim compatibility from a similar-looking KiCad/STEP model.
-
-A printed receiver is allowed only when the interface is documented and its
-electrical contacts remain bought, rated components. Its female path must be
-derived from the male lamp lugs/threads from one source dimension, with
-clearance applied once through `cadfits`. Record why a purchased socket was not
-used. The interface declaration must then carry:
-
-- lamp and receiver/contact MPNs plus source URL and revision;
-- interface type and datum, lug count, insertion depth, lock angle/direction;
-- selected CAD clearance and the method that derived it;
-- retention stop, connector access, tool/finger access and service direction;
-- the five motion-condition IDs and the fit-coupon record below.
-
-### Motion is a five-phase contract
-
-Every removable lamp writes all five conditions to `measure/motion.json` and
-references their IDs from `power.json`:
-
-1. `insert`: axial insertion to the rotation datum is clear;
-2. `lock`: the locking rotation is clear;
-3. `retained`: an axial pull in the removal direction is blocked while locked;
-4. `unlock`: reverse rotation is clear;
-5. `remove`: axial extraction after unlocking is clear.
-
-Use `allow_seated_contact` for phases that begin installed. A clear insertion
-alone proves only that a pocket is reachable; it does not prove capture. A
-blocked pull alone can be a collision in the wrong direction; state which way
-the user or stored energy drives the lamp and put the retaining shoulder in
-front of that direction.
-
-For a threaded interface, the rotation condition is only a rigid-body proxy;
-`check_motion` cannot follow helical thread engagement or predict tightening
-torque. Keep those as coupon/prototype findings rather than geometry-gate claims.
-
-### Physical fit needs a real-hardware coupon
-
-CAD and exact STEP booleans cannot predict printer shrinkage, elephant foot,
-surface texture, support scars, material creep, contact spring force or vendor
-tolerance. Before claiming that a printed receiver physically fits, print a
-small coupon containing the complete insertion and locking interface in the
-same material, process, nozzle/layer settings and orientation as the final
-part. Test at least three declared candidate clearances with the exact
-production lamp and receiver/contact samples.
-
-Record `status`, material, process, orientation, hardware sample identifiers,
-candidate clearances, method and result. `planned` means physical fit is still
-unverified. `failed` blocks the interface. `passed` must name a
-`selected_clearance_mm` that was actually among the tested candidates; update
-the CAD and spec to that value before final manufacture. The current
-`geometry.clearance_mm` must be included in the candidate set even while the
-coupon is only planned.
+- lamp, socket and any separate contact are separate component rows, each with
+  evidence, a search record and a mount;
+- a printed receiver records why a purchased socket was not used, derives its
+  female path from the male lugs/threads through `cadfits`, and keeps bought
+  contacts;
+- the interface declaration carries lamp and receiver/contact MPNs plus source
+  URL and revision; interface type and datum, lug count, insertion depth, lock
+  angle/direction; the CAD clearance and its derivation method; retention stop,
+  connector access, tool/finger access and service direction;
+- all five motion conditions (`insert`, `lock`, `retained`, `unlock`,
+  `remove`) are written to `measure/motion.json` and their IDs referenced from
+  `power.json`; phases that begin installed use `allow_seated_contact`;
+- a `fit_coupon` record with `status`, material, process, orientation,
+  hardware sample identifiers, candidate clearances (at least three, including
+  the current `geometry.clearance_mm`), method and result. `planned` leaves
+  physical fit unverified, `failed` blocks the interface, and `passed` names a
+  `selected_clearance_mm` drawn from the tested candidates, which is then
+  written back into the CAD and the spec.
 
 ## Manifest shape
 

@@ -11,20 +11,23 @@ evidence, and reserve real CAD space for every carried component and wire route.
 
 ## Boundary
 
-- Use GitHub open-hardware projects to learn integration patterns: battery and
-  controller placement, connectors, hatches, wire channels, strain relief,
-  service access, light pipes and diffusers, and assembly order.
-- Never use a GitHub project's dimensions, electrical ratings or photometric
-  ratings as authority for the user's hardware. Use manufacturer datasheets,
-  manufacturer product pages, or applicable standards for those facts.
-- Use `$step-parts` first for bought component geometry and `$cad` to derive and
-  verify seats from the component STEP. A GitHub analogy or public CAD library
-  does not replace either one.
-- Do not redesign the requested exterior around an analogous repository. Fit
-  the powered system inside the approved product form.
-- A visible coloured lens is not proof of a functional light or of an exact
-  part number. Confirm the requested function; preserve uncertainty when only
-  the image is evidence.
+The design knowledge this workflow applies lives in the wiki. Search it
+(`python "$(workshop skills path)/wiki/scripts/wiki" search <words>`) before selecting:
+`electrical-component-selection` (contract, evidence, hard gates),
+`power-path-design` (boundary, one path per branch, wires as solids),
+`lighting-design` and `removable-lamp-interfaces`; a `skills/wiki/pages/...`
+path in this skill's references is one of those pages, under
+`"$(workshop skills path)/wiki/"`. The rules this skill enforces from them:
+
+- GitHub open-hardware projects supply integration patterns only. Ratings and
+  dimensions come from manufacturer datasheets, product pages or standards.
+- `$step-parts` comes first for bought geometry, and `$cad` derives and
+  verifies seats from the component STEP.
+- Fit the powered system inside the approved product form; never redesign the
+  exterior around an analogy.
+- A visible coloured lens proves neither a functional light nor an MPN.
+  Confirm the function, and preserve uncertainty when only the image is
+  evidence.
 
 ## Two-phase workflow
 
@@ -78,13 +81,10 @@ CAD artifacts. Keep those moments explicit:
    instructions and an explicit license. Record used results, meaningful
    rejections and misses. A login wall or network failure is `unavailable`, not
    a catalog miss.
-4. **Specify one complete path per independently rated branch.** Each path
-   begins and returns at its source and contains protection or a sourced
-   justification, switching/control, interconnects, conductors and exactly one
-   actuator or other load. Check the full source-voltage range against every
-   inline component and size continuous and peak capacity against the load's
-   worst case. Parallel lights get separate paths unless they are one
-   manufacturer-rated module or strip.
+4. **Specify one complete path per independently rated branch**, from source
+   through protection, control, interconnects and conductors to exactly one
+   load and back, contained in voltage and sized for continuous and peak
+   current (`wiki show power-path-design#one-complete-path-per-independently-rated-branch`).
 5. **Specify the physical handoff without polluting the product render.**
    Holders, hatches, channels, clips, strain relief, visible lenses, bezels and
    diffusers are product geometry. A bought battery, hidden controller or
@@ -92,15 +92,13 @@ CAD artifacts. Keep those moments explicit:
    `cad.mode: validation_envelope`: keep each reference STEP out of the combined
    assembly/render, but give it a `measure/mounts.json` declaration so
    `check_mount` places the envelope into the real assembly and measures clashes
-   against the named parts. A wire envelope includes insulation diameter, bend
-   room, connector insertion/removal space and service loops; a centerline or
-   wiring diagram alone is not a collision check. Use catalog STEP where
+   against the named parts. A wire envelope is a solid, not a centerline
+   (`wiki show power-path-design#wires-are-solids`). Use catalog STEP where
    available and a sourced, documented envelope when it is not. For a
-   removable lamp, prefer a purchased socket; CAD seats that socket rather than
-   recreating uncertain contact geometry. A justified printed receiver still
-   uses bought contacts, derives its mate through `cadfits`, declares the full
-   insert/lock/retain/unlock/remove sequence in `measure/motion.json`, and plans
-   a real-hardware fit coupon before any physical-fit claim.
+   removable lamp, prefer a purchased socket; a justified printed receiver
+   still uses bought contacts, derives its mate through `cadfits`, declares the
+   five-phase sequence in `measure/motion.json`, and plans a real-hardware fit
+   coupon before any physical-fit claim (`wiki show removable-lamp-interfaces`).
 6. **Materialize and check schema 3 in the CAD phase.** Once the selected
    project-local STEP/envelope files, mount ids and motion condition ids exist,
    follow [references/power-manifest.md](references/power-manifest.md), save the

@@ -531,6 +531,24 @@ def self_check() -> int:
         if path.stat().st_size <= 1000:
             print("render_review self-check failed: PNG is unexpectedly small", file=sys.stderr)
             return 1
+
+    # An assembly of modules whose colours sit on the solids inside them, one
+    # module moved as a whole: each solid keeps its own colour and its place.
+    from build123d import Color, Compound, Location
+
+    red, blue = Box(4, 4, 4), Pos(10, 0, 0) * Box(4, 4, 4)
+    red.color, blue.color = Color(1, 0, 0), Color(0, 0, 1)
+    moved = Compound(children=[blue])
+    moved.location = Location((0, 0, 20))
+    nested = Compound(children=[Compound(children=[red]), moved])
+    drawn = {colour: points for points, _faces, colour in tessellate_occurrences(nested, 0.1)}
+    if set(drawn) != {(255, 0, 0), (0, 0, 255)}:
+        print(f"render_review self-check failed: nested colours {sorted(drawn)}", file=sys.stderr)
+        return 1
+    if not np.allclose(drawn[(0, 0, 255)].mean(axis=0), (10, 0, 20), atol=1e-6):
+        print("render_review self-check failed: a moved module's solid lost its placement",
+              file=sys.stderr)
+        return 1
     print(f"render_review self-check: ok foreground={foreground} colours={colour_count}")
     return 0
 

@@ -22,24 +22,14 @@ Decide this before the layout, because it decides the layout. **Default to one
 part.** Most objects are a single sculpted body; a unified body looks better,
 prints better, and has nothing to misfit.
 
-Split into a separate printed part only when at least one of these is true:
-
-1. It must open or be removed in use — a lid, a cover, a cap, a drawer.
-2. It moves relative to the rest — hinge, linkage, bearing, rotating joint —
-   and is not print-in-place.
-3. No single orientation can print it — two functional faces that must both be
-   smooth and face opposite ways, or an unsupportable internal void.
-4. It exceeds the print bed in every orientation.
-5. It must be a different material or colour, and the user said so.
-6. It is a purchased component, not printed at all. A bearing, magnet, screw,
-   PCB, or motor is not a printed part — it is a pocket in one. Model the
-   pocket, sized from the real component, and search `$step-parts` for it first.
-
-When none applies, or when you are genuinely unsure: one part. A visible parting
-line on a reference photo is not a reason to split — mass-produced objects carry
-seams from mould tooling and factory assembly that a printed part does not need.
-`$image-to-cad`'s `references/decomposition.md` defers to this rule and expands
-the reasoning for reconstructions.
+Split only when the split test says so — it must open, it moves and is not
+print-in-place, no orientation prints it, it exceeds the bed, it must be another
+material or colour, or it is a purchased component (a pocket, not a part). When
+none applies, or when you are genuinely unsure: one part. A visible parting line
+on a reference photo is not a reason to split. The full test, the seam table and
+print-in-place gaps: `skills/wiki/pages/printing/printed-part-count.md`
+(`wiki show printed-part-count`); `$image-to-cad`'s `references/decomposition.md`
+says what a reconstruction spec records about it.
 
 A part count is not a file count. One printed part with a dozen features still
 earns the layout below; three parts do not have to mean three directories.

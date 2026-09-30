@@ -8,11 +8,11 @@ spool is said out loud: ``arm_black``,
 ``leg_dark_brown``, ``canopy_misty_blue``.
 
 The names here are exactly the ones the CAD skill's filament palette stocks
-(``make/skills/cad/scripts/cadfilament.py``): 19 distinct colours across the 26
-spools of Bambu Lab PLA Lite and Bambu Lab PETG Basic.  Seven names are in both
-stocks, so a name alone does not say which spool -- the *colour* does not have
-to be decidable from the name for the name to be useful, and this module
-deliberately does not try to decide it.  It answers one question: does this
+(``make/skills/cad/scripts/cadfilament.py``): 43 distinct colours across the 51
+spools of Bambu Lab PLA Lite, PLA Matte and PETG Basic.  Eight names are in
+more than one stock, so a name alone does not say which spool -- the *colour*
+does not have to be decidable from the name for the name to be useful, and this
+module deliberately does not try to decide it.  It answers one question: does this
 occurrence name end in a colour somebody can actually buy?
 
 Why the table is repeated here rather than imported: the palette lives inside
@@ -42,26 +42,50 @@ __all__ = [
 
 
 #: Every colour name the filament palette stocks, in the ``_``-joined form an
-#: occurrence name carries.  The union of both stocks: a part is named for the
+#: occurrence name carries.  The union of every stock: a part is named for the
 #: colour it prints in, not for the stock it prints from.
 FILAMENT_COLOUR_NAMES: Tuple[str, ...] = (
+    "apple_green",
+    "ash_gray",
     "beige",
     "black",
     "blue",
+    "bone_white",
+    "caramel",
+    "charcoal",
     "cocoa_brown",
     "cyan",
     "dark_beige",
+    "dark_blue",
     "dark_brown",
+    "dark_chocolate",
     "dark_gray",
+    "dark_green",
+    "dark_red",
+    "desert_tan",
+    "grass_green",
     "gray",
     "green",
+    "ice_blue",
+    "ivory_white",
+    "latte_brown",
+    "lemon_yellow",
+    "lilac_purple",
+    "mandarin_orange",
+    "marine_blue",
     "misty_blue",
+    "nardo_gray",
     "navy_blue",
     "orange",
     "pine_green",
+    "plum",
     "red",
     "reflex_blue",
+    "sakura_pink",
+    "scarlet_red",
+    "sky_blue",
     "sunflower_yellow",
+    "terracotta",
     "white",
     "yellow",
 )

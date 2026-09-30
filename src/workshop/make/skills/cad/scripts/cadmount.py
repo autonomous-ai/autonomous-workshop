@@ -88,14 +88,30 @@ AXIS_TOL = 1e-3
 MIN_TURN = 0.6
 
 
-def load(path: str | Path):
+def load(path: str | Path, solid=None):
     """Import a component STEP as one solid, or say why it is not one.
 
-    Catalog parts are single solids; a multi-solid import is usually an
-    assembly whose sub-parts move relative to each other, and a seat derived
-    from all of them at once is a seat for a pose rather than for a part.
+    A multi-solid import is usually an assembly whose sub-parts move relative to
+    each other, and a seat derived from all of them at once is a seat for a pose
+    rather than for a part.  So the default still refuses one.
+
+    `solid` is how a caller says it knows better, and each value is a different
+    claim about the component:
+
+    ``"largest"``  seat the biggest solid.  The claim is that the rest are
+                   features that move -- a servo's output hub, its lead stub.
+    ``int``        seat that index of ``shape.solids()``.  Use it only with an
+                   index read from the file in this session; import order is not
+                   a contract.
+    ``"all"``      measure the whole compound.  The claim is that **nothing in
+                   this component moves relative to anything else in it** at the
+                   pose being checked -- true of a cell holder's shell and
+                   contacts, false of anything with an output shaft.  Say it in
+                   the manifest, not in a comment; the gate records it.
+
+    Every one of these is the caller's assertion, not something the file states.
     """
-    from build123d import import_step
+    from build123d import Compound, import_step
 
     path = Path(path)
     if not path.is_file():
@@ -106,12 +122,24 @@ def load(path: str | Path):
     solids = shape.solids()
     if not solids:
         raise ValueError(f"{path.name} imported with no solid")
-    if len(solids) > 1:
+    if len(solids) == 1:
+        return solids[0]
+    if solid == "all":
+        return Compound(children=list(solids))
+    if solid == "largest":
+        return max(solids, key=lambda s: s.volume)
+    if isinstance(solid, int) and not isinstance(solid, bool):
+        if not 0 <= solid < len(solids):
+            raise ValueError(
+                f"{path.name} has {len(solids)} solids; index {solid} is out of range")
+        return solids[solid]
+    if solid is not None:
         raise ValueError(
-            f"{path.name} imported as {len(solids)} solids. Pick the one to seat "
-            "-- import_step(...).solids()[i] -- rather than seating the assembly, "
-            "whose parts move relative to each other.")
-    return solids[0]
+            f'solid={solid!r} is not one of "largest", "all" or an integer index')
+    raise ValueError(
+        f"{path.name} imported as {len(solids)} solids. Say which one is the part "
+        'by passing solid= ("largest", "all", or an index), or seat one solid '
+        "directly -- do not derive a seat from an assembly whose parts move.")
 
 
 def _axis_frame(insert):
@@ -581,6 +609,49 @@ def _self_check() -> int:
     tight = seat_report(Box(40, 40, 40) - seat_for(Box(9, 19, 29), "slip"), block)
     check("an undersized pocket is reported as a clash",
           not tight["seated"] and tight["clash_mm3"] > 1.0, str(tight))
+
+    # --- which solid of a multi-solid catalog STEP is the part ---------------
+    # `load` turns a flat refusal into three caller assertions, so each one owes
+    # a fixture. A body with a hub standing off it, written out and read back,
+    # is the shape every vendor gearmotor file has.
+    import tempfile
+
+    from build123d import Compound, export_step, import_step
+
+    body, hub = Box(20, 20, 10), Pos(0, 0, 9) * Cylinder(3, 8)
+    with tempfile.TemporaryDirectory(prefix="cadmount-self-check-") as temporary:
+        part = Path(temporary) / "gearmotor.step"
+        export_step(Compound(children=[body, hub]), str(part))
+        solids = import_step(str(part)).solids()
+        check("the fixture really is a multi-solid file", len(solids) == 2,
+              f"{len(solids)} solid(s)")
+
+        def refusal(solid) -> str:
+            try:
+                load(part, solid)
+            except ValueError as error:
+                return str(error)
+            return ""
+
+        biggest = max(range(len(solids)), key=lambda i: solids[i].volume)
+        check("a multi-solid file is still refused by default",
+              "imported as 2 solids" in refusal(None), refusal(None)[:48])
+        check('solid="largest" seats the body, not the hub',
+              math.isclose(load(part, "largest").volume, body.volume, rel_tol=1e-6),
+              f"{load(part, 'largest').volume:.2f} vs body {body.volume:.2f}")
+        check("an index seats that solid",
+              math.isclose(load(part, biggest).volume, body.volume, rel_tol=1e-6),
+              f"index {biggest} -> {load(part, biggest).volume:.2f}")
+        whole = load(part, "all")
+        check('solid="all" stays measurable solid by solid',
+              len(whole.solids()) == 2
+              and math.isclose(whole.volume, body.volume + hub.volume, rel_tol=1e-6),
+              f"{whole.volume:.2f} vs {body.volume + hub.volume:.2f}")
+        check("an out-of-range index is refused", "out of range" in refusal(9), refusal(9))
+        check("a bool is refused rather than taken as index 1",
+              "not one of" in refusal(True), refusal(True))
+        check("an unknown word is refused by name",
+              "not one of" in refusal("biggest"), refusal("biggest"))
 
     print(f"\n{len(failures)} failed" if failures else "\nall checks passed")
     return 1 if failures else 0

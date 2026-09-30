@@ -6,7 +6,7 @@ required materials retain their own licenses.
 ## Peter's product-to-CAD tools
 
 The `cad`, `design-reference`, `electromechanical-integration`,
-`image-to-cad`, `mechanisms`, and `step-parts` skills under
+`image-to-cad`, `product-design`, `step-parts`, and `wiki` skills under
 `src/workshop/make/skills/` derive from
 [`autonomous-ai/autonomous-product-to-cad`](https://github.com/autonomous-ai/autonomous-product-to-cad).
 Their exact reviewed revisions and local adaptations are recorded in
@@ -20,16 +20,29 @@ included MIT notice.
 
 The `cad` skill's `scripts/cadfilament.py` bundles factual tables of Bambu Lab
 filament names and the sRGB hex values published for them: 13 PLA Lite colours
-published at `3dfilamentprofiles.com`, read 2026-09-10, and 13 PETG Basic
-colours published by Bambu Lab itself in its "Filament Hex Code Table - PETG
-Basic", read 2026-09-15. No other content from either source is included, and
-the names are used to identify the stock a part is printed in.
+published at `3dfilamentprofiles.com`, read 2026-09-10, 13 PETG Basic colours
+published by Bambu Lab itself in its "Filament Hex Code Table - PETG Basic",
+read 2026-09-15, and 25 PLA Matte colours from Bambu Lab's "Filament Hex Code
+Table - PLA Matte", read by upstream 2026-09-25. No other content from these
+sources is included, and the names are used to identify the stock a part is
+printed in.
 
 The pinned upstream `design-reference`, `electromechanical-integration`,
-`image-to-cad`, and `mechanisms` trees do not contain standalone license files. Their inclusion does not imply that the MIT license
-above applies to them. `design-reference` bundles no dataset and downloads
-nothing; it directs Internet research whose results are cited by URL, revision
-and license in the build spec rather than fetched into the repository.
+`image-to-cad`, `product-design`, and `wiki` trees do not contain standalone
+license files. Their inclusion does not imply that the MIT license above
+applies to them. `design-reference` bundles no dataset and downloads nothing;
+it directs Internet research whose results are cited by URL, revision and
+license in the build spec rather than fetched into the repository. The `wiki`
+pages summarise engineering knowledge in their own words and cite each outside
+source in their front matter; they bundle no copy of a standard's tables.
+
+The `cad` skill's `scripts/stdpart` builds standard elements through two
+required dependencies that Workshop pins and does not vendor:
+[`bd_warehouse`](https://github.com/gumyr/bd_warehouse) 0.3, Apache License
+2.0, by Roger Maitland, and
+[`py_gearworks`](https://github.com/GarryBGoode/py_gearworks) 0.0.x, Apache
+License 2.0, copyright 2026 Gergely Bencsik. Their license files remain part of
+the separately distributed dependency wheels.
 
 ## Repository-authored work
 

@@ -2,7 +2,8 @@
 """One Make iteration: build, print gates, likeness, motion, visual feedback.
 
     make_round <project>/cad [--component part_<role>.step.py]
-               [--require-component-passes] [--ref LABEL=PATH ...] [--min 0.90]
+               [--require-component-passes] [--ref LABEL=PATH[@AZ,EL[,TOL]] ...]
+               [--min 0.90]
                [--accept-likeness REASON --acceptance-review REVIEW.json]
                [--nozzle 0.4] [--overhang-angle 45] [--all-parts] [--no-motion]
                [--full] [--out DIR] [--json] [--record-visual FEEDBACK.json]
@@ -525,23 +526,71 @@ LEDGER_LINE = re.compile(r"^\s*[-*]?\s*`?([A-Za-z][A-Za-z0-9_-]*)=(ref/[^`\s]+)`
 # The Likeness handoff table in image-to-cad's build_spec.md template. A filled
 # template produced no reference at all until this row was read too (ADR 0072).
 LEDGER_ROW = re.compile(r"^\s*\|\s*([A-Za-z][A-Za-z0-9_-]*)\s*\|\s*`?(ref/[^`\s|]+)`?\s*\|")
+# The template's camera column, `AZ,EL` optionally followed by `(±TOL)`.
+LEDGER_CAMERA = re.compile(
+    r"^\s*`?(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)`?\s*(?:\(\s*±\s*(\d+(?:\.\d+)?)\s*\))?\s*$"
+)
+# `@AZ,EL[,TOL]` after a reference path: where the image was taken from. It
+# travels on the reference string, which is the form verify_project reads, and
+# render_views gets it as --camera. Both own the rules; this only checks them
+# early so a bad camera costs no render.
+CAMERA_SUFFIX = re.compile(r"@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:,(\d+(?:\.\d+)?))?$")
+
+
+def split_camera(ref: str) -> tuple[str, str | None]:
+    """``PATH[@AZ,EL[,TOL]]`` -> (path, camera text or None)."""
+    match = CAMERA_SUFFIX.search(ref)
+    if match is None:
+        return ref, None
+    return ref[:match.start()].strip(), ",".join(v for v in match.groups() if v is not None)
+
+
+def checked_camera(ref: str) -> str:
+    """The reference unchanged, or ValueError when its camera cannot be used."""
+    if "@" not in ref:
+        return ref
+    _path, camera = split_camera(ref)
+    if camera is None:
+        raise ValueError("a reference camera must be @AZ,EL or @AZ,EL,TOL in degrees: %r" % (ref,))
+    values = [float(v) for v in camera.split(",")]
+    if not -90.0 <= values[1] <= 90.0:
+        raise ValueError("reference camera elevation %g is outside -90..90: %r" % (values[1], ref))
+    if len(values) == 3 and not 0.0 < values[2] < 90.0:
+        raise ValueError("reference camera tolerance %g must be above 0 and below 90: %r" % (values[2], ref))
+    return ref
+
+
+def ledger_camera(line: str, match) -> str:
+    """``@AZ,EL[,TOL]`` from a Likeness handoff row's camera column, or ""."""
+    cells = line[match.end():].split("|")
+    camera = LEDGER_CAMERA.match(cells[0]) if cells else None
+    if camera is None:
+        return ""
+    return "@" + ",".join(v for v in camera.groups() if v is not None)
 
 
 def parse_refs(values, spec_paths) -> list[tuple[str, str]]:
-    """``LABEL=PATH`` pairs from the command line, else from the spec's ledger."""
+    """``LABEL=PATH[@AZ,EL[,TOL]]`` pairs from the command line, else from the
+    spec's ledger. A declared camera stays on the path string."""
     refs = []
     for value in values or ():
         label, _, path = str(value).partition("=")
         if not label or not path:
             raise ValueError("--ref must be LABEL=PATH: %r" % (value,))
-        refs.append((label.strip(), path.strip()))
+        refs.append((label.strip(), checked_camera(path.strip())))
     if refs:
         return refs
     for spec in spec_paths:
         for line in Path(spec).read_text(encoding="utf-8", errors="replace").splitlines():
-            match = LEDGER_LINE.match(line) or LEDGER_ROW.match(line)
+            match = LEDGER_LINE.match(line)
+            camera = ""
+            if match is None:
+                match = LEDGER_ROW.match(line)
+                if match is not None:
+                    camera = ledger_camera(line, match)
             if match:
-                refs.append((match.group(1), str(Path(spec).parent / match.group(2))))
+                ref = str(Path(spec).parent / match.group(2)) + camera
+                refs.append((match.group(1), checked_camera(ref)))
     return refs
 
 
@@ -765,9 +814,10 @@ def resolve_reference(ref: str, project: Path):
     cwd-relative, or relative to the run workspace (the directory holding
     WISH.json above the project). The first that exists wins; None if none
     does. Round 27 of the goose run (2026-09-08) wrote a workspace-relative
-    path and lost its score for it."""
+    path and lost its score for it. A declared ``@AZ,EL[,TOL]`` camera is not
+    part of the path."""
 
-    candidate = Path(ref)
+    candidate = Path(split_camera(ref)[0])
     if candidate.is_absolute():
         return candidate if candidate.is_file() else None
     roots = [project, Path.cwd()]
@@ -1029,21 +1079,38 @@ def with_component_reference(project: Path, role: str, refs: list):
     if not mine:
         return refs, [], []
     hashes = {item["sha256"] for item in mine}
-    kept = []
-    for ref_label, ref in refs:
-        path = resolve_reference(ref, project)
-        if path is not None and file_hash(path) in hashes:
-            continue
-        kept.append((ref_label, ref))
+    kept, cameras = split_sealed_copies(refs, hashes, project)
     to_score, report, errors = [], [], []
     for item in mine:
         problem = sealed_file_error(item)
         if problem is not None:
             errors.append(problem)
             continue
-        to_score.append((label, str(item["path"])))
+        to_score.append((label, str(item["path"]) + cameras.get(item["sha256"], "")))
         report.append({"label": label, "scored_by": "component:%s" % role})
     return to_score + kept, report, errors
+
+
+def split_sealed_copies(refs: list, hashes: set, project: Path) -> tuple[list, dict]:
+    """``(kept refs, sealed sha256 -> "@AZ,EL[,TOL]")``.
+
+    A reference that is a copy of a sealed image is not scored twice; the
+    sealed image is scored instead, from the camera the copy declared. The
+    Wish seals pixels, not where they were taken from, so a declared camera
+    is the only way a sealed image reaches verify_project --image-derived.
+    """
+
+    kept, cameras = [], {}
+    for label, ref in refs:
+        path = resolve_reference(ref, project)
+        digest = file_hash(path) if path is not None else None
+        if digest in hashes:
+            camera = split_camera(ref)[1]
+            if camera is not None:
+                cameras.setdefault(digest, "@" + camera)
+            continue
+        kept.append((label, ref))
+    return kept, cameras
 
 
 def stall_streak(history: list, identities: list | None = None) -> int:
@@ -1084,12 +1151,7 @@ def with_sealed_references(project: Path, refs: list, digests: dict, floor: floa
     if not sealed:
         return refs, [], []
     sealed_hashes = {item["sha256"] for item in sealed}
-    kept = []
-    for label, ref in refs:
-        path = resolve_reference(ref, project)
-        if path is not None and file_hash(path) in sealed_hashes:
-            continue
-        kept.append((label, ref))
+    kept, cameras = split_sealed_copies(refs, sealed_hashes, project)
     covered = component_coverage(project, digests, floor)
     to_score, report, errors = [], [], []
     for item in sealed:
@@ -1116,7 +1178,7 @@ def with_sealed_references(project: Path, refs: list, digests: dict, floor: floa
             })
             report.append({"label": item["label"], "scored_by": "missing"})
             continue
-        to_score.append((item["label"], str(item["path"])))
+        to_score.append((item["label"], str(item["path"]) + cameras.get(item["sha256"], "")))
         report.append({"label": item["label"], "scored_by": "assembly"})
     return to_score + kept, report, errors
 
@@ -1369,18 +1431,27 @@ def make_round(args) -> int:
         # so a later reference cannot erase an earlier reference's camera.
         view_dir = out / "likeness" / ("ref-%03d" % ref_index)
         command = [python, str(i2c / "render_views.py"), str(entry), "--match", str(ref_path), "--label", label, "--min", str(args.min), "-o", str(view_dir), "--shaded", "--json"]
+        camera = split_camera(ref)[1]
+        if camera is not None:
+            # the = form: argparse reads a leading "-" as a new option
+            command.append("--camera=%s" % camera)
         if previous_poses and Path(previous_poses).is_file():
             command += ["--poses-from", str(previous_poses)]
         done = run(command, cwd=project, log=out / ("likeness-%s.log" % label))
         result = parse_render_views(done.stdout, label)
         selected_poses = view_dir / "poses.json"
         searched = False
-        if result is not None and "--poses-from" in command and float(result["iou"]) < args.min:
+        if result is not None and "--poses-from" in command and (
+            float(result["iou"]) < args.min or result.get("ok") is False
+        ):
             # Replay scores the OLD camera. A part that moved (a neck that now
             # leans, a head that turned) can only lose under it, and the loop
             # then sees a wall that is the camera's, not the shape's (goose,
             # 2026-09-08: replay 0.49, fresh search 0.75). When the replay is
             # under the floor, search a window around it and keep the better.
+            # A replay render_views refused because the stored pose sits
+            # outside a declared camera's window is searched again too; with
+            # --camera the search stays inside that window.
             window = search_window(float(result.get("az", 0.0)), float(result.get("el", 0.0)))
             # Keep replay evidence intact if the bounded search does worse.
             search_dir = view_dir / "search"
@@ -1595,6 +1666,14 @@ def self_check() -> int:
     check(diff_parts({}, {"a": "1", "b": "2"}) == ["a", "b"], "the first round checks every part")
     check(diff_parts({"a": "1", "b": "2"}, {"a": "1", "b": "3", "c": "4"}) == ["b", "c"], "later rounds check only changed or new parts")
     check(parse_refs(["hero=ref/hero.png", "side=/abs/side.png"], []) == [("hero", "ref/hero.png"), ("side", "/abs/side.png")], "--ref pairs parse")
+    check(parse_refs(["hero=ref/hero.png@-60,20"], []) == [("hero", "ref/hero.png@-60,20")], "a declared camera stays on the reference, the form verify_project reads")
+    check(split_camera("ref/hero.png@-60.5,20,15") == ("ref/hero.png", "-60.5,20,15") and split_camera("ref/hero@2x.png") == ("ref/hero@2x.png", None), "a camera splits off the path; an @ inside a file name is not one")
+    for bad in ("hero=ref/hero.png@-60,20,90", "hero=ref/hero.png@0,95", "hero=ref/hero.png@front"):
+        try:
+            parse_refs([bad], [])
+            check(False, "an unusable camera is refused before any render: %s" % bad)
+        except ValueError:
+            check(True, "an unusable camera is refused before any render: %s" % bad)
     pretty = (
         'rendering hero...\n{\n  "source": "/p/cad/duck.step.py",\n  "poses": {"hero": {"az": -82.5}},\n'
         '  "views": [\n    {\n      "label": "hero",\n      "kind": "replay-match",\n      "iou": 0.9029,\n'
@@ -1612,6 +1691,7 @@ def self_check() -> int:
         check(resolve_reference("ref/hero.jpg", project) == project / "ref" / "hero.jpg", "a project-relative reference resolves")
         check(resolve_reference("artifacts/make/r0001/product/goose/ref/hero.jpg", project) == project / "ref" / "hero.jpg", "a workspace-relative reference resolves through WISH.json")
         check(resolve_reference("ref/missing.jpg", project) is None, "a missing reference stays missing")
+        check(resolve_reference("ref/hero.jpg@-60,20", project) == project / "ref" / "hero.jpg", "a declared camera is not part of the path")
     window = search_window(-118.125, -75.0)
     check(window[0] == "--search-az=-148.125,-88.125,10" and window[1] == "--search-el=-90,-45,10" and window[-2:] == ["--refine", "2"], "the search window brackets the replayed camera and clamps elevation")
     with tempfile.TemporaryDirectory() as tmp:
@@ -1628,6 +1708,8 @@ def self_check() -> int:
         spec = Path(tmp) / "toy_spec.md"
         spec.write_text("| Label | Project-local reference | Minimum IoU |\n|---|---|---:|\n| <> | `ref/<file>` | 0.90 |\n| hero | `ref/hero.png` | 0.90 |\n", encoding="utf-8")
         check([r[0] for r in parse_refs([], [spec])] == ["hero"], "the template's Likeness handoff row is a ledger entry; its header and placeholder are not")
+        spec.write_text("| Label | Project-local reference | Camera AZ,EL (±TOL) | Minimum IoU | Why |\n|---|---|---|---:|---|\n| <> | `ref/<file>` | <az>,<el> (±30) | 0.90 | <> |\n| hero | `ref/hero.png` | -60,20 (±15) | 0.90 | x |\n| side | `ref/side.png` | 0,0 | 0.90 | x |\n", encoding="utf-8")
+        check([(r[0], r[1][len(str(spec.parent)) + 1:]) for r in parse_refs([], [spec])] == [("hero", "ref/hero.png@-60,20,15"), ("side", "ref/side.png@0,0")], "the handoff table's camera column travels with its reference")
     with tempfile.TemporaryDirectory() as tmp:
         run_dir = Path(tmp)
         project = run_dir / "artifacts" / "cad"
@@ -1649,6 +1731,8 @@ def self_check() -> int:
         check([label for label, _ in refs] == ["ref-01-hero"], "a ledger copy of a sealed image is scored once, under its sealed label")
         check(report == [{"label": "ref-01-hero", "scored_by": "assembly"}], "an uncovered sealed reference is scored against the assembly")
         check([e["label"] for e in errors] == ["ref-02-side", "ref-03-gone"] and "sealed hash" in errors[0]["error"] and "missing" in errors[1]["error"], "a changed or missing sealed reference is an error, never a silent drop")
+        refs, _, _ = with_sealed_references(project, [("copy", "ref/copy.png@-60,20")], {}, 0.9)
+        check(refs == [("ref-01-hero", str(run_dir / "wish-references" / "ref-01-hero.png") + "@-60,20")], "a copy of a sealed image lends it the camera it declared")
         (run_dir / "WISH.json").write_text("{not json", encoding="utf-8")
         _, _, errors = with_sealed_references(project, [], {}, 0.9)
         check(len(errors) == 1 and "WISH.json unreadable" in errors[0]["error"], "an unreadable Wish fails the round instead of scoring nothing")
@@ -1688,7 +1772,7 @@ def main(argv=None) -> int:
     parser.add_argument("--entry", help="entry generator name when more than one non-part *.step.py exists")
     parser.add_argument("--component", help="review one isolated part_<role>.step.py using its own round history")
     parser.add_argument("--require-component-passes", action="store_true", help="before assembly review, require current passing isolated rounds for every part")
-    parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH", help="reference view; repeatable; default from the spec ledger. The Wish's sealed references are always scored at assembly scope")
+    parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH[@AZ,EL[,TOL]]", help="reference view and the camera it was taken from; repeatable; default from the spec ledger. The Wish's sealed references are always scored at assembly scope; a --ref that copies one lends it its camera. --full needs a camera on every reference")
     parser.add_argument("--min", type=float, default=0.90, help="likeness floor passed to render_views (default 0.90)")
     parser.add_argument("--accept-likeness", metavar="REASON", help="with --component: accept an image still below the floor after %d rounds that changed the geometry without moving it; the reason is reported when the run ends" % STALL_STREAK)
     parser.add_argument("--acceptance-review", metavar="REVIEW.json", help="with --accept-likeness: the independent reviewer's agreement, judged on the latest round's comparison images")

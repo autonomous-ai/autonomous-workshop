@@ -33,8 +33,9 @@ SKILL_PATHS = {
     "image-to-cad": "make/skills/image-to-cad",
     "make-round": "make/skills/make-round",
     "manual-design": "release/skills/manual-design",
-    "mechanisms": "make/skills/mechanisms",
+    "product-design": "make/skills/product-design",
     "step-parts": "make/skills/step-parts",
+    "wiki": "make/skills/wiki",
 }
 SKILLS = tuple(SKILL_PATHS)
 LISTED_MAKE_SKILLS = tuple(

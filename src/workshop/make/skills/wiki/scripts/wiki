@@ -1,0 +1,692 @@
+#!/usr/bin/env python3
+"""Search, read, add to and lint the design wiki.
+
+The wiki is a directory of Markdown pages, one topic per page, each with a
+small front matter block (title, tags, aliases, sources, updated). This script
+is the only index: nothing is generated or cached, every call reads the pages.
+
+    wiki search shaft deflection          ranked sections, with path:line
+    wiki search spindle --pages           one line per page; synonyms expand
+    wiki show joints#keyed-joints         print one section (or a whole page)
+    wiki list [--tag gear]                every page, its title and tags
+    wiki new mechanisms/belts --title "Belts and pulleys"
+    wiki lint                             the rules a page must keep
+    wiki --self-check
+
+Search is BM25 over sections (a page's intro and every ##/### section), with
+the page title, tags and aliases weighted into each of its sections, and the
+query expanded through `synonyms.txt` -- that is what lets "spindle",
+"axle" and "shaft" find the same page. Matching folds accents and a plural
+`s`, nothing smarter: when a search misses, add the missing word to the page's
+`aliases` or a synonym group, which fixes it for every later search.
+
+Lint enforces the rules that keep the wiki worth searching:
+
+    front matter          title, tags, sources and an ISO `updated` date
+    one slug, one page    slugs are file stems, unique across topics
+    links resolve         [[slug]], [[slug#section]] and `related:` entries
+    no project results    no `output/...` path and no name of a project that
+                          exists under output/ -- the skills are vendored
+                          into other repositories, where one run's numbers
+                          read as if they were the tool's own
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import re
+import sys
+import tempfile
+import textwrap
+import unicodedata
+from collections import Counter
+from dataclasses import dataclass, field
+from datetime import date
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+DEFAULT_ROOT = HERE.parent  # skills/wiki: holds pages/ and synonyms.txt
+
+REQUIRED = ("title", "tags", "sources", "updated")
+SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+LINK = re.compile(r"\[\[([^\]|#]+)(?:#([^\]|]+))?(?:\|[^\]]*)?\]\]")
+# A path into output/ is a directory then more path, or a file name: "output/x/y"
+# or "output/x.step" -- not prose like "input/output/optical axis".
+OUTPUT_PATH = re.compile(r"(?<![\w/.-])output/[\w-]+(?:/|\.\w+\b)")
+HEADING = re.compile(r"^(#{1,3})\s+(.*\S)\s*$")
+FENCE = re.compile(r"^\s*(```|~~~)")
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+W_HEADING, W_BODY = 3, 1
+W_ABOUT = 2.5  # per concept the page's title, tags or aliases name
+K1, B = 1.2, 0.75
+MAX_PAGE_LINES = 250
+# Words that say how a question is phrased, not what it is about. Folded.
+STOP = frozenset("""a an the for of to on at by with and or how what which why when is are
+    be do does should can design designing make build use using""".split())
+
+
+# --------------------------------------------------------------------------
+# text
+
+
+def fold(text: str) -> str:
+    """Lower case, accents stripped: 'Hélice' and 'helice' are one key."""
+    text = unicodedata.normalize("NFD", text.lower())
+    return "".join(c for c in text if unicodedata.category(c) != "Mn")
+
+
+def stem(tok: str) -> str:
+    if len(tok) > 4 and tok.endswith("ies"):
+        return tok[:-3] + "y"
+    if len(tok) > 4 and tok.endswith(("ches", "shes", "xes", "sses")):
+        return tok[:-2]
+    if len(tok) > 3 and tok.endswith("s") and not tok.endswith(("ss", "us", "is")):
+        return tok[:-1]
+    return tok
+
+
+def tokens(text: str) -> list[str]:
+    return [stem(t) for t in re.findall(r"[a-z0-9]+", fold(text)) if len(t) > 1 or t.isdigit()]
+
+
+def anchor(heading: str) -> str:
+    """GitHub-style anchor, accents folded so it can be typed."""
+    a = re.sub(r"[^\w\s-]", "", fold(heading)).strip()
+    return re.sub(r"[\s_]+", "-", a)
+
+
+# --------------------------------------------------------------------------
+# pages
+
+
+@dataclass
+class Section:
+    heading: str
+    anchor: str
+    line: int  # 1-indexed line of the heading in the file
+    body: list[str]
+
+
+@dataclass
+class Page:
+    path: Path
+    slug: str
+    topic: str
+    meta: dict
+    meta_errors: list[str]
+    body_start: int
+    lines: list[str]
+    sections: list[Section] = field(default_factory=list)
+
+    @property
+    def title(self) -> str:
+        return str(self.meta.get("title", self.slug))
+
+    def listing(self, key: str) -> list[str]:
+        v = self.meta.get(key, [])
+        return v if isinstance(v, list) else [v]
+
+
+def parse_scalar_list(raw: str) -> list[str] | str:
+    raw = raw.strip()
+    if raw.startswith("[") and raw.endswith("]"):
+        inner = raw[1:-1].strip()
+        return [x.strip().strip("'\"") for x in inner.split(",") if x.strip()] if inner else []
+    return raw.strip("'\"")
+
+
+def parse_front_matter(lines: list[str]) -> tuple[dict, list[str], int]:
+    """A deliberately tiny YAML subset: `key: value`, `key: [a, b]`, `- item` lists."""
+    if not lines or lines[0].strip() != "---":
+        return {}, ["no front matter (the file must start with ---)"], 0
+    meta: dict = {}
+    errors: list[str] = []
+    key = None
+    for i, line in enumerate(lines[1:], start=1):
+        if line.strip() == "---":
+            return meta, errors, i + 1
+        if not line.strip():
+            continue
+        m = re.match(r"^([a-z_]+):\s*(.*)$", line)
+        if m:
+            key, value = m.group(1), m.group(2)
+            meta[key] = parse_scalar_list(value) if value.strip() else []
+            continue
+        m = re.match(r"^\s+-\s+(.*)$", line)
+        if m and key and isinstance(meta.get(key), list):
+            meta[key].append(m.group(1).strip().strip("'\""))
+            continue
+        errors.append(f"front matter line {i + 1} is not `key: value` or `- item`: {line.strip()!r}")
+    return meta, errors + ["front matter is never closed with ---"], len(lines)
+
+
+def split_sections(page: Page) -> None:
+    current = Section(page.title, "", page.body_start + 1, [])
+    in_fence = False
+    for i in range(page.body_start, len(page.lines)):
+        line = page.lines[i]
+        if FENCE.match(line):
+            in_fence = not in_fence
+        m = None if in_fence else HEADING.match(line)
+        if m and len(m.group(1)) == 1:
+            current.heading = m.group(2)
+            current.line = i + 1
+            continue
+        if m:
+            page.sections.append(current)
+            current = Section(m.group(2), anchor(m.group(2)), i + 1, [])
+            continue
+        current.body.append(line)
+    page.sections.append(current)
+
+
+def load_page(path: Path, pages_dir: Path) -> Page:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    meta, errors, start = parse_front_matter(lines)
+    rel = path.relative_to(pages_dir)
+    topic = rel.parent.as_posix() if rel.parent != Path(".") else ""
+    page = Page(path, path.stem, topic, meta, errors, start, lines)
+    split_sections(page)
+    return page
+
+
+def load_wiki(root: Path) -> list[Page]:
+    pages_dir = root / "pages"
+    return [load_page(p, pages_dir) for p in sorted(pages_dir.rglob("*.md"))]
+
+
+def load_synonyms(root: Path) -> tuple[list[list[str]], list[str]]:
+    path = root / "synonyms.txt"
+    groups: list[list[str]] = []
+    errors: list[str] = []
+    if not path.exists():
+        return groups, errors
+    for n, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        members = [m.strip() for m in line.split("|") if m.strip()]
+        if len(members) < 2:
+            errors.append(f"synonyms.txt:{n}: a group needs at least two members separated by |")
+            continue
+        groups.append(members)
+    return groups, errors
+
+
+def words(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", fold(text))
+
+
+def concepts(query: str, groups: list[list[str]]) -> list[set[str]]:
+    """The query as concepts: one token set per idea the user typed.
+
+    A synonym group the query names ("ball bearing", "spindle") is one concept
+    whose tokens are every member's, so a two-word term counts once and its
+    other members carry it into pages that use a different word. Groups
+    triggered by the same typed words merge; typed words no group claims are
+    concepts of their own. A section scores the best token of each concept.
+    """
+    q = words(query)
+    padded = " " + " ".join(q) + " "
+    found: list[tuple[set[str], set[str]]] = []  # (typed words claimed, concept tokens)
+    for group in groups:
+        claimed: set[str] = set()
+        for m in group:
+            mw = words(m)
+            if mw and " " + " ".join(mw) + " " in padded:
+                claimed |= set(mw)
+        if not claimed:
+            continue
+        toks = {t for m in group for t in tokens(m)}
+        for i, (c, t) in enumerate(found):
+            if c & claimed:
+                found[i] = (c | claimed, t | toks)
+                break
+        else:
+            found.append((claimed, toks))
+    claimed_all = set().union(*(c for c, _ in found)) if found else set()
+    out = [t for _, t in found]
+    for w in q:
+        if w not in claimed_all and w not in STOP and (len(w) > 1 or w.isdigit()):
+            t = {stem(w)}
+            if t not in out:
+                out.append(t)
+    return out
+
+
+# --------------------------------------------------------------------------
+# search
+
+
+def section_terms(sec: Section) -> Counter:
+    c: Counter = Counter()
+    for weight, text in ((W_HEADING, sec.heading if sec.anchor else ""),
+                         (W_BODY, "\n".join(sec.body))):
+        for t in tokens(text):
+            c[t] += weight
+    return c
+
+
+def page_terms(page: Page) -> set[str]:
+    """What the page says it is about: title, tags, aliases."""
+    return set(tokens(" ".join([page.title] + page.listing("tags") + page.listing("aliases"))))
+
+
+def search(pages: list[Page], groups, query: str, tag: str | None = None) -> list[dict]:
+    wanted = concepts(query, groups)
+    if not wanted:
+        return []
+    docs = []
+    about = {p.slug: page_terms(p) for p in pages}
+    for page in pages:
+        if tag and fold(tag) not in [fold(t) for t in page.listing("tags")]:
+            continue
+        for sec in page.sections:
+            if any(line.strip() for line in sec.body):  # a bare heading is not a hit
+                docs.append((page, sec, section_terms(sec)))
+    if not docs:
+        return []
+    # A page that names the idea in its title, tags or aliases is about it; a
+    # section that merely mentions it is not. Scored against pages, not
+    # sections, so a word every section uses ("shaft") still picks its page.
+    n_pages = len(pages)
+    pdf = Counter(t for terms in about.values() for t in terms)
+
+    def page_bonus(page: Page, concept: set[str]) -> float:
+        hit = [t for t in concept if t in about[page.slug]]
+        return max((W_ABOUT * math.log(1 + (n_pages - pdf[t] + 0.5) / (pdf[t] + 0.5))
+                    for t in hit), default=0.0)
+    n = len(docs)
+    avg = sum(sum(c.values()) for _, _, c in docs) / n
+    df = Counter(t for _, _, c in docs for t in set(c))
+    hits = []
+    for page, sec, c in docs:
+        length = sum(c.values())
+        score = 0.0
+        matched = []
+        for concept in wanted:
+            best, best_t = 0.0, None
+            for t in concept:
+                tf = c.get(t, 0)
+                if not tf:
+                    continue
+                idf = math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5))
+                v = idf * tf * (K1 + 1) / (tf + K1 * (1 - B + B * length / avg))
+                if v > best:
+                    best, best_t = v, t
+            if best_t:
+                score += best
+                matched += [t for t in concept if c.get(t)]
+            score += page_bonus(page, concept)
+        if score > 0:
+            hits.append({"page": page, "section": sec, "score": score, "matched": matched})
+    hits.sort(key=lambda h: -h["score"])
+    return hits
+
+
+def snippet(sec: Section, matched: list[str], width: int = 110) -> str:
+    best, best_n = "", 0
+    for line in sec.body:
+        s = line.strip()
+        if not s or FENCE.match(s):
+            continue
+        n = len(set(tokens(s)) & set(matched))
+        if n > best_n:
+            best, best_n = s, n
+    return textwrap.shorten(best, width=width, placeholder=" …") if best else ""
+
+
+def ref(page: Page, sec: Section) -> str:
+    return page.slug + (f"#{sec.anchor}" if sec.anchor else "")
+
+
+def cmd_search(args, root: Path) -> int:
+    pages = load_wiki(root)
+    groups, _ = load_synonyms(root)
+    query = " ".join(args.query)
+    hits = search(pages, groups, query, args.tag)
+    wanted = concepts(query, groups)
+    if args.pages:
+        best: dict[str, dict] = {}
+        for h in hits:
+            best.setdefault(h["page"].slug, h)
+        hits = list(best.values())
+    else:
+        per_page: Counter = Counter()
+        kept = []
+        for h in hits:
+            if per_page[h["page"].slug] < args.per_page:
+                kept.append(h)
+                per_page[h["page"].slug] += 1
+        hits = kept
+    hits = hits[: args.top]
+    if args.json:
+        print(json.dumps({
+            "query": query, "concepts": [sorted(c) for c in wanted],
+            "hits": [{
+                "ref": h["page"].slug if args.pages else ref(h["page"], h["section"]),
+                "title": h["page"].title,
+                "heading": h["section"].heading,
+                "path": str(h["page"].path),
+                "line": h["section"].line,
+                "score": round(h["score"], 3),
+            } for h in hits]}, ensure_ascii=False))
+        return 0 if hits else 1
+    multi = [sorted(c) for c in wanted if len(c) > 1]
+    if multi:
+        print("(concepts: " + "; ".join(" | ".join(c) for c in multi) + ")")
+    if not hits:
+        print(f"no page matches {query!r}. If the knowledge exists, add the term to a "
+              "page's aliases or to synonyms.txt; if it does not, research it and "
+              "`wiki new` a page.")
+        return 1
+    for h in hits:
+        page, sec = h["page"], h["section"]
+        where = f"{page.path}:{sec.line}"
+        label = page.slug if args.pages else ref(page, sec)
+        head = page.title if args.pages else f"{page.title} › {sec.heading}" if sec.anchor else page.title
+        print(f"{h['score']:6.2f}  {label}  {head}")
+        print(f"        {where}")
+        s = snippet(sec, h["matched"])
+        if s:
+            print(f"        {s}")
+    return 0
+
+
+# --------------------------------------------------------------------------
+# show / list / new
+
+
+def find(pages: list[Page], slug: str) -> Page | None:
+    return next((p for p in pages if p.slug == slug), None)
+
+
+def cmd_show(args, root: Path) -> int:
+    pages = load_wiki(root)
+    slug, _, want = args.ref.partition("#")
+    page = find(pages, slug)
+    if not page:
+        print(f"no page {slug!r}; try `wiki search {slug}`", file=sys.stderr)
+        return 1
+    if not want:
+        print(f"# {page.path}")
+        print("\n".join(page.lines[page.body_start:]))
+        return 0
+    want = anchor(want)
+    for i, sec in enumerate(page.sections):
+        if sec.anchor == want:
+            level = len(HEADING.match(page.lines[sec.line - 1]).group(1))
+            out = [page.lines[sec.line - 1]] + sec.body
+            for nxt in page.sections[i + 1:]:  # include subsections of a ## section
+                if len(HEADING.match(page.lines[nxt.line - 1]).group(1)) <= level:
+                    break
+                out += [page.lines[nxt.line - 1]] + nxt.body
+            print(f"# {page.path}:{sec.line}")
+            print("\n".join(out).rstrip())
+            return 0
+    print(f"{slug} has no section #{want}; sections: "
+          + ", ".join(s.anchor for s in page.sections if s.anchor), file=sys.stderr)
+    return 1
+
+
+def cmd_list(args, root: Path) -> int:
+    for page in load_wiki(root):
+        tags = page.listing("tags")
+        if args.tag and fold(args.tag) not in [fold(t) for t in tags]:
+            continue
+        where = f"{page.topic}/" if page.topic else ""
+        print(f"{where}{page.slug:28s} {page.title}  [{', '.join(tags)}]")
+    return 0
+
+
+TEMPLATE = """---
+title: {title}
+tags: []
+aliases: []
+sources: []
+related: []
+updated: {today}
+---
+
+# {title}
+
+One paragraph: what this page decides, and when to read it.
+
+## Rule or formula
+
+State the invariant, then the mechanism that makes it true. Write numbers as
+something that can be copied into a parameter block as an `assert`.
+
+## When it does not hold
+
+## Checks
+"""
+
+
+def cmd_new(args, root: Path) -> int:
+    rel = Path(args.path)
+    slug = rel.stem if rel.suffix == ".md" else rel.name
+    if not SLUG.match(slug):
+        print(f"slug {slug!r} must be lower-case words joined by -", file=sys.stderr)
+        return 1
+    existing = find(load_wiki(root), slug)
+    if existing:
+        print(f"{slug} already exists at {existing.path}: extend it rather than adding a second page",
+              file=sys.stderr)
+        return 1
+    path = root / "pages" / rel.parent / f"{slug}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    title = args.title or slug.replace("-", " ").capitalize()
+    path.write_text(TEMPLATE.format(title=title, today=date.today().isoformat()), encoding="utf-8")
+    print(path)
+    return 0
+
+
+# --------------------------------------------------------------------------
+# lint
+
+
+def repo_output_names(root: Path) -> list[str]:
+    """Project directories under the repository's output/, if there is one."""
+    for d in [root, *root.parents]:
+        out = d / "output"
+        if out.is_dir() and (d / "skills").is_dir():
+            return sorted(p.name for p in out.iterdir() if p.is_dir() and not p.name.startswith("."))
+    return []
+
+
+def lint(root: Path) -> tuple[list[str], list[str]]:
+    pages = load_wiki(root)
+    errors: list[str] = []
+    warnings: list[str] = []
+    by_slug: dict[str, Page] = {}
+    for page in pages:
+        where = str(page.path)
+        errors += [f"{where}: {e}" for e in page.meta_errors]
+        if not SLUG.match(page.slug):
+            errors.append(f"{where}: file stem {page.slug!r} is not a slug (lower-case words joined by -)")
+        if page.slug in by_slug:
+            errors.append(f"{where}: slug {page.slug!r} already used by {by_slug[page.slug].path}")
+        by_slug.setdefault(page.slug, page)
+        for key in REQUIRED:
+            v = page.meta.get(key)
+            if not v or (isinstance(v, list) and not [x for x in v if x]):
+                errors.append(f"{where}: front matter `{key}` is missing or empty")
+        upd = page.meta.get("updated")
+        if isinstance(upd, str) and upd and not ISO_DATE.match(upd):
+            errors.append(f"{where}: `updated` must be YYYY-MM-DD, got {upd!r}")
+        if not any(HEADING.match(l) and HEADING.match(l).group(1) == "#"
+                   for l in page.lines[page.body_start:]):
+            errors.append(f"{where}: no `# Title` heading")
+        if len(page.lines) > MAX_PAGE_LINES:
+            warnings.append(f"{where}: {len(page.lines)} lines; split it so a search hit lands on one idea")
+
+    anchors = {p.slug: {s.anchor for s in p.sections if s.anchor} for p in pages}
+    projects = repo_output_names(root)
+    project_re = re.compile(r"(?<![\w-])(" + "|".join(map(re.escape, projects)) + r")(?![\w])",
+                            re.I) if projects else None
+    for page in pages:
+        for target in page.listing("related"):
+            if target and target not in anchors:
+                errors.append(f"{page.path}: related: {target!r} is not a page")
+        for n, line in enumerate(page.lines, start=1):
+            for m in LINK.finditer(line):
+                slug, sec = m.group(1).strip(), m.group(2)
+                if slug not in anchors:
+                    errors.append(f"{page.path}:{n}: [[{slug}]] is not a page")
+                elif sec and anchor(sec) not in anchors[slug]:
+                    errors.append(f"{page.path}:{n}: [[{slug}#{sec}]]: {slug} has no such section")
+            if n <= page.body_start:
+                continue
+            for m in OUTPUT_PATH.finditer(line):
+                errors.append(f"{page.path}:{n}: `{m.group(0)}` points at one project's output; "
+                              "keep the rule, drop the run")
+            if project_re:
+                for m in project_re.finditer(line):
+                    errors.append(f"{page.path}:{n}: names the project {m.group(1)!r}; "
+                                  "state the mechanism, not whose run found it")
+
+    _, syn_errors = load_synonyms(root)
+    errors += syn_errors
+    return errors, warnings
+
+
+def cmd_lint(args, root: Path) -> int:
+    errors, warnings = lint(root)
+    for w in warnings:
+        print(f"warning: {w}")
+    for e in errors:
+        print(f"error: {e}")
+    n = len(load_wiki(root))
+    print(f"wiki lint: {n} pages, {len(errors)} errors, {len(warnings)} warnings")
+    return 1 if errors else 0
+
+
+# --------------------------------------------------------------------------
+# self-check
+
+
+def self_check() -> int:
+    def page(title, tags, body, aliases="[]", sources="[Shigley, ch. 7]", related="[]"):
+        return (f"---\ntitle: {title}\ntags: {tags}\naliases: {aliases}\n"
+                f"sources: {sources}\nrelated: {related}\nupdated: 2026-01-01\n---\n\n"
+                f"# {title}\n\n{body}\n")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "output" / "zebracart").mkdir(parents=True)
+        root = repo / "skills" / "wiki"
+        pages = root / "pages" / "mech"
+        pages.mkdir(parents=True)
+        (root / "synonyms.txt").write_text(
+            "# comment\nshaft | axle | spindle\ngear | cog\nball bearing | bearing\n", encoding="utf-8")
+        (pages / "shafts.md").write_text(page(
+            "Shafts", "[shaft, axle]",
+            "Intro about axles.\n\n## Deflection\n\nA shaft bends: delta = F L^3 / (48 E I).\n\n"
+            "```python\n## not a heading inside a fence\n```\n\n"
+            "## Supports\n\nTwo bearings spaced apart. See [[gears#centre-distance]].",
+            related="[gears]"), encoding="utf-8")
+        (pages / "gears.md").write_text(page(
+            "Gears", "[gear]",
+            "## Centre distance\n\na = m (z1 + z2) / 2, never typed.\n\n## Backlash\n\nThin the tooth.",
+            aliases="[gearing]"), encoding="utf-8")
+        (pages / "bearings.md").write_text(page(
+            "Ball bearings", "[bearing]", "## Sizes\n\n608 is 8 x 22 x 7."), encoding="utf-8")
+
+        loaded = load_wiki(root)
+        groups, syn_err = load_synonyms(root)
+        assert not syn_err, syn_err
+        shafts = find(loaded, "shafts")
+        assert [s.anchor for s in shafts.sections] == ["", "deflection", "supports"], \
+            "a ## line inside a code fence must not start a section"
+
+        def top(q):
+            h = search(loaded, groups, q)
+            return ref(h[0]["page"], h[0]["section"]) if h else None
+
+        assert top("shaft deflection") == "shafts#deflection", top("shaft deflection")
+        assert top("spindle") and top("spindle").startswith("shafts"), "a synonym must reach shafts"
+        assert top("cog") and top("cog").startswith("gears"), "a synonym must reach gears"
+        assert top("ball bearing") == "bearings#sizes", top("ball bearing")
+        assert top("gears backlash") == "gears#backlash", "plural must stem to the tag"
+        assert search(loaded, groups, "zzzz") == []
+        assert fold("Hélice") == "helice"
+        two_word = concepts("ball bearing", groups)
+        assert len(two_word) == 1 and "bearing" in two_word[0], "a two-word term is one concept"
+        assert top("spindle cog") == top("shaft gear"), "a synonym query must rank like the word it stands for"
+        assert concepts("how to design a gear", groups) == concepts("gear", groups), "phrasing words are not the topic"
+
+        errors, _ = lint(root)
+        assert errors == [], errors
+
+        # each rule, one defect at a time
+        (pages / "bad.md").write_text(page(
+            "Bad", "[x]", "See [[nope]] and [[gears#no-such]]. Found in output/zebracart/params.py; "
+            "zebracart measured it. Prose about input/output/optical axes is fine.",
+            sources="[]", related="[ghost]"), encoding="utf-8")
+        errors, _ = lint(root)
+        text = "\n".join(errors)
+        for needle in ("`sources` is missing", "[[nope]] is not a page", "has no such section",
+                       "related: 'ghost'", "output/zebracart", "names the project 'zebracart'"):
+            assert needle in text, f"lint missed: {needle}\n{text}"
+        assert "output/optical" not in text, "prose containing output/ is not a path"
+        (pages / "bad.md").unlink()
+        (pages / "dup").mkdir()
+        (pages / "dup" / "gears.md").write_text(page("Gears again", "[gear]", "x"), encoding="utf-8")
+        assert any("already used" in e for e in lint(root)[0]), "duplicate slug across topics"
+        (pages / "dup" / "gears.md").unlink()
+        (root / "synonyms.txt").write_text("lonely\n", encoding="utf-8")
+        assert any("at least two" in e for e in lint(root)[0])
+
+    print("wiki self-check: ok")
+    return 0
+
+
+# --------------------------------------------------------------------------
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0],
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--root", type=Path, default=DEFAULT_ROOT,
+                        help="wiki directory holding pages/ and synonyms.txt")
+    parser.add_argument("--self-check", action="store_true")
+    sub = parser.add_subparsers(dest="cmd")
+
+    p = sub.add_parser("search", help="ranked sections for a query")
+    p.add_argument("query", nargs="+")
+    p.add_argument("--top", type=int, default=8)
+    p.add_argument("--per-page", type=int, default=3, help="sections shown per page")
+    p.add_argument("--pages", action="store_true", help="one line per page")
+    p.add_argument("--tag")
+    p.add_argument("--json", action="store_true")
+
+    p = sub.add_parser("show", help="print a page or one section: slug[#section]")
+    p.add_argument("ref")
+
+    p = sub.add_parser("list", help="every page")
+    p.add_argument("--tag")
+
+    p = sub.add_parser("new", help="create a page from the template: topic/slug")
+    p.add_argument("path")
+    p.add_argument("--title")
+
+    sub.add_parser("lint", help="front matter, links, and no project results")
+
+    args = parser.parse_args(argv)
+    if args.self_check:
+        return self_check()
+    root = args.root.resolve()
+    handlers = {"search": cmd_search, "show": cmd_show, "list": cmd_list,
+                "new": cmd_new, "lint": cmd_lint}
+    if args.cmd not in handlers:
+        parser.print_help()
+        return 2
+    return handlers[args.cmd](args, root)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

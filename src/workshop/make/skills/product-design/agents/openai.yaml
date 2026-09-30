@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product Design"
+  short_description: "Design a product described in words into a buildable CAD spec"
+  default_prompt: "Use $product-design to survey existing products, set requirements, select a concept and size it from sourced anchors, writing the spec $cad implements."

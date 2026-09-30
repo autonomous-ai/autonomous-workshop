@@ -76,11 +76,14 @@ While pursuing the Goal:
    round's repair from that sealed `product_root` and `made_sha256`, not from
    the last revision.
 2. **Act:** Use native editing and the materialized `cad`, `image-to-cad`,
-   `design-reference`, `electromechanical-integration`, `mechanisms`, and
-   `step-parts` skills under `.agents/skills/` to
-   create or repair the actual product artifact. `mechanisms` is reference
-   knowledge for anything that turns, slides, swings, indexes or latches. Use native subagents for bounded mechanism, CAD, or
-   review tasks when useful.
+   `product-design`, `design-reference`, `electromechanical-integration`,
+   `step-parts`, and `wiki` skills under `.agents/skills/` to create or repair
+   the actual product artifact.
+   `product-design` designs a prose Wish whose design is still open, never a
+   sealed concept or Design Contract. `wiki` is read-only reference knowledge:
+   search it before a part that turns, slides, swings, indexes, latches or
+   carries load, and whenever a kernel operation fails. Use native subagents
+   for bounded mechanism, CAD, or review tasks when useful.
 3. **Evaluate:** Build the artifact, run narrow deterministic checkers, inspect
    actual STEP and rendered outputs, and compare observed behavior with the
    concept, dimensions, materials, tolerances, assembly, and prior feedback.

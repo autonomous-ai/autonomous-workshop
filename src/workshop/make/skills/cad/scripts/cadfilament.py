@@ -19,10 +19,17 @@ An unknown name raises with the whole list rather than resolving to something
 close, for the same reason `cadfits` derives the second half of a mate instead
 of asserting it: a near-miss that still builds is the failure worth preventing.
 
-Two stocks, two tables
-----------------------
+Three stocks, three tables
+--------------------------
 **Bambu Lab PLA Lite** (13 colours) is the default, read from
 https://3dfilamentprofiles.com/filaments/bambu-lab/pla/lite on 2026-09-10.
+
+**Bambu Lab PLA Matte** (25 colours) carries the pastels and muted tones PLA
+Lite lacks — a mint, a coral-peach, a pale pink, warm off-whites — so a soft
+toy palette need not fall back on the nearest saturated spool. Its hex values
+come from Bambu's own *Filament Hex Code Table — PLA Matte*
+(https://store.bblcdn.eu/s8/default/f131f643495b417197832b291fc7b068/Bambu_PLA_Matte_Hex_Code.pdf),
+read 2026-09-25; that sheet prints no colour codes.
 
 **Bambu Lab PETG Basic** (13 colours) is the tougher, less brittle stock — a
 part that flexes, takes an impact, or sits in a warm car. Its hex values come
@@ -31,12 +38,13 @@ from Bambu's own *Filament Hex Code Table — PETG Basic*, read 2026-09-15.
 Hex values are as published; the trailing number is Bambu's colour code.
 
 Seven names — black, white, gray, red, orange, yellow, green — are in both
-tables, and five of them are a **different** hex in each (black and orange
-happen to be the same colour in both stocks), so a name alone no longer
-identifies a spool. `material` is what separates them, and it defaults to PLA
+PLA Lite and PETG Basic, and five of them are a **different** hex in each (black
+and orange happen to be the same colour in both stocks); PLA Matte shares
+`dark brown` with PETG Basic, again as a different spool. So a name alone does
+not identify a spool. `material` is what separates them, and it defaults to PLA
 Lite, which is what every colour authored before PETG was stocked already meant.
-Ask for a PETG-only colour without saying so and the error names the stock that
-has it instead of guessing.
+Ask for a colour from another stock without saying so and the error names the
+stock that has it instead of guessing.
 
 A PETG part printed in place also wants
 `cadfits.print_in_place_gap(..., material="PETG")`: PETG strings and oozes more
@@ -93,6 +101,35 @@ MATERIALS: dict[str, dict[str, str]] = {
         "white": "#FFFEF7",             # 16103
         "yellow": "#FFD834",            # 16400
     },
+    # Bambu Lab PLA Matte — pastel and muted tones. Bambu's hex table lists no
+    # colour codes.
+    "pla matte": {
+        "apple green": "#C2E189",
+        "ash gray": "#9B9EA0",
+        "bone white": "#CBC6B8",
+        "caramel": "#AE835B",
+        "charcoal": "#000000",
+        "dark blue": "#042F56",
+        "dark brown": "#7D6556",
+        "dark chocolate": "#4D3324",
+        "dark green": "#68724D",
+        "dark red": "#BB3D43",
+        "desert tan": "#E8DBB7",
+        "grass green": "#61C680",
+        "ice blue": "#A3D8E1",
+        "ivory white": "#FFFFFF",
+        "latte brown": "#D3B7A7",
+        "lemon yellow": "#F7D959",
+        "lilac purple": "#AE96D4",
+        "mandarin orange": "#F99963",
+        "marine blue": "#0078BF",
+        "nardo gray": "#757575",
+        "plum": "#950051",
+        "sakura pink": "#E8AFCF",
+        "scarlet red": "#DE4343",
+        "sky blue": "#56B7E6",
+        "terracotta": "#B15533",
+    },
     # Bambu Lab PETG Basic — tougher and less brittle than PLA.
     "petg basic": {
         "black": "#000000",             # 30105
@@ -114,13 +151,15 @@ MATERIALS: dict[str, dict[str, str]] = {
 #: The stock a colour comes from when the caller does not say.
 DEFAULT_MATERIAL = "pla lite"
 
-# Family shorthands. Exactly one PLA stock and one PETG stock are loaded here,
-# so the family alone is unambiguous; stocking a second of either retires its
-# shorthand rather than picking a winner behind the caller's back.
-_MATERIAL_ALIASES: dict[str, str] = {"pla": "pla lite", "petg": "petg basic"}
+# Family shorthands, for a family with exactly one stock loaded. PETG has one,
+# so "PETG" is unambiguous. PLA has two (Lite and Matte), so the bare "PLA"
+# shorthand is retired rather than picking a winner behind the caller's back:
+# name the stock.
+_MATERIAL_ALIASES: dict[str, str] = {"petg": "petg basic"}
 
 _MATERIAL_LABELS: dict[str, str] = {
     "pla lite": "Bambu Lab PLA Lite",
+    "pla matte": "Bambu Lab PLA Matte",
     "petg basic": "Bambu Lab PETG Basic",
 }
 
@@ -232,7 +271,7 @@ def _self_check() -> int:
         all(
             filament_hex(name, material=stock) == MATERIALS[stock][name]
             for name in shared
-            for stock in MATERIALS
+            for stock in ("pla lite", "petg basic")
         ),
         f"in both: {', '.join(shared)}",
     )
@@ -264,6 +303,35 @@ def _self_check() -> int:
         )
     else:
         check("a colour from the other stock names that stock", False, "no error raised")
+
+    try:
+        filament("black", material="PLA")
+    except ValueError as exc:
+        check(
+            "the bare PLA shorthand is ambiguous and raises",
+            "PLA Lite" in str(exc) and "PLA Matte" in str(exc),
+            str(exc),
+        )
+    else:
+        check("the bare PLA shorthand is ambiguous and raises", False, "no error raised")
+
+    check(
+        "a matte pastel resolves by its stock name",
+        filament_hex("Ice Blue", material="PLA Matte")
+        == filament_hex("ice_blue", material="pla-matte")
+        == "#A3D8E1",
+    )
+    check(
+        "dark brown is a different spool in PLA Matte and PETG Basic",
+        filament_hex("dark brown", material="PLA Matte")
+        != filament_hex("dark brown", material="PETG"),
+    )
+    try:
+        filament("mandarin orange")
+    except ValueError as exc:
+        check("a matte colour asked for as PLA Lite names PLA Matte", "pla matte" in str(exc), str(exc))
+    else:
+        check("a matte colour asked for as PLA Lite names PLA Matte", False, "no error raised")
 
     try:
         filament("black", material="nylon")

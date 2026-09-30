@@ -305,13 +305,16 @@ Each item pairs a SANITY check with a VISUAL check, per `cad`'s build loop.
 
 **Likeness handoff**
 
-| Label | Project-local reference | Minimum IoU | Why this viewpoint is usable |
-|---|---|---:|---|
-| <> | `ref/<file>` | 0.90 | <> |
+| Label | Project-local reference | Camera AZ,EL (±TOL) | Minimum IoU | Why this viewpoint is usable |
+|---|---|---|---:|---|
+| <> | `ref/<file>` | <az>,<el> (±30) | 0.90 | <> |
 
 - [ ] the spec phase records the pairs and threshold but does not claim a score
 - [ ] the CAD phase passes every pair to `verify_project --image-derived` as
-      `--likeness-ref LABEL=PATH`
+      `--likeness-ref LABEL=PATH@AZ,EL[,TOL]`, with the camera from the table
+- [ ] the landmark ledger has a row that states a side (e.g. "handle on -Y"),
+      and, for any reference flattened by `ref_silhouette.py`, a row for every
+      enclosed through-opening -- the silhouette gate no longer scores those
 - [ ] the delivery floor is 0.90 and fixed: `verify_project --image-derived`
       does not take a lowered one. `check_likeness --accept-mismatch` records a
       mismatch **while iterating** — and only once that view has two rounds on

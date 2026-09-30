@@ -194,13 +194,21 @@ def boxes_apart(a, b, margin: float = 0.0) -> bool:
 def clash_volume(component, obstacles: list) -> float:
     """Exact intersection volume against every obstacle, bbox-prefiltered."""
     total = 0.0
+    # The component's SOLIDS, for the reason `obstacle_solids` gives for the
+    # other side of this boolean: a many-bodied compound is not a body.  A
+    # component intersected whole can report hundreds of mm3 against an
+    # obstacle that no single body of it touches -- a seat clash named in a bay
+    # the component drops into with clearance all round, and no seat edit
+    # answers it because there is nothing there to clear.
+    bodies = list(component.solids()) or [component]
     for obstacle in obstacles:
-        if boxes_apart(component, obstacle):
-            continue
-        with contextlib.suppress(Exception):
-            meeting = component & obstacle
-            if meeting is not None:
-                total += float(sum(solid.volume for solid in meeting.solids()))
+        for body in bodies:
+            if boxes_apart(body, obstacle):
+                continue
+            with contextlib.suppress(Exception):
+                meeting = body & obstacle
+                if meeting is not None:
+                    total += float(sum(solid.volume for solid in meeting.solids()))
     return total
 
 
@@ -328,7 +336,7 @@ def run_mount(spec: dict, project: Path, shape, parts: dict,
              f'no "sha256" for {declared}; the catalog file can change under the seat')
 
     try:
-        component = cadmount.load(source)
+        component = cadmount.load(source, spec.get("solid"))
     except (ValueError, FileNotFoundError) as error:
         note("component-source", str(error))
         return findings
