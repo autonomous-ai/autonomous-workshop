@@ -63,7 +63,17 @@ Drive to a written spec containing:
   interfaces, what it mates with. No hedged quantities — the Workshop concept
   contract rejects "roughly", "about", "several", "as needed". If a number is
   not decided, decide it.
-- **Envelope, wall thickness, print stance.**
+- **Envelope, wall thickness, print stance.** Name each geometry's print
+  stance by the face that lies on the bed.
+- **Every joint, pinned.** For each pair of Components that join: the joint
+  type (peg and socket, collar, pin, snap, glue face), its dimensions and
+  clearance in mm, and where it sits on both mating Components. Make builds
+  joints exactly as written and cannot choose them: never write "hidden
+  joints", "Make decides the pegs" or any other hand-off of joint geometry.
+- **No two statements that cannot both hold.** A face cannot be both a
+  Component's print-bed face and carry a peg, and a feature cannot sit on a
+  Component the prose places it off. Make stops with a need when it finds
+  such a pair.
 - **The fixed-frame plan.** How the toy composes in Release's product frame at
   35 degrees azimuth, 22 degrees elevation, against `#f5f0e6`, with the Focal
   Component as the focal point.
@@ -102,7 +112,8 @@ Draft the block per
 [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md): one `geometries[]`
 entry per item on the unique-geometry list, and one `requirements[]` row for
 every checkable claim the prose decided — a dimension, a count, a wall
-thickness, a clearance, a joint range, a visible feature. Check the block against the prose line by line,
+thickness, a clearance, a joint range, a joint's geometry, a print stance, a
+visible feature. Check the block against the prose line by line,
 not just against itself: a block that leaves out a decided number or feature
 lets the run drift, and nobody downstream reads the prose closely enough to
 notice. Name each
@@ -284,11 +295,31 @@ Any change to size, shape or stance amends the contract. When an image no
 longer shows what the contract says, fix the image by AI editing. Then redo
 Stage 3b for every image you touched, and the assembly image.
 
-Record every check in the working notes as a table: image, feature, size at
-contract scale, minimum, verdict, resolution.
+Then check every hidden joint the contract pins, which no image shows. For
+each Component, take its print stance and its bed face, and for each peg,
+socket, collar, pin or boss it carries:
 
-Done when: every feature the images show meets its minimum, every form has a
-support-free stance, and every change is in both the contract and the images.
+- **Nothing stands on the bed face.** A peg or collar on the bed face lifts
+  the part off the bed. Mating faces that print face down cannot also carry
+  pegs; move the pegs to the other side of the joint or change the stance.
+- **Nothing prints over air.** A collar, lip or boss that sticks out sideways
+  in the print stance hangs unsupported. A socket or pin hole that runs
+  parallel to the bed needs a teardrop or pointed top.
+- **Both sides agree.** The peg and its socket have the same axis and
+  position on the two mating Components, and the clearance is at least
+  0.2 mm a side.
+
+Resolve each problem with the list above. A resolution that moves a visible
+feature from one Component to another is a visible change: redo the images it
+touches. Compute the checks with a script only when the joints are too many to
+check reliably by hand.
+
+Record every check in the working notes as a table: image or joint, feature,
+size at contract scale, minimum, verdict, resolution.
+
+Done when: every feature the images show meets its minimum, every form and
+every hidden joint has a support-free stance, and every change is in both the
+contract and the images.
 
 ## Stage 3d - Check that the mechanism can move
 
