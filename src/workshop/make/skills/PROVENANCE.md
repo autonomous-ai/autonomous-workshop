@@ -1,5 +1,177 @@
 # Shared skill provenance
 
+## Resync to upstream `b67636e`: build123d libraries that downgrade the toolchain (2026-10-01)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `b67636e092a68f94335d0a76ee004b59784dad66` (2026-10-01), resynced from
+  `db26c4e`. That is one upstream commit touching the same single file,
+  `wiki/pages/modeling/element-libraries.md`. The merge is the same three-way
+  merge as before. The Workshop copy was byte-identical to the `db26c4e` base,
+  so it takes upstream's bytes unchanged. No other tree moved; their locks move
+  to the new commit only, and `make-round` is unchanged.
+- **What upstream brought.** A new section, "Other build123d libraries",
+  makes a dry run the rule before any install
+  (`pip install --dry-run --report`). The reason is that pip does not fail
+  when a library cannot accept the environment: it backtracks to an old
+  release that pins an old build123d. The section gives a verdict for
+  `gflabel`, `gfthings`, `gridfinity_build123d`, `bd-vslot` and `capistry`,
+  and the `cq-gridfinity` row now points to it. The page's aliases gain the
+  new names.
+
+Upstream measured its verdicts in its own venv, which runs Python 3.14 with
+`bd_warehouse` 0.3.0. Workshop pins the same `bd_warehouse` range
+(`>=0.3,<0.4`) and `build123d==0.11.1`, but declares
+`requires-python = ">=3.11"`. Its development venv here is 3.11.12. Each
+verdict was resolved against that venv with `uv pip install --dry-run`, read
+against PyPI metadata on 2026-10-01:
+
+- `gfthings` downgrades the toolchain here too, but for a different reason.
+  It installs 0.8.3, which takes `build123d` from 0.11.1 to 0.10.0 and
+  `cadquery-ocp` from 7.9.3 to 7.8.1. Its current 0.9.0 requires Python 3.12
+  and pins `build123d<0.11`, so it would downgrade on any interpreter.
+- `gflabel` 0.2.0 declares `requires-python <3.13,>=3.10` and
+  `build123d>=0.8.0`. On 3.11 or 3.12 it installs cleanly with no change to
+  build123d. Upstream's fallback only happens from 3.13 upward.
+- `capistry` 0.2.0 requires Python 3.13 or later. On 3.11 it fails to resolve
+  rather than installing, so "installs cleanly" holds only from 3.13.
+- `gridfinity_build123d` is not on PyPI at all, so it is git-only. Upstream's
+  reason for avoiding it (it pins `bd_warehouse` to a git commit) is not
+  something a dry run from PyPI can show.
+- The `bd-vslot` verdict does not depend on the interpreter.
+
+The page is left as upstream wrote it, not adapted locally. Where a verdict
+differs here, the difference is harmless: either a library the page warns
+against turns out to install cleanly, or a library it clears fails to resolve.
+In neither case does the page lead to a toolchain downgrade. The dry-run rule
+it leads with is what shows the right answer on any interpreter. The page's
+"The venv runs Python 3.14" describes upstream's venv, which the wiki
+`SKILL.md` note on machines and fixtures already covers in spirit. Making the
+verdicts depend on the interpreter belongs upstream.
+
+Verified here: `verify_skill_locks` matches eight trees, `wiki --self-check`
+passes and `wiki lint` reports 193 pages with 0 errors. `search gflabel`,
+`search capistry` and `search bd-vslot` each rank the new section first.
+
+Consequences for existing runs:
+
+- **Materialized instruction bytes changed.** The `wiki` fingerprint moves. A
+  run parked before this change must be restarted rather than resumed; resume
+  fails closed on the materialized-instruction-hash mismatch.
+  `workshop resume --refresh-tools` rewrites the skills a run already carries.
+- No gate reads the wiki, and no script changed.
+
+## Resync to upstream `db26c4e`: four more CadQuery libraries ruled out (2026-10-01)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `db26c4e38748d1affe67da62ab97a0c4943069b1` (2026-10-01), resynced from
+  `7e03fc2`. That is one upstream commit touching one file. The merge is the
+  same three-way merge as before: the base is the locked `7e03fc2` bytes, one
+  side is the Workshop tree and the other is upstream `HEAD`. Only `wiki`
+  moved. Its `modeling/element-libraries.md` was byte-identical to the
+  `7e03fc2` base here, so it takes upstream's bytes unchanged. `cad`,
+  `design-reference`, `electromechanical-integration`, `image-to-cad`,
+  `product-design` and `step-parts` did not change, and their locks move to
+  the new commit only. `make-round` is unchanged. Adoption is unchanged too:
+  `toy-archive` and the reverse-engineering pair stay out.
+- **What upstream brought.** The table "CadQuery libraries that do not apply"
+  gains three rows and corrects a fourth. `cq-gridfinity` needs `cadquery` and
+  `cqkit`, so author Gridfinity bins in build123d from the published profile
+  (42 mm pitch, 7 mm height unit). `argus-diff` needs `cadquery`; the idea
+  worth keeping is to match bodies by a fingerprint of volume, area, centre of
+  mass, bbox and principal moments. `dl4to4ocp` pins `torch==1.12` and
+  produces a voxel field with no parametric source. `cq-kit` was listed as
+  missing from PyPI, which was wrong: it is published as `cqkit`. It now has
+  its own row, which says it is CadQuery-only and that build123d's selectors
+  already cover it. The page's aliases gain the new names, so
+  `search gridfinity` and `search argus-diff` both rank this section first.
+
+Merge: the page carries no Workshop-local lines, so nothing needed merging.
+The `argus-diff` row names two tools. `interfere` resolves to the `cad`
+skill's `scripts/inspect interfere`. `step_verify` is a script in upstream's
+`step-to-source`, which Workshop does not adopt. The row still holds without
+it, because it only explains why not to install a package and `interfere`
+already covers clashes. The wiki `SKILL.md` note on `step-to-source`
+mentions only `reverse-engineering/` pages, and this row is not on one. It
+is left as upstream wrote it, not adapted locally.
+
+Verified here: `verify_skill_locks` matches eight trees, `wiki --self-check`
+passes and `wiki lint` reports 193 pages with 0 errors.
+
+Consequences for existing runs:
+
+- **Materialized instruction bytes changed.** The `wiki` fingerprint moves. A
+  run parked before this change must be restarted rather than resumed; resume
+  fails closed on the materialized-instruction-hash mismatch.
+  `workshop resume --refresh-tools` rewrites the skills a run already carries.
+- No gate reads the wiki, and no script changed.
+
+## Resync to upstream `7e03fc2`: the joint catalogue, segmented axles, phrase-aware wiki search (2026-10-01)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `7e03fc2269ffbeb9f423cab348a3c699cbd69bde` (2026-10-01), resynced from
+  `b149710` — 4 upstream commits touching 41 files. Same three-way merge as
+  before: base the locked `b149710` bytes, one side the Workshop tree, the
+  other upstream `HEAD`. Only `wiki` moved upstream; `cad`,
+  `design-reference`, `electromechanical-integration`, `image-to-cad`,
+  `product-design` and `step-parts` came out byte-identical, and their locks
+  move to the new commit only. `make-round` is unchanged. Adoption is
+  unchanged too: `toy-archive` (changed upstream in this range) and the
+  reverse-engineering pair stay out.
+- **What upstream brought.** Twelve researched pages cover joints the
+  catalogue only named or did not have: `mechanisms/ball-and-socket-joints`,
+  `posable-figure-joints`, `rod-ends-and-clevises`, `hinge-types`,
+  `shaft-hub-connections`, `rolling-contact-joints`, `swivels-and-turntables`,
+  `telescoping-tubes-and-locks`, `scissor-and-pantograph-linkages` and
+  `bayonet-and-twist-locks`, `fasteners/push-pins-and-clip-fasteners`, and
+  `printing/interlocking-joinery-for-prints`. A thirteenth,
+  `mechanisms/joint-variant-index`, maps every variant to its section, and
+  `joints.md` names the kinematic pair before the form. `shaft-couplings`
+  gains CV and printed universal joints, `clutches-and-freewheels` dog and jaw
+  clutches, and `flexures-and-living-hinges` six more flexure forms.
+  `shafts-and-bearings` and `fdm-joining-split-prints` gain the segmented
+  axle: an axle longer than the bed splits at the pivots it carries, each
+  pivot pin printed lying on a D-flat that keys a D-socket, the flat cut where
+  the curve leaves at about 50° because a shallower one fails `check_overhang`
+  along the whole pin, and the sag computed with the section varying along
+  the span. Back-links are wired across 20 pages; 193 pages.
+- **Search.** `scripts/wiki` no longer lets a synonym member typed inside a
+  longer typed member call its own group, and keeps stop words out of concept
+  tokens: "split pin" had ranked parting lines first, "claw coupling"
+  grippers, and "knuckle joint" hinges. `synonyms.txt` gains the new
+  vocabulary. Upstream reports 4 of 76 sample queries changing their top page,
+  each to the right one; the new self-check fixtures fail on the old code.
+
+Merge: upstream changed only the `description` front matter of `wiki`'s
+`SKILL.md`, and Workshop's lines there (the `workshop skills path` command and
+the consult-only block) sit below it, so the merge was clean. Nothing needed
+adapting. The new pages cite `skills/cad/scripts/cadfits.py` (`slot_for`,
+`peg_for`, `mating_clearance`, `print_in_place_gap`), `cadprint.min_wall` and
+`shell_wall`, and `stdpart sizes` for `SetScrew`, `LockCollar`,
+`ExternalSnapRing`, `ShaftKey` and `ORing`. Every one resolves against the
+Workshop trees, and the existing `SKILL.md` note already reads a
+`skills/<name>/` path as the sibling Make skill.
+
+`toy-archive`'s change (`6d989fb`: `publish` refuses a black-on-white
+likeness mask as the Factory cover, because an image-derived `verify_project`
+writes its own `snap/iso.png`) is not taken; that publish wraps a host-only
+effect. Workshop's Factory handoff also uses the sealed `snap/iso.png` as the
+cover, but the Make proposal binds that file to the signature review's
+`iso_sha256`, so a mask written over the reviewed render fails the proposal
+instead of reaching Factory.
+
+Verified here: `verify_skill_locks` matches eight trees; `wiki --self-check`
+passes, including upstream's four new phrase and stop-word fixtures; and
+`wiki lint` reports 193 pages, 0 errors.
+
+Consequences for existing runs:
+
+- **Materialized instruction bytes changed.** The `wiki` fingerprint moves. A
+  run parked before this change must be restarted rather than resumed; resume
+  fails closed on the materialized-instruction-hash mismatch.
+  `workshop resume --refresh-tools` rewrites the skills a run already carries.
+- No gate reads the wiki, and `scripts/wiki` is the only script that changed.
+  A query whose top page moved now names the joint it asked for.
+
 ## Resync to upstream `b149710`: per-piece likeness, bought parts in 6h, print unions (2026-09-30)
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at

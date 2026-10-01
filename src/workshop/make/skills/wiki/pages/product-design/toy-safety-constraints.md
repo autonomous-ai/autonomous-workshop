@@ -13,8 +13,8 @@ sources:
   - https://www.law.cornell.edu/cfr/text/16/1500.53
   - https://law.resource.org/pub/eu/toys/en.71.1.2014.html
   - https://www.cpsc.gov/Business--Manufacturing/Business-Education/Business-Guidance/Magnets
-related: [handheld-ergonomics, printed-part-count, automata-patterns, joints, stability-and-tipping]
-updated: 2026-09-29
+related: [handheld-ergonomics, printed-part-count, automata-patterns, joints, stability-and-tipping, scissor-and-pantograph-linkages, posable-figure-joints]
+updated: 2026-10-01
 ---
 
 # Toy safety as design constraints
@@ -90,7 +90,7 @@ not something a rigid sweep can check; record it as an open item.
   **5 mm** rod it must also admit a **12 mm** rod. Gaps between 5 and 12 mm
   trap fingers.
 - **Scissor actions in folding toys**: keep 12 mm or more clearance between
-  the moving parts.
+  the moving parts ([[scissor-and-pantograph-linkages]]).
 - **Springs** (spiral, extension, compression): the gap between turns must be
   more than **3 mm** (compression springs, at rest), or the spring must be
   inaccessible.

@@ -8,11 +8,15 @@ sources:
   - https://codeberg.org/Zolko/Asm4_documentation Resources/Tutorial3 (FreeCAD Jansen walker: link lengths x10 mm, layer offsets, 15-leg phasing)
   - "experience: walkers whose legs were posed once for every phase, and axles driven by one rod"
   - "experience: an eccentric-driven rocker whose pin was placed for a 90 deg mid-swing transmission"
-related: [mechanism-design, automata-patterns, mechanism-verification]
-updated: 2026-09-29
+related: [mechanism-design, automata-patterns, mechanism-verification, scissor-and-pantograph-linkages, rod-ends-and-clevises]
+updated: 2026-10-01
 ---
 
 # Linkages
+
+Scissor chains, lazy tongs, scissor lifts, pantographs and Hoberman
+elements: [[scissor-and-pantograph-linkages]]. Straight-line and toggle
+linkages: [[straight-line-and-toggle-linkages]].
 
 ## Four-bar
 

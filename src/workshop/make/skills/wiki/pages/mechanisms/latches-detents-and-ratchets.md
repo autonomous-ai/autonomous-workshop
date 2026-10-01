@@ -9,8 +9,8 @@ sources:
   - https://patents.google.com/patent/US20100288593A1/en (rake angle; engagement held by contact geometry rather than by spring and friction)
   - https://patents.google.com/patent/US4916276A/en (heart-shaped cam push-push lock: pin rocks on a holder, spring-biased into the groove)
   - https://www.kjmagnetics.com/blog/testing-magnet-strength (any gap or coating cuts pull force; steel plate should be about twice the magnet's diameter wide)
-related: [joints, snap-fit-design, cams-intermittent, clutches-and-freewheels, springs, flexures-and-living-hinges, straight-line-and-toggle-linkages, magnets-and-strap-slots, mechanism-verification, creep-and-stress-relaxation, hinges-and-pin-joints]
-updated: 2026-09-23
+related: [joints, snap-fit-design, cams-intermittent, clutches-and-freewheels, springs, flexures-and-living-hinges, straight-line-and-toggle-linkages, magnets-and-strap-slots, mechanism-verification, creep-and-stress-relaxation, hinges-and-pin-joints, bayonet-and-twist-locks, posable-figure-joints]
+updated: 2026-10-01
 ---
 
 # Latches, detents and ratchets
@@ -137,7 +137,8 @@ in the retention chain. A freewheel built from pawls is on
   can clear the notch. Buy it where possible: the groove is small and a
   printed one wears.
 - **Bayonet**: an L-slot turned into a short leg; a detent bump in the short
-  leg stops it backing out ([[joints#latching-and-holding]]).
+  leg stops it backing out ([[joints#latching-and-holding]]). Slot forms, lug
+  sizing and ramps: [[bayonet-and-twist-locks]].
 
 ## Magnetic catches
 

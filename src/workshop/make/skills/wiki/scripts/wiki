@@ -230,17 +230,23 @@ def concepts(query: str, groups: list[list[str]]) -> list[set[str]]:
     concepts of their own. A section scores the best token of each concept.
     """
     q = words(query)
-    padded = " " + " ".join(q) + " "
-    found: list[tuple[set[str], set[str]]] = []  # (typed words claimed, concept tokens)
-    for group in groups:
-        claimed: set[str] = set()
+    spans: list[tuple[int, int, int]] = []  # (group, start, end) of every member typed
+    for gi, group in enumerate(groups):
         for m in group:
             mw = words(m)
-            if mw and " " + " ".join(mw) + " " in padded:
-                claimed |= set(mw)
+            for i in range(len(q) - len(mw) + 1) if mw else ():
+                if q[i:i + len(mw)] == mw:
+                    spans.append((gi, i, i + len(mw)))
+    # A member typed inside a longer member is a word of that phrase, not its own
+    # sense: "split pin" is a pin, so the "split" of parting lines stays out.
+    spans = [(g, i, j) for g, i, j in spans
+             if not any(a <= i and j <= b and b - a > j - i for _, a, b in spans)]
+    found: list[tuple[set[str], set[str]]] = []  # (typed words claimed, concept tokens)
+    for gi, group in enumerate(groups):
+        claimed = {w for g, i, j in spans if g == gi for w in q[i:j]}
         if not claimed:
             continue
-        toks = {t for m in group for t in tokens(m)}
+        toks = {t for m in group for t in tokens(m) if t not in STOP}
         for i, (c, t) in enumerate(found):
             if c & claimed:
                 found[i] = (c | claimed, t | toks)
@@ -582,7 +588,9 @@ def self_check() -> int:
         pages = root / "pages" / "mech"
         pages.mkdir(parents=True)
         (root / "synonyms.txt").write_text(
-            "# comment\nshaft | axle | spindle\ngear | cog\nball bearing | bearing\n", encoding="utf-8")
+            "# comment\nshaft | axle | spindle\ngear | cog\nball bearing | bearing\n"
+            "split | parting line | seam\nsplit pin | cotter pin\nball and socket | ball joint\n",
+            encoding="utf-8")
         (pages / "shafts.md").write_text(page(
             "Shafts", "[shaft, axle]",
             "Intro about axles.\n\n## Deflection\n\nA shaft bends: delta = F L^3 / (48 E I).\n\n"
@@ -595,6 +603,12 @@ def self_check() -> int:
             aliases="[gearing]"), encoding="utf-8")
         (pages / "bearings.md").write_text(page(
             "Ball bearings", "[bearing]", "## Sizes\n\n608 is 8 x 22 x 7."), encoding="utf-8")
+        (pages / "seams.md").write_text(page(
+            "Parting lines", "[split, seam]",
+            "## Where to split\n\nSplit the part on a seam; a split line hides in a crease."), encoding="utf-8")
+        (pages / "pins.md").write_text(page(
+            "Clevis pins", "[pin]", "## Retainers\n\nA cotter pin bent through the cross hole.",
+            aliases="[split pin]"), encoding="utf-8")
 
         loaded = load_wiki(root)
         groups, syn_err = load_synonyms(root)
@@ -618,6 +632,11 @@ def self_check() -> int:
         assert len(two_word) == 1 and "bearing" in two_word[0], "a two-word term is one concept"
         assert top("spindle cog") == top("shaft gear"), "a synonym query must rank like the word it stands for"
         assert concepts("how to design a gear", groups) == concepts("gear", groups), "phrasing words are not the topic"
+        assert concepts("split pin", groups) == [{"split", "pin", "cotter"}], \
+            "a word inside a longer typed member must not call its own group"
+        assert top("split pin") == "pins#retainers", top("split pin")
+        assert top("split seam") == "seams#where-to-split", "a bare word still calls its group"
+        assert all("and" not in c for c in concepts("ball and socket", groups)), "stop words are not concept tokens"
 
         errors, _ = lint(root)
         assert errors == [], errors
