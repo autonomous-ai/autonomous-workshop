@@ -79,6 +79,7 @@ from workshop.runtime.package_data import (
 )
 from workshop.runtime.progress import WishRunTimingEvent
 from workshop.wish import (
+    LoadedWishReference,
     Wish,
     generate_wish_id,
     load_wish_references,
@@ -742,12 +743,16 @@ def _reject_conflicting_publication_options(args: argparse.Namespace) -> None:
         )
 
 
-def _load_sealed_contract(path: Path) -> tuple[str, dict]:
+def _load_sealed_contract(
+    path: Path, references: Sequence[LoadedWishReference]
+) -> tuple[str, dict]:
     """Read and validate a Design Contract file, refusing before any run starts.
 
     A contract that cannot be parsed or fails any of ADR 0072's checks must
     never fall back to ordinary Wish mode, so ``parse_design_contract``'s
-    ``ContractError`` is left to propagate and abort ``wish`` entirely.
+    ``ContractError`` is left to propagate and abort ``wish`` entirely. The
+    same holds for reference images that would not seal under the names the
+    contract lists.
     """
 
     try:
@@ -755,6 +760,7 @@ def _load_sealed_contract(path: Path) -> tuple[str, dict]:
     except (OSError, UnicodeError) as exc:
         raise WorkshopError("cannot read design contract file") from exc
     contract = parse_design_contract(text)
+    contract.check_reference_names([item.reference.name for item in references])
     return text, contract.to_dict()
 
 
@@ -774,7 +780,7 @@ def _wish(args: argparse.Namespace) -> int:
                 "--contract seals the whole file as the objective: do not also "
                 "type a WISH"
             )
-        objective, sealed_contract = _load_sealed_contract(args.contract)
+        objective, sealed_contract = _load_sealed_contract(args.contract, loaded_references)
         context["design_contract"] = sealed_contract
     else:
         if not args.objective:
@@ -836,7 +842,9 @@ def _fix(args: argparse.Namespace) -> int:
         revision_options["references"] = [item.reference for item in loaded_references]
         revision_options["reference_sources"] = wish_reference_sources(loaded_references)
     if args.contract is not None:
-        _, revision_options["design_contract"] = _load_sealed_contract(args.contract)
+        _, revision_options["design_contract"] = _load_sealed_contract(
+            args.contract, loaded_references
+        )
     wish, snapshot = prepare_revision(args.source, prompt, **revision_options)
     runtime = manager_runtime_selection(
         args.agent, model=args.model, reasoning_effort=args.effort,

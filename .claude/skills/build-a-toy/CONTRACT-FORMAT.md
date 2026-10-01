@@ -63,7 +63,10 @@ recreates the defect this skill exists to remove.
 - `references[].file`: named `ref-NN-<slug>.png`, `.jpg` or `.webp`,
   numbered from `01` without gaps, each at most 800x800 pixels and 12 MiB,
   with one subject fully inside the frame. These are `design-a-toy`'s rules.
-  `shows` is `assembly` or `geometry:<id>`.
+  `shows` is `assembly` or `geometry:<id>`. Pass every one of these files to
+  `--ref` under these names and in this order: `wish --contract` and
+  `fix --contract` refuse missing images and images that would seal under any
+  other name, because Make finds an image's label by its name.
 - `geometries[]`: one entry per **Unique Geometry**. `id` is lowercase kebab
   case. `count` is how many Components the toy has with this shape.
   `wall_min_mm` is the minimum wall.

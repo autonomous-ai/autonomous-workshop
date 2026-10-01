@@ -1039,6 +1039,16 @@ def _contract_text(block=None, prose="# Antisol\n\nA toy about disc worlds.\n"):
     return "%s\n```design-contract\n%s\n```\n" % (prose, json.dumps(body, indent=2))
 
 
+def _contract_image(directory):
+    """The one image ``_contract_block`` lists, under the name it lists."""
+
+    from PIL import Image
+
+    path = Path(directory) / "ref-01-antisol.png"
+    Image.new("RGB", (64, 64), "red").save(path)
+    return path
+
+
 class WishContractCommandTest(unittest.TestCase):
     """``workshop wish --contract`` (ADR 0072, Delivery 2)."""
 
@@ -1053,13 +1063,67 @@ class WishContractCommandTest(unittest.TestCase):
             ), mock.patch(
                 "cli.main.start_native_run", return_value=native_receipt()
             ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
-                result = main(("wish", "--contract", str(contract_path)))
+                result = main(
+                    ("wish", "--contract", str(contract_path),
+                     "--ref", str(_contract_image(tmp)))
+                )
             self.assertEqual(result, 0)
             sealed_wish = start.call_args.args[0]
             self.assertEqual(sealed_wish.objective, text)
             self.assertIn("design_contract", sealed_wish.context)
             self.assertEqual(sealed_wish.context["design_contract"]["title"], "Antisol")
             self.assertIn("Contract Mode: sealed", stdout.getvalue())
+
+    def test_contract_images_seal_under_the_names_the_contract_lists(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            contract_path.write_text(_contract_text(), encoding="utf-8")
+            image = _contract_image(tmp)
+            with mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-one"
+            ), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                result = main(
+                    ("wish", "--contract", str(contract_path), "--ref", str(image))
+                )
+            self.assertEqual(result, 0)
+            sealed_wish = start.call_args.args[0]
+            self.assertEqual(
+                [reference.name for reference in sealed_wish.references],
+                ["ref-01-antisol.png"],
+            )
+
+    def test_images_that_do_not_match_the_contract_refuse_and_start_no_run(self):
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            contract_path.write_text(_contract_text(), encoding="utf-8")
+            image = Path(tmp) / "antisol-front.png"
+            Image.new("RGB", (64, 64), "red").save(image)
+            with mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+                StringIO()
+            ), redirect_stderr(StringIO()) as stderr:
+                result = main(
+                    ("wish", "--contract", str(contract_path), "--ref", str(image))
+                )
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("ref-01-antisol-front.png", stderr.getvalue())
+            self.assertIn("ref-01-antisol.png", stderr.getvalue())
+
+    def test_a_contract_without_its_images_refuses_and_starts_no_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            contract_path.write_text(_contract_text(), encoding="utf-8")
+            with mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+                StringIO()
+            ), redirect_stderr(StringIO()) as stderr:
+                result = main(("wish", "--contract", str(contract_path)))
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("lists 1 reference image(s) but 0 were given", stderr.getvalue())
 
     def test_a_contract_that_does_not_parse_refuses_and_starts_no_run(self):
         with tempfile.TemporaryDirectory() as tmp:
