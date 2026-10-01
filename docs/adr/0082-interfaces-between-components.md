@@ -12,7 +12,8 @@
   definition (`src/workshop/make/agents/component-worker.toml`)
 - Amends: ADR 0080 (what the root writes before spawning workers, and how
   long a worker lives) and ADR 0081 (a third unlock reason)
-- Issue: #78 (spec C of the series begun in #76)
+- Issue: #78 (spec C of the series begun in #76); amended by #80
+  (Interfaces between instances of one Unique Geometry)
 
 ## Context
 
@@ -45,8 +46,9 @@ by writing shared files, and that became the run's biggest cost.
 
 1. **Interfaces in the contract.** Design Contract schema 2 adds a required
    `interfaces` list. Each Interface has an `id`, an **Interface Kind**
-   (`static`, `separable` or `coupled`) and the two or more Unique Geometry
-   ids it joins. A separable Interface carries a **Keep-out Envelope**:
+   (`static`, `separable` or `coupled`) and the two or more Components it
+   joins, each named by its Unique Geometry id or, since #80, as one instance
+   of it (decision 9). A separable Interface carries a **Keep-out Envelope**:
    `inside` and `outside` Components and `shapes`, each a pose name with one
    `box` (`min_mm`, `max_mm`) or `cylinder` (`base_mm`, `axis`, `radius_mm`,
    `height_mm`) in assembly coordinates, one per declared pose or a single
@@ -134,6 +136,35 @@ by writing shared files, and that became the run's biggest cost.
    the assembly passes and sends every unlock (Shared Helper, Interface or
    assembly) to that thread.
 
+9. **Instances (amendment, #80).** An Interface may name one instance of a
+   Unique Geometry whose `count` is above 1 as `<id>#<n>`, with `n` from 1
+   to `count`: `wing#1` meets `wing#2`, or `wing#1` alone meets
+   `heart-core`. The form applies wherever an Interface names a Component:
+   `components`, `envelope.inside` and `.outside`, `yielding` and each pose
+   table mover's `component`. Within one Interface the references are
+   distinct, and a bare id never appears beside an instance of the same
+   geometry; `#n` on a geometry with `count` 1 and an `n` outside 1..`count`
+   are refused. "Two or more Components" counts instances. The change is
+   additive inside schema 2, so no valid contract changes meaning. Every
+   instance is built by the geometry's one Component file, owned by one
+   worker: `gen_step(instance=1)` may build a variant per instance (a file
+   that takes no `instance` builds identical copies), and
+   `assembly_pose(shape, pose, instance)` places instance `n` in assembly
+   coordinates. A Component whose instance an Interface names must take
+   `instance` in `assembly_pose`; `make_round` reads that from the source and
+   refuses the interface check, or fails the envelope check, with a message
+   naming the convention. The generated interface entry builds one child per
+   reference, labelled by it (`wing#1`), which the pose table's movers and
+   obstacles name. Locking, identity, staleness and the unlock belong to the
+   Component: the interface check builds the wing once, refuses unless it is
+   locked, and a failure yielding `wing#2` unlocks `part_wing.step.py`. A
+   separable Interface with an instance on one side is checked with
+   `check_envelope --instance n` in that geometry's component round; with
+   instances on both sides, both checks run in the same round, reported as
+   `<interface> <id>#<n>`. The sealed Interface records, the verifier's list,
+   `product.json`, the Make receipt and the run report keep the references
+   verbatim.
+
 ## Consequences
 
 - The Manager's shared code shrinks to what Interfaces need, and is proven
@@ -156,6 +187,12 @@ by writing shared files, and that became the run's biggest cost.
   assert is the page's own or that a standard element is not hand-built under
   another name.
 
+- A mirror pair that meshes (Broken God's two 24-tooth wing roots) is a
+  Coupled Interface between `wing#1` and `wing#2`, checked before assembly
+  rather than left out of the contract. Only the first instance passes the
+  print gates in a component round, because `gen` builds `gen_step()` with
+  its default instance; a variant's printability shows at assembly.
+
 ## Compatibility and migration
 
 Runs created before this change keep their materialized `make_round`, guard,
@@ -166,7 +203,18 @@ contracts get the new rules; `design-a-toy` writes schema 2.
 
 ## Verification
 
-Contract tests cover a complete section, a kinematic source in place of a
+Contract tests cover instance references (#80): two instances of one
+geometry, one instance beside another geometry, an instance on one side of
+an envelope, and the refusal of `#0`, `#3` on a `count` 2 geometry, `#1` on
+a `count` 1 geometry, a bare id beside its instance, a repeated reference,
+and an unknown instance as `yielding` or mover. The `make_round` tests build
+two instances once as distinct labelled children, refuse the check while the
+Component is unlocked, unlock the Component of a yielding instance with
+evidence, stale the result on a later change, check instances on both sides
+of one envelope in one round, and refuse a placement hook without the
+instance; real build123d tests cover `check_envelope --instance` and the
+generated entry's placement of each instance. Contract tests also cover a
+complete section, a kinematic source in place of a
 pose table, an empty section, schema 1 without it, and the refusal of each
 missing or foreign field. The `make_round` tests, with fake build, gates,
 envelope and motion tools, cover the freeze and its hashes, a failing

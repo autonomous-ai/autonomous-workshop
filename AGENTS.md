@@ -251,6 +251,10 @@ Interface on its locked Components, unlocking the yielding one on failure.
 Assembly and final verification need a current passing check of every
 Coupled Interface, both modes are root-only, Component Workers live until the
 assembly passes, and the run report lists every Interface with its proof.
+Its #80 amendment lets an Interface name one instance of a Unique Geometry
+whose count is above 1, `<id>#<n>` (`wing#1` meets `wing#2`); the geometry's
+one Component file builds and places each instance, and locking, staleness
+and unlocks stay with that Component.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

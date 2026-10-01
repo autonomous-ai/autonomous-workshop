@@ -276,7 +276,10 @@ _Avoid_: Greebles, trim, hand-modelled detail
 **Interface**:
 One place where two or more Components meet, recorded in the Design Contract
 with its Interface Kind and the Components it joins. Interfaces are how a
-toy's Components are built in isolation and still fit.
+toy's Components are built in isolation and still fit. An Interface names a
+Component by its Unique Geometry id, or one instance of a Unique Geometry
+whose count is above 1 as `<id>#<n>`: a mirror pair of wings that mesh is an
+Interface between `wing#1` and `wing#2`.
 _Avoid_: Joint (a joint is one kind of Interface), connection, mating
 
 **Interface Kind**:
