@@ -137,3 +137,35 @@ class DesignContractParsingTest(unittest.TestCase):
         self.assertIn("title", message)
         self.assertIn("inventor", message)
         self.assertIn("does not exist", message)
+
+
+class CheckReferenceNamesTest(unittest.TestCase):
+    def setUp(self):
+        self.contract = parse_design_contract(_contract_text(_block()))
+
+    def test_the_contract_images_in_order_pass(self):
+        self.contract.check_reference_names(["ref-01-antisol.png", "ref-02-world-disc.png"])
+
+    def test_no_images_pass(self):
+        self.contract.check_reference_names([])
+
+    def test_a_name_the_contract_does_not_list_refuses_and_names_both(self):
+        with self.assertRaises(ContractError) as failure:
+            self.contract.check_reference_names(
+                ["ref-01-ref-01-antisol.png", "ref-02-world-disc.png"]
+            )
+        message = str(failure.exception)
+        self.assertTrue(message.startswith("design contract: "))
+        self.assertIn("ref-01-ref-01-antisol.png", message)
+        self.assertIn("not ref-01-antisol.png", message)
+
+    def test_every_mismatch_is_named_at_once(self):
+        with self.assertRaises(ContractError) as failure:
+            self.contract.check_reference_names(["ref-01-world-disc.png", "ref-02-antisol.png"])
+        message = str(failure.exception)
+        self.assertIn("reference image 1", message)
+        self.assertIn("reference image 2", message)
+
+    def test_a_different_count_refuses(self):
+        with self.assertRaisesRegex(ContractError, "lists 2 reference image\\(s\\) but 1"):
+            self.contract.check_reference_names(["ref-01-antisol.png"])

@@ -1037,6 +1037,48 @@ class WishContractCommandTest(unittest.TestCase):
             self.assertEqual(sealed_wish.context["design_contract"]["title"], "Antisol")
             self.assertIn("Contract Mode: sealed", stdout.getvalue())
 
+    def test_contract_images_seal_under_the_names_the_contract_lists(self):
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            contract_path.write_text(_contract_text(), encoding="utf-8")
+            image = Path(tmp) / "ref-01-antisol.png"
+            Image.new("RGB", (64, 64), "red").save(image)
+            with mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-one"
+            ), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                result = main(
+                    ("wish", "--contract", str(contract_path), "--ref", str(image))
+                )
+            self.assertEqual(result, 0)
+            sealed_wish = start.call_args.args[0]
+            self.assertEqual(
+                [reference.name for reference in sealed_wish.references],
+                ["ref-01-antisol.png"],
+            )
+
+    def test_images_that_do_not_match_the_contract_refuse_and_start_no_run(self):
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            contract_path.write_text(_contract_text(), encoding="utf-8")
+            image = Path(tmp) / "antisol-front.png"
+            Image.new("RGB", (64, 64), "red").save(image)
+            with mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+                StringIO()
+            ), redirect_stderr(StringIO()) as stderr:
+                result = main(
+                    ("wish", "--contract", str(contract_path), "--ref", str(image))
+                )
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("ref-01-antisol-front.png", stderr.getvalue())
+            self.assertIn("ref-01-antisol.png", stderr.getvalue())
+
     def test_a_contract_that_does_not_parse_refuses_and_starts_no_run(self):
         with tempfile.TemporaryDirectory() as tmp:
             contract_path = Path(tmp) / "CONTRACT.md"

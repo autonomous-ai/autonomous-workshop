@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from workshop.errors import ContractError
 
@@ -69,6 +69,36 @@ class DesignContract:
         """Sealed file name -> the label Contract Mode uses in Make round summaries."""
 
         return {reference.file: reference.shows for reference in self.references}
+
+    def check_reference_names(self, names: Sequence[str]) -> None:
+        """Refuse reference images that would not reach their contract labels.
+
+        Make labels a sealed image by looking its file name up in
+        ``reference_labels`` (ADR 0072), so an image sealed under any other
+        name is scored as nothing. Given images must seal as exactly the files
+        this contract lists, in its order; every mismatch is named at once.
+        Giving no images is left to the caller.
+        """
+
+        if not names:
+            return
+        expected = [reference.file for reference in self.references]
+        errors: List[str] = []
+        if len(names) != len(expected):
+            errors.append(
+                "it lists %d reference image(s) but %d were given"
+                % (len(expected), len(names))
+            )
+        for position, (given, listed) in enumerate(zip(names, expected), start=1):
+            if given != listed:
+                errors.append(
+                    "reference image %d seals as %s, not %s" % (position, given, listed)
+                )
+        if errors:
+            raise ContractError(
+                "design contract: %s; pass the contract's images under its file "
+                "names and in its order" % "; ".join(errors)
+            )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
