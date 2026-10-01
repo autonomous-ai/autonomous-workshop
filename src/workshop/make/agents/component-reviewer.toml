@@ -16,11 +16,19 @@ verdict forward.
   Compare form there: bodies thinner or blockier than the reference, openings
   it shows that the model fills, members merged or missing, detail simplified
   away. A high silhouette score cannot establish form by itself.
-- Visual check: one round's visual packet (front, top and iso views and every
-  `compare-NN.png`). Answer with JSON only: `{"status": "pass"|"fail",
+- Visual check: one round's visual packet (`sheet.png`, which holds every
+  view including the side and tilted three-quarter views, and every
+  `compare-NN.png`). Judge silhouette, stance and shape language first, then
+  proportion between parts, then whether surface detail reads at render
+  scale. Judge against the plan (the contract rows, or the `WISH-EXPANSION.md`
+  lines you are given) and, separately, against the reference images when
+  the packet has any. Answer with JSON only: `{"status": "pass"|"fail",
+  "matches_plan": true|false, "matches_reference": true|false|null,
   "observation": "...", "findings": [{"part", "defect", "evidence",
   "repair"}], "differences": [{"feature", "reference", "model", "decision",
-  "reason"}]}`. `findings` is empty on pass and required on fail, at most 12.
+  "reason"}]}`. `matches_reference` is null when the packet has no reference
+  image; a pass needs `matches_plan` true and `matches_reference` not false.
+  `findings` is empty on pass and required on fail, at most 12.
   `differences` lists how the model differs from its reference, at most 12;
   `decision` is `repair` or `keep`, and a `repair` cannot pass. When the
   request says the image is below the floor, `differences` is required.

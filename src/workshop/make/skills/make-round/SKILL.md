@@ -125,9 +125,15 @@ calls were reassembling by hand.
 - Do not read the cad or image-to-cad scripts to learn their flags. The
   exact invocations are below; they are the same programs the host gates
   run, unchanged.
-- View each image at most once per round. Always inspect the front, top and iso
-  views in `visual-packet.json`, together with the Wish, concept, dimensions and
-  reference images when present. Look for misplaced, missing or extra parts,
+- Open `visual/sheet.png` at most once per round: one labelled image holding every
+  view the round rendered -- `iso`, `front`, `left` (the side profile), `top`,
+  and the tilted three-quarter views `iso_front`, `iso_back`, `iso_left`,
+  `iso_right` and `iso_bottom`. The single views sit beside it at full size;
+  open one only when a detail is too small to judge on the sheet. Judge the
+  direction of a limb, head or weapon, and whether a form is really sculpted
+  or only a round section, on the tilted view that faces it: a dead-on view
+  flattens depth along its own axis. Compare against the Wish, concept,
+  dimensions and reference images when present. Look for misplaced, missing or extra parts,
   size/proportion mismatch, visible intersections, wrong orientation, floating
   geometry and incorrect form. A high likeness score cannot establish visual
   correctness. Use a targeted additional view if a part is hidden; record
@@ -167,6 +173,20 @@ implicitly apply whole-object reference images:
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
     --component part_<role>.step.py [--ref detail=<component-reference.png>]
 ```
+
+Once every component has a first build, and before any component loop,
+preview the whole object once:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+    --preview-assembly [--entry <name>.step.py]
+```
+
+It renders the combined entry's review sheet under
+`measure/assembly-previews/pNNNN/` and nothing else: no gate, no likeness, no
+round history, no state, and never a pass. Use it to fix proportion, scale and
+placement between parts while they are rough. Preview again only after a
+component's size or placement changes.
 
 After every component passes, start the assembled-object loop with:
 
@@ -233,6 +253,36 @@ component geometry.
 
 The native Manager performs the visual judgment. Python renders and hashes
 evidence; it never calls a vision model, diagnoses an image or chooses repairs.
+A clean build and green gates are not a form verdict. Open `sheet.png` and
+judge in this order:
+
+1. **Silhouette, stance and shape language.** Does the outline read as the
+   intended object in the intended pose from every view, and do its sections,
+   edges, points and proportion carry the style the plan states (for example
+   angular, creased and gaunt rather than round, filleted and full)?
+2. **Proportion between parts.** Head to body, limb length and thickness,
+   against the plan and, when a `## Reference reading` exists, its measured
+   `[observed]` ratios.
+3. **Surface detail at render scale.** Does relief, texture or ornament
+   actually read, or is it too shallow to see?
+
+Judge twice, separately: against the plan the object is built from
+(`WISH-EXPANSION.md`, the sealed concept, or the Design Contract) as
+`matches_plan`, and against the round's reference images as
+`matches_reference` -- `null` when the round has none. Name a defect whenever
+the render falls short. The common ones: round or boxy massing where the form
+should be sculpted (a loft of circles or ellipses is still a tube), a shape
+language the plan did not ask for (soft and inflated where it asked for hard
+and angular), a
+silhouette that reads as a different object, relief too shallow to see, a part
+that lost its shape. Reporting a real defect is the intended outcome, not a
+failure: the round hands the attempt back so it can be fixed.
+
+When the silhouette or massing is wrong, the repair is usually a different
+construction family (loft with shaped sections, sweep, revolve, sketch
+profile), not smaller parameter nudges on a shape that reads incorrectly:
+those rarely converge.
+
 After inspecting the packet, write this JSON with the exact packet hash from
 the summary. Each defect names the affected part, visible error, view/location
 evidence, and proposed source correction. Keep observations short and concrete.
@@ -241,6 +291,8 @@ evidence, and proposed source correction. Keep observations short and concrete.
 {
   "packet_sha256": "<visual packet hash from summary>",
   "status": "fail",
+  "matches_plan": false,
+  "matches_reference": null,
   "observation": "The body is coherent, but the left wheel is visibly offset.",
   "findings": [{
     "part": "left wheel",
@@ -251,7 +303,10 @@ evidence, and proposed source correction. Keep observations short and concrete.
 }
 ```
 
-Use `pass` with an empty findings list only after inspection finds no errors;
+`pass` is refused unless `matches_plan` is true and `matches_reference` is not
+false, and `matches_reference` must be a boolean exactly when the round has
+reference images. Use `pass` with an empty findings list only after inspection
+finds no errors;
 use `inconclusive` and describe the missing evidence when a verdict is impossible.
 
 When a scored reference is below the floor, add `differences`: every way the
@@ -346,7 +401,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
 | likeness | `"$WORKSHOP_PYTHON" $I/render_views.py <entry>.step.py --match <ref.png> --label <L> --min 0.90 -o <dir> --shaded --json [--camera=AZ,EL[,TOL]] [--poses-from <prev poses.json>]` | `results[].iou`, `.ok`, `.az/.el/.roll/.fov` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
-| inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view front --view top --view iso -o <round>/visual` | exact shaded PNGs for native Manager inspection of one component or the assembly |
+| inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view iso --view front --view left --view top --view iso_front --view iso_back --view iso_left --view iso_right --view iso_bottom --sheet -o <round>/visual` | `sheet.png` (every view, labelled) plus each exact shaded PNG, for native Manager inspection of one component or the assembly |
 | final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit [--image-derived --likeness-ref L=PATH@AZ,EL[,TOL] ...] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
 | motion sheet | `"$WORKSHOP_PYTHON" $C/motion_presentation.py` (see the cad skill) | presentation only, not a gate |
 

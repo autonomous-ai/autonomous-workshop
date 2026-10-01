@@ -39,15 +39,25 @@ def png(tag: bytes) -> bytes:
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
     return buffer.getvalue()
+def rendered_views(command):
+    """The images a real render_review writes for this command line."""
+    views = [command[i + 1] for i, arg in enumerate(command) if arg == "--view"]
+    return views + (["sheet"] if "--sheet" in command else [])
 
 
 def fake_visual_render(command):
     """Stand in for the renderer only; real packet and feedback validation run."""
     out = Path(command[command.index("-o") + 1])
     out.mkdir()
-    for view in ("front", "top", "iso"):
+    for view in rendered_views(command):
         (out / (view + ".png")).write_bytes(("fixture " + view).encode())
     return subprocess.CompletedProcess(command, 0, "fixture views", "")
+
+
+def fixture_verdicts(summary):
+    """Plan and reference verdicts that agree with the round's own packet."""
+    packet = json.loads(Path(summary["visual"]["packet"]).read_text())
+    return {"matches_plan": True, "matches_reference": True if packet["references"] else None}
 
 
 def record_fixture_visual_pass(module, project, summary):
@@ -58,6 +68,7 @@ def record_fixture_visual_pass(module, project, summary):
         "status": "pass", "findings": [],
         # Each round is inspected afresh; a repeated observation is refused (ADR 0075).
         "observation": "Synthetic fixture: round %d visual evidence accepted for this test." % summary["round"],
+        **fixture_verdicts(summary),
     }
     if any("iou" in item and not item.get("ok") for item in summary.get("likeness") or []):
         # Below the floor the review must name how the model differs (ADR 0075).
@@ -135,7 +146,7 @@ class MakeRoundTest(unittest.TestCase):
             if tool == "render_review" and not render_fails:
                 out = Path(command[command.index("-o") + 1])
                 out.mkdir()
-                for view in ("front", "top", "iso"):
+                for view in rendered_views(command):
                     (out / (view + ".png")).write_bytes(view.encode())
             if tool in ("check_thickness", "check_overhang"):
                 stdout, code = _gate_output(
@@ -159,7 +170,10 @@ class MakeRoundTest(unittest.TestCase):
 
     def _feedback(self, project, summary, status="pass"):
         value = {"packet_sha256": summary["visual"]["packet_sha256"], "status": status,
-                 "findings": [], "observation": "Inspected all views against the concept."}
+                 "findings": [], "observation": "Inspected all views against the concept.",
+                 **fixture_verdicts(summary)}
+        if status == "fail":
+            value["matches_plan"] = False
         if status == "fail":
             value["findings"] = [{"part": "wheel", "defect": "misplaced axle",
                                   "evidence": "front: axle above wheel centre", "repair": "align centre datum"}]
@@ -184,6 +198,127 @@ class MakeRoundTest(unittest.TestCase):
             self.assertFalse(summary["checks_ok"])
             self.assertEqual(summary["print"]["wheel"]["verdict"], "FAIL")
 
+    def test_visual_packet_binds_side_tilted_views_and_one_review_sheet(self):
+        # A dead-on front/top/iso triple hid the side profile and flattened
+        # depth; every round now renders the side and tilted three-quarter
+        # views and one labelled sheet the Manager opens once.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            calls = []
+            module, summary = self._round(project, calls=calls)
+            render = next(c for c in calls if Path(c[1]).name == "render_review")
+            self.assertIn("--sheet", render)
+            self.assertEqual(rendered_views(render)[:-1], list(module.VISUAL_VIEWS))
+            for required in ("front", "top", "iso", "left", "iso_front", "iso_back",
+                             "iso_left", "iso_right", "iso_bottom"):
+                self.assertIn(required, module.VISUAL_VIEWS)
+            packet = json.loads(Path(summary["visual"]["packet"]).read_text())
+            names = sorted(Path(path).name for path in packet["images"])
+            self.assertEqual(names, sorted(v + ".png" for v in (*module.VISUAL_VIEWS, "sheet")))
+            self.assertTrue(summary["visual"]["sheet"].endswith("/visual/sheet.png"))
+            self.assertIn(summary["visual"]["sheet"], module.render_summary(summary))
+            # The sheet is bound evidence: a changed sheet cannot be reviewed.
+            Path(summary["visual"]["sheet"]).write_bytes(b"another sheet")
+            with self.assertRaisesRegex(ValueError, "stale images"):
+                module.record_visual(project, self._feedback(project, summary))
+
+    def test_assembly_preview_renders_the_whole_once_and_is_never_a_round(self):
+        # Proportion between parts only shows assembled; a preview shows it
+        # while components are rough, without gates, history, state or a pass.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module = load_module()
+            (project / "toy.step.py").write_text("def gen_step(): pass\n")
+            (project / "part_wheel.step.py").write_text("def gen_step(): pass\n")
+            (project / "part_body.step.py").write_text("def gen_step(): pass\n")
+            calls = []
+
+            def fake_run(command, **kwargs):
+                calls.append(command)
+                return fake_visual_render(command)
+
+            with contextlib.redirect_stdout(io.StringIO()) as stdout, \
+                    mock.patch.object(module, "skills_root", return_value=project), \
+                    mock.patch.object(module, "run", side_effect=fake_run):
+                self.assertEqual(module.main([str(project), "--preview-assembly"]), 0)
+                self.assertEqual(module.main([str(project), "--preview-assembly"]), 0)
+            self.assertEqual([Path(c[1]).name for c in calls], ["render_review", "render_review"])
+            self.assertEqual(Path(calls[0][2]).name, "toy.step.py")
+            self.assertEqual(rendered_views(calls[0]), [*module.VISUAL_VIEWS, "sheet"])
+            previews = project / "measure/assembly-previews"
+            self.assertEqual(sorted(p.name for p in previews.iterdir()), ["p0001", "p0002"])
+            record = json.loads((previews / "p0001/preview.json").read_text())
+            self.assertEqual(record["kind"], "assembly-preview")
+            self.assertEqual(record["components"], ["part_body.step.py", "part_wheel.step.py"])
+            self.assertTrue(record["sheet"].endswith("/visual/sheet.png"))
+            self.assertIn(record["sheet"], record["images"])
+            self.assertIn("never a pass", record["verdict"])
+            self.assertIn("not a round and not a pass", stdout.getvalue())
+            self.assertFalse((project / "measure/make-round-state.json").exists())
+            self.assertFalse((project / "measure/rounds").exists())
+            self.assertFalse((project / "measure/component-rounds").exists())
+
+    def test_assembly_preview_needs_components_and_takes_no_round_options(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module = load_module()
+            (project / "toy.step.py").write_text("def gen_step(): pass\n")
+            with contextlib.redirect_stderr(io.StringIO()) as stderr, \
+                    mock.patch.object(module, "skills_root", return_value=project), \
+                    mock.patch.object(module, "run", side_effect=fake_visual_render):
+                self.assertEqual(module.main([str(project), "--preview-assembly"]), 2)
+            self.assertIn("needs part_<role>.step.py components", stderr.getvalue())
+            for extra in (["--component", "part_x.step.py"], ["--require-component-passes"],
+                          ["--record-visual", "f.json"], ["--ref", "hero=ref/hero.png"]):
+                with self.subTest(extra=extra), contextlib.redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit):
+                        module.main([str(project), "--preview-assembly", *extra])
+
+    def test_visual_verdict_judges_plan_and_reference_separately(self):
+        # A pass must agree with the plan and must not contradict a
+        # reference; a reference verdict exists exactly when a reference does.
+        def attempt(project, summary, **overrides):
+            path = self._feedback(project, summary)
+            value = json.loads(path.read_text())
+            value.update(overrides)
+            path.write_text(json.dumps(value))
+            return module.record_visual(project, path)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, summary = self._round(project)
+            self.assertIn("silhouette, stance and shape language first", summary["visual"]["detail"])
+            self.assertIn("a shape language the plan did not ask", summary["visual"]["detail"])
+            self.assertIn("construction family", (Path(module.__file__).parents[1] / "SKILL.md").read_text())
+            for overrides, message in (
+                ({"matches_plan": False}, "needs matches_plan true"),
+                ({"matches_plan": None}, "matches_plan must be true or false"),
+                ({"matches_reference": True}, "must be null when the round has no reference"),
+            ):
+                with self.subTest(overrides=overrides):
+                    with self.assertRaisesRegex(ValueError, message):
+                        attempt(project, summary, **overrides)
+            missing = self._feedback(project, summary)
+            value = json.loads(missing.read_text())
+            del value["matches_reference"]
+            missing.write_text(json.dumps(value))
+            with self.assertRaisesRegex(ValueError, "invalid visual feedback fields"):
+                module.record_visual(project, missing)
+            result = module.record_visual(project, self._feedback(project, summary, "fail"))
+            self.assertFalse(result["ok"])
+            self.assertIs(result["visual"]["matches_plan"], False)
+            self.assertIn("plan=false ref=n/a", module.render_summary(result))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            (project / "ref").mkdir()
+            (project / "ref/hero.png").write_bytes(b"hero")
+            module, summary = self._round(project, argv=[str(project), "--ref", "hero=ref/hero.png"])
+            with self.assertRaisesRegex(ValueError, "true or false when the round has reference"):
+                attempt(project, summary, matches_reference=None)
+            with self.assertRaisesRegex(ValueError, "matches_reference not false"):
+                attempt(project, summary, matches_reference=False)
+
     def test_no_reference_round_requires_visual_inspection_and_reports_errors(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
@@ -192,7 +327,7 @@ class MakeRoundTest(unittest.TestCase):
             self.assertFalse(summary["ok"])
             self.assertEqual(summary["visual"]["status"], "pending")
             packet = json.loads(Path(summary["visual"]["packet"]).read_text())
-            self.assertEqual(len(packet["images"]), 3)
+            self.assertEqual(len(packet["images"]), len(module.VISUAL_VIEWS) + 1)
             self.assertEqual(packet["references"], {})
             result = module.record_visual(project, self._feedback(project, summary, "fail"))
             self.assertFalse(result["ok"])
@@ -325,7 +460,7 @@ class MakeRoundTest(unittest.TestCase):
                 if tool == "render_review":
                     out = Path(command[command.index("-o") + 1])
                     out.mkdir()
-                    for view in ("front", "top", "iso"):
+                    for view in rendered_views(command):
                         (out / (view + ".png")).write_bytes(view.encode())
                 if tool in ("check_thickness", "check_overhang"):
                     stdout, code = _gate_output(tool, fails=False)
@@ -428,7 +563,7 @@ class MakeRoundTest(unittest.TestCase):
                 if tool == "render_review":
                     out = Path(command[command.index("-o") + 1])
                     out.mkdir()
-                    for view in ("front", "top", "iso"):
+                    for view in rendered_views(command):
                         (out / (view + ".png")).write_bytes(view.encode())
                 return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
 
@@ -477,7 +612,7 @@ class MakeRoundTest(unittest.TestCase):
             if tool == "render_review":
                 out = Path(command[command.index("-o") + 1])
                 out.mkdir()
-                for view in ("front", "top", "iso"):
+                for view in rendered_views(command):
                     (out / (view + ".png")).write_bytes(view.encode())
             if tool in ("check_thickness", "check_overhang"):
                 stdout, code = _gate_output(tool, fails=False)
@@ -526,7 +661,7 @@ class MakeRoundTest(unittest.TestCase):
                 if tool == "render_review":
                     out = Path(command[command.index("-o") + 1])
                     out.mkdir()
-                    for view in ("front", "top", "iso"):
+                    for view in rendered_views(command):
                         (out / (view + ".png")).write_bytes(view.encode())
                 if tool in ("check_thickness", "check_overhang"):
                     stdout, code = _gate_output(tool, fails=False)
@@ -553,6 +688,7 @@ class MakeRoundTest(unittest.TestCase):
                     "status": "pass",
                     "findings": [],
                     "observation": "The isolated component is coherent in all three views.",
+                    **fixture_verdicts(summary),
                 }))
                 self.assertTrue(module.record_visual(project, feedback, component=name)["ok"])
 
@@ -604,7 +740,7 @@ class MakeRoundTest(unittest.TestCase):
                 if tool == "render_review":
                     out = Path(command[command.index("-o") + 1])
                     out.mkdir()
-                    for view in ("front", "top", "iso"):
+                    for view in rendered_views(command):
                         (out / (view + ".png")).write_bytes(view.encode())
                 if tool in ("check_thickness", "check_overhang"):
                     stdout, code = _gate_output(tool, fails=False)
@@ -625,6 +761,7 @@ class MakeRoundTest(unittest.TestCase):
                 "packet_sha256": summary["visual"]["packet_sha256"],
                 "status": "pass", "findings": [],
                 "observation": "The isolated component is coherent in all three views.",
+                **fixture_verdicts(summary),
             }))
             self.assertTrue(module.record_visual(project, feedback, component="part_wheel.step.py")["ok"])
 
@@ -764,7 +901,7 @@ class SealedReferenceTest(unittest.TestCase):
             if tool == "render_review":
                 out = Path(command[command.index("-o") + 1])
                 out.mkdir()
-                for view in ("front", "top", "iso"):
+                for view in rendered_views(command):
                     (out / (view + ".png")).write_bytes(view.encode())
             if tool in ("check_thickness", "check_overhang"):
                 stdout, code = _gate_output(tool, fails=False)
@@ -903,6 +1040,7 @@ class SealedReferenceTest(unittest.TestCase):
         feedback.write_text(json.dumps({
             "packet_sha256": summary["visual"]["packet_sha256"], "status": "pass", "findings": [],
             "observation": "The isolated component is coherent in all three views.",
+            **fixture_verdicts(summary),
         }))
         return module.record_visual(project, feedback, component="part_body.step.py")
 
@@ -948,6 +1086,7 @@ class SealedReferenceTest(unittest.TestCase):
         feedback.write_text(json.dumps({
             "packet_sha256": summary["visual"]["packet_sha256"], "status": "pass", "findings": [],
             "observation": "The isolated component is coherent in all three views.",
+            **fixture_verdicts(summary),
         }))
         return feedback
 
@@ -1096,6 +1235,7 @@ class ContractComponentLikenessTest(unittest.TestCase):
         value = {
             "packet_sha256": summary["visual"]["packet_sha256"], "status": "pass", "findings": [],
             "observation": observation or "The isolated component is coherent in all three views.",
+            **fixture_verdicts(summary),
         }
         if differences is not None:
             value["differences"] = differences

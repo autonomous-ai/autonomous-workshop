@@ -46,7 +46,23 @@ NAMED_VIEWS = {
     "bottom": (-90.0, -90.0),
     "iso": (-45.0, 35.264),
     "rear_iso": (135.0, 30.0),
+    # Tilted three-quarter views, each about 25 degrees off one face and
+    # 24 degrees up (55 for top and bottom). A dead-on view flattens depth
+    # along its own axis, so a limb bent toward the camera or a round section
+    # posing as a sculpted one reads correctly only from a tilted view that
+    # faces it.
+    "iso_front": (-63.0, 24.0),
+    "iso_back": (117.0, 24.0),
+    "iso_left": (153.0, 24.0),
+    "iso_right": (-27.0, 24.0),
+    "iso_top": (45.0, 55.0),
+    "iso_bottom": (45.0, -55.0),
 }
+# One labelled sheet a reviewer opens once instead of one image per view.
+SHEET_NAME = "sheet"
+SHEET_COLUMNS = 3
+SHEET_TILE = 480
+SHEET_LABEL_HEIGHT = 22
 FALLBACK_COLOURS = (
     (52, 63, 75),
     (231, 168, 62),
@@ -61,7 +77,12 @@ def _runtime_paths() -> None:
     scripts = Path(__file__).resolve().parent
     for path in (scripts, scripts / "packages", scripts / "packages" / "cadgen" / "src"):
         text = str(path)
-        if path.is_dir() and text not in sys.path:
+        # Move an entry already on the path to the front too: the editable
+        # install lists the vendored cadgen after PYTHONPATH, where an older
+        # cadgen would still be imported first.
+        if path.is_dir() and sys.path[:1] != [text]:
+            if text in sys.path:
+                sys.path.remove(text)
             sys.path.insert(0, text)
 
 
@@ -210,7 +231,11 @@ def _tessellation_cache(entry: Path | None):
     if entry is None:
         return None
     _runtime_paths()
-    from cadgen.inspection_runtime import Measurements
+    try:
+        from cadgen.inspection_runtime import Measurements
+    except ImportError:
+        # A cache that cannot load is a miss, never a failed render.
+        return None
 
     class _OccurrenceTessellationCache(Measurements):
         @contextlib.contextmanager
@@ -507,6 +532,25 @@ def render(occurrences, azimuth: float, elevation: float, size: int, pad: float,
     return Image.fromarray(pixels)
 
 
+def compose_sheet(tiles, tile: int = SHEET_TILE, columns: int = SHEET_COLUMNS):
+    """Lay labelled views out as one grid image, in the order given."""
+    from PIL import ImageDraw
+
+    if not tiles:
+        raise ValueError("a sheet needs at least one view")
+    rows = -(-len(tiles) // columns)
+    cell = tile + SHEET_LABEL_HEIGHT
+    sheet = Image.new("RGB", (columns * tile, rows * cell), BACKGROUND)
+    draw = ImageDraw.Draw(sheet)
+    for index, (label, image) in enumerate(tiles):
+        left = (index % columns) * tile
+        top = (index // columns) * cell
+        draw.text((left + 6, top + 4), label, fill=(20, 24, 30))
+        sheet.paste(image.convert("RGB").resize((tile, tile), Image.LANCZOS),
+                    (left, top + SHEET_LABEL_HEIGHT))
+    return sheet
+
+
 def parse_view(text: str):
     if text in NAMED_VIEWS:
         return text, *NAMED_VIEWS[text]
@@ -603,6 +647,11 @@ def main(argv=None) -> int:
     )
     parser.add_argument("--pad", type=float, default=DEFAULT_PAD)
     parser.add_argument("--self-check", action="store_true")
+    parser.add_argument(
+        "--sheet",
+        action="store_true",
+        help="also write sheet.png, every rendered view labelled in one grid",
+    )
     args = parser.parse_args(argv)
     if args.self_check:
         return self_check()
@@ -620,9 +669,18 @@ def main(argv=None) -> int:
     views = [parse_view(value) for value in (args.view or ["iso"])]
     out = args.out or source.parent / "snap" / "review"
     out.mkdir(parents=True, exist_ok=True)
+    if args.sheet and any(label == SHEET_NAME for label, _az, _el in views):
+        parser.error(f"--sheet writes {SHEET_NAME}.png; no view may use that name")
+    tiles = []
     for label, azimuth, elevation in views:
         path = out / f"{label}.png"
-        render(occurrences, azimuth, elevation, args.size, args.pad).save(path)
+        image = render(occurrences, azimuth, elevation, args.size, args.pad)
+        image.save(path)
+        tiles.append((label, image))
+        print(path)
+    if args.sheet:
+        path = out / f"{SHEET_NAME}.png"
+        compose_sheet(tiles).save(path)
         print(path)
     return 0
 

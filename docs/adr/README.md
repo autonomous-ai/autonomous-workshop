@@ -35,3 +35,5 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0074: Every Component is scored against its own sealed image](0074-every-component-scored-against-its-own-image.md)
 - [0075: Component review compares form, and acceptance needs a second reader](0075-component-review-compares-form-and-acceptance-needs-a-second-reader.md)
 - [0077: Component Workers and a root-owned Component Reviewer](0077-component-workers-and-a-root-owned-reviewer.md)
+- [0081: Spark Make expands the Wish before building](0081-spark-make-expands-the-wish.md)
+- [0082: Make rounds review one sheet and judge plan and reference apart](0082-make-round-review-sheet-and-split-verdict.md)

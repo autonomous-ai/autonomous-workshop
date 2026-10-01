@@ -67,6 +67,28 @@ COMPARISON_HEIGHT = 480
 # Names that identify the Workshop Manager; an acceptance review must come
 # from someone else (ADR 0075).
 MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
+# The views every round renders, in sheet order. front, top and iso keep their
+# names so a review row can still cite them; the side view and the tilted
+# three-quarter views show depth a dead-on view flattens.
+VISUAL_VIEWS = ("iso", "front", "left", "top", "iso_front", "iso_back",
+                "iso_left", "iso_right", "iso_bottom")
+VISUAL_SHEET = "sheet"
+VISUAL_FEEDBACK_FIELDS = frozenset(
+    ("packet_sha256", "status", "findings", "observation", "matches_plan", "matches_reference"))
+# What the Manager is told to do with a pending packet. Kept short: it is
+# printed in every round summary.
+VISUAL_REVIEW_STEPS = (
+    "The build and gates are not a form verdict. Open sheet.png and judge in order: "
+    "silhouette, stance and shape language first, then proportion between parts, then "
+    "whether surface detail reads at render scale. Judge against the plan (WISH-EXPANSION.md, the sealed "
+    "concept or the Design Contract) and, separately, against the reference images when "
+    "the round has any. Name a defect whenever the render falls short: round or boxy "
+    "massing where the form should be sculpted, a shape language the plan did not ask "
+    "for, a silhouette that reads as a different "
+    "object, relief too shallow to see, a part that lost its shape. Reporting a real "
+    "defect is the intended outcome, not a failure. Record matches_plan, matches_reference "
+    "(null without references), findings and observation with --record-visual."
+)
 _GEOMETRY_DEADLINES = {}
 
 
@@ -153,10 +175,12 @@ def prepare_visual(project, entry, out, cad, refs, likeness=(), component=None):
     """Render evidence for native inspection; never infer a visual verdict."""
     before = source_hashes(project, component)
     views = out / "visual"
-    done = run([sys.executable, str(cad / "render_review"), str(entry),
-                "--view", "front", "--view", "top", "--view", "iso", "-o", str(views)],
+    command = [sys.executable, str(cad / "render_review"), str(entry)]
+    for view in VISUAL_VIEWS:
+        command += ["--view", view]
+    done = run([*command, "--sheet", "-o", str(views)],
                cwd=project, log=out / "visual-render.log")
-    paths = [views / (v + ".png") for v in ("front", "top", "iso")]
+    paths = [views / (v + ".png") for v in (*VISUAL_VIEWS, VISUAL_SHEET)]
     if done.returncode or not all(p.is_file() for p in paths) or before != source_hashes(project, component):
         return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}
     comparisons, error = prepare_comparisons(project, out, refs, likeness)
@@ -173,11 +197,13 @@ def prepare_visual(project, entry, out, cad, refs, likeness=(), component=None):
               "comparisons": comparisons}
     packet_path = out / "visual-packet.json"
     packet_path.write_text(json.dumps(packet, sort_keys=True, indent=2) + "\n", encoding="utf-8")
-    detail = "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"
+    detail = VISUAL_REVIEW_STEPS
     if comparisons:
-        detail += "; compare each reference with the model beside it and list every difference of form"
+        detail += " Then, in each compare-NN.png, compare each reference with the model beside it and list every difference of form."
     return {"status": "pending", "findings": [], "packet": str(packet_path),
-            "packet_sha256": file_hash(packet_path), "detail": detail}
+            "packet_sha256": file_hash(packet_path),
+            "sheet": str((views / (VISUAL_SHEET + ".png")).resolve()),
+            "detail": detail}
 
 
 def component_role(project: Path, value: str) -> tuple[str, Path]:
@@ -245,8 +271,7 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
         if file_hash(path) != digest:
             raise ValueError("visual feedback has stale images or references")
     feedback = json.loads(Path(feedback_path).read_text())
-    required = {"packet_sha256", "status", "findings", "observation"}
-    if not required <= set(feedback) or not set(feedback) <= required | {"differences"}:
+    if not VISUAL_FEEDBACK_FIELDS <= set(feedback) or not set(feedback) <= VISUAL_FEEDBACK_FIELDS | {"differences"}:
         raise ValueError("invalid visual feedback fields")
     if feedback["packet_sha256"] != visual["packet_sha256"]:
         raise ValueError("visual feedback belongs to a different round")
@@ -262,6 +287,21 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
             raise ValueError("visual finding text must be nonempty and bounded")
     if (feedback["status"] == "pass" and findings) or (feedback["status"] == "fail" and not findings):
         raise ValueError("visual status contradicts findings")
+    # Two separate judgements, as the review asks them: against the plan the
+    # object is built from, and against the reference images when there are
+    # any. A reference judgement without a reference, or none with one, is a
+    # malformed record rather than a guess to accept.
+    if not isinstance(feedback["matches_plan"], bool):
+        raise ValueError("matches_plan must be true or false")
+    if packet["references"]:
+        if not isinstance(feedback["matches_reference"], bool):
+            raise ValueError("matches_reference must be true or false when the round has reference images")
+    elif feedback["matches_reference"] is not None:
+        raise ValueError("matches_reference must be null when the round has no reference image")
+    if feedback["status"] == "pass" and (
+        feedback["matches_plan"] is not True or feedback["matches_reference"] is False
+    ):
+        raise ValueError("a visual pass needs matches_plan true and matches_reference not false")
     if not isinstance(feedback["observation"], str) or not 1 <= len(feedback["observation"].strip()) <= 2000:
         raise ValueError("visual feedback needs a bounded observation, including uncertainty")
     check_differences(feedback, summary, comparisons)
@@ -658,14 +698,20 @@ def render_summary(summary: dict) -> str:
         lines.append("  full  %-4s verify_project exit %s  %s" % ("ok" if summary["full"]["ok"] else "FAIL", summary["full"]["returncode"], summary["full"]["tail"][:90]))
     if summary.get("visual") is not None:
         visual = summary["visual"]
-        lines.append("  visual %s  %s" % (visual["status"].upper(), visual.get("observation", visual.get("detail", ""))))
+        verdicts = ""
+        if "matches_plan" in visual:
+            verdicts = "plan=%s ref=%s  " % (
+                str(visual["matches_plan"]).lower(),
+                "n/a" if visual["matches_reference"] is None else str(visual["matches_reference"]).lower())
+        lines.append("  visual %s  %s%s" % (visual["status"].upper(), verdicts,
+                                            visual.get("observation", visual.get("detail", ""))))
         for item in visual["findings"]:
             lines.append("    %s: %s | evidence: %s | repair: %s" % (item["part"], item["defect"], item["evidence"], item["repair"]))
         for item in visual.get("differences") or []:
             lines.append("    differs %s: reference %s | model %s | %s: %s" % (
                 item["feature"], item["reference"], item["model"], item["decision"], item["reason"]))
         if visual["status"] == "pending":
-            lines.append("    inspect %s then use --record-visual <feedback.json>" % visual["packet"])
+            lines.append("    inspect %s then use --record-visual <feedback.json>" % visual.get("sheet", visual["packet"]))
     verdict = ("UNVERIFIED" if summary.get("geometry_status") == "unverified" else "PASS") if summary["ok"] else "FAIL"
     if summary.get("visual", {}).get("status") == "pending" and summary.get("checks_ok"):
         verdict = "PENDING"
@@ -1213,6 +1259,53 @@ def motion_policy():
     return runpy.run_path(str(Path(__file__).resolve().parents[2] / "cad/scripts/motion_policy.py"))
 
 
+PREVIEW_DIR = "assembly-previews"
+
+
+def preview_assembly(project: Path, entry: Path, parts: list, cad: Path) -> int:
+    """Render the whole object once before its components are finished.
+
+    Proportion between parts, pose and scale only show on the assembled
+    object, and the gated assembly review comes after every component passes,
+    by when a wrong-sized part has already cost its own rounds. This renders
+    the same sheet an assembly round would, and nothing else: it builds no
+    part evidence, runs no gate, touches no round history or state, and is
+    never a pass.
+    """
+    if not parts:
+        print("make_round: --preview-assembly needs part_<role>.step.py components", file=sys.stderr)
+        return 2
+    root = project / "measure" / PREVIEW_DIR
+    root.mkdir(parents=True, exist_ok=True)
+    index = 1 + sum(1 for p in root.glob("p[0-9][0-9][0-9][0-9]") if p.is_dir())
+    out = root / ("p%04d" % index)
+    out.mkdir()
+    before = source_hashes(project)
+    views = out / "visual"
+    command = [sys.executable, str(cad / "render_review"), str(entry)]
+    for view in VISUAL_VIEWS:
+        command += ["--view", view]
+    done = run([*command, "--sheet", "-o", str(views)], cwd=project, log=out / "visual-render.log")
+    paths = [views / (v + ".png") for v in (*VISUAL_VIEWS, VISUAL_SHEET)]
+    if done.returncode or not all(p.is_file() for p in paths) or before != source_hashes(project):
+        print("make_round: assembly preview did not render; see %s" % (out / "visual-render.log"), file=sys.stderr)
+        return 2
+    sheet = (views / (VISUAL_SHEET + ".png")).resolve()
+    record = {
+        "kind": "assembly-preview", "schema_version": 1, "entry": entry.name,
+        "components": sorted(p.name for p in parts), "sources": before,
+        "images": {str(p.resolve()): file_hash(p) for p in paths}, "sheet": str(sheet),
+        "verdict": "none: evidence only, never a pass or a round",
+    }
+    (out / "preview.json").write_text(json.dumps(record, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    print("make_round assembly preview %s (%d components)" % (out.name, len(parts)))
+    print("  inspect %s" % sheet)
+    print("  judge silhouette, stance and shape language, then proportion and placement between parts;")
+    print("  fix scale and placement in the component sources, then continue component rounds.")
+    print("  not a round and not a pass: the gated assembly review still follows every component pass.")
+    return 0
+
+
 def make_round(args) -> int:
     project = Path(args.project).resolve()
     if not project.is_dir():
@@ -1268,6 +1361,8 @@ def make_round(args) -> int:
     else:
         print("make_round: expected exactly one entry *.step.py (found %d); pass --entry" % len(entries), file=sys.stderr)
         return 2
+    if getattr(args, "preview_assembly", False):
+        return preview_assembly(project, entry, all_parts, cad)
     measure = project / "measure"
     measure.mkdir(exist_ok=True)
     try:
@@ -1773,6 +1868,7 @@ def main(argv=None) -> int:
     parser.add_argument("--component", help="review one isolated part_<role>.step.py using its own round history")
     parser.add_argument("--require-component-passes", action="store_true", help="before assembly review, require current passing isolated rounds for every part")
     parser.add_argument("--ref", dest="refs", action="append", metavar="LABEL=PATH[@AZ,EL[,TOL]]", help="reference view and the camera it was taken from; repeatable; default from the spec ledger. The Wish's sealed references are always scored at assembly scope; a --ref that copies one lends it its camera. --full needs a camera on every reference")
+    parser.add_argument("--preview-assembly", action="store_true", help="render the assembled object's review sheet once, before components pass; evidence only, never a round or a pass")
     parser.add_argument("--min", type=float, default=0.90, help="likeness floor passed to render_views (default 0.90)")
     parser.add_argument("--accept-likeness", metavar="REASON", help="with --component: accept an image still below the floor after %d rounds that changed the geometry without moving it; the reason is reported when the run ends" % STALL_STREAK)
     parser.add_argument("--acceptance-review", metavar="REVIEW.json", help="with --accept-likeness: the independent reviewer's agreement, judged on the latest round's comparison images")
@@ -1794,6 +1890,9 @@ def main(argv=None) -> int:
         parser.error("project is required")
     if args.component and args.require_component_passes:
         parser.error("--component and --require-component-passes are mutually exclusive")
+    if args.preview_assembly and (args.component or args.require_component_passes or args.record_visual
+                                  or args.full or args.refs or args.out):
+        parser.error("--preview-assembly takes only the project and --entry")
     if args.component and args.entry:
         parser.error("--component and --entry are mutually exclusive")
     if args.component and args.out:

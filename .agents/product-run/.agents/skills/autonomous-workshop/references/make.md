@@ -25,6 +25,13 @@ the best three full custom-agent TOMLs, select the Inventor whose Taste owns
 the hardest-to-fake magic, and write one compact source with exactly
 `selected_inventor_id`, roster-covering `ranking`, `concept`, and `research`.
 
+For Spark outside Contract Mode and outside an early-proof turn, obtain
+references and expand the sealed Wish before writing any component source:
+follow
+[wish expansion](wish-expansion.md) and write
+`<cad-project>/WISH-EXPANSION.md` as the selected Inventor. The Wish itself is
+unchanged and still decides; the expansion only settles what it leaves open.
+
 During a frozen deep-v8 or deep-v9 proof turn, follow the host prompt literally. Create or
 continue the Make Goal immediately, then inspect the required stable
 instructions, stage packet, and sealed concept in one bounded batch rather than
@@ -56,11 +63,12 @@ deterministic commands:
   --motion-angles=-12,0,12
 ```
 
-When the Wish supplies images or names an existing object, follow
-[visual-reference-inspection.md](visual-reference-inspection.md) before
-committing the form: prefer the sealed `wish-references/`, search for one when
-the Wish names an object and attaches none, and label a text-derived
-interpretation as such when neither is reachable rather than stopping the run.
+Before committing the form, follow
+[visual-reference-inspection.md](visual-reference-inspection.md): prefer the
+sealed `wish-references/`, search for images of a named object or of an
+original subject's anatomy and style, generate a concept view when the runtime
+has a built-in image tool, and label a text-derived interpretation as such
+only when none is usable rather than stopping the run.
 
 STEP is the only geometry format the toolchain writes. `render_product`
 tessellates the exact STEP in memory and there is no mesh export. The print
@@ -143,9 +151,44 @@ are separate. Frozen older runs retain their materialized rules and tools.
    exactly one non-part combined `*.step.py` entry and one
    `part_<role>.step.py` per printable part. For Spark, start with components
    only: every distinct physical component, including the sole component of a
-   one-piece object, gets its own `part_<role>.step.py`. Do not author the
-   combined entry yet or hide component construction inside the assembly file.
-2. For Spark, review and repair every component separately before assembly.
+   one-piece object, gets its own `part_<role>.step.py`. Never hide component
+   construction inside the assembly file.
+
+   A component is a piece the object really separates into at a natural seam:
+   a limb at its joint, a head at the neck, a weapon, an armour plate at its
+   edge, the base. It is not a print half. Do not plan paired `_a`/`_b`
+   halves of one form before `check_overhang` has failed on that whole piece:
+   every half doubles its component rounds, puts a seam through a visible
+   face, and forces thin detail thicker so each half keeps a wall. When a
+   piece fails overhang, repair it in this order and stop at the first step
+   that passes:
+
+   1. Reorient the piece's print pose.
+   2. Reshape the unsupported underside: a round underside becomes a keel or
+      chamfer at 45 degrees or steeper, or a flat land where it meets the base
+      or a hidden face. An angular section often serves the form as well.
+   3. Move or add a split at a natural seam the object already has.
+   4. Only then split the single form on a plane, and record in
+      `GEOMETRY-NOTES.md` the overhang failure the split fixes.
+
+2. For Spark with more than one component, preview the whole object once
+   before any component loop. When every component has a first build, author
+   the non-part combined `*.step.py` entry that places them, and run:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --preview-assembly
+   ```
+
+   Open its `sheet.png` once and judge silhouette, stance and shape language,
+   then the proportion, scale and placement between parts: head to body, limbs
+   to barrel, weapon to hand, the open spaces between them. Fix those in the
+   component sources now, while each component is still rough; a part refined
+   at the wrong size loses every round spent on it. Preview again only after a
+   component's size or placement changes, never after every round. A preview
+   is evidence only: not a round, not a pass, and no substitute for the gated
+   assembly review.
+3. For Spark, review and repair every component separately before assembly.
    For each `part_<role>.step.py`, run:
 
    ```bash
@@ -172,7 +215,8 @@ are separate. Frozen older runs retain their materialized rules and tools.
    When a worker reports a round whose checks pass (build, print and every
    likeness item ok or accepted, visual feedback pending), you, not the
    worker, ask the reviewer for its visual check: give it that round's visual
-   packet paths (front, top, iso and every `compare-NN.png`) and that
+   packet paths (`sheet.png`, which holds every view including the side and
+   tilted three-quarter views, and every `compare-NN.png`) and that
    Component's contract rows, and say when an image is below the floor. Add
    the round's `packet_sha256` to its answer and record it with
    `--record-visual`. On a fail, forward its findings and differences to the
@@ -222,8 +266,8 @@ are separate. Frozen older runs retain their materialized rules and tools.
    disagrees, and geometry changed after the review are all refused. Every
    acceptance is reported to the person when the run ends; it is never
    recorded as the person's decision.
-3. Only after every component passes, author the non-part combined `*.step.py`
-   entry and begin assembled-object rounds with:
+4. Only after every component passes, begin assembled-object rounds on the
+   non-part combined `*.step.py` entry (author it now if no preview did) with:
 
    ```bash
    "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
@@ -235,27 +279,31 @@ are separate. Frozen older runs retain their materialized rules and tools.
    changes a component, rerun that component's isolated review-and-fix loop,
    then return to the assembled object. Forge and Quest retain their existing
    whole-product baseline sequence.
-4. Generate explicit source targets with
+5. Generate explicit source targets with
    `.agents/skills/cad/scripts/gen <entry.step.py> --write`, which writes the
    sibling `.step`. That STEP is the only geometry artifact.
-5. Run `make_round` after each source repair and inspect its exact visual packet.
-   The Manager records misplaced, missing or extra parts, size/proportion
-   mismatches, visible intersections, and form defects with image evidence and
-   a concrete repair using `--record-visual`. Inspect the actual views even when
+6. Run `make_round` after each source repair and inspect its exact visual packet.
+   The Manager judges silhouette and stance first, then proportion between
+   parts, then whether surface detail reads, and records `matches_plan` and
+   `matches_reference` (null without references) separately, with misplaced,
+   missing or extra parts, size/proportion mismatches, visible intersections,
+   and form defects as findings with image evidence and a concrete repair,
+   using `--record-visual`. A wrong silhouette is usually repaired by a
+   different construction family, not by parameter nudges. Inspect the actual views even when
    likeness passes or no reference image exists. Pending or inconclusive visual
    feedback is not a pass. These self-checks do not replace independent review.
    Run only additional narrow checks affected by an edit. `make_round` gates
    every part that builds with `check_thickness` and `check_overhang` at the
    fixed 0.4 mm nozzle standard, so a wall or overhang defect surfaces in the
    round that caused it rather than at final verification.
-6. Render the exact STEP to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
+7. Render the exact STEP to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
    and `<cad-project>/snap/signature.png` (at least 1200×800 RGB). When the
    promise changes product geometry or state, generate distinct exact-state
    STEPs and use `render_product --state-sheet ... --state-source ...` at one
    fixed view. `--motion-sheet` rotates one unchanged shape and is only presentation
    viewpoint evidence; it can never prove a state transition. The signature
    sheet must show the promised states or interaction, not repeated angles.
-7. For a moving mechanism, also produce and review exact-state animation using
+8. For a moving mechanism, also produce and review exact-state animation using
    [motion review](motion-review-v1.md); still images cannot establish motion.
    Give one independent native critic only the images and that animation. Record its blind held
    object, volumetric form, subjects, action, and relationship. Then reveal the
@@ -265,7 +313,7 @@ are separate. Frozen older runs retain their materialized rules and tools.
    at this reveal step; do not author that list. Allow up to three focused
    repairs, each followed by regenerated preflight, images and an independent
    rereview. Stop as soon as the review passes.
-8. Run the integrated final verifier once. Do not use it as an iteration loop.
+9. Run the integrated final verifier once. Do not use it as an iteration loop.
    Whenever the Wish has references, run it with `--image-derived` and a
    `--likeness-ref LABEL=PATH@AZ,EL[,TOL]` for every one of them. The suffix
    is the camera you judge each image was taken from (front `-90,0`, right
@@ -284,14 +332,16 @@ are separate. Frozen older runs retain their materialized rules and tools.
    "<reason>"`; the finalizer copies every acceptance from the verifier's
    `measure/likeness-acceptance.json` into `product.json`. Do not author
    `likeness_acceptances` yourself.
-9. Write product metadata and invoke the Make finalizer immediately.
+10. Write product metadata and invoke the Make finalizer immediately.
 
 Complete the blind signature review and, if needed, up to three focused repairs before
 running the integrated final verifier once. The review must separately match the exact subjects,
 action, and spatial/causal relationship; matching only nouns is a failure.
 Enumerate every explicit positive and negative held-form requirement from
 the Wish in the review's `critical_form_requirements`; each entry needs
-exact blind visual evidence. Any visible departure from one of those
+exact blind visual evidence. When `WISH-EXPANSION.md` exists, also enumerate
+its defining parts and negative spaces there; a choice the Wish does not
+require never fails a faithful build. Any visible departure from one of those
 requirements belongs in `blocking_visual_defects`, not in a nonblocking
 caveat. Use one critic and no more than four review rounds (initial plus three
 rereviews). On rereview, record fresh image observations before comparison and

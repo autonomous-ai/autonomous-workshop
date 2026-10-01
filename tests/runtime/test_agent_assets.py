@@ -144,6 +144,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "make.md",
             "spark-economics-v4.md",
             "visual-reference-inspection.md",
+            "wish-expansion.md",
             "playtest.md",
         ):
             with self.subTest(reference=reference):
@@ -198,6 +199,128 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         self.assertNotIn("--print-preflight", make)
         self.assertIn("check_thickness", make)
         self.assertNotIn("Make contract", playtest)
+
+    def test_spark_make_expands_the_wish_without_replacing_it(self):
+        product_run = REPOSITORY / ".agents" / "product-run"
+        reference_root = (
+            product_run / ".agents" / "skills" / "autonomous-workshop" / "references"
+        )
+
+        def text(path):
+            return " ".join(path.read_text(encoding="utf-8").split())
+
+        make = text(reference_root / "make.md")
+        expansion = text(reference_root / "wish-expansion.md")
+        constitution = text(product_run / "AGENTS.md")
+
+        for required in (
+            "[wish expansion](wish-expansion.md)",
+            "`<cad-project>/WISH-EXPANSION.md`",
+            "For Spark outside Contract Mode and outside an early-proof turn",
+            "The Wish itself is unchanged and still decides",
+            "When `WISH-EXPANSION.md` exists, also enumerate",
+            "a choice the Wish does not require never fails a faithful build",
+        ):
+            with self.subTest(reference="make", required=required):
+                self.assertIn(required, make)
+        # The expansion is written before source, so the pointer precedes the
+        # component funnel it feeds.
+        self.assertLess(
+            make.index("[wish expansion](wish-expansion.md)"),
+            make.index("--component part_<role>.step.py"),
+        )
+        for required in (
+            "new Spark Make only, outside Contract Mode and outside an early-proof turn",
+            "The expansion exists to generate a 3D model",
+            "before the first `part_<role>.step.py`",
+            "What must be recognisable",
+            "negative spaces that must stay open",
+            "One overall size in mm",
+            "generic shortcuts to avoid",
+            "keyed locating joints",
+            "record the tradeoff in `GEOMETRY-NOTES.md`",
+            "The sealed Wish is unchanged and remains the objective",
+            "Keep every explicit Wish requirement, value and prohibition exactly",
+            "Do not add subjects, features, lights, electronics or mechanisms",
+            "never a reason to fail a faithful build",
+            "name its construction family",
+            "## Reading the references first",
+            "`measure_image.py`",
+            "`## Reference reading`",
+            "`[observed]`",
+            "`[inferred]`",
+            "One view fixes only two dimensions",
+            "Take size from the Wish or a known object in frame, never from pixels",
+            "name the conflict and follow the Wish",
+            "say once that the expansion is text-derived",
+            "at the natural seams the object already has",
+            "translate every style word of the Wish",
+            "Using the selected Inventor's Taste to decide the values",
+            "**Section shape:**",
+            "**Edges:**",
+            "**Silhouette:**",
+            "**Proportion:**",
+            "Carry them into the blind review's `critical_form_requirements`",
+            "First obtain references as",
+            "its kind (sealed, found with its URL, or generated)",
+            "Do not plan paired halves of one form",
+        ):
+            with self.subTest(reference="wish-expansion", required=required):
+                self.assertIn(required, expansion)
+        # A print half is not a component: halves double component rounds
+        # and thicken detail, so a planar split comes last in the overhang
+        # repair order, after reorienting and reshaping the piece.
+        for required in (
+            "It is not a print half",
+            "before `check_overhang` has failed on that whole piece",
+            "1. Reorient the piece's print pose.",
+            "2. Reshape the unsupported underside",
+            "3. Move or add a split at a natural seam",
+            "4. Only then split the single form on a plane",
+        ):
+            with self.subTest(reference="make", required=required):
+                self.assertIn(required, make)
+        self.assertLess(
+            make.index("1. Reorient the piece's print pose."),
+            make.index("4. Only then split the single form on a plane"),
+        )
+        self.assertIn("never a pre-planned `_a`/`_b` print half", constitution)
+        # The rough whole is previewed once before component loops, so scale
+        # and placement between parts are fixed before parts are refined.
+        for required in (
+            "preview the whole object once before any component loop",
+            "--preview-assembly",
+            "Preview again only after a component's size or placement changes",
+            "A preview is evidence only: not a round, not a pass",
+        ):
+            with self.subTest(reference="make", required=required):
+                self.assertIn(required, make)
+        self.assertLess(
+            make.index("preview the whole object once before any component loop"),
+            make.index("review and repair every component separately before assembly"),
+        )
+        self.assertIn("run one `make_round --preview-assembly` of the rough whole", constitution)
+        # Style lives in shape, decided by the Inventor's Taste; the step and
+        # the reference sourcing must survive compaction in the constitution.
+        self.assertIn("proportion rules by the Inventor's Taste", constitution)
+        self.assertIn("generated when the runtime has a built-in image tool", constitution)
+        inspection = text(reference_root / "visual-reference-inspection.md")
+        for required in (
+            "every Spark Make outside Contract Mode obtains references",
+            "For an original subject, search for the subject's real anatomy",
+            "never a likeness target",
+            "never copy one artist's design",
+            "Codex's `image_gen`",
+            "never call an image API with a key or script one",
+            "it never outranks the Wish text or a sealed reference",
+            "Do not pass them to `make_round --ref`",
+        ):
+            with self.subTest(reference="visual-reference-inspection", required=required):
+                self.assertIn(required, inspection)
+        # Compaction drops references but re-emits the constitution, so the
+        # step itself must survive there.
+        self.assertIn("`<cad-project>/WISH-EXPANSION.md`", constitution)
+        self.assertIn("the sealed Wish stays unchanged and still decides", constitution)
 
     def test_make_session_guidance_saves_tokens_without_withholding_guidance(self):
         make = " ".join(

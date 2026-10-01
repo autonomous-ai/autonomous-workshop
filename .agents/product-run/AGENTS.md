@@ -229,19 +229,34 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   image-to-cad gate. Do not `cat`, `rg`, or `sed` through skill scripts to
   learn their flags, and open a full report only when a summary names a
   failure you cannot place.
+- For Spark outside Contract Mode, first obtain references (sealed, found by
+  image search, and generated when the runtime has a built-in image tool) as
+  `references/visual-reference-inspection.md` directs, then expand the Wish
+  into `<cad-project>/WISH-EXPANSION.md` as `references/wish-expansion.md`
+  directs, translating its style words into section, edge, silhouette and
+  proportion rules by the Inventor's Taste; the sealed Wish stays unchanged
+  and still decides.
 - For Spark, spend the baseline phase on the parts before the whole. Model each
-  distinct physical component in its own `part_<role>.step.py`, run and pass an
+  distinct physical component in its own `part_<role>.step.py` (a piece split
+  at a natural seam, never a pre-planned `_a`/`_b` print half; split one form
+  on a plane only after reorienting and reshaping it fail `check_overhang`),
+  run and pass an
   isolated `make_round --component part_<role>.step.py` visual review-and-fix
-  loop for every component, and only then create/review the combined entry with
-  `--require-component-passes`. If an assembly repair changes a component,
+  loop for every component, and only then review the combined entry with
+  `--require-component-passes`. Before those loops, once every component has a
+  first build, run one `make_round --preview-assembly` of the rough whole and
+  fix proportion and placement between parts; a preview is never a pass. If an assembly repair changes a component,
   repeat that component's isolated loop before reviewing the assembly again.
 - Inspect each Make round's visual packet for misplaced parts, proportion and
   size mismatches, missing/extra geometry, visible intersections and form errors.
   Record concrete native observations through `make_round --record-visual` so
   its summary carries visual feedback alongside numeric checks. Likeness alone
   cannot pass this inspection, including for products without reference images.
-  View each image at most once per round; inspect all supplied views and use
-  targeted additional views when occlusion leaves a concrete uncertainty.
+  Open each round's `visual/sheet.png` once: it holds every view, including
+  the side and the tilted three-quarter views. Judge depth and direction on
+  the tilted view that faces the feature, open a single full-size view only
+  when a detail is too small on the sheet, and use targeted additional views
+  when occlusion leaves a concrete uncertainty.
 - Every Wish is open-ended. The one universal toy blueprint supplies baseline
   contract expectations; it does not classify or constrain what can be
   invented. Product-specific methods and extra evidence come from the Wish,
