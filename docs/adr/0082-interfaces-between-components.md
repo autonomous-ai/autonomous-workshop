@@ -62,6 +62,22 @@ by writing shared files, and that became the run's biggest cost.
    page's assert; gears and standard elements come from `stdpart`
    (`bd_warehouse`, `py_gearworks`). A Component's geometry, print stance and
    dimensions stay in its own file. Component Workers never edit one.
+   `--shared-helpers` checks these rules mechanically, before it builds a
+   sample, on every Shared Helper a Component or sample imports: each design
+   value (a module-level UPPER_CASE name bound to a number or a tuple of
+   numbers) cites `# wiki: <slug>` on its line or in the comment lines
+   directly above, the page exists in the run's wiki, and the value appears
+   in an `assert` of the module; a value derived from cited values needs no
+   citation. A function or class named for a standard element (gear, pinion,
+   rack, bearing, screw, bolt, nut, washer, thread...) needs `bd_warehouse` or
+   `py_gearworks`, and no helper names an involute. A failure builds and
+   freezes nothing. The installed print-details library,
+   `features/print_details.py`, is a Shared Helper: a project `.py` module
+   that Components import, so it is frozen with the others and bound into
+   the packets of the Components that import it. It is a standard element
+   like a `stdpart` gear, not a design value, so it is exempt from the
+   citation rule while its bytes are the library's, and an edited copy is
+   refused.
 3. **Shared Helper check and freeze.** The Workshop Manager writes samples
    under `samples/<name>.step.py` (a peg in its socket, a pinion on its
    sector) that import the Shared Helpers, and runs `make_round <cad>
@@ -135,8 +151,10 @@ by writing shared files, and that became the run's biggest cost.
   placement passes its envelope and fails at assembly instead.
 - The coupled check proves a necessary geometric condition only, as
   `check_motion` documents: not sustained contact or force transmission.
-- Wiki citation and the library rule are instructions; the freeze does not
-  parse helper code for them.
+- The Shared Helper rules are checked by name and syntax, not meaning: a
+  citation proves a page exists and an assert names the value, not that the
+  assert is the page's own or that a standard element is not hand-built under
+  another name.
 
 ## Compatibility and migration
 
@@ -152,7 +170,10 @@ Contract tests cover a complete section, a kinematic source in place of a
 pose table, an empty section, schema 1 without it, and the refusal of each
 missing or foreign field. The `make_round` tests, with fake build, gates,
 envelope and motion tools, cover the freeze and its hashes, a failing
-sample, a sample importing nothing, a component round before the freeze, a
+sample, a sample importing nothing, the Shared Helper rules (an uncited,
+unasserted or unknown-page value, a citation above a value, a derived value,
+a hand-written gear or involute, an unimported helper, and the print-details
+library exempt only byte for byte), a component round before the freeze, a
 contract without the section, a changed helper reported with its importers
 only, the re-freeze event, inside and outside envelope failures, a
 compliant pair, an inside change that leaves the outside pass current, the

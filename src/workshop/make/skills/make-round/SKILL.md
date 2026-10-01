@@ -345,8 +345,18 @@ rules apply. Contracts without it keep the rules above unchanged.
   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad --shared-helpers
   ```
 
-  It builds every sample and runs `check_thickness` and `check_overhang` on
-  it. A pass writes `measure/shared-helpers-freeze.json` with the sha256 of
+  It first checks the Shared Helper rules on every helper a Component or
+  sample imports, and builds nothing while one fails (exit 1, every failure
+  on stderr): each design value, a module-level UPPER_CASE name bound to a
+  number or a tuple of numbers, cites `# wiki: <slug>[#section]` on its line
+  or in the comment lines directly above, the page exists in the run's wiki,
+  and the value appears in an `assert` of the module. A value derived from
+  cited values needs no citation. A function or class named for a standard
+  element (gear, pinion, rack, bearing, screw, bolt, nut, washer, thread...)
+  needs `bd_warehouse` or `py_gearworks`, and no helper names an involute.
+  `features/print_details.py` is exempt only while its bytes are the
+  print-details library's; an edited copy is refused. Then it builds every
+  sample and runs `check_thickness` and `check_overhang` on it. A pass writes `measure/shared-helpers-freeze.json` with the sha256 of
   every Shared Helper (each project `.py` module that is not an entry, a
   sample or evidence) and appends the event to
   `measure/shared-helper-freezes.jsonl`; a failing sample, or one that

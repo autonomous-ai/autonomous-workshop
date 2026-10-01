@@ -1774,6 +1774,11 @@ class ReviewerBindingTest(unittest.TestCase):
             self.assertNotIn("reviewer_id", self._state(project))
 
 
+def params(width):
+    """A cited, asserted Shared Helper value (ADR 0082)."""
+    return "BODY_W = %d  # wiki: joints-and-fits\nassert BODY_W >= 20\n" % width
+
+
 class InterfaceTest(unittest.TestCase):
     """ADR 0082: Shared Helpers are frozen on tested samples, a separable
     Interface keeps a Keep-out Envelope in each component round, and a
@@ -1806,8 +1811,11 @@ class InterfaceTest(unittest.TestCase):
     def _project(self, tmp, interfaces=None, freeze=True):
         project = self._run_root(tmp, self.REFS, context=self._contract(interfaces))
         (project / "features").mkdir()
-        (project / "params.py").write_text("BODY_W = 40\n")
+        (project / "params.py").write_text(params(40))
         (project / "features/__init__.py").write_text("")
+        # skills_root() is the project here: the wiki the citations name.
+        (project / "wiki/pages/printing").mkdir(parents=True)
+        (project / "wiki/pages/printing/joints-and-fits.md").write_text("# Joints and fits\n")
         (project / "features/joints.py").write_text("PEG_D = 4.0  # wiki: joints-and-fits\nassert PEG_D >= 3\n")
         (project / "part_body.step.py").write_text(
             "import params\nfrom features.joints import PEG_D\ndef gen_step(): return 'body'\n")
@@ -1889,7 +1897,7 @@ class InterfaceTest(unittest.TestCase):
             # (cad/scripts holds this fixture's stand-in tool bytes, not a run's.)
             self.assertEqual(sorted(path for path in freeze["helpers"] if not path.startswith("cad/")),
                              ["features/__init__.py", "features/joints.py", "params.py"])
-            self.assertEqual(freeze["helpers"]["params.py"], hashlib.sha256(b"BODY_W = 40\n").hexdigest())
+            self.assertEqual(freeze["helpers"]["params.py"], hashlib.sha256(params(40).encode()).hexdigest())
             self.assertEqual(list(freeze["samples"]), ["peg_in_socket"])
             summary = json.loads((project / "measure/helper-rounds/r0001/summary.json").read_text())
             self.assertEqual(freeze["summary_sha256"], hashlib.sha256(
@@ -1920,6 +1928,76 @@ class InterfaceTest(unittest.TestCase):
             self.assertEqual(self._main(project, ["--shared-helpers"]), 1)
             self.assertIn("imports no Shared Helper", self.stdout)
 
+    # -- the Shared Helper rules: wiki citation, assert, standard elements
+
+    def _rules(self, project, helper_text, path="features/joints.py"):
+        (project / path).write_text(helper_text)
+        code = self._main(project, ["--shared-helpers"])
+        return code, self.stderr
+
+    def test_an_uncited_unasserted_or_unknown_page_value_freezes_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, freeze=False)
+            code, stderr = self._rules(project, (
+                "PEG_D = 4.0\n"
+                "PEG_CLEAR = 0.2  # wiki: joints-and-fits\n"
+                "SOCKET_D = 5  # wiki: no-such-page\n"
+                "assert PEG_D >= 3 and SOCKET_D > 4\n"))
+            self.assertEqual(code, 1)
+            self.assertIn("features/joints.py:1 PEG_D cites no wiki page", stderr)
+            self.assertIn("features/joints.py:2 PEG_CLEAR is in no assert", stderr)
+            self.assertIn("features/joints.py:3 SOCKET_D cites no-such-page, which is not a page", stderr)
+            self.assertNotIn("PEG_D is in no assert", stderr)
+            # Checked before anything is built or frozen.
+            self.assertEqual(self.calls, [])
+            self.assertFalse((project / "measure/shared-helpers-freeze.json").exists())
+
+    def test_a_citation_above_a_value_and_a_derived_value_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, freeze=False)
+            code, stderr = self._rules(project, (
+                "# Running fit for a 4 mm peg.\n"
+                "# wiki: joints-and-fits#clearance\n"
+                "PEG_D, PEG_CLEAR = 4.0, 0.2\n"
+                "SOCKET_D = PEG_D + 2 * PEG_CLEAR\n"
+                "AXIS: tuple = (0, 0, 1)  # wiki: printing/joints-and-fits\n"
+                "assert PEG_D >= 3 and PEG_CLEAR >= 0.15 and AXIS[2] == 1\n"))
+            self.assertEqual(code, 0, stderr)
+
+    def test_a_hand_written_standard_element_or_involute_freezes_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, freeze=False)
+            code, stderr = self._rules(project, "def spur_gear(teeth):\n    return teeth\n")
+            self.assertEqual(code, 1)
+            self.assertIn("features/joints.py:1 spur_gear builds a standard element by hand", stderr)
+            library = "from py_gearworks import SpurGear\ndef pinion(teeth):\n    return SpurGear(teeth)\n"
+            self.assertEqual(self._rules(project, library)[0], 0, self.stderr)
+            code, stderr = self._rules(project, library + "def involute_point(r, t):\n    return r * t\n")
+            self.assertEqual(code, 1)
+            self.assertIn("involute_point writes an involute by hand", stderr)
+
+    def test_a_helper_no_component_or_sample_imports_is_not_checked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, freeze=False)
+            (project / "features/scratch.py").write_text("LOOSE = 3\n")
+            self.assertEqual(self._main(project, ["--shared-helpers"]), 0, self.stderr)
+
+    def test_the_installed_print_details_library_is_exempt_only_byte_for_byte(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, freeze=False)
+            library = b"RIVET_D = 1.2\ndef rivet(): return RIVET_D\n"
+            (project / "print-details/scripts").mkdir(parents=True)
+            (project / "print-details/scripts/print_details.py").write_bytes(library)
+            (project / "features/print_details.py").write_bytes(library)
+            (project / "part_arm.step.py").write_text(
+                "from features.joints import PEG_D\nfrom features.print_details import rivet\n"
+                "def gen_step(): return 'arm'\n")
+            self.assertEqual(self._main(project, ["--shared-helpers"]), 0, self.stderr)
+            self.assertIn("features/print_details.py", self._freeze(project)["helpers"])
+            (project / "features/print_details.py").write_bytes(library + b"# tuned\n")
+            self.assertEqual(self._main(project, ["--shared-helpers"]), 1)
+            self.assertIn("features/print_details.py differs from the print-details library", self.stderr)
+
     def test_a_component_round_before_the_freeze_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._project(tmp, freeze=False)
@@ -1945,7 +2023,7 @@ class InterfaceTest(unittest.TestCase):
     def test_a_changed_frozen_helper_is_reported_with_the_components_that_import_it(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._project(tmp)
-            (project / "params.py").write_text("BODY_W = 42\n")
+            (project / "params.py").write_text(params(42))
             code, summary = self._component(project, "arm")
             self.assertEqual(summary["helper_freeze"]["changed"], [])  # the arm does not import params.py
             code, summary = self._component(project, "body")

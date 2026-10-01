@@ -176,10 +176,11 @@ are separate. Frozen older runs retain their materialized rules and tools.
    other Component must clear it: a separable Interface's Keep-out Envelope
    is that agreement. Before choosing a joint, fit, clearance or gear, run
    the wiki's `search` and `show` (`wiki/SKILL.md`), and next to each value
-   name the page it came from and add that page's `assert`. Take every gear,
-   bearing, fastener and other standard element from
-   `.agents/skills/cad/scripts/stdpart` (`bd_warehouse`, `py_gearworks`);
-   never hand-write an involute.
+   name the page it came from as `# wiki: <slug>` and add that page's
+   `assert` naming the value. Take every gear, bearing, fastener and other
+   standard element from `.agents/skills/cad/scripts/stdpart`
+   (`bd_warehouse`, `py_gearworks`); never hand-write an involute.
+   `--shared-helpers` checks these rules before it builds a sample.
 
    Then build a sample of each Shared Helper under `samples/<name>.step.py`,
    for example a peg in its socket or a pinion on its sector. A sample

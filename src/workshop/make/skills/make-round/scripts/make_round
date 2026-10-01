@@ -59,6 +59,7 @@ failed or pending. Exit 2: the round could not run or the policy refused it.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 from importlib.metadata import PackageNotFoundError, version as package_version
 import json
@@ -1621,9 +1622,130 @@ def freeze_report(project: Path, freeze: dict, helpers: dict[str, str]) -> dict:
             "affected": {path: importers.get(path, []) for path in changed}}
 
 
+WIKI_CITATION = re.compile(r"#\s*wiki:\s*([A-Za-z0-9_./-]+)(?:#[A-Za-z0-9_-]+)?")
+DESIGN_VALUE_NAME = re.compile(r"[A-Z][A-Z0-9_]*")
+# Name parts of a standard element that bd_warehouse or py_gearworks builds.
+STANDARD_ELEMENT_WORDS = frozenset({
+    "gear", "gears", "pinion", "rack", "sprocket", "bearing", "bearings", "screw", "screws", "bolt",
+    "bolts", "nut", "nuts", "washer", "washers", "circlip", "snapring", "oring", "thread", "threads"})
+STANDARD_ELEMENT_LIBRARIES = ("bd_warehouse", "py_gearworks")
+PRINT_DETAILS_INSTALL = "features/print_details.py"
+
+
+def _number_literal(node) -> bool:
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
+        node = node.operand
+    if isinstance(node, (ast.Tuple, ast.List)):
+        return bool(node.elts) and all(_number_literal(item) for item in node.elts)
+    return isinstance(node, ast.Constant) and type(node.value) in (int, float)
+
+
+def _name_words(name: str) -> list[str]:
+    spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name)
+    return [word for word in spaced.lower().split("_") if word]
+
+
+def helper_rule_failures(path: Path, relative: str, wiki_pages: set[str]) -> list[str]:
+    """What breaks the Shared Helper rules of ADR 0082 in one helper.
+
+    Every design value -- a module-level UPPER_CASE name bound to a number or
+    a tuple of numbers -- cites ``# wiki: <slug>`` on its line or in the
+    comment lines directly above, the cited page exists in the run's wiki, and
+    the value appears in an ``assert`` of the module. A function or class
+    named for a standard element needs bd_warehouse or py_gearworks, and no
+    helper writes its own involute. Values derived from cited values need no
+    citation of their own.
+    """
+
+    try:
+        text = path.read_text(encoding="utf-8")
+        tree = ast.parse(text)
+    except (OSError, SyntaxError, UnicodeError, ValueError) as exc:
+        return ["%s: unreadable (%s)" % (relative, exc)]
+    lines = text.splitlines()
+    asserted = {node.id for test in ast.walk(tree) if isinstance(test, ast.Assert)
+                for node in ast.walk(test) if isinstance(node, ast.Name)}
+    failures = []
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            targets, value = node.targets, node.value
+        elif isinstance(node, ast.AnnAssign) and node.value is not None:
+            targets, value = [node.target], node.value
+        else:
+            continue
+        names = [target.id for target in targets if isinstance(target, ast.Name)]
+        if len(names) != len(targets) or not all(DESIGN_VALUE_NAME.fullmatch(name) for name in names) \
+                or not _number_literal(value):
+            continue
+        cited = WIKI_CITATION.search(lines[node.lineno - 1])
+        above = node.lineno - 2
+        while cited is None and above >= 0 and lines[above].lstrip().startswith("#"):
+            cited = WIKI_CITATION.search(lines[above])
+            above -= 1
+        for name in names:
+            where = "%s:%d %s" % (relative, node.lineno, name)
+            if cited is None:
+                failures.append("%s cites no wiki page; add `# wiki: <slug>` from `wiki search`" % where)
+            elif cited.group(1).rsplit("/", 1)[-1] not in wiki_pages:
+                failures.append("%s cites %s, which is not a page of this wiki" % (where, cited.group(1)))
+            if name not in asserted:
+                failures.append("%s is in no assert; add the cited page's assert" % where)
+    libraries = any(
+        (isinstance(node, ast.Import) and any(alias.name.split(".")[0] in STANDARD_ELEMENT_LIBRARIES
+                                              for alias in node.names))
+        or (isinstance(node, ast.ImportFrom) and (node.module or "").split(".")[0] in STANDARD_ELEMENT_LIBRARIES)
+        for node in ast.walk(tree))
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            name, line = node.name, node.lineno
+        elif isinstance(node, ast.Name):
+            name, line = node.id, node.lineno
+        else:
+            continue
+        words = _name_words(name)
+        if "involute" in words:
+            failures.append("%s:%d %s writes an involute by hand; take the gear from stdpart (py_gearworks, "
+                            "bd_warehouse)" % (relative, line, name))
+        elif not libraries and not isinstance(node, ast.Name) and STANDARD_ELEMENT_WORDS.intersection(words):
+            failures.append("%s:%d %s builds a standard element by hand; take it from stdpart (bd_warehouse, "
+                            "py_gearworks)" % (relative, line, name))
+    return sorted(set(failures), key=failures.index)
+
+
+def shared_helper_rules(project: Path, samples: list[Path], roots) -> list[str]:
+    """Check the Shared Helper rules on every helper a Component or sample
+    imports. The installed print-details library is a standard element: its
+    exact bytes are exempt, an edited copy is refused."""
+
+    try:
+        wiki = Path(roots / "wiki" / "pages")
+        library = Path(roots / "print-details" / "scripts" / "print_details.py")
+    except (KeyError, TypeError):
+        wiki = library = None
+    if wiki is None or not wiki.is_dir():
+        return ["cannot locate the wiki skill's pages to check Shared Helper citations"]
+    wiki_pages = {page.stem for page in wiki.rglob("*.md")}
+    library_sha = file_hash(library) if library.is_file() else None
+    imported: dict[str, None] = {}
+    for source in [*sorted(project.glob("part_*.step.py")), *samples]:
+        for path in imported_helpers(project, source):
+            imported.setdefault(path, None)
+    failures = []
+    for relative in sorted(imported):
+        path = project / relative
+        if relative == PRINT_DETAILS_INSTALL:
+            if file_hash(path) != library_sha:
+                failures.append("%s differs from the print-details library; reinstall it with "
+                                "print_details.py --install and never edit it" % relative)
+            continue
+        failures.extend(helper_rule_failures(path, relative, wiki_pages))
+    return failures
+
+
 def shared_helper_check(project: Path, args, cad: Path) -> int:
-    """Build the Manager's samples under samples/, run both print gates on
-    each, and freeze the Shared Helpers when every sample passes."""
+    """Check the Shared Helper rules, build the Manager's samples under
+    samples/, run both print gates on each, and freeze the Shared Helpers
+    when the rules hold and every sample passes."""
 
     interfaces, error = contract_interfaces(project)
     if error is not None:
@@ -1635,6 +1757,12 @@ def shared_helper_check(project: Path, args, cad: Path) -> int:
               "joint section, gear pair or standard profile there from the Shared Helpers" % SAMPLES_DIR,
               file=sys.stderr)
         return 2
+    rule_failures = shared_helper_rules(project, samples, skills_root())
+    if rule_failures:
+        # Cheap to fix and checked before any sample is built or frozen.
+        print("make_round: the Shared Helpers break the rules of ADR 0082; nothing was built or frozen:\n  %s"
+              % "\n  ".join(rule_failures), file=sys.stderr)
+        return 1
     measure = project / "measure"
     root = measure / HELPER_ROUNDS_DIR
     root.mkdir(parents=True, exist_ok=True)

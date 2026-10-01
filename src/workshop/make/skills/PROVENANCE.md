@@ -1711,3 +1711,15 @@ applies the same Coupled Interface rule through `make_round` and writes the
 Interfaces, each with its proof, into `component-acceptance.json`. Upstream
 `check_motion` keeps its `b149710` bytes. This changes the `cad` and
 `make-round` fingerprints.
+
+## Local change: Shared Helper rules checked at the freeze (2026-10-01)
+
+A Workshop-local change (ADR 0082) to Workshop's own `make-round`.
+`make_round --shared-helpers` now checks the Shared Helper rules on every
+helper a Component or sample imports before it builds a sample: each
+module-level design value cites an existing page of the run's wiki with
+`# wiki: <slug>` and appears in an `assert`; a function or class named for a
+standard element needs `bd_warehouse` or `py_gearworks`; no helper names an
+involute. The installed `features/print_details.py` is exempt only byte for
+byte. A failure builds and freezes nothing. This changes the `make-round`
+fingerprint.
