@@ -5157,7 +5157,13 @@ def _adopt_token_budget(paths, checkpoint, limit):
     if budget is not previous:
         budget.previous_budget = previous.to_dict()
     recovered = _read_product_token_usage(paths, checkpoint)
-    if any(thread.get("status") == "pending" for thread in recovered["threads"]):
+    # Initial adoption needs complete historical coverage. An existing token
+    # ledger already tracks pending descendants (including children canceled
+    # at the cap); changing its limit must preserve, not deadlock on, them.
+    # observe() still rejects lost threads, regressing counters and bad usage.
+    if budget is not previous and any(
+        thread.get("status") == "pending" for thread in recovered["threads"]
+    ):
         raise ContractError("cannot adopt a token cap with unobserved native threads")
     budget.observe(recovered)
     budget.limit = limit

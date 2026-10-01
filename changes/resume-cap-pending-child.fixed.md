@@ -1,0 +1,1 @@
+- Allow `workshop resume --max-tokens` to change an existing token budget with pending native descendants while preserving all tracked usage. Initial token-budget adoption still requires complete observed history, and lost or regressing accounting remains blocked.

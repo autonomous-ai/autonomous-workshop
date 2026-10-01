@@ -207,6 +207,62 @@ def test_missing_ledger_is_not_reset(tmp_path):
         _load_lifetime_budget(paths, checkpoint)
 
 
+def test_cap_change_preserves_pending_child_and_later_charges_usage(tmp_path):
+    paths, checkpoint = context(tmp_path)
+    budget = ProductTokenBudget(1000)
+    pending = observation(1000)
+    pending["threads"].append({"thread_id": CHILD, "tokens": counters(0), "status": "pending"})
+    budget.observe(pending)
+    _save_lifetime_budget(paths, checkpoint, budget)
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", return_value=pending):
+        _adopt_token_budget(paths, checkpoint, 2000)
+    loaded = _load_lifetime_budget(paths, checkpoint)
+    assert loaded.limit == 2000
+    assert loaded.to_dict()["used_tokens"] == 1100
+    assert loaded.observation == pending
+    # A subsequently reported child remains charged to the same allowance.
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", return_value=observation(1000, child=True)):
+        with pytest.raises(ContractError, match="limit reached"):
+            _product_token_observer(paths, checkpoint, loaded)()
+    assert _load_lifetime_budget(paths, checkpoint).to_dict()["used_tokens"] == 2200
+
+
+def test_initial_token_adoption_still_refuses_pending_history(tmp_path):
+    from workshop.workflow.budgets import LifetimeBudget
+
+    paths, checkpoint = context(tmp_path)
+    pending = observation(100)
+    pending["threads"].append({"thread_id": CHILD, "tokens": counters(0), "status": "pending"})
+    with mock.patch("workshop.workflow.native_run._load_lifetime_budget", return_value=LifetimeBudget()), mock.patch(
+        "workshop.workflow.native_run._read_product_token_usage", return_value=pending
+    ), mock.patch("workshop.workflow.native_run._save_lifetime_budget") as save:
+        with pytest.raises(ContractError, match="unobserved native threads"):
+            _adopt_token_budget(paths, checkpoint, 2000)
+    save.assert_not_called()
+
+
+@pytest.mark.parametrize("change", ["lost-child", "regression", "unavailable"])
+def test_cap_change_with_pending_child_keeps_accounting_fail_closed(tmp_path, change):
+    paths, checkpoint = context(tmp_path)
+    budget = ProductTokenBudget(1000)
+    pending = observation(200)
+    pending["threads"].append({"thread_id": CHILD, "tokens": counters(0), "status": "pending"})
+    budget.observe(pending)
+    _save_lifetime_budget(paths, checkpoint, budget)
+    before = (tmp_path / "native-budget.json").read_bytes()
+    recovered = copy.deepcopy(pending)
+    if change == "lost-child":
+        recovered["threads"].pop()
+    elif change == "regression":
+        recovered = observation(100)
+        recovered["threads"].append(copy.deepcopy(pending["threads"][-1]))
+    with mock.patch("workshop.workflow.native_run._read_product_token_usage", return_value=recovered,
+                    side_effect=UsageUnavailable("missing") if change == "unavailable" else None):
+        with pytest.raises(ContractError):
+            _adopt_token_budget(paths, checkpoint, 2000)
+    assert (tmp_path / "native-budget.json").read_bytes() == before
+
+
 def test_observer_stops_at_cap_and_on_lost_accounting(tmp_path):
     paths, checkpoint = context(tmp_path)
     budget = ProductTokenBudget(1000)
