@@ -75,13 +75,11 @@ class DesignContract:
 
         Make labels a sealed image by looking its file name up in
         ``reference_labels`` (ADR 0072), so an image sealed under any other
-        name is scored as nothing. Given images must seal as exactly the files
-        this contract lists, in its order; every mismatch is named at once.
-        Giving no images is left to the caller.
+        name is scored as nothing, and a run given no image scores nothing at
+        all. The images must seal as exactly the files this contract lists, in
+        its order; every mismatch is named at once.
         """
 
-        if not names:
-            return
         expected = [reference.file for reference in self.references]
         errors: List[str] = []
         if len(names) != len(expected):

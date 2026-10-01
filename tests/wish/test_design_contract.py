@@ -146,8 +146,9 @@ class CheckReferenceNamesTest(unittest.TestCase):
     def test_the_contract_images_in_order_pass(self):
         self.contract.check_reference_names(["ref-01-antisol.png", "ref-02-world-disc.png"])
 
-    def test_no_images_pass(self):
-        self.contract.check_reference_names([])
+    def test_no_images_refuses(self):
+        with self.assertRaisesRegex(ContractError, "lists 2 reference image\\(s\\) but 0"):
+            self.contract.check_reference_names([])
 
     def test_a_name_the_contract_does_not_list_refuses_and_names_both(self):
         with self.assertRaises(ContractError) as failure:
