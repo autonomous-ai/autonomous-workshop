@@ -475,6 +475,31 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                     item.get("reason", ""),
                 )
             )
+    interfaces = receipt.get("interfaces")
+    if isinstance(interfaces, (list, tuple)):
+        # ADR 0082: how each meeting between Components was proven.
+        proofs = {
+            "keep-out-envelope": "Keep-out Envelope checked in each side's component round",
+            "shared-helper-samples": "Shared Helper samples passed the print gates",
+        }
+        for item in interfaces:
+            if not isinstance(item, Mapping):
+                continue
+            components = item.get("components")
+            check = item.get("check")
+            proof = proofs.get(check) or "interface check %s%s" % (
+                check,
+                " at r%04d" % item["round"] if type(item.get("round")) is int else "",
+            )
+            print(
+                "Interface %s (%s: %s): %s"
+                % (
+                    item.get("id", "?"),
+                    item.get("kind", "?"),
+                    " + ".join(str(c) for c in components) if isinstance(components, list) else "?",
+                    proof,
+                )
+            )
     publication = receipt.get("publication")
     publication_reason = None
     if isinstance(publication, Mapping):

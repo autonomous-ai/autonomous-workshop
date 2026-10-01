@@ -5,7 +5,9 @@
                [--require-component-passes] [--ref LABEL=PATH[@AZ,EL[,TOL]] ...]
                [--nozzle 0.4] [--overhang-angle 45] [--all-parts] [--no-motion]
                [--full] [--out DIR] [--json] [--record-visual FEEDBACK.json]
-               [--record-review REVIEW.json] [--worker-nonce HEX] [--self-check]
+               [--record-review REVIEW.json] [--record-unlock UNLOCK.json]
+               [--shared-helpers] [--interface ID]
+               [--worker-nonce HEX] [--self-check]
 
 Every verdict comes from the original cad tools, run unchanged; this script
 only sequences them, remembers what changed between rounds, and prints a
@@ -21,18 +23,37 @@ sealed image of its own Unique Geometry, and the assembly never shows that
 image against the whole object.
 
 A component round passes on build, print gates and an independent reviewer's
-recorded agreement (--record-review). A round that changes the geometry of a
-component whose previous round passed its checks is a shape round; after
+recorded agreement (--record-review). The round policy (ADR 0081) makes the
+build -> review -> repair loop mandatory: a round that passed its checks is
+reviewed before the Component's geometry may change again; a shape round is
+the first geometry-changing round after a disagreeing review, and after
 SHAPE_REPAIR_LIMIT of them a disagreeing review is recorded as a component
-acceptance the run reports when it ends. The assembly round keeps the
-Workshop Manager's --record-visual, the blind review and --full.
+acceptance the run reports when it ends. An agreeing review or an acceptance
+locks the Component until a Shared Helper it imports changes or the Workshop
+Manager records an assembly unlock (--record-unlock); a rerun that rebuilds
+the reviewed B-rep carries the review forward. A round that fails its checks
+is not rendered. A component packet binds only the Component's own files and
+the Shared Helpers it imports. The assembly round keeps the Workshop
+Manager's --record-visual, the blind review and --full.
 In a run with the make_round guard (ADR 0080) only a Component Worker runs a
 component round: the guard hook passes --worker-nonce, the round records it,
 and the host refuses a component round whose nonce it did not issue.
+
+When the sealed Design Contract has an Interfaces section (ADR 0082), the
+Workshop Manager first runs --shared-helpers: it builds the samples under
+samples/ and runs the print gates on them, and a pass freezes the Shared
+Helpers by hash. Component rounds refuse to start before that freeze and
+report every frozen helper they import that has changed since, with the
+Components that import it. A component round of a separable Interface also
+checks its Keep-out Envelope. --interface ID runs the coupled motion check of
+one Coupled Interface on its locked Components; a failure unlocks the
+contract's yielding Component, and assembly rounds with
+--require-component-passes need a current passing check of every Coupled
+Interface. Only the Workshop Manager runs those two modes.
 This tool makes no model calls.
 
-Exit 0: all checks and the recorded review passed. Exit 1: failed or pending.
-Exit 2: the round could not run.
+Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
+failed or pending. Exit 2: the round could not run or the policy refused it.
 """
 
 from __future__ import annotations
@@ -45,6 +66,7 @@ import os
 import re
 import signal
 import runpy
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -70,41 +92,119 @@ COMPARISON_HEIGHT = 480
 # Names that identify the Workshop Manager; a component review must come from
 # someone else (ADR 0075, ADR 0076).
 MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
+# On a runtime that proves who reviewed (issue #77), a review names its
+# Component Reviewer by the native agent id the runtime returned when it was
+# spawned, and a Component's first review binds that id. The Workshop host
+# sets the runtime; without one a review keeps the free-text reviewer name.
+REVIEWER_RUNTIME_ENV = "WORKSHOP_REVIEWER_RUNTIME"
+REVIEWER_ID_FORMATS = {"claude": (re.compile(r"[0-9a-f]{17}"), "17 lowercase hex characters")}
 _GEOMETRY_DEADLINES = {}
+# Interfaces between Components (ADR 0082).
+SAMPLES_DIR = "samples"
+HELPER_ROUNDS_DIR = "helper-rounds"
+HELPER_FREEZE_NAME = "shared-helpers-freeze.json"
+HELPER_FREEZE_LOG = "shared-helper-freezes.jsonl"
+INTERFACE_ROUNDS_DIR = "interface-rounds"
+COUPLED = "coupled"
+SEPARABLE = "separable"
+# Directories that hold no Shared Helper: evidence, caches and the samples.
+NOT_HELPERS = frozenset({"measure", "rounds", "snap", "review", "ref", SAMPLES_DIR,
+                         "__cadgen__", "__pycache__", ".git", ".venv"})
 
 
 def file_hash(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def other_component_file(name: str, role: str | None) -> bool:
-    """Whether ``name`` is another Component's own source or STEP.
-
-    Component Workers repair Components in parallel (ADR 0077), so a component
-    round binds its own source and every shared file, never a sibling's.
-    """
-
-    if role is None or not name.startswith("part_"):
-        return False
-    for suffix in (".step.py", ".step", ".stp"):
-        if name.endswith(suffix):
-            return name[len("part_"):-len(suffix)] != role
-    return False
-
-
-def source_hashes(project, role=None):
-    """Bind helpers and design constraints as well as entry generators; a
-    component round (``role``) leaves out other Components' own files."""
+def source_hashes(project):
+    """Bind helpers and design constraints as well as entry generators: the
+    assembly packet depends on every file of the project."""
     return {
         p.relative_to(project).as_posix(): file_hash(p)
         for p in sorted(project.rglob("*"))
         if p.is_file() and p.suffix in (".py", ".md", ".json", ".step", ".stp")
-        and not other_component_file(p.name, role)
         and not any(v in ("rounds", "__cadgen__", "__pycache__", ".git", ".venv")
                     for v in p.relative_to(project).parts)
         and (p.suffix in (".py", ".step", ".stp") or not any(
             v in ("measure", "snap", "review") for v in p.relative_to(project).parts))
     }
+
+
+def _module_files(project: Path, base: Path, dotted: str, level: int) -> list[Path]:
+    """The project files ``import`` of ``dotted`` at relative ``level`` from a
+    module in ``base`` executes: each package's ``__init__.py`` and the module
+    itself. A name outside the project (cadgen, the standard library) has none."""
+
+    root = project if level == 0 else base
+    for _ in range(max(0, level - 1)):
+        root = root.parent
+    files = []
+    parts = [part for part in dotted.split(".") if part]
+    for index, part in enumerate(parts):
+        root = root / part
+        if (root / "__init__.py").is_file():
+            files.append(root / "__init__.py")
+        elif index == len(parts) - 1 and root.with_suffix(".py").is_file():
+            files.append(root.with_suffix(".py"))
+        elif not root.is_dir():
+            break
+    return [path for path in files if project in path.resolve().parents]
+
+
+def imported_helpers(project: Path, source: Path) -> dict[str, str]:
+    """Project-relative path -> sha256 of every project-local module the
+    Component's source imports, directly or through another such module.
+
+    Read from the import statements, without running the source: a component
+    packet and lock depend on these Shared Helpers only, never on a helper the
+    Component does not import or on another Component's files (ADR 0081).
+    """
+
+    import ast
+
+    project = project.resolve()
+    found: dict[Path, None] = {}
+    pending = [source.resolve()]
+    seen = set()
+    while pending:
+        module = pending.pop()
+        if module in seen:
+            continue
+        seen.add(module)
+        try:
+            tree = ast.parse(module.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError, UnicodeError, ValueError):
+            continue
+        for node in ast.walk(tree):
+            targets = []
+            if isinstance(node, ast.Import):
+                targets = [(alias.name, 0) for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                stem = node.module or ""
+                targets = [(stem, node.level)]
+                # ``from features import forms`` may name a submodule.
+                targets += [((stem + "." if stem else "") + alias.name, node.level)
+                            for alias in node.names if alias.name != "*"]
+            for dotted, level in targets:
+                for path in _module_files(project, module.parent, dotted, level):
+                    resolved = path.resolve()
+                    if resolved != source.resolve() and resolved not in found:
+                        found[resolved] = None
+                        pending.append(resolved)
+    return {path.relative_to(project).as_posix(): file_hash(path) for path in sorted(found)}
+
+
+def component_sources(project: Path, role: str) -> dict[str, str]:
+    """What a component round binds: its own source and STEP and the Shared
+    Helpers it imports (ADR 0081)."""
+
+    project = project.resolve()
+    source = project / ("part_%s.step.py" % role)
+    bound = imported_helpers(project, source) if source.is_file() else {}
+    for path in (source, project / ("part_%s.step" % role), project / ("part_%s.stp" % role)):
+        if path.is_file():
+            bound[path.name] = file_hash(path)
+    return dict(sorted(bound.items()))
 
 
 def compose_comparison(reference: Path, render: Path, out_path: Path, caption: str) -> None:
@@ -167,7 +267,8 @@ def prepare_comparisons(project, out, refs):
 def prepare_visual(project, entry, out, cad, refs, component=None):
     """Render evidence for native inspection; never infer a visual verdict.
     ``component`` is the role of a component round, else None."""
-    before = source_hashes(project, component)
+    bound = (lambda: component_sources(project, component)) if component else (lambda: source_hashes(project))
+    before = bound()
     views = out / "visual"
     command = [sys.executable, str(cad / "render_review"), str(entry),
                "--view", "front", "--view", "top", "--view", "iso"]
@@ -177,7 +278,7 @@ def prepare_visual(project, entry, out, cad, refs, component=None):
             command.append("--view=%s" % view)
     done = run(command + ["-o", str(views)], cwd=project, log=out / "visual-render.log")
     paths = [views / (v + ".png") for v in ("front", "top", "iso")]
-    if done.returncode or not all(p.is_file() for p in paths) or before != source_hashes(project, component):
+    if done.returncode or not all(p.is_file() for p in paths) or before != bound():
         return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}
     comparisons, error = prepare_comparisons(project, out, refs)
     if error is not None:
@@ -235,7 +336,8 @@ def packet_error(visual: dict, project: Path, role: str | None = None) -> str | 
     if file_hash(packet_path) != visual["packet_sha256"]:
         return "visual packet changed"
     packet = json.loads(packet_path.read_text())
-    if packet["sources"] != source_hashes(project, role):
+    current = source_hashes(project) if role is None else component_sources(project, role)
+    if packet["sources"] != current:
         return "stale CAD sources or design constraints"
     comparisons = packet.get("comparisons") or {}
     bound = {**packet["images"], **packet["references"],
@@ -380,6 +482,7 @@ def record_review(project: Path, review_path, component: str) -> dict:
         raise ValueError("a review needs the reviewer's name")
     if reviewer.strip().lower() in MANAGER_NAMES:
         raise ValueError("the Workshop Manager cannot review its own component")
+    bound = reviewer_binding(state, reviewer)
     if type(review["agrees"]) is not bool:
         raise ValueError("a review's agrees must be true or false")
     if not isinstance(review["reason"], str) or not 1 <= len(review["reason"].strip()) <= MAX_REASON:
@@ -398,20 +501,62 @@ def record_review(project: Path, review_path, component: str) -> dict:
         "reviewer": reviewer.strip(), "agrees": review["agrees"], "reason": review["reason"].strip(),
         "round": latest, "differences": differences,
     }
+    policy = review_policy(component_policy(state, round_root), {
+        "agrees": review["agrees"], "identity": state.get("identity"), "carry_key": summary.get("carry_key"),
+        "imported_helpers": summary.get("imported_helpers") or {}, "review": recorded,
+    })
+    reviewed = policy["reviewed"]
+    acceptance = None
+    if reviewed["accepted"]:
+        acceptance = {"reviewer": recorded["reviewer"], "reason": recorded["reason"],
+                      "shape_rounds": int(policy.get("shape_rounds") or 0)}
+        summary["accepted"] = acceptance
+    reviewed["acceptance"] = acceptance
     summary["review"] = recorded
     visual["status"] = "reviewed"
-    shape_rounds = int(summary.get("shape_rounds", 0))
-    if review["agrees"]:
-        summary["ok"] = True
-    elif shape_rounds >= SHAPE_REPAIR_LIMIT:
-        summary["accepted"] = {"reviewer": recorded["reviewer"], "reason": recorded["reason"],
-                               "shape_rounds": shape_rounds}
-        summary["ok"] = True
-    else:
-        summary["ok"] = False
+    summary["ok"] = policy["phase"] == LOCKED
+    summary["locked"] = lock_record(policy)
     (out / "review.json").write_text(json.dumps(review, sort_keys=True, indent=2) + "\n")
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
+    state["policy"] = policy
+    if bound is not None:
+        state["reviewer_id"] = bound
+    state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return summary
+
+
+def reviewer_binding(state: dict, reviewer: str, runtime: str | None = None) -> str | None:
+    """The native reviewer id a review binds the Component to, or None where
+    the runtime gives no such id (issue #77).
+
+    The id must have the runtime's format, so a name or a placeholder is
+    refused. The Component's first review binds it; a review naming another
+    id is refused with the bound one, so the Manager asks that thread again.
+    """
+
+    runtime = os.environ.get(REVIEWER_RUNTIME_ENV) if runtime is None else runtime
+    if runtime not in REVIEWER_ID_FORMATS:
+        return None
+    pattern, shape = REVIEWER_ID_FORMATS[runtime]
+    if not pattern.fullmatch(reviewer):
+        raise ValueError(
+            "reviewer must be the component-reviewer's native agent id (%s), exactly as the "
+            "runtime returned it when the reviewer was spawned; got %r" % (shape, reviewer[:40]))
+    bound = state.get("reviewer_id")
+    if bound is not None and bound != reviewer:
+        raise ValueError(
+            "this Component's reviews are bound to reviewer %s; send the review request to "
+            "that reviewer's thread and record its answer under that id" % bound)
+    return reviewer
+
+
+def lock_record(policy: dict) -> dict | None:
+    """``{"round", "source"}`` of the review that locks the Component, or None."""
+
+    if policy.get("phase") != LOCKED:
+        return None
+    reviewed = policy["reviewed"]
+    return {"round": reviewed["round"], "source": "agreeing-review" if reviewed["agrees"] else "component-acceptance"}
 
 
 def previous_observation(out: Path, summary: dict) -> str | None:
@@ -716,7 +861,31 @@ def render_summary(summary: dict) -> str:
     for item in summary.get("sealed") or []:
         lines.append("  seal  %-14s shown to %s" % (item["label"], item["scored_by"]))
     if summary.get("shape_limit") is not None:
-        lines.append("  shape %d/%d shape round(s)" % (summary.get("shape_rounds", 0), summary["shape_limit"]))
+        used = summary.get("shape_rounds_used", summary.get("shape_rounds", 0))
+        lines.append("  shape %d/%d shape round(s) used; this round %s" % (
+            used, summary["shape_limit"], "is a shape round" if summary.get("shape_round") else "is not one"))
+        helpers = summary.get("imported_helpers") or {}
+        if helpers:
+            lines.append("  helpers " + ", ".join("%s %s" % (path, digest[:12]) for path, digest in helpers.items()))
+        for item in summary.get("unlock") or []:
+            if item.get("kind") == "shared-helper":
+                lines.append("  unlock imported Shared Helper changed: %s" % ", ".join(item["paths"]))
+            elif item.get("kind") == "interface":
+                lines.append("  unlock interface %s r%04d: %s" % (item.get("interface"), item.get("interface_round", 0),
+                                                                item.get("reason", "")[:160]))
+            else:
+                lines.append("  unlock %s r%04d: %s" % (item.get("kind"), item.get("assembly_round", 0), item.get("reason", "")[:160]))
+        frozen = summary.get("helper_freeze") or {}
+        for path in frozen.get("changed") or []:
+            lines.append("  frozen %s changed since the freeze of r%04d; imported by %s; the Manager reruns "
+                         "--shared-helpers" % (path, frozen.get("round") or 0,
+                                               ", ".join(frozen["affected"].get(path, [])) or "no Component"))
+        for interface_id, item in (summary.get("envelopes") or {}).items():
+            lines.append("  keep  %-4s %-14s %s: %s" % (item["verdict"], interface_id, item["role"], item["detail"][:120]))
+        locked = summary.get("locked")
+        if locked:
+            lines.append("  lock  LOCKED by the %s of r%04d; change the geometry only after an unlock" % (
+                locked["source"].replace("-", " "), locked["round"]))
     if summary.get("motion_status") == "not-run":
         lines.append("  move  SKIP motion unverified")
     if summary.get("motion") is not None:
@@ -734,11 +903,13 @@ def render_summary(summary: dict) -> str:
                 item["feature"], item["reference"], item["model"], item["decision"], item["reason"]))
         if visual["status"] == "pending" and summary.get("shape_limit") is not None:
             lines.append("    reviewer inspects %s; record it with --record-review <review.json>" % visual["packet"])
+            lines.append("    worker: report this round and wait; only a rerun that leaves the geometry unchanged may run before the review")
         elif visual["status"] == "pending":
             lines.append("    inspect %s then use --record-visual <feedback.json>" % visual["packet"])
     review = summary.get("review")
     if review is not None:
-        lines.append("  review %s by %s: %s" % ("AGREES" if review["agrees"] else "DISAGREES", review["reviewer"], review["reason"][:160]))
+        carried = " (carried from r%04d)" % review["carried_from"] if review.get("carried_from") else ""
+        lines.append("  review %s%s by %s: %s" % ("AGREES" if review["agrees"] else "DISAGREES", carried, review["reviewer"], review["reason"][:160]))
         for item in review.get("differences") or []:
             lines.append("    differs %s: reference %s | model %s" % (item["feature"], item["reference"], item["model"]))
         if summary.get("accepted"):
@@ -754,11 +925,11 @@ def render_summary(summary: dict) -> str:
 # running the tools
 
 
-def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS) -> subprocess.CompletedProcess:
+def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS, extra_env=None) -> subprocess.CompletedProcess:
     started = time.monotonic()
     name = Path(command[1]).name if len(command) > 1 else ""
-    analysis = name in {"check_thickness", "check_overhang", "check_motion", "check_mesh"}
-    environment = {**os.environ, "CADGEN_WARM": "0"}
+    analysis = name in {"check_thickness", "check_overhang", "check_motion", "check_mesh", "check_envelope"}
+    environment = {**os.environ, "CADGEN_WARM": "0", **(extra_env or {})}
     if analysis:
         budget = float(environment.get("WORKSHOP_GEOMETRY_TIMEOUT", "600"))
         if not 0 < budget <= 86400:
@@ -1157,26 +1328,706 @@ def motion_policy():
     return runpy.run_path(str(Path(__file__).resolve().parents[2] / "cad/scripts/motion_policy.py"))
 
 
-def shape_limit_refusal(state: dict, round_root: Path) -> str | None:
-    """Why no further component round may start, or None.
+# ---------------------------------------------------------------------------
+# the component round policy (ADR 0081): one pure function decides admission,
+# Shape Round counting and the lock; make_round only gathers its inputs.
 
-    At the shape-repair limit a round that passed its checks is reviewed, not
-    repaired again: the review then passes the component or becomes its
-    recorded acceptance, so the run cannot loop on its shape (ADR 0076).
+OPEN, AWAITING, DISAGREED, LOCKED = "open", "awaiting-review", "disagreed", "locked"
+
+
+def round_policy(previous: dict, new: dict) -> dict:
+    """Admit or refuse one component round, and what it leaves behind.
+
+    ``previous`` is the Component's policy state: ``phase`` (open,
+    awaiting-review, disagreed or locked), ``identity`` of its latest round,
+    ``round`` its number, ``shape_rounds`` used, ``reviewed`` -- the review
+    the phase rests on, ``{"round", "identity", "carry_key", "agrees",
+    "accepted", "imported_helpers", ...}`` -- and ``unlocks``, the reasons a
+    locked Component may change. ``new`` is the round: its B-rep
+    ``identity`` (None when it did not build), ``helpers`` (current sha256
+    of the Shared Helpers it imports), ``checks_ok`` (None to ask only
+    whether it is admitted) and ``carry_key`` (identity, shown reference
+    bytes and contract rows together).
+
+    Returns ``{"admit", "refusal", "shape_round", "unlocks", "carried",
+    "state"}``: ``carried`` is the review this round inherits, ``state`` the
+    next policy state, or None when the round is refused or only asked about.
     """
 
-    latest = state.get("round")
-    if int(state.get("shape_rounds", 0)) < SHAPE_REPAIR_LIMIT or state.get("checks_ok") is not True:
+    phase = previous.get("phase") or OPEN
+    reviewed = previous.get("reviewed")
+    shape_rounds = int(previous.get("shape_rounds") or 0)
+    unlocks = list(previous.get("unlocks") or [])
+    identity = new.get("identity")
+    latest = previous.get("round")
+    result = {"admit": True, "refusal": None, "shape_round": False, "unlocks": unlocks,
+              "carried": None, "state": None}
+    if phase == LOCKED:
+        helpers = new.get("helpers") or {}
+        changed = sorted(path for path, digest in (reviewed.get("imported_helpers") or {}).items()
+                         if helpers.get(path) != digest)
+        if changed and not any(item.get("kind") == "shared-helper" and item.get("paths") == changed
+                               for item in unlocks):
+            unlocks.append({"kind": "shared-helper", "paths": changed})
+        if not unlocks and identity != reviewed["identity"]:
+            how = "an agreeing review" if reviewed.get("agrees") else "a Component Acceptance"
+            result.update(admit=False, refusal=(
+                "the Component is locked by %s of r%04d; its geometry may change only when a Shared "
+                "Helper it imports changes or the Workshop Manager records an assembly unlock. Revert "
+                "your change; a rerun that leaves the geometry unchanged may run" % (how, reviewed["round"])))
+    elif phase == AWAITING and identity != previous.get("identity"):
+        result.update(admit=False, refusal=(
+            "r%04d passed its build and print checks and has no Component Review; report it and wait. "
+            "Change the geometry only after a recorded disagreeing review; revert your change, or rerun "
+            "it unchanged" % latest))
+    elif phase == DISAGREED and identity is not None and identity != reviewed["identity"]:
+        result["shape_round"] = True
+    checks_ok = new.get("checks_ok")
+    if not result["admit"] or checks_ok is None:
+        return result
+    passed = checks_ok is True
+    carry = (passed and reviewed is not None and identity == reviewed.get("identity")
+             and new.get("carry_key") == reviewed.get("carry_key"))
+    state = {"phase": phase, "identity": identity, "round": new.get("round"),
+             "shape_rounds": shape_rounds + (1 if result["shape_round"] else 0),
+             "reviewed": reviewed, "unlocks": unlocks}
+    if phase == LOCKED:
+        if passed and carry:
+            # The reviewed B-rep came back: the review carries and relocks.
+            result["carried"] = reviewed
+            state.update(reviewed={**reviewed, "imported_helpers": new.get("helpers") or {}}, unlocks=[])
+        elif passed:
+            state.update(phase=AWAITING, reviewed=None, unlocks=[])
+    elif phase == DISAGREED and not result["shape_round"]:
+        if passed and carry:
+            result["carried"] = reviewed
+        elif passed and identity is not None:
+            state.update(phase=AWAITING, reviewed=None)
+    else:
+        state.update(phase=AWAITING if passed else OPEN, reviewed=None)
+    result["state"] = state
+    return result
+
+
+def review_policy(previous: dict, review: dict) -> dict:
+    """The policy state after a Component Review of the latest round.
+
+    Agreement locks the Component. A disagreement locks it as a Component
+    Acceptance once its Shape Rounds are used, else it is the repair list for
+    the next Shape Round. ``review`` holds ``agrees``, ``identity``,
+    ``carry_key``, ``imported_helpers`` and the recorded review.
+    """
+
+    if previous.get("phase") != AWAITING:
+        raise ValueError("r%04d is not awaiting a Component Review" % int(previous.get("round") or 0))
+    shape_rounds = int(previous.get("shape_rounds") or 0)
+    accepted = not review["agrees"] and shape_rounds >= SHAPE_REPAIR_LIMIT
+    reviewed = {**review, "round": previous.get("round"), "accepted": accepted}
+    return {**previous, "phase": LOCKED if review["agrees"] or accepted else DISAGREED,
+            "reviewed": reviewed, "unlocks": []}
+
+
+def legacy_policy(state: dict, summary: dict | None) -> dict:
+    """The policy state of a Component whose rounds an earlier make_round ran
+    (a run whose tools were refreshed): read from its latest round."""
+
+    if not state.get("round"):
+        return {"phase": OPEN}
+    shape_rounds = min(int(state.get("shape_rounds") or 0), SHAPE_REPAIR_LIMIT)
+    base = {"identity": state.get("identity"), "round": state.get("round"), "shape_rounds": shape_rounds,
+            "unlocks": []}
+    review = (summary or {}).get("review")
+    if not state.get("checks_ok"):
+        return {**base, "phase": OPEN, "reviewed": None}
+    if review is None:
+        return {**base, "phase": AWAITING, "reviewed": None}
+    accepted = bool((summary or {}).get("accepted"))
+    reviewed = {"round": state.get("round"), "identity": state.get("identity"), "carry_key": None,
+                "agrees": bool(review.get("agrees")), "accepted": accepted, "imported_helpers": {},
+                "review": review, "acceptance": (summary or {}).get("accepted")}
+    phase = LOCKED if review.get("agrees") or accepted else DISAGREED
+    return {**base, "phase": phase, "reviewed": reviewed}
+
+
+def component_policy(state: dict, round_root: Path) -> dict:
+    if isinstance(state.get("policy"), dict):
+        return state["policy"]
+    summary = None
+    if state.get("round"):
+        try:
+            summary = json.loads((round_root / ("r%04d" % state["round"]) / "summary.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            summary = None
+    return legacy_policy(state, summary)
+
+
+def contract_rows(project: Path, role: str) -> str:
+    """sha256 of the Component's own Design Contract rows: its Unique
+    Geometry, the requirements and references scoped to it. Outside Contract
+    Mode, of nothing."""
+
+    rows = None
+    root = run_root(project)
+    if root is not None:
+        try:
+            wish = json.loads((root / "WISH.json").read_text(encoding="utf-8"))
+            contract = ((wish.get("context") or {}).get("design_contract")) if isinstance(wish, dict) else None
+        except (OSError, ValueError, AttributeError):
+            contract = None
+        if isinstance(contract, dict):
+            scope = GEOMETRY_LABEL + role
+            rows = {
+                "geometries": [g for g in contract.get("geometries") or () if isinstance(g, dict) and g.get("id") == role],
+                "requirements": [r for r in contract.get("requirements") or () if isinstance(r, dict) and r.get("scope") == scope],
+                "references": [r for r in contract.get("references") or () if isinstance(r, dict) and r.get("shows") == scope],
+            }
+    return hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest()
+
+
+def carry_key(identity: str | None, refs: list, project: Path, rows: str) -> str | None:
+    """What a review judged: the B-rep, the shown reference bytes at their
+    cameras, and the Component's contract rows. A review carries to a later
+    round only when all three are unchanged."""
+
+    if identity is None:
         return None
+    shown = []
+    for label, ref in refs:
+        path = resolve_reference(ref, project)
+        shown.append([label, split_camera(ref)[1], file_hash(path) if path is not None else None])
+    return hashlib.sha256(json.dumps([identity, sorted(shown), rows]).encode()).hexdigest()
+
+
+def record_unlock(project: Path, unlock_path, component: str) -> dict:
+    """Record that an assembly round requires a change to one locked Component.
+
+    The record cites the assembly round and one finding the Workshop Manager
+    recorded there with --record-visual. It builds nothing; the Component's
+    next rounds are admitted and are never Shape Rounds (ADR 0081).
+    """
+
+    role, _source = component_role(project, component)
+    state_path, round_root = state_and_round_root(project, component)
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    if state.get("scope") != "component:%s" % role:
+        raise ValueError("component round state is invalid")
+    policy = component_policy(state, round_root)
+    if policy.get("phase") != LOCKED:
+        raise ValueError("part_%s.step.py is not locked; its rounds need no unlock" % role)
+    record = json.loads(Path(unlock_path).read_text(encoding="utf-8"))
+    if not isinstance(record, dict) or set(record) != {"assembly_round", "finding", "reason"}:
+        raise ValueError("an unlock needs assembly_round, finding and reason")
+    number, index = record["assembly_round"], record["finding"]
+    if type(number) is not int or number < 1 or type(index) is not int or index < 0:
+        raise ValueError("assembly_round and finding must be a round number and a finding index")
+    reason = record["reason"]
+    if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= MAX_REASON:
+        raise ValueError("an unlock needs a reason of 1 to %d characters" % MAX_REASON)
+    assembly = project / "measure" / ROUNDS_DIR / ("r%04d" % number)
     try:
-        summary = json.loads((round_root / ("r%04d" % latest) / "summary.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError, TypeError):
+        feedback_bytes = (assembly / "visual-feedback.json").read_bytes()
+        feedback = json.loads(feedback_bytes)
+        findings = feedback["findings"]
+    except (OSError, ValueError, KeyError, TypeError):
+        raise ValueError("assembly round r%04d has no recorded visual finding" % number) from None
+    if not isinstance(findings, list) or index >= len(findings):
+        raise ValueError("assembly round r%04d has no finding %d" % (number, index))
+    unlock = {"kind": "assembly", "assembly_round": number, "finding": findings[index],
+              "visual_feedback_sha256": hashlib.sha256(feedback_bytes).hexdigest(),
+              "reason": reason.strip()}
+    policy = {**policy, "unlocks": [*(policy.get("unlocks") or []), unlock]}
+    state["policy"] = policy
+    with (round_root / "unlocks.jsonl").open("a", encoding="utf-8") as ledger:
+        ledger.write(json.dumps(unlock, sort_keys=True) + "\n")
+    state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return unlock
+
+
+# ---------------------------------------------------------------------------
+# Interfaces between Components (ADR 0082): the Shared Helper freeze, Keep-out
+# Envelopes and Coupled Interface checks. Only the round mechanics live here;
+# every verdict comes from the print gates, check_envelope and check_motion.
+
+
+def contract_interfaces(project: Path) -> tuple[list | None, str | None]:
+    """``(interfaces, error)`` from the sealed Design Contract.
+
+    ``interfaces`` is None when the run has no contract or its contract has no
+    Interfaces section (schema 1, or a run sealed before ADR 0082): such runs
+    keep the protocol without a freeze. An unreadable Wish is an error.
+    """
+
+    root = run_root(project)
+    if root is None:
+        return None, None
+    try:
+        wish = json.loads((root / "WISH.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return None, "WISH.json unreadable: %s" % exc
+    context = wish.get("context") if isinstance(wish, dict) else None
+    contract = context.get("design_contract") if isinstance(context, dict) else None
+    if not isinstance(contract, dict) or "interfaces" not in contract:
+        return None, None
+    interfaces = contract["interfaces"]
+    if not isinstance(interfaces, list) or not all(
+            isinstance(item, dict) and isinstance(item.get("id"), str) for item in interfaces):
+        return None, "the sealed contract's interfaces are invalid"
+    return interfaces, None
+
+
+def shared_helpers(project: Path) -> dict[str, str]:
+    """Project-relative path -> sha256 of every Shared Helper: each importable
+    project-local ``.py`` module that is not an entry, a sample or evidence."""
+
+    project = project.resolve()
+    found = {}
+    for path in sorted(project.rglob("*.py")):
+        relative = path.relative_to(project)
+        if path.name.endswith(".step.py") or any(part in NOT_HELPERS for part in relative.parts[:-1]):
+            continue
+        if path.is_file():
+            found[relative.as_posix()] = file_hash(path)
+    return found
+
+
+def helper_importers(project: Path) -> dict[str, list[str]]:
+    """Shared Helper path -> the Components whose source imports it."""
+
+    importers: dict[str, list[str]] = {}
+    for source in sorted(project.glob("part_*.step.py")):
+        role = source.name[len("part_"):-len(".step.py")]
+        for path in imported_helpers(project, source):
+            importers.setdefault(path, []).append(role)
+    return importers
+
+
+def read_freeze(project: Path) -> dict | None:
+    try:
+        record = json.loads((project / "measure" / HELPER_FREEZE_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
         return None
-    if isinstance(summary, dict) and summary.get("review") is not None:
+    return record if isinstance(record, dict) and isinstance(record.get("helpers"), dict) else None
+
+
+def freeze_report(project: Path, freeze: dict, helpers: dict[str, str]) -> dict:
+    """What changed in the Shared Helpers one Component imports since the
+    freeze, and every Component that imports each changed file (ADR 0082).
+    Detection only: the round policy's import-scoped unlock acts on it."""
+
+    frozen = freeze["helpers"]
+    changed = sorted(path for path, digest in helpers.items() if frozen.get(path) != digest)
+    importers = helper_importers(project) if changed else {}
+    return {"round": freeze.get("round"), "changed": changed,
+            "affected": {path: importers.get(path, []) for path in changed}}
+
+
+def shared_helper_check(project: Path, args, cad: Path) -> int:
+    """Build the Manager's samples under samples/, run both print gates on
+    each, and freeze the Shared Helpers when every sample passes."""
+
+    interfaces, error = contract_interfaces(project)
+    if error is not None:
+        print("make_round: %s" % error, file=sys.stderr)
+        return 2
+    samples = sorted((project / SAMPLES_DIR).glob("*.step.py")) if (project / SAMPLES_DIR).is_dir() else []
+    if interfaces and not samples:
+        print("make_round: the contract has Interfaces but %s/ holds no sample <name>.step.py; build each "
+              "joint section, gear pair or standard profile there from the Shared Helpers" % SAMPLES_DIR,
+              file=sys.stderr)
+        return 2
+    measure = project / "measure"
+    root = measure / HELPER_ROUNDS_DIR
+    root.mkdir(parents=True, exist_ok=True)
+    state_path = root / STATE_NAME
+    state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
+    number = int(state.get("round", 0)) + 1
+    out = root / ("r%04d" % number)
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+    before = shared_helpers(project)
+    # A sample sits in samples/ and imports the Shared Helpers from the project.
+    path_env = {"PYTHONPATH": os.pathsep.join(filter(None, [str(project), os.environ.get("PYTHONPATH")]))}
+    python = sys.executable
+    results = {}
+    for sample in samples:
+        name = sample.name[:-len(".step.py")]
+        imported = imported_helpers(project, sample)
+        item = {"source_sha256": file_hash(sample), "imports": sorted(imported)}
+        if not imported:
+            item.update(verdict="FAIL", failures=["imports no Shared Helper; a sample tests the helpers it imports"])
+            results[name] = item
+            continue
+        done = run([python, str(cad / "gen"), str(sample), "--write", "--json"], cwd=project,
+                   log=out / ("gen-%s.log" % name), extra_env=path_env)
+        build = parse_build(done.stdout, done.stderr, done.returncode)
+        if build["verdict"] == "PASS" and not sample.with_name(sample.name[:-len(".py")]).is_file():
+            build = {"verdict": "FAIL", "failures": ["gen reported success but wrote no STEP"]}
+        item["build"] = build
+        if build["verdict"] != "PASS":
+            item.update(verdict="FAIL", failures=build["failures"])
+            results[name] = item
+            continue
+        gates = {}
+        for gate, extra in (("thickness", ["--nozzle", str(args.nozzle)]),
+                            ("overhang", ["--angle", str(args.overhang_angle)])):
+            done = run([python, str(cad / ("check_" + gate)), str(sample), *extra,
+                        "--report", str(out / ("%s-%s.md" % (gate, name)))],
+                       cwd=project, log=out / ("%s-%s.log" % (gate, name)), extra_env=path_env)
+            parsed = (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout)
+            if done.returncode not in (0, 1):
+                # A gate that could not measure never passes a sample.
+                parsed["verdict"] = "FAIL"
+                parsed["failures"] = (["check_%s exit %d" % (gate, done.returncode)] + parsed["failures"])[:4]
+            gates[gate] = parsed
+        item.update(gates)
+        failures = [f for gate in gates.values() if gate["verdict"] != "PASS" for f in gate["failures"]]
+        item.update(verdict="PASS" if all(g["verdict"] == "PASS" for g in gates.values()) else "FAIL",
+                    failures=failures[:4])
+        results[name] = item
+    after = shared_helpers(project)
+    errors = [] if before == after else ["the Shared Helpers changed while their samples were checked"]
+    ok = not errors and all(item["verdict"] == "PASS" for item in results.values())
+    previous = read_freeze(project)
+    summary = {"round": number, "scope": "shared-helpers", "project": str(project), "samples": results,
+               "helpers": after, "errors": errors, "ok": ok, "frozen": False, "out": str(out),
+               "nozzle": args.nozzle, "overhang_angle": args.overhang_angle}
+    if ok:
+        changed = sorted(path for path in set(after) | set((previous or {}).get("helpers", {}))
+                         if after.get(path) != (previous or {}).get("helpers", {}).get(path))
+        importers = helper_importers(project)
+        freeze = {"schema_version": 1, "round": number, "helpers": after,
+                  "samples": {name: item["source_sha256"] for name, item in results.items()},
+                  "summary_sha256": None}
+        event = {"round": number, "refreeze_of": (previous or {}).get("round"),
+                 "changed": changed if previous is not None else [],
+                 "affected": {path: importers.get(path, []) for path in changed} if previous is not None else {}}
+        summary.update(frozen=True, freeze_event=event)
+    (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    if ok:
+        freeze["summary_sha256"] = file_hash(out / "summary.json")
+        (measure / HELPER_FREEZE_NAME).write_text(json.dumps(freeze, indent=1, sort_keys=True) + "\n",
+                                                  encoding="utf-8")
+        with (measure / HELPER_FREEZE_LOG).open("a", encoding="utf-8") as ledger:
+            ledger.write(json.dumps(event, sort_keys=True) + "\n")
+    state_path.write_text(json.dumps({"round": number, "last_out": str(out), "ok": ok}, indent=1) + "\n",
+                          encoding="utf-8")
+    print(json.dumps(summary, sort_keys=True) if args.json else render_helper_summary(summary))
+    return 0 if ok else 1
+
+
+def render_helper_summary(summary: dict) -> str:
+    lines = ["make_round r%04d  shared-helpers  %s  %d sample(s)"
+             % (summary["round"], summary["project"], len(summary["samples"]))]
+    for name, item in summary["samples"].items():
+        why = ("  " + "; ".join(item["failures"])) if item["verdict"] != "PASS" and item["failures"] else ""
+        lines.append("  sample %-4s %-24s imports %s%s" % (item["verdict"], name, ", ".join(item["imports"]) or "-", why))
+    for error in summary["errors"]:
+        lines.append("  error %s" % error)
+    if summary["frozen"]:
+        event = summary["freeze_event"]
+        lines.append("  freeze %d Shared Helper(s) frozen at r%04d" % (len(summary["helpers"]), summary["round"]))
+        for path in event["changed"]:
+            lines.append("  refreeze %s changed since r%04d; imported by %s"
+                         % (path, event["refreeze_of"], ", ".join(event["affected"].get(path, [])) or "no Component"))
+    lines.append("  %s  reports under %s" % ("PASS" if summary["ok"] else "FAIL", summary["out"]))
+    return "\n".join(lines)
+
+
+def separable_roles(interfaces: list, role: str) -> list[tuple[dict, str]]:
+    """``(interface, "inside"|"outside")`` for each separable Interface this
+    Component keeps a Keep-out Envelope with."""
+
+    found = []
+    for item in interfaces or ():
+        envelope = item.get("envelope") if item.get("kind") == SEPARABLE else None
+        if isinstance(envelope, dict):
+            for side in ("inside", "outside"):
+                if envelope.get(side) == role:
+                    found.append((item, side))
+    return found
+
+
+def parse_envelope(stdout: str, returncode: int) -> dict:
+    """A check_envelope result; anything but a complete PASS fails."""
+
+    try:
+        payload = json.loads((stdout or "").strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        payload = None
+    if not isinstance(payload, dict) or not isinstance(payload.get("ok"), bool):
+        return {"verdict": "FAIL", "poses": [], "detail": "check_envelope exit %d without a result" % returncode}
+    verdict = "PASS" if payload["ok"] and returncode == 0 else "FAIL"
+    return {"verdict": verdict, "poses": payload.get("poses") or [], "detail": str(payload.get("detail", ""))[:300]}
+
+
+def check_envelopes(project: Path, role: str, part: Path, out: Path, interfaces: list) -> dict:
+    """Run check_envelope for every separable Interface this Component joins."""
+
+    results = {}
+    for item, side in separable_roles(interfaces, role):
+        envelope_path = out / ("envelope-%s.json" % item["id"])
+        envelope_path.write_text(json.dumps(item["envelope"], sort_keys=True) + "\n", encoding="utf-8")
+        done = run([sys.executable, str(Path(__file__).resolve().parent / "check_envelope"), str(part),
+                    "--envelope", str(envelope_path), "--role", side, "--json"],
+                   cwd=project, log=out / ("envelope-%s.log" % item["id"]))
+        results[item["id"]] = {"role": side, **parse_envelope(done.stdout, done.returncode)}
+    return results
+
+
+def interface_state_path(project: Path, interface_id: str) -> Path:
+    return project / "measure" / INTERFACE_ROUNDS_DIR / interface_id / STATE_NAME
+
+
+def component_identity(project: Path, role: str, out: Path, cad: Path) -> str | None:
+    """The current B-rep identity of one Component, built now, or None."""
+
+    part = project / ("part_%s.step.py" % role)
+    if not part.is_file():
         return None
-    return ("the component used its %d shape rounds and r%04d passed its checks; have an independent "
-            "reviewer judge r%04d and record it with --record-review <review.json>"
-            % (SHAPE_REPAIR_LIMIT, latest, latest))
+    done = run([sys.executable, str(cad / "gen"), str(part), "--write", "--json"], cwd=project,
+               log=out / ("gen-%s.log" % role))
+    step = part.with_name(part.name[:-len(".py")])
+    if parse_build(done.stdout, done.stderr, done.returncode)["verdict"] != "PASS" or not step.is_file():
+        return None
+    return parse_identity(done.stdout) or file_hash(step)
+
+
+def locked_at(project: Path, role: str, digest: str | None) -> str:
+    """Why one Component is not locked at its current identity, or ""."""
+
+    _summary, reason = current_passing_component_round(project, role, digest)
+    if reason:
+        return reason
+    state_path, round_root = state_and_round_root(project, "part_%s.step.py" % role)
+    policy = component_policy(json.loads(state_path.read_text(encoding="utf-8")), round_root)
+    if policy.get("phase") != LOCKED:
+        return "part_%s.step.py is not locked by an agreeing review or a Component Acceptance" % role
+    return ""
+
+
+INTERFACE_ENTRY = '''"""Generated by make_round --interface %(id)s (ADR 0082).
+
+Places the Interface's Components in assembly coordinates, each through its
+own assembly_pose(shape, None), labelled by its Component id. No geometry
+of its own; never printed.
+"""
+
+import importlib.util
+import sys
+from pathlib import Path
+
+PRINTABLE = False
+PROJECT = Path(%(project)r)
+COMPONENTS = %(components)r
+
+
+def _component(role):
+    if str(PROJECT) not in sys.path:
+        sys.path.insert(0, str(PROJECT))
+    path = PROJECT / ("part_%%s.step.py" %% role)
+    spec = importlib.util.spec_from_file_location("_interface_part_" + role.replace("-", "_"), path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    place = getattr(module, "assembly_pose", None)
+    if place is None:
+        raise ValueError("%%s defines no assembly_pose(shape, pose)" %% path.name)
+    shape = place(module.gen_step(), None)
+    shape.label = role
+    return shape
+
+
+def gen_step():
+    from build123d import Compound
+
+    return Compound(label="interface", children=[_component(role) for role in COMPONENTS])
+'''
+
+
+def interface_condition(project: Path, interface: dict) -> dict:
+    """The one coupled_motion_collision condition this Interface is checked
+    with: its sealed pose table, or the motion-manifest condition it names."""
+
+    components = list(interface["components"])
+    if interface.get("poses") is not None:
+        poses = interface["poses"]
+        movers = []
+        for mover in poses["movers"]:
+            entry = {"part": mover["component"]}
+            entry.update({key: mover[key] for key in ("rotation", "translation", "driven") if key in mover})
+            movers.append(entry)
+        inputs = {"steps": poses["steps"], "movers": movers}
+    else:
+        try:
+            manifest = json.loads((project / "measure" / "motion.json").read_text(encoding="utf-8"))
+            conditions = manifest["conditions"]
+        except (OSError, ValueError, KeyError, TypeError):
+            raise ValueError("%s takes its poses from measure/motion.json condition %r, which cannot be read"
+                             % (interface["id"], interface["poses_from"])) from None
+        found = [item for item in conditions if isinstance(item, dict) and item.get("id") == interface["poses_from"]]
+        if len(found) != 1 or found[0].get("check") != "coupled_motion_collision":
+            raise ValueError("measure/motion.json has no single coupled_motion_collision condition %r"
+                             % interface["poses_from"])
+        inputs = dict(found[0].get("inputs") or {})
+    moving = {mover.get("part") for mover in inputs.get("movers") or () if isinstance(mover, dict)}
+    unknown = sorted(str(name) for name in moving if name not in components)
+    if unknown:
+        raise ValueError("the pose table of %s moves %s, which the Interface does not join"
+                         % (interface["id"], ", ".join(unknown)))
+    # Only the Interface's own Components are built; the ones that do not
+    # move are its obstacles, on the record.
+    inputs["obstacle_parts"] = [role for role in components if role not in moving]
+    return {"id": interface["id"], "check": "coupled_motion_collision", "expect": "clear", "inputs": inputs}
+
+
+def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
+    """``--interface ID``: the coupled motion check of one Coupled Interface on
+    its locked Components (ADR 0082). A failure unlocks the yielding
+    Component with the check's evidence as its repair input."""
+
+    interfaces, error = contract_interfaces(project)
+    if error is not None or interfaces is None:
+        print("make_round: %s" % (error or "the sealed Design Contract has no Interfaces section"), file=sys.stderr)
+        return 2
+    interface = next((item for item in interfaces if item.get("id") == interface_id), None)
+    if interface is None:
+        print("make_round: the sealed contract has no Interface %r" % interface_id, file=sys.stderr)
+        return 2
+    if interface.get("kind") != COUPLED:
+        print("make_round: %s is a %s Interface; only a Coupled Interface has an interface check%s"
+              % (interface_id, interface.get("kind"),
+                 " (its Keep-out Envelope is checked in each component round)" if interface.get("kind") == SEPARABLE else ""),
+              file=sys.stderr)
+        return 2
+    root = project / "measure" / INTERFACE_ROUNDS_DIR / interface_id
+    root.mkdir(parents=True, exist_ok=True)
+    state_path = root / STATE_NAME
+    state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
+    number = int(state.get("round", 0)) + 1
+    out = root / ("r%04d" % number)
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+    components = list(interface["components"])
+    identities = {role: component_identity(project, role, out, cad) for role in components}
+    refusals = [reason for role in components for reason in [locked_at(project, role, identities[role])] if reason]
+    if refusals:
+        shutil.rmtree(out)
+        print("make_round: interface %s judges locked geometry only: %s" % (interface_id, "; ".join(refusals)),
+              file=sys.stderr)
+        return 2
+    try:
+        condition = interface_condition(project, interface)
+    except ValueError as exc:
+        shutil.rmtree(out)
+        print("make_round: %s" % exc, file=sys.stderr)
+        return 2
+    entry = out / ("interface_%s.step.py" % interface_id.replace("-", "_"))
+    entry.write_text(INTERFACE_ENTRY % {"id": interface_id, "project": str(project), "components": components},
+                     encoding="utf-8")
+    manifest = out / "motion.json"
+    manifest.write_text(json.dumps({"assembly": entry.relative_to(project).as_posix(), "conditions": [condition]},
+                                   indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    done = run([sys.executable, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"],
+               cwd=project, log=out / "motion.log")
+    motion = parse_motion(done.stdout, done.returncode, done.stderr)
+    passed = motion["verdict"] == "pass"
+    summary = {"round": number, "scope": "interface:%s" % interface_id, "project": str(project),
+               "interface": interface_id, "kind": COUPLED, "components": components,
+               "yielding": interface.get("yielding"), "identities": identities, "motion": motion,
+               "ok": passed, "unlocked": None, "out": str(out)}
+    if motion["verdict"] == "fail":
+        summary["unlocked"] = interface_unlock(project, interface, number, out, motion)
+    (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    steps = {role: file_hash(project / ("part_%s.step" % role)) for role in components
+             if (project / ("part_%s.step" % role)).is_file()}
+    state_path.write_text(json.dumps({"round": number, "last_out": str(out), "identities": identities,
+                                      "steps": steps, "ok": passed, "verdict": motion["verdict"]},
+                                     indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps(summary, sort_keys=True) if args.json else render_interface_summary(summary))
+    return 0 if passed else 1
+
+
+def interface_unlock(project: Path, interface: dict, number: int, out: Path, motion: dict) -> str:
+    """Unlock the contract's yielding Component of a failed Interface check,
+    with the check's evidence as its repair input. Its rounds after the
+    unlock are admitted and are never Shape Rounds (ADR 0081, ADR 0082)."""
+
+    role = interface["yielding"]
+    state_path, round_root = state_and_round_root(project, "part_%s.step.py" % role)
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    policy = component_policy(state, round_root)
+    unlock = {"kind": "interface", "interface": interface["id"], "interface_round": number,
+              "evidence": {"round": str(out), "motion_log_sha256": file_hash(out / "motion.log"),
+                           "detail": motion["detail"], "conditions": motion["conditions"]},
+              "reason": "Interface %s failed its coupled motion check: %s" % (interface["id"], motion["detail"])}
+    state["policy"] = {**policy, "unlocks": [*(policy.get("unlocks") or []), unlock]}
+    with (round_root / "unlocks.jsonl").open("a", encoding="utf-8") as ledger:
+        ledger.write(json.dumps(unlock, sort_keys=True) + "\n")
+    state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return role
+
+
+def render_interface_summary(summary: dict) -> str:
+    motion = summary["motion"]
+    lines = ["make_round r%04d  %s  %s  %s" % (summary["round"], summary["scope"], summary["project"],
+                                               " + ".join(summary["components"])),
+             "  move  %-4s %s" % (motion["verdict"].upper()[:4], motion["detail"][:160])]
+    if summary.get("unlocked"):
+        lines.append("  unlock part_%s.step.py (the yielding Component); send this round to its worker"
+                     % summary["unlocked"])
+    lines.append("  %s  reports under %s" % ("PASS" if summary["ok"] else "FAIL", summary["out"]))
+    return "\n".join(lines)
+
+
+def interface_report(project: Path, interfaces: list | None, digests: dict) -> list[dict]:
+    """Each Interface with its Kind, Components and how it was proven, for
+    the run report (ADR 0082). ``digests`` holds each Component's current
+    identity. A Coupled Interface's ``check`` is ``pass`` only while its
+    latest --interface check passed on those exact identities; else
+    ``fail``, ``stale`` or ``not-run``. A separable Interface is proven by
+    each side's component round, a static one by the Shared Helper samples."""
+
+    report = []
+    for interface in interfaces or ():
+        item = {"id": interface["id"], "kind": interface.get("kind"), "components": list(interface["components"])}
+        if interface.get("kind") == COUPLED:
+            try:
+                state = json.loads(interface_state_path(project, interface["id"]).read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                state = None
+            if state is None:
+                check = "not-run"
+            elif not state.get("ok"):
+                check = "fail"
+            elif any(digests.get(role) is None or digests.get(role) not in (
+                    (state.get("identities") or {}).get(role), (state.get("steps") or {}).get(role))
+                     for role in item["components"]):
+                # Either recorded form names the same geometry: the B-rep
+                # identity gen reported, or the STEP a reader without a fresh
+                # build can only hash (ADR 0073).
+                check = "stale"
+            else:
+                check = "pass"
+            item.update(check=check, yielding=interface.get("yielding"),
+                        round=state.get("round") if state is not None else None)
+        elif interface.get("kind") == SEPARABLE:
+            item["check"] = "keep-out-envelope"
+        else:
+            item["check"] = "shared-helper-samples"
+        report.append(item)
+    return report
+
+
+def interface_failures(project: Path, interfaces: list | None, digests: dict) -> list[str]:
+    """Why assembly may not start on the Coupled Interfaces: each needs a
+    current passing check on its Components' present geometry."""
+
+    why = {"not-run": "has no --interface check", "fail": "failed its latest --interface check",
+           "stale": "is stale: a Component it joins changed after its check"}
+    return ["interface %s %s" % (item["id"], why[item["check"]])
+            for item in interface_report(project, interfaces, digests)
+            if item["kind"] == COUPLED and item["check"] != "pass"]
 
 
 def make_round(args) -> int:
@@ -1211,6 +2062,15 @@ def make_round(args) -> int:
             return 2
         print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
         return 0 if summary["ok"] else 1
+    if getattr(args, "record_unlock", None):
+        try:
+            unlock = record_unlock(project, args.record_unlock, args.component)
+        except (ValueError, KeyError, OSError, TypeError) as exc:
+            print("make_round: %s" % exc, file=sys.stderr)
+            return 2
+        print(json.dumps(unlock, sort_keys=True) if args.json else
+              "make_round: %s unlocked by assembly r%04d: %s" % (args.component, unlock["assembly_round"], unlock["reason"]))
+        return 0
     if args.full:
         print("make_round: --full requires --record-visual after inspection and independent blind review", file=sys.stderr)
         return 2
@@ -1219,6 +2079,20 @@ def make_round(args) -> int:
         print("make_round: cannot locate the cad and image-to-cad skills", file=sys.stderr)
         return 2
     cad = roots / "cad" / "scripts"
+    if getattr(args, "shared_helpers", False):
+        (project / "measure").mkdir(exist_ok=True)
+        return shared_helper_check(project, args, cad)
+    if getattr(args, "interface", None):
+        return interface_check(project, args.interface, args, cad)
+    # An unreadable Wish fails the round through its sealed references.
+    interfaces, _interface_error = contract_interfaces(project)
+    freeze = read_freeze(project) if interfaces is not None else None
+    if args.component and interfaces is not None and freeze is None:
+        # ADR 0082: workers never build on untested Shared Helpers.
+        print("make_round: the Shared Helpers are not frozen; the Workshop Manager runs make_round "
+              "--shared-helpers on the samples under %s/ before any component round" % SAMPLES_DIR,
+              file=sys.stderr)
+        return 2
     python = sys.executable
     generators = sorted(project.glob("*.step.py"))
     all_parts = [g for g in generators if g.name.startswith("part_")]
@@ -1250,13 +2124,13 @@ def make_round(args) -> int:
         return 2
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
-    if component is not None:
-        refusal = shape_limit_refusal(state, round_root)
-        if refusal is not None:
-            print("make_round: %s" % refusal, file=sys.stderr)
-            return 2
+    previous_state = state
+    policy = component_policy(state, round_root) if component is not None else None
     round_index = int(state.get("round", 0)) + 1
     out = Path(args.out) if args.out else round_root / ("r%04d" % round_index)
+    if component is not None and out.exists():
+        # A refused round left nothing; an earlier interrupted one is redone.
+        shutil.rmtree(out)
     out.mkdir(parents=True, exist_ok=True)
 
     # A one-piece project exposes its buildable geometry through the entry.
@@ -1270,6 +2144,10 @@ def make_round(args) -> int:
     digests: dict[str, str] = {}
     build: dict[str, dict] = {}
     build_failures: dict[str, dict] = {}
+    # A refused component round puts back the STEP it overwrote, so the
+    # pending packet still shows what is on disk.
+    built_step = entry.with_name(entry.name[:-len(".py")])
+    earlier_step = built_step.read_bytes() if component is not None and built_step.is_file() else None
     for part in parts:
         role = part.name.removeprefix("part_").removesuffix(".step.py")
         step = part.with_name(part.name[:-len(".py")])
@@ -1286,6 +2164,19 @@ def make_round(args) -> int:
     # part's for the assembly. None when it did not build.
     if component is not None:
         round_identity = digests.get(component)
+        helpers = imported_helpers(project, entry)
+        locked_helpers = ((policy.get("reviewed") or {}).get("imported_helpers") or {})
+        current_helpers = {**helpers, **{path: file_hash(project / path) if (project / path).is_file() else None
+                                         for path in locked_helpers if path not in helpers}}
+        admission = round_policy(policy, {"identity": round_identity, "helpers": current_helpers})
+        if not admission["admit"]:
+            shutil.rmtree(out)
+            if earlier_step is not None:
+                built_step.write_bytes(earlier_step)
+            elif built_step.is_file():
+                built_step.unlink()
+            print("make_round: %s" % admission["refusal"], file=sys.stderr)
+            return 2
     else:
         round_identity = None if build_failures else hashlib.sha256(
             json.dumps(digests, sort_keys=True).encode()).hexdigest()
@@ -1303,6 +2194,8 @@ def make_round(args) -> int:
             _, reason = current_passing_component_round(project, part_role, digests.get(part_role))
             if reason:
                 failures.append(reason)
+        # ADR 0082: no assembly with a known or unproven Coupled Interface.
+        failures += interface_failures(project, interfaces, digests)
         prerequisite_log = out / "component-prerequisites.log"
         if failures:
             prerequisite_log.write_text("\n".join(failures) + "\n", encoding="utf-8")
@@ -1383,6 +2276,12 @@ def make_round(args) -> int:
             "logs": {},
         }
 
+    # 2c. a separable Interface's Keep-out Envelope, checked on this
+    # Component alone: either side repairs without touching the other (ADR 0082).
+    envelopes = {}
+    if component is not None and component in digests:
+        envelopes = check_envelopes(project, component, entry, out, interfaces)
+
     # 3. the references this round shows its reader, each composed beside the
     # model at the reference's declared camera. Nothing is scored (ADR 0076).
     refs = parse_refs(args.refs, [] if component is not None else sorted(project.glob("*_spec.md")))
@@ -1401,33 +2300,43 @@ def make_round(args) -> int:
             shown.append((label, ref))
     refs = shown
 
-    # A shape round changes the geometry of a component whose previous round
-    # passed its checks; repairs of build or print failures are not counted.
-    shape_rounds = int(state.get("shape_rounds", 0))
-    if (
-        component is not None and state.get("checks_ok") is True
-        and round_identity is not None and round_identity != state.get("identity")
-    ):
-        shape_rounds += 1
-
     # 4. motion gate when the project declares a manifest.
     motion = None
     manifest = measure / "motion.json"
     if component is None and manifest.is_file() and check_motion:
         done = run([python, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"], cwd=project, log=out / "motion.log")
         motion = parse_motion(done.stdout, done.returncode, done.stderr)
-
-    # 5. Visual inspection is a separate evidence submission, not a model call.
-    visual = prepare_visual(project, entry, out, cad, refs, component)
     full = None
 
     ok = (
         all(item["verdict"] == "PASS" for item in build.values())
         and all(item["verdict"] in ("PASS", "UNVERIFIED") for item in printing.values())
+        and all(item["verdict"] == "PASS" for item in envelopes.values())
         and not reference_errors
         and (motion is None or motion["verdict"] in ("pass", "unverified"))
         and (full is None or full["ok"])
     )
+
+    # The round policy (ADR 0081): whether this is a Shape Round, whether an
+    # earlier review carries to it, and the lock it leaves.
+    outcome = None
+    if component is not None:
+        key = carry_key(round_identity, refs, project, contract_rows(project, component))
+        outcome = round_policy(policy, {"identity": round_identity, "helpers": current_helpers,
+                                        "checks_ok": ok, "carry_key": key, "round": round_index})
+
+    # 5. Visual inspection is a separate evidence submission, not a model call.
+    # A component round that failed its checks is not rendered: nobody reviews
+    # it. One an earlier review carries to needs no new review.
+    if component is not None and not ok:
+        visual = {"status": "not-rendered", "findings": [],
+                  "detail": "build and print checks failed; repair them first. Nothing was rendered"}
+    elif outcome is not None and outcome["carried"] is not None:
+        visual = {"status": "carried", "findings": [],
+                  "detail": "the reviewed B-rep, references and contract rows of r%04d are unchanged"
+                            % outcome["carried"]["round"]}
+    else:
+        visual = prepare_visual(project, entry, out, cad, refs, component)
     summary = {
         "round": round_index,
         "scope": "component:%s" % component if component is not None else "assembly",
@@ -1454,8 +2363,25 @@ def make_round(args) -> int:
         "out": str(out),
     }
     if component is not None:
-        summary.update(review=None, shape_rounds=shape_rounds, shape_limit=SHAPE_REPAIR_LIMIT,
-                       worker_nonce=getattr(args, "worker_nonce", None))
+        next_policy = outcome["state"]
+        carried = outcome["carried"]
+        review = None
+        if carried is not None:
+            review = {**carried["review"], "carried_from": carried["round"]}
+            if carried.get("acceptance"):
+                summary["accepted"] = carried["acceptance"]
+            summary["ok"] = next_policy["phase"] == LOCKED
+        summary.update(
+            review=review, shape_round=outcome["shape_round"],
+            shape_rounds=next_policy["shape_rounds"], shape_rounds_used=next_policy["shape_rounds"],
+            shape_limit=SHAPE_REPAIR_LIMIT, phase=next_policy["phase"], locked=lock_record(next_policy),
+            unlock=outcome["unlocks"], imported_helpers=helpers, carry_key=key,
+            worker_nonce=getattr(args, "worker_nonce", None),
+        )
+        if envelopes:
+            summary["envelopes"] = envelopes
+        if freeze is not None:
+            summary["helper_freeze"] = freeze_report(project, freeze, helpers)
     if any(item["verdict"] == "UNVERIFIED" for item in printing.values()) or (motion and motion["verdict"] == "unverified"):
         summary["geometry_status"] = "unverified"
         summary["print_ready_claim"] = False
@@ -1474,12 +2400,18 @@ def make_round(args) -> int:
             if role in digests and part.with_name(part.name[:-len(".py")]).is_file()
         },
         "checks_ok": ok,
-        "shape_rounds": shape_rounds,
         "last_out": str(out),
     }
+    if component is not None:
+        state.update(shape_rounds=next_policy["shape_rounds"], policy=next_policy)
+        # The Component's reviewer binding outlives its rounds (issue #77).
+        if previous_state.get("reviewer_id") is not None:
+            state["reviewer_id"] = previous_state["reviewer_id"]
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
-    return 1  # pending or failed visual evidence cannot report a complete round
+    # Pending or failed visual evidence cannot report a complete round; a
+    # carried review can.
+    return 0 if summary["ok"] else 1
 
 
 # ---------------------------------------------------------------------------
@@ -1634,6 +2566,40 @@ def self_check() -> int:
     })
     check("shape 5/5" in text and "DISAGREES" in text and "differs arm" in text and "ACCEPTED at the shape-repair limit" in text,
           "a component accepted at the shape-repair limit says so with the reviewer's differences")
+    awaiting = {"phase": AWAITING, "identity": "A", "round": 3, "shape_rounds": 1}
+    check(not round_policy(awaiting, {"identity": "B"})["admit"] and round_policy(awaiting, {"identity": "A"})["admit"],
+          "an unreviewed passing round refuses a geometry change and admits an unchanged rerun")
+    disagreed = review_policy(awaiting, {"agrees": False, "identity": "A", "carry_key": "k", "imported_helpers": {}, "review": {}})
+    first = round_policy(disagreed, {"identity": "B", "checks_ok": False, "round": 4})
+    repair = round_policy(first["state"], {"identity": "C", "checks_ok": True, "round": 5})
+    check(first["shape_round"] and not repair["shape_round"] and repair["state"]["shape_rounds"] == 2,
+          "the first change after a disagreeing review is a shape round; the print repair after it is not")
+    at_cap = review_policy({**awaiting, "shape_rounds": SHAPE_REPAIR_LIMIT},
+                           {"agrees": False, "identity": "A", "carry_key": "k", "imported_helpers": {"h.py": "1"}, "review": {}})
+    check(at_cap["phase"] == LOCKED and at_cap["reviewed"]["accepted"], "a disagreeing review at the cap is an accepted lock")
+    check(not round_policy(at_cap, {"identity": "B", "helpers": {"h.py": "1"}})["admit"], "a locked Component refuses a change")
+    carried = round_policy(at_cap, {"identity": "A", "helpers": {"h.py": "2"}, "checks_ok": True, "carry_key": "k", "round": 4})
+    check(carried["carried"] is not None and carried["state"]["phase"] == LOCKED,
+          "a Shared Helper change unlocks; the same B-rep carries the acceptance and relocks")
+    def refused(state, reviewer, runtime):
+        try:
+            reviewer_binding(state, reviewer, runtime)
+        except ValueError:
+            return True
+        return False
+    check(refused({}, "fresh-reviewer", "claude") and reviewer_binding({}, "fresh-reviewer", "") is None,
+          "on Claude Code a reviewer is a native agent id; elsewhere it stays a name")
+    check(parse_envelope("not json", 1)["verdict"] == "FAIL"
+          and parse_envelope('{"ok": true, "poses": [], "detail": "1 pose(s)"}', 1)["verdict"] == "FAIL"
+          and parse_envelope('{"ok": true, "poses": [], "detail": "1 pose(s)"}', 0)["verdict"] == "PASS",
+          "a Keep-out Envelope passes only on a complete passing result")
+    check(separable_roles([{"id": "s", "kind": "separable", "envelope": {"inside": "arm", "outside": "body"}},
+                           {"id": "c", "kind": "coupled", "components": ["arm", "body"]}], "body")
+          == [({"id": "s", "kind": "separable", "envelope": {"inside": "arm", "outside": "body"}}, "outside")],
+          "a Component keeps the envelope of each separable Interface it joins, on its own side")
+    check(reviewer_binding({}, "a1f355b61d99918ed", "claude") == "a1f355b61d99918ed"
+          and refused({"reviewer_id": "a1f355b61d99918ed"}, "a7740f58e37677176", "claude"),
+          "a Component's first reviewer id binds it; another id is refused")
     summary = {
         "round": 3, "scope": "assembly", "project": "/p/cad", "parts": ["frame", "knob", "lens"], "changed": ["frame"], "checked": ["frame"],
         "build": {"frame": {"verdict": "PASS", "failures": []}},
@@ -1671,6 +2637,9 @@ def main(argv=None) -> int:
     parser.add_argument("--no-motion", action="store_true", help="skip check_motion even when measure/motion.json exists")
     parser.add_argument("--record-visual", help="record native Manager feedback for the last assembly round without rebuilding")
     parser.add_argument("--record-review", metavar="REVIEW.json", help="with --component: record an independent reviewer's judgement of the latest round without rebuilding")
+    parser.add_argument("--record-unlock", metavar="UNLOCK.json", help="with --component: record that an assembly round's recorded finding requires a change to this locked Component, as {assembly_round, finding, reason}; builds nothing")
+    parser.add_argument("--shared-helpers", action="store_true", help="Workshop Manager: build the samples under samples/, run the print gates on them, and freeze the Shared Helpers on a pass (ADR 0082)")
+    parser.add_argument("--interface", metavar="ID", help="Workshop Manager: run the coupled motion check of one sealed Coupled Interface on its locked Components (ADR 0082)")
     parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
@@ -1693,8 +2662,18 @@ def main(argv=None) -> int:
         parser.error("--record-review cannot be combined with --record-visual or --full")
     if args.component and args.record_visual:
         parser.error("a component round is judged by an independent reviewer: use --record-review")
+    if args.record_unlock and not args.component:
+        parser.error("--record-unlock requires --component")
+    if args.record_unlock and (args.record_review or args.record_visual or args.full):
+        parser.error("--record-unlock cannot be combined with --record-review, --record-visual or --full")
+    if args.shared_helpers or args.interface:
+        if args.shared_helpers and args.interface:
+            parser.error("--shared-helpers and --interface are separate checks")
+        if (args.component or args.entry or args.require_component_passes or args.record_visual
+                or args.record_review or args.record_unlock or args.full or args.out or args.refs):
+            parser.error("--shared-helpers and --interface take no component, assembly or record options")
     if args.worker_nonce is not None:
-        if not args.component or args.record_review:
+        if not args.component or args.record_review or args.record_unlock:
             parser.error("--worker-nonce belongs only to a component build round")
         if not re.fullmatch(r"[0-9a-f]{32}", args.worker_nonce):
             parser.error("--worker-nonce is invalid")

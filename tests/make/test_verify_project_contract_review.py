@@ -233,3 +233,77 @@ class ContractReviewTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InterfaceReviewTest(unittest.TestCase):
+    """ADR 0082: the final verifier lists each Interface with how it was
+    proven, and refuses a Coupled Interface without a current passing check."""
+
+    INTERFACES = [
+        {"id": "arm-swing", "kind": "separable", "components": ["arm", "body"],
+         "envelope": {"inside": "arm", "outside": "body",
+                      "shapes": [{"pose": "rest", "box": {"min_mm": [0, 0, 0], "max_mm": [1, 1, 1]}}]}},
+        {"id": "gear-mesh", "kind": "coupled", "components": ["body", "arm"], "yielding": "arm",
+         "poses_from": "gear-mesh"},
+    ]
+
+    @classmethod
+    def setUpClass(cls):
+        cls.verifier = runpy.run_path(str(VERIFIER))
+        cls.make_round = runpy.run_path(str(cls.verifier["MAKE_ROUND_SCRIPT"]))
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.run_root = Path(temporary.name).resolve()
+        contract = {"design_contract": {**CONTRACT["design_contract"], "interfaces": self.INTERFACES}}
+        (self.run_root / "WISH.json").write_text(json.dumps({"references": [], "context": contract}))
+        self.project = self.run_root / "artifacts/make/r0001/product/cad"
+        self.project.mkdir(parents=True)
+        (self.project / "part_arm.step").write_bytes(b"arm step")
+
+    def _check(self, identities):
+        state = self.project / "measure/interface-rounds/gear-mesh/make-round-state.json"
+        state.parent.mkdir(parents=True)
+        state.write_text(json.dumps({"round": 2, "ok": True, "verdict": "pass", "identities": identities}))
+
+    def _gate(self):
+        runner = self.verifier["Runner"](cwd=self.run_root, dry_run=False, verbose=False)
+        runner.component_acceptances = []
+        runner.last_stdout = json.dumps({"sourceRef": "part_body.step.py", "identitySha256": "brep-body"})
+        coverage = {"component_coverage": lambda *_: {}, **{
+            name: self.make_round[name] for name in ("contract_interfaces", "interface_failures", "interface_report")}}
+        failed = self.verifier["_component_review_failed"](runner, coverage, self.project, [])
+        return failed, runner
+
+    def test_a_coupled_interface_without_a_current_check_fails_final_verification(self):
+        failed, runner = self._gate()
+        self.assertTrue(failed)
+        self.assertEqual([item["check"] for item in runner.interfaces], ["keep-out-envelope", "not-run"])
+        self._check({"body": "brep-body", "arm": sha(b"other arm")})
+        failed, runner = self._gate()
+        self.assertTrue(failed)
+        self.assertEqual(runner.interfaces[1]["check"], "stale")
+
+    def test_each_interface_is_listed_with_its_kind_and_proof(self):
+        # The arm was found current by gen: its identity is its STEP bytes.
+        self._check({"body": "brep-body", "arm": sha(b"arm step")})
+        failed, runner = self._gate()
+        self.assertFalse(failed)
+        self.assertEqual(runner.interfaces[1], {"id": "gear-mesh", "kind": "coupled", "components": ["body", "arm"],
+                                                "check": "pass", "yielding": "arm", "round": 2})
+        notes = [record["command"] for record in runner.records if record["status"] == "note"]
+        self.assertIn("gear-mesh (coupled: body + arm): --interface check pass at r0002", " ".join(notes))
+        self.assertIn("arm-swing (separable: arm + body): Keep-out Envelope", " ".join(notes))
+        report = self.project / "measure/verification-pipeline.md"
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text("# Verification pipeline record\n")
+        self.verifier["_write_component_acceptance"](report, [], runner.interfaces)
+        record = json.loads((report.parent / "component-acceptance.json").read_text())
+        self.assertEqual(record["interfaces"], runner.interfaces)
+
+    def test_a_contract_without_interfaces_writes_no_interfaces(self):
+        (self.run_root / "WISH.json").write_text(json.dumps({"references": [], "context": CONTRACT}))
+        failed, runner = self._gate()
+        self.assertFalse(failed)
+        self.assertIsNone(runner.interfaces)

@@ -149,12 +149,52 @@ are separate. Frozen older runs retain their materialized rules and tools.
    In Spark you author no Component (ADR 0080). Settle the component list and
    write only the shared files: `params.py` and anything under `features/`.
    Fix every interface there before you spawn a worker: each joint's peg,
-   socket or collar dimensions, its position on both mating Components, and
-   each Component's print stance, taken from the Design Contract. A Component
-   Worker then writes that Component's first `part_<id>.step.py` against
-   those shared values. Spawn no Inventor or other agent to author a
-   Component; an Inventor's optional design notes may inform the worker's
-   brief, but an Inventor never runs `make_round`.
+   socket or collar dimensions and its position on both mating Components,
+   taken from the Design Contract. A Component Worker then writes that
+   Component's first `part_<id>.step.py` against those shared values. Spawn
+   no Inventor or other agent to author a Component; an Inventor's optional
+   design notes may inform the worker's brief, but an Inventor never runs
+   `make_round`.
+
+   With the shared files, copy the printable detail library into the
+   project; workers build rivets, bosses, low domes, bands, rims, pipe ribs,
+   inset panels, lancet windows and grille slits with it instead of by hand:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/print-details/scripts/print_details.py --install <cad-project>
+   ```
+
+   It writes `features/print_details.py`, byte for byte, so the sealed
+   project builds on its own. It is a standard element, like a `stdpart`
+   gear, not a design value: never edit it.
+
+   When the sealed Design Contract has an `interfaces` section (ADR 0082),
+   implement its Interfaces; do not invent others. A shared file is then a
+   Shared Helper and holds only what two or more Components must agree on:
+   Interface values, joint sections and standard profiles. A Component's own
+   geometry, print stance and dimensions stay in its own file, even when one
+   other Component must clear it: a separable Interface's Keep-out Envelope
+   is that agreement. Before choosing a joint, fit, clearance or gear, run
+   the wiki's `search` and `show` (`wiki/SKILL.md`), and next to each value
+   name the page it came from and add that page's `assert`. Take every gear,
+   bearing, fastener and other standard element from
+   `.agents/skills/cad/scripts/stdpart` (`bd_warehouse`, `py_gearworks`);
+   never hand-write an involute.
+
+   Then build a sample of each Shared Helper under `samples/<name>.step.py`,
+   for example a peg in its socket or a pinion on its sector. A sample
+   imports the Shared Helpers from the project (`import params`, `from
+   features.joints import ...`) and returns one printable piece. Run:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --shared-helpers
+   ```
+
+   It builds every sample and runs both print gates on it; a pass freezes
+   the Shared Helpers by hash. Component rounds refuse to start before that
+   freeze, so spawn no worker until it passes. Repair a failing sample in
+   the Shared Helper, never in a worker's file.
 2. For Spark, review and repair every component separately before assembly.
    For each `part_<role>.step.py`, run:
 
@@ -177,11 +217,14 @@ are separate. Frozen older runs retain their materialized rules and tools.
    Delegate each Component's authoring and loop (ADR 0077, ADR 0080). Once the
    shared files are written, spawn one worker per Component, in parallel, as
    a `component-worker` agent. Give it only: the component id and the
-   `part_<id>.step.py` path it writes; the shared files it builds on; its
+   `part_<id>.step.py` path it writes; the shared files it builds on,
+   including `features/print_details.py`; its
    sealed `geometry:<id>` reference and declared camera; only that
    Component's Design Contract rows; the nozzle; and the shape-repair limit
    (5). The worker writes the first draft, runs the round above until build
-   and print pass, then reports in 10 lines or fewer. The worker may view its
+   and print pass, then reports in 10 lines or fewer and waits:
+   `make_round` refuses to change a passing round's geometry before its
+   review is recorded (ADR 0081). The worker may view its
    own sealed reference image once. Neither you nor a worker views a
    Component's rendered rounds (front, top, iso and `compare-NN.png`); only its
    reviewer does, and the worker acts on the reviewer's text. If the runtime
@@ -189,24 +232,71 @@ are separate. Frozen older runs retain their materialized rules and tools.
    finishes.
 
    When a worker reports build and print passing, you, not the worker, ask the
-   reviewer. Keep one reviewer thread per Component, spawned once as a
-   `component-reviewer` agent, and send each later review of that Component
-   to the same thread as a follow-up so its cached prefix survives. Give it the
-   round's visual packet paths (front, top, iso and every `compare-NN.png`)
-   and that Component's contract rows. Write its answer with the exact packet
-   hash from the worker's report as
+   reviewer. Each Component has one reviewer: spawn it once as a
+   `component-reviewer` agent and send every later review of that Component
+   to the same thread as a follow-up, so its cached prefix survives. Never
+   spawn a second reviewer for a Component.
+
+   The review request has one fixed shape and nothing else: the round's
+   `visual-packet.json` path, its packet sha256 from the worker's report, and
+   that Component's contract rows. Add no notes, no accepted differences and
+   no explanation of the renders; the reviewer's definition already explains
+   the print stance and the printing limits. Ask once per packet: never ask
+   for a re-review of the same packet, and never edit, filter or summarize
+   the answer.
+
+   Write its answer unchanged as
    `{"round", "packet_sha256", "reviewer", "agrees", "reason", "differences"}`;
    `differences` lists `{"feature", "reference", "model"}` (at most 12) and is
-   required when it disagrees. Record it with the same `--component` argument
-   plus `--record-review <review.json>`. On a disagreement, forward the
-   reviewer's text to the same worker: it is the repair list for the next
-   shape round. Close the worker once the reviewer agrees or the cap below is
-   reached.
+   required when it disagrees. `reviewer` is the reviewer's native agent id,
+   exactly as the runtime returned it when you spawned it (on Claude Code, 17
+   lowercase hex characters), never a name. Record it with the same
+   `--component` argument plus `--record-review <review.json>`. The
+   Component's first review binds that id; `make_round` refuses a review
+   naming another id and tells you the bound one. The host refuses Make output
+   whose recorded review names an agent that is not this run's Component
+   Reviewer or that did not read every image of the packet it judged.
+
+   After recording, tell the worker only "review recorded for round N". The
+   worker reads the recorded review from that round itself; on a
+   disagreement it is the repair list for the next shape round. Keep every
+   worker's thread until the assembly passes (ADR 0082), and send each later
+   unlock to the worker that already holds that Component.
 
    Workers never edit a shared file such as `params.py` or
-   `features/forms.py`; they ask you. Edit it yourself, then send every
-   Component that uses it back through a worker: the edit changes their B-rep
-   identity, which invalidates their passes (ADR 0073).
+   `features/forms.py`; they ask you. Edit it yourself, then send back
+   through its worker only each Component whose summary lists that file
+   under `imported_helpers`: a change to a Shared Helper a Component does not
+   import stales nothing of it (ADR 0081). The edit unlocks those Components.
+   A rerun that rebuilds the reviewed B-rep keeps its review and locks again;
+   one whose B-rep moved needs a new review, without spending a shape round.
+   Once frozen, change a Shared Helper only when it must change, and rerun
+   `--shared-helpers` at once to re-freeze it; a component round's `frozen`
+   line names any frozen file that changed and every Component that imports
+   it.
+
+   Give each worker the rows of every Interface its Component joins. A
+   Component in a separable or coupled Interface defines `assembly_pose(shape,
+   pose)`, which places it in assembly coordinates. Its own round checks a
+   separable Interface's Keep-out Envelope (the `keep` line): the inside
+   Component stays inside in every declared pose, the outside one stays out.
+
+   Check each Coupled Interface (a gear mesh, a cam, a linkage, parts that
+   pass through one space at different times) once every Component it joins
+   is locked:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --interface <interface-id>
+   ```
+
+   It refuses while a Component it joins is not locked at its current
+   geometry, and runs the coupled motion check on just those Components over
+   the sealed pose table. On a failure it unlocks the contract's yielding
+   Component and names it; send that worker only the interface round's path.
+   The worker's repair is not a shape round; after the repaired Component is
+   reviewed and locked again, rerun the check. Only you run
+   `--shared-helpers` and `--interface`; the hook refuses both to workers.
 
    When two Design Contract statements cannot both hold, for example two
    Components that print on a mating face that also carries a peg, stop and
@@ -229,13 +319,17 @@ are separate. Frozen older runs retain their materialized rules and tools.
    a sealed Wish reference that depicts one component in that component's
    round with `--ref LABEL=wish-references/<file>`.
 
-   A shape round is a component round that changes the geometry after a round
-   that passed build and print; fixing build or print failures does not
-   count. You get five. After the fifth, `make_round` will not start another
-   round for that component until the latest passing round is reviewed. An
-   agreeing review then passes it; a disagreeing one is recorded as a
-   component acceptance. Every acceptance is reported to the person when the
-   run ends; it is never recorded as the person's decision.
+   Read each round summary's `shape` and `lock` lines (ADR 0081). A round
+   that passed build and print is reviewed before its geometry may change;
+   only an unchanged rerun may run first. A shape round is the first
+   geometry-changing round after a disagreeing review; build and print
+   repairs, unchanged reruns and changes forced by a Shared Helper or an
+   assembly round are not. A Component gets five. An agreeing review locks
+   the Component; so does a disagreeing review once the five are used, which
+   is recorded as a component acceptance. Every acceptance is reported to the
+   person when the run ends; it is never recorded as the person's decision.
+   A locked Component's geometry changes only when a Shared Helper it imports
+   changes or you record an assembly unlock.
 3. Only after every component passes, author the non-part combined `*.step.py`
    entry and begin assembled-object rounds with:
 
@@ -245,9 +339,15 @@ are separate. Frozen older runs retain their materialized rules and tools.
    ```
 
    This refuses assembly review when a component has no passing isolated round
-   or its freshly built STEP changed afterward. If an assembly repair
-   changes a component, rerun that component's isolated review-and-fix loop,
-   then return to the assembled object. Forge and Quest retain their existing
+   or its freshly built STEP changed afterward, and, under an Interfaces
+   section, when a Coupled Interface has no current passing `--interface`
+   check. If an assembly repair
+   changes a component, first record why: cite the assembly round and the
+   finding you recorded there with `--record-visual`,
+   `{"assembly_round", "finding", "reason"}`, and run the same `--component`
+   argument plus `--record-unlock <unlock.json>`. It builds nothing. Then send
+   the Component back through its worker for its isolated review-and-fix
+   loop, and return to the assembled object. Forge and Quest retain their existing
    whole-product baseline sequence.
 4. Generate explicit source targets with
    `.agents/skills/cad/scripts/gen <entry.step.py> --write`, which writes the

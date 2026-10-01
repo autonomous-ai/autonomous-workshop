@@ -29,6 +29,7 @@ from typing import Any, Callable, Mapping, Optional
 from workshop.errors import ContractError
 from workshop.runtime.make_round_hook import (
     HOOK_TIMEOUT_SECONDS,
+    REVIEWER_RUNTIME_ENV,
     installed_make_round_guard,
     make_round_guard_command,
 )
@@ -112,23 +113,29 @@ CLAUDE_SUBPROCESS_ENVIRONMENT_ALLOWLIST = (
 
 
 def claude_hook_settings(script: Path) -> str:
-    """The ``--settings`` JSON registering the make_round guard (ADR 0080)."""
+    """The ``--settings`` JSON registering the make_round guard (ADR 0080).
 
+    ``Bash`` admits make_round calls by role. ``Read`` and ``SubagentStart``
+    give the guard the evidence that binds each Component Review to the
+    reviewer that read its packet (ADR 0081, issue #77); an older guard
+    ignores both events.
+    """
+
+    hook = [
+        {
+            "type": "command",
+            "command": make_round_guard_command(script),
+            "timeout": HOOK_TIMEOUT_SECONDS,
+        }
+    ]
     return json.dumps(
         {
             "hooks": {
                 "PreToolUse": [
-                    {
-                        "matcher": "Bash",
-                        "hooks": [
-                            {
-                                "type": "command",
-                                "command": make_round_guard_command(script),
-                                "timeout": HOOK_TIMEOUT_SECONDS,
-                            }
-                        ],
-                    }
-                ]
+                    {"matcher": "Bash", "hooks": hook},
+                    {"matcher": "Read", "hooks": hook},
+                ],
+                "SubagentStart": [{"hooks": hook}],
             }
         },
         sort_keys=True,
@@ -838,6 +845,9 @@ class ClaudeNativeSessionLauncher:
             extra={
                 "TMPDIR": str(private_temp),
                 "WORKSHOP_PYTHON": str(Path(sys.executable).absolute()),
+                # make_round checks a Component Review's reviewer against
+                # this runtime's native agent id format (issue #77).
+                REVIEWER_RUNTIME_ENV: "claude",
                 "PYTHONHASHSEED": "0",
                 "PYTHONDONTWRITEBYTECODE": "1",
                 "PYTHONNOUSERSITE": "1",

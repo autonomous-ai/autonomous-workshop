@@ -158,7 +158,12 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   Component Worker authors and repairs each Component, and only a Component
   Worker runs a Component's `make_round` rounds: a Workshop hook refuses them
   from you, an Inventor or any other agent. You write only the shared
-  `params.py` and `features/` files and run assembly. When `MANAGER.json` names a
+  `params.py` and `features/` files and run assembly. Each Component has one
+  Component Reviewer that you ask with the fixed request `references/make.md`
+  gives, and whose answer you record unchanged. When the Design Contract
+  has Interfaces, those shared files hold only what Interfaces need, and you
+  freeze them with `make_round --shared-helpers` before any worker starts and
+  check each Coupled Interface with `make_round --interface` before assembly. When `MANAGER.json` names a
   different agent directory, the host also writes each of these agents there
   in that runtime's own format, from the same bytes. Spawn them from that
   directory by the same name; `.codex/agents/` stays the identity binding.

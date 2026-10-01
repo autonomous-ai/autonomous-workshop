@@ -917,6 +917,24 @@ the next resync. `tests/make/test_harness_verdict.py` covers it.
   The design pages apply to any moving product; `verification.md` describes
   evidence only a `check_motion: true` run produces.
 
+## `print-details`
+
+Added 2026-10-01 (issue #79). Host-owned, not vendored: authored in this
+repository and recorded in `LOCK.json` under this repository's URL, like
+`make-round`. A one-file build123d library of printable decorative detail for
+Component Workers -- rivets, round bosses, low domes, raised bands and rims,
+half-round pipe ribs, inset panels with an optional lancet arch, windows and
+grille slits. Each limit it enforces names the `wiki` page it comes from
+(`printing/fdm-minimum-feature-sizes.md`,
+`printing/wall-thickness-and-hollowing.md`,
+`printing/overhangs-and-print-orientation.md`); the library reads those
+numbers, it does not change the pages. Its `--self-check` runs the vendored
+`cad` tree's own `check_thickness` and `check_overhang`, unchanged, on every
+feature at its minimum and default sizes. It does not modify the vendored
+`cad` or `wiki` trees, so a resync does not touch it, and it could be offered
+upstream later. The Manager copies it into a CAD project as
+`features/print_details.py` so the sealed project stays self-contained.
+
 ## `make-round`
 
 Local extension (2026-09-09, ADR 0060): each round renders native inspection
@@ -1476,3 +1494,48 @@ routing self-checks, and the matching prose in `cad/SKILL.md` and
 the Workshop pipeline (ADR 0076). `render_views.py`, `check_likeness.py` and
 `likeness-gate.md` keep their upstream `b149710` bytes. This changes the
 `cad` fingerprint.
+
+## Local change: Shape Rounds follow Component Reviews (2026-10-01)
+
+A Workshop-local change to Workshop's own `make-round` (ADR 0081). One pure
+`round_policy` decides admission, Shape Round counting and the lock of a
+component round: a passing round must be reviewed before the Component's
+geometry may change (a refused round exits 2, writes no round and puts back
+the STEP it overwrote); a Shape Round is the first geometry change after a
+disagreeing review; an agreeing review or a Component Acceptance locks the
+Component until a Shared Helper it imports changes or the Manager records an
+assembly unlock with the new root-only `--record-unlock`; a rerun of the
+reviewed B-rep carries the review forward. A component packet binds only the
+Component's own files and the Shared Helpers it imports, and a component round
+that fails its checks is not rendered. This changes the `make-round`
+fingerprint.
+
+## Local change: a Component Review names its bound reviewer (2026-10-01)
+
+A Workshop-local change to Workshop's own `make-round` (issue #77, extending
+ADR 0081). When the Workshop host sets `WORKSHOP_REVIEWER_RUNTIME` (Claude
+Code), `--record-review` requires `reviewer` to be the reviewer's native agent
+id, binds a Component's first reviewer id in its component state and refuses
+a review naming another id. Without it a review keeps the free-text reviewer
+name. `SKILL.md` describes the fixed review request and the worker reading
+the recorded review itself. This changes the `make-round` fingerprint.
+
+## Local change: Interfaces between Components (2026-10-01)
+
+A Workshop-local change (ADR 0082, issue #78) to Workshop's own `make-round`
+and to the vendored `cad` tree. `make_round --shared-helpers` builds the
+Manager's samples under `samples/` and runs `check_thickness` and
+`check_overhang` on them, freezing the Shared Helpers by hash on a pass; under
+a sealed contract with an Interfaces section a component round refuses to
+start before that freeze and reports a frozen helper it imports that changed,
+with the Components that import it. A new `make-round/scripts/check_envelope`
+checks a separable Interface's Keep-out Envelope on a Component's B-rep in its
+own round, and `make_round --interface <id>` runs `check_motion`'s
+`coupled_motion_collision` on one Coupled Interface's locked Components,
+unlocking the contract's yielding Component on failure.
+`--require-component-passes` also needs a current passing check of every
+Coupled Interface. In `cad`, `verify_project`'s Contract Mode component gate
+applies the same Coupled Interface rule through `make_round` and writes the
+Interfaces, each with its proof, into `component-acceptance.json`. Upstream
+`check_motion` keeps its `b149710` bytes. This changes the `cad` and
+`make-round` fingerprints.

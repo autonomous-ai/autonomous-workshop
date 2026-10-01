@@ -880,6 +880,10 @@ class AgentRunTest(unittest.TestCase):
                 )
                 self.assertEqual(script.read_bytes(), make_round_guard_bytes())
                 self.assertFalse(any(run.run_root.rglob("make_round_guard.py")))
+                # Issue #77: only Claude Code records reviewer evidence.
+                self.assertEqual(
+                    checkpoint.component_reviewer_binding, manager_id == "claude"
+                )
                 reopened = AgentRun.open(
                     run.run_root,
                     host_state_root=run.host_state_root,
@@ -890,6 +894,7 @@ class AgentRunTest(unittest.TestCase):
     def test_an_unguarded_run_has_no_guard(self):
         run = self.create(make_role_agents=make_role_agent_files())
         self.assertIsNone(run.snapshot().make_round_guard_sha256)
+        self.assertFalse(run.snapshot().component_reviewer_binding)
         self.assertIsNone(installed_make_round_guard(run.host_state_root))
 
     def test_snapshot_refuses_a_tampered_or_removed_guard(self):
@@ -902,6 +907,27 @@ class AgentRunTest(unittest.TestCase):
         script.unlink()
         with self.assertRaisesRegex(StateConflict, "make_round guard"):
             run.snapshot()
+
+    def test_a_tampered_reviewer_binding_is_refused_on_reopen(self):
+        for name, change in (
+            ("not true", lambda payload: payload.update(component_reviewer_binding=False)),
+            ("no guard", lambda payload: payload.pop("make_round_guard_sha256")),
+        ):
+            with self.subTest(name):
+                self.run_root = self.root / ("run-binding-" + name.replace(" ", "-"))
+                self.host_state_root = self.root / ("host-binding-" + name.replace(" ", "-"))
+                run = self.create(
+                    make_role_agents=make_role_agent_files(),
+                    make_round_guard=True,
+                    manager_id="claude",
+                )
+                checkpoint_path = run.host_state_root / "agent-run.json"
+                payload = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+                payload.pop("checkpoint_sha256")
+                change(payload)
+                agent_run_module.AgentRun._write_checkpoint_file(checkpoint_path, payload)
+                with self.assertRaisesRegex(StateConflict, "reviewer binding is invalid"):
+                    AgentRun.open(run.run_root, host_state_root=run.host_state_root)
 
     def test_the_guard_needs_the_worker_role_and_a_hook_capable_manager(self):
         with self.assertRaisesRegex(ContractError, "Component Worker"):

@@ -19,6 +19,13 @@ MAKE_ROUND_GUARD_SCRIPT = "make_round_guard.py"
 HOOK_TIMEOUT_SECONDS = 10
 # Managers whose PreToolUse hook names the calling subagent.
 MAKE_ROUND_GUARD_MANAGER_IDS = frozenset({"codex", "claude"})
+# Managers whose hooks also record subagent starts and reviewer reads, so a
+# Component Review can be bound to one proven Component Reviewer (issue #77).
+# Codex keeps its earlier review rules until it exposes the same evidence.
+REVIEWER_BINDING_MANAGER_IDS = frozenset({"claude"})
+# The environment variable naming the runtime whose native agent id format
+# make_round requires of a Component Review's reviewer.
+REVIEWER_RUNTIME_ENV = "WORKSHOP_REVIEWER_RUNTIME"
 
 
 def installed_make_round_guard(host_state_root: Path) -> Optional[Path]:
@@ -41,6 +48,8 @@ __all__ = [
     "MAKE_ROUND_GUARD_DIRECTORY",
     "MAKE_ROUND_GUARD_MANAGER_IDS",
     "MAKE_ROUND_GUARD_SCRIPT",
+    "REVIEWER_BINDING_MANAGER_IDS",
+    "REVIEWER_RUNTIME_ENV",
     "installed_make_round_guard",
     "make_round_guard_command",
 ]

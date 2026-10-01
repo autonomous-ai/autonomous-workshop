@@ -138,7 +138,9 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0075-component-review-compares-form-and-acceptance-needs-a-second-reader.md`, and
 `docs/adr/0076-component-passes-on-an-independent-review-not-a-likeness-score.md`, and
 `docs/adr/0077-component-workers-and-a-root-owned-reviewer.md`, and
-`docs/adr/0080-component-workers-author-and-a-hook-admits-their-rounds.md` before changing the CLI, runtime,
+`docs/adr/0080-component-workers-author-and-a-hook-admits-their-rounds.md`, and
+`docs/adr/0081-shape-rounds-follow-component-reviews.md`, and
+`docs/adr/0082-interfaces-between-components.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -223,6 +225,32 @@ reference but never rendered rounds. A host-state `PreToolUse` hook admits a
 component round only from a `component-worker` and passes it a one-time
 nonce; the host refuses a component round without an issued nonce. Two
 contradicting Design Contract statements are a `need`.
+ADR 0081 amends the Shape Round counting and cap of ADRs 0075-0077 for new
+runs: a passing component round is reviewed before its geometry may change; a
+Shape Round is the first geometry change after a disagreeing review; an
+agreeing review or a Component Acceptance locks the Component until a Shared
+Helper it imports changes or the Manager records an assembly unlock, and a
+rerun of the reviewed B-rep carries the review forward. A component packet
+binds only the Shared Helpers it imports, and a failed round is not rendered.
+ADR 0081's extension (issue #77) binds each Component's reviews to one proven
+Component Reviewer on Claude Code: a review names the reviewer's native agent
+id, the first review binds it, and Make acceptance refuses a review whose
+reviewer the guard did not see start as a `component-reviewer` or read every
+packet image. The Manager sends a fixed request (packet, hash, contract rows)
+once per packet and tells the worker only which round was reviewed. Codex
+keeps its earlier review rules until it exposes the same evidence.
+ADR 0082 records Interfaces between Components for new schema 2 Design
+Contracts: each Interface has a Kind (static, separable or coupled) and the
+Components it joins. The Manager's Shared Helpers hold only Interface values,
+joint sections and standard profiles, and are frozen by hash after their
+samples pass `make_round --shared-helpers`; component rounds refuse to start
+before the freeze and report later helper changes with their importers. A
+separable Interface's Keep-out Envelope is checked in each side's own
+component round, and `make_round --interface <id>` checks a Coupled
+Interface on its locked Components, unlocking the yielding one on failure.
+Assembly and final verification need a current passing check of every
+Coupled Interface, both modes are root-only, Component Workers live until the
+assembly passes, and the run report lists every Interface with its proof.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

@@ -2716,13 +2716,15 @@ def _verify_make_round_workers(
     made: NativeMade,
     *,
     require_every_component: bool = False,
+    bind_reviewers: bool = False,
 ) -> None:
     """Refuse Make output holding a Component round no worker ran (ADR 0080).
 
     A run created without the make_round guard keeps its frozen behaviour. A
     changed guard is a host-state conflict; a round without an issued worker
     nonce is a Make rejection the Manager repairs by rerunning it through a
-    component-worker.
+    component-worker. With ``bind_reviewers`` (issue #77) a recorded
+    Component Review whose reviewer is unproven is refused the same way.
     """
 
     if guard_sha256 is None:
@@ -2738,6 +2740,7 @@ def _verify_make_round_workers(
         host_state_root,
         run_root=Path(run_root),
         require_every_component=require_every_component,
+        bind_reviewers=bind_reviewers,
     )
 
 
@@ -2779,8 +2782,67 @@ def _made_component_acceptances(product: Mapping[str, Any]) -> list[dict[str, An
     return acceptances
 
 
+_INTERFACE_PROOFS = {
+    "static": "shared-helper-samples",
+    "separable": "keep-out-envelope",
+    "coupled": "pass",
+}
+
+
+def _made_interfaces(product: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The sealed contract's Interfaces with how each was proven (ADR 0082).
+
+    The Make finalizer copies them from the final verifier's hash-bound
+    ``component-acceptance.json``. The host checks their shape again before
+    sealing them into its own receipt: a Coupled Interface is reported only
+    with a passing interface check.
+    """
+
+    raw = product.get("interfaces", ())
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence) or len(raw) > 64:
+        raise ContractError("Made interfaces are invalid")
+    interfaces: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in raw:
+        kind = item.get("kind") if isinstance(item, Mapping) else None
+        expected = {"id", "kind", "components", "check"} | (
+            {"yielding", "round"} if kind == "coupled" else set()
+        )
+        if not isinstance(item, Mapping) or set(item) != expected or kind not in _INTERFACE_PROOFS:
+            raise ContractError("Made interface fields are invalid")
+        identifier, components = item["id"], item["components"]
+        if (
+            not isinstance(identifier, str) or not 1 <= len(identifier) <= 200
+            or identifier in seen
+            or not isinstance(components, list) or len(components) < 2
+            or not all(isinstance(entry, str) and 1 <= len(entry) <= 200 for entry in components)
+            or len(set(components)) != len(components)
+            or item["check"] != _INTERFACE_PROOFS[kind]
+            or (kind == "coupled" and (
+                item["yielding"] not in components
+                or type(item["round"]) is not int or item["round"] < 1
+            ))
+        ):
+            raise ContractError("Made interface is invalid")
+        seen.add(identifier)
+        interfaces.append({key: item[key] for key in sorted(expected)})
+    return interfaces
+
+
 def _component_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]:
     """The accepted Components of the current Make, from the host's own receipt."""
+
+    return _latest_make_check(host_state_root, "component_acceptances")
+
+
+def _interface_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The proven Interfaces of the current Make, from the host's own receipt."""
+
+    return _latest_make_check(host_state_root, "interfaces")
+
+
+def _latest_make_check(host_state_root: Path, key: str) -> list[dict[str, Any]]:
+    """One list the latest Make gate receipt sealed among its checks."""
 
     gates = Path(host_state_root) / "gates"
     if not gates.is_dir():
@@ -2794,12 +2856,12 @@ def _component_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]
     latest = receipts[-1]
     try:
         checks = json.loads(latest.read_bytes().decode("utf-8"))["evidence"]["checks"]
-        acceptances = checks.get("component_acceptances") or []
+        values = checks.get(key) or []
     except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError) as exc:
         raise StateConflict("Make gate receipt is unreadable: %s" % latest.name) from exc
-    if not isinstance(acceptances, list):
+    if not isinstance(values, list):
         raise StateConflict("Make gate receipt is malformed: %s" % latest.name)
-    return acceptances
+    return values
 
 
 def _best_round(history: Sequence[Mapping[str, Any]]) -> Optional[Mapping[str, Any]]:
@@ -7531,6 +7593,7 @@ def _evaluate_make_stage(
             made,
             # Component-first Spark Make builds every Component in a round.
             require_every_component=checkpoint.effort == "spark",
+            bind_reviewers=checkpoint.component_reviewer_binding,
         )
         # Spark consumes Make's accepted output, not another engineering
         # acceptance pass. Keep only exact-byte and upstream identity checks.
@@ -7551,6 +7614,9 @@ def _evaluate_make_stage(
         component_acceptances = _made_component_acceptances(made.product)
         if component_acceptances:
             product_checks["component_acceptances"] = component_acceptances
+        interfaces = _made_interfaces(made.product)
+        if interfaces:
+            product_checks["interfaces"] = interfaces
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -10186,6 +10252,7 @@ def _native_receipt(
     component_acceptances = (
         _component_acceptance_history(paths.host_state) if paths is not None else []
     )
+    interfaces = _interface_history(paths.host_state) if paths is not None else []
     local_release_run = False
     if paths is not None:
         try:
@@ -10403,6 +10470,7 @@ def _native_receipt(
         "rounds": rounds,
         "likeness_acceptances": likeness_acceptances,
         "component_acceptances": component_acceptances,
+        "interfaces": interfaces,
         "product_id": checkpoint.product_id,
         "status": visible_status,
         "stage": visible_stage,
