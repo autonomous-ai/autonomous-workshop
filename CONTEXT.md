@@ -224,9 +224,10 @@ passes a Component; its disagreement lists the differences to repair.
 _Avoid_: Likeness check, self-review, sign-off
 
 **Shape Round**:
-A component round that changes the geometry of a Component whose previous
-round passed its build and print checks. A Component gets five; repairs of
-build or print failures and reruns that change nothing are not Shape Rounds.
+The first round of a Component after a disagreeing Component Review. A
+Component gets five. Build or print repairs, unchanged reruns, and changes
+forced by a Shared Helper, an Interface or an assembly round are not Shape
+Rounds (ADR 0081).
 _Avoid_: Attempt, iteration
 
 **Component Worker**:

@@ -1055,6 +1055,18 @@ component round whose nonce it did not issue. Frozen and Grok runs have no
 guard. On Claude Code, which has no sandbox, the guard is tamper-resistant,
 not tamper-proof.
 
+In a new run `make_round` also enforces the component round policy
+(ADR 0081): a passing component round must be reviewed before the
+Component's geometry may change, a Shape Round is the first geometry change
+after a disagreeing review, and an agreeing review or a Component Acceptance
+locks the Component. A Shared Helper change the Component imports unlocks it
+automatically; an assembly repair unlocks it only through the Manager's
+record-only `--record-unlock`, which the guard admits from the root alone. A
+rerun that rebuilds the reviewed B-rep carries the review forward. A
+component packet binds only the Component's own files and the Shared Helpers
+it imports, and a round that fails its checks is not rendered. Frozen runs
+keep their materialized `make_round`.
+
 The Claude Code adapter reports native token usage to the host through the
 same per-turn contract as Codex: gross input and gross output, plus a
 cached-input, cache-write-input and reasoning-output detail that travels
