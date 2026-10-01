@@ -115,7 +115,7 @@ calls were reassembling by hand.
   when the summary names a failure you cannot place.
 - In a run with the make_round guard (ADR 0080), only a `component-worker`
   runs a component round; the root Workshop Manager alone runs
-  `--record-review`, `--record-visual` and assembly rounds. A Workshop hook
+  `--record-review`, `--record-unlock`, `--record-visual` and assembly rounds. A Workshop hook
   refuses a call from the wrong agent and gives each worker round a one-time
   `--worker-nonce`; never pass one yourself. The host refuses a component
   round without a nonce it issued, so run `make_round` only as one plain
@@ -153,7 +153,8 @@ calls were reassembling by hand.
 - Spark uses two levels. Pass one isolated round history for every component,
   then begin assembled-object rounds. Component feedback cannot stand in for
   assembly feedback, and an assembly repair that changes component geometry
-  invalidates that component's prior pass.
+  needs a recorded `--record-unlock` and invalidates that component's prior
+  pass unless its rerun rebuilds the reviewed B-rep.
 
 ## Usage
 
@@ -233,9 +234,10 @@ component geometry.
   review (component) or native feedback (assembly) is recorded, even if all
   numeric checks pass. A renderer failure produces visual status `error`;
   never fabricate a review or feedback for missing images.
-- Exit 0 means numeric checks and the recorded review or visual feedback
-  pass; 1 means failed, inconclusive or pending; 2 means invalid input, a
-  refused review, or the round could not run.
+- Exit 0 means numeric checks and the recorded (or carried) review or visual
+  feedback pass; 1 means failed, inconclusive or pending; 2 means invalid
+  input, a refused review, a round the round policy refused, or the round
+  could not run.
 
 ## Review a component round
 
@@ -265,19 +267,58 @@ repair list for the next round. Then record it without rebuilding:
 
 It refuses a review of a round that is not the latest, a different packet
 hash, changed sources, packet, renders, references or comparisons, a round
-whose build or print checks failed, a second review of the same round, and a
-reviewer named as the Workshop Manager. It cannot prove who the reviewer was;
+whose build or print checks failed or that has no packet, a second review of
+the same round (a carried review counts), and a reviewer named as the
+Workshop Manager. It cannot prove who the reviewer was;
 the Manager must not write the review itself.
 
-A **shape round** is a component round that changes the geometry of a
-component whose previous round passed its checks. Repairs of build or print
-failures and reruns without a geometry change do not count; the summary shows
-`shape N/5`. After five shape rounds, a round that passed its checks must be
-reviewed before another may start (`make_round` exits 2 until then). At that
-point an agreeing review passes the component; a disagreeing one is recorded
-as a **component acceptance** that the run reports when it ends, so the loop
-cannot run on without end. Once that review is recorded, a later round may
-still run, for example when the assembly needs the part changed.
+### The round policy (ADR 0081)
+
+`make_round` makes the build -> review -> repair loop mandatory. Read the
+summary's `shape` and `lock` lines, or `shape_round`, `shape_rounds_used`,
+`locked` and `unlock` in `summary.json`, before deciding what to do next.
+
+- A round that passes build and print must be reviewed before the
+  Component's geometry may change. Until its review is recorded, a round
+  whose B-rep identity differs exits 2 and leaves nothing behind (the STEP it
+  overwrote is put back); a rerun that leaves the geometry unchanged may run
+  at any time, for example to regenerate a stale packet. Report the passing
+  round and wait.
+- A **shape round** is the first geometry-changing round after a disagreeing
+  review. Build and print repairs, unchanged reruns, and changes forced from
+  outside the Component (a Shared Helper change, an assembly unlock) are
+  never shape rounds. The summary says whether this round was one and how
+  many of the five are used.
+- An agreeing review **locks** the Component. So does a disagreeing review
+  recorded once the five shape rounds are used: it becomes a **component
+  acceptance** that the run reports when it ends, so the loop cannot run on
+  without end. A locked Component refuses a geometry change until something
+  outside it requires one:
+  - a Shared Helper the Component imports changes (detected automatically);
+  - the Workshop Manager records that an assembly round needs it changed:
+
+    ```sh
+    "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+        --component part_<role>.step.py --record-unlock <unlock.json>
+    ```
+
+    with `{"assembly_round": 4, "finding": 0, "reason": "..."}`, citing one
+    finding recorded on that assembly round with `--record-visual`. It
+    builds nothing.
+
+  Rounds after an unlock are admitted and never counted. When the next
+  passing round rebuilds the reviewed B-rep, with the same references and
+  contract rows, the review or acceptance carries forward
+  (`review.carried_from`), the round exits 0 and the Component locks again
+  with no new review. A different B-rep returns it to "passed, awaiting
+  review" with its shape-round count kept; a disagreeing review then, at the
+  cap, is a new component acceptance.
+- A component round that fails its checks is not rendered (visual status
+  `not-rendered`); only a passing round is shown to the reviewer.
+- A component packet binds the Component's own source and STEP and the Shared
+  Helpers it imports, directly or through another project module
+  (`imported_helpers` in the summary). Editing any other file does not stale
+  it.
 
 ## Record assembly visual feedback
 

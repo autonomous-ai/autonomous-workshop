@@ -111,7 +111,9 @@ class DecideTest(unittest.TestCase):
         review = COMPONENT + " --record-review review.json"
         assembly = SCRIPT + " cad --require-component-passes"
         visual = SCRIPT + " cad --record-visual feedback.json --full"
-        for command in (review, assembly, visual):
+        # ADR 0081: an assembly unlock is the Manager's record too.
+        unlock = COMPONENT + " --record-unlock=unlock.json"
+        for command in (review, assembly, visual, unlock):
             self.assertIsNone(decide(_event(command), issue=_Issuer()), command)
             for agent_type in ("component-worker", "rowan-vale"):
                 output = decide(_event(command, agent_type), issue=_Issuer())

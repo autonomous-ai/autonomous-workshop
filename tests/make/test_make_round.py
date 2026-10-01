@@ -989,17 +989,50 @@ class SealedReferenceTest(unittest.TestCase):
             (project / "part_wheel.step").write_text("wheel v2 step\n")
             self.assertTrue(module.record_review(project, review, "part_body.step.py")["ok"])
 
-    def test_a_shared_helper_or_own_source_change_stales_a_pending_component_packet(self):
-        for changed in ("features/forms.py", "part_body.step.py", "toy.step.py"):
+    def _helpers(self, project):
+        (project / "features").mkdir()
+        (project / "features/__init__.py").write_text("")
+        (project / "features/forms.py").write_text("from .rings import RING\nWIDTH = 1\n")
+        (project / "features/rings.py").write_text("RING = 2\n")
+        (project / "features/housing.py").write_text("INTERIOR = 3\n")
+        (project / "params.py").write_text("SCALE = 1\n")
+        (project / "part_body.step.py").write_text(
+            "from features import forms\nimport params\ndef gen_step(): return 'body'\n")
+
+    def test_an_imported_shared_helper_or_own_source_change_stales_a_pending_component_packet(self):
+        # ADR 0081: only what the Component imports, directly or not.
+        for changed in ("features/forms.py", "features/rings.py", "features/__init__.py", "params.py",
+                        "part_body.step.py"):
             with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
                 project = self._run_root(tmp, {"ref-01-body.png": b"body"})
-                (project / "features").mkdir()
-                (project / "features/forms.py").write_text("WIDTH = 1\n")
+                self._helpers(project)
                 module = load_module()
                 review = self._pending_body_review(module, project)
                 (project / changed).write_text("# changed\n")
                 with self.assertRaisesRegex(ValueError, "stale CAD sources"):
                     module.record_review(project, review, "part_body.step.py")
+
+    def test_an_unimported_shared_helper_or_the_entry_does_not_stale_a_component_packet(self):
+        for changed in ("features/housing.py", "toy.step.py", "toy_spec.md"):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                project = self._run_root(tmp, {"ref-01-body.png": b"body"})
+                self._helpers(project)
+                module = load_module()
+                review = self._pending_body_review(module, project)
+                (project / changed).write_text("# changed\n")
+                self.assertTrue(module.record_review(project, review, "part_body.step.py")["ok"])
+
+    def test_the_summary_lists_the_imported_shared_helpers_and_their_hashes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-body.png": b"body"})
+            self._helpers(project)
+            module = load_module()
+            self._pending_body_review(module, project)
+            summary = json.loads((project / "measure/component-rounds/body/r0001/summary.json").read_text())
+            expected = {path: hashlib.sha256((project / path).read_bytes()).hexdigest()
+                        for path in ("features/__init__.py", "features/forms.py", "features/rings.py", "params.py")}
+            self.assertEqual(summary["imported_helpers"], expected)
+            self.assertIn("helpers features/__init__.py", module.render_summary(summary))
 
     def test_the_assembly_packet_still_binds_every_component_source(self):
         module = load_module()
@@ -1008,7 +1041,7 @@ class SealedReferenceTest(unittest.TestCase):
             (project / "part_body.step.py").write_text("body\n")
             (project / "part_wheel.step.py").write_text("wheel\n")
             self.assertEqual(sorted(module.source_hashes(project)), ["part_body.step.py", "part_wheel.step.py"])
-            self.assertEqual(sorted(module.source_hashes(project, "body")), ["part_body.step.py"])
+            self.assertEqual(sorted(module.component_sources(project, "body")), ["part_body.step.py"])
 
     def test_a_component_changed_after_its_pass_no_longer_covers_its_reference(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1237,7 +1270,8 @@ class ContractComponentReviewTest(unittest.TestCase):
             self.assertEqual(summary["worker_nonce"], "ab" * 16)
             result = self._review(module, project, summary)
             self.assertEqual(result["worker_nonce"], "ab" * 16)
-            _, unguarded = self._component(module, project, calls)
+            _, unguarded = self._component(module, project, calls, edit=False)
+            self.assertEqual(unguarded["round"], 2)
             self.assertIsNone(unguarded["worker_nonce"])
 
     def test_a_worker_nonce_belongs_only_to_a_component_build_round(self):
@@ -1287,8 +1321,8 @@ class ContractComponentReviewTest(unittest.TestCase):
                 project = self._contract_root(tmp)
                 module, calls = load_module(), []
                 _, summary = self._component(module, project, calls, faults={"wall": change == "checks"})
-                packet_path = Path(summary["visual"]["packet"])
-                packet = json.loads(packet_path.read_text())
+                packet_path = Path(summary["visual"].get("packet", "/nonexistent"))
+                packet = json.loads(packet_path.read_text()) if change != "checks" else {}
                 refusal = {"source": "stale CAD sources", "comparison": "stale images or references",
                            "packet": "visual packet changed", "checks": "did not pass its build and print checks",
                            "twice": "already has a recorded review"}[change]
@@ -1325,42 +1359,82 @@ class ContractComponentReviewTest(unittest.TestCase):
             self.assertEqual(module.current_passing_component_round(project, "body", None)[1],
                              "part_body.step.py latest component round did not pass")
 
-    def test_only_rounds_that_change_checked_geometry_count_as_shape_rounds(self):
+    def test_only_the_first_geometry_change_after_a_disagreeing_review_is_a_shape_round(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._contract_root(tmp)
             module, calls = load_module(), []
             _, summary = self._component(module, project, calls, faults={"wall": True})
-            self.assertEqual(summary["shape_rounds"], 0)
+            self.assertEqual((summary["shape_rounds_used"], summary["shape_round"]), (0, False))
             # repairing a print failure is not a shape round
             _, summary = self._component(module, project, calls)
-            self.assertEqual(summary["shape_rounds"], 0)
-            # a rerun that changes no geometry is not one either
-            _, summary = self._component(module, project, calls, edit=False)
-            self.assertEqual(summary["shape_rounds"], 0)
-            # a build that fails produced no new shape
+            self.assertEqual((summary["shape_rounds_used"], summary["phase"]), (0, "awaiting-review"))
+            # a rerun that changes no geometry is admitted and not counted
+            code, summary = self._component(module, project, calls, edit=False)
+            self.assertEqual((code, summary["round"], summary["shape_rounds_used"]), (1, 3, 0))
+            self._disagree(module, project, summary)
+            # a build that fails after the review produced no new shape
             _, summary = self._component(module, project, calls, faults={"build": True})
-            self.assertEqual(summary["shape_rounds"], 0)
+            self.assertEqual((summary["shape_rounds_used"], summary["phase"]), (0, "disagreed"))
+            # the first changed geometry is the shape round, even when its print fails
+            _, summary = self._component(module, project, calls, faults={"wall": True})
+            self.assertEqual((summary["shape_rounds_used"], summary["shape_round"]), (1, True))
+            self.assertIn("this round is a shape round", module.render_summary(summary))
+            # the print repairs that follow are free
+            _, summary = self._component(module, project, calls, faults={"wall": True})
+            self.assertEqual((summary["shape_rounds_used"], summary["shape_round"]), (1, False))
             _, summary = self._component(module, project, calls)
-            self.assertEqual(summary["shape_rounds"], 0)
+            self.assertEqual((summary["shape_rounds_used"], summary["shape_round"], summary["phase"]),
+                             (1, False, "awaiting-review"))
+
+    def test_a_passing_round_is_reviewed_before_its_geometry_may_change(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
             _, summary = self._component(module, project, calls)
-            self.assertEqual(summary["shape_rounds"], 1)
+            before = len(calls)
+            code, latest = self._component(module, project, calls)
+            self.assertEqual(code, 2)
+            self.assertIn("has no Component Review; report it and wait", self.stderr)
+            self.assertEqual(latest["round"], 1)
+            self.assertFalse((project / "measure/component-rounds/body/r0002").exists())
+            # only the build ran: no print gate, no render
+            self.assertEqual([Path(c[1]).name for c in calls[before:]], ["gen"])
+            # a build that fails is a change too
+            code, _ = self._component(module, project, calls, faults={"build": True})
+            self.assertEqual(code, 2)
+
+    def test_a_round_that_fails_its_checks_is_not_rendered(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            for fault in ({"wall": True}, {"build": True}):
+                with self.subTest(fault=fault):
+                    before = len(calls)
+                    _, summary = self._component(module, project, calls, faults=fault)
+                    self.assertNotIn("render_review", [Path(c[1]).name for c in calls[before:]])
+                    self.assertEqual(summary["visual"]["status"], "not-rendered")
+                    self.assertFalse((Path(summary["out"]) / "visual").exists())
+                    self.assertIn("visual NOT-RENDERED", module.render_summary(summary))
+                    with self.assertRaisesRegex(ValueError, "did not pass its build and print checks"):
+                        self._review(module, project, summary)
 
     def test_at_the_limit_a_disagreeing_review_becomes_a_recorded_acceptance(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._contract_root(tmp)
             module, calls = load_module(), []
             summary = self._five_shape_rounds(module, project, calls)
-            # the Manager may not start a sixth shape repair before the review
-            before = len(calls)
-            code = self._main(module, project, ["--component", "part_body.step.py"], calls)
+            # no sixth shape repair before the review
+            code, _ = self._component(module, project, calls)
             self.assertEqual(code, 2)
-            self.assertIn("record it with --record-review", self.stderr)
-            self.assertEqual(len(calls), before)
+            self.assertIn("has no Component Review", self.stderr)
+            # the worker reverts; the refused build left the pending packet intact
+            (project / "part_body.step.py").write_text("def gen_step(): return 'body %d'\n" % (self._edits - 1))
             result = self._disagree(module, project, summary)
             self.assertTrue(result["ok"])
             self.assertEqual(result["accepted"], {"reviewer": "fresh-reviewer-subagent",
                                                   "reason": "The arm is too thin.", "shape_rounds": 5})
             self.assertIn("ACCEPTED at the shape-repair limit", module.render_summary(result))
+            self.assertEqual(result["locked"], {"round": 6, "source": "component-acceptance"})
             digests = json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())["parts"]
             self.assertEqual(list(module.component_coverage(project, digests).values()), [{
                 "role": "body",
@@ -1378,15 +1452,204 @@ class ContractComponentReviewTest(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertNotIn("accepted", result)
 
-    def test_after_a_recorded_review_at_the_limit_another_round_may_run(self):
+    def test_an_accepted_component_is_locked_and_an_unchanged_rerun_carries_the_acceptance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            summary = self._five_shape_rounds(module, project, calls)
+            accepted = self._disagree(module, project, summary)
+            code, _ = self._component(module, project, calls)
+            self.assertEqual(code, 2)
+            self.assertIn("locked by a Component Acceptance of r0006", self.stderr)
+            # revert the refused edit: the reviewed B-rep is rebuilt
+            (project / "part_body.step.py").write_text("def gen_step(): return 'body %d'\n" % (self._edits - 1))
+            code, summary = self._component(module, project, calls, edit=False)
+            self.assertEqual((code, summary["round"]), (0, 7))
+            self.assertEqual(summary["review"], {**accepted["review"], "carried_from": 6})
+            self.assertEqual(summary["accepted"], accepted["accepted"])
+            self.assertEqual(summary["visual"]["status"], "carried")
+            self.assertEqual(summary["locked"], {"round": 6, "source": "component-acceptance"})
+            self.assertIn("(carried from r0006)", module.render_summary(summary))
+            with self.assertRaisesRegex(ValueError, "already has a recorded review"):
+                self._disagree(module, project, summary)
+            digests = json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())["parts"]
+            self.assertEqual(list(module.component_coverage(project, digests).values())[0]["accepted"],
+                             accepted["accepted"])
+
+    def _locked_with_helper(self, module, project, calls, identity):
+        """A Component importing features/forms.py, agreed and locked."""
+        (project / "features").mkdir()
+        (project / "features/forms.py").write_text("WIDTH = 1\n")
+        (project / "part_body.step.py").write_text("from features.forms import WIDTH\ndef gen_step(): return 'body'\n")
+        with mock.patch.object(module, "parse_identity", side_effect=lambda _out: identity["value"]):
+            _, summary = self._component(module, project, calls, edit=False)
+        self._review(module, project, summary)
+        return summary
+
+    def _built(self, module, project, calls, identity, **kwargs):
+        with mock.patch.object(module, "parse_identity", side_effect=lambda _out: identity["value"]):
+            return self._component(module, project, calls, edit=False, **kwargs)
+
+    def test_a_locked_component_refuses_a_change_without_an_unlock(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls, identity = load_module(), [], {"value": "a" * 64}
+            self._locked_with_helper(module, project, calls, identity)
+            identity["value"] = "b" * 64
+            code, latest = self._built(module, project, calls, identity)
+            self.assertEqual((code, latest["round"]), (2, 1))
+            self.assertIn("locked by an agreeing review of r0001", self.stderr)
+            # editing a helper the Component does not import unlocks nothing
+            (project / "features/housing.py").write_text("INTERIOR = 2\n")
+            code, _ = self._built(module, project, calls, identity)
+            self.assertEqual(code, 2)
+
+    def test_an_imported_helper_change_unlocks_and_an_identical_brep_carries_the_review(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls, identity = load_module(), [], {"value": "a" * 64}
+            first = self._locked_with_helper(module, project, calls, identity)
+            (project / "features/forms.py").write_text("WIDTH = 1  # reworded\n")
+            code, summary = self._built(module, project, calls, identity)
+            self.assertEqual(code, 0)
+            self.assertEqual(summary["unlock"], [{"kind": "shared-helper", "paths": ["features/forms.py"]}])
+            self.assertEqual(summary["review"]["carried_from"], 1)
+            self.assertEqual(summary["locked"], {"round": 1, "source": "agreeing-review"})
+            self.assertFalse(summary["shape_round"])
+            self.assertNotEqual(summary["imported_helpers"], first["imported_helpers"])
+            self.assertIn("unlock imported Shared Helper changed: features/forms.py", module.render_summary(summary))
+            # relocked on the new helper bytes: a change is refused again
+            identity["value"] = "b" * 64
+            code, _ = self._built(module, project, calls, identity)
+            self.assertEqual(code, 2)
+
+    def test_an_imported_helper_change_that_moves_the_brep_awaits_review_and_keeps_the_count(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls, identity = load_module(), [], {"value": "a" * 64}
+            (project / "features").mkdir()
+            (project / "features/forms.py").write_text("WIDTH = 1\n")
+            (project / "part_body.step.py").write_text("from features.forms import WIDTH\ndef gen_step(): return 'body'\n")
+            _, summary = self._built(module, project, calls, identity)
+            self._disagree(module, project, summary)
+            identity["value"] = "b" * 64
+            _, summary = self._built(module, project, calls, identity)
+            self.assertEqual(summary["shape_rounds_used"], 1)
+            self._review(module, project, summary)
+            (project / "features/forms.py").write_text("WIDTH = 2\n")
+            identity["value"] = "c" * 64
+            # an unlocked failing round is admitted and free
+            code, summary = self._built(module, project, calls, identity, faults={"wall": True})
+            self.assertEqual((code, summary["shape_round"], summary["phase"]), (1, False, "locked"))
+            code, summary = self._built(module, project, calls, identity)
+            self.assertEqual((code, summary["phase"], summary["shape_rounds_used"]), (1, "awaiting-review", 1))
+            self.assertIsNone(summary["review"])
+            self.assertIsNone(summary["locked"])
+            self.assertEqual(summary["visual"]["status"], "pending")
+
+    def test_a_disagreeing_review_at_the_cap_after_an_unlock_is_a_new_acceptance(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._contract_root(tmp)
             module, calls = load_module(), []
             summary = self._five_shape_rounds(module, project, calls)
             self._disagree(module, project, summary)
+            (project / "features").mkdir()
+            (project / "features/forms.py").write_text("WIDTH = 1\n")
+            # The Manager moves the Component onto a helper only through an
+            # unlock; here a sixth geometry arrives with an assembly unlock.
+            unlock = self._assembly_unlock(module, project, calls)
+            self.assertEqual(unlock["assembly_round"], 1)
             code, summary = self._component(module, project, calls)
-            self.assertEqual(code, 1)
-            self.assertEqual(summary["shape_rounds"], 6)
+            self.assertEqual((code, summary["shape_round"], summary["shape_rounds_used"]), (1, False, 5))
+            self.assertEqual(summary["unlock"][0]["kind"], "assembly")
+            self.assertIn("unlock assembly r0001", module.render_summary(summary))
+            review = write_review(project, summary, agrees=False, reason="Still too thin.", differences=self.DIFFERS)
+            code = self._main(module, project, ["--component", "part_body.step.py", "--record-review", str(review)], calls)
+            self.assertEqual(code, 0)
+            result = json.loads(Path(summary["out"], "summary.json").read_text())
+            self.assertEqual(result["accepted"], {"reviewer": "fresh-reviewer-subagent", "reason": "Still too thin.",
+                                                  "shape_rounds": 5})
+            self.assertEqual(result["locked"], {"round": summary["round"], "source": "component-acceptance"})
+
+    def _assembly_unlock(self, module, project, calls, finding=0):
+        """Run an assembly round, record a failing finding, and unlock part_body from it."""
+        self._main(module, project, [], calls)
+        assembly = self._assembly(project)
+        feedback = project / "measure/assembly-feedback.json"
+        feedback.write_text(json.dumps({
+            "packet_sha256": assembly["visual"]["packet_sha256"], "status": "fail",
+            "findings": [{"part": "body", "defect": "socket misses the arm peg", "evidence": "iso: gap",
+                          "repair": "move the socket 2 mm up"}],
+            "observation": "Round %d: the arm floats off the body socket in the iso view." % assembly["round"],
+        }))
+        module.record_visual(project, feedback)
+        path = project / "measure/unlock.json"
+        path.write_text(json.dumps({"assembly_round": assembly["round"], "finding": finding,
+                                    "reason": "Assembly r%04d: the socket misses the arm peg." % assembly["round"]}))
+        code = self._main(module, project, ["--component", "part_body.step.py", "--record-unlock", str(path)], calls)
+        if code:
+            raise ValueError(self.stderr)
+        state = json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())
+        return state["policy"]["unlocks"][-1]
+
+    def test_an_assembly_unlock_cites_a_recorded_finding_and_builds_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self._review(module, project, summary)
+            with self.assertRaisesRegex(ValueError, "has no finding 3"):
+                self._assembly_unlock(module, project, calls, finding=3)
+            unlock = self._assembly_unlock(module, project, calls)
+            self.assertEqual(unlock["finding"]["defect"], "socket misses the arm peg")
+            self.assertEqual(unlock["reason"], "Assembly r0002: the socket misses the arm peg.")
+            # recording an unlock runs no tool
+            before = len(calls)
+            self.assertEqual(self._main(module, project, ["--component", "part_body.step.py", "--record-unlock",
+                                                          str(project / "measure/unlock.json")], calls), 0)
+            self.assertEqual(len(calls), before)
+            code, summary = self._component(module, project, calls)
+            self.assertEqual((code, summary["shape_round"], summary["phase"]), (1, False, "awaiting-review"))
+            self.assertEqual(summary["unlock"], [unlock, unlock])
+
+    def test_an_unlock_needs_a_locked_component_and_a_recorded_assembly_finding(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            self._component(module, project, calls)
+            path = project / "measure/unlock.json"
+            path.write_text(json.dumps({"assembly_round": 1, "finding": 0, "reason": "r0001 needs it"}))
+            with self.assertRaisesRegex(ValueError, "is not locked"):
+                module.record_unlock(project, path, "part_body.step.py")
+            _, summary = self._component(module, project, calls, edit=False)
+            self._review(module, project, summary)
+            with self.assertRaisesRegex(ValueError, "r0001 has no recorded visual finding"):
+                module.record_unlock(project, path, "part_body.step.py")
+            path.write_text(json.dumps({"assembly_round": 1, "finding": 0}))
+            with self.assertRaisesRegex(ValueError, "assembly_round, finding and reason"):
+                module.record_unlock(project, path, "part_body.step.py")
+        with contextlib.redirect_stderr(io.StringIO()):
+            for argv in (["/tmp", "--record-unlock", "u.json"],
+                         ["/tmp", "--component", "part_body.step.py", "--record-unlock", "u.json",
+                          "--record-review", "r.json"],
+                         ["/tmp", "--component", "part_body.step.py", "--record-unlock", "u.json",
+                          "--worker-nonce", "ab" * 16]):
+                with self.subTest(argv=argv), self.assertRaises(SystemExit):
+                    module.main(argv)
+
+    def test_a_changed_reference_or_contract_row_does_not_carry_a_review(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self._review(module, project, summary)
+            wish_path = module.run_root(project) / "WISH.json"
+            wish = json.loads(wish_path.read_text())
+            wish["context"]["design_contract"]["requirements"] = [
+                {"id": "R1", "scope": "geometry:body", "text": "The arm is as thick as the leg."}]
+            wish_path.write_text(json.dumps(wish))
+            code, summary = self._component(module, project, calls, edit=False)
+            self.assertEqual((code, summary["phase"]), (1, "awaiting-review"))
             self.assertIsNone(summary["review"])
 
     def test_a_scored_reference_without_a_model_render_leaves_no_visual_evidence(self):
@@ -1441,6 +1704,119 @@ class ContractComponentReviewTest(unittest.TestCase):
             module, calls = load_module(), []
             _, summary = self._component(module, project, calls)
             self.assertEqual(summary["refs"], [])
+
+
+class RoundPolicyTest(unittest.TestCase):
+    """ADR 0081: admission, Shape Round counting and the lock, from inputs alone."""
+
+    module = None
+
+    @classmethod
+    def setUpClass(cls):
+        cls.module = load_module()
+
+    def reviewed(self, *, agrees, identity="A", accepted=False, helpers=None, key="kA", round_=3):
+        return {"round": round_, "identity": identity, "carry_key": key, "agrees": agrees,
+                "accepted": accepted, "imported_helpers": helpers or {}, "review": {"agrees": agrees},
+                "acceptance": None}
+
+    def decide(self, previous, identity, checks_ok=True, key=None, helpers=None):
+        return self.module.round_policy(previous, {
+            "identity": identity, "checks_ok": checks_ok, "carry_key": key or "k" + str(identity),
+            "helpers": helpers or {}, "round": 9})
+
+    def test_the_table(self):
+        P = self.module
+        awaiting = {"phase": P.AWAITING, "identity": "A", "round": 3, "shape_rounds": 2}
+        disagreed = {"phase": P.DISAGREED, "identity": "A", "round": 3, "shape_rounds": 2,
+                     "reviewed": self.reviewed(agrees=False)}
+        locked = {"phase": P.LOCKED, "identity": "A", "round": 3, "shape_rounds": 2,
+                  "reviewed": self.reviewed(agrees=True, helpers={"features/forms.py": "h1"})}
+        accepted = {**locked, "shape_rounds": 5,
+                    "reviewed": self.reviewed(agrees=False, accepted=True)}
+        unlocked = {**locked, "unlocks": [{"kind": "assembly", "assembly_round": 4}]}
+        # (name, previous, identity, checks_ok, helpers) -> (admit, shape round, phase, shape rounds, carried)
+        cases = [
+            ("first round", {}, "A", True, None, (True, False, P.AWAITING, 0, False)),
+            ("first round fails", {}, "A", False, None, (True, False, P.OPEN, 0, False)),
+            ("unreviewed pass, changed", awaiting, "B", True, None, (False, False, None, None, False)),
+            ("unreviewed pass, build fails", awaiting, None, False, None, (False, False, None, None, False)),
+            ("unreviewed pass, unchanged rerun", awaiting, "A", True, None, (True, False, P.AWAITING, 2, False)),
+            ("disagreed, first change", disagreed, "B", True, None, (True, True, P.AWAITING, 3, False)),
+            ("disagreed, first change fails print", disagreed, "B", False, None, (True, True, P.OPEN, 3, False)),
+            ("disagreed, build fails", disagreed, None, False, None, (True, False, P.DISAGREED, 2, False)),
+            ("disagreed, unchanged rerun", disagreed, "A", True, None, (True, False, P.DISAGREED, 2, True)),
+            ("repair after the shape round", {"phase": P.OPEN, "identity": "B", "shape_rounds": 3},
+             "C", True, None, (True, False, P.AWAITING, 3, False)),
+            ("locked, changed", locked, "B", True, {"features/forms.py": "h1"}, (False, False, None, None, False)),
+            ("locked, unchanged rerun", locked, "A", True, {"features/forms.py": "h1"}, (True, False, P.LOCKED, 2, True)),
+            ("accepted, changed", accepted, "B", True, None, (False, False, None, None, False)),
+            ("helper unlock, identical B-rep", locked, "A", True, {"features/forms.py": "h2"},
+             (True, False, P.LOCKED, 2, True)),
+            ("helper unlock, new B-rep", locked, "B", True, {"features/forms.py": "h2"},
+             (True, False, P.AWAITING, 2, False)),
+            ("helper unlock, failing round", locked, "B", False, {"features/forms.py": "h2"},
+             (True, False, P.LOCKED, 2, False)),
+            ("assembly unlock, new B-rep", unlocked, "B", True, None, (True, False, P.AWAITING, 2, False)),
+            ("assembly unlock, back to the reviewed B-rep", unlocked, "A", True, None, (True, False, P.LOCKED, 2, True)),
+        ]
+        for name, previous, identity, checks_ok, helpers, expected in cases:
+            with self.subTest(name):
+                result = self.decide(previous, identity, checks_ok, helpers=helpers)
+                state = result["state"]
+                observed = (result["admit"], result["shape_round"], state and state["phase"],
+                            state and state["shape_rounds"], result["carried"] is not None)
+                self.assertEqual(observed, expected)
+                if not result["admit"]:
+                    self.assertTrue(result["refusal"])
+
+    def test_admission_is_decided_before_the_checks(self):
+        P = self.module
+        result = P.round_policy({"phase": P.AWAITING, "identity": "A", "round": 3}, {"identity": "B"})
+        self.assertEqual((result["admit"], result["state"]), (False, None))
+        self.assertIn("r0003 passed its build and print checks and has no Component Review", result["refusal"])
+        result = P.round_policy({"phase": P.AWAITING, "identity": "A", "round": 3}, {"identity": "A"})
+        self.assertEqual((result["admit"], result["state"]), (True, None))
+
+    def test_a_carried_unlock_relocks_and_clears_its_reasons(self):
+        P = self.module
+        locked = {"phase": P.LOCKED, "identity": "A", "round": 3, "shape_rounds": 2,
+                  "reviewed": self.reviewed(agrees=True, helpers={"features/forms.py": "h1"})}
+        result = self.decide(locked, "A", helpers={"features/forms.py": "h2"})
+        self.assertEqual(result["unlocks"], [{"kind": "shared-helper", "paths": ["features/forms.py"]}])
+        self.assertEqual(result["state"]["unlocks"], [])
+        self.assertEqual(result["state"]["reviewed"]["imported_helpers"], {"features/forms.py": "h2"})
+
+    def test_a_changed_reference_or_contract_row_is_not_carried(self):
+        P = self.module
+        locked = {"phase": P.LOCKED, "identity": "A", "round": 3, "shape_rounds": 2,
+                  "reviewed": self.reviewed(agrees=True)}
+        result = self.decide(locked, "A", key="other")
+        self.assertEqual((result["carried"], result["state"]["phase"]), (None, P.AWAITING))
+
+    def test_reviews(self):
+        P = self.module
+        review = {"agrees": False, "identity": "A", "carry_key": "kA", "imported_helpers": {}, "review": {}}
+        for shape_rounds, agrees, phase, accepted in (
+            (0, True, P.LOCKED, False), (4, False, P.DISAGREED, False),
+            (5, False, P.LOCKED, True), (5, True, P.LOCKED, False),
+        ):
+            with self.subTest(shape_rounds=shape_rounds, agrees=agrees):
+                state = P.review_policy({"phase": P.AWAITING, "round": 7, "shape_rounds": shape_rounds},
+                                        {**review, "agrees": agrees})
+                self.assertEqual((state["phase"], state["reviewed"]["accepted"], state["reviewed"]["round"]),
+                                 (phase, accepted, 7))
+        with self.assertRaisesRegex(ValueError, "not awaiting a Component Review"):
+            P.review_policy({"phase": P.LOCKED, "round": 7}, review)
+
+    def test_a_component_reviewed_by_an_earlier_make_round_keeps_its_review(self):
+        P = self.module
+        state = {"round": 4, "identity": "A", "checks_ok": True, "shape_rounds": 5}
+        policy = P.legacy_policy(state, {"review": {"agrees": False}, "accepted": {"shape_rounds": 5}})
+        self.assertEqual((policy["phase"], policy["reviewed"]["accepted"]), (P.LOCKED, True))
+        self.assertEqual(P.legacy_policy(state, {"review": None})["phase"], P.AWAITING)
+        self.assertEqual(P.legacy_policy({**state, "checks_ok": False}, {})["phase"], P.OPEN)
+        self.assertEqual(P.legacy_policy({}, None), {"phase": P.OPEN})
 
 
 if __name__ == "__main__":

@@ -12,8 +12,8 @@ and subagents alike. The runtime names the calling subagent in the hook input
   ``--worker-nonce``. make_round records the nonce in the round, and the host
   refuses a Make proposal holding a Component round whose nonce it did not
   issue to a worker for that Component.
-- ``--record-review``, ``--record-visual`` and assembly rounds run only from
-  the root Workshop Manager.
+- ``--record-review``, ``--record-unlock`` (ADR 0081), ``--record-visual``
+  and assembly rounds run only from the root Workshop Manager.
 
 The hook decides who may run make_round, not who may spawn whom. It runs as a
 standalone script with the standard library only; it makes no model call.
@@ -44,6 +44,8 @@ _WRAPPERS = frozenset({"exec", "nohup", "time", "command", "builtin"})
 # The script name at the end of its token. The nonce goes right after it,
 # before the call's own arguments; the rewrite is re-parsed before it is used.
 _SCRIPT_TOKEN = re.compile(r"make_round(?=[\s;&|)\"']|$)")
+# A record about a Component that builds nothing; only the root makes one.
+_ROOT_RECORDS = ("--record-review", "--record-unlock")
 
 Issuer = Callable[[Mapping[str, Any], str], str]
 
@@ -175,8 +177,10 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
     agent_type = event.get("agent_type")
     is_root = not agent_type and not event.get("agent_id")
     component = _option(arguments, "--component")
-    if component is not None and "--record-review" not in arguments and not any(
-        argument.startswith("--record-review=") for argument in arguments
+    if component is not None and not any(
+        argument == flag or argument.startswith(flag + "=")
+        for argument in arguments
+        for flag in _ROOT_RECORDS
     ):
         if agent_type != COMPONENT_WORKER:
             return _deny(
@@ -203,8 +207,8 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
         }
     if not is_root:
         return _deny(
-            "only the Workshop Manager records a Component Review, runs an "
-            "assembly round or records assembly feedback"
+            "only the Workshop Manager records a Component Review or an "
+            "assembly unlock, runs an assembly round or records assembly feedback"
         )
     return None
 

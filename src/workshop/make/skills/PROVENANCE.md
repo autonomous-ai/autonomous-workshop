@@ -1476,3 +1476,18 @@ routing self-checks, and the matching prose in `cad/SKILL.md` and
 the Workshop pipeline (ADR 0076). `render_views.py`, `check_likeness.py` and
 `likeness-gate.md` keep their upstream `b149710` bytes. This changes the
 `cad` fingerprint.
+
+## Local change: Shape Rounds follow Component Reviews (2026-10-01)
+
+A Workshop-local change to Workshop's own `make-round` (ADR 0081). One pure
+`round_policy` decides admission, Shape Round counting and the lock of a
+component round: a passing round must be reviewed before the Component's
+geometry may change (a refused round exits 2, writes no round and puts back
+the STEP it overwrote); a Shape Round is the first geometry change after a
+disagreeing review; an agreeing review or a Component Acceptance locks the
+Component until a Shared Helper it imports changes or the Manager records an
+assembly unlock with the new root-only `--record-unlock`; a rerun of the
+reviewed B-rep carries the review forward. A component packet binds only the
+Component's own files and the Shared Helpers it imports, and a component round
+that fails its checks is not rendered. This changes the `make-round`
+fingerprint.

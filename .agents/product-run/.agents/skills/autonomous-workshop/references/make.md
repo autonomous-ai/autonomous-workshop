@@ -181,7 +181,9 @@ are separate. Frozen older runs retain their materialized rules and tools.
    sealed `geometry:<id>` reference and declared camera; only that
    Component's Design Contract rows; the nozzle; and the shape-repair limit
    (5). The worker writes the first draft, runs the round above until build
-   and print pass, then reports in 10 lines or fewer. The worker may view its
+   and print pass, then reports in 10 lines or fewer and waits:
+   `make_round` refuses to change a passing round's geometry before its
+   review is recorded (ADR 0081). The worker may view its
    own sealed reference image once. Neither you nor a worker views a
    Component's rendered rounds (front, top, iso and `compare-NN.png`); only its
    reviewer does, and the worker acts on the reviewer's text. If the runtime
@@ -204,9 +206,12 @@ are separate. Frozen older runs retain their materialized rules and tools.
    reached.
 
    Workers never edit a shared file such as `params.py` or
-   `features/forms.py`; they ask you. Edit it yourself, then send every
-   Component that uses it back through a worker: the edit changes their B-rep
-   identity, which invalidates their passes (ADR 0073).
+   `features/forms.py`; they ask you. Edit it yourself, then send back
+   through its worker only each Component whose summary lists that file
+   under `imported_helpers`: a change to a Shared Helper a Component does not
+   import stales nothing of it (ADR 0081). The edit unlocks those Components.
+   A rerun that rebuilds the reviewed B-rep keeps its review and locks again;
+   one whose B-rep moved needs a new review, without spending a shape round.
 
    When two Design Contract statements cannot both hold, for example two
    Components that print on a mating face that also carries a peg, stop and
@@ -229,13 +234,17 @@ are separate. Frozen older runs retain their materialized rules and tools.
    a sealed Wish reference that depicts one component in that component's
    round with `--ref LABEL=wish-references/<file>`.
 
-   A shape round is a component round that changes the geometry after a round
-   that passed build and print; fixing build or print failures does not
-   count. You get five. After the fifth, `make_round` will not start another
-   round for that component until the latest passing round is reviewed. An
-   agreeing review then passes it; a disagreeing one is recorded as a
-   component acceptance. Every acceptance is reported to the person when the
-   run ends; it is never recorded as the person's decision.
+   Read each round summary's `shape` and `lock` lines (ADR 0081). A round
+   that passed build and print is reviewed before its geometry may change;
+   only an unchanged rerun may run first. A shape round is the first
+   geometry-changing round after a disagreeing review; build and print
+   repairs, unchanged reruns and changes forced by a Shared Helper or an
+   assembly round are not. A Component gets five. An agreeing review locks
+   the Component; so does a disagreeing review once the five are used, which
+   is recorded as a component acceptance. Every acceptance is reported to the
+   person when the run ends; it is never recorded as the person's decision.
+   A locked Component's geometry changes only when a Shared Helper it imports
+   changes or you record an assembly unlock.
 3. Only after every component passes, author the non-part combined `*.step.py`
    entry and begin assembled-object rounds with:
 
@@ -246,8 +255,12 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    This refuses assembly review when a component has no passing isolated round
    or its freshly built STEP changed afterward. If an assembly repair
-   changes a component, rerun that component's isolated review-and-fix loop,
-   then return to the assembled object. Forge and Quest retain their existing
+   changes a component, first record why: cite the assembly round and the
+   finding you recorded there with `--record-visual`,
+   `{"assembly_round", "finding", "reason"}`, and run the same `--component`
+   argument plus `--record-unlock <unlock.json>`. It builds nothing. Then send
+   the Component back through its worker for its isolated review-and-fix
+   loop, and return to the assembled object. Forge and Quest retain their existing
    whole-product baseline sequence.
 4. Generate explicit source targets with
    `.agents/skills/cad/scripts/gen <entry.step.py> --write`, which writes the
