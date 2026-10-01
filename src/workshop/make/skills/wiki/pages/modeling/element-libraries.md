@@ -1,7 +1,7 @@
 ---
 title: Gear and standard-element libraries
 tags: [gear, library, bd-warehouse, py-gearworks, cadquery, backlash, mesh-to, bevel]
-aliases: [bd_warehouse, py_gearworks, SpurGear, mesh_to, cq_gears, cq-electronics, cq-gridfinity, gridfinity, argus-diff, dl4to4ocp, topology optimisation, gear library]
+aliases: [bd_warehouse, py_gearworks, SpurGear, mesh_to, cq_gears, cq-electronics, cq-gridfinity, gridfinity, gflabel, gfthings, gridfinity_build123d, bd-vslot, capistry, keycap, argus-diff, dl4to4ocp, topology optimisation, gear library]
 sources:
   - skills/cad/references/standard-elements.md (gear-library and unreachable-library sections; before the move)
   - skills/cad/scripts/stdpart --self-check (asserts the backlash behaviour below)
@@ -123,10 +123,25 @@ from a build123d toolchain pinned to `cadquery-ocp` 7.9:
 | `cq-electronics` (PCBs, headers, Raspberry Pi boards) | pins `cadquery-ocp==7.7.2`; installing it would downgrade the kernel build123d runs on. Use `$step-parts` for boards and connectors. |
 | `cq_gears`, `cadquery-plugins` | not published on PyPI, and CadQuery-only. `py_gearworks` covers the gear types `cq_gears` has except worm. |
 | `cq-kit` (PyPI `cqkit`) | CadQuery-only selector and export helpers; build123d's selectors and filters already do this. |
-| `cq-gridfinity` (PyPI `cqgridfinity`) | requires `cadquery` and `cqkit`. Gridfinity bins and baseplates are a short published profile (42 mm pitch, 7 mm height unit), so author them in build123d from that spec. |
+| `cq-gridfinity` (PyPI `cqgridfinity`) | requires `cadquery` and `cqkit`. Gridfinity bins and baseplates are a short published profile (42 mm pitch, 7 mm height unit). The build123d Gridfinity libraries do not install here either (see the next section), so author them in build123d from that spec. |
 | `argus-diff` (STEP revision diff) | requires `cadquery`. `step_verify` already measures one solid against another, and `interfere` covers clashes. If you need a multi-body diff between two revisions, the idea worth copying is matching bodies by a fingerprint (volume, area, centre of mass, bbox, principal moments), not installing the package. |
 | `dl4to4ocp` (topology optimisation) | vendors `dl4to`, which pins `torch==1.12` and ships its requirements as a conda export. Its result is a voxel field, so it gives no parametric source. |
 | `cadquery` itself | installs cleanly beside build123d, but drags in ~26 packages (numba, llvmlite, casadi, trame) for a kernel no generator here uses. |
 
 If a CadQuery-only library is genuinely the only source for a part, that is a
 recorded miss plus a `$step-parts` search, not a second kernel.
+
+## Other build123d libraries
+
+A library written for build123d can still fail to fit. The venv runs Python
+3.14 with the `bd_warehouse` 0.3.0 release. When a library cannot accept
+either, pip does not fail: it quietly backtracks to an old release that pins
+an old build123d. So check what `pip install --dry-run --report <file> <pkg>`
+would install before you install anything.
+
+| library | verdict |
+|---|---|
+| `gflabel`, `gfthings` (Gridfinity labels, bins) | current releases declare `requires-python <3.13`, so on 3.14 pip falls back to releases that pin build123d 0.5 or 0.6. |
+| `gridfinity_build123d` | pins `bd_warehouse` to a git commit, which would replace the release `stdpart` builds from. |
+| `bd-vslot` (V-slot rail parts) | not needed: `bd_warehouse` already ships the OpenBuilds V-slot range, with its wheels and steppers. |
+| `capistry` (keyboard keycaps) | installs cleanly; use it if someone asks for a keycap. |

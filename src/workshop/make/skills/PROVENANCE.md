@@ -1,5 +1,65 @@
 # Shared skill provenance
 
+## Resync to upstream `b67636e`: build123d libraries that downgrade the toolchain (2026-10-01)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `b67636e092a68f94335d0a76ee004b59784dad66` (2026-10-01), resynced from
+  `db26c4e`. That is one upstream commit touching the same single file,
+  `wiki/pages/modeling/element-libraries.md`. The merge is the same three-way
+  merge as before. The Workshop copy was byte-identical to the `db26c4e` base,
+  so it takes upstream's bytes unchanged. No other tree moved; their locks move
+  to the new commit only, and `make-round` is unchanged.
+- **What upstream brought.** A new section, "Other build123d libraries",
+  makes a dry run the rule before any install
+  (`pip install --dry-run --report`). The reason is that pip does not fail
+  when a library cannot accept the environment: it backtracks to an old
+  release that pins an old build123d. The section gives a verdict for
+  `gflabel`, `gfthings`, `gridfinity_build123d`, `bd-vslot` and `capistry`,
+  and the `cq-gridfinity` row now points to it. The page's aliases gain the
+  new names.
+
+Upstream measured its verdicts in its own venv, which runs Python 3.14 with
+`bd_warehouse` 0.3.0. Workshop pins the same `bd_warehouse` range
+(`>=0.3,<0.4`) and `build123d==0.11.1`, but declares
+`requires-python = ">=3.11"`. Its development venv here is 3.11.12. Each
+verdict was resolved against that venv with `uv pip install --dry-run`, read
+against PyPI metadata on 2026-10-01:
+
+- `gfthings` downgrades the toolchain here too, but for a different reason.
+  It installs 0.8.3, which takes `build123d` from 0.11.1 to 0.10.0 and
+  `cadquery-ocp` from 7.9.3 to 7.8.1. Its current 0.9.0 requires Python 3.12
+  and pins `build123d<0.11`, so it would downgrade on any interpreter.
+- `gflabel` 0.2.0 declares `requires-python <3.13,>=3.10` and
+  `build123d>=0.8.0`. On 3.11 or 3.12 it installs cleanly with no change to
+  build123d. Upstream's fallback only happens from 3.13 upward.
+- `capistry` 0.2.0 requires Python 3.13 or later. On 3.11 it fails to resolve
+  rather than installing, so "installs cleanly" holds only from 3.13.
+- `gridfinity_build123d` is not on PyPI at all, so it is git-only. Upstream's
+  reason for avoiding it (it pins `bd_warehouse` to a git commit) is not
+  something a dry run from PyPI can show.
+- The `bd-vslot` verdict does not depend on the interpreter.
+
+The page is left as upstream wrote it, not adapted locally. Where a verdict
+differs here, the difference is harmless: either a library the page warns
+against turns out to install cleanly, or a library it clears fails to resolve.
+In neither case does the page lead to a toolchain downgrade. The dry-run rule
+it leads with is what shows the right answer on any interpreter. The page's
+"The venv runs Python 3.14" describes upstream's venv, which the wiki
+`SKILL.md` note on machines and fixtures already covers in spirit. Making the
+verdicts depend on the interpreter belongs upstream.
+
+Verified here: `verify_skill_locks` matches eight trees, `wiki --self-check`
+passes and `wiki lint` reports 193 pages with 0 errors. `search gflabel`,
+`search capistry` and `search bd-vslot` each rank the new section first.
+
+Consequences for existing runs:
+
+- **Materialized instruction bytes changed.** The `wiki` fingerprint moves. A
+  run parked before this change must be restarted rather than resumed; resume
+  fails closed on the materialized-instruction-hash mismatch.
+  `workshop resume --refresh-tools` rewrites the skills a run already carries.
+- No gate reads the wiki, and no script changed.
+
 ## Resync to upstream `db26c4e`: four more CadQuery libraries ruled out (2026-10-01)
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
