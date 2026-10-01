@@ -1,15 +1,16 @@
 ---
 title: Hinges and pin joints
 tags: [hinge, knuckle, pin, lid, friction-hinge, detent, stop, retention, print-in-place, revolute]
-aliases: [barrel hinge, knuckle hinge, piano hinge, butt hinge, lid hinge, box hinge, friction hinge, torque hinge, hold-open hinge, free-stop hinge, detented hinge, hinge pin, filament pin]
+aliases: [barrel hinge, knuckle hinge, piano hinge, butt hinge, lid hinge, box hinge, door hinge, pin-and-barrel hinge, friction hinge, torque hinge, hold-open hinge, free-stop hinge, detented hinge, hinge pin, filament pin, hinge types, kinds of hinge]
 sources:
   - skills/cad/scripts/cadfits.py (print_in_place_gap, slot_for, peg_for)
   - https://3dprintcalcs.uk/mechanical/hinge-calculator/ (hole = pin + 2 c; wall = 3 × nozzle; pin ≥ 6 × nozzle; ≥ 3 knuckles, odd; axial gap ≥ 2 layers when the axis is vertical)
   - https://www.snapmaker.com/blog/3d-printed-hinges/ (0.2–0.3 mm pin-to-barrel gap; lower flow 2–5 % when a hinge fuses)
   - https://www.sovol3d.com/blogs/news/print-in-place-3d-printing-how-to-design-hinges-joints-and-moving-parts-that-actually-work (PLA 0.15–0.40 mm per side by fit; PETG +0.05; 0.5 mm × 45° bottom chamfer; 3–4 perimeters on pins)
   - https://www.sugatsune-intl.com/torque-hinges/torque-calculation/ (door moment = m g x_cg, maximum with the lid horizontal; hinge torque tolerance ±20 %; torque shared equally between hinges)
-related: [joints, flexures-and-living-hinges, shafts-and-bearings, dowel-pins-and-press-fits, fdm-minimum-feature-sizes, overhangs-and-print-orientation, mechanism-verification, latches-detents-and-ratchets, snap-fit-design, creep-and-stress-relaxation, counterweights-and-gravity-balance]
-updated: 2026-09-23
+  - https://en.wikipedia.org/wiki/Hinge (the hinge forms the type catalogue covers)
+related: [joints, hinge-types, rod-ends-and-clevises, flexures-and-living-hinges, shafts-and-bearings, dowel-pins-and-press-fits, fdm-minimum-feature-sizes, overhangs-and-print-orientation, mechanism-verification, latches-detents-and-ratchets, snap-fit-design, creep-and-stress-relaxation, counterweights-and-gravity-balance]
+updated: 2026-10-01
 ---
 
 # Hinges and pin joints
@@ -19,6 +20,17 @@ the pin and knuckles, chooses how the pin is retained, and adds the three
 things a lid hinge usually also owes: a stop, a hold-open torque and a swing
 that clears the box. The short catalogue rows are in [[joints#revolute-joints]];
 a hinge that bends instead of turning is in [[flexures-and-living-hinges]].
+
+## Hinge types
+
+Which hinge form to draw is on [[hinge-types]]: butt, continuous (piano),
+strap and T, lift-off (flag), pivot, rising butt and self-closing cam,
+spring and double-action, offset (swing-clear, gooseneck), concealed
+European cup, invisible (Soss), and the four-bar hinge that moves a lid
+clear. Its chooser gives each type's geometry, when to use it and how it
+prints; every type still takes its pin, knuckles, retention and stop from
+the sections below. A pin that joins a rod or link rather than two leaves
+(fork and eye, clevis pin, rod end) is on [[rod-ends-and-clevises]].
 
 ## Pin and knuckle sizing
 

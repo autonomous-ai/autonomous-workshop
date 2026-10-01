@@ -9,8 +9,8 @@ sources:
   - https://en.wikipedia.org/wiki/Trapezoidal_thread_form (30° metric trapezoid, 29° Acme, ISO 2904, DIN 103, designation)
   - https://en.wikipedia.org/wiki/ISO_metric_screw_thread (60° profile, pitches)
   - https://hackaday.com/2024/12/03/torque-testing-3d-printed-screws/ (printed screw torque by orientation)
-related: [metric-screw-clearance-holes, heat-set-inserts, overhangs-and-print-orientation, layer-anisotropy, printed-threads-and-bosses, sweeps-and-helices]
-updated: 2026-09-23
+related: [metric-screw-clearance-holes, heat-set-inserts, overhangs-and-print-orientation, layer-anisotropy, printed-threads-and-bosses, sweeps-and-helices, bayonet-and-twist-locks]
+updated: 2026-10-01
 ---
 
 # Printed threads

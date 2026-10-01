@@ -16,8 +16,8 @@ sources:
   - "https://www.emergentmind.com/topics/tendon-driven-anthropomorphic-manipulators (n + 1 and 2n tendon arrangements for n joints; via search excerpt)"
   - "https://usangler.com/best-fishing-line/ (nylon monofilament 25–35 % elongation to break, absorbs water and loses strength wet; braid does not; via search excerpt)"
   - Shigley's Mechanical Engineering Design, ch. 17 (flexible elements; flat and V-belt friction, effective μ of a V groove)
-related: [belts-and-pulleys, springs, automaton-craft-practice, friction-wear-and-lubricants, creep-and-stress-relaxation, linkages, energy-drive, overhangs-and-print-orientation, fdm-hole-accuracy, toy-safety-constraints, mechanism-verification]
-updated: 2026-09-23
+related: [belts-and-pulleys, springs, automaton-craft-practice, friction-wear-and-lubricants, creep-and-stress-relaxation, linkages, energy-drive, overhangs-and-print-orientation, fdm-hole-accuracy, toy-safety-constraints, mechanism-verification, rolling-contact-joints]
+updated: 2026-10-01
 ---
 
 # Cable, cord and tendon drives

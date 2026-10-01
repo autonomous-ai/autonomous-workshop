@@ -1,14 +1,14 @@
 ---
 title: Shafts and bearings
 tags: [shaft, axle, bearing, bushing, deflection, stress, collar, circlip, support, axial-location]
-aliases: [spindle, journal, plain bearing, ball bearing, sleeve bearing, retaining ring, e-clip, set screw, beam deflection]
+aliases: [spindle, journal, plain bearing, ball bearing, sleeve bearing, retaining ring, e-clip, set screw, beam deflection, segmented axle, axle too long to print]
 sources:
   - Shigley's Mechanical Engineering Design, ch. 4 (beam deflection) and ch. 7 (shafts and shaft components)
   - ISO 15 (radial bearing boundary dimensions)
   - Roark's Formulas for Stress and Strain, beams table (simply supported and cantilever cases)
   - skills/cad/scripts/stdpart (bearings and snap rings from bd_warehouse)
-related: [joints, gears, mechanism-design, beam-and-plate-stiffness, exact-constraint-and-kinematic-mounts, noise-and-vibration]
-updated: 2026-09-23
+related: [joints, gears, mechanism-design, beam-and-plate-stiffness, exact-constraint-and-kinematic-mounts, noise-and-vibration, shaft-hub-connections, rod-ends-and-clevises, swivels-and-turntables]
+updated: 2026-10-01
 ---
 
 # Shafts and bearings
@@ -28,6 +28,49 @@ parameter and most of them owe an `assert`.
 | **brass / aluminium tube** | light, long, or wiring through the axis | check the wall against the set screw or pin that drives it |
 
 Printed shafts below about 5 mm are fragile; below 3 mm use metal.
+
+A shaft longer than the bed is not a reason to buy a rod: segment it
+([[#an-axle-longer-than-the-bed]]).
+
+## An axle longer than the bed
+
+A fixed axle carrying a row of pivots (the ground pivots of a linkage walker,
+a comb of levers) is often longer than any bed. A bought rod solves it, but
+then the kit does not come off the printer. Segment the axle at the pivots it
+carries:
+
+- **Bodies between the pivots, a pin through each.** Each body fills the gap
+  between two pivot stacks and prints standing, its end faces on the bed. A
+  separate pin runs through the pivot stack into a socket in the body each
+  side, and is that pivot's journal. Both halves have their joint face on the
+  bed, which is the case for a dowel rather than a plug
+  ([[fdm-joining-split-prints#connectors]]).
+- **The pin prints lying on a deep D-flat.** It is the only part bending
+  across the gap, and standing it breaks at a layer line. The curve must leave
+  the flat steeper than 45°: flat depth `r (1 − cos θ)` with θ about 50°, a
+  third of the radius. A shallow flat leaves a down-facing band under 45° that
+  runs the whole length of the pin; that is an overhang, not a ledge, and
+  `check_overhang` fails it (a 0.6 flat on an 8 mm pin did).
+- **A deep flat costs little.** In a round running hole the hole's curve
+  catches on the flat's two edges, so the flat side runs only about 0.1 mm
+  looser than the round side, not the flat's depth looser. Turned sideways to
+  the load, the flat removes material near the neutral axis and keeps about
+  94 % of the round section's `I`; turned toward the load it loses about a
+  third. Put it where the pivot is loaded least: sideways under a vertical load.
+- **Key the socket with the flat.** A D-socket locates the pin; in a round
+  socket it floats by the flat's depth, and a chain of floating joints no
+  longer meets the far frame.
+- **The pin bottoms in both sockets.** Its length, printed in XY, then sets the
+  pivot's running play; glue cannot. One pin diameter of engagement per side.
+- **The end bodies sit in pockets in the frames.** The pocket, not a pin,
+  carries the end moment.
+- **The bare pins decide the sag.** A pin through a pivot stack is bounded by
+  the hole the plate end can take, and the pins near mid-span sit where the
+  moment is largest, so they carry most of the deflection while being a small
+  part of the length. Compute it with the section changing along the span,
+  `δ = F ∫ m(s)² / (E I(s)) ds` with `m` the moment of a unit load at the
+  point, not with one diameter. A thicker body buys little; a larger pin, or
+  fewer and shorter gaps, buys most.
 
 ## Stiffness: deflection decides before strength does
 
@@ -109,7 +152,7 @@ Ways to stop a shaft (or a part on it) moving along the axis:
 |---|---|
 | shoulder on the shaft | printed shafts; the cheapest and most exact |
 | head of a shoulder pin | [[joints#revolute-joints]] |
-| e-clip / circlip in a groove | metal shafts; the groove comes from `stdpart` snap rings, never typed |
+| e-clip / circlip in a groove | metal shafts; the groove comes from `stdpart` snap rings, never typed; pins and their clips: [[rod-ends-and-clevises#clevis-pins-and-what-holds-them]] |
 | collar with set screw | M3 grub screw into a captive nut; tighten on a flat |
 | the next part in the stack | legitimate only if that part is itself proven held |
 
@@ -123,7 +166,8 @@ The general rule behind fixed-and-floating — count the constraints:
 Single D-flat for any phased part; pin through the shaft for high torque with
 exact phase; press fit only for parts that never come off. The whole list is
 [[joints#keyed-joints]]. A set screw on a round shaft slips — always drive it
-onto a flat.
+onto a flat. Torque capacity of every hub form (keys, splines, polygons, set
+screws, clamp hubs, tapers, Hirth teeth) is in [[shaft-hub-connections]].
 
 ## Checks
 

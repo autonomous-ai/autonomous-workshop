@@ -11,8 +11,8 @@ sources:
   - https://arxiv.org/pdf/2301.08431 (Hartisch & Haninger, compliant fin-ray gripper, sec. 3)
   - https://www.eng.yale.edu/grablab/pubs/ma_icra2013.pdf (Ma & Dollar, open-source underactuated hand; via search excerpt)
   - https://la.disneyresearch.com/wp-content/uploads/A-Passively-Safe-and-Gravity-Counterbalanced-Anthropomorphic-Robot-Arm-Paper.pdf (actuators grounded at the base, counterbalance; via search excerpt)
-related: [hobby-servos, small-dc-motors, stepper-motors, belts-and-pulleys, linkages, flexures-and-living-hinges, mass-properties-and-measurement, beam-and-plate-stiffness, stability-and-tipping, gears]
-updated: 2026-09-23
+related: [hobby-servos, small-dc-motors, stepper-motors, belts-and-pulleys, linkages, flexures-and-living-hinges, mass-properties-and-measurement, beam-and-plate-stiffness, stability-and-tipping, gears, posable-figure-joints, rolling-contact-joints]
+updated: 2026-10-01
 ---
 
 # Arm and gripper sizing

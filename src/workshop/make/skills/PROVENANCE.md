@@ -1,5 +1,72 @@
 # Shared skill provenance
 
+## Resync to upstream `7e03fc2`: the joint catalogue, segmented axles, phrase-aware wiki search (2026-10-01)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `7e03fc2269ffbeb9f423cab348a3c699cbd69bde` (2026-10-01), resynced from
+  `b149710` — 4 upstream commits touching 41 files. Same three-way merge as
+  before: base the locked `b149710` bytes, one side the Workshop tree, the
+  other upstream `HEAD`. Only `wiki` moved upstream; `cad`,
+  `design-reference`, `electromechanical-integration`, `image-to-cad`,
+  `product-design` and `step-parts` came out byte-identical, and their locks
+  move to the new commit only. `make-round` is unchanged. Adoption is
+  unchanged too: `toy-archive` (changed upstream in this range) and the
+  reverse-engineering pair stay out.
+- **What upstream brought.** Twelve researched pages cover joints the
+  catalogue only named or did not have: `mechanisms/ball-and-socket-joints`,
+  `posable-figure-joints`, `rod-ends-and-clevises`, `hinge-types`,
+  `shaft-hub-connections`, `rolling-contact-joints`, `swivels-and-turntables`,
+  `telescoping-tubes-and-locks`, `scissor-and-pantograph-linkages` and
+  `bayonet-and-twist-locks`, `fasteners/push-pins-and-clip-fasteners`, and
+  `printing/interlocking-joinery-for-prints`. A thirteenth,
+  `mechanisms/joint-variant-index`, maps every variant to its section, and
+  `joints.md` names the kinematic pair before the form. `shaft-couplings`
+  gains CV and printed universal joints, `clutches-and-freewheels` dog and jaw
+  clutches, and `flexures-and-living-hinges` six more flexure forms.
+  `shafts-and-bearings` and `fdm-joining-split-prints` gain the segmented
+  axle: an axle longer than the bed splits at the pivots it carries, each
+  pivot pin printed lying on a D-flat that keys a D-socket, the flat cut where
+  the curve leaves at about 50° because a shallower one fails `check_overhang`
+  along the whole pin, and the sag computed with the section varying along
+  the span. Back-links are wired across 20 pages; 193 pages.
+- **Search.** `scripts/wiki` no longer lets a synonym member typed inside a
+  longer typed member call its own group, and keeps stop words out of concept
+  tokens: "split pin" had ranked parting lines first, "claw coupling"
+  grippers, and "knuckle joint" hinges. `synonyms.txt` gains the new
+  vocabulary. Upstream reports 4 of 76 sample queries changing their top page,
+  each to the right one; the new self-check fixtures fail on the old code.
+
+Merge: upstream changed only the `description` front matter of `wiki`'s
+`SKILL.md`, and Workshop's lines there (the `workshop skills path` command and
+the consult-only block) sit below it, so the merge was clean. Nothing needed
+adapting. The new pages cite `skills/cad/scripts/cadfits.py` (`slot_for`,
+`peg_for`, `mating_clearance`, `print_in_place_gap`), `cadprint.min_wall` and
+`shell_wall`, and `stdpart sizes` for `SetScrew`, `LockCollar`,
+`ExternalSnapRing`, `ShaftKey` and `ORing`. Every one resolves against the
+Workshop trees, and the existing `SKILL.md` note already reads a
+`skills/<name>/` path as the sibling Make skill.
+
+`toy-archive`'s change (`6d989fb`: `publish` refuses a black-on-white
+likeness mask as the Factory cover, because an image-derived `verify_project`
+writes its own `snap/iso.png`) is not taken; that publish wraps a host-only
+effect. Workshop's Factory handoff also uses the sealed `snap/iso.png` as the
+cover, but the Make proposal binds that file to the signature review's
+`iso_sha256`, so a mask written over the reviewed render fails the proposal
+instead of reaching Factory.
+
+Verified here: `verify_skill_locks` matches eight trees; `wiki --self-check`
+passes, including upstream's four new phrase and stop-word fixtures; and
+`wiki lint` reports 193 pages, 0 errors.
+
+Consequences for existing runs:
+
+- **Materialized instruction bytes changed.** The `wiki` fingerprint moves. A
+  run parked before this change must be restarted rather than resumed; resume
+  fails closed on the materialized-instruction-hash mismatch.
+  `workshop resume --refresh-tools` rewrites the skills a run already carries.
+- No gate reads the wiki, and `scripts/wiki` is the only script that changed.
+  A query whose top page moved now names the joint it asked for.
+
 ## Resync to upstream `b149710`: per-piece likeness, bought parts in 6h, print unions (2026-09-30)
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
