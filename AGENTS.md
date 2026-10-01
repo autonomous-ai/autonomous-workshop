@@ -231,6 +231,13 @@ agreeing review or a Component Acceptance locks the Component until a Shared
 Helper it imports changes or the Manager records an assembly unlock, and a
 rerun of the reviewed B-rep carries the review forward. A component packet
 binds only the Shared Helpers it imports, and a failed round is not rendered.
+ADR 0081's extension (issue #77) binds each Component's reviews to one proven
+Component Reviewer on Claude Code: a review names the reviewer's native agent
+id, the first review binds it, and Make acceptance refuses a review whose
+reviewer the guard did not see start as a `component-reviewer` or read every
+packet image. The Manager sends a fixed request (packet, hash, contract rows)
+once per packet and tells the worker only which round was reviewed. Codex
+keeps its earlier review rules until it exposes the same evidence.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

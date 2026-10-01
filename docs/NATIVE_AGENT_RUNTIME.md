@@ -1067,6 +1067,20 @@ component packet binds only the Component's own files and the Shared Helpers
 it imports, and a round that fails its checks is not rendered. Frozen runs
 keep their materialized `make_round`.
 
+A new Claude Code run also binds each Component's reviews to one proven
+Component Reviewer (ADR 0081, extended by issue #77). The guard is registered
+for `Read` and `SubagentStart` as well: it logs every subagent the runtime
+starts and every `Read` by a `component-reviewer`, with the agent id, the
+resolved path and the sha256 of the file, beside the nonce table in host
+state. The launcher sets `WORKSHOP_REVIEWER_RUNTIME=claude`, so
+`--record-review` requires the reviewer's 17-hex native agent id and binds a
+Component's first id. The checkpoint freezes `component_reviewer_binding`,
+and Make acceptance refuses a recorded review whose reviewer was not started
+as a `component-reviewer`, did not read every image of the reviewed packet
+with its exact bytes, or differs from the Component's earlier reviewer.
+Codex runs keep the free-text reviewer until Codex exposes equivalent
+subagent and read evidence.
+
 The Claude Code adapter reports native token usage to the host through the
 same per-turn contract as Codex: gross input and gross output, plus a
 cached-input, cache-write-input and reasoning-output detail that travels

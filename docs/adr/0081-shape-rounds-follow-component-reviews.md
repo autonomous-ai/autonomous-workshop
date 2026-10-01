@@ -9,9 +9,10 @@
   (`src/workshop/make/agents/component-worker.toml`)
 - Amends: ADR 0075 and ADR 0077 (how Shape Rounds are counted and what the
   cap does); ADR 0076 (when a Component Acceptance is recorded)
-- Extended by: spec B of issue #76's series (reviewer identity and the
-  Manager-reviewer channel) and spec C (Interfaces, which add an Interface
-  failure as a third unlock reason)
+- Extended by: spec B of issue #76's series (issue #77, reviewer identity
+  and the Manager-reviewer channel; see "Extension: one proven Component
+  Reviewer" below) and spec C (Interfaces, which add an Interface failure as
+  a third unlock reason)
 
 ## Context
 
@@ -140,6 +141,93 @@ guard tests cover `--record-unlock` as a root-only call, and
 (attempt 12) after specs A-C land, comparing total rounds, print-gate
 failures, time from a passing round to its review, tokens at assembly and
 Component Acceptances, needs the owner's go-ahead.
+
+## Extension: one proven Component Reviewer (issue #77)
+
+### Context
+
+In attempt 11 the review was not independent, and nothing could tell. The
+Manager asked reviewers to "re-review … taking into account …" and to
+"re-issue your chest-cage r0005 review with three changes", forwarded a
+review with "Ignore item 1", and spawned a fresh reviewer for most reviews
+although ADR 0077 keeps one thread per Component. `reviewer` was free text
+("component-reviewer", "<subagent name>"). The reviewer only reads images and
+returns text, so no hook saw which agent judged which packet. Reviewers also
+asked for detail that cannot print at that scale (1 mm rivets, 0.6-0.9 mm
+raised bands, sharp cones), one driver of 64 print-gate failures in 111
+rounds.
+
+### Decision
+
+1. **Reviewer id.** On a runtime that proves who reviewed, `reviewer` is the
+   native agent id the runtime returned when the reviewer was spawned. The
+   launcher names the runtime to `make_round` with
+   `WORKSHOP_REVIEWER_RUNTIME`; for Claude Code the id is 17 lowercase hex
+   characters. `--record-review` refuses any other value, binds the
+   Component's first id in its component state (`reviewer_id`, kept across
+   rounds) and refuses a review naming another id with a message naming the
+   bound one.
+2. **Evidence.** The make_round guard is also registered for `Read` and
+   `SubagentStart`. It appends every subagent start (`agent_id`,
+   `agent_type`, `session_id`) to `subagents.jsonl`, and every `Read` by a
+   `component-reviewer` (`agent_id`, `agent_type`, resolved path, sha256 of
+   the file when the hook runs) to `reviewer-reads.jsonl`, both beside the
+   nonce table in host state, outside the workspace. It never denies a read
+   or a spawn.
+3. **Host verification.** The check that admits worker nonces also checks,
+   for every review recorded on a worker's round (a review carried forward
+   is judged on its original round; a summary the revision source sealed
+   keeps its evidence): the id has the runtime's format; the subagent log
+   started it as a `component-reviewer`; the read log shows it read every
+   image of that round's packet (front, top, iso and each `compare-NN.png`)
+   with the packet's hashes; and every review of the Component names the same
+   id. Any failure refuses the Make output like an unissued nonce; an
+   unreadable log is a host-state conflict.
+4. **Fixed channel.** The review request is the packet path, its sha256 and
+   the Component's contract rows, nothing else, sent once per packet to the
+   Component's one reviewer thread. The Manager writes the answer unchanged,
+   never asks for a second review of a packet (one review per packet is
+   already enforced) and never edits, filters or summarizes it. It tells the
+   worker only "review recorded for round N"; the worker reads `review.json`
+   in that round.
+5. **Printable repairs.** The reviewer definition explains the print stance
+   (a rotation the stance explains is not a difference) and the printing
+   limits at the run's nozzle, citing the wiki pages they come from
+   (`wall-thickness-and-hollowing`, `fdm-minimum-feature-sizes`,
+   `overhangs-and-print-orientation`). Repairs stay within them; the
+   agree/disagree judgement is still form against the reference (ADR 0076).
+6. **Scope.** The checkpoint freezes `component_reviewer_binding` for new
+   Claude Code runs with the guard. Codex runs keep the free-text reviewer
+   and no read evidence until Codex exposes equivalent subagent and read
+   evidence; Grok has no guard. Frozen runs keep their materialized hook,
+   tool and definitions; an older guard ignores the new events.
+
+### Consequences
+
+- "Independent review" in the run report rests on host evidence: an agent
+  the runtime started as the Component Reviewer read the exact images.
+- The Manager can still type any id; the host check against the subagent and
+  read logs is what makes the binding hold. Like the nonce table, the logs
+  are tamper-resistant, not tamper-proof, on Claude Code.
+- A reviewer that judges from a summary, or a review re-issued by a new
+  agent, is refused at Make acceptance and must be redone by the bound
+  reviewer on a fresh round.
+- The `SubagentStart` hook input (`agent_id`, `agent_type`) is taken from
+  Claude Code's documented hook contract and its 2.1.286 binary; a live run
+  must confirm it, together with the `Read` hook from a subagent.
+
+### Verification
+
+`make_round` tests cover a refused non-id reviewer, the first id binding, a
+second id refused and the same id accepted, and the free-text path without a
+runtime. Guard tests cover a reviewer `Read` logged with id, type, path and
+hash, reads by other agents or the root not logged, a subagent start logged,
+and both logs written beside the script rather than in the workspace. Host
+tests cover a pass and refusals for an id with no start record, another
+agent type, a missed image, other bytes, a second reviewer, a non-id and a
+changed packet, and an unreadable log as a host conflict. Launcher and
+checkpoint tests cover the hook registration, the environment and the frozen
+binding.
 
 ## Rejected alternatives
 
