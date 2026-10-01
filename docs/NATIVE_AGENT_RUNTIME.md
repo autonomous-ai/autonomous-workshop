@@ -1081,6 +1081,24 @@ with its exact bytes, or differs from the Component's earlier reviewer.
 Codex runs keep the free-text reviewer until Codex exposes equivalent
 subagent and read evidence.
 
+A new run whose sealed Design Contract has an Interfaces section (ADR 0082)
+also proves the meetings between Components before assembly. The Workshop
+Manager builds samples of the Shared Helpers under `samples/` and runs
+`make_round --shared-helpers`; a pass freezes the helpers by hash, component
+rounds refuse to start before that freeze, and each later component round
+reports a frozen helper it imports that changed, with every Component that
+imports it. A component round of a separable Interface checks its Keep-out
+Envelope with `check_envelope`. `make_round --interface <id>` runs the
+coupled motion check of one Coupled Interface on its locked Components only;
+a failure unlocks the contract's yielding Component with the check's
+evidence, and `--require-component-passes` and the final verifier require a
+current passing check of every Coupled Interface. The guard admits both
+modes from the root alone. The final verifier lists each Interface with its
+proof in `component-acceptance.json`; the Make finalizer copies the list
+into `product.json`, and the host seals it into its Make receipt and the run
+report. Contracts without the section and frozen runs keep the earlier
+protocol.
+
 The Claude Code adapter reports native token usage to the host through the
 same per-turn contract as Codex: gross input and gross output, plus a
 cached-input, cache-write-input and reasoning-output detail that travels

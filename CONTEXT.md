@@ -231,12 +231,13 @@ Rounds (ADR 0081).
 _Avoid_: Attempt, iteration
 
 **Component Worker**:
-A short-lived agent that authors one Component's own source, repairs it until
-it builds and passes its print gates, then applies its Component Reviewer's
-text as Shape Rounds. It sees only that Component's inputs, including its
-sealed reference image, but never the Component's rendered rounds, and never
-edits a shared helper. Only a Component Worker runs a Component's rounds. Its
-context is discarded when the Component is done.
+The agent that authors one Component's own source, repairs it until it builds
+and passes its print gates, then applies its Component Reviewer's text as
+Shape Rounds. It sees only that Component's inputs, including its sealed
+reference image, but never the Component's rendered rounds, and never edits a
+Shared Helper. Only a Component Worker runs a Component's rounds. Its context
+lives until the assembly passes, so an unlock returns to the worker that
+already knows the Component.
 _Avoid_: Builder, sub-Manager, part agent
 
 **Component Reviewer**:
@@ -251,6 +252,43 @@ A Component Review that disagreed after the Component used all its Shape
 Rounds, recorded instead of repaired again and reported to the person when
 the run ends. It is never the person's decision.
 _Avoid_: Waiver, override, Stalled Out
+
+**Shared Helper**:
+A project file two or more Components import because they must agree on what
+it holds: an Interface's values, a joint section or a standard profile. Each
+value cites the design wiki page it came from and carries that page's assert;
+a gear or other standard element comes from the toolchain's libraries. A
+Component's own geometry, print stance and dimensions never live in one. The
+Workshop Manager writes it, tests it on built samples, and freezes it before
+any Component Worker starts.
+_Avoid_: Shared file, common code, utils
+
+**Interface**:
+One place where two or more Components meet, recorded in the Design Contract
+with its Interface Kind and the Components it joins. Interfaces are how a
+toy's Components are built in isolation and still fit.
+_Avoid_: Joint (a joint is one kind of Interface), connection, mating
+
+**Interface Kind**:
+How an Interface is proven: static (parts that sit together, proven by the
+Shared Helper samples), separable (proven by a Keep-out Envelope in each
+side's own rounds) or coupled (proven by a Coupled Interface check).
+
+**Keep-out Envelope**:
+A simple solid in assembly coordinates, one per declared pose or a single
+static one, that one Component of a separable Interface stays inside and the
+other stays outside. Each side is checked in its own Component rounds, so
+either can be repaired without touching the other. It is sufficient, not
+necessary: anything that needs contact or shares space over time is coupled.
+_Avoid_: Clearance box, bounding box
+
+**Coupled Interface**:
+An Interface whose Components must move together or pass through the same
+space at different times: gears, cams, linkages. It is checked on its locked
+Components alone by the coupled motion check over its pose table. On failure
+the Design Contract's yielding Component is unlocked and repairs, and that
+repair is not a Shape Round.
+_Avoid_: Mechanism check, mesh check
 
 **Unique Geometry**:
 One distinct shape in a Design Contract, shared by every Component built to it.

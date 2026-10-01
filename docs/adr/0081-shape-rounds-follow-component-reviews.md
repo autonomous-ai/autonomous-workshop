@@ -12,7 +12,7 @@
 - Extended by: spec B of issue #76's series (issue #77, reviewer identity
   and the Manager-reviewer channel; see "Extension: one proven Component
   Reviewer" below) and spec C (Interfaces, which add an Interface failure as
-  a third unlock reason)
+  a third unlock reason; ADR 0082)
 
 ## Context
 
