@@ -854,6 +854,10 @@ def contract_reference_labels(wish: dict) -> dict:
     contract's ``shows`` field (``"assembly"`` or ``"geometry:<id>"``) instead
     of the sealed file's stem, since that is the vocabulary the contract and
     its review share.
+
+    Runs sealed before the host kept a contract name intact hold
+    ``ref-01-x.png`` as ``ref-01-ref-01-x.png``: the place prefix doubled,
+    and only for the image's own place. That name maps to the same label.
     """
 
     context = wish.get("context") if isinstance(wish, dict) else None
@@ -863,7 +867,10 @@ def contract_reference_labels(wish: dict) -> dict:
     labels = {}
     for reference in contract.get("references") or ():
         if isinstance(reference, dict) and isinstance(reference.get("file"), str) and isinstance(reference.get("shows"), str):
-            labels[reference["file"]] = reference["shows"]
+            name = reference["file"]
+            labels[name] = reference["shows"]
+            if SEALED_NAME.fullmatch(name):
+                labels.setdefault(name[:len("ref-01-")] + name, reference["shows"])
     return labels
 
 
