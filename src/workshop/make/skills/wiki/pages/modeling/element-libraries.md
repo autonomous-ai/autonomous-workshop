@@ -1,13 +1,13 @@
 ---
 title: Gear and standard-element libraries
 tags: [gear, library, bd-warehouse, py-gearworks, cadquery, backlash, mesh-to, bevel]
-aliases: [bd_warehouse, py_gearworks, SpurGear, mesh_to, cq_gears, cq-electronics, gear library]
+aliases: [bd_warehouse, py_gearworks, SpurGear, mesh_to, cq_gears, cq-electronics, cq-gridfinity, gridfinity, argus-diff, dl4to4ocp, topology optimisation, gear library]
 sources:
   - skills/cad/references/standard-elements.md (gear-library and unreachable-library sections; before the move)
   - skills/cad/scripts/stdpart --self-check (asserts the backlash behaviour below)
   - "toolchain: build123d with cadquery-ocp 7.9; measured on an m1.5 12/23 pair"
 related: [gears, operation-families]
-updated: 2026-09-23
+updated: 2026-10-01
 ---
 
 # Gear and standard-element libraries
@@ -121,7 +121,11 @@ from a build123d toolchain pinned to `cadquery-ocp` 7.9:
 | library | why not |
 |---|---|
 | `cq-electronics` (PCBs, headers, Raspberry Pi boards) | pins `cadquery-ocp==7.7.2`; installing it would downgrade the kernel build123d runs on. Use `$step-parts` for boards and connectors. |
-| `cq_gears`, `cq-kit`, `cadquery-plugins` | not published on PyPI, and CadQuery-only. `py_gearworks` covers the gear types `cq_gears` has except worm. |
+| `cq_gears`, `cadquery-plugins` | not published on PyPI, and CadQuery-only. `py_gearworks` covers the gear types `cq_gears` has except worm. |
+| `cq-kit` (PyPI `cqkit`) | CadQuery-only selector and export helpers; build123d's selectors and filters already do this. |
+| `cq-gridfinity` (PyPI `cqgridfinity`) | requires `cadquery` and `cqkit`. Gridfinity bins and baseplates are a short published profile (42 mm pitch, 7 mm height unit), so author them in build123d from that spec. |
+| `argus-diff` (STEP revision diff) | requires `cadquery`. `step_verify` already measures one solid against another, and `interfere` covers clashes. If you need a multi-body diff between two revisions, the idea worth copying is matching bodies by a fingerprint (volume, area, centre of mass, bbox, principal moments), not installing the package. |
+| `dl4to4ocp` (topology optimisation) | vendors `dl4to`, which pins `torch==1.12` and ships its requirements as a conda export. Its result is a voxel field, so it gives no parametric source. |
 | `cadquery` itself | installs cleanly beside build123d, but drags in ~26 packages (numba, llvmlite, casadi, trame) for a kernel no generator here uses. |
 
 If a CadQuery-only library is genuinely the only source for a part, that is a

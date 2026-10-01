@@ -1,5 +1,50 @@
 # Shared skill provenance
 
+## Resync to upstream `db26c4e`: four more CadQuery libraries ruled out (2026-10-01)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `db26c4e38748d1affe67da62ab97a0c4943069b1` (2026-10-01), resynced from
+  `7e03fc2`. That is one upstream commit touching one file. The merge is the
+  same three-way merge as before: the base is the locked `7e03fc2` bytes, one
+  side is the Workshop tree and the other is upstream `HEAD`. Only `wiki`
+  moved. Its `modeling/element-libraries.md` was byte-identical to the
+  `7e03fc2` base here, so it takes upstream's bytes unchanged. `cad`,
+  `design-reference`, `electromechanical-integration`, `image-to-cad`,
+  `product-design` and `step-parts` did not change, and their locks move to
+  the new commit only. `make-round` is unchanged. Adoption is unchanged too:
+  `toy-archive` and the reverse-engineering pair stay out.
+- **What upstream brought.** The table "CadQuery libraries that do not apply"
+  gains three rows and corrects a fourth. `cq-gridfinity` needs `cadquery` and
+  `cqkit`, so author Gridfinity bins in build123d from the published profile
+  (42 mm pitch, 7 mm height unit). `argus-diff` needs `cadquery`; the idea
+  worth keeping is to match bodies by a fingerprint of volume, area, centre of
+  mass, bbox and principal moments. `dl4to4ocp` pins `torch==1.12` and
+  produces a voxel field with no parametric source. `cq-kit` was listed as
+  missing from PyPI, which was wrong: it is published as `cqkit`. It now has
+  its own row, which says it is CadQuery-only and that build123d's selectors
+  already cover it. The page's aliases gain the new names, so
+  `search gridfinity` and `search argus-diff` both rank this section first.
+
+Merge: the page carries no Workshop-local lines, so nothing needed merging.
+The `argus-diff` row names two tools. `interfere` resolves to the `cad`
+skill's `scripts/inspect interfere`. `step_verify` is a script in upstream's
+`step-to-source`, which Workshop does not adopt. The row still holds without
+it, because it only explains why not to install a package and `interfere`
+already covers clashes. The wiki `SKILL.md` note on `step-to-source`
+mentions only `reverse-engineering/` pages, and this row is not on one. It
+is left as upstream wrote it, not adapted locally.
+
+Verified here: `verify_skill_locks` matches eight trees, `wiki --self-check`
+passes and `wiki lint` reports 193 pages with 0 errors.
+
+Consequences for existing runs:
+
+- **Materialized instruction bytes changed.** The `wiki` fingerprint moves. A
+  run parked before this change must be restarted rather than resumed; resume
+  fails closed on the materialized-instruction-hash mismatch.
+  `workshop resume --refresh-tools` rewrites the skills a run already carries.
+- No gate reads the wiki, and no script changed.
+
 ## Resync to upstream `7e03fc2`: the joint catalogue, segmented axles, phrase-aware wiki search (2026-10-01)
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
