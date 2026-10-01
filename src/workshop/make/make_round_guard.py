@@ -12,8 +12,10 @@ and subagents alike. The runtime names the calling subagent in the hook input
   ``--worker-nonce``. make_round records the nonce in the round, and the host
   refuses a Make proposal holding a Component round whose nonce it did not
   issue to a worker for that Component.
-- ``--record-review``, ``--record-unlock`` (ADR 0081), ``--record-visual``
-  and assembly rounds run only from the root Workshop Manager.
+- ``--record-review``, ``--record-unlock`` (ADR 0081), ``--record-visual``,
+  assembly rounds, and the checks that span Components -- the Shared Helper
+  check ``--shared-helpers`` and the Coupled Interface check ``--interface``
+  (ADR 0082) -- run only from the root Workshop Manager.
 
 On Claude Code the same script also keeps the evidence that binds a Component
 Review to its reviewer (ADR 0081, issue #77). It is registered for ``Read``
@@ -58,8 +60,9 @@ _WRAPPERS = frozenset({"exec", "nohup", "time", "command", "builtin"})
 # The script name at the end of its token. The nonce goes right after it,
 # before the call's own arguments; the rewrite is re-parsed before it is used.
 _SCRIPT_TOKEN = re.compile(r"make_round(?=[\s;&|)\"']|$)")
-# A record about a Component that builds nothing; only the root makes one.
-_ROOT_RECORDS = ("--record-review", "--record-unlock")
+# A record about a Component that builds nothing, or a check that spans
+# Components (ADR 0082); only the root makes one.
+_ROOT_RECORDS = ("--record-review", "--record-unlock", "--shared-helpers", "--interface")
 
 Issuer = Callable[[Mapping[str, Any], str], str]
 
@@ -222,7 +225,8 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
     if not is_root:
         return _deny(
             "only the Workshop Manager records a Component Review or an "
-            "assembly unlock, runs an assembly round or records assembly feedback"
+            "assembly unlock, runs an assembly round, the Shared Helper check or "
+            "an Interface check, or records assembly feedback"
         )
     return None
 

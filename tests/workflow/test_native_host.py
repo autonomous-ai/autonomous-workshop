@@ -53,7 +53,9 @@ from workshop.workflow.native_run import (
     _likeness_acceptance_history,
     _made_likeness_acceptances,
     _component_acceptance_history,
+    _interface_history,
     _made_component_acceptances,
+    _made_interfaces,
     _verify_make_round_workers,
     _playtest_score_history,
     _record_playtest_evidence,
@@ -3491,6 +3493,48 @@ class NativeHostTest(unittest.TestCase):
             with self.subTest(bad=bad if not isinstance(bad, list) or len(bad) < 5 else "65 items"):
                 with self.assertRaises(ContractError):
                     _made_component_acceptances({"component_acceptances": bad})
+
+    INTERFACES = [
+        {"id": "wing-housing", "kind": "separable", "components": ["wing", "spine-housing"],
+         "check": "keep-out-envelope"},
+        {"id": "pinion-sector", "kind": "coupled", "components": ["heart-core", "wing"],
+         "check": "pass", "round": 2, "yielding": "wing"},
+    ]
+
+    def test_made_interfaces_are_validated_before_the_host_seals_them(self):
+        # ADR 0082: a Coupled Interface is reported only with a passing check.
+        self.assertEqual(_made_interfaces({"title": "t"}), [])
+        self.assertEqual(_made_interfaces({"interfaces": self.INTERFACES}), self.INTERFACES)
+        coupled = self.INTERFACES[1]
+        for bad in (
+            "nope",
+            [dict(coupled, check="stale")],
+            [dict(coupled, kind="welded")],
+            [dict(coupled, components=["wing"])],
+            [dict(coupled, yielding="tail")],
+            [dict(coupled, round=0)],
+            [{k: v for k, v in coupled.items() if k != "yielding"}],
+            [dict(self.INTERFACES[0], round=1)],
+            [coupled, coupled],
+        ):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ContractError):
+                    _made_interfaces({"interfaces": bad})
+
+    def test_interfaces_are_read_from_the_latest_make_gate_receipt(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary).resolve()
+            self.assertEqual(_interface_history(host), [])
+            gates = host / "gates"
+            gates.mkdir()
+            (gates / "0003-make.json").write_text(json.dumps(
+                {"evidence": {"checks": {"interfaces": self.INTERFACES}}}), encoding="utf-8")
+            self.assertEqual(_interface_history(host), self.INTERFACES)
+            self.assertEqual(_component_acceptance_history(host), [])
+            (gates / "0005-make.json").write_text(json.dumps(
+                {"evidence": {"checks": {"interfaces": {"id": "x"}}}}), encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "malformed: 0005-make.json"):
+                _interface_history(host)
 
     def test_repair_base_names_the_best_sealed_round_only_when_the_last_is_worse(self):
         with tempfile.TemporaryDirectory() as temporary:

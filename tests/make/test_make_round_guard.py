@@ -124,6 +124,21 @@ class DecideTest(unittest.TestCase):
                 output = decide(_event(command, agent_type), issue=_Issuer())
                 self.assertEqual(_decision(output), "deny", (command, agent_type))
 
+    def test_the_checks_that_span_components_are_root_only(self):
+        # ADR 0082: the Shared Helper check and an Interface check.
+        helpers = SCRIPT + " cad --shared-helpers"
+        interface = SCRIPT + " cad --interface pinion-sector"
+        # A worker naming its own Component does not turn either into its round.
+        smuggled = COMPONENT + " --interface=pinion-sector"
+        for command in (helpers, interface, smuggled):
+            self.assertIsNone(decide(_event(command), issue=_Issuer()), command)
+            for agent_type in ("component-worker", "component-reviewer", "rowan-vale"):
+                issuer = _Issuer()
+                output = decide(_event(command, agent_type), issue=issuer)
+                self.assertEqual(_decision(output), "deny", (command, agent_type))
+                self.assertIn("Interface check", output["hookSpecificOutput"]["permissionDecisionReason"])
+                self.assertEqual(issuer.issued, [])
+
     def test_a_caller_supplied_nonce_is_refused(self):
         for agent_type in (None, "component-worker"):
             output = decide(

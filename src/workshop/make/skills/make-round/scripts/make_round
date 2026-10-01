@@ -6,6 +6,7 @@
                [--nozzle 0.4] [--overhang-angle 45] [--all-parts] [--no-motion]
                [--full] [--out DIR] [--json] [--record-visual FEEDBACK.json]
                [--record-review REVIEW.json] [--record-unlock UNLOCK.json]
+               [--shared-helpers] [--interface ID]
                [--worker-nonce HEX] [--self-check]
 
 Every verdict comes from the original cad tools, run unchanged; this script
@@ -37,6 +38,18 @@ Manager's --record-visual, the blind review and --full.
 In a run with the make_round guard (ADR 0080) only a Component Worker runs a
 component round: the guard hook passes --worker-nonce, the round records it,
 and the host refuses a component round whose nonce it did not issue.
+
+When the sealed Design Contract has an Interfaces section (ADR 0082), the
+Workshop Manager first runs --shared-helpers: it builds the samples under
+samples/ and runs the print gates on them, and a pass freezes the Shared
+Helpers by hash. Component rounds refuse to start before that freeze and
+report every frozen helper they import that has changed since, with the
+Components that import it. A component round of a separable Interface also
+checks its Keep-out Envelope. --interface ID runs the coupled motion check of
+one Coupled Interface on its locked Components; a failure unlocks the
+contract's yielding Component, and assembly rounds with
+--require-component-passes need a current passing check of every Coupled
+Interface. Only the Workshop Manager runs those two modes.
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
@@ -86,6 +99,17 @@ MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
 REVIEWER_RUNTIME_ENV = "WORKSHOP_REVIEWER_RUNTIME"
 REVIEWER_ID_FORMATS = {"claude": (re.compile(r"[0-9a-f]{17}"), "17 lowercase hex characters")}
 _GEOMETRY_DEADLINES = {}
+# Interfaces between Components (ADR 0082).
+SAMPLES_DIR = "samples"
+HELPER_ROUNDS_DIR = "helper-rounds"
+HELPER_FREEZE_NAME = "shared-helpers-freeze.json"
+HELPER_FREEZE_LOG = "shared-helper-freezes.jsonl"
+INTERFACE_ROUNDS_DIR = "interface-rounds"
+COUPLED = "coupled"
+SEPARABLE = "separable"
+# Directories that hold no Shared Helper: evidence, caches and the samples.
+NOT_HELPERS = frozenset({"measure", "rounds", "snap", "review", "ref", SAMPLES_DIR,
+                         "__cadgen__", "__pycache__", ".git", ".venv"})
 
 
 def file_hash(path):
@@ -846,8 +870,18 @@ def render_summary(summary: dict) -> str:
         for item in summary.get("unlock") or []:
             if item.get("kind") == "shared-helper":
                 lines.append("  unlock imported Shared Helper changed: %s" % ", ".join(item["paths"]))
+            elif item.get("kind") == "interface":
+                lines.append("  unlock interface %s r%04d: %s" % (item.get("interface"), item.get("interface_round", 0),
+                                                                item.get("reason", "")[:160]))
             else:
                 lines.append("  unlock %s r%04d: %s" % (item.get("kind"), item.get("assembly_round", 0), item.get("reason", "")[:160]))
+        frozen = summary.get("helper_freeze") or {}
+        for path in frozen.get("changed") or []:
+            lines.append("  frozen %s changed since the freeze of r%04d; imported by %s; the Manager reruns "
+                         "--shared-helpers" % (path, frozen.get("round") or 0,
+                                               ", ".join(frozen["affected"].get(path, [])) or "no Component"))
+        for interface_id, item in (summary.get("envelopes") or {}).items():
+            lines.append("  keep  %-4s %-14s %s: %s" % (item["verdict"], interface_id, item["role"], item["detail"][:120]))
         locked = summary.get("locked")
         if locked:
             lines.append("  lock  LOCKED by the %s of r%04d; change the geometry only after an unlock" % (
@@ -891,11 +925,11 @@ def render_summary(summary: dict) -> str:
 # running the tools
 
 
-def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS) -> subprocess.CompletedProcess:
+def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS, extra_env=None) -> subprocess.CompletedProcess:
     started = time.monotonic()
     name = Path(command[1]).name if len(command) > 1 else ""
-    analysis = name in {"check_thickness", "check_overhang", "check_motion", "check_mesh"}
-    environment = {**os.environ, "CADGEN_WARM": "0"}
+    analysis = name in {"check_thickness", "check_overhang", "check_motion", "check_mesh", "check_envelope"}
+    environment = {**os.environ, "CADGEN_WARM": "0", **(extra_env or {})}
     if analysis:
         budget = float(environment.get("WORKSHOP_GEOMETRY_TIMEOUT", "600"))
         if not 0 < budget <= 86400:
@@ -1509,6 +1543,493 @@ def record_unlock(project: Path, unlock_path, component: str) -> dict:
     return unlock
 
 
+# ---------------------------------------------------------------------------
+# Interfaces between Components (ADR 0082): the Shared Helper freeze, Keep-out
+# Envelopes and Coupled Interface checks. Only the round mechanics live here;
+# every verdict comes from the print gates, check_envelope and check_motion.
+
+
+def contract_interfaces(project: Path) -> tuple[list | None, str | None]:
+    """``(interfaces, error)`` from the sealed Design Contract.
+
+    ``interfaces`` is None when the run has no contract or its contract has no
+    Interfaces section (schema 1, or a run sealed before ADR 0082): such runs
+    keep the protocol without a freeze. An unreadable Wish is an error.
+    """
+
+    root = run_root(project)
+    if root is None:
+        return None, None
+    try:
+        wish = json.loads((root / "WISH.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return None, "WISH.json unreadable: %s" % exc
+    context = wish.get("context") if isinstance(wish, dict) else None
+    contract = context.get("design_contract") if isinstance(context, dict) else None
+    if not isinstance(contract, dict) or "interfaces" not in contract:
+        return None, None
+    interfaces = contract["interfaces"]
+    if not isinstance(interfaces, list) or not all(
+            isinstance(item, dict) and isinstance(item.get("id"), str) for item in interfaces):
+        return None, "the sealed contract's interfaces are invalid"
+    return interfaces, None
+
+
+def shared_helpers(project: Path) -> dict[str, str]:
+    """Project-relative path -> sha256 of every Shared Helper: each importable
+    project-local ``.py`` module that is not an entry, a sample or evidence."""
+
+    project = project.resolve()
+    found = {}
+    for path in sorted(project.rglob("*.py")):
+        relative = path.relative_to(project)
+        if path.name.endswith(".step.py") or any(part in NOT_HELPERS for part in relative.parts[:-1]):
+            continue
+        if path.is_file():
+            found[relative.as_posix()] = file_hash(path)
+    return found
+
+
+def helper_importers(project: Path) -> dict[str, list[str]]:
+    """Shared Helper path -> the Components whose source imports it."""
+
+    importers: dict[str, list[str]] = {}
+    for source in sorted(project.glob("part_*.step.py")):
+        role = source.name[len("part_"):-len(".step.py")]
+        for path in imported_helpers(project, source):
+            importers.setdefault(path, []).append(role)
+    return importers
+
+
+def read_freeze(project: Path) -> dict | None:
+    try:
+        record = json.loads((project / "measure" / HELPER_FREEZE_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return record if isinstance(record, dict) and isinstance(record.get("helpers"), dict) else None
+
+
+def freeze_report(project: Path, freeze: dict, helpers: dict[str, str]) -> dict:
+    """What changed in the Shared Helpers one Component imports since the
+    freeze, and every Component that imports each changed file (ADR 0082).
+    Detection only: the round policy's import-scoped unlock acts on it."""
+
+    frozen = freeze["helpers"]
+    changed = sorted(path for path, digest in helpers.items() if frozen.get(path) != digest)
+    importers = helper_importers(project) if changed else {}
+    return {"round": freeze.get("round"), "changed": changed,
+            "affected": {path: importers.get(path, []) for path in changed}}
+
+
+def shared_helper_check(project: Path, args, cad: Path) -> int:
+    """Build the Manager's samples under samples/, run both print gates on
+    each, and freeze the Shared Helpers when every sample passes."""
+
+    interfaces, error = contract_interfaces(project)
+    if error is not None:
+        print("make_round: %s" % error, file=sys.stderr)
+        return 2
+    samples = sorted((project / SAMPLES_DIR).glob("*.step.py")) if (project / SAMPLES_DIR).is_dir() else []
+    if interfaces and not samples:
+        print("make_round: the contract has Interfaces but %s/ holds no sample <name>.step.py; build each "
+              "joint section, gear pair or standard profile there from the Shared Helpers" % SAMPLES_DIR,
+              file=sys.stderr)
+        return 2
+    measure = project / "measure"
+    root = measure / HELPER_ROUNDS_DIR
+    root.mkdir(parents=True, exist_ok=True)
+    state_path = root / STATE_NAME
+    state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
+    number = int(state.get("round", 0)) + 1
+    out = root / ("r%04d" % number)
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+    before = shared_helpers(project)
+    # A sample sits in samples/ and imports the Shared Helpers from the project.
+    path_env = {"PYTHONPATH": os.pathsep.join(filter(None, [str(project), os.environ.get("PYTHONPATH")]))}
+    python = sys.executable
+    results = {}
+    for sample in samples:
+        name = sample.name[:-len(".step.py")]
+        imported = imported_helpers(project, sample)
+        item = {"source_sha256": file_hash(sample), "imports": sorted(imported)}
+        if not imported:
+            item.update(verdict="FAIL", failures=["imports no Shared Helper; a sample tests the helpers it imports"])
+            results[name] = item
+            continue
+        done = run([python, str(cad / "gen"), str(sample), "--write", "--json"], cwd=project,
+                   log=out / ("gen-%s.log" % name), extra_env=path_env)
+        build = parse_build(done.stdout, done.stderr, done.returncode)
+        if build["verdict"] == "PASS" and not sample.with_name(sample.name[:-len(".py")]).is_file():
+            build = {"verdict": "FAIL", "failures": ["gen reported success but wrote no STEP"]}
+        item["build"] = build
+        if build["verdict"] != "PASS":
+            item.update(verdict="FAIL", failures=build["failures"])
+            results[name] = item
+            continue
+        gates = {}
+        for gate, extra in (("thickness", ["--nozzle", str(args.nozzle)]),
+                            ("overhang", ["--angle", str(args.overhang_angle)])):
+            done = run([python, str(cad / ("check_" + gate)), str(sample), *extra,
+                        "--report", str(out / ("%s-%s.md" % (gate, name)))],
+                       cwd=project, log=out / ("%s-%s.log" % (gate, name)), extra_env=path_env)
+            parsed = (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout)
+            if done.returncode not in (0, 1):
+                # A gate that could not measure never passes a sample.
+                parsed["verdict"] = "FAIL"
+                parsed["failures"] = (["check_%s exit %d" % (gate, done.returncode)] + parsed["failures"])[:4]
+            gates[gate] = parsed
+        item.update(gates)
+        failures = [f for gate in gates.values() if gate["verdict"] != "PASS" for f in gate["failures"]]
+        item.update(verdict="PASS" if all(g["verdict"] == "PASS" for g in gates.values()) else "FAIL",
+                    failures=failures[:4])
+        results[name] = item
+    after = shared_helpers(project)
+    errors = [] if before == after else ["the Shared Helpers changed while their samples were checked"]
+    ok = not errors and all(item["verdict"] == "PASS" for item in results.values())
+    previous = read_freeze(project)
+    summary = {"round": number, "scope": "shared-helpers", "project": str(project), "samples": results,
+               "helpers": after, "errors": errors, "ok": ok, "frozen": False, "out": str(out),
+               "nozzle": args.nozzle, "overhang_angle": args.overhang_angle}
+    if ok:
+        changed = sorted(path for path in set(after) | set((previous or {}).get("helpers", {}))
+                         if after.get(path) != (previous or {}).get("helpers", {}).get(path))
+        importers = helper_importers(project)
+        freeze = {"schema_version": 1, "round": number, "helpers": after,
+                  "samples": {name: item["source_sha256"] for name, item in results.items()},
+                  "summary_sha256": None}
+        event = {"round": number, "refreeze_of": (previous or {}).get("round"),
+                 "changed": changed if previous is not None else [],
+                 "affected": {path: importers.get(path, []) for path in changed} if previous is not None else {}}
+        summary.update(frozen=True, freeze_event=event)
+    (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    if ok:
+        freeze["summary_sha256"] = file_hash(out / "summary.json")
+        (measure / HELPER_FREEZE_NAME).write_text(json.dumps(freeze, indent=1, sort_keys=True) + "\n",
+                                                  encoding="utf-8")
+        with (measure / HELPER_FREEZE_LOG).open("a", encoding="utf-8") as ledger:
+            ledger.write(json.dumps(event, sort_keys=True) + "\n")
+    state_path.write_text(json.dumps({"round": number, "last_out": str(out), "ok": ok}, indent=1) + "\n",
+                          encoding="utf-8")
+    print(json.dumps(summary, sort_keys=True) if args.json else render_helper_summary(summary))
+    return 0 if ok else 1
+
+
+def render_helper_summary(summary: dict) -> str:
+    lines = ["make_round r%04d  shared-helpers  %s  %d sample(s)"
+             % (summary["round"], summary["project"], len(summary["samples"]))]
+    for name, item in summary["samples"].items():
+        why = ("  " + "; ".join(item["failures"])) if item["verdict"] != "PASS" and item["failures"] else ""
+        lines.append("  sample %-4s %-24s imports %s%s" % (item["verdict"], name, ", ".join(item["imports"]) or "-", why))
+    for error in summary["errors"]:
+        lines.append("  error %s" % error)
+    if summary["frozen"]:
+        event = summary["freeze_event"]
+        lines.append("  freeze %d Shared Helper(s) frozen at r%04d" % (len(summary["helpers"]), summary["round"]))
+        for path in event["changed"]:
+            lines.append("  refreeze %s changed since r%04d; imported by %s"
+                         % (path, event["refreeze_of"], ", ".join(event["affected"].get(path, [])) or "no Component"))
+    lines.append("  %s  reports under %s" % ("PASS" if summary["ok"] else "FAIL", summary["out"]))
+    return "\n".join(lines)
+
+
+def separable_roles(interfaces: list, role: str) -> list[tuple[dict, str]]:
+    """``(interface, "inside"|"outside")`` for each separable Interface this
+    Component keeps a Keep-out Envelope with."""
+
+    found = []
+    for item in interfaces or ():
+        envelope = item.get("envelope") if item.get("kind") == SEPARABLE else None
+        if isinstance(envelope, dict):
+            for side in ("inside", "outside"):
+                if envelope.get(side) == role:
+                    found.append((item, side))
+    return found
+
+
+def parse_envelope(stdout: str, returncode: int) -> dict:
+    """A check_envelope result; anything but a complete PASS fails."""
+
+    try:
+        payload = json.loads((stdout or "").strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        payload = None
+    if not isinstance(payload, dict) or not isinstance(payload.get("ok"), bool):
+        return {"verdict": "FAIL", "poses": [], "detail": "check_envelope exit %d without a result" % returncode}
+    verdict = "PASS" if payload["ok"] and returncode == 0 else "FAIL"
+    return {"verdict": verdict, "poses": payload.get("poses") or [], "detail": str(payload.get("detail", ""))[:300]}
+
+
+def check_envelopes(project: Path, role: str, part: Path, out: Path, interfaces: list) -> dict:
+    """Run check_envelope for every separable Interface this Component joins."""
+
+    results = {}
+    for item, side in separable_roles(interfaces, role):
+        envelope_path = out / ("envelope-%s.json" % item["id"])
+        envelope_path.write_text(json.dumps(item["envelope"], sort_keys=True) + "\n", encoding="utf-8")
+        done = run([sys.executable, str(Path(__file__).resolve().parent / "check_envelope"), str(part),
+                    "--envelope", str(envelope_path), "--role", side, "--json"],
+                   cwd=project, log=out / ("envelope-%s.log" % item["id"]))
+        results[item["id"]] = {"role": side, **parse_envelope(done.stdout, done.returncode)}
+    return results
+
+
+def interface_state_path(project: Path, interface_id: str) -> Path:
+    return project / "measure" / INTERFACE_ROUNDS_DIR / interface_id / STATE_NAME
+
+
+def component_identity(project: Path, role: str, out: Path, cad: Path) -> str | None:
+    """The current B-rep identity of one Component, built now, or None."""
+
+    part = project / ("part_%s.step.py" % role)
+    if not part.is_file():
+        return None
+    done = run([sys.executable, str(cad / "gen"), str(part), "--write", "--json"], cwd=project,
+               log=out / ("gen-%s.log" % role))
+    step = part.with_name(part.name[:-len(".py")])
+    if parse_build(done.stdout, done.stderr, done.returncode)["verdict"] != "PASS" or not step.is_file():
+        return None
+    return parse_identity(done.stdout) or file_hash(step)
+
+
+def locked_at(project: Path, role: str, digest: str | None) -> str:
+    """Why one Component is not locked at its current identity, or ""."""
+
+    _summary, reason = current_passing_component_round(project, role, digest)
+    if reason:
+        return reason
+    state_path, round_root = state_and_round_root(project, "part_%s.step.py" % role)
+    policy = component_policy(json.loads(state_path.read_text(encoding="utf-8")), round_root)
+    if policy.get("phase") != LOCKED:
+        return "part_%s.step.py is not locked by an agreeing review or a Component Acceptance" % role
+    return ""
+
+
+INTERFACE_ENTRY = '''"""Generated by make_round --interface %(id)s (ADR 0082).
+
+Places the Interface's Components in assembly coordinates, each through its
+own assembly_pose(shape, None), labelled by its Component id. No geometry
+of its own; never printed.
+"""
+
+import importlib.util
+import sys
+from pathlib import Path
+
+PRINTABLE = False
+PROJECT = Path(%(project)r)
+COMPONENTS = %(components)r
+
+
+def _component(role):
+    if str(PROJECT) not in sys.path:
+        sys.path.insert(0, str(PROJECT))
+    path = PROJECT / ("part_%%s.step.py" %% role)
+    spec = importlib.util.spec_from_file_location("_interface_part_" + role.replace("-", "_"), path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    place = getattr(module, "assembly_pose", None)
+    if place is None:
+        raise ValueError("%%s defines no assembly_pose(shape, pose)" %% path.name)
+    shape = place(module.gen_step(), None)
+    shape.label = role
+    return shape
+
+
+def gen_step():
+    from build123d import Compound
+
+    return Compound(label="interface", children=[_component(role) for role in COMPONENTS])
+'''
+
+
+def interface_condition(project: Path, interface: dict) -> dict:
+    """The one coupled_motion_collision condition this Interface is checked
+    with: its sealed pose table, or the motion-manifest condition it names."""
+
+    components = list(interface["components"])
+    if interface.get("poses") is not None:
+        poses = interface["poses"]
+        movers = []
+        for mover in poses["movers"]:
+            entry = {"part": mover["component"]}
+            entry.update({key: mover[key] for key in ("rotation", "translation", "driven") if key in mover})
+            movers.append(entry)
+        inputs = {"steps": poses["steps"], "movers": movers}
+    else:
+        try:
+            manifest = json.loads((project / "measure" / "motion.json").read_text(encoding="utf-8"))
+            conditions = manifest["conditions"]
+        except (OSError, ValueError, KeyError, TypeError):
+            raise ValueError("%s takes its poses from measure/motion.json condition %r, which cannot be read"
+                             % (interface["id"], interface["poses_from"])) from None
+        found = [item for item in conditions if isinstance(item, dict) and item.get("id") == interface["poses_from"]]
+        if len(found) != 1 or found[0].get("check") != "coupled_motion_collision":
+            raise ValueError("measure/motion.json has no single coupled_motion_collision condition %r"
+                             % interface["poses_from"])
+        inputs = dict(found[0].get("inputs") or {})
+    moving = {mover.get("part") for mover in inputs.get("movers") or () if isinstance(mover, dict)}
+    unknown = sorted(str(name) for name in moving if name not in components)
+    if unknown:
+        raise ValueError("the pose table of %s moves %s, which the Interface does not join"
+                         % (interface["id"], ", ".join(unknown)))
+    # Only the Interface's own Components are built; the ones that do not
+    # move are its obstacles, on the record.
+    inputs["obstacle_parts"] = [role for role in components if role not in moving]
+    return {"id": interface["id"], "check": "coupled_motion_collision", "expect": "clear", "inputs": inputs}
+
+
+def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
+    """``--interface ID``: the coupled motion check of one Coupled Interface on
+    its locked Components (ADR 0082). A failure unlocks the yielding
+    Component with the check's evidence as its repair input."""
+
+    interfaces, error = contract_interfaces(project)
+    if error is not None or interfaces is None:
+        print("make_round: %s" % (error or "the sealed Design Contract has no Interfaces section"), file=sys.stderr)
+        return 2
+    interface = next((item for item in interfaces if item.get("id") == interface_id), None)
+    if interface is None:
+        print("make_round: the sealed contract has no Interface %r" % interface_id, file=sys.stderr)
+        return 2
+    if interface.get("kind") != COUPLED:
+        print("make_round: %s is a %s Interface; only a Coupled Interface has an interface check%s"
+              % (interface_id, interface.get("kind"),
+                 " (its Keep-out Envelope is checked in each component round)" if interface.get("kind") == SEPARABLE else ""),
+              file=sys.stderr)
+        return 2
+    root = project / "measure" / INTERFACE_ROUNDS_DIR / interface_id
+    root.mkdir(parents=True, exist_ok=True)
+    state_path = root / STATE_NAME
+    state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
+    number = int(state.get("round", 0)) + 1
+    out = root / ("r%04d" % number)
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+    components = list(interface["components"])
+    identities = {role: component_identity(project, role, out, cad) for role in components}
+    refusals = [reason for role in components for reason in [locked_at(project, role, identities[role])] if reason]
+    if refusals:
+        shutil.rmtree(out)
+        print("make_round: interface %s judges locked geometry only: %s" % (interface_id, "; ".join(refusals)),
+              file=sys.stderr)
+        return 2
+    try:
+        condition = interface_condition(project, interface)
+    except ValueError as exc:
+        shutil.rmtree(out)
+        print("make_round: %s" % exc, file=sys.stderr)
+        return 2
+    entry = out / ("interface_%s.step.py" % interface_id.replace("-", "_"))
+    entry.write_text(INTERFACE_ENTRY % {"id": interface_id, "project": str(project), "components": components},
+                     encoding="utf-8")
+    manifest = out / "motion.json"
+    manifest.write_text(json.dumps({"assembly": entry.relative_to(project).as_posix(), "conditions": [condition]},
+                                   indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    done = run([sys.executable, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"],
+               cwd=project, log=out / "motion.log")
+    motion = parse_motion(done.stdout, done.returncode, done.stderr)
+    passed = motion["verdict"] == "pass"
+    summary = {"round": number, "scope": "interface:%s" % interface_id, "project": str(project),
+               "interface": interface_id, "kind": COUPLED, "components": components,
+               "yielding": interface.get("yielding"), "identities": identities, "motion": motion,
+               "ok": passed, "unlocked": None, "out": str(out)}
+    if motion["verdict"] == "fail":
+        summary["unlocked"] = interface_unlock(project, interface, number, out, motion)
+    (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    steps = {role: file_hash(project / ("part_%s.step" % role)) for role in components
+             if (project / ("part_%s.step" % role)).is_file()}
+    state_path.write_text(json.dumps({"round": number, "last_out": str(out), "identities": identities,
+                                      "steps": steps, "ok": passed, "verdict": motion["verdict"]},
+                                     indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps(summary, sort_keys=True) if args.json else render_interface_summary(summary))
+    return 0 if passed else 1
+
+
+def interface_unlock(project: Path, interface: dict, number: int, out: Path, motion: dict) -> str:
+    """Unlock the contract's yielding Component of a failed Interface check,
+    with the check's evidence as its repair input. Its rounds after the
+    unlock are admitted and are never Shape Rounds (ADR 0081, ADR 0082)."""
+
+    role = interface["yielding"]
+    state_path, round_root = state_and_round_root(project, "part_%s.step.py" % role)
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    policy = component_policy(state, round_root)
+    unlock = {"kind": "interface", "interface": interface["id"], "interface_round": number,
+              "evidence": {"round": str(out), "motion_log_sha256": file_hash(out / "motion.log"),
+                           "detail": motion["detail"], "conditions": motion["conditions"]},
+              "reason": "Interface %s failed its coupled motion check: %s" % (interface["id"], motion["detail"])}
+    state["policy"] = {**policy, "unlocks": [*(policy.get("unlocks") or []), unlock]}
+    with (round_root / "unlocks.jsonl").open("a", encoding="utf-8") as ledger:
+        ledger.write(json.dumps(unlock, sort_keys=True) + "\n")
+    state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return role
+
+
+def render_interface_summary(summary: dict) -> str:
+    motion = summary["motion"]
+    lines = ["make_round r%04d  %s  %s  %s" % (summary["round"], summary["scope"], summary["project"],
+                                               " + ".join(summary["components"])),
+             "  move  %-4s %s" % (motion["verdict"].upper()[:4], motion["detail"][:160])]
+    if summary.get("unlocked"):
+        lines.append("  unlock part_%s.step.py (the yielding Component); send this round to its worker"
+                     % summary["unlocked"])
+    lines.append("  %s  reports under %s" % ("PASS" if summary["ok"] else "FAIL", summary["out"]))
+    return "\n".join(lines)
+
+
+def interface_report(project: Path, interfaces: list | None, digests: dict) -> list[dict]:
+    """Each Interface with its Kind, Components and how it was proven, for
+    the run report (ADR 0082). ``digests`` holds each Component's current
+    identity. A Coupled Interface's ``check`` is ``pass`` only while its
+    latest --interface check passed on those exact identities; else
+    ``fail``, ``stale`` or ``not-run``. A separable Interface is proven by
+    each side's component round, a static one by the Shared Helper samples."""
+
+    report = []
+    for interface in interfaces or ():
+        item = {"id": interface["id"], "kind": interface.get("kind"), "components": list(interface["components"])}
+        if interface.get("kind") == COUPLED:
+            try:
+                state = json.loads(interface_state_path(project, interface["id"]).read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                state = None
+            if state is None:
+                check = "not-run"
+            elif not state.get("ok"):
+                check = "fail"
+            elif any(digests.get(role) is None or digests.get(role) not in (
+                    (state.get("identities") or {}).get(role), (state.get("steps") or {}).get(role))
+                     for role in item["components"]):
+                # Either recorded form names the same geometry: the B-rep
+                # identity gen reported, or the STEP a reader without a fresh
+                # build can only hash (ADR 0073).
+                check = "stale"
+            else:
+                check = "pass"
+            item.update(check=check, yielding=interface.get("yielding"),
+                        round=state.get("round") if state is not None else None)
+        elif interface.get("kind") == SEPARABLE:
+            item["check"] = "keep-out-envelope"
+        else:
+            item["check"] = "shared-helper-samples"
+        report.append(item)
+    return report
+
+
+def interface_failures(project: Path, interfaces: list | None, digests: dict) -> list[str]:
+    """Why assembly may not start on the Coupled Interfaces: each needs a
+    current passing check on its Components' present geometry."""
+
+    why = {"not-run": "has no --interface check", "fail": "failed its latest --interface check",
+           "stale": "is stale: a Component it joins changed after its check"}
+    return ["interface %s %s" % (item["id"], why[item["check"]])
+            for item in interface_report(project, interfaces, digests)
+            if item["kind"] == COUPLED and item["check"] != "pass"]
+
+
 def make_round(args) -> int:
     project = Path(args.project).resolve()
     if not project.is_dir():
@@ -1558,6 +2079,20 @@ def make_round(args) -> int:
         print("make_round: cannot locate the cad and image-to-cad skills", file=sys.stderr)
         return 2
     cad = roots / "cad" / "scripts"
+    if getattr(args, "shared_helpers", False):
+        (project / "measure").mkdir(exist_ok=True)
+        return shared_helper_check(project, args, cad)
+    if getattr(args, "interface", None):
+        return interface_check(project, args.interface, args, cad)
+    # An unreadable Wish fails the round through its sealed references.
+    interfaces, _interface_error = contract_interfaces(project)
+    freeze = read_freeze(project) if interfaces is not None else None
+    if args.component and interfaces is not None and freeze is None:
+        # ADR 0082: workers never build on untested Shared Helpers.
+        print("make_round: the Shared Helpers are not frozen; the Workshop Manager runs make_round "
+              "--shared-helpers on the samples under %s/ before any component round" % SAMPLES_DIR,
+              file=sys.stderr)
+        return 2
     python = sys.executable
     generators = sorted(project.glob("*.step.py"))
     all_parts = [g for g in generators if g.name.startswith("part_")]
@@ -1659,6 +2194,8 @@ def make_round(args) -> int:
             _, reason = current_passing_component_round(project, part_role, digests.get(part_role))
             if reason:
                 failures.append(reason)
+        # ADR 0082: no assembly with a known or unproven Coupled Interface.
+        failures += interface_failures(project, interfaces, digests)
         prerequisite_log = out / "component-prerequisites.log"
         if failures:
             prerequisite_log.write_text("\n".join(failures) + "\n", encoding="utf-8")
@@ -1739,6 +2276,12 @@ def make_round(args) -> int:
             "logs": {},
         }
 
+    # 2c. a separable Interface's Keep-out Envelope, checked on this
+    # Component alone: either side repairs without touching the other (ADR 0082).
+    envelopes = {}
+    if component is not None and component in digests:
+        envelopes = check_envelopes(project, component, entry, out, interfaces)
+
     # 3. the references this round shows its reader, each composed beside the
     # model at the reference's declared camera. Nothing is scored (ADR 0076).
     refs = parse_refs(args.refs, [] if component is not None else sorted(project.glob("*_spec.md")))
@@ -1768,6 +2311,7 @@ def make_round(args) -> int:
     ok = (
         all(item["verdict"] == "PASS" for item in build.values())
         and all(item["verdict"] in ("PASS", "UNVERIFIED") for item in printing.values())
+        and all(item["verdict"] == "PASS" for item in envelopes.values())
         and not reference_errors
         and (motion is None or motion["verdict"] in ("pass", "unverified"))
         and (full is None or full["ok"])
@@ -1834,6 +2378,10 @@ def make_round(args) -> int:
             unlock=outcome["unlocks"], imported_helpers=helpers, carry_key=key,
             worker_nonce=getattr(args, "worker_nonce", None),
         )
+        if envelopes:
+            summary["envelopes"] = envelopes
+        if freeze is not None:
+            summary["helper_freeze"] = freeze_report(project, freeze, helpers)
     if any(item["verdict"] == "UNVERIFIED" for item in printing.values()) or (motion and motion["verdict"] == "unverified"):
         summary["geometry_status"] = "unverified"
         summary["print_ready_claim"] = False
@@ -2041,6 +2589,14 @@ def self_check() -> int:
         return False
     check(refused({}, "fresh-reviewer", "claude") and reviewer_binding({}, "fresh-reviewer", "") is None,
           "on Claude Code a reviewer is a native agent id; elsewhere it stays a name")
+    check(parse_envelope("not json", 1)["verdict"] == "FAIL"
+          and parse_envelope('{"ok": true, "poses": [], "detail": "1 pose(s)"}', 1)["verdict"] == "FAIL"
+          and parse_envelope('{"ok": true, "poses": [], "detail": "1 pose(s)"}', 0)["verdict"] == "PASS",
+          "a Keep-out Envelope passes only on a complete passing result")
+    check(separable_roles([{"id": "s", "kind": "separable", "envelope": {"inside": "arm", "outside": "body"}},
+                           {"id": "c", "kind": "coupled", "components": ["arm", "body"]}], "body")
+          == [({"id": "s", "kind": "separable", "envelope": {"inside": "arm", "outside": "body"}}, "outside")],
+          "a Component keeps the envelope of each separable Interface it joins, on its own side")
     check(reviewer_binding({}, "a1f355b61d99918ed", "claude") == "a1f355b61d99918ed"
           and refused({"reviewer_id": "a1f355b61d99918ed"}, "a7740f58e37677176", "claude"),
           "a Component's first reviewer id binds it; another id is refused")
@@ -2082,6 +2638,8 @@ def main(argv=None) -> int:
     parser.add_argument("--record-visual", help="record native Manager feedback for the last assembly round without rebuilding")
     parser.add_argument("--record-review", metavar="REVIEW.json", help="with --component: record an independent reviewer's judgement of the latest round without rebuilding")
     parser.add_argument("--record-unlock", metavar="UNLOCK.json", help="with --component: record that an assembly round's recorded finding requires a change to this locked Component, as {assembly_round, finding, reason}; builds nothing")
+    parser.add_argument("--shared-helpers", action="store_true", help="Workshop Manager: build the samples under samples/, run the print gates on them, and freeze the Shared Helpers on a pass (ADR 0082)")
+    parser.add_argument("--interface", metavar="ID", help="Workshop Manager: run the coupled motion check of one sealed Coupled Interface on its locked Components (ADR 0082)")
     parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
@@ -2108,6 +2666,12 @@ def main(argv=None) -> int:
         parser.error("--record-unlock requires --component")
     if args.record_unlock and (args.record_review or args.record_visual or args.full):
         parser.error("--record-unlock cannot be combined with --record-review, --record-visual or --full")
+    if args.shared_helpers or args.interface:
+        if args.shared_helpers and args.interface:
+            parser.error("--shared-helpers and --interface are separate checks")
+        if (args.component or args.entry or args.require_component_passes or args.record_visual
+                or args.record_review or args.record_unlock or args.full or args.out or args.refs):
+            parser.error("--shared-helpers and --interface take no component, assembly or record options")
     if args.worker_nonce is not None:
         if not args.component or args.record_review or args.record_unlock:
             parser.error("--worker-nonce belongs only to a component build round")

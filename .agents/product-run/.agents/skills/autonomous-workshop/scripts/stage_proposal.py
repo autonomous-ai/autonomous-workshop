@@ -2605,18 +2605,27 @@ COMPONENT_ACCEPTANCE_NAME = "component-acceptance.json"
 MAX_COMPONENT_ACCEPTANCES = 64
 COMPONENT_SHAPE_REPAIR_LIMIT = 5
 _MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
+# How the final verifier says each Interface was proven (ADR 0082).
+INTERFACE_PROOFS = {
+    "static": "shared-helper-samples",
+    "separable": "keep-out-envelope",
+    "coupled": "pass",
+}
 
 
 def _component_acceptances(
     run_root: Path, product_root_value: str, verification_relative: PurePosixPath
-) -> Optional[list[dict[str, Any]]]:
-    """The final verifier's component acceptances, or None when it wrote none.
+) -> Optional[tuple[list[dict[str, Any]], Optional[list[dict[str, Any]]]]]:
+    """``(acceptances, interfaces)`` from the final verifier, or None when it
+    wrote no record.
 
     The verifier writes ``component-acceptance.json`` beside its report and
-    binds it to the report's exact bytes. Every entry is a Component whose
-    independent reviewer still disagreed after the shape-repair allowance was
-    spent; the Workshop Manager accepted it with the reason the run reports
-    when it ends.
+    binds it to the report's exact bytes. Every acceptance is a Component
+    whose independent reviewer still disagreed after the shape-repair
+    allowance was spent; the Workshop Manager accepted it with the reason the
+    run reports when it ends. ``interfaces`` lists the sealed contract's
+    Interfaces with how each was proven (ADR 0082), or is None for a
+    contract without an Interfaces section.
     """
 
     relative = "%s/%s" % (
@@ -2627,7 +2636,11 @@ def _component_acceptances(
         return None
     label = "Make %s" % COMPONENT_ACCEPTANCE_NAME
     document, _, _ = _read_json(run_root, relative, label)
-    record = _fields(document, {"schema_version", "verification_sha256", "acceptances"}, label)
+    record = _mapping(document, label)
+    if not {"schema_version", "verification_sha256", "acceptances"} <= set(record) or not set(record) <= {
+        "schema_version", "verification_sha256", "acceptances", "interfaces"
+    }:
+        raise ProposalError("%s fields are invalid" % label)
     verification_sha256, _, _ = _hash_regular(
         run_root,
         "%s/%s" % (product_root_value, verification_relative.as_posix()),
@@ -2666,13 +2679,57 @@ def _component_acceptances(
         _bounded_text(item["reason"], item_label + " reason", 1_000)
         if item["accepted_by"] != "workshop-manager":
             raise ProposalError("%s must be accepted by the workshop-manager" % item_label)
-    return acceptances
+    interfaces = None
+    if "interfaces" in record:
+        interfaces = _verified_interfaces(record["interfaces"], label)
+    return acceptances, interfaces
+
+
+def _verified_interfaces(value: Any, label: str) -> list[dict[str, Any]]:
+    """The verifier's Interface list: each sealed Interface with its Kind,
+    Components and proof. A Coupled Interface is listed only with a current
+    passing --interface check; anything else fails the verifier itself."""
+
+    interfaces = _array(value, label + " interfaces")
+    if len(interfaces) > MAX_COMPONENT_ACCEPTANCES:
+        raise ProposalError("%s lists too many interfaces" % label)
+    seen = set()
+    for index, raw in enumerate(interfaces, 1):
+        item_label = "%s interface %d" % (label, index)
+        item = _mapping(raw, item_label)
+        kind = item.get("kind")
+        expected = {"id", "kind", "components", "check"} | (
+            {"yielding", "round"} if kind == "coupled" else set())
+        if set(item) != expected or kind not in INTERFACE_PROOFS:
+            raise ProposalError("%s fields are invalid" % item_label)
+        identifier = _bounded_text(item["id"], item_label + " id", 200)
+        if identifier in seen:
+            raise ProposalError("%s repeats an interface id" % item_label)
+        seen.add(identifier)
+        components = _array(item["components"], item_label + " components")
+        if len(components) < 2 or len(set(map(str, components))) != len(components):
+            raise ProposalError("%s must join two or more Components" % item_label)
+        for component in components:
+            _bounded_text(component, item_label + " component", 200)
+        if item["check"] != INTERFACE_PROOFS[kind]:
+            raise ProposalError(
+                "%s is not proven: %s needs %s" % (item_label, kind, INTERFACE_PROOFS[kind])
+            )
+        if kind == "coupled" and (
+            item["yielding"] not in components
+            or type(item["round"]) is not int or item["round"] < 1
+        ):
+            raise ProposalError("%s needs its yielding Component and check round" % item_label)
+    return interfaces
 
 
 def _seal_component_acceptances(
-    product_root: Path, acceptances: Optional[list[dict[str, Any]]]
+    product_root: Path,
+    acceptances: Optional[list[dict[str, Any]]],
+    interfaces: Optional[list[dict[str, Any]]] = None,
 ) -> None:
-    """Copy the verifier's acceptances into product.json; never let the agent author them."""
+    """Copy the verifier's acceptances and Interfaces into product.json;
+    never let the agent author them."""
 
     path = product_root / "product.json"
     if path.is_symlink() or not path.is_file():
@@ -2690,17 +2747,25 @@ def _seal_component_acceptances(
             % COMPONENT_ACCEPTANCE_NAME
         )
     if acceptances is None:
-        if "component_acceptances" in product:
-            raise ProposalError(
-                "Make product.json component_acceptances must come from the final "
-                "verifier's %s, which does not exist" % COMPONENT_ACCEPTANCE_NAME
-            )
+        for key in ("component_acceptances", "interfaces"):
+            if key in product:
+                raise ProposalError(
+                    "Make product.json %s must come from the final verifier's %s, "
+                    "which does not exist" % (key, COMPONENT_ACCEPTANCE_NAME)
+                )
         return
+    if interfaces is None and "interfaces" in product:
+        raise ProposalError(
+            "Make product.json interfaces must come from the final verifier's %s, "
+            "which lists none" % COMPONENT_ACCEPTANCE_NAME
+        )
     updated = dict(product)
     if acceptances:
         updated["component_acceptances"] = acceptances
     else:
         updated.pop("component_acceptances", None)
+    if interfaces is not None:
+        updated["interfaces"] = interfaces
     if updated != product:
         path.write_text(json.dumps(updated, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -2784,19 +2849,33 @@ def _make_contract(
         raise ProposalError(
             "CAD verification must live inside the declared CAD project"
         )
-    component_acceptances = _component_acceptances(
+    verified = _component_acceptances(
         run_root, product_root_value, verification_relative
     )
+    component_acceptances = None if verified is None else verified[0]
+    interfaces = None if verified is None else verified[1]
+    sealed_contract = _sealed_design_contract(run_root, assignment["wish_sha256"])
     if (
         component_acceptances is None
         and _wish_has_sealed_references(run_root, assignment["wish_sha256"])
-        and _sealed_design_contract(run_root, assignment["wish_sha256"]) is not None
+        and sealed_contract is not None
     ):
         raise ProposalError(
             "Contract Mode Make requires the final verifier's %s bound to its "
             "report; rerun verify_project --image-derived" % COMPONENT_ACCEPTANCE_NAME
         )
-    _seal_component_acceptances(product_root, component_acceptances)
+    if verified is not None and sealed_contract is not None and "interfaces" in sealed_contract:
+        # ADR 0082: every sealed Interface is listed with how it was proven.
+        sealed_ids = sorted(
+            str(item.get("id")) for item in sealed_contract.get("interfaces") or ()
+            if isinstance(item, dict)
+        )
+        if interfaces is None or sorted(str(item["id"]) for item in interfaces) != sealed_ids:
+            raise ProposalError(
+                "Make %s must list every Interface of the sealed Design Contract; "
+                "rerun verify_project --image-derived" % COMPONENT_ACCEPTANCE_NAME
+            )
+    _seal_component_acceptances(product_root, component_acceptances, interfaces)
     product_document, product_bytes, _ = _read_json(
         run_root,
         "%s/product.json" % product_root_value,

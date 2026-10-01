@@ -121,6 +121,28 @@ notice. Name each
 them, even though the files do not exist yet. A toy with more than one
 component also gets one `"shows": "assembly"` reference, listed first.
 
+Write the block as `"schema_version": 2` with an `interfaces[]` entry for
+every place two or more Components meet (ADR 0082): a peg in a socket, a
+pinion on a sector, a wing swinging past a housing. Give each its Interface
+Kind:
+
+- **static** for parts that sit together and never move against each other.
+- **separable** when one Component only has to keep clear of another. Give
+  it a Keep-out Envelope: which Component stays `inside` and which stays
+  `outside`, and one simple box or cylinder in assembly coordinates per
+  declared pose (or one for a part that does not move). Size it from the
+  prose's clearances, so each side can be built without the other's outline.
+- **coupled** for anything that needs contact or shares space over time:
+  gears, cams, linkages, parts that pass through one space at different
+  times. Name its `yielding` Component, the one that changes when the
+  check fails, and give its pose table (`poses`: steps and movers, each with
+  its rotation or translation in assembly coordinates) from the same numbers
+  Stage 3d checks.
+
+A toy whose Components never meet has `"interfaces": []`. Never leave a
+meeting out: one the block does not name is one nobody checks before
+assembly.
+
 Check the drafted block against CONTRACT-FORMAT.md's row limits: at most 16
 assembly-scoped requirements, at most 4 per Unique Geometry, and the whole
 file (prose plus block) under 40,000 characters. If the design does not fit,
@@ -383,8 +405,12 @@ check stops at its time limit and an unfinished sweep proves nothing:
 Record every check in the working notes as a table: check, parts, value,
 limit, verdict, resolution.
 
-Done when: every check passes on the contract as amended, and the motion plan
-is in the contract.
+Bring the Interfaces up to date with what you fixed: every mesh and every
+swept clearance is a coupled Interface whose pose table matches the sweep
+you just ran, and every envelope still holds its side through the travel.
+
+Done when: every check passes on the contract as amended, the motion plan is
+in the contract, and the Interfaces match it.
 
 ## Stage 4 - Visual review
 

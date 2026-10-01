@@ -1501,3 +1501,23 @@ id, binds a Component's first reviewer id in its component state and refuses
 a review naming another id. Without it a review keeps the free-text reviewer
 name. `SKILL.md` describes the fixed review request and the worker reading
 the recorded review itself. This changes the `make-round` fingerprint.
+
+## Local change: Interfaces between Components (2026-10-01)
+
+A Workshop-local change (ADR 0082, issue #78) to Workshop's own `make-round`
+and to the vendored `cad` tree. `make_round --shared-helpers` builds the
+Manager's samples under `samples/` and runs `check_thickness` and
+`check_overhang` on them, freezing the Shared Helpers by hash on a pass; under
+a sealed contract with an Interfaces section a component round refuses to
+start before that freeze and reports a frozen helper it imports that changed,
+with the Components that import it. A new `make-round/scripts/check_envelope`
+checks a separable Interface's Keep-out Envelope on a Component's B-rep in its
+own round, and `make_round --interface <id>` runs `check_motion`'s
+`coupled_motion_collision` on one Coupled Interface's locked Components,
+unlocking the contract's yielding Component on failure.
+`--require-component-passes` also needs a current passing check of every
+Coupled Interface. In `cad`, `verify_project`'s Contract Mode component gate
+applies the same Coupled Interface rule through `make_round` and writes the
+Interfaces, each with its proof, into `component-acceptance.json`. Upstream
+`check_motion` keeps its `b149710` bytes. This changes the `cad` and
+`make-round` fingerprints.

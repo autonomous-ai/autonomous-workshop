@@ -316,6 +316,7 @@ class StageProposalToolTest(unittest.TestCase):
         objective=None,
         extra_context=None,
         references=None,
+        interfaces=None,
     ):
         """Seal a Design Contract as the Wish, and its own matching Match/Invented pair.
 
@@ -363,6 +364,9 @@ class StageProposalToolTest(unittest.TestCase):
                 for index, (geometry, text) in enumerate(geometry_requirements, 1)
             ],
         }
+        if interfaces is not None:
+            # A schema 2 contract with an Interfaces section (ADR 0082).
+            design_contract.update(schema_version=2, interfaces=interfaces)
         context = {"design_contract": design_contract}
         if extra_context:
             context.update(extra_context)
@@ -2630,12 +2634,58 @@ class StageProposalToolTest(unittest.TestCase):
         # A fresh run root for each subTest, so one refusal cannot mask another.
         self.setUp()
 
-    def write_component_acceptance(self, report, acceptances, *, verification_sha256=None):
-        (report.parent / "component-acceptance.json").write_text(json.dumps({
+    def write_component_acceptance(self, report, acceptances, *, verification_sha256=None, interfaces=None):
+        record = {
             "schema_version": 1,
             "verification_sha256": verification_sha256 or hashlib.sha256(report.read_bytes()).hexdigest(),
             "acceptances": acceptances,
-        }), encoding="utf-8")
+        }
+        if interfaces is not None:
+            record["interfaces"] = interfaces
+        (report.parent / "component-acceptance.json").write_text(json.dumps(record), encoding="utf-8")
+
+    INTERFACES = [
+        {"id": "wing-housing", "kind": "separable", "components": ["wing", "spine-housing"],
+         "check": "keep-out-envelope"},
+        {"id": "pinion-sector", "kind": "coupled", "components": ["heart-core", "wing"],
+         "check": "pass", "yielding": "wing", "round": 2},
+    ]
+
+    def test_make_carries_the_verified_interfaces_into_the_product(self):
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [], interfaces=self.INTERFACES)
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertEqual(product["interfaces"], self.INTERFACES)
+
+    def test_make_refuses_an_unproven_or_malformed_interface(self):
+        coupled = self.INTERFACES[1]
+        cases = {
+            "stale coupled": ([{**coupled, "check": "stale"}], "not proven"),
+            "one component": ([{**coupled, "components": ["wing"]}], "two or more"),
+            "unknown kind": ([{**coupled, "kind": "welded"}], "fields are invalid"),
+            "foreign yielding": ([{**coupled, "yielding": "tail"}], "yielding"),
+            "repeated id": ([coupled, coupled], "repeats"),
+        }
+        for name, (interfaces, needle) in cases.items():
+            with self.subTest(name):
+                self.setUp_fresh()
+                _, report = self.acceptance_stage()
+                report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+                self.write_component_acceptance(report, [], interfaces=interfaces)
+                refused = self.finalize_make(expected=2)
+                self.assertIn(needle, refused.stderr)
+
+    def test_make_refuses_interfaces_the_verifier_did_not_record(self):
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [])
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        product["interfaces"] = self.INTERFACES
+        (product_root / "product.json").write_text(json.dumps(product), encoding="utf-8")
+        refused = self.finalize_make(expected=2)
+        self.assertIn("interfaces must come from the final verifier", refused.stderr)
 
     def finalize_make(self, expected=0):
         return self.run_tool(
@@ -2770,6 +2820,36 @@ class StageProposalToolTest(unittest.TestCase):
         product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
         self.assertNotIn("component_acceptances", product)
         self.assertNotIn("likeness_acceptances", product)
+
+    def test_make_in_contract_mode_lists_every_sealed_interface(self):
+        reference = {
+            "name": "ref-01-observatory.png", "sha256": "0" * 64, "media_type": "image/png",
+            "size": 4, "width": 16, "height": 16,
+        }
+        sealed = [{"id": "dome-hatch", "kind": "static", "components": ["dome", "hatch"]}]
+        assignment, invented, _ = self.seal_contract_wish(
+            self.CONTRACT_REQUIREMENTS, references=[reference], interfaces=sealed)
+        product_root, _, _, _ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(self.CONTRACT_REQUIREMENTS),
+        )
+        self.write_stage(
+            "make",
+            {"assignment": assignment.to_dict(), "invented": invented.to_dict(), "feedback": []},
+            round_index=1,
+        )
+        report = product_root / "cad/project/validation/cad-build.json"
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [])
+        refused = self.finalize_make(expected=2)
+        self.assertIn("every Interface of the sealed Design Contract", refused.stderr)
+        listed = [{**sealed[0], "check": "shared-helper-samples"}]
+        self.write_component_acceptance(report, [], interfaces=listed)
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertEqual(product["interfaces"], listed)
 
     def test_make_verification_must_belong_to_declared_cad_project(self):
         product_root, _, _, verification = self.create_product()

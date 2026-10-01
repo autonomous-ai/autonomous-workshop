@@ -149,12 +149,40 @@ are separate. Frozen older runs retain their materialized rules and tools.
    In Spark you author no Component (ADR 0080). Settle the component list and
    write only the shared files: `params.py` and anything under `features/`.
    Fix every interface there before you spawn a worker: each joint's peg,
-   socket or collar dimensions, its position on both mating Components, and
-   each Component's print stance, taken from the Design Contract. A Component
-   Worker then writes that Component's first `part_<id>.step.py` against
-   those shared values. Spawn no Inventor or other agent to author a
-   Component; an Inventor's optional design notes may inform the worker's
-   brief, but an Inventor never runs `make_round`.
+   socket or collar dimensions and its position on both mating Components,
+   taken from the Design Contract. A Component Worker then writes that
+   Component's first `part_<id>.step.py` against those shared values. Spawn
+   no Inventor or other agent to author a Component; an Inventor's optional
+   design notes may inform the worker's brief, but an Inventor never runs
+   `make_round`.
+
+   When the sealed Design Contract has an `interfaces` section (ADR 0082),
+   implement its Interfaces; do not invent others. A shared file is then a
+   Shared Helper and holds only what two or more Components must agree on:
+   Interface values, joint sections and standard profiles. A Component's own
+   geometry, print stance and dimensions stay in its own file, even when one
+   other Component must clear it: a separable Interface's Keep-out Envelope
+   is that agreement. Before choosing a joint, fit, clearance or gear, run
+   the wiki's `search` and `show` (`wiki/SKILL.md`), and next to each value
+   name the page it came from and add that page's `assert`. Take every gear,
+   bearing, fastener and other standard element from
+   `.agents/skills/cad/scripts/stdpart` (`bd_warehouse`, `py_gearworks`);
+   never hand-write an involute.
+
+   Then build a sample of each Shared Helper under `samples/<name>.step.py`,
+   for example a peg in its socket or a pinion on its sector. A sample
+   imports the Shared Helpers from the project (`import params`, `from
+   features.joints import ...`) and returns one printable piece. Run:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --shared-helpers
+   ```
+
+   It builds every sample and runs both print gates on it; a pass freezes
+   the Shared Helpers by hash. Component rounds refuse to start before that
+   freeze, so spawn no worker until it passes. Repair a failing sample in
+   the Shared Helper, never in a worker's file.
 2. For Spark, review and repair every component separately before assembly.
    For each `part_<role>.step.py`, run:
 
@@ -218,8 +246,9 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    After recording, tell the worker only "review recorded for round N". The
    worker reads the recorded review from that round itself; on a
-   disagreement it is the repair list for the next shape round. Close the
-   worker once the reviewer agrees or the cap below is reached.
+   disagreement it is the repair list for the next shape round. Keep every
+   worker's thread until the assembly passes (ADR 0082), and send each later
+   unlock to the worker that already holds that Component.
 
    Workers never edit a shared file such as `params.py` or
    `features/forms.py`; they ask you. Edit it yourself, then send back
@@ -228,6 +257,33 @@ are separate. Frozen older runs retain their materialized rules and tools.
    import stales nothing of it (ADR 0081). The edit unlocks those Components.
    A rerun that rebuilds the reviewed B-rep keeps its review and locks again;
    one whose B-rep moved needs a new review, without spending a shape round.
+   Once frozen, change a Shared Helper only when it must change, and rerun
+   `--shared-helpers` at once to re-freeze it; a component round's `frozen`
+   line names any frozen file that changed and every Component that imports
+   it.
+
+   Give each worker the rows of every Interface its Component joins. A
+   Component in a separable or coupled Interface defines `assembly_pose(shape,
+   pose)`, which places it in assembly coordinates. Its own round checks a
+   separable Interface's Keep-out Envelope (the `keep` line): the inside
+   Component stays inside in every declared pose, the outside one stays out.
+
+   Check each Coupled Interface (a gear mesh, a cam, a linkage, parts that
+   pass through one space at different times) once every Component it joins
+   is locked:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --interface <interface-id>
+   ```
+
+   It refuses while a Component it joins is not locked at its current
+   geometry, and runs the coupled motion check on just those Components over
+   the sealed pose table. On a failure it unlocks the contract's yielding
+   Component and names it; send that worker only the interface round's path.
+   The worker's repair is not a shape round; after the repaired Component is
+   reviewed and locked again, rerun the check. Only you run
+   `--shared-helpers` and `--interface`; the hook refuses both to workers.
 
    When two Design Contract statements cannot both hold, for example two
    Components that print on a mating face that also carries a peg, stop and
@@ -270,7 +326,9 @@ are separate. Frozen older runs retain their materialized rules and tools.
    ```
 
    This refuses assembly review when a component has no passing isolated round
-   or its freshly built STEP changed afterward. If an assembly repair
+   or its freshly built STEP changed afterward, and, under an Interfaces
+   section, when a Coupled Interface has no current passing `--interface`
+   check. If an assembly repair
    changes a component, first record why: cite the assembly round and the
    finding you recorded there with `--record-visual`,
    `{"assembly_round", "finding", "reason"}`, and run the same `--component`

@@ -115,7 +115,8 @@ calls were reassembling by hand.
   when the summary names a failure you cannot place.
 - In a run with the make_round guard (ADR 0080), only a `component-worker`
   runs a component round; the root Workshop Manager alone runs
-  `--record-review`, `--record-unlock`, `--record-visual` and assembly rounds. A Workshop hook
+  `--record-review`, `--record-unlock`, `--record-visual`, assembly rounds,
+  `--shared-helpers` and `--interface` (ADR 0082). A Workshop hook
   refuses a call from the wrong agent and gives each worker round a one-time
   `--worker-nonce`; never pass one yourself. The host refuses a component
   round without a nonce it issued, so run `make_round` only as one plain
@@ -304,6 +305,8 @@ summary's `shape` and `lock` lines, or `shape_round`, `shape_rounds_used`,
   without end. A locked Component refuses a geometry change until something
   outside it requires one:
   - a Shared Helper the Component imports changes (detected automatically);
+  - a Coupled Interface check fails and the contract names this Component
+    as its yielding one (`--interface`, below; recorded automatically);
   - the Workshop Manager records that an assembly round needs it changed:
 
     ```sh
@@ -328,6 +331,53 @@ summary's `shape` and `lock` lines, or `shape_round`, `shape_rounds_used`,
   Helpers it imports, directly or through another project module
   (`imported_helpers` in the summary). Editing any other file does not stale
   it.
+
+### Interfaces between Components (ADR 0082)
+
+When the sealed Design Contract has an `interfaces` section, three more
+rules apply. Contracts without it keep the rules above unchanged.
+
+- **Freeze the Shared Helpers first.** The Workshop Manager builds samples
+  under `<project>/samples/<name>.step.py` (a peg in its socket, a pinion on
+  its sector), each importing the Shared Helpers from the project, and runs:
+
+  ```sh
+  "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad --shared-helpers
+  ```
+
+  It builds every sample and runs `check_thickness` and `check_overhang` on
+  it. A pass writes `measure/shared-helpers-freeze.json` with the sha256 of
+  every Shared Helper (each project `.py` module that is not an entry, a
+  sample or evidence) and appends the event to
+  `measure/shared-helper-freezes.jsonl`; a failing sample, or one that
+  imports no Shared Helper, freezes nothing. A component round before the
+  freeze exits 2. After it, a component round's `frozen` line (`helper_freeze`
+  in `summary.json`) names each Shared Helper it imports that changed since
+  the freeze and every Component that imports it. Rerun the check to
+  re-freeze; the change is recorded as an event.
+- **Keep-out Envelopes.** For each separable Interface a Component joins, its
+  round runs `check_envelope` on its B-rep: the inside Component, placed by
+  its entry's `assembly_pose(shape, pose)` at every declared pose, stays
+  inside that pose's shape; the outside Component, placed with `pose` None,
+  stays out of every shape. A failure fails the round's checks like a print
+  gate (the `keep` line, `envelopes` in `summary.json`).
+- **Coupled Interfaces.** Once every Component an Interface joins is locked:
+
+  ```sh
+  "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad --interface <id>
+  ```
+
+  It refuses (exit 2) a separable or static Interface and any Component not
+  locked at its current geometry, builds those Components only, places them
+  through `assembly_pose(shape, None)` and runs `check_motion`'s
+  `coupled_motion_collision` over the sealed pose table (or the
+  `measure/motion.json` condition its `poses_from` names), with the
+  non-moving Components as obstacles. Rounds live under
+  `measure/interface-rounds/<id>/`. A failure unlocks the yielding
+  Component with the check's evidence; its repair is never a shape round.
+  `--require-component-passes` refuses assembly while any Coupled Interface
+  lacks a current passing check, and so does the final verifier, which lists
+  every Interface with its proof in `component-acceptance.json`.
 
 ## Record assembly visual feedback
 
@@ -411,6 +461,9 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | Step | Invocation | Reads |
 |---|---|---|
 | build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
+| build a sample | `PYTHONPATH=<project> "$WORKSHOP_PYTHON" $C/gen samples/<name>.step.py --write --json`, then both print gates | exit codes and gate verdicts |
+| keep-out envelope | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/check_envelope part_<role>.step.py --envelope <round>/envelope-<id>.json --role inside\|outside --json` | `ok` and the per-pose volumes outside or inside the envelope |
+| interface check | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/interface-rounds/<id>/rNNNN/motion.json --json` | the one `coupled_motion_collision` condition's `status` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
 | inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view front --view top --view iso [--view=AZ,EL ...] -o <round>/visual` | exact shaded PNGs, one per reference camera, composed into `compare-NN.png` beside each reference |
 | final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit --print-gates [--image-derived] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |

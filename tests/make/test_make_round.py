@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import unittest
@@ -1771,6 +1772,365 @@ class ReviewerBindingTest(unittest.TestCase):
             _, summary = self._component(module, project, calls)
             self.assertTrue(self._review(module, project, summary, reviewer="fresh-reviewer")["ok"])
             self.assertNotIn("reviewer_id", self._state(project))
+
+
+class InterfaceTest(unittest.TestCase):
+    """ADR 0082: Shared Helpers are frozen on tested samples, a separable
+    Interface keeps a Keep-out Envelope in each component round, and a
+    Coupled Interface is checked on its locked Components."""
+
+    _run_root = SealedReferenceTest._run_root
+    REFS = {"ref-01-whole.png": b"whole", "ref-02-body.png": b"body", "ref-03-arm.png": b"arm"}
+    ENVELOPE = {"inside": "arm", "outside": "body", "shapes": [
+        {"pose": "folded", "box": {"min_mm": [0, 0, 0], "max_mm": [40, 10, 6]}},
+        {"pose": "spread", "cylinder": {"base_mm": [0, 0, 0], "axis": [0, 0, 1], "radius_mm": 42, "height_mm": 6}},
+    ]}
+    INTERFACES = [
+        {"id": "arm-peg", "kind": "static", "components": ["body", "arm"]},
+        {"id": "arm-swing", "kind": "separable", "components": ["arm", "body"], "envelope": ENVELOPE},
+        {"id": "gear-mesh", "kind": "coupled", "components": ["body", "arm"], "yielding": "arm",
+         "poses": {"steps": 8, "movers": [
+             {"component": "arm", "rotation": {"axis_point": [0, 0, 0], "axis_direction": [0, 0, 1],
+                                               "start_deg": 0, "end_deg": 90}, "driven": True}]}},
+    ]
+
+    def _contract(self, interfaces=None):
+        return {"design_contract": {
+            "schema_version": 2, "title": "Broken God",
+            "references": [{"file": "ref-01-whole.png", "shows": "assembly"},
+                           {"file": "ref-02-body.png", "shows": "geometry:body"},
+                           {"file": "ref-03-arm.png", "shows": "geometry:arm"}],
+            "interfaces": self.INTERFACES if interfaces is None else interfaces,
+        }}
+
+    def _project(self, tmp, interfaces=None, freeze=True):
+        project = self._run_root(tmp, self.REFS, context=self._contract(interfaces))
+        (project / "features").mkdir()
+        (project / "params.py").write_text("BODY_W = 40\n")
+        (project / "features/__init__.py").write_text("")
+        (project / "features/joints.py").write_text("PEG_D = 4.0  # wiki: joints-and-fits\nassert PEG_D >= 3\n")
+        (project / "part_body.step.py").write_text(
+            "import params\nfrom features.joints import PEG_D\ndef gen_step(): return 'body'\n")
+        (project / "part_arm.step.py").write_text("from features.joints import PEG_D\ndef gen_step(): return 'arm'\n")
+        (project / "samples").mkdir()
+        (project / "samples/peg_in_socket.step.py").write_text(
+            "from features.joints import PEG_D\ndef gen_step(): return 'peg'\n")
+        self.faults = {}
+        self.calls = []
+        self.module = load_module()
+        if freeze:
+            self.assertEqual(self._main(project, ["--shared-helpers"]), 0, self.stderr)
+        return project
+
+    def _fake(self, command, **kwargs):
+        tool = Path(command[1]).name
+        self.calls.append((command, kwargs))
+        faults = self.faults
+        if tool == "gen":
+            source = Path(command[2])
+            source.with_name(source.name[:-len(".py")]).write_bytes(source.read_bytes())
+        if tool == "render_review":
+            return fake_render_review(command)
+        if tool in ("check_thickness", "check_overhang"):
+            fails = tool == "check_thickness" and Path(command[2]).name in faults.get("wall", ())
+            stdout, code = _gate_output(tool, fails=fails)
+            log = kwargs.get("log")
+            if log is not None:
+                Path(log).write_text(stdout, encoding="utf-8")
+            return subprocess.CompletedProcess(command, code, stdout, "")
+        if tool == "check_envelope":
+            role = command[command.index("--role") + 1]
+            ok = Path(command[2]).name not in faults.get("envelope", ())
+            pose = "spread" if role == "inside" else "folded"
+            payload = {"ok": ok, "role": role, "poses": [{"pose": pose, "status": "pass" if ok else "fail"}],
+                       "detail": "2 pose(s) keep to the %s" % role if ok else
+                       ("12.5 mm3 lies outside the envelope in pose spread" if role == "inside"
+                        else "8.0 mm3 enters the envelope of pose folded")}
+            return subprocess.CompletedProcess(command, 0 if ok else 1, json.dumps(payload) + "\n", "")
+        if tool == "check_motion":
+            status = faults.get("motion", "pass")
+            payload = {"ok": status == "pass", "results": [
+                {"id": "gear-mesh", "status": status,
+                 "detail": "clear" if status == "pass" else "collision at step 3 between arm and body (2.1 mm3)"}]}
+            # run() always leaves the tool's log; the unlock cites its hash.
+            Path(kwargs["log"]).write_text(json.dumps(payload), encoding="utf-8")
+            return subprocess.CompletedProcess(command, 0 if status == "pass" else 1, json.dumps(payload), "")
+        return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
+
+    def _main(self, project, argv):
+        with contextlib.redirect_stdout(io.StringIO()) as stdout, contextlib.redirect_stderr(io.StringIO()) as stderr, \
+                mock.patch.object(self.module, "skills_root", return_value=project), \
+                mock.patch.object(self.module, "run", side_effect=self._fake):
+            code = self.module.main([str(project), *argv])
+        self.stdout, self.stderr = stdout.getvalue(), stderr.getvalue()
+        return code
+
+    def _component(self, project, role):
+        code = self._main(project, ["--component", "part_%s.step.py" % role])
+        state = json.loads((project / ("measure/component-rounds/%s/make-round-state.json" % role)).read_text())
+        return code, json.loads((Path(state["last_out"]) / "summary.json").read_text())
+
+    def _lock(self, project, role):
+        code, summary = self._component(project, role)
+        self.assertEqual(code, 1, self.stderr)
+        review = write_review(project, summary)
+        self.assertEqual(self._main(project, ["--component", "part_%s.step.py" % role, "--record-review", str(review)]), 0)
+        return summary
+
+    def _freeze(self, project):
+        return json.loads((project / "measure/shared-helpers-freeze.json").read_text())
+
+    # -- the Shared Helper check and freeze
+
+    def test_passing_samples_freeze_the_shared_helpers_by_hash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            freeze = self._freeze(project)
+            # (cad/scripts holds this fixture's stand-in tool bytes, not a run's.)
+            self.assertEqual(sorted(path for path in freeze["helpers"] if not path.startswith("cad/")),
+                             ["features/__init__.py", "features/joints.py", "params.py"])
+            self.assertEqual(freeze["helpers"]["params.py"], hashlib.sha256(b"BODY_W = 40\n").hexdigest())
+            self.assertEqual(list(freeze["samples"]), ["peg_in_socket"])
+            summary = json.loads((project / "measure/helper-rounds/r0001/summary.json").read_text())
+            self.assertEqual(freeze["summary_sha256"], hashlib.sha256(
+                (project / "measure/helper-rounds/r0001/summary.json").read_bytes()).hexdigest())
+            self.assertTrue(summary["frozen"])
+            self.assertEqual(summary["samples"]["peg_in_socket"]["imports"], ["features/__init__.py", "features/joints.py"])
+            # A sample imports the Shared Helpers from the project root.
+            gen = next(kwargs for command, kwargs in self.calls if Path(command[1]).name == "gen")
+            self.assertEqual(gen["extra_env"]["PYTHONPATH"].split(os.pathsep)[0], str(project))
+            gates = [Path(command[1]).name for command, _ in self.calls]
+            self.assertEqual(gates, ["gen", "check_thickness", "check_overhang"])
+
+    def test_a_sample_that_fails_a_print_gate_freezes_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, freeze=False)
+            self.faults["wall"] = {"peg_in_socket.step.py"}
+            self.assertEqual(self._main(project, ["--shared-helpers"]), 1)
+            self.assertFalse((project / "measure/shared-helpers-freeze.json").exists())
+            self.assertIn("sample FAIL peg_in_socket", self.stdout)
+
+    def test_a_contract_with_interfaces_needs_a_sample(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, freeze=False)
+            (project / "samples/peg_in_socket.step.py").unlink()
+            self.assertEqual(self._main(project, ["--shared-helpers"]), 2)
+            self.assertIn("no sample", self.stderr)
+            (project / "samples/peg_in_socket.step.py").write_text("def gen_step(): return 'peg'\n")
+            self.assertEqual(self._main(project, ["--shared-helpers"]), 1)
+            self.assertIn("imports no Shared Helper", self.stdout)
+
+    def test_a_component_round_before_the_freeze_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, freeze=False)
+            self.assertEqual(self._main(project, ["--component", "part_body.step.py"]), 2)
+            self.assertIn("not frozen", self.stderr)
+            self.assertFalse((project / "measure/component-rounds/body/r0001").exists())
+            self.assertEqual(self._main(project, ["--shared-helpers"]), 0)
+            code, summary = self._component(project, "body")
+            self.assertEqual((code, summary["checks_ok"]), (1, True))
+            self.assertEqual(summary["helper_freeze"], {"round": 1, "changed": [], "affected": {}})
+
+    def test_a_contract_without_an_interfaces_section_keeps_the_protocol_without_a_freeze(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, freeze=False)
+            wish = json.loads((project.parents[4] / "WISH.json").read_text())
+            del wish["context"]["design_contract"]["interfaces"]
+            (project.parents[4] / "WISH.json").write_text(json.dumps(wish))
+            code, summary = self._component(project, "body")
+            self.assertEqual(code, 1)
+            self.assertNotIn("helper_freeze", summary)
+            self.assertNotIn("envelopes", summary)
+
+    def test_a_changed_frozen_helper_is_reported_with_the_components_that_import_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            (project / "params.py").write_text("BODY_W = 42\n")
+            code, summary = self._component(project, "arm")
+            self.assertEqual(summary["helper_freeze"]["changed"], [])  # the arm does not import params.py
+            code, summary = self._component(project, "body")
+            self.assertEqual(summary["helper_freeze"], {"round": 1, "changed": ["params.py"],
+                                                        "affected": {"params.py": ["body"]}})
+            self.assertIn("frozen params.py changed since the freeze of r0001; imported by body",
+                          self.module.render_summary(summary))
+            # Detection, not a block: the round ran and passed its checks.
+            self.assertTrue(summary["checks_ok"])
+            (project / "features/joints.py").write_text("PEG_D = 4.2  # wiki: joints-and-fits\nassert PEG_D >= 3\n")
+            self.assertEqual(self._main(project, ["--shared-helpers"]), 0)
+            event = [json.loads(line) for line in
+                     (project / "measure/shared-helper-freezes.jsonl").read_text().splitlines()][-1]
+            self.assertEqual(event, {"round": 2, "refreeze_of": 1, "changed": ["features/joints.py", "params.py"],
+                                     "affected": {"features/joints.py": ["arm", "body"], "params.py": ["body"]}})
+            self.assertIn("refreeze params.py changed since r0001; imported by body", self.stdout)
+            self.assertEqual(self._freeze(project)["round"], 2)
+
+    # -- Keep-out Envelopes
+
+    def test_each_side_of_a_separable_interface_checks_its_envelope_in_its_own_round(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self.calls.clear()
+            code, summary = self._component(project, "arm")
+            command = next(command for command, _ in self.calls if Path(command[1]).name == "check_envelope")
+            self.assertEqual(command[command.index("--role") + 1], "inside")
+            sealed = json.loads(Path(command[command.index("--envelope") + 1]).read_text())
+            self.assertEqual(sealed, self.ENVELOPE)
+            self.assertEqual(summary["envelopes"]["arm-swing"]["verdict"], "PASS")
+            self.assertTrue(summary["checks_ok"])
+            self.calls.clear()
+            _, summary = self._component(project, "body")
+            command = next(command for command, _ in self.calls if Path(command[1]).name == "check_envelope")
+            self.assertEqual(command[command.index("--role") + 1], "outside")
+            self.assertIn("keep  PASS arm-swing", self.module.render_summary(summary))
+
+    def test_an_inside_component_leaving_its_envelope_in_one_pose_fails_its_round(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self.faults["envelope"] = {"part_arm.step.py"}
+            code, summary = self._component(project, "arm")
+            self.assertEqual(code, 1)
+            self.assertFalse(summary["checks_ok"])
+            self.assertEqual(summary["visual"]["status"], "not-rendered")
+            self.assertEqual(summary["envelopes"]["arm-swing"]["verdict"], "FAIL")
+            self.assertIn("keep  FAIL arm-swing      inside: 12.5 mm3 lies outside the envelope in pose spread",
+                          self.module.render_summary(summary))
+
+    def test_an_outside_component_entering_the_envelope_fails_its_round(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self.faults["envelope"] = {"part_body.step.py"}
+            _, summary = self._component(project, "body")
+            self.assertFalse(summary["checks_ok"])
+            self.assertIn("enters the envelope", summary["envelopes"]["arm-swing"]["detail"])
+            _, summary = self._component(project, "arm")
+            self.assertTrue(summary["checks_ok"])
+
+    def test_a_change_to_the_inside_component_does_not_stale_the_outside_one(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._lock(project, "body")
+            body_step = hashlib.sha256((project / "part_body.step").read_bytes()).hexdigest()
+            (project / "part_arm.step.py").write_text("from features.joints import PEG_D\ndef gen_step(): return 'arm 2'\n")
+            self._component(project, "arm")
+            _summary, reason = self.module.current_passing_component_round(project, "body", body_step)
+            self.assertEqual(reason, "")
+
+    # -- Coupled Interface checks
+
+    def _locked_pair(self, project):
+        self._lock(project, "body")
+        self._lock(project, "arm")
+
+    def test_an_interface_check_is_refused_while_a_component_it_joins_is_unlocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._lock(project, "body")
+            self._component(project, "arm")
+            self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 2)
+            self.assertIn("judges locked geometry only", self.stderr)
+            self.assertIn("part_arm.step.py", self.stderr)
+            self.assertFalse((project / "measure/interface-rounds/gear-mesh/r0001").exists())
+
+    def test_only_a_coupled_interface_has_an_interface_check(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            for interface_id, why in (("arm-swing", "Keep-out Envelope"), ("arm-peg", "static"), ("tail", "no Interface")):
+                self.assertEqual(self._main(project, ["--interface", interface_id]), 2)
+                self.assertIn(why, self.stderr)
+
+    def test_a_passing_check_runs_the_sealed_pose_table_on_just_its_components(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._locked_pair(project)
+            self.calls.clear()
+            self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 0, self.stderr)
+            out = project / "measure/interface-rounds/gear-mesh/r0001"
+            manifest = json.loads((out / "motion.json").read_text())
+            self.assertEqual(manifest["assembly"], "measure/interface-rounds/gear-mesh/r0001/interface_gear_mesh.step.py")
+            condition = manifest["conditions"][0]
+            self.assertEqual(condition["check"], "coupled_motion_collision")
+            self.assertEqual(condition["inputs"]["movers"][0]["part"], "arm")
+            self.assertEqual(condition["inputs"]["obstacle_parts"], ["body"])
+            self.assertIn("COMPONENTS = ['body', 'arm']", (out / "interface_gear_mesh.step.py").read_text())
+            summary = json.loads((out / "summary.json").read_text())
+            self.assertTrue(summary["ok"])
+            self.assertIsNone(summary["unlocked"])
+            self.assertEqual(summary["identities"]["body"],
+                             hashlib.sha256((project / "part_body.step").read_bytes()).hexdigest())
+            tools = [Path(command[1]).name for command, _ in self.calls]
+            self.assertEqual(tools, ["gen", "gen", "check_motion"])
+
+    def test_a_failed_check_unlocks_only_the_yielding_component_with_its_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._locked_pair(project)
+            self.faults["motion"] = "fail"
+            self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 1)
+            self.assertIn("unlock part_arm.step.py", self.stdout)
+            arm = json.loads((project / "measure/component-rounds/arm/make-round-state.json").read_text())
+            body = json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())
+            self.assertEqual(body["policy"]["unlocks"], [])
+            unlock = arm["policy"]["unlocks"][-1]
+            self.assertEqual((unlock["kind"], unlock["interface"], unlock["interface_round"]), ("interface", "gear-mesh", 1))
+            self.assertIn("collision at step 3", unlock["evidence"]["detail"])
+            self.assertEqual(unlock["evidence"]["motion_log_sha256"], hashlib.sha256(
+                (project / "measure/interface-rounds/gear-mesh/r0001/motion.log").read_bytes()).hexdigest())
+            # The repair is admitted and is not a Shape Round; it is reviewed again.
+            (project / "part_arm.step.py").write_text("from features.joints import PEG_D\ndef gen_step(): return 'arm 2'\n")
+            code, summary = self._component(project, "arm")
+            self.assertEqual((code, summary["shape_round"], summary["shape_rounds_used"], summary["phase"]),
+                             (1, False, 0, "awaiting-review"))
+            self.assertIn("unlock interface gear-mesh r0001", self.module.render_summary(summary))
+            # The body stays locked: a change there is still refused.
+            (project / "part_body.step.py").write_text("import params\nfrom features.joints import PEG_D\ndef gen_step(): return 'body 2'\n")
+            self.assertEqual(self._main(project, ["--component", "part_body.step.py"]), 2)
+
+    def test_assembly_needs_a_current_passing_check_of_every_coupled_interface(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._locked_pair(project)
+            self.assertEqual(self._main(project, ["--require-component-passes"]), 1)
+            self.assertIn("interface gear-mesh has no --interface check", self.stderr)
+            self.faults["motion"] = "fail"
+            self._main(project, ["--interface", "gear-mesh"])
+            self.assertEqual(self._main(project, ["--require-component-passes"]), 1)
+            self.assertIn("interface gear-mesh failed its latest --interface check", self.stderr)
+            # The yielding arm repairs and is reviewed again; the old pass is stale.
+            self.faults["motion"] = "pass"
+            (project / "part_arm.step.py").write_text("from features.joints import PEG_D\ndef gen_step(): return 'arm 2'\n")
+            self._lock(project, "arm")
+            self.assertEqual(self._main(project, ["--require-component-passes"]), 1)
+            self.assertIn("interface gear-mesh failed", self.stderr)
+            self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 0)
+            self.assertNotEqual(self._main(project, ["--require-component-passes"]), 2)
+            self.assertNotIn("interface gear-mesh", self.stderr)
+
+    def test_a_later_change_to_a_component_makes_the_interface_result_stale(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._locked_pair(project)
+            self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 0)
+            interfaces, _ = self.module.contract_interfaces(project)
+            state = json.loads((project / "measure/interface-rounds/gear-mesh/make-round-state.json").read_text())
+            current = dict(state["identities"])
+            self.assertEqual(self.module.interface_failures(project, interfaces, current), [])
+            self.assertEqual(self.module.interface_failures(project, interfaces, {**current, "body": "0" * 64}),
+                             ["interface gear-mesh is stale: a Component it joins changed after its check"])
+            # A reader that only hashes the STEP on disk sees the same geometry.
+            steps = {role: hashlib.sha256((project / ("part_%s.step" % role)).read_bytes()).hexdigest()
+                     for role in ("body", "arm")}
+            state["identities"] = {"body": "brep-body", "arm": "brep-arm"}
+            (project / "measure/interface-rounds/gear-mesh/make-round-state.json").write_text(json.dumps(state))
+            self.assertEqual(self.module.interface_failures(project, interfaces, steps), [])
+
+    def test_the_new_modes_take_no_component_or_assembly_options(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, freeze=False)
+            for argv in (["--interface", "gear-mesh", "--component", "part_arm.step.py"],
+                         ["--shared-helpers", "--require-component-passes"],
+                         ["--shared-helpers", "--interface", "gear-mesh"]):
+                with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+                    self.module.main([str(project), *argv])
 
 
 class RoundPolicyTest(unittest.TestCase):

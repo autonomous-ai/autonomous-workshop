@@ -27,7 +27,7 @@ recreates the defect this skill exists to remove.
 ````markdown
 ```design-contract
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "title": "Antisol",
   "inventor": "ad-astra",
   "envelope_mm": [200, 200, 60],
@@ -44,10 +44,27 @@ recreates the defect this skill exists to remove.
      "text": "The sun den is the focal point at 35 degrees azimuth, 22 elevation."},
     {"id": "R02", "scope": "geometry:world-disc",
      "text": "Each disc carries one raised equatorial band."}
+  ],
+  "interfaces": [
+    {"id": "disc-peg", "kind": "static", "components": ["world-disc", "base"]},
+    {"id": "disc-swing", "kind": "separable", "components": ["world-disc", "base"],
+     "envelope": {"inside": "world-disc", "outside": "base", "shapes": [
+       {"pose": "rest", "cylinder": {"base_mm": [0, 0, 20], "axis": [0, 0, 1],
+                                     "radius_mm": 34, "height_mm": 8}}]}},
+    {"id": "sun-drive", "kind": "coupled", "components": ["sun-gear", "world-disc"],
+     "yielding": "world-disc",
+     "poses": {"steps": 10, "movers": [
+       {"component": "sun-gear", "rotation": {"axis_point": [0, 0, 0],
+        "axis_direction": [0, 0, 1], "start_deg": 0, "end_deg": 36}},
+       {"component": "world-disc", "driven": true, "rotation": {"axis_point": [40, 0, 0],
+        "axis_direction": [0, 0, 1], "start_deg": 0, "end_deg": -72}}]}}
   ]
 }
 ```
 ````
+
+(The example abridges `geometries[]`; every id an Interface names must be a
+Unique Geometry.)
 
 ## Field rules
 
@@ -70,6 +87,26 @@ recreates the defect this skill exists to remove.
 - `geometries[]`: one entry per **Unique Geometry**. `id` is lowercase kebab
   case. `count` is how many Components the toy has with this shape.
   `wall_min_mm` is the minimum wall.
+- `schema_version`: `2` for every new contract. A schema 1 contract has no
+  `interfaces` and stays valid only for runs sealed before them.
+- `interfaces[]` (ADR 0082): one entry per place two or more Components meet;
+  `[]` when none do. `id` is lowercase kebab case and unique. `kind` is
+  `static`, `separable` or `coupled`. `components` lists two or more
+  different Unique Geometry ids.
+  - A `separable` Interface has an `envelope`: `inside` and `outside`, two of
+    its Components, and `shapes`, each a lowercase `pose` name with exactly
+    one `box` (`min_mm`, `max_mm`, min below max) or `cylinder` (`base_mm`, a
+    non-zero `axis`, positive `radius_mm` and `height_mm`), in assembly
+    coordinates. One shape is a static envelope; several are one per pose,
+    each pose named once.
+  - A `coupled` Interface has `yielding`, one of its Components, and exactly
+    one of `poses` (`steps`, a positive integer, and `movers`, each naming
+    one of its `component`s once with a `rotation` and/or `translation` in
+    `check_motion`'s form and an optional `driven`) or `poses_from`, the id
+    of a `coupled_motion_collision` condition in the CAD project's
+    `measure/motion.json` whose movers name Components by id.
+  - A `static` Interface has nothing more. No Kind takes another Kind's
+    fields.
 - `requirements[]`: the visual requirements, meaning what a person would
   judge by looking. `id` is `R` followed by two digits, unique. `scope` is
   `assembly` or `geometry:<id>`. That is the requirement's Requirement Scope.
@@ -82,6 +119,9 @@ A contract is ready only when all of these hold. Report every failure at once.
 
 - The block parses, and every field above is present and well formed.
 - Every `id` is unique, and every `geometry:<id>` it cites exists.
+- Every Interface has its Kind and two or more existing Components, a
+  separable one its envelope and a coupled one its yielding Component and
+  poses.
 - Every Unique Geometry has at least one reference whose `shows` names it.
 - Every reference file exists beside `CONTRACT.md` and meets the image rules.
 - **At most 16 assembly-scoped requirements, and at most 4 per Unique

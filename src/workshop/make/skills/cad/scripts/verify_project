@@ -715,12 +715,48 @@ def _component_review_coverage(
     return failures, acceptances
 
 
+def _interface_review(make_round: dict, project: Path, identities: dict[str, str]) -> tuple[list[str], list[dict] | None]:
+    """``(failures, report)`` for the sealed contract's Interfaces (ADR 0082).
+
+    ``report`` is None when the contract has no Interfaces section. Every
+    Coupled Interface needs a current passing make_round --interface check on
+    the Components' present identities; make_round owns that rule.
+    """
+    if "contract_interfaces" not in make_round:
+        return [], None
+    interfaces, error = make_round["contract_interfaces"](project)
+    if error is not None:
+        return [error], None
+    if interfaces is None:
+        return [], None
+    digests: dict[str, str] = {}
+    for interface in interfaces:
+        for role in interface.get("components") or ():
+            step = project / f"{PART_PREFIX}{role}.step"
+            if role in identities:
+                digests[role] = identities[role]
+            elif step.is_file():
+                digests[role] = _sha256_file(step)
+    failures = [f"{failure}; run make_round --interface" for failure in
+                make_round["interface_failures"](project, interfaces, digests)]
+    return failures, make_round["interface_report"](project, interfaces, digests)
+
+
 def _component_review_failed(runner: "Runner", make_round: dict, project: Path, sealed: list[dict]) -> bool:
     """Record the Contract Mode component-image gate; True when it fails."""
     started = time.perf_counter()
-    failures, acceptances = _component_review_coverage(
-        make_round, project, sealed, _gen_part_identities(runner.last_stdout)
-    )
+    identities = _gen_part_identities(runner.last_stdout)
+    failures, acceptances = _component_review_coverage(make_round, project, sealed, identities)
+    interface_failures, interfaces = _interface_review(make_round, project, identities)
+    failures += interface_failures
+    if interfaces is not None:
+        runner.interfaces = interfaces
+        proofs = {"keep-out-envelope": "Keep-out Envelope checked in each side's component round",
+                  "shared-helper-samples": "Shared Helper samples passed the print gates"}
+        for item in interfaces:
+            proof = proofs.get(item["check"]) or (
+                f"--interface check {item['check']}" + (f" at r{item['round']:04d}" if item.get("round") else ""))
+            runner.note("interface", f"{item['id']} ({item['kind']}: {' + '.join(item['components'])}): {proof}")
     for failure in failures:
         print(f"verify_project: {failure}", file=sys.stderr)
     if runner.component_acceptances is not None:
@@ -741,13 +777,16 @@ def _component_review_failed(runner: "Runner", make_round: dict, project: Path, 
     return bool(failures)
 
 
-def _write_component_acceptance(report: Path, acceptances: list[dict]) -> None:
-    """Bind the Manager's component acceptances to this exact verification report."""
+def _write_component_acceptance(report: Path, acceptances: list[dict], interfaces: list[dict] | None = None) -> None:
+    """Bind the Manager's component acceptances, and the contract's Interfaces
+    with how each was proven (ADR 0082), to this exact verification report."""
     record = {
         "schema_version": 1,
         "verification_sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
         "acceptances": acceptances,
     }
+    if interfaces is not None:
+        record["interfaces"] = interfaces
     (report.parent / COMPONENT_ACCEPTANCE_NAME).write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
 
 
@@ -946,6 +985,9 @@ class Runner:
         # Workshop Manager accepted at the shape-repair limit, written beside
         # the report as component-acceptance.json.
         self.component_acceptances: list[dict] | None = None
+        # The sealed contract's Interfaces and how each was proven, when it
+        # has an Interfaces section (ADR 0082).
+        self.interfaces: list[dict] | None = None
 
     def command(
         self,
@@ -1525,7 +1567,7 @@ def _write_report(
                   "verification_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
     (path.parent / "geometry-inspection.json").write_text(json.dumps(disclosure, indent=2) + "\n", encoding="utf-8")
     if runner.component_acceptances is not None:
-        _write_component_acceptance(path, runner.component_acceptances)
+        _write_component_acceptance(path, runner.component_acceptances, runner.interfaces)
 
 
 # ── Harness verdict ───────────────────────────────────────────────────────────
