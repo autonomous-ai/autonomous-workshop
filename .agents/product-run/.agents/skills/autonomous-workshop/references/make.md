@@ -156,6 +156,18 @@ are separate. Frozen older runs retain their materialized rules and tools.
    design notes may inform the worker's brief, but an Inventor never runs
    `make_round`.
 
+   With the shared files, copy the printable detail library into the
+   project; workers build rivets, bosses, low domes, bands, rims, pipe ribs,
+   inset panels, lancet windows and grille slits with it instead of by hand:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/print-details/scripts/print_details.py --install <cad-project>
+   ```
+
+   It writes `features/print_details.py`, byte for byte, so the sealed
+   project builds on its own. It is a standard element, like a `stdpart`
+   gear, not a design value: never edit it.
+
    When the sealed Design Contract has an `interfaces` section (ADR 0082),
    implement its Interfaces; do not invent others. A shared file is then a
    Shared Helper and holds only what two or more Components must agree on:
@@ -205,7 +217,8 @@ are separate. Frozen older runs retain their materialized rules and tools.
    Delegate each Component's authoring and loop (ADR 0077, ADR 0080). Once the
    shared files are written, spawn one worker per Component, in parallel, as
    a `component-worker` agent. Give it only: the component id and the
-   `part_<id>.step.py` path it writes; the shared files it builds on; its
+   `part_<id>.step.py` path it writes; the shared files it builds on,
+   including `features/print_details.py`; its
    sealed `geometry:<id>` reference and declared camera; only that
    Component's Design Contract rows; the nozzle; and the shape-repair limit
    (5). The worker writes the first draft, runs the round above until build

@@ -60,6 +60,7 @@ _PRODUCT_RUN_DOMAIN_SKILL_PATHS = (
     ("image-to-cad", Path("make/skills/image-to-cad")),
     ("make-round", Path("make/skills/make-round")),
     ("manual-design", Path("release/skills/manual-design")),
+    ("print-details", Path("make/skills/print-details")),
     ("product-design", Path("make/skills/product-design")),
     ("step-parts", Path("make/skills/step-parts")),
     ("wiki", Path("make/skills/wiki")),

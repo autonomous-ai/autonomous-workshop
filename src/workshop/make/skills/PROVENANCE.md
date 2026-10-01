@@ -917,6 +917,24 @@ the next resync. `tests/make/test_harness_verdict.py` covers it.
   The design pages apply to any moving product; `verification.md` describes
   evidence only a `check_motion: true` run produces.
 
+## `print-details`
+
+Added 2026-10-01 (issue #79). Host-owned, not vendored: authored in this
+repository and recorded in `LOCK.json` under this repository's URL, like
+`make-round`. A one-file build123d library of printable decorative detail for
+Component Workers -- rivets, round bosses, low domes, raised bands and rims,
+half-round pipe ribs, inset panels with an optional lancet arch, windows and
+grille slits. Each limit it enforces names the `wiki` page it comes from
+(`printing/fdm-minimum-feature-sizes.md`,
+`printing/wall-thickness-and-hollowing.md`,
+`printing/overhangs-and-print-orientation.md`); the library reads those
+numbers, it does not change the pages. Its `--self-check` runs the vendored
+`cad` tree's own `check_thickness` and `check_overhang`, unchanged, on every
+feature at its minimum and default sizes. It does not modify the vendored
+`cad` or `wiki` trees, so a resync does not touch it, and it could be offered
+upstream later. The Manager copies it into a CAD project as
+`features/print_details.py` so the sealed project stays self-contained.
+
 ## `make-round`
 
 Local extension (2026-09-09, ADR 0060): each round renders native inspection

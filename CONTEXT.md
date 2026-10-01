@@ -263,6 +263,16 @@ Workshop Manager writes it, tests it on built samples, and freezes it before
 any Component Worker starts.
 _Avoid_: Shared file, common code, utils
 
+**Print Detail**:
+A decorative surface feature (a rivet, boss, low dome, band, rim, pipe rib,
+inset panel, lancet window or grille slit) that a Component Worker adds from
+the Workshop's print-details library instead of modelling it by hand. Each
+refuses a size below the design wiki's print limits for the run's nozzle and
+prints without support in the Component's print stance. The Workshop Manager
+copies the library unchanged into the CAD project, where it is frozen with
+the Shared Helpers but holds no design value.
+_Avoid_: Greebles, trim, hand-modelled detail
+
 **Interface**:
 One place where two or more Components meet, recorded in the Design Contract
 with its Interface Kind and the Components it joins. Interfaces are how a

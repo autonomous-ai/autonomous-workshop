@@ -77,8 +77,9 @@ While pursuing the Goal:
    the last revision.
 2. **Act:** Use native editing and the materialized `cad`, `image-to-cad`,
    `product-design`, `design-reference`, `electromechanical-integration`,
-   `step-parts`, and `wiki` skills under `.agents/skills/` to create or repair
-   the actual product artifact.
+   `print-details`, `step-parts`, and `wiki` skills under `.agents/skills/` to
+   create or repair the actual product artifact. `print-details` builds
+   decorative surface detail that passes the print gates.
    `product-design` designs a prose Wish whose design is still open, never a
    sealed concept or Design Contract. `wiki` is read-only reference knowledge:
    search it before a part that turns, slides, swings, indexes, latches or

@@ -27,6 +27,11 @@
       "source_commit": "db64280a9ee12f3d3e8a728c64906f00a456c150",
       "source_url": "https://github.com/autonomous-ai/autonomous-workshop"
     },
+    "print-details": {
+      "sha256": "3ef1bbf4e07fcb9b9061c058dd8f4b148e23cd49a61da273c291ee75758df454",
+      "source_commit": "e7c5581fb307016564ee4ed71f79da186cc1e8c5",
+      "source_url": "https://github.com/autonomous-ai/autonomous-workshop"
+    },
     "product-design": {
       "sha256": "5c681ce5ced86d6726d424781a7166c8f89962b17cf418e674216566e19f393f",
       "source_commit": "b149710749317fca5ae359f40fb17a362525b1de",

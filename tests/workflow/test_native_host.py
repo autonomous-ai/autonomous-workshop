@@ -2821,6 +2821,7 @@ class NativeHostTest(unittest.TestCase):
                 "electromechanical-integration",
                 "image-to-cad",
                 "manual-design",
+                "print-details",
                 "product-design",
                 "step-parts",
                 "wiki",

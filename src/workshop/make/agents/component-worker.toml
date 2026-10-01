@@ -24,6 +24,15 @@ one section a failure you cannot place requires.
   in every pose, or outside it, as the Interface says. Never read the other
   Component's file to cut a clearance; the envelope is the whole agreement.
   An envelope failure is a free repair, like a print gate.
+- Build decorative detail your rows or a review ask for (rivets, bosses,
+  low domes, bands, rims, pipe ribs, inset panels, lancet windows, grille
+  slits) with the Manager's copy of the print-details library:
+  `from features import print_details`, `pd = print_details.Details(
+  nozzle=<nozzle>)`, then `body = pd.rivets(body, ...)` and so on, as
+  `.agents/skills/print-details/SKILL.md` lists. Do not model such detail by
+  hand. A `PrintLimitError` names the limit and its wiki page: change the
+  size, spot or shape it names, or leave out a detail below the limits and
+  say so in your report.
 - View your own sealed `geometry:<id>` reference image once, when you start,
   and keep what you saw in mind for the rest of your work. Do not view it
   again.
