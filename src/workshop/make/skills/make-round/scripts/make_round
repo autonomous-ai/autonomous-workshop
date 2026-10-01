@@ -79,6 +79,12 @@ COMPARISON_HEIGHT = 480
 # Names that identify the Workshop Manager; a component review must come from
 # someone else (ADR 0075, ADR 0076).
 MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
+# On a runtime that proves who reviewed (issue #77), a review names its
+# Component Reviewer by the native agent id the runtime returned when it was
+# spawned, and a Component's first review binds that id. The Workshop host
+# sets the runtime; without one a review keeps the free-text reviewer name.
+REVIEWER_RUNTIME_ENV = "WORKSHOP_REVIEWER_RUNTIME"
+REVIEWER_ID_FORMATS = {"claude": (re.compile(r"[0-9a-f]{17}"), "17 lowercase hex characters")}
 _GEOMETRY_DEADLINES = {}
 
 
@@ -452,6 +458,7 @@ def record_review(project: Path, review_path, component: str) -> dict:
         raise ValueError("a review needs the reviewer's name")
     if reviewer.strip().lower() in MANAGER_NAMES:
         raise ValueError("the Workshop Manager cannot review its own component")
+    bound = reviewer_binding(state, reviewer)
     if type(review["agrees"]) is not bool:
         raise ValueError("a review's agrees must be true or false")
     if not isinstance(review["reason"], str) or not 1 <= len(review["reason"].strip()) <= MAX_REASON:
@@ -488,8 +495,35 @@ def record_review(project: Path, review_path, component: str) -> dict:
     (out / "review.json").write_text(json.dumps(review, sort_keys=True, indent=2) + "\n")
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
     state["policy"] = policy
+    if bound is not None:
+        state["reviewer_id"] = bound
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return summary
+
+
+def reviewer_binding(state: dict, reviewer: str, runtime: str | None = None) -> str | None:
+    """The native reviewer id a review binds the Component to, or None where
+    the runtime gives no such id (issue #77).
+
+    The id must have the runtime's format, so a name or a placeholder is
+    refused. The Component's first review binds it; a review naming another
+    id is refused with the bound one, so the Manager asks that thread again.
+    """
+
+    runtime = os.environ.get(REVIEWER_RUNTIME_ENV) if runtime is None else runtime
+    if runtime not in REVIEWER_ID_FORMATS:
+        return None
+    pattern, shape = REVIEWER_ID_FORMATS[runtime]
+    if not pattern.fullmatch(reviewer):
+        raise ValueError(
+            "reviewer must be the component-reviewer's native agent id (%s), exactly as the "
+            "runtime returned it when the reviewer was spawned; got %r" % (shape, reviewer[:40]))
+    bound = state.get("reviewer_id")
+    if bound is not None and bound != reviewer:
+        raise ValueError(
+            "this Component's reviews are bound to reviewer %s; send the review request to "
+            "that reviewer's thread and record its answer under that id" % bound)
+    return reviewer
 
 
 def lock_record(policy: dict) -> dict | None:
@@ -1555,6 +1589,7 @@ def make_round(args) -> int:
         return 2
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
+    previous_state = state
     policy = component_policy(state, round_root) if component is not None else None
     round_index = int(state.get("round", 0)) + 1
     out = Path(args.out) if args.out else round_root / ("r%04d" % round_index)
@@ -1821,6 +1856,9 @@ def make_round(args) -> int:
     }
     if component is not None:
         state.update(shape_rounds=next_policy["shape_rounds"], policy=next_policy)
+        # The Component's reviewer binding outlives its rounds (issue #77).
+        if previous_state.get("reviewer_id") is not None:
+            state["reviewer_id"] = previous_state["reviewer_id"]
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
     # Pending or failed visual evidence cannot report a complete round; a
@@ -1995,6 +2033,17 @@ def self_check() -> int:
     carried = round_policy(at_cap, {"identity": "A", "helpers": {"h.py": "2"}, "checks_ok": True, "carry_key": "k", "round": 4})
     check(carried["carried"] is not None and carried["state"]["phase"] == LOCKED,
           "a Shared Helper change unlocks; the same B-rep carries the acceptance and relocks")
+    def refused(state, reviewer, runtime):
+        try:
+            reviewer_binding(state, reviewer, runtime)
+        except ValueError:
+            return True
+        return False
+    check(refused({}, "fresh-reviewer", "claude") and reviewer_binding({}, "fresh-reviewer", "") is None,
+          "on Claude Code a reviewer is a native agent id; elsewhere it stays a name")
+    check(reviewer_binding({}, "a1f355b61d99918ed", "claude") == "a1f355b61d99918ed"
+          and refused({"reviewer_id": "a1f355b61d99918ed"}, "a7740f58e37677176", "claude"),
+          "a Component's first reviewer id binds it; another id is refused")
     summary = {
         "round": 3, "scope": "assembly", "project": "/p/cad", "parts": ["frame", "knob", "lens"], "changed": ["frame"], "checked": ["frame"],
         "build": {"frame": {"verdict": "PASS", "failures": []}},

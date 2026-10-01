@@ -15,12 +15,21 @@ and subagents alike. The runtime names the calling subagent in the hook input
 - ``--record-review``, ``--record-unlock`` (ADR 0081), ``--record-visual``
   and assembly rounds run only from the root Workshop Manager.
 
+On Claude Code the same script also keeps the evidence that binds a Component
+Review to its reviewer (ADR 0081, issue #77). It is registered for ``Read``
+and ``SubagentStart`` as well: every subagent the runtime starts is appended
+to the subagent log, and every ``Read`` by a ``component-reviewer`` is
+appended to the reviewer read log with the agent id, the resolved path and
+the sha256 of the bytes it read. A ``Read`` is never denied. The host checks
+each recorded review against both logs.
+
 The hook decides who may run make_round, not who may spawn whom. It runs as a
 standalone script with the standard library only; it makes no model call.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -31,6 +40,11 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
 NONCE_TABLE_NAME = "worker-nonces.jsonl"
+READ_LOG_NAME = "reviewer-reads.jsonl"
+SUBAGENT_LOG_NAME = "subagents.jsonl"
+COMPONENT_REVIEWER = "component-reviewer"
+# A file larger than any packet image is logged without a hash.
+MAX_HASHED_READ_BYTES = 64 * 1024 * 1024
 NONCE_FLAG = "--worker-nonce"
 COMPONENT_WORKER = "component-worker"
 SCRIPT_NAME = "make_round"
@@ -213,6 +227,68 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
     return None
 
 
+def reviewer_read(event: Mapping[str, Any]) -> Optional[dict[str, Any]]:
+    """The read-log record for a ``Read`` by a Component Reviewer, or ``None``.
+
+    The path is resolved and the file hashed when the hook runs, just before
+    the runtime reads it, so the record names the exact bytes the reviewer saw.
+    """
+
+    if event.get("tool_name") != "Read" or event.get("agent_type") != COMPONENT_REVIEWER:
+        return None
+    agent_id = event.get("agent_id")
+    tool_input = event.get("tool_input")
+    if not isinstance(agent_id, str) or not agent_id or not isinstance(tool_input, Mapping):
+        return None
+    path = tool_input.get("file_path")
+    if not isinstance(path, str) or not path:
+        return None
+    cwd = event.get("cwd")
+    if not os.path.isabs(path) and isinstance(cwd, str):
+        path = os.path.join(cwd, path)
+    resolved = os.path.realpath(path)
+    digest = None
+    try:
+        if os.path.isfile(resolved) and os.path.getsize(resolved) <= MAX_HASHED_READ_BYTES:
+            with open(resolved, "rb") as handle:
+                digest = hashlib.sha256(handle.read()).hexdigest()
+    except OSError:
+        digest = None
+    return {
+        "agent_id": agent_id,
+        "agent_type": event.get("agent_type"),
+        "path": resolved,
+        "sha256": digest,
+        "session_id": event.get("session_id"),
+        "tool_use_id": event.get("tool_use_id"),
+    }
+
+
+def subagent_record(event: Mapping[str, Any]) -> Optional[dict[str, Any]]:
+    """The subagent-log record for a ``SubagentStart`` event, or ``None``."""
+
+    if event.get("hook_event_name") != "SubagentStart":
+        return None
+    agent_id = event.get("agent_id")
+    if not isinstance(agent_id, str) or not agent_id:
+        return None
+    return {
+        "agent_id": agent_id,
+        "agent_type": event.get("agent_type"),
+        "session_id": event.get("session_id"),
+    }
+
+
+def _append(table: Path, record: Mapping[str, Any]) -> None:
+    line = (json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    descriptor = os.open(str(table), os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+    try:
+        os.write(descriptor, line)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 def _table_issuer(table: Path) -> Issuer:
     def issue(event: Mapping[str, Any], component: str) -> str:
         nonce = secrets.token_hex(16)
@@ -224,13 +300,7 @@ def _table_issuer(table: Path) -> Issuer:
             "session_id": event.get("session_id"),
             "tool_use_id": event.get("tool_use_id"),
         }
-        line = (json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
-        descriptor = os.open(str(table), os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
-        try:
-            os.write(descriptor, line)
-            os.fsync(descriptor)
-        finally:
-            os.close(descriptor)
+        _append(table, record)
         return nonce
 
     return issue
@@ -244,7 +314,20 @@ def main() -> int:
     except ValueError:
         print(json.dumps(_deny("the hook input is not a JSON object")))
         return 0
-    table = Path(__file__).resolve().parent / NONCE_TABLE_NAME
+    directory = Path(__file__).resolve().parent
+    # Evidence only: a spawn or a read is never refused, and a record that
+    # cannot be written is missing at the host's check instead.
+    evidence = subagent_record(event)
+    log = SUBAGENT_LOG_NAME
+    if evidence is None:
+        evidence, log = reviewer_read(event), READ_LOG_NAME
+    if evidence is not None:
+        try:
+            _append(directory / log, evidence)
+        except OSError:
+            pass
+        return 0
+    table = directory / NONCE_TABLE_NAME
     try:
         output = decide(event, issue=_table_issuer(table))
     except OSError:

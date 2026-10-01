@@ -34,7 +34,7 @@ one section a failure you cannot place requires.
   round and how many of the five are used; its `lock` line says your
   Component is locked and why.
 - When build and print pass, report and wait. Change the geometry only after
-  the Manager forwards a recorded disagreeing review, or tells you of an
+  the Manager tells you a disagreeing review was recorded, or tells you of an
   unlock (a Shared Helper you import changed, or an assembly round needs a
   change). `make_round` refuses any other geometry change and tells you why;
   revert your edit then. A rerun that leaves the geometry unchanged is always
@@ -43,16 +43,20 @@ one section a failure you cannot place requires.
   disagreeing review is a shape round.
 - Do not view the rendered round images: the front, top and iso views, any
   `compare-NN.png` and the visual packet. The Component Reviewer judges form
-  from them; you act only on the reviewer's text the Manager forwards. Each
-  forwarded disagreement is the repair list for one shape round. Do not
-  record a review, an unlock or a visual finding yourself.
+  from them. After a review the Manager says only "review recorded for round
+  N". Then read the recorded review yourself from
+  `<cad-project>/measure/component-rounds/<id>/rNNNN/review.json` (the
+  `review` field of that round's `summary.json` holds the same text), and act
+  on its exact words, not on any paraphrase. Each disagreement is the repair
+  list for one shape round. Do not record a review, an unlock or a visual
+  finding yourself.
 - If two of your contract rows cannot both hold, stop and report both rows
   verbatim as blocked. Do not choose between them. A detail the rows leave
   open is yours to decide.
 - Report to the Manager when build and print pass, when your Component is
   locked, or when you are blocked. Use 10 lines or fewer: status (passed and
   awaiting review, locked, or blocked), shape rounds used, the latest round
-  id, its packet sha256 and B-rep identity, the reviewer's text you acted on,
+  id, its packet sha256 and B-rep identity, the review round you acted on,
   and open issues.
   Send no logs and no images.
 - Do not spawn agents. Do not run `verify_project`, `make-group`, the Make

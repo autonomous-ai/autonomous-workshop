@@ -2716,13 +2716,15 @@ def _verify_make_round_workers(
     made: NativeMade,
     *,
     require_every_component: bool = False,
+    bind_reviewers: bool = False,
 ) -> None:
     """Refuse Make output holding a Component round no worker ran (ADR 0080).
 
     A run created without the make_round guard keeps its frozen behaviour. A
     changed guard is a host-state conflict; a round without an issued worker
     nonce is a Make rejection the Manager repairs by rerunning it through a
-    component-worker.
+    component-worker. With ``bind_reviewers`` (issue #77) a recorded
+    Component Review whose reviewer is unproven is refused the same way.
     """
 
     if guard_sha256 is None:
@@ -2738,6 +2740,7 @@ def _verify_make_round_workers(
         host_state_root,
         run_root=Path(run_root),
         require_every_component=require_every_component,
+        bind_reviewers=bind_reviewers,
     )
 
 
@@ -7531,6 +7534,7 @@ def _evaluate_make_stage(
             made,
             # Component-first Spark Make builds every Component in a round.
             require_every_component=checkpoint.effort == "spark",
+            bind_reviewers=checkpoint.component_reviewer_binding,
         )
         # Spark consumes Make's accepted output, not another engineering
         # acceptance pass. Keep only exact-byte and upstream identity checks.

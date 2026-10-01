@@ -275,6 +275,8 @@ class ClaudeNativeSessionTest(unittest.TestCase):
             seen.setdefault("commands", []).append(command)
             self.assertEqual(kwargs["cwd"], str(self.run_root))
             self.assertIn("WORKSHOP_PYTHON", kwargs["env"])
+            # make_round checks a reviewer id in this runtime's format (#77).
+            self.assertEqual(kwargs["env"]["WORKSHOP_REVIEWER_RUNTIME"], "claude")
             self.assertNotIn("FACTORY_PASSWORD", kwargs["env"])
             return _FakeProcess(
                 [
@@ -437,6 +439,14 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         hook = json.loads(claude_hook_settings(script))["hooks"]["PreToolUse"][0]
         self.assertEqual(hook["matcher"], "Bash")
         self.assertIn(str(script), hook["hooks"][0]["command"])
+
+    def test_guard_settings_also_record_reviewer_reads_and_subagent_starts(self):
+        # Issue #77: the evidence that binds a Component Review to its reviewer.
+        script = Path("/state/make-round-guard/make_round_guard.py")
+        hooks = json.loads(claude_hook_settings(script))["hooks"]
+        self.assertEqual([entry["matcher"] for entry in hooks["PreToolUse"]], ["Bash", "Read"])
+        for entry in (hooks["PreToolUse"][1], hooks["SubagentStart"][0]):
+            self.assertIn(str(script), entry["hooks"][0]["command"])
 
     def test_an_installed_make_round_guard_is_registered_on_every_turn(self):
         commands = []

@@ -243,15 +243,16 @@ component geometry.
 
 A component passes when it builds, its print gates pass and an independent
 reviewer agrees that it looks like its reference (ADR 0076). The Workshop
-Manager does not judge its own component: spawn a fresh subagent that did not
-author the Component. Give it the round's `visual-packet.json` images (front,
-top, iso and every `compare-NN.png`) and that geometry's contract lines, and
-ask whether the model looks like its reference. Write its answer with the
-exact packet hash from the summary:
+Manager does not judge its own component: each Component has one reviewer
+that did not author it, spawned once and asked again in the same thread for
+every later round. The request is fixed: the round's `visual-packet.json`
+path, its packet sha256 and that geometry's contract lines, nothing else, once
+per packet. Write its answer unchanged with the exact packet hash from the
+summary:
 
 ```json
 {"round": 3, "packet_sha256": "<visual packet hash from summary>",
- "reviewer": "<subagent name>", "agrees": false,
+ "reviewer": "<the reviewer's native agent id>", "agrees": false,
  "reason": "The arm reads half as thick as the reference.",
  "differences": [{"feature": "upper arm", "reference": "as thick as the leg",
                   "model": "half the leg's thickness"}]}
@@ -269,8 +270,16 @@ It refuses a review of a round that is not the latest, a different packet
 hash, changed sources, packet, renders, references or comparisons, a round
 whose build or print checks failed or that has no packet, a second review of
 the same round (a carried review counts), and a reviewer named as the
-Workshop Manager. It cannot prove who the reviewer was;
-the Manager must not write the review itself.
+Workshop Manager. Where the Workshop host names the runtime
+(`WORKSHOP_REVIEWER_RUNTIME`, set on Claude Code), `reviewer` must be the
+reviewer's native agent id in that runtime's format (17 lowercase hex
+characters), the Component's first review binds it in the component state as
+`reviewer_id`, and a review naming another id is refused with the bound one.
+`make_round` cannot prove who the reviewer was; the host does, at Make
+acceptance, from the guard's record of which agent the runtime started and
+which packet images it read. The Manager must not write, edit or filter the
+review, and tells the worker only which round was reviewed: the worker reads
+`review.json` in that round.
 
 ### The round policy (ADR 0081)
 

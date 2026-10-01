@@ -42,6 +42,7 @@ from workshop.make.role_agents import (
 from workshop._validation import require_sha256
 from workshop.make.role_guard import (
     MAKE_ROUND_GUARD_MANAGER_IDS,
+    REVIEWER_BINDING_MANAGER_IDS,
     install_make_round_guard,
     verify_make_round_guard,
 )
@@ -846,6 +847,9 @@ class AgentRunCheckpoint:
     # The sha256 of the make_round guard hook sealed in host state (ADR 0080);
     # None for a run created without one.
     make_round_guard_sha256: Optional[str] = None
+    # Whether Make acceptance binds each Component Review to one proven
+    # Component Reviewer (issue #77); frozen at creation, False for older runs.
+    component_reviewer_binding: bool = False
 
     @property
     def complete(self) -> bool:
@@ -1381,6 +1385,9 @@ class AgentRun:
         if make_round_guard:
             # Host state, never the workspace, holds the hook and its nonces.
             core["make_round_guard_sha256"] = install_make_round_guard(selected_host)
+            if selected_manager.manager_id in REVIEWER_BINDING_MANAGER_IDS:
+                # Only a runtime whose hooks record subagent starts and reads.
+                core["component_reviewer_binding"] = True
         checkpoint_sha256 = cls._write_checkpoint_file(
             selected_host / "agent-run.json", core
         )
@@ -1538,6 +1545,8 @@ class AgentRun:
             expected_fields.add("turn_seconds")
         if "make_round_guard_sha256" in payload:
             expected_fields.add("make_round_guard_sha256")
+        if "component_reviewer_binding" in payload:
+            expected_fields.add("component_reviewer_binding")
         if set(payload) != expected_fields:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
@@ -1612,6 +1621,11 @@ class AgentRun:
             verify_make_round_guard(
                 self.host_state_root, payload["make_round_guard_sha256"]
             )
+        if "component_reviewer_binding" in payload and (
+            payload["component_reviewer_binding"] is not True
+            or "make_round_guard_sha256" not in payload
+        ):
+            raise StateConflict("agent run reviewer binding is invalid")
         _identifier(payload["product_id"], "agent run product_id")
         _positive_int(payload["max_rounds"], "agent run max_rounds", 100)
         expected_root = _sha256(str(self.run_root).encode("utf-8"))
@@ -2200,6 +2214,7 @@ class AgentRun:
             turn_seconds=payload.get("turn_seconds"),
             turn_untimed="turn_seconds" in payload and payload["turn_seconds"] is None,
             make_round_guard_sha256=payload.get("make_round_guard_sha256"),
+            component_reviewer_binding=payload.get("component_reviewer_binding", False),
         )
 
     def expected_gate_subject_sha256(self) -> str:

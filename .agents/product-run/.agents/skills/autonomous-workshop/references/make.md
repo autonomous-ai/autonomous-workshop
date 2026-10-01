@@ -191,19 +191,35 @@ are separate. Frozen older runs retain their materialized rules and tools.
    finishes.
 
    When a worker reports build and print passing, you, not the worker, ask the
-   reviewer. Keep one reviewer thread per Component, spawned once as a
-   `component-reviewer` agent, and send each later review of that Component
-   to the same thread as a follow-up so its cached prefix survives. Give it the
-   round's visual packet paths (front, top, iso and every `compare-NN.png`)
-   and that Component's contract rows. Write its answer with the exact packet
-   hash from the worker's report as
+   reviewer. Each Component has one reviewer: spawn it once as a
+   `component-reviewer` agent and send every later review of that Component
+   to the same thread as a follow-up, so its cached prefix survives. Never
+   spawn a second reviewer for a Component.
+
+   The review request has one fixed shape and nothing else: the round's
+   `visual-packet.json` path, its packet sha256 from the worker's report, and
+   that Component's contract rows. Add no notes, no accepted differences and
+   no explanation of the renders; the reviewer's definition already explains
+   the print stance and the printing limits. Ask once per packet: never ask
+   for a re-review of the same packet, and never edit, filter or summarize
+   the answer.
+
+   Write its answer unchanged as
    `{"round", "packet_sha256", "reviewer", "agrees", "reason", "differences"}`;
    `differences` lists `{"feature", "reference", "model"}` (at most 12) and is
-   required when it disagrees. Record it with the same `--component` argument
-   plus `--record-review <review.json>`. On a disagreement, forward the
-   reviewer's text to the same worker: it is the repair list for the next
-   shape round. Close the worker once the reviewer agrees or the cap below is
-   reached.
+   required when it disagrees. `reviewer` is the reviewer's native agent id,
+   exactly as the runtime returned it when you spawned it (on Claude Code, 17
+   lowercase hex characters), never a name. Record it with the same
+   `--component` argument plus `--record-review <review.json>`. The
+   Component's first review binds that id; `make_round` refuses a review
+   naming another id and tells you the bound one. The host refuses Make output
+   whose recorded review names an agent that is not this run's Component
+   Reviewer or that did not read every image of the packet it judged.
+
+   After recording, tell the worker only "review recorded for round N". The
+   worker reads the recorded review from that round itself; on a
+   disagreement it is the repair list for the next shape round. Close the
+   worker once the reviewer agrees or the cap below is reached.
 
    Workers never edit a shared file such as `params.py` or
    `features/forms.py`; they ask you. Edit it yourself, then send back

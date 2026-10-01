@@ -1,3 +1,4 @@
+import hashlib
 import json
 import subprocess
 import sys
@@ -8,8 +9,12 @@ from pathlib import Path
 from workshop.make import make_round_guard
 from workshop.make.make_round_guard import (
     NONCE_TABLE_NAME,
+    READ_LOG_NAME,
+    SUBAGENT_LOG_NAME,
     decide,
     make_round_calls,
+    reviewer_read,
+    subagent_record,
 )
 
 SCRIPT = '"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round'
@@ -154,6 +159,52 @@ class DecideTest(unittest.TestCase):
             self.assertIsNone(decide(_event(SCRIPT + " " + flag, "rowan-vale"), issue=_Issuer()))
 
 
+def _read_event(path, agent_type=None, agent_id="a1f355b61d99918ed"):
+    event = {
+        "session_id": "s-1",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Read",
+        "tool_input": {"file_path": str(path)},
+        "tool_use_id": "t-2",
+    }
+    if agent_type is not None:
+        event["agent_type"] = agent_type
+        event["agent_id"] = agent_id
+    return event
+
+
+class ReviewerEvidenceTest(unittest.TestCase):
+    """Issue #77: the evidence that binds a Component Review to its reviewer."""
+
+    def test_a_read_by_a_component_reviewer_names_the_agent_path_and_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            image = Path(directory) / "front.png"
+            image.write_bytes(b"front view")
+            record = reviewer_read(_read_event(image, "component-reviewer"))
+            self.assertEqual(record["agent_id"], "a1f355b61d99918ed")
+            self.assertEqual(record["agent_type"], "component-reviewer")
+            self.assertEqual(record["path"], str(image.resolve()))
+            self.assertEqual(record["sha256"], hashlib.sha256(b"front view").hexdigest())
+
+    def test_a_read_by_another_agent_or_the_root_is_not_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            image = Path(directory) / "front.png"
+            image.write_bytes(b"front view")
+            for agent_type in (None, "component-worker", "general-purpose"):
+                self.assertIsNone(reviewer_read(_read_event(image, agent_type)), agent_type)
+            # A read is never refused by the make_round decision either.
+            self.assertIsNone(decide(_read_event(image, "component-reviewer"), issue=_Issuer()))
+
+    def test_a_subagent_start_is_recorded_with_its_type(self):
+        record = subagent_record({
+            "hook_event_name": "SubagentStart", "session_id": "s-1",
+            "agent_id": "a1f355b61d99918ed", "agent_type": "component-reviewer",
+        })
+        self.assertEqual(record, {"agent_id": "a1f355b61d99918ed",
+                                  "agent_type": "component-reviewer", "session_id": "s-1"})
+        self.assertIsNone(subagent_record(_event("ls")))
+
+
 class HookProcessTest(unittest.TestCase):
     def test_script_appends_the_issued_nonce_beside_itself(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -176,6 +227,33 @@ class HookProcessTest(unittest.TestCase):
                 "--worker-nonce %s " % records[0]["nonce"],
                 output["hookSpecificOutput"]["updatedInput"]["command"],
             )
+
+    def test_script_logs_reviewer_reads_and_starts_beside_itself_not_in_the_workspace(self):
+        with tempfile.TemporaryDirectory() as host, tempfile.TemporaryDirectory() as workspace:
+            script = Path(host) / "make_round_guard.py"
+            script.write_bytes(Path(make_round_guard.__file__).read_bytes())
+            image = Path(workspace) / "front.png"
+            image.write_bytes(b"front view")
+            events = [
+                {"hook_event_name": "SubagentStart", "session_id": "s-1",
+                 "agent_id": "a1f355b61d99918ed", "agent_type": "component-reviewer"},
+                _read_event(image, "component-reviewer"),
+                _read_event(image, "component-worker", agent_id="a7740f58e37677176"),
+                _read_event(image),
+            ]
+            for event in events:
+                completed = subprocess.run(
+                    [sys.executable, str(script)], input=json.dumps(event),
+                    capture_output=True, text=True, check=True, cwd=workspace,
+                )
+                self.assertEqual(completed.stdout, "")
+            reads = [json.loads(line) for line in (Path(host) / READ_LOG_NAME).read_text().splitlines()]
+            self.assertEqual([(r["agent_id"], r["agent_type"], r["path"]) for r in reads],
+                             [("a1f355b61d99918ed", "component-reviewer", str(image.resolve()))])
+            self.assertEqual(reads[0]["sha256"], hashlib.sha256(b"front view").hexdigest())
+            starts = [json.loads(line) for line in (Path(host) / SUBAGENT_LOG_NAME).read_text().splitlines()]
+            self.assertEqual([r["agent_id"] for r in starts], ["a1f355b61d99918ed"])
+            self.assertEqual(sorted(p.name for p in Path(workspace).iterdir()), ["front.png"])
 
     def test_script_denies_when_the_input_is_not_json(self):
         with tempfile.TemporaryDirectory() as directory:

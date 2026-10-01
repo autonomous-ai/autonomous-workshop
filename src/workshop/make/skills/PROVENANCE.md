@@ -1491,3 +1491,13 @@ reviewed B-rep carries the review forward. A component packet binds only the
 Component's own files and the Shared Helpers it imports, and a component round
 that fails its checks is not rendered. This changes the `make-round`
 fingerprint.
+
+## Local change: a Component Review names its bound reviewer (2026-10-01)
+
+A Workshop-local change to Workshop's own `make-round` (issue #77, extending
+ADR 0081). When the Workshop host sets `WORKSHOP_REVIEWER_RUNTIME` (Claude
+Code), `--record-review` requires `reviewer` to be the reviewer's native agent
+id, binds a Component's first reviewer id in its component state and refuses
+a review naming another id. Without it a review keeps the free-text reviewer
+name. `SKILL.md` describes the fixed review request and the worker reading
+the recorded review itself. This changes the `make-round` fingerprint.

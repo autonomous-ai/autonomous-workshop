@@ -1706,6 +1706,73 @@ class ContractComponentReviewTest(unittest.TestCase):
             self.assertEqual(summary["refs"], [])
 
 
+class ReviewerBindingTest(unittest.TestCase):
+    """Issue #77: on Claude Code a review names its Component Reviewer by native
+    agent id, and the Component's first review binds that id."""
+
+    _contract_root = ContractComponentReviewTest._contract_root
+    _run_root = ContractComponentReviewTest._run_root
+    _fake_run = ContractComponentReviewTest._fake_run
+    _main = ContractComponentReviewTest._main
+    _component = ContractComponentReviewTest._component
+    _review = ContractComponentReviewTest._review
+    REFS = ContractComponentReviewTest.REFS
+    CONTRACT = ContractComponentReviewTest.CONTRACT
+    DIFFERS = ContractComponentReviewTest.DIFFERS
+    FIRST = "a1f355b61d99918ed"
+    SECOND = "a7740f58e37677176"
+
+    def setUp(self):
+        patcher = mock.patch.dict("os.environ", {"WORKSHOP_REVIEWER_RUNTIME": "claude"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _state(self, project):
+        return json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())
+
+    def test_a_reviewer_that_is_not_a_native_agent_id_is_refused(self):
+        for reviewer in ("component-reviewer", "<subagent name>", "A1F355B61D99918ED",
+                         "a1f355b61d99918e", " a1f355b61d99918ed"):
+            with self.subTest(reviewer=reviewer), tempfile.TemporaryDirectory() as tmp:
+                project = self._contract_root(tmp)
+                module, calls = load_module(), []
+                _, summary = self._component(module, project, calls)
+                with self.assertRaisesRegex(ValueError, "native agent id"):
+                    self._review(module, project, summary, reviewer=reviewer)
+                self.assertIsNone(json.loads(
+                    (project / "measure/component-rounds/body/r0001/summary.json").read_text())["review"])
+
+    def test_the_first_id_binds_and_only_that_id_reviews_the_component_again(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self._review(module, project, summary, reviewer=self.FIRST, agrees=False,
+                         reason="The arm is too thin.", differences=self.DIFFERS)
+            self.assertEqual(self._state(project)["reviewer_id"], self.FIRST)
+            _, summary = self._component(module, project, calls)
+            # The binding outlives the round that made it.
+            self.assertEqual(self._state(project)["reviewer_id"], self.FIRST)
+            review = write_review(project, summary, reviewer=self.SECOND)
+            code = self._main(module, project, ["--component", "part_body.step.py", "--record-review", str(review)], calls)
+            self.assertEqual(code, 2)
+            self.assertIn("bound to reviewer %s" % self.FIRST, self.stderr)
+            self.assertIsNone(json.loads(Path(summary["visual"]["packet"]).parent.joinpath("summary.json").read_text())["review"])
+            review = write_review(project, summary, reviewer=self.FIRST)
+            code = self._main(module, project, ["--component", "part_body.step.py", "--record-review", str(review)], calls)
+            self.assertEqual(code, 0)
+            self.assertEqual(self._state(project)["reviewer_id"], self.FIRST)
+
+    def test_without_a_binding_runtime_the_reviewer_stays_a_name(self):
+        with mock.patch.dict("os.environ", {"WORKSHOP_REVIEWER_RUNTIME": ""}), \
+                tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self.assertTrue(self._review(module, project, summary, reviewer="fresh-reviewer")["ok"])
+            self.assertNotIn("reviewer_id", self._state(project))
+
+
 class RoundPolicyTest(unittest.TestCase):
     """ADR 0081: admission, Shape Round counting and the lock, from inputs alone."""
 
