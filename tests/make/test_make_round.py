@@ -853,6 +853,37 @@ class SealedReferenceTest(unittest.TestCase):
             self.assertIn("--component part_world-disc.step.py", summary["reference_errors"][0]["error"])
             self.assertEqual(summary["sealed"], [{"label": "geometry:world-disc", "scored_by": "missing"}])
 
+    def test_contract_mode_labels_a_reference_sealed_with_a_doubled_place_prefix(self):
+        # Before 3c74e963 the host sealed ref-01-whole.png as
+        # ref-01-ref-01-whole.png; runs sealed then keep that name for good.
+        with tempfile.TemporaryDirectory() as tmp:
+            context = {
+                "design_contract": {
+                    "title": "Antisol",
+                    "references": [{"file": "ref-01-whole.png", "shows": "geometry:world-disc"}],
+                }
+            }
+            project = self._run_root(tmp, {"ref-01-ref-01-whole.png": b"whole"}, context=context)
+            module, calls = load_module(), []
+            self._main(module, project, [], calls)
+            summary = self._assembly(project)
+            self.assertEqual(self._shown(summary), [])
+            self.assertEqual([i["label"] for i in summary["reference_errors"]], ["geometry:world-disc"])
+
+    def test_contract_mode_does_not_relabel_a_doubled_prefix_for_another_place(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            context = {
+                "design_contract": {
+                    "title": "Antisol",
+                    "references": [{"file": "ref-01-whole.png", "shows": "geometry:world-disc"}],
+                }
+            }
+            project = self._run_root(tmp, {"ref-02-ref-01-whole.png": b"whole"}, context=context)
+            module, calls = load_module(), []
+            self._main(module, project, [], calls)
+            summary = self._assembly(project)
+            self.assertEqual(self._shown(summary), ["ref-02-ref-01-whole"])
+
     def test_a_missing_sealed_reference_refuses_rather_than_dropping_it(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._run_root(tmp, {"ref-01-whole.png": b"whole"}, missing={"ref-01-whole.png"})

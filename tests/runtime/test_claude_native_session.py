@@ -1,4 +1,6 @@
+import hashlib
 import json
+import stat
 import subprocess
 import tempfile
 import unittest
@@ -14,12 +16,14 @@ from workshop.runtime.managers import (
     NATIVE_TOKEN_USAGE_FIELDS,
 )
 from workshop.runtime.claude import (
+    CLAUDE_SESSION_CHECKPOINT_NAME,
     CLAUDE_TOKEN_BUDGET_STOP_MESSAGE,
     claude_hook_settings,
     DEFAULT_CLAUDE_TIMEOUT_SECONDS,
     ClaudeInvocationError,
     ClaudeNativeSessionLauncher,
     ClaudeNativeSessionOutcome,
+    _canonical_json,
     claude_subprocess_environment,
     claude_supports_native_workshop,
 )
@@ -740,6 +744,88 @@ class ClaudeNativeSessionTest(unittest.TestCase):
             prompt="make",
         )
         self.assertEqual(resumed.session_id, "claude-session-real")
+
+    def _rebind(self, launcher, constitution_sha256, **overrides):
+        values = {
+            "product_id": "wish-one",
+            "wish_sha256": DIGEST,
+            "run_root": self.run_root,
+            "host_state_root": self.host_state,
+            "constitution_sha256": constitution_sha256,
+        }
+        values.update(overrides)
+        return launcher.rebind_session_constitution(**values)
+
+    def test_rebind_session_constitution_moves_only_the_instruction_hash(self):
+        """A host tool refresh reaches a Claude run by rebinding its record."""
+
+        launcher = self._launcher_with_streams(
+            [[_init_line(), _result_line()], [_init_line(), _result_line()]]
+        )
+        self._turn(launcher, "start")
+        checkpoint = self.host_state / CLAUDE_SESSION_CHECKPOINT_NAME
+        before = json.loads(checkpoint.read_text(encoding="utf-8"))
+        corrected = "c" * 64
+
+        result = self._rebind(launcher, corrected)
+
+        self.assertEqual(
+            result,
+            {
+                "session_id": SESSION,
+                "previous_constitution_sha256": DIGEST,
+                "constitution_sha256": corrected,
+                "changed": True,
+            },
+        )
+        after = json.loads(checkpoint.read_text(encoding="utf-8"))
+        unchanged = {"constitution_sha256", "checkpoint_sha256"}
+        self.assertEqual(
+            {key: value for key, value in after.items() if key not in unchanged},
+            {key: value for key, value in before.items() if key not in unchanged},
+        )
+        self.assertEqual(after["constitution_sha256"], corrected)
+        self.assertEqual(
+            after["checkpoint_sha256"],
+            hashlib.sha256(
+                _canonical_json(
+                    {key: value for key, value in after.items() if key != "checkpoint_sha256"}
+                )
+            ).hexdigest(),
+        )
+        self.assertEqual(stat.S_IMODE(checkpoint.stat().st_mode), 0o600)
+        self.assertFalse(self._rebind(launcher, corrected)["changed"])
+
+        with self.assertRaisesRegex(ContractError, "checkpoint binding is invalid"):
+            self._turn(launcher, "resume")
+        resumed = launcher.resume(
+            product_id="wish-one",
+            wish_sha256=DIGEST,
+            constitution_sha256=corrected,
+            run_root=self.run_root,
+            host_state_root=self.host_state,
+            prompt="make",
+        )
+        self.assertEqual(resumed.session_id, SESSION)
+
+    def test_rebind_session_constitution_refuses_another_binding_or_a_tampered_record(self):
+        launcher = self._launcher_with_streams([[_init_line(), _result_line()]])
+        self._turn(launcher, "start")
+        checkpoint = self.host_state / CLAUDE_SESSION_CHECKPOINT_NAME
+        for overrides in (
+            {"wish_sha256": "d" * 64},
+            {"product_id": "wish-two"},
+            {"run_root": self.run_root.parent},
+        ):
+            with self.subTest(overrides=overrides), self.assertRaisesRegex(
+                ContractError, "checkpoint binding is invalid"
+            ):
+                self._rebind(launcher, "e" * 64, **overrides)
+        tampered = json.loads(checkpoint.read_text(encoding="utf-8"))
+        tampered["session_id"] = "claude-session-other"
+        checkpoint.write_text(json.dumps(tampered) + "\n", encoding="utf-8")
+        with self.assertRaisesRegex(ContractError, "checkpoint binding is invalid"):
+            self._rebind(launcher, "e" * 64)
 
     def _launcher_with_streams(self, streams, returncodes=None):
         remaining = [list(lines) for lines in streams]

@@ -687,6 +687,65 @@ class ClaudeNativeSessionLauncher:
             token_usage,
         )
 
+    def rebind_session_constitution(
+        self,
+        *,
+        product_id: str,
+        wish_sha256: str,
+        run_root: Path,
+        host_state_root: Path,
+        constitution_sha256: str,
+    ) -> Mapping[str, Any]:
+        """Rebind the stored session to a host-corrected instruction tree.
+
+        The record binds the hash of the run's instruction and skill bytes, so
+        a host tool refresh moves it by design and rebinds it in the same
+        operation. The record must be self-consistent and bound to this exact
+        product, Wish and pair of roots; only its constitution field changes,
+        and the session, runtime policy and CLI version it names are kept.
+        """
+
+        _require_sha256(wish_sha256, "Claude Wish sha256")
+        _require_sha256(constitution_sha256, "Claude constitution sha256")
+        path = Path(host_state_root) / self.session_checkpoint_name
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(payload, dict):
+                raise ContractError("Claude session checkpoint is not an object")
+            identity = {
+                key: value for key, value in payload.items() if key != "checkpoint_sha256"
+            }
+            session_id = _canonical_session_id(payload.get("session_id"))
+            previous = _require_sha256(
+                payload.get("constitution_sha256"), "Claude constitution sha256"
+            )
+            if (
+                payload.get("checkpoint_sha256")
+                != hashlib.sha256(_canonical_json(identity)).hexdigest()
+                or payload.get("kind") != CLAUDE_SESSION_CHECKPOINT_KIND
+                or payload.get("schema_version") not in (1, 2)
+                or payload.get("product_id") != product_id
+                or payload.get("wish_sha256") != wish_sha256
+                or payload.get("run_root_sha256") != _path_sha256(Path(run_root))
+                or payload.get("host_state_root_sha256")
+                != _path_sha256(Path(host_state_root))
+            ):
+                raise ContractError("Claude session checkpoint does not match")
+        except (OSError, ValueError, ContractError) as exc:
+            raise ContractError(
+                "Claude native session checkpoint binding is invalid"
+            ) from exc
+        if previous != constitution_sha256:
+            rebound = {**identity, "constitution_sha256": constitution_sha256}
+            digest = hashlib.sha256(_canonical_json(rebound)).hexdigest()
+            _write_private_checkpoint(path, {**rebound, "checkpoint_sha256": digest})
+        return {
+            "session_id": session_id,
+            "previous_constitution_sha256": previous,
+            "constitution_sha256": constitution_sha256,
+            "changed": previous != constitution_sha256,
+        }
+
     def _checkpoint_identity(
         self,
         *,
