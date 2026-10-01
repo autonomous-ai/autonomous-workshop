@@ -6,8 +6,8 @@ sources:
   - "experience: sections of a published print-in-place flexi toy's segment joints, measured along each axis and normal to the faces"
   - "experience: a flexi chain's legs met their neighbours at full yaw though every joint was clear at rest; separate beads read as stacked discs"
   - https://3dcentral.ca/articulated-3d-prints-how-flexi-toys-work/
-related: [print-in-place-mechanisms, fdm-minimum-feature-sizes, fillet-chamfer-pitfalls, loft-organic-bodies, mechanism-verification]
-updated: 2026-09-28
+related: [print-in-place-mechanisms, fdm-minimum-feature-sizes, fillet-chamfer-pitfalls, loft-organic-bodies, mechanism-verification, posable-figure-joints]
+updated: 2026-10-01
 ---
 
 # Flexi chain joints: two crossed loops

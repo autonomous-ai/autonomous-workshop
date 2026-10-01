@@ -7,8 +7,8 @@ sources:
   - "experience: automata built in this repository (rules only, no results)"
   - "experience: a head-and-tail drive added to a finished walker, where the strap's closed ring decided the assembly order"
   - "experience: legs added to a push-along flapper's pushrod inside a carved split body"
-related: [mechanism-design, linkages, cams-intermittent, energy-drive]
-updated: 2026-09-30
+related: [mechanism-design, linkages, cams-intermittent, energy-drive, swivels-and-turntables]
+updated: 2026-10-01
 ---
 
 # Automaton patterns
@@ -24,7 +24,7 @@ then fit the figure over it.
 | **cam shaft box** | one horizontal shaft through a box, cams on it, push rods rise through the lid into the figure | several independent up/down motions with set timing (heads, arms, bobbing) |
 | **crank-and-link** | crank pins on a shaft, links up to hinged panels or limbs | flapping, undulating, waving |
 | **walker** | cranks on two axles tied by coupling rods, legs on the crank pins with a guide | anything that walks |
-| **turntable** | vertical output via bevel/face gear or worm under the figure | spinning, dancing |
+| **turntable** | vertical output via bevel/face gear or worm under the figure; the bearing: [[swivels-and-turntables]] | spinning, dancing |
 | **Geneva / ratchet stage** | indexed output under a figure | clocks, conveyors, turn-taking scenes |
 
 ## Rules shared by every layout

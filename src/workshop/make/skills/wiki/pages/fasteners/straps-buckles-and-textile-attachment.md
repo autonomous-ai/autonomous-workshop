@@ -17,8 +17,8 @@ sources:
   - https://www.paracordplanet.com/paracord-sizes/ (550 paracord about 4 mm; via search excerpt)
   - https://www.paracord.eu/paracord-accessory/cord-end-stopper/cord-locks (cord-lock holes 4–4.9 mm; via search excerpt)
   - https://makerworld.com/en/models/1055730-side-release-buckle (do not print a buckle upright; PETG preferred; via search excerpt)
-related: [snap-fit-design, magnets-and-strap-slots, layer-anisotropy, fdm-print-orientation-for-strength, creep-and-stress-relaxation, fdm-hole-accuracy, filament-properties, beam-and-plate-stiffness, springs, adhesives-and-solvent-welding, latches-detents-and-ratchets]
-updated: 2026-09-23
+related: [snap-fit-design, magnets-and-strap-slots, layer-anisotropy, fdm-print-orientation-for-strength, creep-and-stress-relaxation, fdm-hole-accuracy, filament-properties, beam-and-plate-stiffness, springs, adhesives-and-solvent-welding, latches-detents-and-ratchets, push-pins-and-clip-fasteners]
+updated: 2026-10-01
 ---
 
 # Straps, buckles and textile attachment

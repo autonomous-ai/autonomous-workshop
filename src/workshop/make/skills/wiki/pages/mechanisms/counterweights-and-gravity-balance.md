@@ -8,8 +8,8 @@ sources:
   - https://www.suspa.com/global/products/gas-struts/faq (rod down, ~3.5 % force per 10 °C between −30 and +80 °C, no side load, friction F_out = A p − F_R, F_in = A p + F_R, 10,000–100,000 double strokes)
   - https://www.engineeringtoolbox.com/metal-alloys-densities-d_50.html (steel 7850, bismuth 9750, lead 11340, tungsten 19600 kg/m³)
   - https://en.wikipedia.org/wiki/Random_close_pack (loose random sphere packing 0.59–0.60, random close packing ~0.64)
-related: [springs, hinges-and-pin-joints, stability-and-tipping, linkages, mass-properties-and-measurement, toy-safety-constraints, creep-and-stress-relaxation, magnets-and-strap-slots]
-updated: 2026-09-23
+related: [springs, hinges-and-pin-joints, stability-and-tipping, linkages, mass-properties-and-measurement, toy-safety-constraints, creep-and-stress-relaxation, magnets-and-strap-slots, rod-ends-and-clevises]
+updated: 2026-10-01
 ---
 
 # Counterweights and gravity balance
@@ -130,7 +130,8 @@ moment balance (Stabilus 5.1):  n · F1 · h_s = R · m g · x_g
   holds it shut; one that never crosses holds it open. Place the anchor on
   purpose.
 - Gas springs are bought parts: search `$step-parts` by stroke and extended
-  length, seat both ends from the STEP with `cadmount`. Life is roughly
+  length, seat both ends from the STEP with `cadmount`; end fittings:
+  [[rod-ends-and-clevises#gas-spring-end-fittings]]. Life is roughly
   10,000–100,000 double strokes.
 
 ## Torsion and coil springs at a hinge

@@ -9,8 +9,8 @@ sources:
   - https://www.sovol3d.com/blogs/news/3d-printing-large-models-in-multiple-pieces-keys-glue-and-assembly-tips
   - https://www.baysingersadditivemanufacturing.com/splitting-and-assembling-large-files/
   - https://kingroon.com/blogs/3d-print-101/best-methods-to-bond-3d-prints-together
-related: [printed-part-count, fit-derivation, fdm-print-orientation-for-strength, joints, exact-constraint-and-kinematic-mounts]
-updated: 2026-09-28
+related: [printed-part-count, fit-derivation, fdm-print-orientation-for-strength, joints, exact-constraint-and-kinematic-mounts, interlocking-joinery-for-prints, push-pins-and-clip-fasteners]
+updated: 2026-10-01
 ---
 
 # Splitting large prints and joining the pieces
@@ -26,6 +26,8 @@ build it separately; to protect fragile features in post-processing; and to
 build a fragile feature separately "in an orientation that produces a
 stronger part" ([[fdm-print-orientation-for-strength]]). A bed-size split
 is the first reason; the other four are reasons to split a part that fits.
+An axle or shaft too long for the bed is a bed-size split with bending in it:
+split it at the pivots it carries ([[shafts-and-bearings#an-axle-longer-than-the-bed]]).
 
 ## Where to cut
 
@@ -38,6 +40,9 @@ is the first reason; the other four are reasons to split a part that fits.
   Choose the cut so every piece has a flat face for the bed.
 
 ## Connectors
+
+Woodworking interlocks (mortise and tenon, laps, box joints, scarfs, keys,
+burrs) adapted to prints are in [[interlocking-joinery-for-prints]].
 
 PrusaSlicer's cut tool generates them, and the same shapes are easy to
 model:

@@ -8,8 +8,8 @@ sources:
   - https://wellwhisk.com/best-magnets-for-3d-printing/ (N52 vs N35; via search excerpt)
   - https://www.nylon-cabletie.com/news/what-are-the-specifications-and-dimensions-of-standard-cable-ties-teach-you-how-to-easily-choose-the-right-tie (standard tie widths; via search excerpt)
   - https://ziptie.com/blogs/blog/what-size-do-zip-ties-come-in (miniature 2.5 mm, intermediate 3.6 mm; via search excerpt)
-related: [dowel-pins-and-press-fits, nut-traps-and-captive-nuts, heat-resistance-of-printed-parts, latches-detents-and-ratchets, exact-constraint-and-kinematic-mounts, straps-buckles-and-textile-attachment]
-updated: 2026-09-23
+related: [dowel-pins-and-press-fits, nut-traps-and-captive-nuts, heat-resistance-of-printed-parts, latches-detents-and-ratchets, exact-constraint-and-kinematic-mounts, straps-buckles-and-textile-attachment, push-pins-and-clip-fasteners]
+updated: 2026-10-01
 ---
 
 # Magnets and strap slots as fasteners

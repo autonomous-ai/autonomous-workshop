@@ -7,8 +7,8 @@ sources:
   - https://engbench.com/snapfit.php (ε = 1.5 h y / L², P = E b h² ε / 6L, separation force)
   - https://www.ulprospector.com/knowledge/1248/pe-snapfit-3/ (amorphous materials to 70 % of yield strain; via search excerpt)
   - "experience: a published toy's snap-on head, a split spherical cup hung in a cavity gripping a neck ball"
-related: [joints, magnets-and-strap-slots, layer-anisotropy, creep-and-stress-relaxation, mechanism-verification, straps-buckles-and-textile-attachment, kit-assembly-clash-diagnosis]
-updated: 2026-09-28
+related: [joints, magnets-and-strap-slots, layer-anisotropy, creep-and-stress-relaxation, mechanism-verification, straps-buckles-and-textile-attachment, kit-assembly-clash-diagnosis, ball-and-socket-joints, push-pins-and-clip-fasteners, bayonet-and-twist-locks]
+updated: 2026-10-01
 ---
 
 # Snap-fit design — cantilever, torsion and annular
@@ -140,6 +140,10 @@ into halves or fingers and size each one as a [[#cantilever]] deflected by
   spherical shell between the seat radius and the ball's
   ([[kit-assembly-clash-diagnosis#classify-it]]). Declare it as an allowance
   and do not open the seat to make the gate pass.
+
+Swing angle, holding torque and the other socket forms are in
+[[ball-and-socket-joints]]; printed snap pins in
+[[push-pins-and-clip-fasteners#a-generic-printed-snap-pin]].
 
 ## What a snap fit leaves open
 
