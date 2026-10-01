@@ -1723,3 +1723,18 @@ standard element needs `bd_warehouse` or `py_gearworks`; no helper names an
 involute. The installed `features/print_details.py` is exempt only byte for
 byte. A failure builds and freezes nothing. This changes the `make-round`
 fingerprint.
+
+## Local change: Interfaces between instances of one Unique Geometry (2026-10-01)
+
+A Workshop-local change (ADR 0082, amended by #80) to Workshop's own
+`make-round` and `cad/scripts/verify_project`. An Interface may name one
+instance of a Unique Geometry, `<id>#<n>`. `make_round --interface` builds the
+instance's Component once and places each referenced instance as its own
+child labelled `<id>#<n>`, through `assembly_pose(shape, pose, instance)` and,
+when it takes one, `gen_step(instance=n)`; it refuses a Component file whose
+`assembly_pose` takes no `instance`. Locking, staleness and the unlock act on
+the Component. `check_envelope --instance n` checks one instance against its
+side of a Keep-out Envelope, and a component round runs one check per named
+instance. The final verifier judges an instance on its Component's identity.
+Upstream `check_motion` keeps its `b149710` bytes. This changes the `cad` and
+`make-round` fingerprints.

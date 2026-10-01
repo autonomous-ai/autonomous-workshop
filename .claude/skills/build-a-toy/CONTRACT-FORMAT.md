@@ -57,14 +57,22 @@ recreates the defect this skill exists to remove.
        {"component": "sun-gear", "rotation": {"axis_point": [0, 0, 0],
         "axis_direction": [0, 0, 1], "start_deg": 0, "end_deg": 36}},
        {"component": "world-disc", "driven": true, "rotation": {"axis_point": [40, 0, 0],
-        "axis_direction": [0, 0, 1], "start_deg": 0, "end_deg": -72}}]}}
+        "axis_direction": [0, 0, 1], "start_deg": 0, "end_deg": -72}}]}},
+    {"id": "disc-pair-mesh", "kind": "coupled", "components": ["world-disc#1", "world-disc#2"],
+     "yielding": "world-disc#2",
+     "poses": {"steps": 8, "movers": [
+       {"component": "world-disc#1", "rotation": {"axis_point": [40, 0, 0],
+        "axis_direction": [0, 0, 1], "start_deg": 0, "end_deg": 30}},
+       {"component": "world-disc#2", "driven": true, "rotation": {"axis_point": [72, 0, 0],
+        "axis_direction": [0, 0, 1], "start_deg": 0, "end_deg": -30}}]}}
   ]
 }
 ```
 ````
 
 (The example abridges `geometries[]`; every id an Interface names must be a
-Unique Geometry.)
+Unique Geometry. `world-disc#1` and `world-disc#2` are two of its 16
+instances.)
 
 ## Field rules
 
@@ -92,7 +100,14 @@ Unique Geometry.)
 - `interfaces[]` (ADR 0082): one entry per place two or more Components meet;
   `[]` when none do. `id` is lowercase kebab case and unique. `kind` is
   `static`, `separable` or `coupled`. `components` lists two or more
-  different Unique Geometry ids.
+  different Components. Each is a Unique Geometry id or, when that
+  geometry's `count` is above 1, one instance of it written `<id>#<n>` with
+  `n` from 1 to `count` (issue #80): `wing#1` and `wing#2` for two wings that
+  meet each other, or `wing#1` alone where only the left wing meets
+  `heart-core`. One Interface never names a geometry and an instance of it
+  together. Every other field that names a Component (`inside`, `outside`,
+  `yielding`, a mover's `component`) uses the same references as
+  `components`.
   - A `separable` Interface has an `envelope`: `inside` and `outside`, two of
     its Components, and `shapes`, each a lowercase `pose` name with exactly
     one `box` (`min_mm`, `max_mm`, min below max) or `cylinder` (`base_mm`, a
@@ -121,7 +136,8 @@ A contract is ready only when all of these hold. Report every failure at once.
 - Every `id` is unique, and every `geometry:<id>` it cites exists.
 - Every Interface has its Kind and two or more existing Components, a
   separable one its envelope and a coupled one its yielding Component and
-  poses.
+  poses. An instance `<id>#<n>` names a geometry whose `count` is above 1,
+  with `n` in 1..`count`.
 - Every Unique Geometry has at least one reference whose `shows` names it.
 - Every reference file exists beside `CONTRACT.md` and meets the image rules.
 - **At most 16 assembly-scoped requirements, and at most 4 per Unique

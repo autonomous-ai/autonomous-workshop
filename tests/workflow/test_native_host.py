@@ -3522,6 +3522,16 @@ class NativeHostTest(unittest.TestCase):
                 with self.assertRaises(ContractError):
                     _made_interfaces({"interfaces": bad})
 
+    def test_made_interfaces_keep_instance_references_verbatim(self):
+        # Issue #80: two instances of one Unique Geometry meet.
+        mesh = {"id": "wing-sector-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"],
+                "check": "pass", "round": 1, "yielding": "wing#2"}
+        self.assertEqual(_made_interfaces({"interfaces": [mesh]}), [mesh])
+        for bad in ([dict(mesh, components=["wing#1", "wing#1"])], [dict(mesh, yielding="wing")]):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ContractError):
+                    _made_interfaces({"interfaces": bad})
+
     def test_interfaces_are_read_from_the_latest_make_gate_receipt(self):
         with tempfile.TemporaryDirectory() as temporary:
             host = Path(temporary).resolve()

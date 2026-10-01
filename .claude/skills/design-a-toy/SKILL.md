@@ -139,6 +139,14 @@ Kind:
   its rotation or translation in assembly coordinates) from the same numbers
   Stage 3d checks.
 
+When copies of one Unique Geometry meet each other, or only one copy meets
+another part, name the copy: `<id>#<n>`, with `n` from 1 to the geometry's
+`count`. A mirror pair that meshes, such as two wing roots geared to each
+other, is a coupled Interface between `wing#1` and `wing#2`; a pinion that
+drives only the left wing joins `wing#1` and the pinion's geometry. Use the
+same names in `inside`, `outside`, `yielding` and the movers, and never put
+`wing` and `wing#1` in one Interface.
+
 A toy whose Components never meet has `"interfaces": []`. Never leave a
 meeting out: one the block does not name is one nobody checks before
 assembly.

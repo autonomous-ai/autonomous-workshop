@@ -49,7 +49,10 @@ checks its Keep-out Envelope. --interface ID runs the coupled motion check of
 one Coupled Interface on its locked Components; a failure unlocks the
 contract's yielding Component, and assembly rounds with
 --require-component-passes need a current passing check of every Coupled
-Interface. Only the Workshop Manager runs those two modes.
+Interface. Only the Workshop Manager runs those two modes. An Interface may
+name one instance of a geometry, <id>#<n>; the Component's
+assembly_pose(shape, pose, instance) places it, and the Component is what
+locks, stales and unlocks.
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
@@ -108,6 +111,15 @@ HELPER_FREEZE_LOG = "shared-helper-freezes.jsonl"
 INTERFACE_ROUNDS_DIR = "interface-rounds"
 COUPLED = "coupled"
 SEPARABLE = "separable"
+# An Interface may name one instance of a Unique Geometry whose count is above
+# 1, ``wing#2`` (issue #80). The instance's Component is the geometry's one
+# source file, whose placement hook then takes the instance number.
+INSTANCE_REFERENCE = re.compile(r"^([a-z0-9]+(?:-[a-z0-9]+)*)#([1-9][0-9]*)$")
+PLACE_FUNC = "assembly_pose"
+INSTANCE_PARAM = "instance"
+INSTANCE_CONVENTION = ("define %s(shape, pose, %s) to place instance n in assembly coordinates, and "
+                       "gen_step(%s=1) to build a variant per instance (omit it to build identical copies)"
+                       % (PLACE_FUNC, INSTANCE_PARAM, INSTANCE_PARAM))
 # Directories that hold no Shared Helper: evidence, caches and the samples.
 NOT_HELPERS = frozenset({"measure", "rounds", "snap", "review", "ref", SAMPLES_DIR,
                          "__cadgen__", "__pycache__", ".git", ".venv"})
@@ -1862,17 +1874,55 @@ def render_helper_summary(summary: dict) -> str:
     return "\n".join(lines)
 
 
-def separable_roles(interfaces: list, role: str) -> list[tuple[dict, str]]:
-    """``(interface, "inside"|"outside")`` for each separable Interface this
-    Component keeps a Keep-out Envelope with."""
+def reference_role(reference: str) -> tuple[str, int | None]:
+    """``(component, instance)`` of an Interface Component reference:
+    ``("wing", 2)`` for ``wing#2``, ``("body", None)`` for ``body``."""
+
+    match = INSTANCE_REFERENCE.fullmatch(reference)
+    return (match.group(1), int(match.group(2))) if match is not None else (reference, None)
+
+
+def reference_roles(references) -> list[str]:
+    """The distinct Components behind Interface references, in order: the
+    two instances ``wing#1`` and ``wing#2`` are one Component."""
+
+    return list(dict.fromkeys(reference_role(reference)[0] for reference in references))
+
+
+def instance_hook_missing(part: Path) -> str:
+    """Why ``part`` cannot place one instance of its geometry, or "".
+
+    Read from the source, so a refusal never builds anything: the module's
+    placement hook must take the instance number (issue #80)."""
+
+    try:
+        tree = ast.parse(part.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError) as exc:
+        return "%s cannot be read: %s" % (part.name, exc)
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == PLACE_FUNC:
+            names = [arg.arg for arg in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs)]
+            if INSTANCE_PARAM in names:
+                return ""
+            return ("an Interface names an instance of %s, but its %s takes no %s; %s"
+                    % (part.name, PLACE_FUNC, INSTANCE_PARAM, INSTANCE_CONVENTION))
+    return "an Interface names an instance of %s, which defines no %s; %s" % (part.name, PLACE_FUNC, INSTANCE_CONVENTION)
+
+
+def separable_roles(interfaces: list, role: str) -> list[tuple[dict, str, str]]:
+    """``(interface, "inside"|"outside", reference)`` for each side of a
+    separable Interface this Component keeps a Keep-out Envelope on: the
+    Component itself, or one of its instances. Instances of one geometry on
+    both sides give both sides."""
 
     found = []
     for item in interfaces or ():
         envelope = item.get("envelope") if item.get("kind") == SEPARABLE else None
         if isinstance(envelope, dict):
             for side in ("inside", "outside"):
-                if envelope.get(side) == role:
-                    found.append((item, side))
+                reference = envelope.get(side)
+                if isinstance(reference, str) and reference_role(reference)[0] == role:
+                    found.append((item, side, reference))
     return found
 
 
@@ -1893,13 +1943,23 @@ def check_envelopes(project: Path, role: str, part: Path, out: Path, interfaces:
     """Run check_envelope for every separable Interface this Component joins."""
 
     results = {}
-    for item, side in separable_roles(interfaces, role):
+    for item, side, reference in separable_roles(interfaces, role):
+        _role, instance = reference_role(reference)
+        # A side that is one instance is reported as "<interface> <id>#<n>".
+        key = item["id"] if instance is None else "%s %s" % (item["id"], reference)
+        stem = "envelope-%s" % item["id"] + ("" if instance is None else "-%d" % instance)
+        missing = instance_hook_missing(part) if instance is not None else ""
+        if missing:
+            results[key] = {"role": side, "component": reference, "verdict": "FAIL", "poses": [], "detail": missing}
+            continue
         envelope_path = out / ("envelope-%s.json" % item["id"])
         envelope_path.write_text(json.dumps(item["envelope"], sort_keys=True) + "\n", encoding="utf-8")
-        done = run([sys.executable, str(Path(__file__).resolve().parent / "check_envelope"), str(part),
-                    "--envelope", str(envelope_path), "--role", side, "--json"],
-                   cwd=project, log=out / ("envelope-%s.log" % item["id"]))
-        results[item["id"]] = {"role": side, **parse_envelope(done.stdout, done.returncode)}
+        command = [sys.executable, str(Path(__file__).resolve().parent / "check_envelope"), str(part),
+                   "--envelope", str(envelope_path), "--role", side, "--json"]
+        if instance is not None:
+            command += ["--instance", str(instance)]
+        done = run(command, cwd=project, log=out / ("%s.log" % stem))
+        results[key] = {"role": side, "component": reference, **parse_envelope(done.stdout, done.returncode)}
     return results
 
 
@@ -1937,11 +1997,14 @@ def locked_at(project: Path, role: str, digest: str | None) -> str:
 INTERFACE_ENTRY = '''"""Generated by make_round --interface %(id)s (ADR 0082).
 
 Places the Interface's Components in assembly coordinates, each through its
-own assembly_pose(shape, None), labelled by its Component id. No geometry
-of its own; never printed.
+own assembly_pose(shape, None), labelled by its Interface reference. An
+instance <id>#<n> is built by gen_step(instance=n) when gen_step takes it and
+placed by assembly_pose(shape, None, instance=n) (issue #80). No geometry of
+its own; never printed.
 """
 
 import importlib.util
+import inspect
 import sys
 from pathlib import Path
 
@@ -1950,25 +2013,41 @@ PROJECT = Path(%(project)r)
 COMPONENTS = %(components)r
 
 
-def _component(role):
+def _takes_instance(function):
+    try:
+        return "instance" in inspect.signature(function).parameters
+    except (TypeError, ValueError):
+        return False
+
+
+def _component(reference):
     if str(PROJECT) not in sys.path:
         sys.path.insert(0, str(PROJECT))
+    role, _, number = reference.partition("#")
     path = PROJECT / ("part_%%s.step.py" %% role)
-    spec = importlib.util.spec_from_file_location("_interface_part_" + role.replace("-", "_"), path)
+    spec = importlib.util.spec_from_file_location(
+        "_interface_part_" + reference.replace("-", "_").replace("#", "_"), path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     place = getattr(module, "assembly_pose", None)
     if place is None:
         raise ValueError("%%s defines no assembly_pose(shape, pose)" %% path.name)
-    shape = place(module.gen_step(), None)
-    shape.label = role
+    if not number:
+        shape = place(module.gen_step(), None)
+    else:
+        instance = int(number)
+        if not _takes_instance(place):
+            raise ValueError("%%s: assembly_pose takes no instance" %% path.name)
+        built = module.gen_step(instance=instance) if _takes_instance(module.gen_step) else module.gen_step()
+        shape = place(built, None, instance=instance)
+    shape.label = reference
     return shape
 
 
 def gen_step():
     from build123d import Compound
 
-    return Compound(label="interface", children=[_component(role) for role in COMPONENTS])
+    return Compound(label="interface", children=[_component(reference) for reference in COMPONENTS])
 '''
 
 
@@ -2037,8 +2116,18 @@ def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
         shutil.rmtree(out)
     out.mkdir(parents=True)
     components = list(interface["components"])
-    identities = {role: component_identity(project, role, out, cad) for role in components}
-    refusals = [reason for role in components for reason in [locked_at(project, role, identities[role])] if reason]
+    # Locking and identity belong to the Component: the two instances wing#1
+    # and wing#2 are one source file, built and judged once (issue #80).
+    roles = reference_roles(components)
+    instanced = reference_roles(reference for reference in components if reference_role(reference)[1] is not None)
+    hooks = [reason for role in instanced if (project / ("part_%s.step.py" % role)).is_file()
+             for reason in [instance_hook_missing(project / ("part_%s.step.py" % role))] if reason]
+    if hooks:
+        shutil.rmtree(out)
+        print("make_round: interface %s: %s" % (interface_id, "; ".join(hooks)), file=sys.stderr)
+        return 2
+    identities = {role: component_identity(project, role, out, cad) for role in roles}
+    refusals = [reason for role in roles for reason in [locked_at(project, role, identities[role])] if reason]
     if refusals:
         shutil.rmtree(out)
         print("make_round: interface %s judges locked geometry only: %s" % (interface_id, "; ".join(refusals)),
@@ -2067,7 +2156,7 @@ def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
     if motion["verdict"] == "fail":
         summary["unlocked"] = interface_unlock(project, interface, number, out, motion)
     (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    steps = {role: file_hash(project / ("part_%s.step" % role)) for role in components
+    steps = {role: file_hash(project / ("part_%s.step" % role)) for role in roles
              if (project / ("part_%s.step" % role)).is_file()}
     state_path.write_text(json.dumps({"round": number, "last_out": str(out), "identities": identities,
                                       "steps": steps, "ok": passed, "verdict": motion["verdict"]},
@@ -2081,7 +2170,9 @@ def interface_unlock(project: Path, interface: dict, number: int, out: Path, mot
     with the check's evidence as its repair input. Its rounds after the
     unlock are admitted and are never Shape Rounds (ADR 0081, ADR 0082)."""
 
-    role = interface["yielding"]
+    # A yielding instance (wing#2) unlocks its Component, whose one worker
+    # owns every instance (issue #80).
+    role = reference_role(interface["yielding"])[0]
     state_path, round_root = state_and_round_root(project, "part_%s.step.py" % role)
     state = json.loads(state_path.read_text(encoding="utf-8"))
     policy = component_policy(state, round_root)
@@ -2130,7 +2221,7 @@ def interface_report(project: Path, interfaces: list | None, digests: dict) -> l
                 check = "fail"
             elif any(digests.get(role) is None or digests.get(role) not in (
                     (state.get("identities") or {}).get(role), (state.get("steps") or {}).get(role))
-                     for role in item["components"]):
+                     for role in reference_roles(item["components"])):
                 # Either recorded form names the same geometry: the B-rep
                 # identity gen reported, or the STEP a reader without a fresh
                 # build can only hash (ADR 0073).
@@ -2723,8 +2814,12 @@ def self_check() -> int:
           "a Keep-out Envelope passes only on a complete passing result")
     check(separable_roles([{"id": "s", "kind": "separable", "envelope": {"inside": "arm", "outside": "body"}},
                            {"id": "c", "kind": "coupled", "components": ["arm", "body"]}], "body")
-          == [({"id": "s", "kind": "separable", "envelope": {"inside": "arm", "outside": "body"}}, "outside")],
+          == [({"id": "s", "kind": "separable", "envelope": {"inside": "arm", "outside": "body"}}, "outside", "body")],
           "a Component keeps the envelope of each separable Interface it joins, on its own side")
+    check([side for _item, side, _reference in separable_roles(
+              [{"id": "f", "kind": "separable", "envelope": {"inside": "wing#2", "outside": "wing#1"}}], "wing")]
+          == ["inside", "outside"] and reference_roles(["wing#1", "wing#2", "body"]) == ["wing", "body"],
+          "instances of one geometry on both sides of an envelope are both checked in its round")
     check(reviewer_binding({}, "a1f355b61d99918ed", "claude") == "a1f355b61d99918ed"
           and refused({"reviewer_id": "a1f355b61d99918ed"}, "a7740f58e37677176", "claude"),
           "a Component's first reviewer id binds it; another id is refused")

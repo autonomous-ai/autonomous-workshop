@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Keep-out Envelope check for one Component of a separable Interface (ADR 0082).
 
-    check_envelope <project>/part_<id>.step.py --envelope ENVELOPE.json --role inside|outside [--json]
+    check_envelope <project>/part_<id>.step.py --envelope ENVELOPE.json --role inside|outside
+                   [--instance N] [--json]
 
 A separable Interface seals a Keep-out Envelope: simple solids in assembly
 coordinates, one per declared pose or a single static one. One Component
@@ -16,6 +17,12 @@ the outside Component.
     inside   in every declared pose, no material lies outside that pose's shape
     outside  at its assembly placement, no material lies inside any shape
 
+When the Interface names one instance of the Component's geometry
+(``wing#2``, issue #80), --instance N checks that instance: the entry builds it
+with ``gen_step(instance=N)`` when gen_step takes an instance (otherwise every
+instance is the same shape) and places it with
+``assembly_pose(shape, pose, instance=N)``.
+
 Measured on the B-rep with Boolean volumes. Exit 0 when the Component keeps
 to its side, 1 when it does not or cannot be placed, 2 on bad usage.
 """
@@ -24,12 +31,14 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import inspect
 import io
 import json
 import sys
 from pathlib import Path
 
 PLACE_FUNC = "assembly_pose"
+INSTANCE_PARAM = "instance"
 # Material below this many mm3, or this fraction of the part, is a Boolean
 # residue on a shared face, not a clearance problem.
 MIN_TOLERANCE_MM3 = 1e-3
@@ -56,7 +65,14 @@ def _volume(shape) -> float:
         return 0.0
 
 
-def check(part: Path, envelope: dict, role: str) -> dict:
+def _takes_instance(function) -> bool:
+    try:
+        return INSTANCE_PARAM in inspect.signature(function).parameters
+    except (TypeError, ValueError):
+        return False
+
+
+def check(part: Path, envelope: dict, role: str, instance: int | None = None) -> dict:
     cad = Path(__file__).resolve().parents[2] / "cad" / "scripts"
     sys.path.insert(0, str(cad))
     from printlib import GEN_FUNC, load_entry, project_on_path
@@ -68,7 +84,18 @@ def check(part: Path, envelope: dict, role: str) -> dict:
             return {"ok": False, "role": role, "poses": [],
                     "detail": "%s defines no %s(shape, pose); define it to place the Component in "
                               "assembly coordinates" % (part.name, PLACE_FUNC)}
-        shape = getattr(module, GEN_FUNC)()
+        build = getattr(module, GEN_FUNC)
+        if instance is not None:
+            if not _takes_instance(place):
+                return {"ok": False, "role": role, "poses": [],
+                        "detail": "%s's %s takes no %s; define %s(shape, pose, %s) to place instance %d"
+                                  % (part.name, PLACE_FUNC, INSTANCE_PARAM, PLACE_FUNC, INSTANCE_PARAM, instance)}
+            shape = build(instance=instance) if _takes_instance(build) else build()
+
+            def place(shape, pose, _place=place):
+                return _place(shape, pose, instance=instance)
+        else:
+            shape = build()
         tolerance = max(MIN_TOLERANCE_MM3, RELATIVE_TOLERANCE * _volume(shape))
         results = []
         if role == "inside":
@@ -99,8 +126,11 @@ def main(argv=None) -> int:
     parser.add_argument("part", help="the Component's part_<id>.step.py")
     parser.add_argument("--envelope", required=True, help="the sealed Keep-out Envelope as a JSON file")
     parser.add_argument("--role", required=True, choices=("inside", "outside"))
+    parser.add_argument("--instance", type=int, help="check this instance of the Component's geometry")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    if args.instance is not None and args.instance < 1:
+        parser.error("--instance counts from 1")
     part = Path(args.part).resolve()
     try:
         envelope = json.loads(Path(args.envelope).read_text(encoding="utf-8"))
@@ -114,7 +144,7 @@ def main(argv=None) -> int:
         print("check_envelope: no such entry: %s" % part, file=sys.stderr)
         return 2
     try:
-        result = check(part, envelope, args.role)
+        result = check(part, envelope, args.role, args.instance)
     except Exception as exc:  # noqa: BLE001 - a Component that cannot be placed fails its round
         result = {"ok": False, "role": args.role, "poses": [],
                   "detail": "could not build or place %s: %s: %s" % (part.name, type(exc).__name__, exc)}

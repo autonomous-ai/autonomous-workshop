@@ -31,6 +31,9 @@ ENVELOPE_SHAPES = ("box", "cylinder")
 
 _FENCE = re.compile(r"```design-contract\s*\n(.*?)```", re.DOTALL)
 _GEOMETRY_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+# An Interface may name one instance of a Unique Geometry whose count is
+# above 1: ``wing#2`` (issue #80, ADR 0082).
+_INSTANCE_REFERENCE = re.compile(r"^([a-z0-9]+(?:-[a-z0-9]+)*)#([0-9]+)$")
 _REQUIREMENT_ID = re.compile(r"^R[0-9]{2}$")
 _REFERENCE_FILE = re.compile(
     r"^ref-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
@@ -63,6 +66,8 @@ class ContractRequirement:
 class ContractInterface:
     """One meeting between Components (ADR 0082).
 
+    Each Component reference is a Unique Geometry id or one instance of it,
+    ``<id>#<n>`` (issue #80), kept verbatim everywhere it appears.
     ``envelope`` is the Keep-out Envelope of a separable Interface, and
     ``yielding`` with ``poses`` (an inline pose table) or ``poses_from`` (a
     motion-manifest condition id) belong to a coupled one. Each is kept as the
@@ -390,12 +395,48 @@ def _parse_poses(value: Any, components: Sequence[str], label: str, errors: List
             errors.append("%s.driven must be true or false" % where)
 
 
+def interface_geometry(reference: str) -> str:
+    """The Unique Geometry id an Interface Component reference names:
+    ``wing`` for both ``wing`` and ``wing#2``."""
+
+    match = _INSTANCE_REFERENCE.fullmatch(reference)
+    return match.group(1) if match is not None else reference
+
+
+def _check_component_reference(entry: str, counts: Dict[str, int], label: str, errors: List[str]) -> None:
+    """One Interface Component reference: a Unique Geometry id, or
+    ``<id>#<n>`` for one instance of a geometry whose count is above 1."""
+
+    match = _INSTANCE_REFERENCE.fullmatch(entry)
+    geometry = match.group(1) if match is not None else entry
+    if geometry not in counts:
+        errors.append("%s.components cites a Unique Geometry that does not exist: %r" % (label, entry))
+        return
+    if match is None:
+        return
+    count, number = counts[geometry], match.group(2)
+    if count < 2:
+        errors.append(
+            "%s.components names instance %r, but %r has count %d; name the Unique Geometry itself"
+            % (label, entry, geometry, count)
+        )
+    elif number != str(int(number)) or not 1 <= int(number) <= count:
+        errors.append(
+            "%s.components names instance %r; %r has instances #1 to #%d" % (label, entry, geometry, count)
+        )
+
+
 def _parse_interfaces(
-    value: Any, geometry_ids: frozenset, errors: List[str]
+    value: Any, counts: Dict[str, int], errors: List[str]
 ) -> Tuple[ContractInterface, ...]:
     """The Interfaces section (ADR 0082): every meeting between Components,
     with its Kind and what that Kind needs. An empty list is a toy whose
-    Components never meet."""
+    Components never meet.
+
+    ``counts`` maps each Unique Geometry id to its count. A Component
+    reference is a geometry id or one instance of it, ``<id>#<n>`` (issue
+    #80); the references of one Interface are distinct, and a geometry and an
+    instance of it never appear together."""
 
     if not isinstance(value, list):
         errors.append("interfaces must be a list (schema_version 2)")
@@ -431,8 +472,14 @@ def _parse_interfaces(
             components = []
         else:
             for entry in components:
-                if entry not in geometry_ids:
-                    errors.append("%s.components cites a Unique Geometry that does not exist: %r" % (label, entry))
+                _check_component_reference(entry, counts, label, errors)
+            instanced = {interface_geometry(entry) for entry in components if interface_geometry(entry) != entry}
+            for entry in components:
+                if entry in instanced:
+                    errors.append(
+                        "%s.components names both %r and an instance of it; name every instance, or the "
+                        "Unique Geometry alone" % (label, entry)
+                    )
         allowed = {"id", "kind", "components"}
         if kind == "separable":
             allowed.add("envelope")
@@ -509,7 +556,8 @@ def parse_design_contract(text: str) -> DesignContract:
     requirements = _parse_requirements(block.get("requirements"), geometry_ids, errors)
     interfaces: Optional[Tuple[ContractInterface, ...]] = None
     if schema_version == INTERFACES_SCHEMA_VERSION:
-        interfaces = _parse_interfaces(block.get("interfaces"), geometry_ids, errors)
+        counts = {item.id: item.count for item in geometries}
+        interfaces = _parse_interfaces(block.get("interfaces"), counts, errors)
     elif "interfaces" in block:
         errors.append("interfaces need schema_version 2")
 

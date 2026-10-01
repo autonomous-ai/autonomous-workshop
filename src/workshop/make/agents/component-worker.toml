@@ -24,6 +24,15 @@ one section a failure you cannot place requires.
   in every pose, or outside it, as the Interface says. Never read the other
   Component's file to cut a clearance; the envelope is the whole agreement.
   An envelope failure is a free repair, like a print gate.
+- If an Interface names an instance of your Component, written `<id>#<n>`
+  (`wing#1`, `wing#2`), your one file builds and places every instance:
+  define `assembly_pose(shape, pose, instance)`, which places instance n in
+  assembly coordinates, and, when the instances differ (one carries a
+  pinion boss, the other a plain boss), `gen_step(instance=1)`, which builds
+  instance n. A `gen_step` that takes no `instance` builds identical copies.
+  make_round refuses an instance whose `assembly_pose` takes no `instance`.
+  Your round checks each named instance against its own side of an
+  envelope, both in one round when your instances are on both sides.
 - Build decorative detail your rows or a review ask for (rivets, bosses,
   low domes, bands, rims, pipe ribs, inset panels, lancet windows, grille
   slits) with the Manager's copy of the print-details library:

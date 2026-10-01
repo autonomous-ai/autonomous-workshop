@@ -294,3 +294,72 @@ class InterfacesTest(unittest.TestCase):
         message = self._refused(self._one(poses_from=None, poses=poses))
         self.assertIn("Component the Interface joins", message)
         self.assertIn("needs a rotation, a translation", message)
+
+
+class InterfaceInstancesTest(unittest.TestCase):
+    """Issue #80: an Interface may name one instance of a Unique Geometry
+    whose count is above 1, as ``<id>#<n>``."""
+
+    MESH = {
+        "id": "wing-sector-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"],
+        "yielding": "wing#2",
+        "poses": {"steps": 8, "movers": [
+            {"component": "wing#1", "rotation": {"axis_point": [16, 0, 198.8], "axis_direction": [1, 0, 0],
+                                                 "start_deg": 0, "end_deg": 35}},
+            {"component": "wing#2", "rotation": {"axis_point": [-16, 0, 198.8], "axis_direction": [1, 0, 0],
+                                                 "start_deg": 0, "end_deg": -35}, "driven": True},
+        ]},
+    }
+
+    def _refused(self, interfaces):
+        with self.assertRaises(ContractError) as failure:
+            parse_design_contract(_contract_text(_interfaces_block(interfaces)))
+        return str(failure.exception)
+
+    def _mesh(self, **changes):
+        item = {**self.MESH, **changes}
+        return [{key: value for key, value in item.items() if value is not None}]
+
+    def test_two_instances_of_one_geometry_may_meet_and_seal_verbatim(self):
+        contract = parse_design_contract(_contract_text(_interfaces_block(self._mesh())))
+        self.assertEqual(contract.interfaces[0].components, ("wing#1", "wing#2"))
+        self.assertEqual(contract.interfaces[0].yielding, "wing#2")
+        self.assertEqual(contract.to_dict()["interfaces"], self._mesh())
+
+    def test_one_instance_may_meet_another_geometry_and_keep_one_side_of_an_envelope(self):
+        separable = {
+            "id": "left-wing-housing", "kind": "separable", "components": ["wing#1", "spine-housing"],
+            "envelope": {"inside": "wing#1", "outside": "spine-housing", "shapes": [
+                {"pose": "rest", "box": {"min_mm": [0, 0, 0], "max_mm": [1, 1, 1]}}]},
+        }
+        pinion = {"id": "pinion-left", "kind": "coupled", "components": ["heart-core", "wing#1"],
+                  "yielding": "wing#1", "poses_from": "pinion-drives-left-wing"}
+        mirror = {"id": "wing-fold", "kind": "separable", "components": ["wing#1", "wing#2"],
+                  "envelope": {"inside": "wing#2", "outside": "wing#1", "shapes": [
+                      {"pose": "rest", "box": {"min_mm": [0, 0, 0], "max_mm": [1, 1, 1]}}]}}
+        contract = parse_design_contract(_contract_text(_interfaces_block([separable, pinion, mirror])))
+        self.assertEqual(contract.interfaces[0].envelope["inside"], "wing#1")
+        self.assertEqual(contract.interfaces[2].envelope["outside"], "wing#1")
+
+    def test_every_instance_reference_is_unambiguous(self):
+        self.assertIn("has instances #1 to #2", self._refused(self._mesh(components=["wing#1", "wing#3"])))
+        self.assertIn("has instances #1 to #2", self._refused(self._mesh(components=["wing#0", "wing#2"])))
+        self.assertIn("has instances #1 to #2", self._refused(self._mesh(components=["wing#01", "wing#2"])))
+        message = self._refused(self._mesh(components=["wing#1", "heart-core#1"], yielding="wing#1", poses=None,
+                                           poses_from="drive"))
+        self.assertIn("'heart-core' has count 1", message)
+        self.assertIn("names both 'wing' and an instance of it",
+                      self._refused(self._mesh(components=["wing", "wing#2"])))
+        self.assertIn("two or more different Components",
+                      self._refused(self._mesh(components=["wing#1", "wing#1"])))
+        self.assertIn("does not exist: 'tail#1'", self._refused(self._mesh(components=["wing#1", "tail#1"])))
+
+    def test_an_unknown_instance_may_not_yield_or_move(self):
+        self.assertIn(".yielding must name", self._refused(self._mesh(yielding="wing")))
+        self.assertIn(".yielding must name", self._refused(self._mesh(yielding="wing#3")))
+        poses = {"steps": 4, "movers": [{"component": "wing", "rotation": {"axis_point": [0, 0, 0]}}]}
+        self.assertIn("Component the Interface joins", self._refused(self._mesh(poses=poses)))
+        envelope = {"inside": "wing", "outside": "wing#2", "shapes": [
+            {"pose": "rest", "box": {"min_mm": [0, 0, 0], "max_mm": [1, 1, 1]}}]}
+        self.assertIn("two different Components", self._refused([
+            {"id": "wing-fold", "kind": "separable", "components": ["wing#1", "wing#2"], "envelope": envelope}]))

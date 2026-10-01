@@ -2659,6 +2659,17 @@ class StageProposalToolTest(unittest.TestCase):
         product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
         self.assertEqual(product["interfaces"], self.INTERFACES)
 
+    def test_make_carries_instance_references_verbatim(self):
+        # Issue #80: wing#1 and wing#2 are two instances of one geometry.
+        interfaces = [{"id": "wing-sector-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"],
+                       "check": "pass", "yielding": "wing#2", "round": 1}]
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [], interfaces=interfaces)
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertEqual(product["interfaces"], interfaces)
+
     def test_make_refuses_an_unproven_or_malformed_interface(self):
         coupled = self.INTERFACES[1]
         cases = {

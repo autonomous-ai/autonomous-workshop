@@ -272,7 +272,8 @@ class InterfaceReviewTest(unittest.TestCase):
         runner.component_acceptances = []
         runner.last_stdout = json.dumps({"sourceRef": "part_body.step.py", "identitySha256": "brep-body"})
         coverage = {"component_coverage": lambda *_: {}, **{
-            name: self.make_round[name] for name in ("contract_interfaces", "interface_failures", "interface_report")}}
+            name: self.make_round[name] for name in ("contract_interfaces", "interface_failures", "interface_report",
+                                                     "reference_roles")}}
         failed = self.verifier["_component_review_failed"](runner, coverage, self.project, [])
         return failed, runner
 
@@ -301,6 +302,23 @@ class InterfaceReviewTest(unittest.TestCase):
         self.verifier["_write_component_acceptance"](report, [], runner.interfaces)
         record = json.loads((report.parent / "component-acceptance.json").read_text())
         self.assertEqual(record["interfaces"], runner.interfaces)
+
+    def test_an_interface_between_two_instances_is_judged_on_their_one_component(self):
+        # Issue #80: wing#1 and wing#2 are one Component, part_wing.step.py.
+        contract = {"design_contract": {**CONTRACT["design_contract"], "interfaces": [
+            {"id": "gear-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"], "yielding": "wing#2",
+             "poses_from": "gear-mesh"}]}}
+        (self.run_root / "WISH.json").write_text(json.dumps({"references": [], "context": contract}))
+        (self.project / "part_wing.step").write_bytes(b"wing step")
+        self._check({"wing": sha(b"wing step")})
+        failed, runner = self._gate()
+        self.assertFalse(failed)
+        self.assertEqual(runner.interfaces, [{"id": "gear-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"],
+                                              "check": "pass", "yielding": "wing#2", "round": 2}])
+        (self.project / "part_wing.step").write_bytes(b"wing step 2")
+        failed, runner = self._gate()
+        self.assertTrue(failed)
+        self.assertEqual(runner.interfaces[0]["check"], "stale")
 
     def test_a_contract_without_interfaces_writes_no_interfaces(self):
         (self.run_root / "WISH.json").write_text(json.dumps({"references": [], "context": CONTRACT}))

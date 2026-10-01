@@ -913,6 +913,8 @@ class NativeCommandTest(unittest.TestCase):
              "check": "pass", "round": 2, "yielding": "wing"},
             {"id": "wing-peg", "kind": "static", "components": ["wing", "heart-core"],
              "check": "shared-helper-samples"},
+            {"id": "wing-sector-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"],
+             "check": "pass", "round": 1, "yielding": "wing#2"},
             "not a mapping",
         ]
         with mock.patch("cli.main.native_run_status", return_value=receipt), redirect_stdout(stdout):
@@ -923,6 +925,8 @@ class NativeCommandTest(unittest.TestCase):
         self.assertIn("Interface pinion-sector (coupled: heart-core + wing): interface check pass at r0002", text)
         self.assertIn("Interface wing-peg (static: wing + heart-core): Shared Helper samples passed the print gates",
                       text)
+        # Issue #80: instances are listed by their instance names.
+        self.assertIn("Interface wing-sector-mesh (coupled: wing#1 + wing#2): interface check pass at r0001", text)
 
     def test_status_text_surfaces_actionable_publication_need(self):
         stdout = StringIO()

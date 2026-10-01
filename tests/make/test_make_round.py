@@ -1848,7 +1848,10 @@ class InterfaceTest(unittest.TestCase):
             return subprocess.CompletedProcess(command, code, stdout, "")
         if tool == "check_envelope":
             role = command[command.index("--role") + 1]
-            ok = Path(command[2]).name not in faults.get("envelope", ())
+            name = Path(command[2]).name
+            if "--instance" in command:
+                name += "#" + command[command.index("--instance") + 1]
+            ok = name not in faults.get("envelope", ())
             pose = "spread" if role == "inside" else "folded"
             payload = {"ok": ok, "role": role, "poses": [{"pose": pose, "status": "pass" if ok else "fail"}],
                        "detail": "2 pose(s) keep to the %s" % role if ok else
@@ -2209,6 +2212,136 @@ class InterfaceTest(unittest.TestCase):
                          ["--shared-helpers", "--interface", "gear-mesh"]):
                 with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
                     self.module.main([str(project), *argv])
+
+
+class InterfaceInstanceTest(unittest.TestCase):
+    """Issue #80: an Interface may name one instance of a Unique Geometry,
+    ``wing#1`` and ``wing#2``. Each instance is built and placed by the
+    geometry's one Component file; locking, staleness and the unlock belong
+    to that Component."""
+
+    _run_root = SealedReferenceTest._run_root
+    _fake = InterfaceTest._fake
+    _main = InterfaceTest._main
+    _component = InterfaceTest._component
+    _lock = InterfaceTest._lock
+    REFS = {**InterfaceTest.REFS, "ref-04-wing.png": b"wing"}
+    MESH = {"id": "wing-sector-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"], "yielding": "wing#2",
+            "poses": {"steps": 8, "movers": [
+                {"component": "wing#1", "rotation": {"axis_point": [16, 0, 198.8], "axis_direction": [1, 0, 0],
+                                                     "start_deg": 0, "end_deg": 35}},
+                {"component": "wing#2", "rotation": {"axis_point": [-16, 0, 198.8], "axis_direction": [1, 0, 0],
+                                                     "start_deg": 0, "end_deg": -35}, "driven": True}]}}
+    FOLD = {"id": "wing-fold", "kind": "separable", "components": ["wing#1", "wing#2"],
+            "envelope": {"inside": "wing#2", "outside": "wing#1",
+                         "shapes": [{"pose": "folded", "box": {"min_mm": [0, 0, 0], "max_mm": [40, 10, 6]}}]}}
+    INTERFACES = [MESH, FOLD]
+    WING = ("from features.joints import PEG_D\n"
+            "def gen_step(instance=1): return 'wing %d' % instance\n"
+            "def assembly_pose(shape, pose, instance): return shape\n")
+
+    def _contract(self, interfaces=None):
+        contract = InterfaceTest._contract(self, interfaces)
+        contract["design_contract"]["references"].append({"file": "ref-04-wing.png", "shows": "geometry:wing"})
+        return contract
+
+    def _project(self, tmp, wing=None):
+        project = InterfaceTest._project(self, tmp, freeze=False)
+        (project / "part_wing.step.py").write_text(self.WING if wing is None else wing)
+        self.assertEqual(self._main(project, ["--shared-helpers"]), 0, self.stderr)
+        return project
+
+    def test_two_instances_are_built_once_and_placed_as_distinct_labelled_children(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._lock(project, "wing")
+            self.calls.clear()
+            self.assertEqual(self._main(project, ["--interface", "wing-sector-mesh"]), 0, self.stderr)
+            out = project / "measure/interface-rounds/wing-sector-mesh/r0001"
+            self.assertIn("COMPONENTS = ['wing#1', 'wing#2']", (out / "interface_wing_sector_mesh.step.py").read_text())
+            inputs = json.loads((out / "motion.json").read_text())["conditions"][0]["inputs"]
+            self.assertEqual([mover["part"] for mover in inputs["movers"]], ["wing#1", "wing#2"])
+            self.assertEqual(inputs["obstacle_parts"], [])
+            summary = json.loads((out / "summary.json").read_text())
+            self.assertEqual((summary["components"], summary["yielding"]), (["wing#1", "wing#2"], "wing#2"))
+            self.assertEqual(list(summary["identities"]), ["wing"])
+            self.assertIn("wing#1 + wing#2", self.stdout)
+            # One Component, one build.
+            self.assertEqual([Path(command[1]).name for command, _ in self.calls], ["gen", "check_motion"])
+            interfaces, _ = self.module.contract_interfaces(project)
+            report = self.module.interface_report(project, interfaces, dict(summary["identities"]))
+            self.assertEqual(report[0], {"id": "wing-sector-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"],
+                                         "check": "pass", "yielding": "wing#2", "round": 1})
+
+    def test_the_check_is_refused_while_the_instances_component_is_unlocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._component(project, "wing")
+            self.assertEqual(self._main(project, ["--interface", "wing-sector-mesh"]), 2)
+            self.assertIn("judges locked geometry only", self.stderr)
+            self.assertIn("part_wing.step.py", self.stderr)
+
+    def test_a_failure_yielding_one_instance_unlocks_its_component_and_a_change_stales_the_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._lock(project, "wing")
+            self.faults["motion"] = "fail"
+            self.assertEqual(self._main(project, ["--interface", "wing-sector-mesh"]), 1)
+            self.assertIn("unlock part_wing.step.py", self.stdout)
+            state = json.loads((project / "measure/component-rounds/wing/make-round-state.json").read_text())
+            unlock = state["policy"]["unlocks"][-1]
+            self.assertEqual((unlock["kind"], unlock["interface"], unlock["interface_round"]),
+                             ("interface", "wing-sector-mesh", 1))
+            self.assertEqual(unlock["evidence"]["motion_log_sha256"], hashlib.sha256(
+                (project / "measure/interface-rounds/wing-sector-mesh/r0001/motion.log").read_bytes()).hexdigest())
+            # The wing worker repairs, is reviewed, and the check passes again.
+            (project / "part_wing.step.py").write_text(self.WING.replace("'wing %d'", "'wing v2 %d'"))
+            self._lock(project, "wing")
+            self.faults["motion"] = "pass"
+            self.assertEqual(self._main(project, ["--interface", "wing-sector-mesh"]), 0, self.stderr)
+            interfaces, _ = self.module.contract_interfaces(project)
+            state = json.loads((project / "measure/interface-rounds/wing-sector-mesh/make-round-state.json").read_text())
+            current = dict(state["identities"])
+            self.assertEqual(self.module.interface_failures(project, interfaces, current), [])
+            self.assertEqual(self.module.interface_failures(project, interfaces, {"wing": "0" * 64}),
+                             ["interface wing-sector-mesh is stale: a Component it joins changed after its check"])
+
+    def test_instances_on_both_sides_of_an_envelope_are_each_checked_in_one_round(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self.calls.clear()
+            _code, summary = self._component(project, "wing")
+            commands = [command for command, _ in self.calls if Path(command[1]).name == "check_envelope"]
+            self.assertEqual(sorted((command[command.index("--role") + 1], command[command.index("--instance") + 1])
+                                    for command in commands), [("inside", "2"), ("outside", "1")])
+            self.assertEqual({key: (item["role"], item["component"], item["verdict"])
+                              for key, item in summary["envelopes"].items()},
+                             {"wing-fold wing#2": ("inside", "wing#2", "PASS"),
+                              "wing-fold wing#1": ("outside", "wing#1", "PASS")})
+            self.assertTrue(summary["checks_ok"])
+            self.assertIn("keep  PASS wing-fold wing#1 outside", self.module.render_summary(summary))
+        # One instance entering the other's envelope fails the round.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self.faults["envelope"] = {"part_wing.step.py#1"}
+            _code, summary = self._component(project, "wing")
+            self.assertFalse(summary["checks_ok"])
+            self.assertEqual(summary["envelopes"]["wing-fold wing#1"]["verdict"], "FAIL")
+            self.assertEqual(summary["envelopes"]["wing-fold wing#2"]["verdict"], "PASS")
+
+    def test_an_instance_needs_a_placement_hook_that_takes_the_instance_number(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, wing="from features.joints import PEG_D\n"
+                                              "def gen_step(): return 'wing'\n"
+                                              "def assembly_pose(shape, pose): return shape\n")
+            self.calls.clear()
+            _code, summary = self._component(project, "wing")
+            self.assertFalse(summary["checks_ok"])
+            self.assertNotIn("check_envelope", [Path(command[1]).name for command, _ in self.calls])
+            self.assertIn("assembly_pose(shape, pose, instance)", summary["envelopes"]["wing-fold wing#1"]["detail"])
+            self.assertEqual(self._main(project, ["--interface", "wing-sector-mesh"]), 2)
+            self.assertIn("takes no instance; define assembly_pose(shape, pose, instance)", self.stderr)
+            self.assertFalse((project / "measure/interface-rounds/wing-sector-mesh/r0001").exists())
 
 
 class RoundPolicyTest(unittest.TestCase):

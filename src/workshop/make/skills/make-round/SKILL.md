@@ -371,6 +371,17 @@ rules apply. Contracts without it keep the rules above unchanged.
   inside that pose's shape; the outside Component, placed with `pose` None,
   stays out of every shape. A failure fails the round's checks like a print
   gate (the `keep` line, `envelopes` in `summary.json`).
+- **Instances (issue #80).** An Interface may name one instance of a Unique
+  Geometry whose count is above 1, `<id>#<n>` (`wing#1`, `wing#2`). The
+  geometry's one `part_<id>.step.py` builds and places every instance:
+  `assembly_pose(shape, pose, instance)` places instance n, and
+  `gen_step(instance=1)` builds it when the instances differ (a `gen_step`
+  without `instance` builds identical copies). A file whose `assembly_pose`
+  takes no `instance` fails the envelope check and is refused by
+  `--interface`, with a message naming this convention. An envelope side
+  that is an instance runs `check_envelope --instance n`, reported as
+  `<interface> <id>#<n>`; instances on both sides run both checks in the
+  same round.
 - **Coupled Interfaces.** Once every Component an Interface joins is locked:
 
   ```sh
@@ -382,7 +393,10 @@ rules apply. Contracts without it keep the rules above unchanged.
   through `assembly_pose(shape, None)` and runs `check_motion`'s
   `coupled_motion_collision` over the sealed pose table (or the
   `measure/motion.json` condition its `poses_from` names), with the
-  non-moving Components as obstacles. Rounds live under
+  non-moving Components as obstacles. Each instance an Interface names is
+  its own child, labelled `<id>#<n>`, which the pose table's movers name;
+  locking, staleness and the unlock belong to its Component, built once, so
+  a failure yielding `wing#2` unlocks the wing. Rounds live under
   `measure/interface-rounds/<id>/`. A failure unlocks the yielding
   Component with the check's evidence; its repair is never a shape round.
   `--require-component-passes` refuses assembly while any Coupled Interface

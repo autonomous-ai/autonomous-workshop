@@ -731,7 +731,9 @@ def _interface_review(make_round: dict, project: Path, identities: dict[str, str
         return [], None
     digests: dict[str, str] = {}
     for interface in interfaces:
-        for role in interface.get("components") or ():
+        # An instance reference (wing#2) is judged on its Component's
+        # identity (issue #80).
+        for role in make_round.get("reference_roles", list)(interface.get("components") or ()):
             step = project / f"{PART_PREFIX}{role}.step"
             if role in identities:
                 digests[role] = identities[role]

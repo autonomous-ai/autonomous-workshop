@@ -281,6 +281,14 @@ are separate. Frozen older runs retain their materialized rules and tools.
    pose)`, which places it in assembly coordinates. Its own round checks a
    separable Interface's Keep-out Envelope (the `keep` line): the inside
    Component stays inside in every declared pose, the outside one stays out.
+   An Interface may name one instance of a geometry whose count is above 1,
+   `wing#1` or `wing#2`. Its one worker builds every instance in the one
+   `part_wing.step.py`: tell that worker which instances its Interfaces
+   name. Its `assembly_pose(shape, pose, instance)` places instance n, and
+   `gen_step(instance=1)` may build a variant per instance; make_round
+   refuses an instance whose file's `assembly_pose` takes no `instance`.
+   Instances on both sides of one envelope are both checked in the wing's
+   own round.
 
    Check each Coupled Interface (a gear mesh, a cam, a linkage, parts that
    pass through one space at different times) once every Component it joins
@@ -293,8 +301,11 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    It refuses while a Component it joins is not locked at its current
    geometry, and runs the coupled motion check on just those Components over
-   the sealed pose table. On a failure it unlocks the contract's yielding
-   Component and names it; send that worker only the interface round's path.
+   the sealed pose table. It builds a Component once even when the
+   Interface names two of its instances, and places each instance as its own
+   labelled part. On a failure it unlocks the contract's yielding Component
+   (for `wing#2`, the wing) and names it; send that worker only the
+   interface round's path.
    The worker's repair is not a shape round; after the repaired Component is
    reviewed and locked again, rerun the check. Only you run
    `--shared-helpers` and `--interface`; the hook refuses both to workers.
