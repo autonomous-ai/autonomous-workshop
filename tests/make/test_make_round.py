@@ -2715,5 +2715,213 @@ class RoundPolicyTest(unittest.TestCase):
         self.assertEqual(P.legacy_policy({}, None), {"phase": P.OPEN})
 
 
+
+class InterfaceTextDeliveryTest(unittest.TestCase):
+    """ADR 0084: under a schema 4 Design Contract a component round delivers
+    the Component's rows and the text of every Interface naming it; a review
+    may list Reference Conflicts, which the Design Contract wins."""
+
+    _run_root = SealedReferenceTest._run_root
+    _fake_run = SealedReferenceTest._fake_run
+    _main = SealedReferenceTest._main
+    REFS = ContractComponentReviewTest.REFS
+    POSED = ReferenceCameraRoundTest.POSED
+    STAFF = "The body's bottom 10 mm, a bare 3.7 mm shaft below the ferrule, sits in a 3.9 x 10 socket in the base."
+    PAIR = "The first body's left flange seats on the second body's 50 degree seat cone."
+    CONFLICT = {"file": "ref-02-body.png", "reference": "the ferrule is the foot; no shaft below it",
+                "contract": "Interface body-base: " + STAFF}
+
+    def _contract(self, schema=4):
+        references = [{"file": "ref-01-whole.png", "shows": "assembly", "camera": [-60, 20]},
+                      {"file": "ref-02-body.png", "shows": "geometry:body", "camera": [90, 15]}]
+        geometries = [{"id": "body", "name": "Body", "count": 2, "extents_mm": [30, 20, 10], "wall_min_mm": 1.2},
+                      {"id": "base", "name": "Base", "count": 1, "extents_mm": [80, 80, 10], "wall_min_mm": 1.2},
+                      {"id": "wing", "name": "Wing", "count": 1, "extents_mm": [40, 10, 4], "wall_min_mm": 1.2}]
+        requirements = [{"id": "R01", "scope": "assembly", "text": "The bodies stand on the base."},
+                        {"id": "R02", "scope": "geometry:body", "text": "The ferrule is a riveted band."},
+                        {"id": "R03", "scope": "geometry:wing", "text": "The wing is a thin blade."}]
+        interfaces = [{"id": "body-base", "kind": "static", "components": ["body", "base"], "text": self.STAFF},
+                      {"id": "body-pair", "kind": "static", "components": ["body#1", "body#2"], "text": self.PAIR},
+                      {"id": "wing-base", "kind": "static", "components": ["wing", "base"],
+                       "text": "The wing clips into the base's slot."}]
+        if schema < 4:
+            for item in interfaces:
+                del item["text"]
+        return {"design_contract": {"schema_version": schema, "title": "Broken God", "references": references,
+                                    "geometries": geometries, "requirements": requirements,
+                                    "interfaces": interfaces}}
+
+    def _root(self, tmp, schema=4):
+        project = self._run_root(tmp, self.REFS, context=self._contract(schema))
+        self._edits = 0
+        return project
+
+    def _component(self, module, project, calls, edit=True):
+        if edit:
+            self._edits += 1
+            (project / "part_body.step.py").write_text(self.POSED % self._edits)
+        # ADR 0082: component rounds start only after the Shared Helpers freeze.
+        with mock.patch.object(module, "read_freeze", return_value={"round": 1, "helpers": {}}), \
+                mock.patch.object(module, "freeze_report", return_value={}):
+            code = self._main(module, project, ["--component", "part_body.step.py"], calls)
+        state = json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())
+        return code, json.loads((project / ("measure/component-rounds/body/r%04d/summary.json" % state["round"])).read_text())
+
+    def _review(self, module, project, summary, **changes):
+        return module.record_review(project, write_review(project, summary, **changes), "part_body.step.py")
+
+    def _wish(self, project, change):
+        wish_path = module_run_root(project) / "WISH.json"
+        wish = json.loads(wish_path.read_text())
+        change(wish["context"]["design_contract"])
+        wish_path.write_text(json.dumps(wish))
+
+    def test_the_packet_and_summary_carry_the_components_rows_and_interface_text(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            packet = json.loads(Path(summary["visual"]["packet"]).read_text())
+            self.assertEqual(packet["contract"], summary["contract"])
+            contract = summary["contract"]
+            self.assertEqual((contract["schema_version"], contract["component"]), (4, "body"))
+            self.assertEqual(contract["geometry"]["id"], "body")
+            self.assertEqual(contract["requirements"], [{"id": "R02", "text": "The ferrule is a riveted band."}])
+            # Every Interface naming the body, as itself or as one instance; never another's.
+            self.assertEqual(contract["interfaces"], [
+                {"id": "body-base", "kind": "static", "components": ["body", "base"], "text": self.STAFF},
+                {"id": "body-pair", "kind": "static", "components": ["body#1", "body#2"], "text": self.PAIR},
+            ])
+            self.assertIn("contract", summary["visual"]["detail"])
+            self.assertIn("contract 1 requirement row(s), 2 Interface(s)", module.render_summary(summary))
+
+    def test_a_changed_row_or_interface_text_changes_the_packet_hash(self):
+        changes = {
+            "row": lambda contract: contract["requirements"][1].update(text="The ferrule is a plain band."),
+            "interface text": lambda contract: contract["interfaces"][1].update(text="A flat seat."),
+        }
+        for name, change in changes.items():
+            with self.subTest(name), tempfile.TemporaryDirectory() as tmp:
+                project = self._root(tmp)
+                module, calls = load_module(), []
+                _, first = self._component(module, project, calls)
+                self._wish(project, change)
+                _, second = self._component(module, project, calls, edit=False)
+                self.assertEqual(second["round"], 2)
+                self.assertNotEqual(second["contract"], first["contract"])
+                self.assertNotEqual(second["visual"]["packet_sha256"], first["visual"]["packet_sha256"])
+                self.assertNotEqual(second["carry_key"], first["carry_key"])
+
+    def test_before_schema_4_the_packet_carries_no_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp, schema=3)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self.assertNotIn("contract", summary)
+            self.assertNotIn("contract", json.loads(Path(summary["visual"]["packet"]).read_text()))
+            # The Interfaces did not join the contract-row hash either.
+            rows = module.contract_rows(project, "body")
+            self._wish(project, lambda contract: contract["interfaces"].pop(0))
+            self.assertEqual(module.contract_rows(project, "body"), rows)
+
+    def test_a_conflict_only_agreeing_review_locks_and_the_worker_never_sees_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            result = self._review(module, project, summary, reference_conflicts=[dict(self.CONFLICT)])
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["locked"], {"round": 1, "source": "agreeing-review"})
+            recorded = [{"component": "body", "label": "geometry:body", "file": "ref-02-body.png", "round": 1,
+                         "reviewer": "fresh-reviewer-subagent", "reference": self.CONFLICT["reference"],
+                         "contract": self.CONFLICT["contract"]}]
+            self.assertEqual(result["reference_conflicts"], recorded)
+            self.assertNotIn("reference_conflicts", result["review"])
+            out = Path(result["out"])
+            self.assertNotIn("reference_conflicts", json.loads((out / "review.json").read_text()))
+            self.assertEqual(json.loads((out / "reference-conflicts.json").read_text()), recorded)
+            self.assertIn("1 Reference Conflict(s) recorded", module.render_summary(result))
+            state = json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())
+            self.assertEqual((state["policy"]["phase"], state["policy"]["shape_rounds"]), ("locked", 0))
+            digests = state["parts"]
+            self.assertEqual(list(module.component_coverage(project, digests).values()), [
+                {"role": "body", "accepted": None, "reference_conflicts": recorded}])
+            # An unchanged rerun carries the review and its conflicts.
+            code, carried = self._component(module, project, calls, edit=False)
+            self.assertEqual((code, carried["review"]["carried_from"]), (0, 1))
+            self.assertEqual(carried["reference_conflicts"], recorded)
+
+    def test_conflicts_beside_differences_spend_only_the_differences_shape_round(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            result = self._review(module, project, summary, agrees=False, reason="The band is too thin.",
+                                  differences=ContractComponentReviewTest.DIFFERS,
+                                  reference_conflicts=[dict(self.CONFLICT)])
+            self.assertFalse(result["ok"])
+            self.assertEqual(len(result["reference_conflicts"]), 1)
+            _, repaired = self._component(module, project, calls)
+            self.assertEqual((repaired["shape_round"], repaired["shape_rounds"]), (True, 1))
+
+    def test_a_conflict_only_disagreement_is_refused_and_spends_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            with self.assertRaisesRegex(ValueError, "only findings are Reference Conflicts agrees"):
+                self._review(module, project, summary, agrees=False, reason="The foot differs.",
+                             reference_conflicts=[dict(self.CONFLICT)])
+            state = json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())
+            self.assertEqual((state["policy"]["phase"], state["policy"]["shape_rounds"]), ("awaiting-review", 0))
+            self.assertFalse((Path(summary["out"]) / "review.json").exists())
+            self.assertTrue(self._review(module, project, summary, reference_conflicts=[dict(self.CONFLICT)])["ok"])
+
+    def test_a_malformed_reference_conflict_is_refused(self):
+        cases = {
+            "not a list": ({"reference_conflicts": dict(CONFLICT_FIXTURE)}, "at most 12 reference_conflicts"),
+            "too many": ({"reference_conflicts": [dict(CONFLICT_FIXTURE)] * 13}, "at most 12 reference_conflicts"),
+            "missing field": ({"reference_conflicts": [{"file": "ref-02-body.png", "reference": "a foot"}]},
+                              "needs file, reference and contract"),
+            "extra field": ({"reference_conflicts": [{**CONFLICT_FIXTURE, "repair": "none"}]},
+                            "needs file, reference and contract"),
+            "empty text": ({"reference_conflicts": [{**CONFLICT_FIXTURE, "contract": " "}]}, "1 to 1000 characters"),
+            "not compared": ({"reference_conflicts": [{**CONFLICT_FIXTURE, "file": "ref-01-whole.png"}]},
+                             "names one reference this round compared: ref-02-body.png"),
+            "with a camera mismatch": ({"agrees": None, "camera_mismatch": dict(ReferenceCameraRoundTest.MISMATCH),
+                                        "reference_conflicts": [dict(CONFLICT_FIXTURE)]},
+                                       "camera mismatch replaces agrees, differences and reference_conflicts"),
+        }
+        for name, (changes, refusal) in cases.items():
+            with self.subTest(name), tempfile.TemporaryDirectory() as tmp:
+                project = self._root(tmp)
+                module, calls = load_module(), []
+                _, summary = self._component(module, project, calls)
+                review = write_review(project, summary, **changes)
+                if changes.get("agrees", True) is None:
+                    data = json.loads(review.read_text())
+                    del data["agrees"]
+                    review.write_text(json.dumps(data))
+                with self.assertRaisesRegex(ValueError, refusal):
+                    module.record_review(project, review, "part_body.step.py")
+
+    def test_reference_conflicts_are_accepted_before_schema_4(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp, schema=3)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            result = self._review(module, project, summary, reference_conflicts=[dict(self.CONFLICT)])
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["reference_conflicts"][0]["file"], "ref-02-body.png")
+
+
+CONFLICT_FIXTURE = InterfaceTextDeliveryTest.CONFLICT
+
+
+def module_run_root(project):
+    """The run workspace above a CAD project, as the fixture lays it out."""
+    return Path(project).parents[4]
+
+
 if __name__ == "__main__":
     unittest.main()

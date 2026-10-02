@@ -39,3 +39,5 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0080: Component Workers author their Components, and a hook admits their rounds](0080-component-workers-author-and-a-hook-admits-their-rounds.md)
 - [0081: Shape Rounds follow Component Reviews](0081-shape-rounds-follow-component-reviews.md)
 - [0082: Interfaces between Components](0082-interfaces-between-components.md)
+- [0083: Compare each reference in the Display Pose at its Reference Camera](0083-compare-in-the-display-pose-at-the-reference-camera.md)
+- [0084: The reviewer reads Interface text, and the Design Contract wins over its references](0084-interface-text-and-reference-conflicts.md)

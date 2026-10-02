@@ -224,7 +224,8 @@ build and print checks, is what passes a Component; its disagreement lists
 the differences to repair. A third answer, camera mismatch, says only that
 the side of the model facing the camera is not the side the reference shows:
 it is not a Shape Round, gives the Component Worker nothing to repair, and
-stops the run until that one Reference Camera is amended (ADR 0083).
+stops the run until that one Reference Camera is amended (ADR 0083). A
+Reference Conflict it lists is not a difference (ADR 0084).
 _Avoid_: Likeness check, self-review, sign-off
 
 **Reference Camera**:
@@ -264,6 +265,13 @@ A Component Review that disagreed after the Component used all its Shape
 Rounds, recorded instead of repaired again and reported to the person when
 the run ends. It is never the person's decision.
 _Avoid_: Waiver, override, Stalled Out
+
+**Reference Conflict**:
+A place where a Component's reference image shows something its Design
+Contract forbids. The Design Contract wins: it is not a difference, costs no
+Shape Round, and is reported to the person when the run ends so the image can
+be corrected.
+_Avoid_: Contract mismatch, disagreement
 
 **Shared Helper**:
 A project file two or more Components import because they must agree on what

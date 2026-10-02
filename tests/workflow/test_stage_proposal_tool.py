@@ -2634,7 +2634,8 @@ class StageProposalToolTest(unittest.TestCase):
         # A fresh run root for each subTest, so one refusal cannot mask another.
         self.setUp()
 
-    def write_component_acceptance(self, report, acceptances, *, verification_sha256=None, interfaces=None):
+    def write_component_acceptance(self, report, acceptances, *, verification_sha256=None, interfaces=None,
+                                   conflicts=None):
         record = {
             "schema_version": 1,
             "verification_sha256": verification_sha256 or hashlib.sha256(report.read_bytes()).hexdigest(),
@@ -2642,6 +2643,8 @@ class StageProposalToolTest(unittest.TestCase):
         }
         if interfaces is not None:
             record["interfaces"] = interfaces
+        if conflicts is not None:
+            record["reference_conflicts"] = conflicts
         (report.parent / "component-acceptance.json").write_text(json.dumps(record), encoding="utf-8")
 
     INTERFACES = [
@@ -2687,6 +2690,55 @@ class StageProposalToolTest(unittest.TestCase):
                 self.write_component_acceptance(report, [], interfaces=interfaces)
                 refused = self.finalize_make(expected=2)
                 self.assertIn(needle, refused.stderr)
+
+    REFERENCE_CONFLICT = {
+        "label": "geometry:wing", "scope": "component:wing", "file": "ref-02-wing.png", "round": 3,
+        "reviewer": "blind-critic", "reference": "a flat riveted flange",
+        "contract": "Interface heart-chest-seat: the flange's front face is a 50 degree seat cone",
+    }
+
+    def test_make_carries_the_verified_reference_conflicts_into_the_product(self):
+        # ADR 0084: the contract won; the host reports each conflict.
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [], conflicts=[self.REFERENCE_CONFLICT])
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertEqual(product["reference_conflicts"], [self.REFERENCE_CONFLICT])
+
+    def test_make_refuses_a_malformed_reference_conflict(self):
+        conflict = self.REFERENCE_CONFLICT
+        cases = {
+            "manager reviewer": ([{**conflict, "reviewer": "manager"}], "reviewer"),
+            "assembly label": ([{**conflict, "label": "assembly"}], "sealed geometry image"),
+            "no component": ([{**conflict, "scope": "component:"}], "name a component"),
+            "round zero": ([{**conflict, "round": 0}], "round"),
+            "empty contract": ([{**conflict, "contract": ""}], "contract"),
+            "missing file": ([{k: v for k, v in conflict.items() if k != "file"}], "fields are invalid"),
+            "not a list": ({"a": 1}, "reference_conflicts"),
+        }
+        for name, (conflicts, needle) in cases.items():
+            with self.subTest(name):
+                self.setUp_fresh()
+                _, report = self.acceptance_stage()
+                report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+                self.write_component_acceptance(report, [], conflicts=conflicts)
+                refused = self.finalize_make(expected=2)
+                self.assertIn(needle, refused.stderr)
+
+    def test_make_refuses_reference_conflicts_the_verifier_did_not_record(self):
+        product_root, report = self.acceptance_stage()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        product["reference_conflicts"] = [self.REFERENCE_CONFLICT]
+        (product_root / "product.json").write_text(json.dumps(product), encoding="utf-8")
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        refused = self.finalize_make(expected=2)
+        self.assertIn("reference_conflicts must come from the final verifier", refused.stderr)
+        # A record without conflicts drops an agent-authored list.
+        self.write_component_acceptance(report, [])
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertNotIn("reference_conflicts", product)
 
     def test_make_refuses_interfaces_the_verifier_did_not_record(self):
         product_root, report = self.acceptance_stage()

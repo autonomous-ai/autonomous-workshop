@@ -269,9 +269,14 @@ reviewer agrees that it looks like its reference (ADR 0076). The Workshop
 Manager does not judge its own component: each Component has one reviewer
 that did not author it, spawned once and asked again in the same thread for
 every later round. The request is fixed: the round's `visual-packet.json`
-path, its packet sha256 and that geometry's contract lines, nothing else, once
-per packet. Write its answer unchanged with the exact packet hash from the
-summary:
+path and its packet sha256, nothing else, once per packet. Under a schema 4
+Design Contract (ADR 0084) the round writes the Component's contract into
+the packet itself, bound by the packet hash: `contract` holds its geometry
+row, its `requirements` rows and the `text` of every Interface that names it
+(`<id>` or `<id>#<n>`). The summary's `contract` holds the same for the
+worker. Before schema 4 the packet has no `contract`, and the request also
+carries that geometry's contract lines. Write its answer unchanged with the
+exact packet hash from the summary:
 
 ```json
 {"round": 3, "packet_sha256": "<visual packet hash from summary>",
@@ -282,7 +287,16 @@ summary:
 ```
 
 `differences` (at most 12) is required when `agrees` is false and is the
-repair list for the next round. Then record it without rebuilding:
+repair list for the next round. A review may also list
+`reference_conflicts` (at most 12), each `{"file", "reference",
+"contract"}`: the reference image this round compared, what it shows, and
+what the Design Contract requires instead, quoting the row or Interface
+text. A Reference Conflict is not a difference: the Design Contract wins, it
+costs no shape round, it may stand beside `"agrees": true`, and the worker
+never sees it (`review.json` is written without it; the round keeps it in
+`reference-conflicts.json` and the summary's `reference_conflicts`). The
+final verifier reports each one, and the run reports it when it ends.
+Then record it without rebuilding:
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
@@ -292,8 +306,10 @@ repair list for the next round. Then record it without rebuilding:
 It refuses a review of a round that is not the latest, a different packet
 hash, changed sources, packet, renders, references or comparisons, a round
 whose build or print checks failed or that has no packet, a second review of
-the same round (a carried review counts), and a reviewer named as the
-Workshop Manager. Where the Workshop host names the runtime
+the same round (a carried review counts), a reviewer named as the
+Workshop Manager, a malformed Reference Conflict or one naming a reference
+the round did not compare, and a disagreeing review whose only findings are
+Reference Conflicts (such a review agrees). Where the Workshop host names the runtime
 (`WORKSHOP_REVIEWER_RUNTIME`, set on Claude Code), `reviewer` must be the
 reviewer's native agent id in that runtime's format (17 lowercase hex
 characters), the Component's first review binds it in the component state as
@@ -307,7 +323,7 @@ review, and tells the worker only which round was reviewed: the worker reads
 Under a schema 3 Design Contract the reviewer may answer camera mismatch
 instead: the side of the model that faces the Reference Camera is not the
 side the reference shows. It names the reference and the landmarks each side
-shows, and replaces `agrees` and `differences`:
+shows, and replaces `agrees`, `differences` and `reference_conflicts`:
 
 ```json
 {"round": 3, "packet_sha256": "<visual packet hash from summary>",

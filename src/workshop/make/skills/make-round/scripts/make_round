@@ -63,6 +63,15 @@ before anything is built. Its reviewer may answer camera mismatch instead of
 agreeing or disagreeing: that is not a Shape Round, the worker gets no repair
 text, and the run waits until the host amends that one reference's camera
 (the run root's CONTRACT-AMENDMENTS.json, written only by the host).
+
+A schema 4 Design Contract gives every Interface its text (ADR 0084). A
+component round then writes the Component's own contract rows and the text
+of every Interface naming it into its visual packet and its summary, so the
+reviewer and the worker read the sealed contract rather than a copy. A
+review may list reference_conflicts beside its differences: places where the
+reference shows what the contract forbids. The Design Contract wins: a
+conflict is not a difference, costs no Shape Round, never reaches the
+worker, and is reported when the run ends.
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
@@ -129,6 +138,9 @@ PLACE_FUNC = "assembly_pose"
 # A schema 3 Design Contract seals each reference's Reference Camera, and the
 # host's camera-only amendments live beside WISH.json (ADR 0083).
 CAMERA_SCHEMA_VERSION = 3
+# A schema 4 Design Contract gives every Interface its text, and a component
+# round delivers the Component's contract itself (ADR 0084).
+INTERFACE_TEXT_SCHEMA_VERSION = 4
 AMENDMENTS_NAME = "CONTRACT-AMENDMENTS.json"
 DISPLAY_POSE_DIR = "display-pose"
 INSTANCE_PARAM = "instance"
@@ -298,12 +310,14 @@ def prepare_comparisons(project, out, refs, display_pose=False):
     return comparisons, None
 
 
-def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=False):
+def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=False, contract=None):
     """Render evidence for native inspection; never infer a visual verdict.
     ``component`` is the role of a component round, else None.
     ``display_pose`` (a component round of a schema 3 contract) renders the
     comparisons from the Component in its Display Pose at each reference's
-    Reference Camera, while front, top and iso stay in the print stance."""
+    Reference Camera, while front, top and iso stay in the print stance.
+    ``contract`` (a component round of a schema 4 contract) is the
+    Component's own Design Contract, bound into the packet (ADR 0084)."""
     bound = (lambda: component_sources(project, component)) if component else (lambda: source_hashes(project))
     before = bound()
     views = out / "visual"
@@ -340,6 +354,8 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
               "images": {str(p.resolve()): file_hash(p) for p in paths},
               "references": references,
               "comparisons": comparisons}
+    if contract is not None:
+        packet["contract"] = contract
     packet_path = out / "visual-packet.json"
     packet_path.write_text(json.dumps(packet, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     if component:
@@ -350,6 +366,9 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
                       "beside it in its Display Pose at the Reference Camera, and judges print-facing surfaces "
                       "from the print-stance views; record the review, or a camera mismatch, with "
                       "--record-review <review.json>")
+        if contract is not None:
+            detail += ("; the packet's contract holds the Component's rows and the text of every Interface "
+                       "naming it")
     else:
         detail = "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"
         if comparisons:
@@ -518,9 +537,10 @@ def record_review(project: Path, review_path, component: str) -> dict:
     if mismatch:
         required = (required - {"agrees"}) | {"camera_mismatch"}
     if (not isinstance(review, dict) or not required <= set(review)
-            or not set(review) <= required | ({"differences"} if not mismatch else set())):
+            or not set(review) <= required | ({"differences", "reference_conflicts"} if not mismatch else set())):
         raise ValueError("a review needs round, packet_sha256, reviewer, agrees and reason, and optional "
-                         "differences; a camera mismatch replaces agrees and differences with camera_mismatch")
+                         "differences and reference_conflicts; a camera mismatch replaces agrees, differences "
+                         "and reference_conflicts with camera_mismatch")
     if type(review["round"]) is not int or review["round"] != latest:
         raise ValueError("a review must judge the latest round, r%04d" % latest)
     if summary.get("review") is not None:
@@ -558,6 +578,10 @@ def record_review(project: Path, review_path, component: str) -> dict:
             raise ValueError("a difference needs feature, reference and model")
         if any(not isinstance(v, str) or not 1 <= len(v.strip()) <= 1000 for v in item.values()):
             raise ValueError("difference text must be nonempty and bounded")
+    conflicts = reference_conflicts(review, summary, project)
+    if not review["agrees"] and not differences and conflicts:
+        raise ValueError("a review whose only findings are Reference Conflicts agrees: the Design Contract "
+                         "wins, and a conflict is not a difference (ADR 0084); answer with agrees true")
     if not review["agrees"] and not differences:
         raise ValueError("a disagreeing review must list how the model differs from its reference")
     recorded = {
@@ -567,6 +591,7 @@ def record_review(project: Path, review_path, component: str) -> dict:
     policy = review_policy(component_policy(state, round_root), {
         "agrees": review["agrees"], "identity": state.get("identity"), "carry_key": summary.get("carry_key"),
         "imported_helpers": summary.get("imported_helpers") or {}, "review": recorded,
+        **({"reference_conflicts": conflicts} if conflicts else {}),
     })
     reviewed = policy["reviewed"]
     acceptance = None
@@ -576,16 +601,52 @@ def record_review(project: Path, review_path, component: str) -> dict:
         summary["accepted"] = acceptance
     reviewed["acceptance"] = acceptance
     summary["review"] = recorded
+    if conflicts:
+        summary["reference_conflicts"] = conflicts
+        (out / "reference-conflicts.json").write_text(json.dumps(conflicts, sort_keys=True, indent=2) + "\n")
     visual["status"] = "reviewed"
     summary["ok"] = policy["phase"] == LOCKED
     summary["locked"] = lock_record(policy)
-    (out / "review.json").write_text(json.dumps(review, sort_keys=True, indent=2) + "\n")
+    # The worker reads review.json; a Reference Conflict is nothing to repair.
+    worker_review = {key: value for key, value in review.items() if key != "reference_conflicts"}
+    (out / "review.json").write_text(json.dumps(worker_review, sort_keys=True, indent=2) + "\n")
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
     state["policy"] = policy
     if bound is not None:
         state["reviewer_id"] = bound
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return summary
+
+
+def reference_conflicts(review: dict, summary: dict, project: Path) -> list[dict]:
+    """A review's Reference Conflicts (ADR 0084), checked like a camera
+    mismatch: each names a reference this round compared, what it shows and
+    what the Design Contract requires instead. Returned as recorded, with the
+    reference's label and the round's Component."""
+
+    conflicts = review.get("reference_conflicts", [])
+    if not isinstance(conflicts, list) or len(conflicts) > MAX_DIFFERENCES:
+        raise ValueError("a review lists at most %d reference_conflicts" % MAX_DIFFERENCES)
+    compared = {}
+    for label, ref in summary.get("refs") or ():
+        path = resolve_reference(ref, project)
+        if path is not None:
+            compared.setdefault(path.name, label)
+    recorded = []
+    for item in conflicts:
+        if not isinstance(item, dict) or set(item) != {"file", "reference", "contract"}:
+            raise ValueError("a reference conflict needs file, reference and contract: the reference image, "
+                             "what it shows, and what the Design Contract requires, quoting the row or Interface")
+        if any(not isinstance(v, str) or not 1 <= len(v.strip()) <= MAX_REASON for v in item.values()):
+            raise ValueError("reference conflict text must be 1 to %d characters" % MAX_REASON)
+        name = item["file"].strip()
+        if name not in compared:
+            raise ValueError("a reference conflict names one reference this round compared: %s"
+                             % (", ".join(sorted(compared)) or "none"))
+        recorded.append({"component": summary["parts"][0], "label": compared[name], "file": name,
+                         "round": summary["round"], "reviewer": review["reviewer"].strip(),
+                         "reference": item["reference"].strip(), "contract": item["contract"].strip()})
+    return recorded
 
 
 def record_camera_mismatch(state, state_path, summary, summary_path, out, review, bound) -> dict:
@@ -1089,6 +1150,14 @@ def render_summary(summary: dict) -> str:
             lines.append("    differs %s: reference %s | model %s" % (item["feature"], item["reference"], item["model"]))
         if summary.get("accepted"):
             lines.append("    ACCEPTED at the shape-repair limit (%d shape rounds); reported when the run ends" % summary["accepted"]["shape_rounds"])
+    conflicts = summary.get("reference_conflicts") or []
+    if conflicts:
+        lines.append("  conflict %d Reference Conflict(s) recorded: the Design Contract wins; nothing to repair; "
+                     "reported when the run ends" % len(conflicts))
+    contract = summary.get("contract")
+    if contract is not None:
+        lines.append("  contract %d requirement row(s), %d Interface(s) in summary.json and the packet" % (
+            len(contract.get("requirements") or ()), len(contract.get("interfaces") or ())))
     for item in summary.get("reference_cameras") or []:
         amended = (" (amended from %g,%g)" % tuple(item["amended_from"])) if item.get("amended_from") else ""
         lines.append("  camera %s %s at %g,%g in the Display Pose%s" % (item["label"], item["file"], item["camera"][0], item["camera"][1], amended))
@@ -1298,10 +1367,18 @@ def sealed_contract(project: Path) -> dict | None:
 
 def camera_contract(project: Path) -> bool:
     """Whether the sealed contract gives every reference a Reference Camera
-    (schema 3, ADR 0083). Earlier contracts keep the declared-camera rule."""
+    (schema 3 and later, ADR 0083). Earlier contracts keep the declared-camera
+    rule."""
+
+    return contract_schema(project) >= CAMERA_SCHEMA_VERSION
+
+
+def contract_schema(project: Path) -> int:
+    """The sealed Design Contract's schema version, 0 outside Contract Mode."""
 
     contract = sealed_contract(project)
-    return contract is not None and contract.get("schema_version") == CAMERA_SCHEMA_VERSION
+    schema = contract.get("schema_version") if contract is not None else None
+    return schema if type(schema) is int else 0
 
 
 def camera_text(camera) -> str | None:
@@ -1325,7 +1402,7 @@ def reference_cameras(project: Path) -> tuple[dict, dict]:
     amendment is what the run reports."""
 
     contract = sealed_contract(project)
-    if contract is None or contract.get("schema_version") != CAMERA_SCHEMA_VERSION:
+    if contract_schema(project) < CAMERA_SCHEMA_VERSION:
         return {}, {}
     cameras = {}
     for reference in contract.get("references") or ():
@@ -1345,6 +1422,31 @@ def reference_cameras(project: Path) -> tuple[dict, dict]:
             amended[name] = cameras[name]
             cameras[name] = text
     return cameras, amended
+
+
+def component_contract(project: Path, role: str) -> dict | None:
+    """The Component's own Design Contract under a schema 4 contract (ADR
+    0084): its Unique Geometry row, its requirement rows, and every Interface
+    that names it (``<id>`` or ``<id>#<n>``) with that Interface's text. A
+    component round writes it into its visual packet, for the reviewer, and
+    its summary, for the worker. None before schema 4 and outside Contract
+    Mode, where the Workshop Manager still sends the rows."""
+
+    contract = sealed_contract(project)
+    if contract is None or contract_schema(project) < INTERFACE_TEXT_SCHEMA_VERSION:
+        return None
+    scope = GEOMETRY_LABEL + role
+    geometry = next((item for item in contract.get("geometries") or ()
+                     if isinstance(item, dict) and item.get("id") == role), None)
+    requirements = [{"id": item.get("id"), "text": item.get("text")}
+                    for item in contract.get("requirements") or ()
+                    if isinstance(item, dict) and item.get("scope") == scope]
+    interfaces = [{key: item.get(key) for key in ("id", "kind", "components", "text")}
+                  for item in contract.get("interfaces") or ()
+                  if isinstance(item, dict) and isinstance(item.get("components"), list)
+                  and role in reference_roles(item["components"])]
+    return {"schema_version": contract_schema(project), "component": role, "geometry": geometry,
+            "requirements": requirements, "interfaces": interfaces}
 
 
 def place_hook_missing(part: Path) -> str:
@@ -1489,7 +1591,9 @@ def current_passing_component_round(project: Path, role: str, digest: str | None
 
 def component_coverage(project: Path, digests: dict) -> dict[str, dict]:
     """Reference sha256 -> ``{"role", "accepted"}``, for every reference a
-    current, passing component round showed its reviewer (ADR 0076).
+    current, passing component round showed its reviewer (ADR 0076), with
+    ``reference_conflicts`` when its review recorded any for that reference
+    (ADR 0084).
 
     ``accepted`` is None when the reviewer agreed, else the component
     acceptance recorded at the shape-repair limit: ``{"reviewer", "reason",
@@ -1512,10 +1616,15 @@ def component_coverage(project: Path, digests: dict) -> dict[str, dict]:
         accepted = summary.get("accepted")
         if accepted is not None:
             accepted = {key: accepted[key] for key in ("reviewer", "reason", "shape_rounds")}
+        conflicts = summary.get("reference_conflicts") or []
         for _label, ref in summary.get("refs") or []:
             path = resolve_reference(ref, project)
             if path is not None:
-                covered.setdefault(file_hash(path), {"role": role, "accepted": accepted})
+                cover = {"role": role, "accepted": accepted}
+                mine = [item for item in conflicts if item.get("file") == path.name]
+                if mine:
+                    cover["reference_conflicts"] = mine
+                covered.setdefault(file_hash(path), cover)
     return covered
 
 
@@ -1796,8 +1905,8 @@ def component_policy(state: dict, round_root: Path) -> dict:
 
 def contract_rows(project: Path, role: str) -> str:
     """sha256 of the Component's own Design Contract rows: its Unique
-    Geometry, the requirements and references scoped to it. Outside Contract
-    Mode, of nothing."""
+    Geometry, the requirements and references scoped to it, and under schema
+    4 the Interfaces that name it. Outside Contract Mode, of nothing."""
 
     rows = None
     root = run_root(project)
@@ -1814,6 +1923,12 @@ def contract_rows(project: Path, role: str) -> str:
                 "requirements": [r for r in contract.get("requirements") or () if isinstance(r, dict) and r.get("scope") == scope],
                 "references": [r for r in contract.get("references") or () if isinstance(r, dict) and r.get("shows") == scope],
             }
+            schema = contract.get("schema_version")
+            if type(schema) is int and schema >= INTERFACE_TEXT_SCHEMA_VERSION:
+                # ADR 0084: the Interfaces a schema 4 review read are its rows too.
+                rows["interfaces"] = [i for i in contract.get("interfaces") or () if isinstance(i, dict)
+                                      and isinstance(i.get("components"), list)
+                                      and role in reference_roles(i["components"])]
     return hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest()
 
 
@@ -2640,6 +2755,7 @@ def make_round(args) -> int:
     entries = [g for g in generators if not g.name.startswith("part_")]
     component = None
     display_pose = False
+    delivered = None
     if args.component:
         try:
             role, entry = component_role(project, args.component)
@@ -2649,6 +2765,7 @@ def make_round(args) -> int:
         component = role
         parts = [entry]
         display_pose = camera_contract(project)
+        delivered = component_contract(project, role)
         missing = place_hook_missing(entry) if display_pose else ""
         if missing:
             print("make_round: %s" % missing, file=sys.stderr)
@@ -2890,7 +3007,7 @@ def make_round(args) -> int:
                             % outcome["carried"]["round"]}
     else:
         visual = prepare_visual(project, entry, out, cad, refs, component,
-                                display_pose=component is not None and display_pose)
+                                display_pose=component is not None and display_pose, contract=delivered)
     summary = {
         "round": round_index,
         "scope": "component:%s" % component if component is not None else "assembly",
@@ -2927,6 +3044,8 @@ def make_round(args) -> int:
             review = {**carried["review"], "carried_from": carried["round"]}
             if carried.get("acceptance"):
                 summary["accepted"] = carried["acceptance"]
+            if carried.get("reference_conflicts"):
+                summary["reference_conflicts"] = carried["reference_conflicts"]
             summary["ok"] = next_policy["phase"] == LOCKED
         summary.update(
             review=review, shape_round=outcome["shape_round"],
@@ -2939,6 +3058,9 @@ def make_round(args) -> int:
             summary["envelopes"] = envelopes
         if display_pose:
             summary["reference_cameras"] = shown_cameras(project, refs)
+        if delivered is not None:
+            # ADR 0084: the worker reads its rows from the sealed contract.
+            summary["contract"] = delivered
         if freeze is not None:
             summary["helper_freeze"] = freeze_report(project, freeze, helpers)
     if any(item["verdict"] == "UNVERIFIED" for item in printing.values()) or (motion and motion["verdict"] == "unverified"):

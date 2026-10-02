@@ -475,6 +475,21 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                     item.get("reason", ""),
                 )
             )
+    conflicts = receipt.get("reference_conflicts")
+    if isinstance(conflicts, (list, tuple)):
+        # ADR 0084: a reference image that shows what its Design Contract
+        # forbids; the contract won, and the image should be corrected.
+        for item in conflicts:
+            if isinstance(item, Mapping):
+                print(
+                    "Reference Conflict: %s %s shows %s; the Design Contract requires %s"
+                    % (
+                        item.get("label", "?"),
+                        item.get("file", "?"),
+                        item.get("reference", "?"),
+                        item.get("contract", "?"),
+                    )
+                )
     amendments = receipt.get("contract_amendments")
     if isinstance(amendments, (list, tuple)):
         # ADR 0083: a camera-only contract amendment the host recorded.

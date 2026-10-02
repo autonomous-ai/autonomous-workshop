@@ -137,7 +137,7 @@ notice. Name each
 them, even though the files do not exist yet. A toy with more than one
 component also gets one `"shows": "assembly"` reference, listed first.
 
-Write the block as `"schema_version": 3`. Every reference gets a `camera`
+Write the block as `"schema_version": 4`. Every reference gets a `camera`
 (ADR 0083), which Stage 3b fills in once the image exists, and every place
 two or more Components meet gets an `interfaces[]` entry (ADR 0082): a peg in a socket, a
 pinion on a sector, a wing swinging past a housing. Give each its Interface
@@ -155,6 +155,14 @@ Kind:
   check fails, and give its pose table (`poses`: steps and movers, each with
   its rotation or translation in assembly coordinates) from the same numbers
   Stage 3d checks.
+
+Give every Interface its `text` (ADR 0084): in words, what it imposes on
+each Component it joins, with sizes and places, for example "The staff's
+bottom 10 mm, a bare Ø3.7 shaft below the ferrule, sits in a Ø3.9 × 10
+socket in the base at X −40, Y −32." Name every joint feature it puts on
+each side: pegs, sockets, plugs, seat faces. Make hands this text to each
+joined Component's reviewer and worker, and where an image shows something
+the text forbids, the contract wins and the run reports the image.
 
 When copies of one Unique Geometry meet each other, or only one copy meets
 another part, name the copy: `<id>#<n>`, with `n` from 1 to the geometry's
@@ -282,6 +290,16 @@ For each image, take its alpha silhouette and check:
    renders the Component from exactly this camera beside its image, so a
    camera that shows the wrong side wastes a run. There is no silhouette
    pose search; the estimate is yours.
+
+7. **Joint features.** For every joint feature an Interface puts on a
+   Component (a peg, a socket, a plug, a seat face), look at that
+   Component's image from its Reference Camera. If the camera can see the
+   feature, the image must show it as the Interface `text` contracts it:
+   a ferrule drawn as the foot where the shaft continues into a socket, or
+   a flat flange where the Interface makes a seat cone, is a disagreement.
+   If the camera cannot see it, the image need not show it. An image left
+   showing what the contract forbids becomes a Reference Conflict in every
+   review of that Component.
 
 A measurement is a **disagreement** when it is off by more than 5% of the
 dimension it measures and by more than 0.5 mm. The 0.5 mm floor is for small

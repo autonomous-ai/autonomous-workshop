@@ -2705,6 +2705,9 @@ def _likeness_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]:
 _COMPONENT_ACCEPTANCE_FIELDS = frozenset(
     {"label", "scope", "reviewer", "shape_rounds", "reason", "accepted_by"}
 )
+_REFERENCE_CONFLICT_FIELDS = frozenset(
+    {"label", "scope", "file", "round", "reviewer", "reference", "contract"}
+)
 _COMPONENT_SHAPE_REPAIR_LIMIT = 5
 _WORKSHOP_MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
 
@@ -2782,6 +2785,44 @@ def _made_component_acceptances(product: Mapping[str, Any]) -> list[dict[str, An
     return acceptances
 
 
+def _made_reference_conflicts(product: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Reference Conflicts from sealed product metadata (ADR 0084).
+
+    The Make finalizer copies them from the final verifier's hash-bound
+    ``component-acceptance.json``. Each is a place where a Component's
+    reference image shows what its Design Contract forbids; the contract
+    won, and the host reports the conflict so the image can be corrected.
+    The host checks their shape again before sealing them into its receipt.
+    """
+
+    raw = product.get("reference_conflicts", ())
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence) or len(raw) > 64:
+        raise ContractError("Made reference conflicts are invalid")
+    conflicts: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, Mapping) or set(item) != _REFERENCE_CONFLICT_FIELDS:
+            raise ContractError("Made reference conflict fields are invalid")
+        label, scope, reviewer = item["label"], item["scope"], item["reviewer"]
+        if (
+            not isinstance(label, str) or not 1 <= len(label.strip()) <= 200
+            or not label.startswith("geometry:")
+            or not isinstance(scope, str) or len(scope) > 200
+            or not scope.startswith("component:")
+            or not scope[len("component:"):].strip()
+            or not isinstance(item["file"], str) or not 1 <= len(item["file"].strip()) <= 200
+            or type(item["round"]) is not int or item["round"] < 1
+            or not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= 200
+            or reviewer.strip().lower() in _WORKSHOP_MANAGER_NAMES
+            or any(
+                not isinstance(item[key], str) or not 1 <= len(item[key].strip()) <= 1000
+                for key in ("reference", "contract")
+            )
+        ):
+            raise ContractError("Made reference conflict is invalid")
+        conflicts.append({key: item[key] for key in sorted(_REFERENCE_CONFLICT_FIELDS)})
+    return conflicts
+
+
 _INTERFACE_PROOFS = {
     "static": "shared-helper-samples",
     "separable": "keep-out-envelope",
@@ -2833,6 +2874,13 @@ def _component_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]
     """The accepted Components of the current Make, from the host's own receipt."""
 
     return _latest_make_check(host_state_root, "component_acceptances")
+
+
+def _reference_conflict_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The Reference Conflicts of the current Make, from the host's own
+    receipt (ADR 0084)."""
+
+    return _latest_make_check(host_state_root, "reference_conflicts")
 
 
 def _contract_amendment_history(host_state_root: Path) -> list[dict[str, Any]]:
@@ -7634,6 +7682,9 @@ def _evaluate_make_stage(
         interfaces = _made_interfaces(made.product)
         if interfaces:
             product_checks["interfaces"] = interfaces
+        reference_conflicts = _made_reference_conflicts(made.product)
+        if reference_conflicts:
+            product_checks["reference_conflicts"] = reference_conflicts
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -10270,6 +10321,9 @@ def _native_receipt(
         _component_acceptance_history(paths.host_state) if paths is not None else []
     )
     interfaces = _interface_history(paths.host_state) if paths is not None else []
+    reference_conflicts = (
+        _reference_conflict_history(paths.host_state) if paths is not None else []
+    )
     contract_amendments = (
         _contract_amendment_history(paths.host_state) if paths is not None else []
     )
@@ -10491,6 +10545,7 @@ def _native_receipt(
         "likeness_acceptances": likeness_acceptances,
         "component_acceptances": component_acceptances,
         "interfaces": interfaces,
+        "reference_conflicts": reference_conflicts,
         "contract_amendments": contract_amendments,
         "product_id": checkpoint.product_id,
         "status": visible_status,

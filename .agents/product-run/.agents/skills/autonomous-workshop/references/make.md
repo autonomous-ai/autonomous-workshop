@@ -241,24 +241,39 @@ are separate. Frozen older runs retain their materialized rules and tools.
    spawn a second reviewer for a Component.
 
    The review request has one fixed shape and nothing else: the round's
-   `visual-packet.json` path, its packet sha256 from the worker's report, and
-   that Component's contract rows. Add no notes, no accepted differences and
+   `visual-packet.json` path and its packet sha256 from the worker's report.
+   Under a schema 4 Design Contract (ADR 0084) `make_round` writes the
+   Component's contract into the packet itself: its requirement rows and the
+   text of every Interface that names it. Before schema 4 the packet has no
+   `contract`; add that Component's contract rows to the request as its
+   third item. Add no notes, no accepted differences and
    no explanation of the renders; the reviewer's definition already explains
    the print stance and the printing limits. Ask once per packet: never ask
    for a re-review of the same packet, and never edit, filter or summarize
    the answer.
 
    Write its answer unchanged as
-   `{"round", "packet_sha256", "reviewer", "agrees", "reason", "differences"}`;
+   `{"round", "packet_sha256", "reviewer", "agrees", "reason", "differences",
+   "reference_conflicts"}`;
    `differences` lists `{"feature", "reference", "model"}` (at most 12) and is
-   required when it disagrees. `reviewer` is the reviewer's native agent id,
+   required when it disagrees. `reference_conflicts`, when the reviewer gives
+   it, lists `{"file", "reference", "contract"}` (at most 12): places where a
+   reference image shows what the Design Contract forbids. The Design
+   Contract wins: a Reference Conflict is not a difference, costs no shape
+   round, may stand beside an agreement, never reaches the worker, and is
+   reported to the person when the run ends so the image can be corrected.
+   Do not repair toward the image and do not stop the run for it. `reviewer` is the reviewer's native agent id,
    exactly as the runtime returned it when you spawned it (on Claude Code, 17
    lowercase hex characters), never a name. Record it with the same
    `--component` argument plus `--record-review <review.json>`. The
    Component's first review binds that id; `make_round` refuses a review
    naming another id and tells you the bound one. The host refuses Make output
    whose recorded review names an agent that is not this run's Component
-   Reviewer or that did not read every image of the packet it judged.
+   Reviewer or that did not read every image of the packet it judged. If
+   `--record-review` refuses an answer as malformed (for example a
+   disagreement whose only findings are Reference Conflicts), send the
+   refusal line unchanged to the same reviewer thread and record its
+   corrected answer for the same packet.
 
    After recording, tell the worker only "review recorded for round N". The
    worker reads the recorded review from that round itself; on a
@@ -268,7 +283,8 @@ are separate. Frozen older runs retain their materialized rules and tools.
    answer `{"camera_mismatch": {"file", "reference", "model"}, "reason"}`:
    the side of the model facing the reference's Reference Camera is not the
    side the reference shows. Write it unchanged with `round`,
-   `packet_sha256` and `reviewer`, and no `agrees` or `differences`, and
+   `packet_sha256` and `reviewer`, and no `agrees`, `differences` or
+   `reference_conflicts`, and
    record it with `--record-review` the same way. It is not a disagreement
    and not a shape round: tell the worker nothing and send it no repair. The
    summary's `need:` line is the need. Stop the run with it at once, quoting
@@ -294,7 +310,9 @@ are separate. Frozen older runs retain their materialized rules and tools.
    line names any frozen file that changed and every Component that imports
    it.
 
-   Give each worker the rows of every Interface its Component joins. A
+   Give each worker the rows of every Interface its Component joins, with
+   each Interface's text under a schema 4 Design Contract; each component
+   round's `summary.json` repeats them under `contract`. A
    Component in a separable or coupled Interface defines `assembly_pose(shape,
    pose)`, which places it in assembly coordinates; under a schema 3 Design
    Contract every Component defines it, and `assembly_pose(shape, None)` is

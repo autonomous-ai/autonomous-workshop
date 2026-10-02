@@ -141,7 +141,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0080-component-workers-author-and-a-hook-admits-their-rounds.md`, and
 `docs/adr/0081-shape-rounds-follow-component-reviews.md`, and
 `docs/adr/0082-interfaces-between-components.md`, and
-`docs/adr/0083-compare-in-the-display-pose-at-the-reference-camera.md` before changing the CLI, runtime,
+`docs/adr/0083-compare-in-the-display-pose-at-the-reference-camera.md`, and
+`docs/adr/0084-interface-text-and-reference-conflicts.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -267,6 +268,15 @@ the run with a need that `workshop resume --reference-camera FILE=AZ,EL`
 answers with a host-recorded amendment of that one camera, leaving WISH.json,
 requirements and images sealed. Schema 1 and 2 contracts and frozen runs keep
 the earlier comparison.
+ADR 0084 adds Design Contract schema 4: every Interface carries `text`, what
+it imposes on each Component it joins, which no gate measures. A component
+round writes the Component's rows and the text of every Interface naming it
+into its visual packet and summary, so the Manager's review request is the
+packet path and hash. Where a reference shows what the contract forbids, the
+reviewer lists a Reference Conflict, not a difference: the contract wins, it
+costs no Shape Round, never reaches the worker, and the final receipt and
+`workshop status --json` report it. A difference below the print limits is
+not listed. Schema 1 to 3 contracts and frozen runs keep the earlier review.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

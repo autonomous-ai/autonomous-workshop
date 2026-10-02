@@ -56,6 +56,8 @@ from workshop.workflow.native_run import (
     _interface_history,
     _made_component_acceptances,
     _made_interfaces,
+    _made_reference_conflicts,
+    _reference_conflict_history,
     _verify_make_round_workers,
     _playtest_score_history,
     _record_playtest_evidence,
@@ -3495,6 +3497,50 @@ class NativeHostTest(unittest.TestCase):
                 with self.assertRaises(ContractError):
                     _made_component_acceptances({"component_acceptances": bad})
 
+    REFERENCE_CONFLICT = {
+        "label": "geometry:heart-core", "scope": "component:heart-core", "file": "ref-06-heart.png",
+        "round": 4, "reviewer": "a1b2c3d4e5f6a7b8c", "reference": "a flat riveted flange",
+        "contract": "Interface heart-chest-seat: the flange's front face is a 50 degree seat cone",
+    }
+
+    def test_made_reference_conflicts_are_validated_before_the_host_seals_them(self):
+        conflict = dict(self.REFERENCE_CONFLICT)
+        self.assertEqual(_made_reference_conflicts({"title": "t"}), [])
+        self.assertEqual(_made_reference_conflicts({"reference_conflicts": [conflict]}), [conflict])
+        for bad in (
+            "nope",
+            [conflict] * 65,
+            ["not a mapping"],
+            [dict(conflict, label="assembly")],
+            [dict(conflict, scope="component:")],
+            [dict(conflict, file="")],
+            [dict(conflict, round=0)],
+            [dict(conflict, round=True)],
+            [dict(conflict, reviewer="Workshop-Manager")],
+            [dict(conflict, reference=" ")],
+            [dict(conflict, contract="x" * 1001)],
+            [dict(conflict, repair="none")],
+            [{k: v for k, v in conflict.items() if k != "contract"}],
+        ):
+            with self.subTest(bad=bad if not isinstance(bad, list) or len(bad) < 5 else "65 items"):
+                with self.assertRaises(ContractError):
+                    _made_reference_conflicts({"reference_conflicts": bad})
+
+    def test_reference_conflicts_are_read_from_the_latest_make_gate_receipt(self):
+        conflict = dict(self.REFERENCE_CONFLICT)
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary).resolve()
+            self.assertEqual(_reference_conflict_history(host), [])
+            gates = host / "gates"
+            gates.mkdir()
+            (gates / "0003-make.json").write_text(json.dumps(
+                {"evidence": {"checks": {"reference_conflicts": [conflict]}}}), encoding="utf-8")
+            self.assertEqual(_reference_conflict_history(host), [conflict])
+            # A receipt sealed before ADR 0084 reports none.
+            (gates / "0005-make.json").write_text(json.dumps(
+                {"evidence": {"checks": {"component_acceptances": []}}}), encoding="utf-8")
+            self.assertEqual(_reference_conflict_history(host), [])
+
     INTERFACES = [
         {"id": "wing-housing", "kind": "separable", "components": ["wing", "spine-housing"],
          "check": "keep-out-envelope"},
@@ -4723,6 +4769,8 @@ class ReferenceCameraAmendmentTest(unittest.TestCase):
         self.assertEqual(resumed["contract_amendments"], [
             {"file": "ref-02-body.png", "shows": "geometry:body", "from": [90, 15], "to": [-90, 15],
              "sealed": [90, 15]}])
+        # ADR 0084: a receipt with no Reference Conflict reports an empty list.
+        self.assertEqual(resumed["reference_conflicts"], [])
         records = [json.loads(line) for line in
                    (paths.host_state / "host-corrections.jsonl").read_text().splitlines()]
         amendment = [r for r in records if r["correction"] == "reference-camera-amendment"]
@@ -4754,6 +4802,13 @@ class ReferenceCameraAmendmentTest(unittest.TestCase):
                 resume_native_run(product_id, reference_cameras=cameras)
         self.assertEqual(seen, [])
         self.assertFalse((native_run_paths(product_id).workspace / "CONTRACT-AMENDMENTS.json").exists())
+
+    def test_a_schema_4_contract_keeps_its_cameras_to_amend(self):
+        contract = {**self.CONTRACT, "schema_version": 4}
+        product_id, _started, _seen = self._run(contract)
+        resumed = resume_native_run(product_id, reference_cameras={"ref-02-body.png": (-90, 15)})
+        self.assertEqual([(item["from"], item["to"]) for item in resumed["contract_amendments"]],
+                         [([90, 15], [-90, 15])])
 
     def test_a_contract_before_schema_3_has_no_camera_to_amend(self):
         contract = {**self.CONTRACT, "schema_version": 2,
