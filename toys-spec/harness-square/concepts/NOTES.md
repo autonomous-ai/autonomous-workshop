@@ -32,3 +32,14 @@ come down to 25 degrees if picked. The screen shows the firmware's lilac ASCII o
 
 Pinterest pins and boards consulted for inspiration (looked at only; never passed
 to the generator) are listed at the end of `DESK_CONCEPTS.html`.
+
+## Creature-neutral home concepts (`home/`)
+
+The companion is not fixed to the octopus. The firmware roster has ten creatures
+(cat, frog, rabbit, penguin, cow, ghost, plant, jellyfish, robot, bat), so the
+shell should be a neutral home. There are six concepts with two variants each,
+and each screen shows a different creature: H1 littlehouse (cat), H2 stage (robot),
+H3 planter (frog), H4 petbed (rabbit), H5 terrarium (ghost), H6 zenstone
+(penguin). The H4 and H6 renders show a raised rim around the screen, which must be
+lowered on the front and sides for edge swipes. The H6 penguin resembles Linux's
+Tux and must be redrawn. D1, D6 and D8 are tied to the sea and the octopus.
