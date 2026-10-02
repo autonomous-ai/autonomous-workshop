@@ -140,7 +140,16 @@ calls were reassembling by hand.
   unresolved visibility as inconclusive rather than claiming a pass.
 - For every reference the packet also holds `compare-NN.png`: the reference
   beside the model rendered at the reference's declared camera (`@AZ,EL`, or
-  the front view when none is declared), both at one height. Judge form
+  the front view when none is declared), both at one height. Under a schema 3
+  Design Contract (ADR 0083) every sealed reference has its Reference Camera
+  in the contract, and a component round renders the comparison from the
+  Component in its Display Pose, `assembly_pose(shape, None)` (the first
+  instance when the geometry's count is above 1), at that camera, under
+  `visual/display-pose/`; `front`, `top` and `iso` stay in the print stance.
+  A schema 3 component round of a file with no `assembly_pose` is refused
+  before anything is built. A camera the host amended (`CONTRACT-AMENDMENTS.json`
+  beside `WISH.json`) replaces the sealed one, and the summary's `camera`
+  line says so. Judge form
   there. Look for bodies thinner or blockier than the reference, openings or
   gaps it shows that the model fills, members merged or missing, and detail
   simplified away. No silhouette score is computed anywhere in the Make
@@ -281,6 +290,29 @@ acceptance, from the guard's record of which agent the runtime started and
 which packet images it read. The Manager must not write, edit or filter the
 review, and tells the worker only which round was reviewed: the worker reads
 `review.json` in that round.
+
+Under a schema 3 Design Contract the reviewer may answer camera mismatch
+instead: the side of the model that faces the Reference Camera is not the
+side the reference shows. It names the reference and the landmarks each side
+shows, and replaces `agrees` and `differences`:
+
+```json
+{"round": 3, "packet_sha256": "<visual packet hash from summary>",
+ "reviewer": "<the reviewer's native agent id>",
+ "reason": "The reference shows the halo face-on; the model shows its rim.",
+ "camera_mismatch": {"file": "ref-03-gear-staff.png",
+                     "reference": "the halo's face and its eight spokes",
+                     "model": "the halo edge-on, one thin bar"}}
+```
+
+`--record-review` refuses one without landmarks, naming a reference the round
+did not compare, or on a round compared without a Reference Camera. It is not
+a Component Review: the Component stays awaiting review, no shape round is
+spent, nothing is written to `review.json` (the claim is kept in
+`camera-mismatch.json`), and the summary's `camera_mismatch.need` is the
+need the Workshop Manager stops the run with. The host answers it with a
+camera-only amendment; a rerun of the unchanged B-rep then shows the new
+view and is reviewed afresh.
 
 ### The round policy (ADR 0081)
 

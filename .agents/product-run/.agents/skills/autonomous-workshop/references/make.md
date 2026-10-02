@@ -260,7 +260,23 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    After recording, tell the worker only "review recorded for round N". The
    worker reads the recorded review from that round itself; on a
-   disagreement it is the repair list for the next shape round. Keep every
+   disagreement it is the repair list for the next shape round.
+
+   Under a schema 3 Design Contract (ADR 0083) the reviewer may instead
+   answer `{"camera_mismatch": {"file", "reference", "model"}, "reason"}`:
+   the side of the model facing the reference's Reference Camera is not the
+   side the reference shows. Write it unchanged with `round`,
+   `packet_sha256` and `reviewer`, and no `agrees` or `differences`, and
+   record it with `--record-review` the same way. It is not a disagreement
+   and not a shape round: tell the worker nothing and send it no repair. The
+   summary's `need:` line is the need. Stop the run with it at once, quoting
+   it unchanged:
+   `stage_proposal.py --run-root . need --stage make --status waiting
+   --reason "<the need line>"`. Do not correct the camera, the reference or
+   the model yourself. The run resumes after the host amends that one
+   camera (`CONTRACT-AMENDMENTS.json` beside `WISH.json`, written only by the
+   host). Then ask the worker to rerun its Component unchanged, which shows
+   the new view, and send that packet to the same reviewer. Keep every
    worker's thread until the assembly passes (ADR 0082), and send each later
    unlock to the worker that already holds that Component.
 
@@ -278,7 +294,10 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    Give each worker the rows of every Interface its Component joins. A
    Component in a separable or coupled Interface defines `assembly_pose(shape,
-   pose)`, which places it in assembly coordinates. Its own round checks a
+   pose)`, which places it in assembly coordinates; under a schema 3 Design
+   Contract every Component defines it, and `assembly_pose(shape, None)` is
+   its Display Pose (ADR 0083). make_round refuses a schema 3 component round
+   whose file has none, before building anything. Its own round checks a
    separable Interface's Keep-out Envelope (the `keep` line): the inside
    Component stays inside in every declared pose, the outside one stays out.
    An Interface may name one instance of a geometry whose count is above 1,
@@ -322,8 +341,13 @@ are separate. Frozen older runs retain their materialized rules and tools.
    review. In Contract Mode (ADR 0074) name each component file after its
    Unique Geometry id, `part_<id>.step.py`: its round then shows the sealed
    `geometry:<id>` image automatically. Each `compare-NN.png` is a reference
-   beside the model rendered at that reference's declared camera (`@AZ,EL` on
-   the `--ref`, else the front view), both at one height. The reviewer
+   beside the model, both at one height. Under a schema 3 Design Contract the
+   model is the Component in its Display Pose, `assembly_pose(shape, None)`,
+   seen from the reference's Reference Camera, and the assembly reference is
+   shown from its camera too; `front`, `top` and `iso` stay in the print
+   stance (ADR 0083). Before schema 3 the model is rendered in its print
+   stance at the reference's declared camera (`@AZ,EL` on the `--ref`, else
+   the front view). The reviewer
    compares form there: thinner or blockier bodies, missing openings, merged
    or missing members, simplified detail. No silhouette score is computed. The assembly round
    never shows a component image against the whole object; one with no

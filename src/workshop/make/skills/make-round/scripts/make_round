@@ -53,6 +53,16 @@ Interface. Only the Workshop Manager runs those two modes. An Interface may
 name one instance of a geometry, <id>#<n>; the Component's
 assembly_pose(shape, pose, instance) places it, and the Component is what
 locks, stales and unlocks.
+
+A schema 3 Design Contract gives every reference its Reference Camera (ADR
+0083). A component round then composes each reference beside the Component
+in its Display Pose, assembly_pose(shape, None), rendered at that camera;
+front, top and iso stay in the print stance. Every Component of such a
+contract defines assembly_pose, and a round of one that does not is refused
+before anything is built. Its reviewer may answer camera mismatch instead of
+agreeing or disagreeing: that is not a Shape Round, the worker gets no repair
+text, and the run waits until the host amends that one reference's camera
+(the run root's CONTRACT-AMENDMENTS.json, written only by the host).
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
@@ -116,6 +126,11 @@ SEPARABLE = "separable"
 # source file, whose placement hook then takes the instance number.
 INSTANCE_REFERENCE = re.compile(r"^([a-z0-9]+(?:-[a-z0-9]+)*)#([1-9][0-9]*)$")
 PLACE_FUNC = "assembly_pose"
+# A schema 3 Design Contract seals each reference's Reference Camera, and the
+# host's camera-only amendments live beside WISH.json (ADR 0083).
+CAMERA_SCHEMA_VERSION = 3
+AMENDMENTS_NAME = "CONTRACT-AMENDMENTS.json"
+DISPLAY_POSE_DIR = "display-pose"
 INSTANCE_PARAM = "instance"
 INSTANCE_CONVENTION = ("define %s(shape, pose, %s) to place instance n in assembly coordinates, and "
                        "gen_step(%s=1) to build a variant per instance (omit it to build identical copies)"
@@ -256,19 +271,25 @@ def reference_view(ref: str) -> tuple[str, str, str]:
     return "%g,%g" % (az, el), "az%g_el%g" % (az, el), "%g,%g" % (az, el)
 
 
-def prepare_comparisons(project, out, refs):
-    """``(comparisons, error)``: one composed image per shown reference."""
+def prepare_comparisons(project, out, refs, display_pose=False):
+    """``(comparisons, error)``: one composed image per shown reference.
+    ``display_pose`` composes the Component's Display Pose render at each
+    Reference Camera instead of the print stance (ADR 0083)."""
 
     views = out / "visual"
+    renders = views / DISPLAY_POSE_DIR if display_pose else views
     comparisons = {}
     for index, (label, ref) in enumerate(refs):
         reference = resolve_reference(ref, project)
         _view, stem, caption_camera = reference_view(ref)
-        render = views / (stem + ".png")
+        render = renders / (stem + ".png")
         if reference is None or not render.is_file():
             return {}, "no model render at the declared camera for %s" % label
         target = views / ("compare-%02d.png" % index)
-        caption = "%s  reference | model at declared camera %s" % (label, caption_camera)
+        if display_pose:
+            caption = "%s  reference | model in its Display Pose at Reference Camera %s" % (label, caption_camera)
+        else:
+            caption = "%s  reference | model at declared camera %s" % (label, caption_camera)
         try:
             compose_comparison(reference, render, target, caption)
         except Exception as exc:  # noqa: BLE001 - any unreadable image leaves no evidence
@@ -277,15 +298,19 @@ def prepare_comparisons(project, out, refs):
     return comparisons, None
 
 
-def prepare_visual(project, entry, out, cad, refs, component=None):
+def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=False):
     """Render evidence for native inspection; never infer a visual verdict.
-    ``component`` is the role of a component round, else None."""
+    ``component`` is the role of a component round, else None.
+    ``display_pose`` (a component round of a schema 3 contract) renders the
+    comparisons from the Component in its Display Pose at each reference's
+    Reference Camera, while front, top and iso stay in the print stance."""
     bound = (lambda: component_sources(project, component)) if component else (lambda: source_hashes(project))
     before = bound()
     views = out / "visual"
     command = [sys.executable, str(cad / "render_review"), str(entry),
                "--view", "front", "--view", "top", "--view", "iso"]
-    for view in dict.fromkeys(reference_view(ref)[0] for _label, ref in refs):
+    reference_views = list(dict.fromkeys(reference_view(ref)[0] for _label, ref in refs))
+    for view in reference_views if not display_pose else ():
         if view not in ("front", "top", "iso"):
             # the = form: argparse reads a leading "-" as a new option
             command.append("--view=%s" % view)
@@ -293,7 +318,17 @@ def prepare_visual(project, entry, out, cad, refs, component=None):
     paths = [views / (v + ".png") for v in ("front", "top", "iso")]
     if done.returncode or not all(p.is_file() for p in paths) or before != bound():
         return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}
-    comparisons, error = prepare_comparisons(project, out, refs)
+    if display_pose and refs:
+        posed = out / ("display_pose_%s.step.py" % component.replace("-", "_"))
+        posed.write_text(DISPLAY_POSE_ENTRY % {"project": str(project), "part": entry.name}, encoding="utf-8")
+        done = run([sys.executable, str(cad / "render_review"), str(posed),
+                    *("--view=%s" % view for view in reference_views),
+                    "-o", str(views / DISPLAY_POSE_DIR)],
+                   cwd=project, log=out / "display-pose-render.log")
+        if done.returncode or before != bound():
+            return {"status": "error", "findings": [],
+                    "detail": "Display Pose render failed or source changed; inspect display-pose-render.log"}
+    comparisons, error = prepare_comparisons(project, out, refs, display_pose)
     if error is not None:
         return {"status": "error", "findings": [], "detail": error}
     references = {}
@@ -310,6 +345,11 @@ def prepare_visual(project, entry, out, cad, refs, component=None):
     if component:
         detail = ("An independent reviewer (not the Workshop Manager) compares each reference with the model "
                   "beside it and all views; record the review with --record-review <review.json>")
+        if display_pose:
+            detail = ("An independent reviewer (not the Workshop Manager) compares each reference with the model "
+                      "beside it in its Display Pose at the Reference Camera, and judges print-facing surfaces "
+                      "from the print-stance views; record the review, or a camera mismatch, with "
+                      "--record-review <review.json>")
     else:
         detail = "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"
         if comparisons:
@@ -474,12 +514,20 @@ def record_review(project: Path, review_path, component: str) -> dict:
         raise ValueError("component round summary is invalid")
     review = json.loads(Path(review_path).read_text(encoding="utf-8"))
     required = {"round", "packet_sha256", "reviewer", "agrees", "reason"}
-    if not isinstance(review, dict) or not required <= set(review) or not set(review) <= required | {"differences"}:
-        raise ValueError("a review needs round, packet_sha256, reviewer, agrees and reason, and optional differences")
+    mismatch = isinstance(review, dict) and "camera_mismatch" in review
+    if mismatch:
+        required = (required - {"agrees"}) | {"camera_mismatch"}
+    if (not isinstance(review, dict) or not required <= set(review)
+            or not set(review) <= required | ({"differences"} if not mismatch else set())):
+        raise ValueError("a review needs round, packet_sha256, reviewer, agrees and reason, and optional "
+                         "differences; a camera mismatch replaces agrees and differences with camera_mismatch")
     if type(review["round"]) is not int or review["round"] != latest:
         raise ValueError("a review must judge the latest round, r%04d" % latest)
     if summary.get("review") is not None:
         raise ValueError("r%04d already has a recorded review" % latest)
+    if summary.get("camera_mismatch") is not None:
+        raise ValueError("r%04d already has a recorded camera mismatch; the run waits for the host to amend "
+                         "that Reference Camera, then the Component is rerun unchanged" % latest)
     if not summary.get("checks_ok"):
         raise ValueError("r%04d did not pass its build and print checks; repair them before review" % latest)
     visual = summary.get("visual") or {}
@@ -496,10 +544,12 @@ def record_review(project: Path, review_path, component: str) -> dict:
     if reviewer.strip().lower() in MANAGER_NAMES:
         raise ValueError("the Workshop Manager cannot review its own component")
     bound = reviewer_binding(state, reviewer)
-    if type(review["agrees"]) is not bool:
-        raise ValueError("a review's agrees must be true or false")
     if not isinstance(review["reason"], str) or not 1 <= len(review["reason"].strip()) <= MAX_REASON:
         raise ValueError("a review needs a reason of 1 to %d characters" % MAX_REASON)
+    if mismatch:
+        return record_camera_mismatch(state, state_path, summary, summary_path, out, review, bound)
+    if type(review["agrees"]) is not bool:
+        raise ValueError("a review's agrees must be true or false")
     differences = review.get("differences", [])
     if not isinstance(differences, list) or len(differences) > MAX_DIFFERENCES:
         raise ValueError("a review lists at most %d differences" % MAX_DIFFERENCES)
@@ -535,6 +585,51 @@ def record_review(project: Path, review_path, component: str) -> dict:
     if bound is not None:
         state["reviewer_id"] = bound
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return summary
+
+
+def record_camera_mismatch(state, state_path, summary, summary_path, out, review, bound) -> dict:
+    """Record a reviewer's camera mismatch (ADR 0083): the side of the model
+    that faces the Reference Camera is not the side the reference shows.
+
+    It names the landmarks each side shows. It is not a Component Review: the
+    policy stays awaiting review, no Shape Round is spent, and nothing is
+    written where the worker reads its review. The summary holds the need the
+    Workshop Manager stops the run with; the host answers it by amending that
+    one reference's camera, and an unchanged rerun shows the new view.
+    """
+
+    shown = summary.get("reference_cameras")
+    if not shown:
+        raise ValueError("a camera mismatch needs a round compared at a Reference Camera (a schema 3 Design "
+                         "Contract); this round has none")
+    claim = review["camera_mismatch"]
+    if not isinstance(claim, dict) or set(claim) != {"file", "reference", "model"}:
+        raise ValueError("a camera mismatch needs file, reference and model: the reference image, the "
+                         "landmarks it shows facing the camera, and the landmarks the model shows instead")
+    if any(not isinstance(v, str) or not 1 <= len(v.strip()) <= MAX_REASON for v in claim.values()):
+        raise ValueError("a camera mismatch names the landmarks each side shows, in 1 to %d characters" % MAX_REASON)
+    camera = next((item for item in shown if item["file"] == claim["file"].strip()), None)
+    if camera is None:
+        raise ValueError("a camera mismatch names one reference this round compared: %s"
+                         % ", ".join(item["file"] for item in shown))
+    az, el = camera["camera"]
+    need = ("Reference Camera mismatch for %s (%s) at %g,%g: the reference shows %s; the model in its Display "
+            "Pose shows %s. Answer with workshop resume <wish-id> --reference-camera %s=AZ,EL"
+            % (camera["file"], camera["label"], az, el, claim["reference"].strip(), claim["model"].strip(),
+               camera["file"]))
+    summary["camera_mismatch"] = {
+        "reviewer": review["reviewer"].strip(), "reason": review["reason"].strip(), "round": summary["round"],
+        "file": camera["file"], "label": camera["label"], "camera": camera["camera"],
+        "reference": claim["reference"].strip(), "model": claim["model"].strip(), "need": need,
+    }
+    summary["visual"]["status"] = "camera-mismatch"
+    summary["ok"] = False
+    (out / "camera-mismatch.json").write_text(json.dumps(review, sort_keys=True, indent=2) + "\n")
+    summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
+    if bound is not None:
+        state["reviewer_id"] = bound
+        state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return summary
 
 
@@ -927,6 +1022,14 @@ def render_summary(summary: dict) -> str:
             lines.append("    differs %s: reference %s | model %s" % (item["feature"], item["reference"], item["model"]))
         if summary.get("accepted"):
             lines.append("    ACCEPTED at the shape-repair limit (%d shape rounds); reported when the run ends" % summary["accepted"]["shape_rounds"])
+    for item in summary.get("reference_cameras") or []:
+        amended = (" (amended from %g,%g)" % tuple(item["amended_from"])) if item.get("amended_from") else ""
+        lines.append("  camera %s %s at %g,%g in the Display Pose%s" % (item["label"], item["file"], item["camera"][0], item["camera"][1], amended))
+    mismatch = summary.get("camera_mismatch")
+    if mismatch is not None:
+        lines.append("  review CAMERA MISMATCH by %s: not a Shape Round; the worker gets no repair text" % mismatch["reviewer"])
+        lines.append("    need: %s" % mismatch["need"])
+        lines.append("    Workshop Manager: stop the run with this need; after the host amends the camera, rerun the Component unchanged")
     verdict = ("UNVERIFIED" if summary.get("geometry_status") == "unverified" else "PASS") if summary["ok"] else "FAIL"
     if (summary.get("visual") or {}).get("status") == "pending" and summary.get("checks_ok"):
         verdict = "PENDING"
@@ -1110,6 +1213,127 @@ def contract_reference_labels(wish: dict) -> dict:
     return labels
 
 
+def sealed_contract(project: Path) -> dict | None:
+    """The Design Contract the Wish sealed, or None outside Contract Mode or
+    when the Wish cannot be read (the sealed references report that)."""
+
+    root = run_root(project)
+    if root is None:
+        return None
+    try:
+        wish = json.loads((root / "WISH.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    context = wish.get("context") if isinstance(wish, dict) else None
+    contract = context.get("design_contract") if isinstance(context, dict) else None
+    return contract if isinstance(contract, dict) else None
+
+
+def camera_contract(project: Path) -> bool:
+    """Whether the sealed contract gives every reference a Reference Camera
+    (schema 3, ADR 0083). Earlier contracts keep the declared-camera rule."""
+
+    contract = sealed_contract(project)
+    return contract is not None and contract.get("schema_version") == CAMERA_SCHEMA_VERSION
+
+
+def camera_text(camera) -> str | None:
+    """``"AZ,EL"`` for a usable ``[AZ, EL]`` Reference Camera, else None."""
+
+    if (
+        not isinstance(camera, list) or len(camera) != 2
+        or any(isinstance(v, bool) or not isinstance(v, (int, float)) for v in camera)
+        or not -180 <= camera[0] <= 180 or not -90 <= camera[1] <= 90
+    ):
+        return None
+    return "%g,%g" % (camera[0], camera[1])
+
+
+def reference_cameras(project: Path) -> tuple[dict, dict]:
+    """``(cameras, amended)`` for a schema 3 contract: sealed file name ->
+    ``"AZ,EL"``, each the contract's Reference Camera unless the host amended
+    it, and file name -> the sealed camera it replaced. Both are empty before
+    schema 3. Only the host writes the amendments file beside WISH.json; a
+    file that does not parse amends nothing, and the host's own record of the
+    amendment is what the run reports."""
+
+    contract = sealed_contract(project)
+    if contract is None or contract.get("schema_version") != CAMERA_SCHEMA_VERSION:
+        return {}, {}
+    cameras = {}
+    for reference in contract.get("references") or ():
+        if isinstance(reference, dict) and isinstance(reference.get("file"), str):
+            text = camera_text(reference.get("camera"))
+            if text is not None:
+                cameras[reference["file"]] = text
+    amended = {}
+    try:
+        document = json.loads((run_root(project) / AMENDMENTS_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        document = None
+    overrides = document.get("reference_cameras") if isinstance(document, dict) else None
+    for name, camera in (overrides or {}).items() if isinstance(overrides, dict) else ():
+        text = camera_text(camera)
+        if name in cameras and text is not None and text != cameras[name]:
+            amended[name] = cameras[name]
+            cameras[name] = text
+    return cameras, amended
+
+
+def place_hook_missing(part: Path) -> str:
+    """Why ``part`` cannot be shown in its Display Pose, or "": a schema 3
+    Component defines assembly_pose(shape, pose) (ADR 0083). Read from the
+    source, so the refusal builds nothing."""
+
+    try:
+        tree = ast.parse(part.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError) as exc:
+        return "%s cannot be read: %s" % (part.name, exc)
+    if any(isinstance(node, ast.FunctionDef) and node.name == PLACE_FUNC for node in tree.body):
+        return ""
+    return ("%s defines no %s(shape, pose); under a schema 3 Design Contract every Component defines it, "
+            "returning the shape placed in its Display Pose when pose is None, so its references can be "
+            "compared from their Reference Cameras" % (part.name, PLACE_FUNC))
+
+
+DISPLAY_POSE_ENTRY = '''"""Generated by make_round for one component round (ADR 0083).
+
+The Component in its Display Pose: assembly_pose(shape, None) of its own
+gen_step(), the first instance of a geometry whose count is above 1. Rendered
+only to compare it with its references; never printed.
+"""
+
+import importlib.util
+import inspect
+import sys
+from pathlib import Path
+
+PRINTABLE = False
+PROJECT = Path(%(project)r)
+PART = %(part)r
+
+
+def _takes_instance(function):
+    try:
+        return "instance" in inspect.signature(function).parameters
+    except (TypeError, ValueError):
+        return False
+
+
+def gen_step():
+    if str(PROJECT) not in sys.path:
+        sys.path.insert(0, str(PROJECT))
+    spec = importlib.util.spec_from_file_location("_display_pose_part", PROJECT / PART)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    place = module.assembly_pose
+    if _takes_instance(place):
+        built = module.gen_step(instance=1) if _takes_instance(module.gen_step) else module.gen_step()
+        return place(built, None, instance=1)
+    return place(module.gen_step(), None)
+'''
+
+
 def sealed_references(project: Path):
     """The references the Wish sealed, as ``(references, error)``.
 
@@ -1132,6 +1356,7 @@ def sealed_references(project: Path):
     except (OSError, ValueError, AttributeError) as exc:
         return [], "WISH.json unreadable: %s" % exc
     contract_labels = contract_reference_labels(wish)
+    cameras, _amended = reference_cameras(project)
     sealed = []
     for item in items:
         name = item.get("name") if isinstance(item, dict) else None
@@ -1140,7 +1365,8 @@ def sealed_references(project: Path):
         if match is None or not isinstance(digest, str):
             return [], "WISH.json names an invalid reference: %r" % (name,)
         label = contract_labels.get(name, match.group(1))
-        sealed.append({"label": label, "path": root / WISH_REFERENCES_DIR / name, "sha256": digest})
+        sealed.append({"label": label, "path": root / WISH_REFERENCES_DIR / name, "sha256": digest,
+                       "camera": cameras.get(name)})
     return sealed, None
 
 
@@ -1262,9 +1488,36 @@ def with_component_reference(project: Path, role: str, refs: list):
         if problem is not None:
             errors.append(problem)
             continue
-        to_score.append((label, str(item["path"]) + cameras.get(item["sha256"], "")))
+        to_score.append((label, str(item["path"]) + sealed_camera(item, cameras)))
         report.append({"label": label, "scored_by": "component:%s" % role})
     return to_score + kept, report, errors
+
+
+def shown_cameras(project: Path, refs: list) -> list[dict]:
+    """The Reference Camera each shown sealed reference was compared from:
+    ``{"label", "file", "camera", "amended_from"}``, ``amended_from`` the
+    sealed camera a host amendment replaced, else None."""
+
+    cameras, amended = reference_cameras(project)
+    shown = []
+    for label, ref in refs:
+        path = resolve_reference(ref, project)
+        name = path.name if path is not None else None
+        if name in cameras:
+            shown.append({"label": label, "file": name,
+                          "camera": [float(v) for v in cameras[name].split(",")],
+                          "amended_from": ([float(v) for v in amended[name].split(",")]
+                                           if name in amended else None)})
+    return shown
+
+
+def sealed_camera(item: dict, copies: dict) -> str:
+    """``"@AZ,EL"`` a sealed image is shown from: its Reference Camera under a
+    schema 3 contract (ADR 0083), else the camera a copy of it declared."""
+
+    if item.get("camera"):
+        return "@" + item["camera"]
+    return copies.get(item["sha256"], "")
 
 
 def split_sealed_copies(refs: list, hashes: set, project: Path) -> tuple[list, dict]:
@@ -1328,7 +1581,7 @@ def with_sealed_references(project: Path, refs: list, digests: dict):
             })
             report.append({"label": item["label"], "scored_by": "missing"})
             continue
-        to_show.append((item["label"], str(item["path"]) + cameras.get(item["sha256"], "")))
+        to_show.append((item["label"], str(item["path"]) + sealed_camera(item, cameras)))
         report.append({"label": item["label"], "scored_by": "assembly"})
     return to_show + kept, report, errors
 
@@ -2317,6 +2570,7 @@ def make_round(args) -> int:
     all_parts = [g for g in generators if g.name.startswith("part_")]
     entries = [g for g in generators if not g.name.startswith("part_")]
     component = None
+    display_pose = False
     if args.component:
         try:
             role, entry = component_role(project, args.component)
@@ -2325,6 +2579,11 @@ def make_round(args) -> int:
             return 2
         component = role
         parts = [entry]
+        display_pose = camera_contract(project)
+        missing = place_hook_missing(entry) if display_pose else ""
+        if missing:
+            print("make_round: %s" % missing, file=sys.stderr)
+            return 2
     elif args.entry:
         parts = all_parts
         entry = project / args.entry
@@ -2555,7 +2814,8 @@ def make_round(args) -> int:
                   "detail": "the reviewed B-rep, references and contract rows of r%04d are unchanged"
                             % outcome["carried"]["round"]}
     else:
-        visual = prepare_visual(project, entry, out, cad, refs, component)
+        visual = prepare_visual(project, entry, out, cad, refs, component,
+                                display_pose=component is not None and display_pose)
     summary = {
         "round": round_index,
         "scope": "component:%s" % component if component is not None else "assembly",
@@ -2599,6 +2859,8 @@ def make_round(args) -> int:
         )
         if envelopes:
             summary["envelopes"] = envelopes
+        if display_pose:
+            summary["reference_cameras"] = shown_cameras(project, refs)
         if freeze is not None:
             summary["helper_freeze"] = freeze_report(project, freeze, helpers)
     if any(item["verdict"] == "UNVERIFIED" for item in printing.values()) or (motion and motion["verdict"] == "unverified"):

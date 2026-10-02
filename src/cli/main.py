@@ -475,6 +475,18 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                     item.get("reason", ""),
                 )
             )
+    amendments = receipt.get("contract_amendments")
+    if isinstance(amendments, (list, tuple)):
+        # ADR 0083: a camera-only contract amendment the host recorded.
+        def camera(value):
+            return ",".join("%g" % v for v in value) if isinstance(value, list) else "?"
+
+        for item in amendments:
+            if isinstance(item, Mapping):
+                print(
+                    "Reference Camera amended: %s (%s) %s -> %s"
+                    % (item.get("file", "?"), item.get("shows", "?"), camera(item.get("from")), camera(item.get("to")))
+                )
     interfaces = receipt.get("interfaces")
     if isinstance(interfaces, (list, tuple)):
         # ADR 0082: how each meeting between Components was proven.
@@ -601,6 +613,22 @@ def _check_motion(value: str) -> bool:
     if value.lower() not in ("true", "false"):
         raise argparse.ArgumentTypeError("expected true or false")
     return value.lower() == "true"
+
+
+def _reference_camera(value: str) -> tuple[str, tuple[float, float]]:
+    """``FILE=AZ,EL``: one corrected Reference Camera (ADR 0083)."""
+
+    file_name, separator, camera = value.partition("=")
+    fields = camera.split(",")
+    try:
+        if not separator or not file_name.strip() or len(fields) != 2:
+            raise ValueError
+        azimuth, elevation = (float(field) for field in fields)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "expected FILE=AZ,EL, a sealed reference file and its camera in degrees"
+        ) from exc
+    return file_name.strip(), (azimuth, elevation)
 
 
 def _turn_minutes(value: str):
@@ -1304,6 +1332,7 @@ def _resume(args: argparse.Namespace) -> int:
         **({"max_tokens": args.max_tokens} if args.max_tokens is not None else {}),
         **({"reasoning_effort": args.effort} if args.effort is not None else {}),
         **_turn_boundary_options(args.turn_minutes),
+        **_reference_camera_options(getattr(args, "reference_cameras", None)),
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
@@ -1312,6 +1341,20 @@ def _resume(args: argparse.Namespace) -> int:
     else:
         _print_native_receipt(receipt, verb="Resume")
     return _native_exit_code(receipt, strict=args.strict)
+
+
+def _reference_camera_options(values) -> dict:
+    """``{"reference_cameras": {file: (az, el)}}``, or nothing when none was
+    given. A file named twice is refused rather than silently resolved."""
+
+    if not values:
+        return {}
+    cameras: dict = {}
+    for file_name, camera in values:
+        if file_name in cameras:
+            raise WorkshopError("--reference-camera names %s more than once" % file_name)
+        cameras[file_name] = camera
+    return {"reference_cameras": cameras}
 
 
 def _publish(args: argparse.Namespace) -> int:
@@ -2296,6 +2339,18 @@ def parser() -> argparse.ArgumentParser:
             "budgeted clamp. An untimed run still needs the Manager's own bound, "
             "which today means a Codex token budget."
             % (MIN_TURN_MINUTES, MAX_TURN_MINUTES, UNTIMED_TURN)
+        ),
+    )
+    resume.add_argument(
+        "--reference-camera",
+        type=_reference_camera,
+        action="append",
+        default=None,
+        metavar="FILE=AZ,EL",
+        dest="reference_cameras",
+        help=(
+            "answer a camera-mismatch need: give one sealed reference of a schema 3 "
+            "Design Contract a corrected Reference Camera; only that camera changes"
         ),
     )
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")

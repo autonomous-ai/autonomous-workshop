@@ -70,6 +70,7 @@ from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER_BYTES,
 )
 from workshop.wish import Wish
+from workshop.wish.design_contract import CAMERA_SCHEMA_VERSION, reference_camera
 from workshop.wish.contracts import (
     MAX_WISH_REFERENCE_BYTES,
     MAX_WISH_REFERENCE_TOTAL_BYTES,
@@ -255,6 +256,13 @@ def _sha256(value: bytes) -> str:
 #: all three shapes, so a run started before the policy existed keeps working
 #: unchanged and is never silently upgraded.
 MAKE_OPTIONS_NAME = "MAKE-OPTIONS.json"
+# Host-owned camera-only amendments of a schema 3 Design Contract (ADR 0083).
+AMENDMENTS_NAME = "CONTRACT-AMENDMENTS.json"
+
+
+def _plain_angle(value: Any) -> Any:
+    number = float(value)
+    return int(number) if number.is_integer() else number
 
 
 def _make_options_bytes(*, check_motion: bool, carry_unchanged: bool) -> bytes:
@@ -2039,27 +2047,143 @@ class AgentRun:
                                 "sha256": digest, "mode": 0o400})
         if not changes:
             return ()
+        self._rebind_inputs(
+            payload, by_path, writes, removals,
+            {"correction": "domain-skill-refresh", "reason": reason.strip(), "changes": changes},
+            label="domain skill refresh",
+        )
+        return tuple(changes)
+
+    def amend_reference_camera(
+        self, file_name: str, camera: Sequence[float], *, reason: str
+    ) -> Optional[dict[str, Any]]:
+        """Amend one sealed reference's Reference Camera (ADR 0083).
+
+        A Component Reviewer's camera mismatch stops the run with a need; the
+        build-a-toy agent answers it with a corrected camera for that one
+        reference. WISH.json, the contract's requirements and every image
+        stay byte for byte as sealed: the host writes the run-root
+        ``CONTRACT-AMENDMENTS.json`` that make_round reads beside them,
+        rebinds it in the tamper-checked input manifest, and appends one
+        owner-only host-correction record naming the file and both cameras.
+        Returns that record, or None when the reference already shows from
+        ``camera``.
+        """
+
+        if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 512:
+            raise ContractError("reference camera amendment reason must be a short string")
+        payload = self._load()
+        if payload["status"] == "complete":
+            raise TransitionError("a completed agent run has no Reference Camera to amend")
+        if payload["stage"] != "make":
+            raise TransitionError("a Reference Camera is amended only while Make is open")
+        by_path: dict[str, dict[str, Any]] = {
+            item["path"]: dict(item) for item in payload["inputs"]
+        }
+        wish_bytes = (self.run_root / "WISH.json").read_bytes()
+        bound = by_path.get("WISH.json")
+        if bound is None or _sha256(wish_bytes) != bound["sha256"]:
+            raise StateConflict("WISH.json differs from its frozen input")
+        context = json.loads(wish_bytes).get("context") or {}
+        contract = context.get("design_contract") if isinstance(context, Mapping) else None
+        if not isinstance(contract, Mapping) or contract.get("schema_version") != CAMERA_SCHEMA_VERSION:
+            raise ContractError(
+                "only a run sealed with a schema 3 Design Contract has Reference Cameras to amend"
+            )
+        sealed = {
+            item["file"]: item for item in contract.get("references") or ()
+            if isinstance(item, Mapping) and isinstance(item.get("file"), str)
+        }
+        if file_name not in sealed:
+            raise ContractError(
+                "the sealed Design Contract has no reference %r; it lists %s"
+                % (file_name, ", ".join(sorted(sealed)))
+            )
+        if reference_camera(list(camera)) is None:
+            raise ContractError(
+                "a Reference Camera is AZ,EL in degrees, AZ in -180..180 and EL in -90..90"
+            )
+        new = [_plain_angle(value) for value in camera]
+        path = AMENDMENTS_NAME
+        previous_input = by_path.get(path)
+        target = self.run_root / path
+        if previous_input is None:
+            if target.exists() or target.is_symlink():
+                raise StateConflict("untracked %s blocks a Reference Camera amendment" % path)
+            document: dict[str, Any] = {
+                "schema_version": 1, "reference_cameras": {}, "amendments": [],
+            }
+        else:
+            content = target.read_bytes()
+            if _sha256(content) != previous_input["sha256"]:
+                raise StateConflict("%s differs from its frozen input" % path)
+            document = json.loads(content)
+        cameras = dict(document["reference_cameras"])
+        old = cameras.get(file_name, sealed[file_name].get("camera"))
+        if old == new:
+            return None
+        cameras[file_name] = new
+        amendment = {
+            "file": file_name, "shows": sealed[file_name].get("shows"),
+            "from": old, "to": new, "sealed": sealed[file_name].get("camera"),
+        }
+        document = {
+            "schema_version": 1,
+            "reference_cameras": cameras,
+            "amendments": [*document["amendments"], amendment],
+        }
+        content = (
+            json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+        digest = _sha256(content)
+        by_path[path] = {"path": path, "sha256": digest, "size": len(content), "mode": 0o400}
+        change = {
+            "path": path,
+            "previous_sha256": None if previous_input is None else previous_input["sha256"],
+            "previous_mode": None if previous_input is None else previous_input["mode"],
+            "sha256": digest, "mode": 0o400,
+        }
+        return self._rebind_inputs(
+            payload, by_path, [(PurePosixPath(path), content, 0o400)], [],
+            {
+                "correction": "reference-camera-amendment", "reason": reason.strip(),
+                "changes": [change], "wish_sha256": bound["sha256"], **amendment,
+            },
+            label="Reference Camera amendment",
+        )
+
+    def _rebind_inputs(
+        self,
+        payload: Mapping[str, Any],
+        by_path: Mapping[str, Mapping[str, Any]],
+        writes: Sequence[tuple[PurePosixPath, bytes, int]],
+        removals: Sequence[PurePosixPath],
+        correction: Mapping[str, Any],
+        *,
+        label: str,
+    ) -> dict[str, Any]:
+        """Write host-owned input bytes, rebind the input manifest in a new
+        checkpoint revision, and append the host-correction record."""
+
         inputs = sorted(by_path.values(), key=lambda item: item["path"])
         if len(inputs) > MAX_AGENT_INPUT_FILES:
-            raise ContractError("domain skill refresh exceeds the agent input file limit")
+            raise ContractError("%s exceeds the agent input file limit" % label)
         total = sum(
             item["size"] for item in inputs
             if not _is_wish_reference_path(item["path"]) and item["path"] != REVISION_INPUT
         )
         if total > MAX_AGENT_INPUT_BYTES:
-            raise ContractError("domain skill refresh exceeds the agent input byte budget")
+            raise ContractError("%s exceeds the agent input byte budget" % label)
 
         record = {
             "kind": "autonomous-workshop.host-correction",
             "schema_version": 1,
-            "correction": "domain-skill-refresh",
-            "reason": reason.strip(),
+            **correction,
             "previous_checkpoint_sha256": payload["checkpoint_sha256"],
             # The successor hash is not known until checkpoint writing, but
             # every hash has the same encoded length. Refuse an oversized
             # correction before modifying the immutable tools or checkpoint.
             "checkpoint_sha256": payload["checkpoint_sha256"],
-            "changes": changes,
         }
         _host_correction_line(record)
 
@@ -2111,7 +2235,7 @@ class AgentRun:
         self._write_next(payload, updated)
         record["checkpoint_sha256"] = self._expected_checkpoint_sha256
         self.record_host_correction(record)
-        return tuple(changes)
+        return record
 
     def record_host_correction(self, record: Mapping[str, Any]) -> None:
         """Append one owner-only ledger line describing a host correction."""

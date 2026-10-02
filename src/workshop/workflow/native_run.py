@@ -2835,6 +2835,23 @@ def _component_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]
     return _latest_make_check(host_state_root, "component_acceptances")
 
 
+def _contract_amendment_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """Every Reference Camera amendment the host recorded (ADR 0083), oldest
+    first: the file, what it shows, and the camera before and after."""
+
+    ledger = host_state_root / "host-corrections.jsonl"
+    if not ledger.exists():
+        return []
+    content = _read_stable_private_bytes(ledger, label="host corrections", maximum_bytes=1024 * 1024)
+    amendments = []
+    for line in content.splitlines():
+        record = json.loads(line)
+        if (record.get("kind") == "autonomous-workshop.host-correction"
+                and record.get("correction") == "reference-camera-amendment"):
+            amendments.append({key: record.get(key) for key in ("file", "shows", "from", "to", "sealed")})
+    return amendments
+
+
 def _interface_history(host_state_root: Path) -> list[dict[str, Any]]:
     """The proven Interfaces of the current Make, from the host's own receipt."""
 
@@ -10253,6 +10270,9 @@ def _native_receipt(
         _component_acceptance_history(paths.host_state) if paths is not None else []
     )
     interfaces = _interface_history(paths.host_state) if paths is not None else []
+    contract_amendments = (
+        _contract_amendment_history(paths.host_state) if paths is not None else []
+    )
     local_release_run = False
     if paths is not None:
         try:
@@ -10471,6 +10491,7 @@ def _native_receipt(
         "likeness_acceptances": likeness_acceptances,
         "component_acceptances": component_acceptances,
         "interfaces": interfaces,
+        "contract_amendments": contract_amendments,
         "product_id": checkpoint.product_id,
         "status": visible_status,
         "stage": visible_stage,
@@ -11167,10 +11188,15 @@ def resume_native_run(
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
     check_motion: bool = False,
+    reference_cameras: Optional[Mapping[str, Sequence[float]]] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
     """Resume one exact native session under an exclusive host mutation lock.
+
+    reference_cameras answers a camera-mismatch need (ADR 0083): each sealed
+    reference file named is given a corrected Reference Camera, recorded as a
+    host amendment that changes only that camera, before the session resumes.
 
     The ignored keyword preserves source compatibility with the former
     optional-publication API; every resumed Release now requires publication.
@@ -11196,6 +11222,8 @@ def resume_native_run(
         raise ContractError("untimed turn option must be boolean")
     if turn_untimed and turn_seconds is not None:
         raise ContractError("choose an exact turn boundary or an untimed turn, not both")
+    if reference_cameras is not None and not isinstance(reference_cameras, Mapping):
+        raise ContractError("reference cameras must map a reference file to AZ,EL")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _combined_timing_observer(
@@ -11215,6 +11243,16 @@ def resume_native_run(
         if checkpoint.status in ("active", "waiting"):
             checkpoint = _adopt_resume_motion_policy(paths, run, checkpoint, check_motion)
             checkpoint = _adopt_resume_inspection_tools(paths, run, checkpoint)
+        if reference_cameras:
+            if checkpoint.status not in ("active", "waiting"):
+                raise StateConflict("a Reference Camera is amended only on an unfinished run")
+            for file_name, camera in sorted(reference_cameras.items()):
+                run.amend_reference_camera(
+                    file_name, camera,
+                    reason="workshop resume --reference-camera %s=%s"
+                    % (file_name, ",".join("%g" % float(value) for value in camera)),
+                )
+            checkpoint = run.snapshot()
         if adopt_turn_budget:
             _adopt_turn_budget(paths, checkpoint)
         if max_tokens is not None:

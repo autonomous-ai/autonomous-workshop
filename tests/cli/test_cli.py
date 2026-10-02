@@ -600,6 +600,30 @@ class NativeCommandTest(unittest.TestCase):
             main(("resume", "wish-one", "--check-motion", "yes"))
         resume.assert_not_called()
 
+    def test_resume_passes_each_reference_camera_amendment(self):
+        with mock.patch(
+            "cli.main.resume_native_run", return_value=native_receipt()
+        ) as resume, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            main(("resume", "wish-one"))
+            self.assertNotIn("reference_cameras", resume.call_args.kwargs)
+            main(("resume", "wish-one", "--reference-camera", "ref-02-body.png=-90,15",
+                  "--reference-camera", "ref-03-arm.png=0,7.5"))
+        self.assertEqual(resume.call_args.kwargs["reference_cameras"],
+                         {"ref-02-body.png": (-90.0, 15.0), "ref-03-arm.png": (0.0, 7.5)})
+        for bad in ("ref-02-body.png", "ref-02-body.png=90", "=0,0", "ref-02-body.png=a,b"):
+            with self.subTest(bad=bad), mock.patch("cli.main.resume_native_run") as resume, \
+                    redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+                main(("resume", "wish-one", "--reference-camera", bad))
+            resume.assert_not_called()
+        stderr = StringIO()
+        with mock.patch("cli.main.resume_native_run") as resume, redirect_stderr(stderr), \
+                redirect_stdout(StringIO()):
+            result = main(("resume", "wish-one", "--reference-camera", "ref-02-body.png=0,0",
+                           "--reference-camera", "ref-02-body.png=90,0"))
+        self.assertNotEqual(result, 0)
+        self.assertIn("more than once", stderr.getvalue())
+        resume.assert_not_called()
+
     def test_wish_pins_an_explicit_inventor_in_the_immutable_wish(self):
         with mock.patch(
             "cli.main.generate_wish_id", return_value="wish-pinned-inventor"

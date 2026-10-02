@@ -254,7 +254,7 @@ class InterfacesTest(unittest.TestCase):
         del block["interfaces"]
         with self.assertRaisesRegex(ContractError, "interfaces must be a list"):
             parse_design_contract(_contract_text(block))
-        with self.assertRaisesRegex(ContractError, "interfaces need schema_version 2"):
+        with self.assertRaisesRegex(ContractError, "interfaces need schema_version 2 or later"):
             parse_design_contract(_contract_text(_block(interfaces=[])))
 
     def test_each_missing_field_is_refused(self):
@@ -363,3 +363,63 @@ class InterfaceInstancesTest(unittest.TestCase):
             {"pose": "rest", "box": {"min_mm": [0, 0, 0], "max_mm": [1, 1, 1]}}]}
         self.assertIn("two different Components", self._refused([
             {"id": "wing-fold", "kind": "separable", "components": ["wing#1", "wing#2"], "envelope": envelope}]))
+
+
+def _camera_block(cameras=((-60, 20), (0, 90)), **overrides):
+    """A schema 3 contract: every reference carries its Reference Camera."""
+
+    block = _block(schema_version=3, interfaces=[])
+    for reference, camera in zip(block["references"], cameras):
+        if camera is not None:
+            reference["camera"] = list(camera)
+    block.update(overrides)
+    return block
+
+
+class ReferenceCameraTest(unittest.TestCase):
+    """ADR 0083: a schema 3 reference names the camera, in the Display Pose
+    frame, from which its image shows its subject."""
+
+    def _refused(self, block):
+        with self.assertRaises(ContractError) as caught:
+            parse_design_contract(_contract_text(block))
+        return str(caught.exception)
+
+    def test_every_reference_carries_its_camera_and_seals_it(self):
+        contract = parse_design_contract(_contract_text(_camera_block()))
+        self.assertEqual([item.camera for item in contract.references], [(-60.0, 20.0), (0.0, 90.0)])
+        self.assertEqual(contract.to_dict()["references"], [
+            {"file": "ref-01-antisol.png", "shows": "assembly", "camera": [-60, 20]},
+            {"file": "ref-02-world-disc.png", "shows": "geometry:world-disc", "camera": [0, 90]},
+        ])
+        self.assertEqual(contract.interfaces, ())
+
+    def test_a_reference_without_a_camera_is_refused_naming_it(self):
+        message = self._refused(_camera_block(cameras=((-60, 20), None)))
+        self.assertIn("references[1].camera must be [AZ, EL]", message)
+        self.assertNotIn("references[0]", message)
+        # The assembly reference too.
+        self.assertIn("references[0].camera", self._refused(_camera_block(cameras=(None, (0, 0)))))
+
+    def test_an_out_of_range_or_malformed_camera_is_refused(self):
+        for camera in ([181, 0], [-181, 0], [0, 91], [0, -90.5], [0], [0, 0, 15], ["0", 0], [True, 0]):
+            with self.subTest(camera=camera):
+                block = _camera_block()
+                block["references"][0]["camera"] = camera
+                self.assertIn("references[0].camera must be", self._refused(block))
+        block = _camera_block(cameras=((180, 90), (-180, -90)))
+        self.assertEqual(parse_design_contract(_contract_text(block)).references[1].camera, (-180.0, -90.0))
+
+    def test_schema_3_keeps_the_interfaces_section(self):
+        block = _camera_block()
+        del block["interfaces"]
+        self.assertIn("interfaces must be a list", self._refused(block))
+
+    def test_schema_1_and_2_parse_as_before_and_refuse_a_camera(self):
+        for block in (_block(), _block(schema_version=2, interfaces=[])):
+            with self.subTest(schema=block["schema_version"]):
+                contract = parse_design_contract(_contract_text(block))
+                self.assertEqual([item.camera for item in contract.references], [None, None])
+                self.assertEqual(contract.to_dict()["references"], block["references"])
+                block["references"][0]["camera"] = [0, 0]
+                self.assertIn("references[0].camera needs schema_version 3", self._refused(block))

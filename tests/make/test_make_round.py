@@ -1774,6 +1774,199 @@ class ReviewerBindingTest(unittest.TestCase):
             self.assertNotIn("reviewer_id", self._state(project))
 
 
+class ReferenceCameraRoundTest(unittest.TestCase):
+    """ADR 0083: under a schema 3 Design Contract a component round compares
+    each reference with the Component in its Display Pose, seen from the
+    reference's Reference Camera; front, top and iso stay in the print stance."""
+
+    _run_root = SealedReferenceTest._run_root
+    _fake_run = SealedReferenceTest._fake_run
+    _main = SealedReferenceTest._main
+    _assembly = SealedReferenceTest._assembly
+    REFS = ContractComponentReviewTest.REFS
+    # The body prints on its back; its Display Pose stands it up.
+    POSED = (
+        "def gen_step():\n    return 'print-stance body %d'\n\n"
+        "def assembly_pose(shape, pose):\n    return ('display-pose', shape, pose)\n"
+    )
+    MISMATCH = {"file": "ref-02-body.png", "reference": "the chest plate and both shoulder sockets face the camera",
+                "model": "the flat back and the print brim face the camera"}
+
+    def _contract(self, schema=3):
+        references = [{"file": "ref-01-whole.png", "shows": "assembly"},
+                      {"file": "ref-02-body.png", "shows": "geometry:body"}]
+        if schema == 3:
+            references[0]["camera"], references[1]["camera"] = [-60, 20], [90, 15]
+        return {"design_contract": {"schema_version": schema, "title": "Broken God", "references": references}}
+
+    def _root(self, tmp, schema=3, posed=True):
+        project = self._run_root(tmp, self.REFS, context=self._contract(schema))
+        self._edits = 0
+        self._posed = posed
+        return project
+
+    def _component(self, module, project, calls, edit=True):
+        if edit:
+            self._edits += 1
+            source = self.POSED if self._posed else "def gen_step():\n    return 'body %d'\n"
+            (project / "part_body.step.py").write_text(source % self._edits)
+        code = self._main(module, project, ["--component", "part_body.step.py"], calls)
+        state_path = project / "measure/component-rounds/body/make-round-state.json"
+        if not state_path.is_file():
+            return code, None
+        state = json.loads(state_path.read_text())
+        return code, json.loads((project / ("measure/component-rounds/body/r%04d/summary.json" % state["round"])).read_text())
+
+    def _mismatch(self, module, project, summary, **changes):
+        review = {"round": summary["round"], "packet_sha256": summary["visual"]["packet_sha256"],
+                  "reviewer": "fresh-reviewer-subagent", "reason": "The reference shows the front; the model its back.",
+                  "camera_mismatch": dict(self.MISMATCH), **changes}
+        path = project / "measure/review.json"
+        path.write_text(json.dumps(review))
+        return module.record_review(project, path, "part_body.step.py")
+
+    def _renders(self, calls):
+        return [c for c in calls if Path(c[1]).name == "render_review"]
+
+    def test_the_comparison_shows_the_display_pose_at_the_reference_camera(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            stance, posed = self._renders(calls)
+            # The print stance is rendered from the Component itself, at the named views only.
+            self.assertEqual(Path(stance[2]).name, "part_body.step.py")
+            self.assertFalse(any(arg.startswith("--view=") for arg in stance))
+            # The comparison render is the Display Pose entry, at the Reference Camera.
+            self.assertEqual(Path(posed[2]).name, "display_pose_body.step.py")
+            self.assertIn("--view=90,15", posed)
+            self.assertEqual(Path(posed[posed.index("-o") + 1]).name, "display-pose")
+            out = Path(summary["out"])
+            self.assertTrue((out / "visual/display-pose/az90_el15.png").is_file())
+            self.assertFalse((out / "visual/az90_el15.png").exists())
+            self.assertEqual(summary["reference_cameras"], [
+                {"label": "geometry:body", "file": "ref-02-body.png", "camera": [90.0, 15.0], "amended_from": None}])
+            self.assertTrue(summary["refs"][0][1].endswith("ref-02-body.png@90,15"))
+            self.assertIn("Display Pose", summary["visual"]["detail"])
+            self.assertIn("camera geometry:body ref-02-body.png at 90,15 in the Display Pose",
+                          module.render_summary(summary))
+            # The generated entry renders assembly_pose(shape, None) of the Component's own build.
+            entry = runpy_entry(Path(posed[2]))
+            self.assertEqual(entry["gen_step"](), ("display-pose", "print-stance body 1", None))
+
+    def test_a_geometry_with_instances_shows_its_first_instance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            self.POSED = (
+                "def gen_step(instance=1):\n    return 'wing %%d of %d' %% instance\n\n"
+                "def assembly_pose(shape, pose, instance=1):\n    return ('display-pose', shape, pose, instance)\n"
+            )
+            self._component(module, project, calls)
+            entry = runpy_entry(Path(self._renders(calls)[1][2]))
+            self.assertEqual(entry["gen_step"](), ("display-pose", "wing 1 of 1", None, 1))
+
+    def test_a_component_without_assembly_pose_is_refused_before_any_render(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp, posed=False)
+            module, calls = load_module(), []
+            code, summary = self._component(module, project, calls)
+            self.assertEqual(code, 2)
+            self.assertIsNone(summary)
+            self.assertEqual(calls, [])
+            self.assertIn("defines no assembly_pose(shape, pose)", self.stderr)
+            self.assertFalse((project / "measure/component-rounds/body/r0001").exists())
+
+    def test_before_schema_3_the_comparison_keeps_the_print_stance_from_the_front(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp, schema=2, posed=False)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self.assertEqual(len(self._renders(calls)), 1)
+            self.assertNotIn("reference_cameras", summary)
+            self.assertFalse(summary["refs"][0][1].endswith("@90,15"))
+            with self.assertRaisesRegex(ValueError, "this round has none"):
+                self._mismatch(module, project, summary)
+
+    def test_the_assembly_reference_is_shown_from_its_reference_camera(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            self._main(module, project, [], calls)
+            render = self._renders(calls)[0]
+            self.assertIn("--view=-60,20", render)
+            self.assertTrue(self._assembly(project)["refs"][0][1].endswith("ref-01-whole.png@-60,20"))
+
+    def test_a_camera_mismatch_needs_landmarks_and_one_compared_reference(self):
+        cases = {
+            "no landmarks": ({"camera_mismatch": {"file": "ref-02-body.png"}}, "needs file, reference and model"),
+            "empty landmark": ({"camera_mismatch": {**self.MISMATCH, "model": " "}}, "names the landmarks"),
+            "not compared": ({"camera_mismatch": {**self.MISMATCH, "file": "ref-01-whole.png"}},
+                             "names one reference this round compared"),
+            "with agrees": ({"agrees": False}, "camera_mismatch"),
+            "with differences": ({"differences": []}, "camera_mismatch"),
+        }
+        for name, (changes, refusal) in cases.items():
+            with self.subTest(name), tempfile.TemporaryDirectory() as tmp:
+                project = self._root(tmp)
+                module, calls = load_module(), []
+                _, summary = self._component(module, project, calls)
+                with self.assertRaisesRegex(ValueError, refusal):
+                    self._mismatch(module, project, summary, **changes)
+
+    def test_a_camera_mismatch_is_a_need_not_a_shape_round_or_repair_text(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            result = self._mismatch(module, project, summary)
+            self.assertFalse(result["ok"])
+            self.assertIsNone(result["review"])
+            self.assertEqual(result["visual"]["status"], "camera-mismatch")
+            mismatch = result["camera_mismatch"]
+            self.assertEqual((mismatch["file"], mismatch["camera"]), ("ref-02-body.png", [90.0, 15.0]))
+            self.assertIn("--reference-camera ref-02-body.png=AZ,EL", mismatch["need"])
+            self.assertIn("the flat back and the print brim", mismatch["need"])
+            self.assertIn("CAMERA MISMATCH", module.render_summary(result))
+            out = Path(result["out"])
+            # The worker reads review.json; a camera mismatch gives it nothing to repair.
+            self.assertFalse((out / "review.json").exists())
+            self.assertTrue((out / "camera-mismatch.json").is_file())
+            state = json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())
+            self.assertEqual((state["policy"]["phase"], state["policy"]["shape_rounds"]), ("awaiting-review", 0))
+            with self.assertRaisesRegex(ValueError, "already has a recorded camera mismatch"):
+                self._mismatch(module, project, summary)
+            # A geometry change is still refused: the round awaits its review.
+            code, _ = self._component(module, project, calls)
+            self.assertEqual(code, 2)
+            self.assertIn("has no Component Review", self.stderr)
+
+    def test_an_amended_camera_is_shown_on_an_unchanged_rerun(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, first = self._component(module, project, calls)
+            self._mismatch(module, project, first)
+            (module.run_root(project) / "CONTRACT-AMENDMENTS.json").write_text(json.dumps(
+                {"schema_version": 1, "reference_cameras": {"ref-02-body.png": [-90, 15]}}))
+            calls.clear()
+            code, summary = self._component(module, project, calls, edit=False)
+            self.assertEqual((code, summary["round"], summary["shape_round"], summary["shape_rounds"]), (1, 2, False, 0))
+            self.assertIn("--view=-90,15", self._renders(calls)[1])
+            self.assertEqual(summary["reference_cameras"][0]["amended_from"], [90.0, 15.0])
+            self.assertEqual(summary["reference_cameras"][0]["camera"], [-90.0, 15.0])
+            self.assertNotEqual(summary["carry_key"], first["carry_key"])
+            self.assertIn("amended from 90,15", module.render_summary(summary))
+            self.assertTrue(module.record_review(project, write_review(project, summary), "part_body.step.py")["ok"])
+
+
+def runpy_entry(path):
+    """Run a generated entry's module code, as render_review loads it."""
+    import runpy
+
+    return runpy.run_path(str(path))
+
+
 def params(width):
     """A cited, asserted Shared Helper value (ADR 0082)."""
     return "BODY_W = %d  # wiki: joints-and-fits\nassert BODY_W >= 20\n" % width

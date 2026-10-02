@@ -15,11 +15,13 @@ one section a failure you cannot place requires.
   joint, peg, socket and collar from the Shared Helper values the Manager
   froze; never redefine them in your file. Your Component's own geometry,
   print stance and dimensions belong in your file, not in a Shared Helper.
-- If your Component joins a separable or coupled Interface, define
+- If your Component joins a separable or coupled Interface, or the Design
+  Contract is schema 3 (ADR 0083: every Component then needs it), define
   `assembly_pose(shape, pose)` in your file: it returns your `gen_step()`
   shape placed in assembly coordinates, at each pose its Keep-out Envelope
   names when you are the inside Component, and at your one assembly
-  placement when `pose` is None. Place it from the Shared Helper's Interface
+  placement, your Display Pose, when `pose` is None. Your reviewer compares
+  that Display Pose with your reference from the reference's camera. Place it from the Shared Helper's Interface
   values. Your round checks the envelope on its `keep` line: stay inside it
   in every pose, or outside it, as the Interface says. Never read the other
   Component's file to cut a clearance; the envelope is the whole agreement.
@@ -80,7 +82,8 @@ one section a failure you cannot place requires.
   `<cad-project>/measure/component-rounds/<id>/rNNNN/review.json` (the
   `review` field of that round's `summary.json` holds the same text), and act
   on its exact words, not on any paraphrase. Each disagreement is the repair
-  list for one shape round. Do not record a review, an unlock or a visual
+  list for one shape round. A round with no `review.json` has nothing for you
+  to repair: wait, and rerun it unchanged when the Manager asks. Do not record a review, an unlock or a visual
   finding yourself.
 - If two of your contract rows cannot both hold, stop and report both rows
   verbatim as blocked. Do not choose between them. A detail the rows leave

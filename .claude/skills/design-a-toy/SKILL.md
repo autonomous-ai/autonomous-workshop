@@ -121,8 +121,9 @@ notice. Name each
 them, even though the files do not exist yet. A toy with more than one
 component also gets one `"shows": "assembly"` reference, listed first.
 
-Write the block as `"schema_version": 2` with an `interfaces[]` entry for
-every place two or more Components meet (ADR 0082): a peg in a socket, a
+Write the block as `"schema_version": 3`. Every reference gets a `camera`
+(ADR 0083), which Stage 3b fills in once the image exists, and every place
+two or more Components meet gets an `interfaces[]` entry (ADR 0082): a peg in a socket, a
 pinion on a sector, a wing swinging past a housing. Give each its Interface
 Kind:
 
@@ -252,6 +253,19 @@ For each image, take its alpha silhouette and check:
    wing blades and 18 mm claws, and the images drew 9 mm, 11-13 mm and
    37 mm. Make followed the numbers, and every part came out a different
    shape from its picture.
+
+6. **Reference Camera.** Estimate, by eye, the camera each image shows its
+   subject from: `[AZ, EL]` in degrees, in the Display Pose (assembly)
+   frame, rounded to 15 degrees, in the convention
+   [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md) gives (AZ -90 is
+   the front, 0 the right side; EL 90 looks straight down). For a component
+   image this is where the camera stands relative to the Component as it sits
+   in the assembled toy, not as it prints. Write the cue you read it from in
+   the working notes ("front and left faces visible, seen slightly from
+   above"), and the camera into the image's `references[]` entry. Make
+   renders the Component from exactly this camera beside its image, so a
+   camera that shows the wrong side wastes a run. There is no silhouette
+   pose search; the estimate is yours.
 
 A measurement is a **disagreement** when it is off by more than 5% of the
 dimension it measures and by more than 0.5 mm. The 0.5 mm floor is for small
@@ -423,8 +437,10 @@ in the contract, and the Interfaces match it.
 ## Stage 4 - Visual review
 
 **Stop. This is the only approval gate.** Show the human every reference image
-at once, assembly first. Give each one a single line in plain words: what it is
-and how many parts use it ("ref-02 wheel - four of these"). Publish them as one
+at once, assembly first. Give each one a single line in plain words: what it is,
+how many parts use it, and the camera it is seen from with its cue
+("ref-02 wheel - four of these; seen from the front-left, slightly above
+(-60, 15)"). Approving the images approves these cameras. Publish them as one
 private Artifact page (load the `artifact-design` skill first) that works at
 phone width and shows the whole set in one look, and give the human its link
 plus each file path. Do not show the contract, the requirement rows, the

@@ -10,7 +10,7 @@ from io import StringIO
 from pathlib import Path
 from unittest import mock
 
-from cli.main import main, parser
+from cli.main import _print_native_receipt, main, parser
 from workshop.errors import ContractError, StateConflict, WorkshopError
 from workshop.match.native import (
     InventorRoster,
@@ -4656,3 +4656,109 @@ class NativeHostTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReferenceCameraAmendmentTest(unittest.TestCase):
+    """ADR 0083: a camera-mismatch need is answered by amending one
+    reference's Reference Camera; nothing sealed changes and the run goes on."""
+
+    CONTRACT = {
+        "schema_version": 3, "title": "Broken God", "inventor": "fixture",
+        "envelope_mm": [100, 100, 100], "interfaces": [],
+        "references": [
+            {"file": "ref-01-whole.png", "shows": "assembly", "camera": [-60, 20]},
+            {"file": "ref-02-body.png", "shows": "geometry:body", "camera": [90, 15]},
+        ],
+        "geometries": [{"id": "body", "name": "Body", "count": 1, "extents_mm": [10, 10, 10], "wall_min_mm": 1}],
+        "requirements": [{"id": "R01", "scope": "assembly", "text": "Stands."}],
+    }
+
+    def _run(self, contract=None):
+        """Start one run that waits in Make, inside the active patches."""
+
+        launcher = _FakeLauncher()
+        seen = []
+        original = launcher.resume
+
+        def resume(**arguments):
+            path = Path(arguments["run_root"]) / "CONTRACT-AMENDMENTS.json"
+            seen.append(json.loads(path.read_text()) if path.is_file() else None)
+            return original(**arguments)
+
+        launcher.resume = resume
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        home = Path(temporary.name).resolve() / "workshop-home"
+        for patcher in (
+            mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(home)}, clear=True),
+            mock.patch("workshop.workflow.native_run._source_checkout_root", return_value=None),
+            mock.patch("workshop.workflow.native_run.CodexNativeSessionLauncher", return_value=launcher),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        product_id = "camera-amendment-wish"
+        wish = Wish.create(product_id, "Broken God contract",
+                           context={"design_contract": contract or self.CONTRACT, "inventor_id": "soren-voss"})
+        started = start_native_run(wish, effort="spark")
+        return product_id, started, seen
+
+    def test_an_amendment_changes_only_that_reference_camera(self):
+        product_id, started, seen = self._run()
+        self.assertEqual((started["status"], started["stage"]), ("waiting", "make"))
+        paths = native_run_paths(product_id)
+        wish_bytes = (paths.workspace / "WISH.json").read_bytes()
+
+        resumed = resume_native_run(product_id, reference_cameras={"ref-02-body.png": (-90, 15)})
+
+        self.assertEqual((paths.workspace / "WISH.json").read_bytes(), wish_bytes)
+        self.assertEqual(resumed["wish_sha256"], started["wish_sha256"])
+        # The resumed session reads the amendment beside the sealed contract.
+        self.assertEqual(seen, [{
+            "schema_version": 1,
+            "reference_cameras": {"ref-02-body.png": [-90, 15]},
+            "amendments": [{"file": "ref-02-body.png", "shows": "geometry:body",
+                            "from": [90, 15], "to": [-90, 15], "sealed": [90, 15]}],
+        }])
+        self.assertEqual(stat.S_IMODE((paths.workspace / "CONTRACT-AMENDMENTS.json").stat().st_mode), 0o400)
+        self.assertEqual(resumed["contract_amendments"], [
+            {"file": "ref-02-body.png", "shows": "geometry:body", "from": [90, 15], "to": [-90, 15],
+             "sealed": [90, 15]}])
+        records = [json.loads(line) for line in
+                   (paths.host_state / "host-corrections.jsonl").read_text().splitlines()]
+        amendment = [r for r in records if r["correction"] == "reference-camera-amendment"]
+        self.assertEqual(len(amendment), 1)
+        self.assertEqual(amendment[0]["wish_sha256"], hashlib.sha256(wish_bytes).hexdigest())
+        self.assertEqual([c["path"] for c in amendment[0]["changes"]], ["CONTRACT-AMENDMENTS.json"])
+        self.assertEqual(amendment[0]["reason"], "workshop resume --reference-camera ref-02-body.png=-90,15")
+
+        # The same answer again records nothing new; a later one is appended.
+        resume_native_run(product_id, reference_cameras={"ref-02-body.png": (-90, 15)})
+        again = resume_native_run(product_id, reference_cameras={"ref-02-body.png": (0, 15)})
+        self.assertEqual([(item["from"], item["to"]) for item in again["contract_amendments"]],
+                         [([90, 15], [-90, 15]), ([-90, 15], [0, 15])])
+        self.assertEqual(seen[-1]["reference_cameras"], {"ref-02-body.png": [0, 15]})
+
+        output = StringIO()
+        with redirect_stdout(output):
+            _print_native_receipt(again, verb="Resume")
+        self.assertIn("Reference Camera amended: ref-02-body.png (geometry:body) 90,15 -> -90,15", output.getvalue())
+
+    def test_an_amendment_is_refused_before_the_session_resumes(self):
+        product_id, _started, seen = self._run()
+        for cameras, refusal in (
+            ({"ref-09-tail.png": (0, 0)}, "has no reference 'ref-09-tail.png'"),
+            ({"ref-02-body.png": (0, 91)}, "EL in -90..90"),
+            ({"ref-02-body.png": (200, 0)}, "AZ in -180..180"),
+        ):
+            with self.subTest(cameras=cameras), self.assertRaisesRegex(ContractError, refusal):
+                resume_native_run(product_id, reference_cameras=cameras)
+        self.assertEqual(seen, [])
+        self.assertFalse((native_run_paths(product_id).workspace / "CONTRACT-AMENDMENTS.json").exists())
+
+    def test_a_contract_before_schema_3_has_no_camera_to_amend(self):
+        contract = {**self.CONTRACT, "schema_version": 2,
+                    "references": [{"file": r["file"], "shows": r["shows"]} for r in self.CONTRACT["references"]]}
+        product_id, _started, seen = self._run(contract)
+        with self.assertRaisesRegex(ContractError, "schema 3 Design Contract"):
+            resume_native_run(product_id, reference_cameras={"ref-02-body.png": (0, 0)})
+        self.assertEqual(seen, [])

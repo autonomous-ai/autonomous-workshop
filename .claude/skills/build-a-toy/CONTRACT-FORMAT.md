@@ -27,13 +27,13 @@ recreates the defect this skill exists to remove.
 ````markdown
 ```design-contract
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "title": "Antisol",
   "inventor": "ad-astra",
   "envelope_mm": [200, 200, 60],
   "references": [
-    {"file": "ref-01-antisol.png", "shows": "assembly"},
-    {"file": "ref-02-world-disc.png", "shows": "geometry:world-disc"}
+    {"file": "ref-01-antisol.png", "shows": "assembly", "camera": [-60, 30]},
+    {"file": "ref-02-world-disc.png", "shows": "geometry:world-disc", "camera": [-90, 75]}
   ],
   "geometries": [
     {"id": "world-disc", "name": "Planet disc", "count": 16,
@@ -92,11 +92,23 @@ instances.)
   `--ref` under these names and in this order: `wish --contract` and
   `fix --contract` refuse missing images and images that would seal under any
   other name, because Make finds an image's label by its name.
+- `references[].camera` (ADR 0083): the reference's **Reference Camera**,
+  `[AZ, EL]` in degrees, in the Display Pose (assembly) frame, assembly
+  reference included. AZ is in -180..180 and EL in -90..90, in
+  `render_review`'s convention: AZ 0 looks from +X, -90 from the front (-Y),
+  90 from the back, 180 from the left; EL 0 is level and 90 looks straight
+  down. design-a-toy estimates it by eye, rounded to 15 degrees. Make renders
+  each Component placed by its `assembly_pose(shape, None)` from this camera
+  beside its reference, so a wrong camera shows the wrong side of the model.
+  Required in schema 3 and refused before it.
 - `geometries[]`: one entry per **Unique Geometry**. `id` is lowercase kebab
   case. `count` is how many Components the toy has with this shape.
   `wall_min_mm` is the minimum wall.
-- `schema_version`: `2` for every new contract. A schema 1 contract has no
-  `interfaces` and stays valid only for runs sealed before them.
+- `schema_version`: `3` for every new contract: schema 2 plus a `camera` on
+  every reference. Under schema 3 every Component file defines
+  `assembly_pose(shape, pose)`, even one in no Interface. A schema 2 contract
+  has no cameras and a schema 1 contract no `interfaces`; both stay valid only
+  for runs sealed before them.
 - `interfaces[]` (ADR 0082): one entry per place two or more Components meet;
   `[]` when none do. `id` is lowercase kebab case and unique. `kind` is
   `static`, `separable` or `coupled`. `components` lists two or more
@@ -134,6 +146,8 @@ A contract is ready only when all of these hold. Report every failure at once.
 
 - The block parses, and every field above is present and well formed.
 - Every `id` is unique, and every `geometry:<id>` it cites exists.
+- Every reference has a `camera` in range, and the person approved the
+  cameras with the images.
 - Every Interface has its Kind and two or more existing Components, a
   separable one its envelope and a coupled one its yielding Component and
   poses. An instance `<id>#<n>` names a geometry whose `count` is above 1,

@@ -1738,3 +1738,22 @@ side of a Keep-out Envelope, and a component round runs one check per named
 instance. The final verifier judges an instance on its Component's identity.
 Upstream `check_motion` keeps its `b149710` bytes. This changes the `cad` and
 `make-round` fingerprints.
+
+## Local change: compare in the Display Pose at the Reference Camera (2026-10-02)
+
+A Workshop-local change (ADR 0083, issue #81) to Workshop's own
+`make-round`. Under a schema 3 Design Contract every sealed reference carries
+its Reference Camera. A component round renders `compare-NN.png` from a
+generated entry that returns the Component's `assembly_pose(shape, None)`
+(the first instance when its `gen_step` and `assembly_pose` take one) at that
+camera, under `visual/display-pose/`, while `front`, `top` and `iso` stay in
+the print stance; an assembly round shows its sealed assembly reference from
+its camera. A schema 3 component round of a file with no `assembly_pose` is
+refused before anything is built. `--record-review` accepts a
+`camera_mismatch` answer that names the reference and the landmarks each side
+shows: it leaves the round policy awaiting review, spends no Shape Round,
+writes `camera-mismatch.json` instead of `review.json`, and puts the need in
+the summary. A camera the host amended in the run-root
+`CONTRACT-AMENDMENTS.json` replaces the sealed one. Schema 1 and 2 contracts
+keep the declared-camera-else-front comparison. This changes the
+`make-round` fingerprint.

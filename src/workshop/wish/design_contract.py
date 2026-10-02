@@ -23,9 +23,15 @@ from workshop.errors import ContractError
 MAX_ASSEMBLY_REQUIREMENTS = 16
 MAX_GEOMETRY_REQUIREMENTS = 4
 # Schema 2 adds the Interfaces section (ADR 0082). Schema 1 contracts, sealed
-# before it, stay valid without one.
-SCHEMA_VERSIONS = (1, 2)
+# before it, stay valid without one. Schema 3 keeps the Interfaces and gives
+# every reference its Reference Camera (ADR 0083).
+SCHEMA_VERSIONS = (1, 2, 3)
 INTERFACES_SCHEMA_VERSION = 2
+CAMERA_SCHEMA_VERSION = 3
+# A Reference Camera, in degrees, in render_review's convention: azimuth 0
+# looks from +X, -90 from the front (-Y); elevation 90 looks down from above.
+CAMERA_AZIMUTH_RANGE = (-180.0, 180.0)
+CAMERA_ELEVATION_RANGE = (-90.0, 90.0)
 INTERFACE_KINDS = ("static", "separable", "coupled")
 ENVELOPE_SHAPES = ("box", "cylinder")
 
@@ -44,6 +50,21 @@ _REFERENCE_FILE = re.compile(
 class ContractReference:
     file: str
     shows: str
+    # The Reference Camera ``(azimuth, elevation)`` in degrees, in the Display
+    # Pose frame (ADR 0083). Required in schema 3, absent before it.
+    camera: Optional[Tuple[float, float]] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        value: Dict[str, Any] = {"file": self.file, "shows": self.shows}
+        if self.camera is not None:
+            value["camera"] = [_plain_number(item) for item in self.camera]
+        return value
+
+
+def _plain_number(value: float) -> Any:
+    """An integral camera angle seals as an integer, as the contract wrote it."""
+
+    return int(value) if float(value).is_integer() else value
 
 
 @dataclass(frozen=True)
@@ -145,9 +166,7 @@ class DesignContract:
             "title": self.title,
             "inventor": self.inventor,
             "envelope_mm": list(self.envelope_mm),
-            "references": [
-                {"file": item.file, "shows": item.shows} for item in self.references
-            ],
+            "references": [item.to_dict() for item in self.references],
             "geometries": [
                 {
                     "id": item.id,
@@ -242,9 +261,26 @@ def _parse_geometries(value: Any, errors: List[str]) -> Tuple[Tuple[ContractGeom
     return tuple(geometries), frozenset(seen)
 
 
+def reference_camera(value: Any) -> Optional[Tuple[float, float]]:
+    """``(azimuth, elevation)`` when ``value`` is a usable Reference Camera,
+    else None: two numbers, azimuth in -180..180 and elevation in -90..90."""
+
+    if not _number_list(value, 2):
+        return None
+    azimuth, elevation = float(value[0]), float(value[1])
+    if not (CAMERA_AZIMUTH_RANGE[0] <= azimuth <= CAMERA_AZIMUTH_RANGE[1]):
+        return None
+    if not (CAMERA_ELEVATION_RANGE[0] <= elevation <= CAMERA_ELEVATION_RANGE[1]):
+        return None
+    return azimuth, elevation
+
+
 def _parse_references(
-    value: Any, geometry_ids: frozenset, errors: List[str]
+    value: Any, geometry_ids: frozenset, errors: List[str], cameras: bool = False
 ) -> Tuple[ContractReference, ...]:
+    """The references; ``cameras`` (schema 3) requires each one's Reference
+    Camera, and before schema 3 a camera is refused rather than ignored."""
+
     if not isinstance(value, list) or not value:
         errors.append("references must be a non-empty list")
         return ()
@@ -259,8 +295,18 @@ def _parse_references(
             errors.append("%s.file must look like ref-NN-<slug>.png, .jpg, or .webp" % label)
             file_name = None
         shows = _scope(item.get("shows"), geometry_ids, "%s.shows" % label, errors)
-        if file_name is not None and shows is not None:
-            references.append(ContractReference(file=file_name, shows=shows))
+        camera = None
+        if cameras:
+            camera = reference_camera(item.get("camera"))
+            if camera is None:
+                errors.append(
+                    "%s.camera must be [AZ, EL] in degrees, AZ in -180..180 and EL in -90..90 "
+                    "(schema_version 3)" % label
+                )
+        elif "camera" in item:
+            errors.append("%s.camera needs schema_version 3" % label)
+        if file_name is not None and shows is not None and (camera is not None or not cameras):
+            references.append(ContractReference(file=file_name, shows=shows, camera=camera))
     return tuple(references)
 
 
@@ -539,7 +585,7 @@ def parse_design_contract(text: str) -> DesignContract:
 
     schema_version = block.get("schema_version")
     if isinstance(schema_version, bool) or schema_version not in SCHEMA_VERSIONS:
-        errors.append("schema_version must be 1 or 2")
+        errors.append("schema_version must be 1, 2 or 3")
 
     title = block.get("title")
     if not isinstance(title, str) or not title.strip():
@@ -552,14 +598,17 @@ def parse_design_contract(text: str) -> DesignContract:
     envelope_mm = _dimensions(block.get("envelope_mm"), "envelope_mm", errors)
 
     geometries, geometry_ids = _parse_geometries(block.get("geometries"), errors)
-    references = _parse_references(block.get("references"), geometry_ids, errors)
+    references = _parse_references(
+        block.get("references"), geometry_ids, errors,
+        cameras=schema_version == CAMERA_SCHEMA_VERSION,
+    )
     requirements = _parse_requirements(block.get("requirements"), geometry_ids, errors)
     interfaces: Optional[Tuple[ContractInterface, ...]] = None
-    if schema_version == INTERFACES_SCHEMA_VERSION:
+    if schema_version in (INTERFACES_SCHEMA_VERSION, CAMERA_SCHEMA_VERSION):
         counts = {item.id: item.count for item in geometries}
         interfaces = _parse_interfaces(block.get("interfaces"), counts, errors)
     elif "interfaces" in block:
-        errors.append("interfaces need schema_version 2")
+        errors.append("interfaces need schema_version 2 or later")
 
     assembly_count = sum(1 for item in requirements if item.scope == "assembly")
     if assembly_count > MAX_ASSEMBLY_REQUIREMENTS:
