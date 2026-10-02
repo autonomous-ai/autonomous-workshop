@@ -508,7 +508,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
                     **options,
                 )
                 if not options:
-                    launcher.token_budget_observer = lambda counters, *, final: None
+                    launcher.token_budget_observer = lambda counters, *, final, **_: None
                 with self.assertRaisesRegex(ClaudeInvocationError, "2.1.285 or newer"):
                     self._turn(launcher, "start")
                 self.assertFalse((self.host_state / "claude-session.json").exists())
@@ -954,7 +954,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
                 subagent,
                 _result_line({"claude-opus-5": OPUS_TOTALS}),
             ],
-            lambda counters, *, final: reports.append((dict(counters), final)),
+            lambda counters, *, final, **_: reports.append((dict(counters), final)),
             commands,
         )
         self._turn(launcher, "start")
@@ -974,6 +974,36 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         self.assertEqual(final["reasoning_output_tokens"], 181_276)
         self.assertEqual(final["cached_input_tokens"], 16_463_646)
 
+    def test_a_budget_report_names_the_session_and_its_streamed_requests(self):
+        """A resume names the resumed session from its first report, and the
+        streamed requests travel apart from the session-wide result (#84)."""
+
+        reports = []
+
+        def observer(counters, *, final, session_id, streamed):
+            reports.append((session_id, counters["input_tokens"], streamed["input_tokens"]))
+
+        launcher, unused = self._budgeted_launcher(
+            [
+                _assistant_line("msg_01A", PER_BLOCK_USAGE),
+                _result_line({"claude-opus-5": OPUS_TOTALS}),
+            ],
+            observer,
+        )
+        self._turn(launcher, "start")
+        launcher._popen_factory = lambda command, **kwargs: _FakeProcess([
+            _assistant_line("msg_02A", PER_BLOCK_USAGE, session_id=SESSION),
+            _result_line({"claude-opus-5": OPUS_TOTALS}),
+        ])
+        reports.clear()
+        self._turn(launcher, "resume")
+        request_input = 2 + 13_227 + 10_010
+        self.assertEqual(reports, [
+            (SESSION, request_input, request_input),
+            (SESSION, OPUS_GROSS_INPUT, request_input),
+            (SESSION, OPUS_GROSS_INPUT, request_input),
+        ])
+
     def test_an_unbudgeted_turn_forwards_no_subagent_text(self):
         commands = []
         launcher, unused = self._budgeted_launcher(
@@ -987,7 +1017,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
     def test_a_budget_stop_kills_the_turn_at_the_crossing_request(self):
         seen = []
 
-        def observer(counters, *, final):
+        def observer(counters, *, final, **_):
             seen.append(final)
             if counters["input_tokens"] > 30_000:
                 raise RuntimeError("limit")
@@ -1011,7 +1041,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         self.assertEqual(seen, [False, False])
 
     def test_a_limit_reached_by_the_final_totals_stops_a_finished_turn(self):
-        def observer(counters, *, final):
+        def observer(counters, *, final, **_):
             if final:
                 raise RuntimeError("limit")
 
@@ -1028,7 +1058,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         reports = []
         launcher, unused = self._budgeted_launcher(
             [_init_line(), _assistant_line("msg_01A", PER_BLOCK_USAGE)],
-            lambda counters, *, final: reports.append((dict(counters), final)),
+            lambda counters, *, final, **_: reports.append((dict(counters), final)),
         )
         launcher_error = None
         try:

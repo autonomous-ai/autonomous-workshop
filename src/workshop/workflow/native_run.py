@@ -5586,21 +5586,60 @@ def _product_token_observer(paths, checkpoint, budget):
 _CLAUDE_TOKEN_SOURCE = "claude-native-stream-v1"
 
 
+def _resumed_session_tokens(prior, counters, streamed):
+    """One session's running total after a later invocation resumed it.
+
+    The prior charge plus this invocation's streamed requests, raised by the
+    invocation's own counters (whose result totals the whole session). No
+    counter falls below the session's recorded charge.
+    """
+
+    tokens = {key: max(prior[key] + streamed[key], counters[key]) for key in prior}
+    tokens["input_tokens"] = max(
+        tokens["input_tokens"], tokens["cached_input_tokens"] + tokens["cache_write_input_tokens"]
+    )
+    tokens["output_tokens"] = max(tokens["output_tokens"], tokens["reasoning_output_tokens"])
+    return tokens
+
+
 def _claude_token_observer(paths, checkpoint, budget):
     """Charge one Claude invocation's streamed usage to the product allowance.
 
-    Each ``--print`` invocation starts its own count, so it is recorded as one
-    more observed thread beside every earlier invocation of the product. The
-    launcher reports running counters as requests stream in and the final
-    counters once the invocation ends; the ledger is durable per report.
+    The ledger holds one observed thread per native session (#84). A
+    ``--print`` invocation of a new session adds a thread; one that resumes a
+    recorded session replaces that thread's counters with the session's new
+    running total and counts the invocation, because a resumed result totals
+    the whole session. Threads recorded before sessions were named never
+    match, so their recorded charge stays as it was. The launcher reports
+    running counters as requests stream in and the final counters once the
+    invocation ends; the ledger is durable per report.
     """
 
     previous = [] if budget.observation is None else budget.observation["threads"]
     thread_id = "claude-invocation-%06d" % (len(previous) + 1)
     root_thread_id = previous[0]["thread_id"] if previous else thread_id
 
-    def observe(counters, *, final=False):
-        threads = [*previous, {"thread_id": thread_id, "status": "observed", "tokens": dict(counters)}]
+    def observe(counters, *, final=False, session_id=None, streamed=None):
+        index = next((
+            position for position, thread in enumerate(previous)
+            if session_id is not None and thread.get("session_id") == session_id
+        ), None)
+        if index is None:
+            thread = {"thread_id": thread_id, "status": "observed", "tokens": dict(counters),
+                      "invocations": 1}
+            if session_id is not None:
+                thread["session_id"] = session_id
+            threads = [*previous, thread]
+        else:
+            prior = previous[index]
+            threads = list(previous)
+            threads[index] = {
+                **prior,
+                "tokens": _resumed_session_tokens(
+                    prior["tokens"], counters, counters if streamed is None else streamed
+                ),
+                "invocations": prior.get("invocations", 1) + 1,
+            }
         totals = {key: sum(thread["tokens"][key] for thread in threads) for key in counters}
         try:
             budget.observe({

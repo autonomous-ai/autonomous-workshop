@@ -405,7 +405,8 @@ def _invocation_counters(
 
     The result's ``modelUsage`` also counts compaction and final output, so
     each counter takes the larger of the two; neither source can lower what
-    the other already observed.
+    the other already observed.  On ``--resume`` the result totals the whole
+    session, not only this invocation; the host charges a session once.
     """
 
     totals = {name: 0 for name in _INVOCATION_COUNTERS}
@@ -683,6 +684,7 @@ class ClaudeNativeSessionLauncher:
             run_root=Path(run_root),
             activity_observer=activity_observer,
             finalization_marker=finalization_marker,
+            resumed_session_id=session_id,
         )
         return _session_outcome(
             session_id,
@@ -862,6 +864,7 @@ class ClaudeNativeSessionLauncher:
         activity_observer: Optional[Callable[[str], None]],
         finalization_marker: Optional[Path] = None,
         session_observer: Optional[Callable[[str], None]] = None,
+        resumed_session_id: Optional[str] = None,
     ) -> tuple[Optional[str], Optional[NativeTokenUsage]]:
         if activity_observer is not None:
             activity_observer("starting")
@@ -920,7 +923,15 @@ class ClaudeNativeSessionLauncher:
             if not final and counters == observed_counters:
                 return
             observed_counters = counters
-            budget_observer(counters, final=final)
+            # A resumed session's result totals the whole session, so the
+            # host needs the session and this invocation's streamed requests
+            # apart from that result to charge the session once (#84).
+            budget_observer(
+                counters,
+                final=final,
+                session_id=observed or resumed_session_id,
+                streamed=_invocation_counters(requests, None),
+            )
 
         stdout = process.stdout
         try:

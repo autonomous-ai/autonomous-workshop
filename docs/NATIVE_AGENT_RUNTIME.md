@@ -1129,8 +1129,13 @@ allowance described below, enforced while the turn streams. The adapter then
 passes `--forward-subagent-text`, so subagent requests reach the stream, and
 reports a running total per invocation to the host. Each request counts once,
 by message id, and the terminal `modelUsage` raises (never lowers) that total,
-which adds compaction and final output. Each invocation is one observed thread
-of the ledger. The host kills the turn as soon as the total reaches the cap,
+which adds compaction and final output. Each native session is one observed
+thread of the ledger, named by its `session_id`: a resume's result totals the
+whole session, so a resumed invocation replaces its session's charge with the
+prior charge plus its streamed requests, raised by that result and never
+lowered, and increments the thread's `invocations`; only a new session adds a
+thread (#84). Threads recorded before sessions were named keep their recorded
+charge, duplicates included. The host kills the turn as soon as the total reaches the cap,
 records `token-budget-stop.json`, and keeps the session resumable. A request
 that streams no event cannot be stopped midway, so a turn may overshoot the
 cap by its last requests. Claude runs created before ADR 0078 keep their

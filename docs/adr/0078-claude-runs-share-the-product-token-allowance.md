@@ -60,3 +60,26 @@ earlier spend was never recorded.
 - Per-request output is an undercount until the result arrives. Input
   dominates cost in these runs, so the running total stays close.
 - Grok Build still has no allowance.
+
+## Amendment: one thread per native session (issue #84)
+
+Broken God attempt 14 (`wish-20261002-105254-fc27c882`) stopped at about
+86.5M of its 100M cap with 173M recorded: the host resumed the same session,
+and the resumed invocation's result reported the whole session's usage, which
+the host added as a second thread with identical counters. On `--resume` the
+terminal `modelUsage` totals the session, not only the new invocation.
+
+The ledger therefore charges each native session once. The adapter reports the
+session id and the invocation's streamed requests beside its running counters.
+A thread records its `session_id` and `invocations`. When an invocation resumes
+a recorded session, that thread keeps its id and its counters become, per
+counter, the larger of the prior charge plus the streamed requests and the
+invocation's own counters, so a result that reports less never lowers the
+charge. A new session still adds a thread. The terminal result stays a source,
+because it counts compaction and final output the stream misses.
+
+Threads recorded before this amendment carry no `session_id` and never match a
+resume, so a ledger that already holds duplicated threads keeps its recorded
+value; nothing rewrites it, and no host command edits a recorded budget. A
+resume of such a run records its next invocation as a new thread. Attempt 14
+is abandoned and rerun.
