@@ -1757,3 +1757,27 @@ the summary. A camera the host amended in the run-root
 `CONTRACT-AMENDMENTS.json` replaces the sealed one. Schema 1 and 2 contracts
 keep the declared-camera-else-front comparison. This changes the
 `make-round` fingerprint.
+
+## Local change: print gates name the failing feature; blunt free edges (2026-10-02)
+
+A Workshop-local change (issue #82) to the vendored `cad` tree and to
+Workshop's own `print-details` and `make-round`. In `cad`, `printlib.py` gains
+`entry_shape`, `printed_mesh` and the feature lookup the two gates share:
+`check_thickness` and `check_overhang` now build the entry once, keep its
+B-rep, and for each region they print name the nearest feature print-details
+tagged in `PRINT_DETAIL_TAGS` (within 1 mm), else the nearest B-rep face, with
+how far a failing region is past its limit. Failing regions are listed first.
+An open tessellation is decided by the B-rep: an invalid solid fails with its
+bad faces listed; a valid one is re-tessellated once at a quarter of the
+deviation and half the angle, and measured if that closes it; one that stays
+open exits 4 with `RESULT: UNMEASURABLE MESH`. Thresholds, the classifiers and
+every self-check verdict are unchanged; `check_mesh` is unchanged. The
+`check_overhang` self-check now passes per-sample slopes through `cluster`.
+
+`print-details` tags every feature it makes with the caller's file and line,
+and adds `bore` (teardrop), `blunt_tip` and `rib_end`, each in its
+self-check. `make_round` records each gate's failing feature keys
+(`defects`), a part's `repeated_defects` against its previous round and the
+round's `repeated_print_defects`, and the gates' exit 4 as an `UNMEASURABLE`
+verdict that fails `checks_ok` without counting as a print failure. This
+changes the `cad`, `print-details` and `make-round` fingerprints.

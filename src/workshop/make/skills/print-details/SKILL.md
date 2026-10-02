@@ -1,6 +1,6 @@
 ---
 name: print-details
-description: Add printable decorative detail to a Component - rivets, round bosses, low domes, raised bands and rims, half-round pipe ribs, inset panels, lancet windows and grille slits - from a library whose every feature refuses a size below the wiki's print limits for the run's nozzle and prints without support in its declared print direction. Use it instead of modelling surface detail by hand.
+description: Add printable decorative detail to a Component - rivets, round bosses, low domes, raised bands and rims, half-round pipe ribs, inset panels, lancet windows, grille slits and teardrop bores - and blunt its points, chisels, keels and rib ends to a land one minimum wall across, from a library whose every feature refuses a size below the wiki's print limits for the run's nozzle and prints without support in its declared print direction. Use it instead of modelling surface detail or a sharp edge by hand.
 ---
 
 # Printable detail
@@ -60,6 +60,9 @@ normal. `up` is the print direction in your generator's coordinates: +Z when
 | `panel(host, at, width, height, depth, arch)` | an inset panel, `flat` or `lancet` topped | 8, 12, 0.8 |
 | `window(host, at, width, height, depth, arch)` | a window through a wall `depth` thick, `lancet`, `gable` or `flat` | 4, 10, 2 |
 | `slit(host, at, width, length, depth, through)` / `slits(...)` | a grille slit running uphill; `at` may be a list | 1.2, 8, 1 |
+| `bore(host, at, d, depth, through)` | a round bore with a pointed (teardrop) roof, through a wall, a vault or a pointed roof | 3, 2 |
+| `blunt_tip(host, tip, toward, reach, back)` | a point, chisel, keel or ridge cut back to a flat land one minimum wall across | 6, 12 |
+| `rib_end(rib, end, toward, reach)` | a rib you built cut square at `end` (ramped if it would look down), before you fuse it | whole rib |
 
 Paths and patterns: `pd.segment(start, end)` (a straight run on one face),
 `pd.ring(axis, radius, normal="radial"|"axial")` (round a wall, or on a face
@@ -80,6 +83,40 @@ What each feature does where the print would hang:
   straight 52 deg flanks before its apex;
 - a low dome on a wall must meet the surface at 38 deg or less; the error
   gives the height that fits.
+
+## Blunt free edges
+
+`check_thickness` counts every straight knife edge as a wall: a chisel wing
+tip, the ridge of a pointed vault, a keel, a feather tapered to nothing or an
+offset rib that runs out in a sliver fails the round however the numbers are
+tuned. The rule, which every Design Contract carries: **every point, chisel,
+keel and V underside ends in a flat land at least one minimum wall across**
+(0.8 mm at a 0.4 nozzle).
+
+- `pd.blunt_tip(host, tip, toward)` finds where the host first spans one
+  minimum wall across, back from `tip` along `-toward`, and cuts it square
+  there. `reach` is how far sideways the cut goes: cover the whole edge of a
+  chisel or ridge (`reach=12` for a 20 mm ridge). A land that would face down
+  off the bed is refused: turn the part so the tip points up or sideways, or
+  rests on the bed.
+- `pd.rib_end(rib, end, toward)` trims a rib, fin or offset layer you
+  modelled yourself at `end`, before you fuse it to the host, so no sliver is
+  left where a trim ran out. It refuses an end face narrower than one
+  minimum wall.
+- Never chamfer an edge to less than one minimum wall, and never ask a
+  chamfer to meet a face in a knife edge.
+
+## When a print gate fails
+
+Every feature this library makes is tagged with the line that called it.
+`check_thickness` and `check_overhang` name the tagged feature nearest each
+failing region (`at feature band@part_wing.step.py:42 -- band-2 ...`), else
+the nearest B-rep face, and say how far the region is past the limit. A tag
+is where the feature was made, so add detail to the body in the pose
+`gen_step()` returns; detail moved after it is made is named by face only.
+Repair that feature: resize it, move it, or blunt the edge beside it. If the same
+feature fails the next round too, `make_round` reports it as a repeated
+print defect; read the report row before changing numbers again.
 
 ## Limits
 

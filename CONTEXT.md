@@ -285,6 +285,29 @@ copies the library unchanged into the CAD project, where it is frozen with
 the Shared Helpers but holds no design value.
 _Avoid_: Greebles, trim, hand-modelled detail
 
+**Blunt Free Edge**:
+The flat land, at least one minimum wall across (0.8 mm at a 0.4 mm nozzle),
+in which every point, chisel, keel and V underside of a Component ends. The
+print gate fails every straight knife edge as a thin wall, so every Design
+Contract states the rule, the Component Reviewer never asks for a sharper
+edge, and the print-details library cuts the land (issue #82).
+_Avoid_: Sharp tip, knife edge, feather edge
+
+**Repeated Print Defect**:
+A failing component round whose failing feature, as the print gate names it,
+also failed in the same Component's previous round. Runs are compared by
+their repeated print defects, which show blind repair; the print-gate failure
+rate is context only, since a failing round costs about what a local gate run
+does (issue #82).
+_Avoid_: Failure rate, retry
+
+**Unmeasurable Mesh**:
+A print gate's verdict on a valid B-rep whose tessellation stays open even
+after one finer retry. Inside and outside are undefined, so nothing was
+measured: it is not a print failure, and it never passes a round. An invalid
+B-rep with an open mesh fails instead, with its bad faces named.
+_Avoid_: Open-mesh failure, non-watertight
+
 **Interface**:
 One place where two or more Components meet, recorded in the Design Contract
 with its Interface Kind and the Components it joins. Interfaces are how a

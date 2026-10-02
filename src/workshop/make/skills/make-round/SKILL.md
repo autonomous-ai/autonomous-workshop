@@ -230,6 +230,19 @@ component geometry.
   A part that did not build is reported as a gate failure, not a skip: there is
   no solid to measure. A round passes only when both gates pass on every part,
   so `built` and `printable at this nozzle` stay separate verdicts.
+- Each failing region names its feature: the print-details feature it lies
+  on with the line that made it (`band@part_wing.step.py:42`), else the
+  nearest B-rep face (`plane@(12,-4,30)`), and how far it is past the limit.
+  The `wall` and `over` lines list them after `at`; the gate reports under
+  the round have the rest. Repair that feature, not a coordinate.
+- A feature that failed the same part's previous round too is a **Repeated
+  Print Defect**: an `again` line names it and `summary.json` lists it under
+  `repeated_print_defects`. Read the report's feature row before you change
+  numbers again; a repeat means the last repair guessed.
+- A part whose tessellation is open is not measured. An invalid B-rep fails
+  with its bad faces listed. A valid one is re-tessellated once, finer; if it
+  stays open the gate's verdict is `UNMEASURABLE`, which is not a print
+  failure and is never a pass: simplify the faces the report names and rerun.
 - An unchanged part reuses its previous PASS only when both gates passed, the
   tool logs still hash to what was recorded, and the nozzle, angle, gate bytes
   and interpreter are identical. A failed or legacy record is always

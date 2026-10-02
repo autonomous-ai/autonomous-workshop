@@ -108,14 +108,17 @@ def _install_gate_identity(project):
         (scripts / name).write_text("# fixture %s\n" % name, encoding="utf-8")
 
 
-def _gate_output(tool, *, fails):
+def _gate_output(tool, *, fails, feature=None):
     """Stand in for one print gate, in the exact shape make_round parses."""
+    named = ("           at feature %s -- band-1 (part_wheel.step.py:7), 0.00 mm away; "
+             "0.38 mm under the 0.80 mm wall\n" % feature) if feature else ""
     if tool == "check_thickness":
         if fails:
             return (
                 "part_wheel.step.py: 4.20 cm3 solid, grid 0.100 mm\n"
                 "  FAIL  wall >= 0.80 mm (+/-0.10)        2.1% of surface below\n"
                 "        1. [wall ] 0.42 mm at (1.0, 2.0, 3.0)  12 samples\n"
+                + named +
                 "RESULT: WALL BELOW MINIMUM\n"
             ), 1
         return (
@@ -146,8 +149,11 @@ class MakeRoundTest(unittest.TestCase):
         wall_fails=False,
         overhang_fails=False,
         overhang_unverified=False,
+        overhang_unmeasurable=False,
+        wall_feature=None,
         argv=None,
         calls=None,
+        round_name="r0001",
     ):
         module = load_module()
         (project / "toy.step.py").write_text("def gen_step(): pass\n")
@@ -168,9 +174,15 @@ class MakeRoundTest(unittest.TestCase):
                 stdout, code = _gate_output(
                     tool,
                     fails=wall_fails if tool == "check_thickness" else overhang_fails,
+                    feature=wall_feature,
                 )
                 if tool == "check_overhang" and overhang_unverified:
                     stdout, code = "", 3
+                if tool == "check_overhang" and overhang_unmeasurable:
+                    stdout, code = (
+                        "part_wheel.step.py: the B-rep is a valid solid, but its tessellation stays "
+                        "open at 6 edge(s) even at 0.005 mm deviation. Inside and outside are "
+                        "undefined on an open mesh.\nRESULT: UNMEASURABLE MESH\n"), 4
                 log = kwargs.get("log")
                 if log is not None:
                     Path(log).parent.mkdir(parents=True, exist_ok=True)
@@ -181,7 +193,7 @@ class MakeRoundTest(unittest.TestCase):
                                                '{"ok":true}\n', "ValueError: wall must be positive\n" if failed else "")
         with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(module, "skills_root", return_value=project), mock.patch.object(module, "run", side_effect=fake_run):
             self.assertEqual(module.main(argv or [str(project)]), 1)
-        summary = json.loads((project / "measure/rounds/r0001/summary.json").read_text())
+        summary = json.loads((project / "measure/rounds" / round_name / "summary.json").read_text())
         return module, summary
 
     def _feedback(self, project, summary, status="pass"):
@@ -210,6 +222,59 @@ class MakeRoundTest(unittest.TestCase):
             _, summary = self._round(Path(tmp), wall_fails=True, overhang_unverified=True)
             self.assertFalse(summary["checks_ok"])
             self.assertEqual(summary["print"]["wheel"]["verdict"], "FAIL")
+
+    def test_an_unmeasurable_mesh_is_its_own_verdict_and_never_passes_a_round(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            module, summary = self._round(Path(tmp), overhang_unmeasurable=True)
+            item = summary["print"]["wheel"]
+            self.assertEqual(item["overhang"]["verdict"], "UNMEASURABLE")
+            self.assertEqual(item["verdict"], "UNMEASURABLE")
+            self.assertTrue(item["overhang"]["failures"][0].startswith("unmeasurable mesh: "))
+            self.assertIn("tessellation stays open", item["overhang"]["failures"][0])
+            self.assertEqual(item["overhang"]["defects"], [])
+            self.assertFalse(summary["checks_ok"])
+            self.assertFalse(module.reusable_print(item))
+            self.assertIn("over  UNMEASURABLE", module.render_summary(summary))
+        with tempfile.TemporaryDirectory() as tmp:
+            _, summary = self._round(Path(tmp), wall_fails=True, overhang_unmeasurable=True)
+            self.assertEqual(summary["print"]["wheel"]["verdict"], "FAIL")
+
+    def test_a_feature_that_fails_again_is_a_repeated_print_defect(self):
+        feature = "band@part_wheel.step.py:7"
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, first = self._round(project, wall_fails=True, wall_feature=feature)
+            self.assertEqual(first["print"]["wheel"]["thickness"]["defects"], [feature])
+            self.assertEqual(first["repeated_print_defects"], {})
+            self.assertIn("at " + feature, module.render_summary(first))
+            _, second = self._round(project, wall_fails=True, wall_feature=feature, round_name="r0002")
+            self.assertEqual(second["print"]["wheel"]["repeated_defects"], [feature])
+            self.assertEqual(second["repeated_print_defects"], {"wheel": [feature]})
+            self.assertIn("again FAIL wheel", " ".join(module.render_summary(second).split()))
+            # A different feature failing is a new defect, not a repeat.
+            _, third = self._round(project, wall_fails=True, wall_feature="plane@(1,2,3)",
+                                   round_name="r0003")
+            self.assertEqual(third["repeated_print_defects"], {})
+
+    def test_print_defects_are_the_failing_regions_named_features(self):
+        module = load_module()
+        stdout = (
+            "        1. [wall ] 0.42 mm at (1.0, 2.0, 3.0)  12 samples\n"
+            "           at feature band@part_x.step.py:7 -- band-1 (part_x.step.py:7), 0.00 mm away; x\n"
+            "        2. [taper] 0.70 mm at (1.0, 2.0, 3.0)  3 samples\n"
+            "           at face plane@(0,0,1) -- face 3 (plane), 0.00 mm away; x\n"
+            "        3. [wall ] 0.50 mm at (9.0, 2.0, 3.0)  12 samples\n"
+            "           at face cone@(9,2,3) -- face 7 (cone), 0.10 mm away; x\n"
+            "        4. [wall ] 0.50 mm at (9.0, 2.0, 3.0)  12 samples\n"
+            "           0.30 mm under the 0.80 mm wall\n"
+        )
+        self.assertEqual(module.print_defects(stdout, "wall"), ["band@part_x.step.py:7", "cone@(9,2,3)"])
+        self.assertEqual(module.print_defects(stdout, "overhang"), [])
+        previous = {"verdict": "FAIL", "thickness": {"defects": ["a", "b"]}, "overhang": {"defects": []}}
+        current = {"thickness": {"defects": ["b", "c"]}, "overhang": {"defects": ["a"]}}
+        self.assertEqual(module.repeated_defects(previous, current), ["b", "a"])
+        self.assertEqual(module.repeated_defects({**previous, "verdict": "PASS"}, current), [])
+        self.assertEqual(module.repeated_defects(None, current), [])
 
     def test_no_reference_round_requires_visual_inspection_and_reports_errors(self):
         with tempfile.TemporaryDirectory() as tmp:
