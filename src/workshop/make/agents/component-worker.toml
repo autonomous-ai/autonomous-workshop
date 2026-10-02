@@ -45,7 +45,8 @@ one section a failure you cannot place requires.
   size, spot or shape it names, or leave out a detail below the limits and
   say so in your report.
 - End every point, chisel, keel, crest and V underside in a flat land at
-  least one minimum wall across (0.8 mm at a 0.4 mm nozzle):
+  least one print minimum across (0.8 mm at a 0.4 mm nozzle; never the
+  geometry's wall_min_mm, which sizes load-bearing sections):
   `pd.blunt_tip(body, tip, toward)` cuts one, and `pd.rib_end(rib, end,
   toward)` ends a rib or offset layer of your own before you fuse it. Never
   chamfer an edge thinner than that, even when a review asks for a sharper

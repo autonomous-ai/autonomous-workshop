@@ -56,7 +56,8 @@ each packet you judge.
     52 degree slope or a teardrop roof under it
     (`.agents/skills/wiki/pages/printing/overhangs-and-print-orientation.md`);
   - no sharp free edge: every point, chisel, keel, crest and V underside
-    ends in a flat land at least one minimum wall across (0.8 mm at 0.4 mm).
+    ends in a flat land at least one print minimum across (0.8 mm at 0.4 mm;
+    never the geometry's wall_min_mm).
     Never ask for a sharp tip, a knife edge, a feather tapered to nothing, or
     a chamfer or taper that leaves an edge thinner than that; where the
     reference shows a sharper tip than that land, write "keep as is".

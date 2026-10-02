@@ -286,8 +286,10 @@ the Shared Helpers but holds no design value.
 _Avoid_: Greebles, trim, hand-modelled detail
 
 **Blunt Free Edge**:
-The flat land, at least one minimum wall across (0.8 mm at a 0.4 mm nozzle),
+The flat land, at least one print minimum across (0.8 mm at a 0.4 mm nozzle),
 in which every point, chisel, keel and V underside of a Component ends. The
+printer sizes it, not the geometry's minimum wall, which is a strength floor
+for load-bearing sections. The
 print gate fails every straight knife edge as a thin wall, so every Design
 Contract states the rule, the Component Reviewer never asks for a sharper
 edge, and the print-details library cuts the land (issue #82).
