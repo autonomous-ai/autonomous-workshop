@@ -19,3 +19,16 @@ retro-PC-style Bluetooth speaker,
 https://www.pinterest.com/pin/128282289382610442/ (another company's product).
 That photo was looked at only. It was never passed to the generator and is not
 used as a reference.
+
+## Desk concepts (`desk/`, `DESK_CONCEPTS.html`)
+
+The owner later set new constraints: desk-only (portable deferred), fixed shell
+(no swappable module), and a screen that is flat or tilted 30 degrees or less, for touch use
+with the Habitat firmware (swipe for panes, top-left corner plus swipe for tabs,
+tap the octopus to speak). There are eight concepts with two variants each:
+D1 tidepool, D2 fieldinstrument, D3 lectern, D4 slate, D5 turntable, D6 aquarium,
+D7 draftingtable, D8 tentacles. The D3 and D7 renders are steeper than 30 degrees and must
+come down to 25 degrees if picked. The screen shows the firmware's lilac ASCII octopus.
+
+Pinterest pins and boards consulted for inspiration (looked at only; never passed
+to the generator) are listed at the end of `DESK_CONCEPTS.html`.

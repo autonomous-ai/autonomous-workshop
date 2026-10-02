@@ -71,3 +71,6 @@ __cadgen__/
 _prototypes/
 # Node dev tooling (Sandcastle agent orchestration).
 /node_modules/
+
+# Harness PCB STEP model (184 MB, kept local only).
+/toys-spec/harness-square/hardware/PCB_Harness_pro_v1.step
