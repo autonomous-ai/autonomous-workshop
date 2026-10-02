@@ -140,7 +140,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0077-component-workers-and-a-root-owned-reviewer.md`, and
 `docs/adr/0080-component-workers-author-and-a-hook-admits-their-rounds.md`, and
 `docs/adr/0081-shape-rounds-follow-component-reviews.md`, and
-`docs/adr/0082-interfaces-between-components.md` before changing the CLI, runtime,
+`docs/adr/0082-interfaces-between-components.md`, and
+`docs/adr/0083-compare-in-the-display-pose-at-the-reference-camera.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -255,6 +256,17 @@ Its #80 amendment lets an Interface name one instance of a Unique Geometry
 whose count is above 1, `<id>#<n>` (`wing#1` meets `wing#2`); the geometry's
 one Component file builds and places each instance, and locking, staleness
 and unlocks stay with that Component.
+ADR 0083 adds Design Contract schema 3 for new contracts: every reference
+carries its Reference Camera (`[AZ, EL]` in the Display Pose frame, estimated
+by eye in design-a-toy and approved with the images), every Component defines
+`assembly_pose`, and a component round composes each reference beside
+`assembly_pose(shape, None)` rendered at that camera while front, top and iso
+stay in the print stance. The Component Reviewer's third verdict, camera
+mismatch, is not a Shape Round and gives the worker no repair text; it stops
+the run with a need that `workshop resume --reference-camera FILE=AZ,EL`
+answers with a host-recorded amendment of that one camera, leaving WISH.json,
+requirements and images sealed. Schema 1 and 2 contracts and frozen runs keep
+the earlier comparison.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

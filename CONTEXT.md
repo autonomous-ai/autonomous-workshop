@@ -218,10 +218,22 @@ _Avoid_: QA, review pass, critique
 
 **Component Review**:
 A reader other than the Workshop Manager judging whether one Component looks
-like its reference, from the reference beside the model at the reference's
-camera. Its recorded agreement, with passing build and print checks, is what
-passes a Component; its disagreement lists the differences to repair.
+like its reference, from the reference beside the model in the Display Pose,
+at the reference's Reference Camera. Its recorded agreement, with passing
+build and print checks, is what passes a Component; its disagreement lists
+the differences to repair. A third answer, camera mismatch, says only that
+the side of the model facing the camera is not the side the reference shows:
+it is not a Shape Round, gives the Component Worker nothing to repair, and
+stops the run until that one Reference Camera is amended (ADR 0083).
 _Avoid_: Likeness check, self-review, sign-off
+
+**Reference Camera**:
+The azimuth and elevation, in the Display Pose frame, from which a reference
+image shows its subject. A schema 3 Design Contract records one for every
+reference, estimated by eye in design-a-toy and approved with the images.
+A camera mismatch is answered by amending that one camera; the contract's
+requirements and image bytes stay sealed.
+_Avoid_: View, declared camera, viewpoint
 
 **Shape Round**:
 The first round of a Component after a disagreeing Component Review. A
