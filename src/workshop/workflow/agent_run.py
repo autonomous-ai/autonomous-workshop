@@ -2086,9 +2086,10 @@ class AgentRun:
             raise StateConflict("WISH.json differs from its frozen input")
         context = json.loads(wish_bytes).get("context") or {}
         contract = context.get("design_contract") if isinstance(context, Mapping) else None
-        if not isinstance(contract, Mapping) or contract.get("schema_version") != CAMERA_SCHEMA_VERSION:
+        schema = contract.get("schema_version") if isinstance(contract, Mapping) else None
+        if type(schema) is not int or schema < CAMERA_SCHEMA_VERSION:
             raise ContractError(
-                "only a run sealed with a schema 3 Design Contract has Reference Cameras to amend"
+                "only a run sealed with a schema 3 Design Contract or later has Reference Cameras to amend"
             )
         sealed = {
             item["file"]: item for item in contract.get("references") or ()

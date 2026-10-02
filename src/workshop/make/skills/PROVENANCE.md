@@ -1795,3 +1795,21 @@ watertight line says so), and one that stays open exits 4 with
 `RESULT: UNMEASURABLE MESH`. Every other `check_mesh` check and threshold is
 unchanged, and `verify_project` still treats any nonzero exit as a failed mesh
 gate. This changes the `cad` fingerprint.
+
+## Local change: Interface text and Reference Conflicts (2026-10-02)
+
+A Workshop-local change (ADR 0084, issue #83) to Workshop's own `make-round`
+and `cad/scripts/verify_project`. Under a schema 4 Design Contract a component
+round writes the Component's own contract, its geometry row, its requirement
+rows and the `text` of every Interface naming it (`<id>` or `<id>#<n>`), into
+`visual-packet.json` (bound by the packet hash) and `summary.json`, and its
+contract-row hash covers those Interfaces. `--record-review` accepts
+`reference_conflicts` beside `differences`, each naming a reference the round
+compared, what it shows and what the contract requires; they may stand beside
+an agreement, are kept out of `review.json` (in `reference-conflicts.json` and
+the summary), carry with the review, and a disagreeing review with only
+conflicts is refused. The final verifier notes each conflict and writes them
+to `component-acceptance.json` as `reference_conflicts`. Schema 3 contracts
+keep their cameras and Display Pose comparison under schema 4. Schema 1 to 3
+packets carry no `contract`. This changes the `cad` and `make-round`
+fingerprints.

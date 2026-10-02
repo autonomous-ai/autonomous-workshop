@@ -2615,9 +2615,11 @@ INTERFACE_PROOFS = {
 
 def _component_acceptances(
     run_root: Path, product_root_value: str, verification_relative: PurePosixPath
-) -> Optional[tuple[list[dict[str, Any]], Optional[list[dict[str, Any]]]]]:
-    """``(acceptances, interfaces)`` from the final verifier, or None when it
-    wrote no record.
+) -> Optional[
+    tuple[list[dict[str, Any]], Optional[list[dict[str, Any]]], list[dict[str, Any]]]
+]:
+    """``(acceptances, interfaces, conflicts)`` from the final verifier, or
+    None when it wrote no record.
 
     The verifier writes ``component-acceptance.json`` beside its report and
     binds it to the report's exact bytes. Every acceptance is a Component
@@ -2625,7 +2627,8 @@ def _component_acceptances(
     allowance was spent; the Workshop Manager accepted it with the reason the
     run reports when it ends. ``interfaces`` lists the sealed contract's
     Interfaces with how each was proven (ADR 0082), or is None for a
-    contract without an Interfaces section.
+    contract without an Interfaces section. ``conflicts`` lists the
+    Reference Conflicts the component reviews recorded (ADR 0084).
     """
 
     relative = "%s/%s" % (
@@ -2638,7 +2641,7 @@ def _component_acceptances(
     document, _, _ = _read_json(run_root, relative, label)
     record = _mapping(document, label)
     if not {"schema_version", "verification_sha256", "acceptances"} <= set(record) or not set(record) <= {
-        "schema_version", "verification_sha256", "acceptances", "interfaces"
+        "schema_version", "verification_sha256", "acceptances", "interfaces", "reference_conflicts"
     }:
         raise ProposalError("%s fields are invalid" % label)
     verification_sha256, _, _ = _hash_regular(
@@ -2682,7 +2685,42 @@ def _component_acceptances(
     interfaces = None
     if "interfaces" in record:
         interfaces = _verified_interfaces(record["interfaces"], label)
-    return acceptances, interfaces
+    conflicts = _verified_reference_conflicts(record.get("reference_conflicts", []), label)
+    return acceptances, interfaces, conflicts
+
+
+REFERENCE_CONFLICT_FIELDS = frozenset(
+    {"label", "scope", "file", "round", "reviewer", "reference", "contract"}
+)
+
+
+def _verified_reference_conflicts(value: Any, label: str) -> list[dict[str, Any]]:
+    """The verifier's Reference Conflicts (ADR 0084): each names a sealed
+    geometry image, its Component, the round and reviewer that recorded it,
+    what the reference shows and what the Design Contract requires."""
+
+    conflicts = _array(value, label + " reference_conflicts")
+    if len(conflicts) > MAX_COMPONENT_ACCEPTANCES:
+        raise ProposalError("%s lists too many reference conflicts" % label)
+    for index, raw in enumerate(conflicts, 1):
+        item_label = "%s reference conflict %d" % (label, index)
+        item = _fields(raw, set(REFERENCE_CONFLICT_FIELDS), item_label)
+        if not _bounded_text(item["label"], item_label + " label", 200).startswith("geometry:"):
+            raise ProposalError("%s label must name a sealed geometry image" % item_label)
+        scope = _bounded_text(item["scope"], item_label + " scope", 200)
+        if not scope.startswith("component:") or not scope[len("component:"):].strip():
+            raise ProposalError("%s scope must name a component" % item_label)
+        _bounded_text(item["file"], item_label + " file", 200)
+        if type(item["round"]) is not int or item["round"] < 1:
+            raise ProposalError("%s round must be a component round number" % item_label)
+        reviewer = _bounded_text(item["reviewer"], item_label + " reviewer", 200)
+        if reviewer.strip().lower() in _MANAGER_NAMES:
+            raise ProposalError(
+                "%s reviewer must be someone other than the Workshop Manager" % item_label
+            )
+        _bounded_text(item["reference"], item_label + " reference", 1_000)
+        _bounded_text(item["contract"], item_label + " contract", 1_000)
+    return conflicts
 
 
 def _verified_interfaces(value: Any, label: str) -> list[dict[str, Any]]:
@@ -2727,9 +2765,10 @@ def _seal_component_acceptances(
     product_root: Path,
     acceptances: Optional[list[dict[str, Any]]],
     interfaces: Optional[list[dict[str, Any]]] = None,
+    conflicts: Optional[list[dict[str, Any]]] = None,
 ) -> None:
-    """Copy the verifier's acceptances and Interfaces into product.json;
-    never let the agent author them."""
+    """Copy the verifier's acceptances, Interfaces and Reference Conflicts
+    into product.json; never let the agent author them."""
 
     path = product_root / "product.json"
     if path.is_symlink() or not path.is_file():
@@ -2747,7 +2786,7 @@ def _seal_component_acceptances(
             % COMPONENT_ACCEPTANCE_NAME
         )
     if acceptances is None:
-        for key in ("component_acceptances", "interfaces"):
+        for key in ("component_acceptances", "interfaces", "reference_conflicts"):
             if key in product:
                 raise ProposalError(
                     "Make product.json %s must come from the final verifier's %s, "
@@ -2766,6 +2805,10 @@ def _seal_component_acceptances(
         updated.pop("component_acceptances", None)
     if interfaces is not None:
         updated["interfaces"] = interfaces
+    if conflicts:
+        updated["reference_conflicts"] = conflicts
+    else:
+        updated.pop("reference_conflicts", None)
     if updated != product:
         path.write_text(json.dumps(updated, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -2854,6 +2897,7 @@ def _make_contract(
     )
     component_acceptances = None if verified is None else verified[0]
     interfaces = None if verified is None else verified[1]
+    reference_conflicts = None if verified is None else verified[2]
     sealed_contract = _sealed_design_contract(run_root, assignment["wish_sha256"])
     if (
         component_acceptances is None
@@ -2875,7 +2919,9 @@ def _make_contract(
                 "Make %s must list every Interface of the sealed Design Contract; "
                 "rerun verify_project --image-derived" % COMPONENT_ACCEPTANCE_NAME
             )
-    _seal_component_acceptances(product_root, component_acceptances, interfaces)
+    _seal_component_acceptances(
+        product_root, component_acceptances, interfaces, reference_conflicts
+    )
     product_document, product_bytes, _ = _read_json(
         run_root,
         "%s/product.json" % product_root_value,

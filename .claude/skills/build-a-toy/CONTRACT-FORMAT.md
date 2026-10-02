@@ -27,7 +27,7 @@ recreates the defect this skill exists to remove.
 ````markdown
 ```design-contract
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "title": "Antisol",
   "inventor": "ad-astra",
   "envelope_mm": [200, 200, 60],
@@ -46,12 +46,15 @@ recreates the defect this skill exists to remove.
      "text": "Each disc carries one raised equatorial band."}
   ],
   "interfaces": [
-    {"id": "disc-peg", "kind": "static", "components": ["world-disc", "base"]},
+    {"id": "disc-peg", "kind": "static", "components": ["world-disc", "base"],
+     "text": "Each disc's flat underside carries a 4 mm peg, 6 mm long, at its centre; the base has a 4.2 x 6 socket under each disc."},
     {"id": "disc-swing", "kind": "separable", "components": ["world-disc", "base"],
+     "text": "Each disc swings inside a 34 mm radius drum above the base; the base keeps that drum clear.",
      "envelope": {"inside": "world-disc", "outside": "base", "shapes": [
        {"pose": "rest", "cylinder": {"base_mm": [0, 0, 20], "axis": [0, 0, 1],
                                      "radius_mm": 34, "height_mm": 8}}]}},
     {"id": "sun-drive", "kind": "coupled", "components": ["sun-gear", "world-disc"],
+     "text": "The sun gear's rim teeth mesh with a toothed rim on each disc's edge.",
      "yielding": "world-disc",
      "poses": {"steps": 10, "movers": [
        {"component": "sun-gear", "rotation": {"axis_point": [0, 0, 0],
@@ -59,6 +62,7 @@ recreates the defect this skill exists to remove.
        {"component": "world-disc", "driven": true, "rotation": {"axis_point": [40, 0, 0],
         "axis_direction": [0, 0, 1], "start_deg": 0, "end_deg": -72}}]}},
     {"id": "disc-pair-mesh", "kind": "coupled", "components": ["world-disc#1", "world-disc#2"],
+     "text": "The first two discs' rim teeth mesh with each other.",
      "yielding": "world-disc#2",
      "poses": {"steps": 8, "movers": [
        {"component": "world-disc#1", "rotation": {"axis_point": [40, 0, 0],
@@ -100,15 +104,17 @@ instances.)
   down. design-a-toy estimates it by eye, rounded to 15 degrees. Make renders
   each Component placed by its `assembly_pose(shape, None)` from this camera
   beside its reference, so a wrong camera shows the wrong side of the model.
-  Required in schema 3 and refused before it.
+  Required from schema 3 and refused before it.
 - `geometries[]`: one entry per **Unique Geometry**. `id` is lowercase kebab
   case. `count` is how many Components the toy has with this shape.
   `wall_min_mm` is the minimum wall.
-- `schema_version`: `3` for every new contract: schema 2 plus a `camera` on
-  every reference. Under schema 3 every Component file defines
-  `assembly_pose(shape, pose)`, even one in no Interface. A schema 2 contract
-  has no cameras and a schema 1 contract no `interfaces`; both stay valid only
-  for runs sealed before them.
+- `schema_version`: `4` for every new contract: schema 3 plus a `text` on
+  every Interface (ADR 0084). Schema 3 is schema 2 plus a `camera` on every
+  reference; from schema 3 every Component file defines
+  `assembly_pose(shape, pose)`, even one in no Interface. A schema 3
+  contract has no Interface text, a schema 2 contract no cameras and a
+  schema 1 contract no `interfaces`; they stay valid only for runs sealed
+  before them.
 - `interfaces[]` (ADR 0082): one entry per place two or more Components meet;
   `[]` when none do. `id` is lowercase kebab case and unique. `kind` is
   `static`, `separable` or `coupled`. `components` lists two or more
@@ -119,7 +125,13 @@ instances.)
   `heart-core`. One Interface never names a geometry and an instance of it
   together. Every other field that names a Component (`inside`, `outside`,
   `yielding`, a mover's `component`) uses the same references as
-  `components`.
+  `components`. `text` (schema 4, required and non-empty, no length limit)
+  states in words what the Interface imposes on each Component it joins:
+  every joint feature it puts on each side (a peg, a socket, a plug, a seat
+  face), with its size and place. Make writes it into each joined
+  Component's review packet and round summary, so the Component Reviewer
+  and the Component Worker read it from the sealed contract. No gate
+  measures or scores it; Interface checks stay numeric.
   - A `separable` Interface has an `envelope`: `inside` and `outside`, two of
     its Components, and `shapes`, each a lowercase `pose` name with exactly
     one `box` (`min_mm`, `max_mm`, min below max) or `cylinder` (`base_mm`, a
@@ -148,9 +160,9 @@ A contract is ready only when all of these hold. Report every failure at once.
 - Every `id` is unique, and every `geometry:<id>` it cites exists.
 - Every reference has a `camera` in range, and the person approved the
   cameras with the images.
-- Every Interface has its Kind and two or more existing Components, a
-  separable one its envelope and a coupled one its yielding Component and
-  poses. An instance `<id>#<n>` names a geometry whose `count` is above 1,
+- Every Interface has its Kind, two or more existing Components and its
+  `text`, a separable one its envelope and a coupled one its yielding
+  Component and poses. An instance `<id>#<n>` names a geometry whose `count` is above 1,
   with `n` in 1..`count`.
 - Every Unique Geometry has at least one reference whose `shows` names it.
 - Every reference file exists beside `CONTRACT.md` and meets the image rules.

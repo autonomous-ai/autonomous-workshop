@@ -24,10 +24,13 @@ MAX_ASSEMBLY_REQUIREMENTS = 16
 MAX_GEOMETRY_REQUIREMENTS = 4
 # Schema 2 adds the Interfaces section (ADR 0082). Schema 1 contracts, sealed
 # before it, stay valid without one. Schema 3 keeps the Interfaces and gives
-# every reference its Reference Camera (ADR 0083).
-SCHEMA_VERSIONS = (1, 2, 3)
+# every reference its Reference Camera (ADR 0083). Schema 4 keeps both and
+# gives every Interface the text of what it imposes on each Component it
+# joins (ADR 0084).
+SCHEMA_VERSIONS = (1, 2, 3, 4)
 INTERFACES_SCHEMA_VERSION = 2
 CAMERA_SCHEMA_VERSION = 3
+INTERFACE_TEXT_SCHEMA_VERSION = 4
 # A Reference Camera, in degrees, in render_review's convention: azimuth 0
 # looks from +X, -90 from the front (-Y); elevation 90 looks down from above.
 CAMERA_AZIMUTH_RANGE = (-180.0, 180.0)
@@ -51,7 +54,7 @@ class ContractReference:
     file: str
     shows: str
     # The Reference Camera ``(azimuth, elevation)`` in degrees, in the Display
-    # Pose frame (ADR 0083). Required in schema 3, absent before it.
+    # Pose frame (ADR 0083). Required from schema 3, absent before it.
     camera: Optional[Tuple[float, float]] = None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -92,7 +95,9 @@ class ContractInterface:
     ``envelope`` is the Keep-out Envelope of a separable Interface, and
     ``yielding`` with ``poses`` (an inline pose table) or ``poses_from`` (a
     motion-manifest condition id) belong to a coupled one. Each is kept as the
-    exact JSON the contract sealed.
+    exact JSON the contract sealed. ``text`` (schema 4, ADR 0084) states in
+    words what the Interface imposes on each Component it joins; it informs
+    the reviewer and the worker, and no gate measures it.
     """
 
     id: str
@@ -102,12 +107,13 @@ class ContractInterface:
     yielding: Optional[str] = None
     poses: Optional[Dict[str, Any]] = None
     poses_from: Optional[str] = None
+    text: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         value: Dict[str, Any] = {
             "id": self.id, "kind": self.kind, "components": list(self.components),
         }
-        for key in ("envelope", "yielding", "poses", "poses_from"):
+        for key in ("envelope", "yielding", "poses", "poses_from", "text"):
             if getattr(self, key) is not None:
                 value[key] = getattr(self, key)
         return value
@@ -301,10 +307,10 @@ def _parse_references(
             if camera is None:
                 errors.append(
                     "%s.camera must be [AZ, EL] in degrees, AZ in -180..180 and EL in -90..90 "
-                    "(schema_version 3)" % label
+                    "(schema_version 3 or later)" % label
                 )
         elif "camera" in item:
-            errors.append("%s.camera needs schema_version 3" % label)
+            errors.append("%s.camera needs schema_version 3 or later" % label)
         if file_name is not None and shows is not None and (camera is not None or not cameras):
             references.append(ContractReference(file=file_name, shows=shows, camera=camera))
     return tuple(references)
@@ -473,7 +479,7 @@ def _check_component_reference(entry: str, counts: Dict[str, int], label: str, e
 
 
 def _parse_interfaces(
-    value: Any, counts: Dict[str, int], errors: List[str]
+    value: Any, counts: Dict[str, int], errors: List[str], text: bool = False
 ) -> Tuple[ContractInterface, ...]:
     """The Interfaces section (ADR 0082): every meeting between Components,
     with its Kind and what that Kind needs. An empty list is a toy whose
@@ -482,7 +488,8 @@ def _parse_interfaces(
     ``counts`` maps each Unique Geometry id to its count. A Component
     reference is a geometry id or one instance of it, ``<id>#<n>`` (issue
     #80); the references of one Interface are distinct, and a geometry and an
-    instance of it never appear together."""
+    instance of it never appear together. ``text`` (schema 4) requires each
+    Interface's non-empty ``text``; before schema 4 it is refused."""
 
     if not isinstance(value, list):
         errors.append("interfaces must be a list (schema_version 2)")
@@ -527,6 +534,18 @@ def _parse_interfaces(
                         "Unique Geometry alone" % (label, entry)
                     )
         allowed = {"id", "kind", "components"}
+        statement = item.get("text")
+        if text:
+            allowed.add("text")
+            if not isinstance(statement, str) or not statement.strip():
+                errors.append(
+                    "%s.text must state, in words, what the Interface imposes on each Component it "
+                    "joins (schema_version 4)" % label
+                )
+                statement = None
+        elif "text" in item:
+            errors.append("%s.text needs schema_version 4" % label)
+            statement = None
         if kind == "separable":
             allowed.add("envelope")
             _parse_envelope(item.get("envelope"), components, "%s.envelope" % label, errors)
@@ -541,9 +560,10 @@ def _parse_interfaces(
             elif not isinstance(item["poses_from"], str) or not item["poses_from"].strip():
                 errors.append("%s.poses_from must name a coupled_motion_collision condition id" % label)
         extra = sorted(set(item) - allowed)
+        extra = [key for key in extra if key != "text"]
         if extra and kind is not None:
             errors.append("%s: a %s Interface does not take %s" % (label, kind, ", ".join(extra)))
-        if identifier is not None and kind is not None and components:
+        if identifier is not None and kind is not None and components and (statement is not None or not text):
             interfaces.append(
                 ContractInterface(
                     id=identifier,
@@ -553,6 +573,7 @@ def _parse_interfaces(
                     yielding=item.get("yielding") if kind == "coupled" else None,
                     poses=item.get("poses") if kind == "coupled" else None,
                     poses_from=item.get("poses_from") if kind == "coupled" else None,
+                    text=statement if text else None,
                 )
             )
     return tuple(interfaces)
@@ -585,7 +606,7 @@ def parse_design_contract(text: str) -> DesignContract:
 
     schema_version = block.get("schema_version")
     if isinstance(schema_version, bool) or schema_version not in SCHEMA_VERSIONS:
-        errors.append("schema_version must be 1, 2 or 3")
+        errors.append("schema_version must be 1, 2, 3 or 4")
 
     title = block.get("title")
     if not isinstance(title, str) or not title.strip():
@@ -600,13 +621,16 @@ def parse_design_contract(text: str) -> DesignContract:
     geometries, geometry_ids = _parse_geometries(block.get("geometries"), errors)
     references = _parse_references(
         block.get("references"), geometry_ids, errors,
-        cameras=schema_version == CAMERA_SCHEMA_VERSION,
+        cameras=schema_version in (CAMERA_SCHEMA_VERSION, INTERFACE_TEXT_SCHEMA_VERSION),
     )
     requirements = _parse_requirements(block.get("requirements"), geometry_ids, errors)
     interfaces: Optional[Tuple[ContractInterface, ...]] = None
-    if schema_version in (INTERFACES_SCHEMA_VERSION, CAMERA_SCHEMA_VERSION):
+    if schema_version in (INTERFACES_SCHEMA_VERSION, CAMERA_SCHEMA_VERSION, INTERFACE_TEXT_SCHEMA_VERSION):
         counts = {item.id: item.count for item in geometries}
-        interfaces = _parse_interfaces(block.get("interfaces"), counts, errors)
+        interfaces = _parse_interfaces(
+            block.get("interfaces"), counts, errors,
+            text=schema_version == INTERFACE_TEXT_SCHEMA_VERSION,
+        )
     elif "interfaces" in block:
         errors.append("interfaces need schema_version 2 or later")
 

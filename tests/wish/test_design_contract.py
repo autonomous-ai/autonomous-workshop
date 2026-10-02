@@ -423,3 +423,73 @@ class ReferenceCameraTest(unittest.TestCase):
                 self.assertEqual(contract.to_dict()["references"], block["references"])
                 block["references"][0]["camera"] = [0, 0]
                 self.assertIn("references[0].camera needs schema_version 3", self._refused(block))
+
+
+def _text_block(texts=("The wing's root carries a 4 mm peg; the heart core a 4.2 mm socket.",
+                       "The wing stays inside its swing drum; the housing stays out of it.",
+                       "The heart core's pinion meshes with the sector on the wing's root.")):
+    """A schema 4 contract: schema 3 plus each Interface's text (ADR 0084)."""
+
+    block = _interfaces_block()
+    block["schema_version"] = 4
+    block["references"][0]["camera"] = [-60, 20]
+    block["references"][1]["camera"] = [0, 90]
+    for interface, text in zip(block["interfaces"], texts):
+        if text is not None:
+            interface["text"] = text
+    return block
+
+
+class InterfaceTextTest(unittest.TestCase):
+    """ADR 0084: a schema 4 Interface states in words what it imposes on each
+    Component it joins."""
+
+    def _refused(self, block):
+        with self.assertRaises(ContractError) as caught:
+            parse_design_contract(_contract_text(block))
+        return str(caught.exception)
+
+    def test_every_interface_carries_its_text_and_seals_it(self):
+        block = _text_block()
+        contract = parse_design_contract(_contract_text(block))
+        self.assertEqual(contract.schema_version, 4)
+        self.assertEqual(contract.interfaces[0].text, block["interfaces"][0]["text"])
+        self.assertEqual(contract.to_dict()["interfaces"], block["interfaces"])
+        # Schema 4 keeps schema 3's Reference Cameras.
+        self.assertEqual([item.camera for item in contract.references], [(-60.0, 20.0), (0.0, 90.0)])
+
+    def test_text_has_no_maximum_length(self):
+        block = _text_block(texts=("x" * 20_000, "y", "z"))
+        self.assertEqual(len(parse_design_contract(_contract_text(block)).interfaces[0].text), 20_000)
+
+    def test_an_interface_without_non_empty_text_is_refused_naming_it(self):
+        for text in (None, "", "   ", 3, ["a"]):
+            with self.subTest(text=text):
+                block = _text_block(texts=(None, "y", "z"))
+                if text is not None:
+                    block["interfaces"][0]["text"] = text
+                message = self._refused(block)
+                self.assertIn("interfaces[0].text must state", message)
+                self.assertNotIn("interfaces[1]", message)
+
+    def test_schema_4_still_needs_every_reference_camera(self):
+        block = _text_block()
+        del block["references"][1]["camera"]
+        self.assertIn("references[1].camera must be [AZ, EL]", self._refused(block))
+
+    def test_schema_1_to_3_parse_as_before_and_refuse_interface_text(self):
+        for block in (_interfaces_block(), _camera_block()):
+            with self.subTest(schema=block["schema_version"]):
+                contract = parse_design_contract(_contract_text(block))
+                self.assertTrue(all(item.text is None for item in contract.interfaces))
+                self.assertEqual(contract.to_dict()["interfaces"], block["interfaces"])
+        block = _interfaces_block()
+        block["interfaces"][0]["text"] = "A peg in a socket."
+        message = self._refused(block)
+        self.assertIn("interfaces[0].text needs schema_version 4", message)
+        self.assertNotIn("does not take", message)
+        camera = _camera_block(interfaces=_text_block()["interfaces"])
+        self.assertIn("text needs schema_version 4", self._refused(camera))
+
+    def test_an_unknown_schema_is_refused(self):
+        self.assertIn("schema_version must be 1, 2, 3 or 4", self._refused(_block(schema_version=5)))

@@ -45,10 +45,12 @@ class FakeCoverage:
     ``current_passing_component_round``.
     """
 
-    def __init__(self, *, identities=("brep-body", sha(b"body step")), accepted=None, passing=True):
+    def __init__(self, *, identities=("brep-body", sha(b"body step")), accepted=None, passing=True,
+                 conflicts=None):
         self.identities = set(identities)
         self.accepted = accepted
         self.passing = passing
+        self.conflicts = conflicts
         self.calls = []
 
     def __call__(self, *args):
@@ -56,7 +58,15 @@ class FakeCoverage:
         _project, digests = args
         if not self.passing or digests.get("body") not in self.identities:
             return {}
-        return {sha(IMAGES["ref-02-body.png"]): {"role": "body", "accepted": self.accepted}}
+        cover = {"role": "body", "accepted": self.accepted}
+        if self.conflicts:
+            cover["reference_conflicts"] = self.conflicts
+        return {sha(IMAGES["ref-02-body.png"]): cover}
+
+
+CONFLICT = {"component": "body", "label": "geometry:body", "file": "ref-02-body.png", "round": 3,
+            "reviewer": "fresh-reviewer", "reference": "a flat riveted flange",
+            "contract": "Interface heart-chest-seat: the flange's front face is a 50 degree seat cone"}
 
 
 class ContractReviewTest(unittest.TestCase):
@@ -175,6 +185,31 @@ class ContractReviewTest(unittest.TestCase):
         self.assertIn("accepted by the Workshop Manager", runner.records[1]["command"])
         self.assertIn("fresh-reviewer", runner.records[1]["command"])
         self.assertEqual([a["label"] for a in runner.component_acceptances], ["geometry:body"])
+
+    def test_reference_conflicts_are_noted_and_bound_to_the_report(self):
+        # ADR 0084: the contract won; the conflict is reported, never failed.
+        runner = self.verifier["Runner"](cwd=self.run_root, dry_run=False, verbose=False)
+        runner.component_acceptances = []
+        runner.last_stdout = json.dumps({"sourceRef": "part_body.step.py", "identitySha256": "brep-body"})
+        failed = self.verifier["_component_review_failed"](
+            runner, {"component_coverage": FakeCoverage(conflicts=[CONFLICT])}, self.project, self.sealed())
+        self.assertFalse(failed)
+        expected = {"label": "geometry:body", "scope": "component:body", "file": "ref-02-body.png", "round": 3,
+                    "reviewer": "fresh-reviewer", "reference": CONFLICT["reference"],
+                    "contract": CONFLICT["contract"]}
+        self.assertEqual(runner.reference_conflicts, [expected])
+        self.assertEqual(runner.component_acceptances, [])
+        self.assertIn("reference conflict", runner.records[-1]["command"])
+        self.assertIn("the contract wins", runner.records[-1]["command"])
+        report = self.project / "measure/verification-pipeline.md"
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text("# Verification pipeline record\n")
+        self.verifier["_write_component_acceptance"](report, [], None, runner.reference_conflicts)
+        record = json.loads((report.parent / "component-acceptance.json").read_text())
+        self.assertEqual(record["reference_conflicts"], [expected])
+        # A run without conflicts writes the record exactly as before.
+        self.verifier["_write_component_acceptance"](report, [], None, [])
+        self.assertNotIn("reference_conflicts", json.loads((report.parent / "component-acceptance.json").read_text()))
 
     def test_the_gate_fails_the_run_when_a_component_image_is_unaccounted(self):
         runner = self.verifier["Runner"](cwd=self.run_root, dry_run=False, verbose=False)

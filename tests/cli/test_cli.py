@@ -927,6 +927,33 @@ class NativeCommandTest(unittest.TestCase):
         )
         self.assertNotIn("Likeness accepted", text)
 
+    def test_run_text_reports_every_reference_conflict(self):
+        # ADR 0084: the contract won; the person corrects the image.
+        stdout = StringIO()
+        receipt = native_receipt(status="completed", stage="release")
+        receipt["reference_conflicts"] = [
+            {"label": "geometry:heart-core", "scope": "component:heart-core", "file": "ref-06-heart.png",
+             "round": 4, "reviewer": "a1b2c3d4e5f6a7b8c", "reference": "a flat riveted flange",
+             "contract": "a 50 degree seat cone"},
+            "not a mapping",
+        ]
+        with mock.patch("cli.main.native_run_status", return_value=receipt), redirect_stdout(stdout):
+            main(("status", "wish-one"))
+        self.assertIn(
+            "Reference Conflict: geometry:heart-core ref-06-heart.png shows a flat riveted flange; "
+            "the Design Contract requires a 50 degree seat cone",
+            stdout.getvalue(),
+        )
+
+    def test_status_json_carries_the_reference_conflicts(self):
+        stdout = StringIO()
+        receipt = native_receipt(status="completed", stage="release")
+        receipt["reference_conflicts"] = [{"label": "geometry:heart-core", "file": "ref-06-heart.png"}]
+        with mock.patch("cli.main.native_run_status", return_value=receipt), redirect_stdout(stdout):
+            main(("status", "wish-one", "--json"))
+        self.assertEqual(json.loads(stdout.getvalue())["reference_conflicts"],
+                         [{"label": "geometry:heart-core", "file": "ref-06-heart.png"}])
+
     def test_run_text_lists_each_interface_and_how_it_was_proven(self):
         stdout = StringIO()
         receipt = native_receipt(status="completed", stage="release")

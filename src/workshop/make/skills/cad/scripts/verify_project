@@ -672,11 +672,14 @@ def _component_review_coverage(
     project: Path,
     sealed: list[dict],
     identities: dict[str, str],
+    conflicts: list[dict] | None = None,
 ) -> tuple[list[str], list[dict]]:
     """``(failures, acceptances)`` for every sealed geometry image.
 
     A Component's identity is the B-rep hash `gen` reported for it, or, when
     `gen` found it current and built nothing, the sha256 of its STEP on disk.
+    Each Reference Conflict the covering review recorded (ADR 0084) is
+    appended to ``conflicts`` when it is given.
     """
     digests: dict[str, str] = {}
     for item in sealed:
@@ -702,6 +705,17 @@ def _component_review_coverage(
                 f"independent review; run make_round --component part_{role}.step.py"
             )
             continue
+        if conflicts is not None:
+            for conflict in cover.get("reference_conflicts") or ():
+                conflicts.append({
+                    "label": item["label"],
+                    "scope": f"component:{cover['role']}",
+                    "file": str(conflict["file"]),
+                    "round": int(conflict["round"]),
+                    "reviewer": str(conflict["reviewer"]),
+                    "reference": str(conflict["reference"]),
+                    "contract": str(conflict["contract"]),
+                })
         accepted = cover.get("accepted")
         if accepted is not None:
             acceptances.append({
@@ -748,7 +762,8 @@ def _component_review_failed(runner: "Runner", make_round: dict, project: Path, 
     """Record the Contract Mode component-image gate; True when it fails."""
     started = time.perf_counter()
     identities = _gen_part_identities(runner.last_stdout)
-    failures, acceptances = _component_review_coverage(make_round, project, sealed, identities)
+    conflicts: list[dict] = []
+    failures, acceptances = _component_review_coverage(make_round, project, sealed, identities, conflicts)
     interface_failures, interfaces = _interface_review(make_round, project, identities)
     failures += interface_failures
     if interfaces is not None:
@@ -763,6 +778,7 @@ def _component_review_failed(runner: "Runner", make_round: dict, project: Path, 
         print(f"verify_project: {failure}", file=sys.stderr)
     if runner.component_acceptances is not None:
         runner.component_acceptances.extend(acceptances)
+        runner.reference_conflicts.extend(conflicts)
     labels = ", ".join(item["label"] for item in sealed if item["label"].startswith("geometry:"))
     runner.records.append({
         "command": f"component review  # {labels or 'no component images'}",
@@ -776,12 +792,24 @@ def _component_review_failed(runner: "Runner", make_round: dict, project: Path, 
             f"({item['shape_rounds']} shape rounds; reviewer {item['reviewer']} disagreed); "
             f"reason: {item['reason']}",
         )
+    for item in conflicts:
+        runner.note(
+            "reference conflict",
+            f"{item['label']} {item['file']} shows {item['reference']}; the Design Contract requires "
+            f"{item['contract']} (reviewer {item['reviewer']}, r{item['round']:04d}); the contract wins",
+        )
     return bool(failures)
 
 
-def _write_component_acceptance(report: Path, acceptances: list[dict], interfaces: list[dict] | None = None) -> None:
-    """Bind the Manager's component acceptances, and the contract's Interfaces
-    with how each was proven (ADR 0082), to this exact verification report."""
+def _write_component_acceptance(
+    report: Path,
+    acceptances: list[dict],
+    interfaces: list[dict] | None = None,
+    conflicts: list[dict] | None = None,
+) -> None:
+    """Bind the Manager's component acceptances, the contract's Interfaces
+    with how each was proven (ADR 0082), and the Reference Conflicts the
+    reviews recorded (ADR 0084) to this exact verification report."""
     record = {
         "schema_version": 1,
         "verification_sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
@@ -789,6 +817,8 @@ def _write_component_acceptance(report: Path, acceptances: list[dict], interface
     }
     if interfaces is not None:
         record["interfaces"] = interfaces
+    if conflicts:
+        record["reference_conflicts"] = conflicts
     (report.parent / COMPONENT_ACCEPTANCE_NAME).write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
 
 
@@ -987,6 +1017,9 @@ class Runner:
         # Workshop Manager accepted at the shape-repair limit, written beside
         # the report as component-acceptance.json.
         self.component_acceptances: list[dict] | None = None
+        # Reference Conflicts the component reviews recorded (ADR 0084),
+        # gathered alongside the acceptances.
+        self.reference_conflicts: list[dict] = []
         # The sealed contract's Interfaces and how each was proven, when it
         # has an Interfaces section (ADR 0082).
         self.interfaces: list[dict] | None = None
@@ -1569,7 +1602,8 @@ def _write_report(
                   "verification_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
     (path.parent / "geometry-inspection.json").write_text(json.dumps(disclosure, indent=2) + "\n", encoding="utf-8")
     if runner.component_acceptances is not None:
-        _write_component_acceptance(path, runner.component_acceptances, runner.interfaces)
+        _write_component_acceptance(path, runner.component_acceptances, runner.interfaces,
+                                    runner.reference_conflicts)
 
 
 # ── Harness verdict ───────────────────────────────────────────────────────────

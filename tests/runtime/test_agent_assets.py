@@ -317,6 +317,49 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "two statements of the sealed Design Contract cannot both hold", skill
         )
 
+    def test_the_reviewer_reads_the_contract_from_its_packet_and_lists_reference_conflicts(self):
+        # ADR 0084: the Design Contract wins over a reference image.
+        def text(*parts):
+            return " ".join(REPOSITORY.joinpath(*parts).read_text(encoding="utf-8").split())
+
+        reviewer = text("src/workshop/make/agents/component-reviewer.toml")
+        for required in (
+            "the round's visual packet path and its packet sha256",
+            "The packet's `contract` holds",
+            "the text of every Interface that names it",
+            "The Design Contract wins",
+            "list it under `reference_conflicts`, never under `differences`",
+            "A review whose only findings are Reference Conflicts agrees",
+            '"reference_conflicts": [{"file": "...", "reference": "...", "contract": "..."}]',
+            "A difference whose repair would go below them is not a difference",
+            "If only such differences remain, the review agrees",
+        ):
+            with self.subTest(reviewer=required):
+                self.assertIn(required, reviewer)
+        # A difference below the print limits is never written down as "keep as is".
+        self.assertNotIn('write a difference smaller than them as "keep as is"', reviewer)
+        self.assertNotIn('than that land, write "keep as is"', reviewer)
+        self.assertIn('never write "keep as is"', reviewer)
+        worker = text("src/workshop/make/agents/component-worker.toml")
+        self.assertIn("`summary.json` also holds them, copied from the sealed contract", worker)
+        make = text(".agents/product-run/.agents/skills/autonomous-workshop/references/make.md")
+        for required in (
+            "`visual-packet.json` path and its packet sha256 from the worker's report",
+            "writes the Component's contract into the packet itself",
+            "a Reference Conflict is not a difference, costs no shape round",
+            "never reaches the worker",
+        ):
+            with self.subTest(make=required):
+                self.assertIn(required, make)
+        skill = text("src/workshop/make/skills/make-round/SKILL.md")
+        self.assertIn("`reference_conflicts` (at most 12)", skill)
+        design = text(".claude/skills/design-a-toy/SKILL.md")
+        self.assertIn('Write the block as `"schema_version": 4`', design)
+        self.assertIn("**Joint features.**", design)
+        contract_format = text(".claude/skills/build-a-toy/CONTRACT-FORMAT.md")
+        self.assertIn('"schema_version": 4', contract_format)
+        self.assertIn("`text` (schema 4, required and non-empty, no length limit)", contract_format)
+
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
