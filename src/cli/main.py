@@ -79,6 +79,7 @@ from workshop.runtime.package_data import (
 )
 from workshop.runtime.progress import WishRunTimingEvent
 from workshop.wish import (
+    LoadedWishReference,
     Wish,
     generate_wish_id,
     load_wish_references,
@@ -457,6 +458,60 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                     item.get("reason", ""),
                 )
             )
+    components = receipt.get("component_acceptances")
+    if isinstance(components, (list, tuple)):
+        # Components accepted when the shape-repair allowance ran out while
+        # the independent reviewer still disagreed, with the recorded reason.
+        for item in components:
+            if not isinstance(item, Mapping):
+                continue
+            rounds = item.get("shape_rounds")
+            print(
+                "Component accepted at the shape-repair limit: %s (reviewer %s, %s shape rounds) — %s"
+                % (
+                    item.get("label", "?"),
+                    item.get("reviewer", "?"),
+                    rounds if type(rounds) is int else "?",
+                    item.get("reason", ""),
+                )
+            )
+    amendments = receipt.get("contract_amendments")
+    if isinstance(amendments, (list, tuple)):
+        # ADR 0083: a camera-only contract amendment the host recorded.
+        def camera(value):
+            return ",".join("%g" % v for v in value) if isinstance(value, list) else "?"
+
+        for item in amendments:
+            if isinstance(item, Mapping):
+                print(
+                    "Reference Camera amended: %s (%s) %s -> %s"
+                    % (item.get("file", "?"), item.get("shows", "?"), camera(item.get("from")), camera(item.get("to")))
+                )
+    interfaces = receipt.get("interfaces")
+    if isinstance(interfaces, (list, tuple)):
+        # ADR 0082: how each meeting between Components was proven.
+        proofs = {
+            "keep-out-envelope": "Keep-out Envelope checked in each side's component round",
+            "shared-helper-samples": "Shared Helper samples passed the print gates",
+        }
+        for item in interfaces:
+            if not isinstance(item, Mapping):
+                continue
+            components = item.get("components")
+            check = item.get("check")
+            proof = proofs.get(check) or "interface check %s%s" % (
+                check,
+                " at r%04d" % item["round"] if type(item.get("round")) is int else "",
+            )
+            print(
+                "Interface %s (%s: %s): %s"
+                % (
+                    item.get("id", "?"),
+                    item.get("kind", "?"),
+                    " + ".join(str(c) for c in components) if isinstance(components, list) else "?",
+                    proof,
+                )
+            )
     publication = receipt.get("publication")
     publication_reason = None
     if isinstance(publication, Mapping):
@@ -558,6 +613,22 @@ def _check_motion(value: str) -> bool:
     if value.lower() not in ("true", "false"):
         raise argparse.ArgumentTypeError("expected true or false")
     return value.lower() == "true"
+
+
+def _reference_camera(value: str) -> tuple[str, tuple[float, float]]:
+    """``FILE=AZ,EL``: one corrected Reference Camera (ADR 0083)."""
+
+    file_name, separator, camera = value.partition("=")
+    fields = camera.split(",")
+    try:
+        if not separator or not file_name.strip() or len(fields) != 2:
+            raise ValueError
+        azimuth, elevation = (float(field) for field in fields)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "expected FILE=AZ,EL, a sealed reference file and its camera in degrees"
+        ) from exc
+    return file_name.strip(), (azimuth, elevation)
 
 
 def _turn_minutes(value: str):
@@ -725,12 +796,16 @@ def _reject_conflicting_publication_options(args: argparse.Namespace) -> None:
         )
 
 
-def _load_sealed_contract(path: Path) -> tuple[str, dict]:
+def _load_sealed_contract(
+    path: Path, references: Sequence[LoadedWishReference]
+) -> tuple[str, dict]:
     """Read and validate a Design Contract file, refusing before any run starts.
 
     A contract that cannot be parsed or fails any of ADR 0072's checks must
     never fall back to ordinary Wish mode, so ``parse_design_contract``'s
-    ``ContractError`` is left to propagate and abort ``wish`` entirely.
+    ``ContractError`` is left to propagate and abort ``wish`` entirely. The
+    same holds for reference images that would not seal under the names the
+    contract lists.
     """
 
     try:
@@ -738,6 +813,7 @@ def _load_sealed_contract(path: Path) -> tuple[str, dict]:
     except (OSError, UnicodeError) as exc:
         raise WorkshopError("cannot read design contract file") from exc
     contract = parse_design_contract(text)
+    contract.check_reference_names([item.reference.name for item in references])
     return text, contract.to_dict()
 
 
@@ -757,7 +833,7 @@ def _wish(args: argparse.Namespace) -> int:
                 "--contract seals the whole file as the objective: do not also "
                 "type a WISH"
             )
-        objective, sealed_contract = _load_sealed_contract(args.contract)
+        objective, sealed_contract = _load_sealed_contract(args.contract, loaded_references)
         context["design_contract"] = sealed_contract
     else:
         if not args.objective:
@@ -819,7 +895,9 @@ def _fix(args: argparse.Namespace) -> int:
         revision_options["references"] = [item.reference for item in loaded_references]
         revision_options["reference_sources"] = wish_reference_sources(loaded_references)
     if args.contract is not None:
-        _, revision_options["design_contract"] = _load_sealed_contract(args.contract)
+        _, revision_options["design_contract"] = _load_sealed_contract(
+            args.contract, loaded_references
+        )
     wish, snapshot = prepare_revision(args.source, prompt, **revision_options)
     runtime = manager_runtime_selection(
         args.agent, model=args.model, reasoning_effort=args.effort,
@@ -1254,6 +1332,7 @@ def _resume(args: argparse.Namespace) -> int:
         **({"max_tokens": args.max_tokens} if args.max_tokens is not None else {}),
         **({"reasoning_effort": args.effort} if args.effort is not None else {}),
         **_turn_boundary_options(args.turn_minutes),
+        **_reference_camera_options(getattr(args, "reference_cameras", None)),
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
@@ -1262,6 +1341,20 @@ def _resume(args: argparse.Namespace) -> int:
     else:
         _print_native_receipt(receipt, verb="Resume")
     return _native_exit_code(receipt, strict=args.strict)
+
+
+def _reference_camera_options(values) -> dict:
+    """``{"reference_cameras": {file: (az, el)}}``, or nothing when none was
+    given. A file named twice is refused rather than silently resolved."""
+
+    if not values:
+        return {}
+    cameras: dict = {}
+    for file_name, camera in values:
+        if file_name in cameras:
+            raise WorkshopError("--reference-camera names %s more than once" % file_name)
+        cameras[file_name] = camera
+    return {"reference_cameras": cameras}
 
 
 def _publish(args: argparse.Namespace) -> int:
@@ -2246,6 +2339,18 @@ def parser() -> argparse.ArgumentParser:
             "budgeted clamp. An untimed run still needs the Manager's own bound, "
             "which today means a Codex token budget."
             % (MIN_TURN_MINUTES, MAX_TURN_MINUTES, UNTIMED_TURN)
+        ),
+    )
+    resume.add_argument(
+        "--reference-camera",
+        type=_reference_camera,
+        action="append",
+        default=None,
+        metavar="FILE=AZ,EL",
+        dest="reference_cameras",
+        help=(
+            "answer a camera-mismatch need: give one sealed reference of a schema 3 "
+            "Design Contract a corrected Reference Camera; only that camera changes"
         ),
     )
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")

@@ -34,4 +34,8 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0073: Carry Forward compares geometry, not STEP bytes](0073-carry-forward-compares-geometry-not-step-bytes.md)
 - [0074: Every Component is scored against its own sealed image](0074-every-component-scored-against-its-own-image.md)
 - [0075: Component review compares form, and acceptance needs a second reader](0075-component-review-compares-form-and-acceptance-needs-a-second-reader.md)
+- [0076: A Component passes on an independent review, not a likeness score](0076-component-passes-on-an-independent-review-not-a-likeness-score.md)
 - [0077: Component Workers and a root-owned Component Reviewer](0077-component-workers-and-a-root-owned-reviewer.md)
+- [0080: Component Workers author their Components, and a hook admits their rounds](0080-component-workers-author-and-a-hook-admits-their-rounds.md)
+- [0081: Shape Rounds follow Component Reviews](0081-shape-rounds-follow-component-reviews.md)
+- [0082: Interfaces between Components](0082-interfaces-between-components.md)

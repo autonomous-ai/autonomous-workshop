@@ -75,11 +75,9 @@ CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --qu
 # Complete sequential gate
 CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh
 
-# Image-derived final: add every usable reference viewpoint
+# Image-derived final
 CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh \
-  --image-derived --unpowered \
-  --likeness-ref hero=ref/hero.png@-45,25 \
-  --likeness-ref side=ref/side.png@0,0
+  --image-derived --unpowered
 ```
 
 Replace `--unpowered` with `--powered` in the image-derived command when the
@@ -94,7 +92,7 @@ refs/validate/interfere pass. It writes no mesh: STEP is the deliverable.
 `--print-gates` adds the printability tail — `check_mesh`, `check_overhang` and
 `check_thickness` on every printable entry, each building the entry from source
 and tessellating it in the gate. It runs last in the workflow, after any
-image-derived render and likeness, because on a multi-part project it is the
+image-derived render, because on a multi-part project it is the
 dearest block in the run. Failures are collected across all parts so one repair
 round sees every defect. Add `--nozzle` when the
 print will not use 0.4 mm. `--skip-thickness` drops the thickness gate and
@@ -102,12 +100,12 @@ forfeits any print-ready claim.
 
 `--image-derived` is an explicit completion mode rather than an inferred one.
 It requires exactly one `*_spec.md`, both `measure/check_spec.py` and
-`measure/check_landmarks.py`, and at least one `--likeness-ref LABEL=PATH@AZ,EL[,TOL]` — every reference
-declares the camera it was taken from, or the pose search cannot see a
-mirror-image model.
-Before the expensive validation batch it writes clean front/right/top/iso
-views, searches the camera for every reference, compares the source with the
-fresh STEP, and runs the 0.90 likeness gate. Read
+and `measure/check_landmarks.py`. After the validation batch it writes clean
+front/right/top/iso views and compares the source with the fresh STEP. It
+computes no silhouette likeness score; in a Workshop Contract Mode run every
+sealed component image must instead be covered by a current component round
+that passed its checks and independent review, and accepted Components are
+written to `measure/component-acceptance.json`. Read
 `image-derived-verification.md` before writing the two local audits.
 
 Every non-quick run persists the command, result, and elapsed time for each

@@ -1,8 +1,8 @@
 """Fixed Make role agents materialized beside the Inventor roster (ADR 0077).
 
 A new product run receives two declarative Codex custom agents: the
-Component Worker, which repairs one Component's source until its round's
-checks pass or its image stalls out, and the Component Reviewer, which alone views that Component's images.
+Component Worker, which repairs one Component's source until build and print
+pass, and the Component Reviewer, which alone views that Component's images.
 The files only declare the roles. Codex owns spawning, routing and waiting;
 the Workshop Manager decides when to use them. Nothing here schedules agents.
 """

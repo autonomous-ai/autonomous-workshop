@@ -316,6 +316,7 @@ class StageProposalToolTest(unittest.TestCase):
         objective=None,
         extra_context=None,
         references=None,
+        interfaces=None,
     ):
         """Seal a Design Contract as the Wish, and its own matching Match/Invented pair.
 
@@ -363,6 +364,9 @@ class StageProposalToolTest(unittest.TestCase):
                 for index, (geometry, text) in enumerate(geometry_requirements, 1)
             ],
         }
+        if interfaces is not None:
+            # A schema 2 contract with an Interfaces section (ADR 0082).
+            design_contract.update(schema_version=2, interfaces=interfaces)
         context = {"design_contract": design_contract}
         if extra_context:
             context.update(extra_context)
@@ -2524,8 +2528,8 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("passing final report", failed_current.stderr)
 
     def test_make_refuses_sealed_references_whose_verifier_skipped_image_derived(self):
-        # ADR 0072 Delivery 2: a sealed reference can only be scored by the
-        # final verifier's likeness gate under --image-derived, so a toy with
+        # ADR 0072 Delivery 2: a sealed reference is accounted for only by
+        # the final verifier under --image-derived, so a toy with
         # sealed references must be refused unless the current final report
         # was run in that mode; a prior preserved image-derived record must
         # not satisfy the check either.
@@ -2592,29 +2596,31 @@ class StageProposalToolTest(unittest.TestCase):
             "cad/project/validation/cad-build.json",
         )
 
-    # ADR 0074: a likeness failure the Workshop Manager accepted is carried,
-    # bound to the exact verification report, into product.json for the host
-    # to report when the run ends. Nothing else may pass as accepted.
+    # A Component accepted at the shape-repair limit is carried, bound to the
+    # exact verification report, into product.json for the host to report
+    # when the run ends. No verifier gate may pass as an accepted failure.
 
-    ACCEPTED_LIKENESS_RECORD = (
+    PASSING_IMAGE_DERIVED_RECORD = (
+        "# Verification pipeline record\n\n- Mode: `image-derived final`\n- Result: **PASS** (exit 0)\n"
+    )
+    ACCEPTED_FAILURE_RECORD = (
         "# Verification pipeline record\n\n"
         "- Mode: `image-derived final`\n"
         "- Result: **PASS (1 accepted failing gate)** (exit 0)\n\n"
         "| # | command | result | seconds |\n"
         "|---:|---|---:|---:|\n"
         "| 1 | `python check_likeness.py --pair a b --label assembly` | accepted-fail | 0.10 |\n"
-        "| 2 | `check_likeness acceptance  # NOTE: accepted by the Workshop Manager` | note | 0.00 |\n"
     )
-    ASSEMBLY_ACCEPTANCE = {
-        "label": "assembly",
-        "scope": "assembly",
-        "iou": 0.483,
-        "floor": 0.9,
-        "reason": "The pose search cannot place the kneeling statue's wings; three repairs moved nothing.",
+    COMPONENT_ACCEPTANCE = {
+        "label": "geometry:wing",
+        "scope": "component:wing",
+        "reviewer": "blind-critic",
+        "shape_rounds": 5,
+        "reason": "The reviewer still reads the wing tip as too blunt; five shape rounds moved it little.",
         "accepted_by": "workshop-manager",
     }
 
-    def likeness_stage(self):
+    def acceptance_stage(self):
         assignment, invented = self.seal_referenced_wish()
         product_root, _, _, _ = self.create_product(invented=invented)
         self.write_stage(
@@ -2624,12 +2630,73 @@ class StageProposalToolTest(unittest.TestCase):
         )
         return product_root, product_root / "cad/project/validation/cad-build.json"
 
-    def write_likeness_acceptance(self, report, acceptances, *, verification_sha256=None):
-        (report.parent / "likeness-acceptance.json").write_text(json.dumps({
+    def setUp_fresh(self):
+        # A fresh run root for each subTest, so one refusal cannot mask another.
+        self.setUp()
+
+    def write_component_acceptance(self, report, acceptances, *, verification_sha256=None, interfaces=None):
+        record = {
             "schema_version": 1,
             "verification_sha256": verification_sha256 or hashlib.sha256(report.read_bytes()).hexdigest(),
             "acceptances": acceptances,
-        }), encoding="utf-8")
+        }
+        if interfaces is not None:
+            record["interfaces"] = interfaces
+        (report.parent / "component-acceptance.json").write_text(json.dumps(record), encoding="utf-8")
+
+    INTERFACES = [
+        {"id": "wing-housing", "kind": "separable", "components": ["wing", "spine-housing"],
+         "check": "keep-out-envelope"},
+        {"id": "pinion-sector", "kind": "coupled", "components": ["heart-core", "wing"],
+         "check": "pass", "yielding": "wing", "round": 2},
+    ]
+
+    def test_make_carries_the_verified_interfaces_into_the_product(self):
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [], interfaces=self.INTERFACES)
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertEqual(product["interfaces"], self.INTERFACES)
+
+    def test_make_carries_instance_references_verbatim(self):
+        # Issue #80: wing#1 and wing#2 are two instances of one geometry.
+        interfaces = [{"id": "wing-sector-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"],
+                       "check": "pass", "yielding": "wing#2", "round": 1}]
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [], interfaces=interfaces)
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertEqual(product["interfaces"], interfaces)
+
+    def test_make_refuses_an_unproven_or_malformed_interface(self):
+        coupled = self.INTERFACES[1]
+        cases = {
+            "stale coupled": ([{**coupled, "check": "stale"}], "not proven"),
+            "one component": ([{**coupled, "components": ["wing"]}], "two or more"),
+            "unknown kind": ([{**coupled, "kind": "welded"}], "fields are invalid"),
+            "foreign yielding": ([{**coupled, "yielding": "tail"}], "yielding"),
+            "repeated id": ([coupled, coupled], "repeats"),
+        }
+        for name, (interfaces, needle) in cases.items():
+            with self.subTest(name):
+                self.setUp_fresh()
+                _, report = self.acceptance_stage()
+                report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+                self.write_component_acceptance(report, [], interfaces=interfaces)
+                refused = self.finalize_make(expected=2)
+                self.assertIn(needle, refused.stderr)
+
+    def test_make_refuses_interfaces_the_verifier_did_not_record(self):
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [])
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        product["interfaces"] = self.INTERFACES
+        (product_root / "product.json").write_text(json.dumps(product), encoding="utf-8")
+        refused = self.finalize_make(expected=2)
+        self.assertIn("interfaces must come from the final verifier", refused.stderr)
 
     def finalize_make(self, expected=0):
         return self.run_tool(
@@ -2640,48 +2707,102 @@ class StageProposalToolTest(unittest.TestCase):
             expected=expected,
         )
 
-    def test_make_carries_a_manager_likeness_acceptance_into_the_product(self):
-        product_root, report = self.likeness_stage()
-        report.write_text(self.ACCEPTED_LIKENESS_RECORD, encoding="utf-8")
-        self.write_likeness_acceptance(report, [self.ASSEMBLY_ACCEPTANCE])
+    def test_make_carries_a_component_acceptance_into_the_product(self):
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [self.COMPONENT_ACCEPTANCE])
         self.finalize_make()
         product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
-        self.assertEqual(product["likeness_acceptances"], [self.ASSEMBLY_ACCEPTANCE])
+        self.assertEqual(product["component_acceptances"], [self.COMPONENT_ACCEPTANCE])
+        self.assertNotIn("likeness_acceptances", product)
 
-    def test_make_refuses_an_accepted_failure_without_its_acceptance_record(self):
-        _, report = self.likeness_stage()
-        report.write_text(self.ACCEPTED_LIKENESS_RECORD, encoding="utf-8")
+    def test_make_refuses_any_accepted_failing_verifier_gate(self):
+        # The likeness gate and its accepted-fail rows are retired: even with
+        # an acceptance record, only a plain PASS is a passing final report.
+        _, report = self.acceptance_stage()
+        report.write_text(self.ACCEPTED_FAILURE_RECORD, encoding="utf-8")
+        refused = self.finalize_make(expected=2)
+        self.assertIn("passing final report", refused.stderr)
+        self.write_component_acceptance(report, [self.COMPONENT_ACCEPTANCE])
         refused = self.finalize_make(expected=2)
         self.assertIn("passing final report", refused.stderr)
 
     def test_make_refuses_an_acceptance_record_bound_to_another_report(self):
-        _, report = self.likeness_stage()
-        report.write_text(self.ACCEPTED_LIKENESS_RECORD, encoding="utf-8")
-        self.write_likeness_acceptance(report, [self.ASSEMBLY_ACCEPTANCE], verification_sha256="1" * 64)
+        _, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [self.COMPONENT_ACCEPTANCE], verification_sha256="1" * 64)
         refused = self.finalize_make(expected=2)
-        self.assertIn("likeness-acceptance.json", refused.stderr)
+        self.assertIn("component-acceptance.json", refused.stderr)
 
-    def test_make_refuses_an_accepted_failure_that_is_not_likeness(self):
-        _, report = self.likeness_stage()
-        report.write_text(
-            self.ACCEPTED_LIKENESS_RECORD.replace("python check_likeness.py --pair a b --label assembly", "check_fit project"),
-            encoding="utf-8",
-        )
-        self.write_likeness_acceptance(report, [self.ASSEMBLY_ACCEPTANCE])
-        refused = self.finalize_make(expected=2)
-        self.assertIn("passing final report", refused.stderr)
+    def test_make_refuses_malformed_component_acceptances(self):
+        cases = {
+            "manager reviewer": ({"reviewer": "Workshop Manager"}, "reviewer"),
+            "too few shape rounds": ({"shape_rounds": 4}, "shape rounds"),
+            "boolean shape rounds": ({"shape_rounds": True}, "shape rounds"),
+            "float shape rounds": ({"shape_rounds": 5.0}, "shape rounds"),
+            "assembly scope": ({"scope": "assembly"}, "scope"),
+            "empty component scope": ({"scope": "component:"}, "scope"),
+            "non-geometry label": ({"label": "assembly"}, "label"),
+            "accepted by user": ({"accepted_by": "user"}, "workshop-manager"),
+            "empty reason": ({"reason": ""}, "reason"),
+            "non-string reviewer": ({"reviewer": 7}, "reviewer"),
+        }
+        for name, (change, needle) in cases.items():
+            with self.subTest(name):
+                self.setUp_fresh()
+                _, report = self.acceptance_stage()
+                report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+                self.write_component_acceptance(report, [{**self.COMPONENT_ACCEPTANCE, **change}])
+                refused = self.finalize_make(expected=2)
+                self.assertIn("component-acceptance.json", refused.stderr)
+                self.assertIn(needle, refused.stderr)
+        for name, acceptances in {
+            "extra field": [{**self.COMPONENT_ACCEPTANCE, "iou": 0.4}],
+            "retired likeness fields": [{
+                "label": "geometry:wing", "scope": "component:wing", "iou": 0.4,
+                "floor": 0.9, "reason": "r", "accepted_by": "workshop-manager",
+            }],
+            "too many": [self.COMPONENT_ACCEPTANCE] * 65,
+        }.items():
+            with self.subTest(name):
+                self.setUp_fresh()
+                _, report = self.acceptance_stage()
+                report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+                self.write_component_acceptance(report, acceptances)
+                refused = self.finalize_make(expected=2)
+                self.assertIn("component-acceptance.json", refused.stderr)
 
-    def test_make_refuses_likeness_acceptances_the_verifier_did_not_record(self):
-        product_root, report = self.likeness_stage()
-        report.write_text(
-            "# Verification pipeline record\n\n- Mode: `image-derived final`\n- Result: **PASS** (exit 0)\n",
-            encoding="utf-8",
-        )
+    def test_make_refuses_component_acceptances_the_verifier_did_not_record(self):
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
         product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
-        product["likeness_acceptances"] = [self.ASSEMBLY_ACCEPTANCE]
+        product["component_acceptances"] = [self.COMPONENT_ACCEPTANCE]
         (product_root / "product.json").write_text(json.dumps(product), encoding="utf-8")
         refused = self.finalize_make(expected=2)
-        self.assertIn("likeness_acceptances", refused.stderr)
+        self.assertIn("component_acceptances", refused.stderr)
+
+    def test_make_refuses_retired_likeness_acceptances_in_the_product(self):
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [])
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        product["likeness_acceptances"] = [{"label": "assembly"}]
+        (product_root / "product.json").write_text(json.dumps(product), encoding="utf-8")
+        refused = self.finalize_make(expected=2)
+        self.assertIn("likeness_acceptances is retired", refused.stderr)
+
+    def test_make_ignores_a_retired_likeness_acceptance_file(self):
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        (report.parent / "likeness-acceptance.json").write_text(json.dumps({
+            "schema_version": 1,
+            "verification_sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+            "acceptances": [{"label": "assembly"}],
+        }), encoding="utf-8")
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertNotIn("likeness_acceptances", product)
+        self.assertNotIn("component_acceptances", product)
 
     def test_make_in_contract_mode_requires_the_verifier_acceptance_record(self):
         requirements = self.CONTRACT_REQUIREMENTS
@@ -2702,16 +2823,44 @@ class StageProposalToolTest(unittest.TestCase):
             round_index=1,
         )
         report = product_root / "cad/project/validation/cad-build.json"
-        report.write_text(
-            "# Verification pipeline record\n\n- Mode: `image-derived final`\n- Result: **PASS** (exit 0)\n",
-            encoding="utf-8",
-        )
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
         refused = self.finalize_make(expected=2)
-        self.assertIn("likeness-acceptance.json", refused.stderr)
-        self.write_likeness_acceptance(report, [])
+        self.assertIn("component-acceptance.json", refused.stderr)
+        self.write_component_acceptance(report, [])
         self.finalize_make()
         product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertNotIn("component_acceptances", product)
         self.assertNotIn("likeness_acceptances", product)
+
+    def test_make_in_contract_mode_lists_every_sealed_interface(self):
+        reference = {
+            "name": "ref-01-observatory.png", "sha256": "0" * 64, "media_type": "image/png",
+            "size": 4, "width": 16, "height": 16,
+        }
+        sealed = [{"id": "dome-hatch", "kind": "static", "components": ["dome", "hatch"]}]
+        assignment, invented, _ = self.seal_contract_wish(
+            self.CONTRACT_REQUIREMENTS, references=[reference], interfaces=sealed)
+        product_root, _, _, _ = self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(self.CONTRACT_REQUIREMENTS),
+        )
+        self.write_stage(
+            "make",
+            {"assignment": assignment.to_dict(), "invented": invented.to_dict(), "feedback": []},
+            round_index=1,
+        )
+        report = product_root / "cad/project/validation/cad-build.json"
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [])
+        refused = self.finalize_make(expected=2)
+        self.assertIn("every Interface of the sealed Design Contract", refused.stderr)
+        listed = [{**sealed[0], "check": "shared-helper-samples"}]
+        self.write_component_acceptance(report, [], interfaces=listed)
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertEqual(product["interfaces"], listed)
 
     def test_make_verification_must_belong_to_declared_cad_project(self):
         product_root, _, _, verification = self.create_product()

@@ -145,6 +145,57 @@ are separate. Frozen older runs retain their materialized rules and tools.
    only: every distinct physical component, including the sole component of a
    one-piece object, gets its own `part_<role>.step.py`. Do not author the
    combined entry yet or hide component construction inside the assembly file.
+
+   In Spark you author no Component (ADR 0080). Settle the component list and
+   write only the shared files: `params.py` and anything under `features/`.
+   Fix every interface there before you spawn a worker: each joint's peg,
+   socket or collar dimensions and its position on both mating Components,
+   taken from the Design Contract. A Component Worker then writes that
+   Component's first `part_<id>.step.py` against those shared values. Spawn
+   no Inventor or other agent to author a Component; an Inventor's optional
+   design notes may inform the worker's brief, but an Inventor never runs
+   `make_round`.
+
+   With the shared files, copy the printable detail library into the
+   project; workers build rivets, bosses, low domes, bands, rims, pipe ribs,
+   inset panels, lancet windows and grille slits with it instead of by hand:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/print-details/scripts/print_details.py --install <cad-project>
+   ```
+
+   It writes `features/print_details.py`, byte for byte, so the sealed
+   project builds on its own. It is a standard element, like a `stdpart`
+   gear, not a design value: never edit it.
+
+   When the sealed Design Contract has an `interfaces` section (ADR 0082),
+   implement its Interfaces; do not invent others. A shared file is then a
+   Shared Helper and holds only what two or more Components must agree on:
+   Interface values, joint sections and standard profiles. A Component's own
+   geometry, print stance and dimensions stay in its own file, even when one
+   other Component must clear it: a separable Interface's Keep-out Envelope
+   is that agreement. Before choosing a joint, fit, clearance or gear, run
+   the wiki's `search` and `show` (`wiki/SKILL.md`), and next to each value
+   name the page it came from as `# wiki: <slug>` and add that page's
+   `assert` naming the value. Take every gear, bearing, fastener and other
+   standard element from `.agents/skills/cad/scripts/stdpart`
+   (`bd_warehouse`, `py_gearworks`); never hand-write an involute.
+   `--shared-helpers` checks these rules before it builds a sample.
+
+   Then build a sample of each Shared Helper under `samples/<name>.step.py`,
+   for example a peg in its socket or a pinion on its sector. A sample
+   imports the Shared Helpers from the project (`import params`, `from
+   features.joints import ...`) and returns one printable piece. Run:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --shared-helpers
+   ```
+
+   It builds every sample and runs both print gates on it; a pass freezes
+   the Shared Helpers by hash. Component rounds refuse to start before that
+   freeze, so spawn no worker until it passes. Repair a failing sample in
+   the Shared Helper, never in a worker's file.
 2. For Spark, review and repair every component separately before assembly.
    For each `part_<role>.step.py`, run:
 
@@ -153,75 +204,168 @@ are separate. Frozen older runs retain their materialized rules and tools.
      --component part_<role>.step.py
    ```
 
-   Its visual packet is recorded with the same `--component` argument plus
-   `--record-visual`, and the round repeats until that isolated component
-   round passes. Delegate each component's loop (ADR 0077). Once the component
-   list is settled, spawn one worker per Component, in parallel, as a
-   `component-worker` agent. Give it only: the component id and its
-   `part_<id>.step.py`; its sealed `geometry:<id>` reference and declared
-   camera; only that Component's Design Contract rows; and the nozzle. The
-   worker repairs from the round summary until the round's checks pass or its
-   image stalls out, then reports in 10 lines or fewer. Neither you nor a
-   worker views a component's images. Only its reviewer does, and the worker
-   acts on the reviewer's text. If the runtime refuses a spawn at its thread
-   limit, spawn the next worker when one finishes.
+   A component passes on three things: it builds, its print gates pass, and
+   an independent reviewer agrees it looks like its reference (ADR 0076). Do
+   not use `--record-visual` for a component.
 
-   Keep one reviewer thread per Component, spawned once as a
-   `component-reviewer` agent, and send each later request about that
-   Component to the same thread as a follow-up so its cached prefix survives.
-   When a worker reports a round whose checks pass (build, print and every
-   likeness item ok or accepted, visual feedback pending), you, not the
-   worker, ask the reviewer for its visual check: give it that round's visual
-   packet paths (front, top, iso and every `compare-NN.png`) and that
-   Component's contract rows, and say when an image is below the floor. Add
-   the round's `packet_sha256` to its answer and record it with
-   `--record-visual`. On a fail, forward its findings and differences to the
-   same worker: they are the repair list for its next rounds. Close the worker
-   once the component round passes.
+   Only a `component-worker` runs a component round (ADR 0080). A Workshop
+   hook refuses the command above from you or any other agent, and passes
+   each worker call a one-time nonce that the round records. The host refuses
+   Make output holding a component round without a nonce it issued to a
+   worker for that Component, so do not run one another way (for example
+   through `python -c`); it will only have to be rerun.
 
-   Workers never edit a shared helper such as `features/forms.py`; they ask
-   you. Edit the helper yourself, then send every Component that uses it back
-   through a worker: the edit changes their B-rep identity, which invalidates
-   their passes (ADR 0073).
+   Delegate each Component's authoring and loop (ADR 0077, ADR 0080). Once the
+   shared files are written, spawn one worker per Component, in parallel, as
+   a `component-worker` agent. Give it only: the component id and the
+   `part_<id>.step.py` path it writes; the shared files it builds on,
+   including `features/print_details.py`; its
+   sealed `geometry:<id>` reference and declared camera; only that
+   Component's Design Contract rows; the nozzle; and the shape-repair limit
+   (5). The worker writes the first draft, runs the round above until build
+   and print pass, then reports in 10 lines or fewer and waits:
+   `make_round` refuses to change a passing round's geometry before its
+   review is recorded (ADR 0081). The worker may view its
+   own sealed reference image once. Neither you nor a worker views a
+   Component's rendered rounds (front, top, iso and `compare-NN.png`); only its
+   reviewer does, and the worker acts on the reviewer's text. If the runtime
+   refuses a spawn at its thread limit, spawn the next worker when one
+   finishes.
 
-   Use explicit `--ref` only when a reference depicts that component by itself; project-level likeness and motion checks
-   belong to the assembled object. A pass is component-specific evidence, not
-   permission to skip the combined review. In Contract Mode (ADR 0074) name
-   each component file after its Unique Geometry id, `part_<id>.step.py`: its
-   round then scores the sealed `geometry:<id>` image automatically, puts that
-   image in the visual packet, and does not pass below the 0.90 floor. The
-   packet also carries `compare-NN.png`: that image beside the model rendered
-   at the pose the gate matched, both at one height. The reviewer compares form
-   there, not with the contract text: thinner or blockier bodies, missing
-   openings, merged or missing members, simplified detail. Below the floor the feedback must
-   list every such difference under `differences` (ADR 0075). The
-   assembly round never scores a component image against the whole object;
-   one with no current component pass fails there as missing. Outside
-   Contract Mode, score a sealed Wish reference that shows one component in
-   that component's round with `--ref LABEL=wish-references/<file>`; the
-   assembly round scores every sealed reference no current component pass
-   has scored, against the whole object.
+   When a worker reports build and print passing, you, not the worker, ask the
+   reviewer. Each Component has one reviewer: spawn it once as a
+   `component-reviewer` agent and send every later review of that Component
+   to the same thread as a follow-up, so its cached prefix survives. Never
+   spawn a second reviewer for a Component.
 
-   When a component image stays below the floor after three rounds that each
-   changed its geometry and did not raise its IoU by more than 0.005
-   (`stalled 3/3` in the summary), the Manager may ask for acceptance. A rerun
-   that changed no geometry does not count (ADR 0075). This is the only other
-   time you ask that Component's reviewer: give it only the latest round's
-   `compare-NN.png` images and the contract rows for that geometry, and ask
-   whether the remaining differences are acceptable. Record its answer as
-   `{"round", "comparisons", "reviewer", "agrees", "reason"}`: `comparisons`
-   maps each image path to its sha256 exactly as that round's packet lists
-   them, and `reviewer` names that reviewer thread. Then have the worker rerun the component round unchanged with
-   `--accept-likeness "<reason>" --acceptance-review <review.json>`; that
-   round's checks pass, so it goes to the reviewer's visual check like any
-   other. If the reviewer disagrees, forward its differences to the same
-   worker for more repair rounds; ask again only after it has applied every
-   difference in rounds that changed the geometry and the summary still shows
-   the image stalled out. The reason names what the image shows and why this geometry cannot follow it.
-   An image that has not stalled out, a review by the Manager, a review that
-   disagrees, and geometry changed after the review are all refused. Every
-   acceptance is reported to the person when the run ends; it is never
-   recorded as the person's decision.
+   The review request has one fixed shape and nothing else: the round's
+   `visual-packet.json` path, its packet sha256 from the worker's report, and
+   that Component's contract rows. Add no notes, no accepted differences and
+   no explanation of the renders; the reviewer's definition already explains
+   the print stance and the printing limits. Ask once per packet: never ask
+   for a re-review of the same packet, and never edit, filter or summarize
+   the answer.
+
+   Write its answer unchanged as
+   `{"round", "packet_sha256", "reviewer", "agrees", "reason", "differences"}`;
+   `differences` lists `{"feature", "reference", "model"}` (at most 12) and is
+   required when it disagrees. `reviewer` is the reviewer's native agent id,
+   exactly as the runtime returned it when you spawned it (on Claude Code, 17
+   lowercase hex characters), never a name. Record it with the same
+   `--component` argument plus `--record-review <review.json>`. The
+   Component's first review binds that id; `make_round` refuses a review
+   naming another id and tells you the bound one. The host refuses Make output
+   whose recorded review names an agent that is not this run's Component
+   Reviewer or that did not read every image of the packet it judged.
+
+   After recording, tell the worker only "review recorded for round N". The
+   worker reads the recorded review from that round itself; on a
+   disagreement it is the repair list for the next shape round.
+
+   Under a schema 3 Design Contract (ADR 0083) the reviewer may instead
+   answer `{"camera_mismatch": {"file", "reference", "model"}, "reason"}`:
+   the side of the model facing the reference's Reference Camera is not the
+   side the reference shows. Write it unchanged with `round`,
+   `packet_sha256` and `reviewer`, and no `agrees` or `differences`, and
+   record it with `--record-review` the same way. It is not a disagreement
+   and not a shape round: tell the worker nothing and send it no repair. The
+   summary's `need:` line is the need. Stop the run with it at once, quoting
+   it unchanged:
+   `stage_proposal.py --run-root . need --stage make --status waiting
+   --reason "<the need line>"`. Do not correct the camera, the reference or
+   the model yourself. The run resumes after the host amends that one
+   camera (`CONTRACT-AMENDMENTS.json` beside `WISH.json`, written only by the
+   host). Then ask the worker to rerun its Component unchanged, which shows
+   the new view, and send that packet to the same reviewer. Keep every
+   worker's thread until the assembly passes (ADR 0082), and send each later
+   unlock to the worker that already holds that Component.
+
+   Workers never edit a shared file such as `params.py` or
+   `features/forms.py`; they ask you. Edit it yourself, then send back
+   through its worker only each Component whose summary lists that file
+   under `imported_helpers`: a change to a Shared Helper a Component does not
+   import stales nothing of it (ADR 0081). The edit unlocks those Components.
+   A rerun that rebuilds the reviewed B-rep keeps its review and locks again;
+   one whose B-rep moved needs a new review, without spending a shape round.
+   Once frozen, change a Shared Helper only when it must change, and rerun
+   `--shared-helpers` at once to re-freeze it; a component round's `frozen`
+   line names any frozen file that changed and every Component that imports
+   it.
+
+   Give each worker the rows of every Interface its Component joins. A
+   Component in a separable or coupled Interface defines `assembly_pose(shape,
+   pose)`, which places it in assembly coordinates; under a schema 3 Design
+   Contract every Component defines it, and `assembly_pose(shape, None)` is
+   its Display Pose (ADR 0083). make_round refuses a schema 3 component round
+   whose file has none, before building anything. Its own round checks a
+   separable Interface's Keep-out Envelope (the `keep` line): the inside
+   Component stays inside in every declared pose, the outside one stays out.
+   An Interface may name one instance of a geometry whose count is above 1,
+   `wing#1` or `wing#2`. Its one worker builds every instance in the one
+   `part_wing.step.py`: tell that worker which instances its Interfaces
+   name. Its `assembly_pose(shape, pose, instance)` places instance n, and
+   `gen_step(instance=1)` may build a variant per instance; make_round
+   refuses an instance whose file's `assembly_pose` takes no `instance`.
+   Instances on both sides of one envelope are both checked in the wing's
+   own round.
+
+   Check each Coupled Interface (a gear mesh, a cam, a linkage, parts that
+   pass through one space at different times) once every Component it joins
+   is locked:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --interface <interface-id>
+   ```
+
+   It refuses while a Component it joins is not locked at its current
+   geometry, and runs the coupled motion check on just those Components over
+   the sealed pose table. It builds a Component once even when the
+   Interface names two of its instances, and places each instance as its own
+   labelled part. On a failure it unlocks the contract's yielding Component
+   (for `wing#2`, the wing) and names it; send that worker only the
+   interface round's path.
+   The worker's repair is not a shape round; after the repaired Component is
+   reviewed and locked again, rerun the check. Only you run
+   `--shared-helpers` and `--interface`; the hook refuses both to workers.
+
+   When two Design Contract statements cannot both hold, for example two
+   Components that print on a mating face that also carries a peg, stop and
+   return a `waiting` need that quotes both statements (`SKILL.md`). Do not
+   choose between them.
+   A freedom the contract explicitly grants stays yours to decide.
+
+   Use explicit `--ref` only when a reference depicts that
+   component by itself; motion checks belong to the assembled object. A pass
+   is component-specific evidence, not permission to skip the combined
+   review. In Contract Mode (ADR 0074) name each component file after its
+   Unique Geometry id, `part_<id>.step.py`: its round then shows the sealed
+   `geometry:<id>` image automatically. Each `compare-NN.png` is a reference
+   beside the model, both at one height. Under a schema 3 Design Contract the
+   model is the Component in its Display Pose, `assembly_pose(shape, None)`,
+   seen from the reference's Reference Camera, and the assembly reference is
+   shown from its camera too; `front`, `top` and `iso` stay in the print
+   stance (ADR 0083). Before schema 3 the model is rendered in its print
+   stance at the reference's declared camera (`@AZ,EL` on the `--ref`, else
+   the front view). The reviewer
+   compares form there: thinner or blockier bodies, missing openings, merged
+   or missing members, simplified detail. No silhouette score is computed. The assembly round
+   never shows a component image against the whole object; one with no
+   current component pass fails there as missing. Outside Contract Mode, show
+   a sealed Wish reference that depicts one component in that component's
+   round with `--ref LABEL=wish-references/<file>`.
+
+   Read each round summary's `shape` and `lock` lines (ADR 0081). A round
+   that passed build and print is reviewed before its geometry may change;
+   only an unchanged rerun may run first. A shape round is the first
+   geometry-changing round after a disagreeing review; build and print
+   repairs, unchanged reruns and changes forced by a Shared Helper or an
+   assembly round are not. A Component gets five. An agreeing review locks
+   the Component; so does a disagreeing review once the five are used, which
+   is recorded as a component acceptance. Every acceptance is reported to the
+   person when the run ends; it is never recorded as the person's decision.
+   A locked Component's geometry changes only when a Shared Helper it imports
+   changes or you record an assembly unlock.
 3. Only after every component passes, author the non-part combined `*.step.py`
    entry and begin assembled-object rounds with:
 
@@ -231,9 +375,15 @@ are separate. Frozen older runs retain their materialized rules and tools.
    ```
 
    This refuses assembly review when a component has no passing isolated round
-   or its freshly built STEP changed afterward. If an assembly repair
-   changes a component, rerun that component's isolated review-and-fix loop,
-   then return to the assembled object. Forge and Quest retain their existing
+   or its freshly built STEP changed afterward, and, under an Interfaces
+   section, when a Coupled Interface has no current passing `--interface`
+   check. If an assembly repair
+   changes a component, first record why: cite the assembly round and the
+   finding you recorded there with `--record-visual`,
+   `{"assembly_round", "finding", "reason"}`, and run the same `--component`
+   argument plus `--record-unlock <unlock.json>`. It builds nothing. Then send
+   the Component back through its worker for its isolated review-and-fix
+   loop, and return to the assembled object. Forge and Quest retain their existing
    whole-product baseline sequence.
 4. Generate explicit source targets with
    `.agents/skills/cad/scripts/gen <entry.step.py> --write`, which writes the
@@ -241,8 +391,8 @@ are separate. Frozen older runs retain their materialized rules and tools.
 5. Run `make_round` after each source repair and inspect its exact visual packet.
    The Manager records misplaced, missing or extra parts, size/proportion
    mismatches, visible intersections, and form defects with image evidence and
-   a concrete repair using `--record-visual`. Inspect the actual views even when
-   likeness passes or no reference image exists. Pending or inconclusive visual
+   a concrete repair using `--record-visual` on the assembly round. Inspect the
+   actual views and every `compare-NN.png`, even when no reference image exists. Pending or inconclusive visual
    feedback is not a pass. These self-checks do not replace independent review.
    Run only additional narrow checks affected by an edit. `make_round` gates
    every part that builds with `check_thickness` and `check_overhang` at the
@@ -266,24 +416,15 @@ are separate. Frozen older runs retain their materialized rules and tools.
    repairs, each followed by regenerated preflight, images and an independent
    rereview. Stop as soon as the review passes.
 8. Run the integrated final verifier once. Do not use it as an iteration loop.
-   Whenever the Wish has references, run it with `--image-derived` and a
-   `--likeness-ref LABEL=PATH@AZ,EL[,TOL]` for every one of them. The suffix
-   is the camera you judge each image was taken from (front `-90,0`, right
-   `0,0`, iso `-45,35`; TOL defaults to 30, wider below 90 when the viewpoint
-   is uncertain): the verifier refuses a reference without one, because a
-   pose search over every azimuth passes a model built the wrong way round.
-   Give `make_round` the same camera on its `--ref` from the first round, so
-   handedness fails early rather than at the final gate. The finalizer refuses a
-   toy with sealed references unless the current final report ran in that
-   mode (ADR 0072, Delivery 2); a plain final report cannot substitute for it,
-   no matter how cleanly it passed. In Contract Mode pass exactly the sealed
-   `assembly` images: the verifier refuses a component image there, and
-   itself fails unless every `geometry:<id>` image has a current component
-   round that passed or was accepted after stalling out (ADR 0074). A stalled
-   assembly image may be accepted with `--likeness-accept-mismatch
-   "<reason>"`; the finalizer copies every acceptance from the verifier's
-   `measure/likeness-acceptance.json` into `product.json`. Do not author
-   `likeness_acceptances` yourself.
+   Whenever the Wish has references, run it with `--image-derived`. The
+   finalizer refuses a toy with sealed references unless the current final
+   report ran in that mode (ADR 0072, Delivery 2); a plain final report cannot
+   substitute for it, no matter how cleanly it passed. In Contract Mode the
+   verifier fails unless every `geometry:<id>` image has a current component
+   round that passed its checks and its independent review (ADR 0076). It
+   writes `measure/component-acceptance.json` beside its report, and the
+   finalizer copies every component acceptance from it into `product.json`.
+   Do not author `component_acceptances` yourself.
 9. Write product metadata and invoke the Make finalizer immediately.
 
 Complete the blind signature review and, if needed, up to three focused repairs before

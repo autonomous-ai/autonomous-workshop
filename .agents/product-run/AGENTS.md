@@ -154,7 +154,16 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   second identity tree, or invent an undeclared specialist. The same directory
   may also hold two fixed Make roles that are not Inventors:
   `component-worker` and `component-reviewer`. Use them only as
-  `references/make.md` describes (ADR 0077). When `MANAGER.json` names a
+  `references/make.md` describes (ADR 0077, ADR 0080). In Spark Make a
+  Component Worker authors and repairs each Component, and only a Component
+  Worker runs a Component's `make_round` rounds: a Workshop hook refuses them
+  from you, an Inventor or any other agent. You write only the shared
+  `params.py` and `features/` files and run assembly. Each Component has one
+  Component Reviewer that you ask with the fixed request `references/make.md`
+  gives, and whose answer you record unchanged. When the Design Contract
+  has Interfaces, those shared files hold only what Interfaces need, and you
+  freeze them with `make_round --shared-helpers` before any worker starts and
+  check each Coupled Interface with `make_round --interface` before assembly. When `MANAGER.json` names a
   different agent directory, the host also writes each of these agents there
   in that runtime's own format, from the same bytes. Spawn them from that
   directory by the same name; `.codex/agents/` stays the identity binding.
@@ -215,7 +224,9 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   failed or is unavailable, explicitly reconcile its saved work and reassign
   the unfinished design before proceeding; do not treat failure as completion.
   An already reviewed, sealed Invent contract satisfies this dependency for
-  Forge/Quest Make without repeating Invent.
+  Forge/Quest Make without repeating Invent. In Spark Make a delegated
+  Inventor design is optional notes for the Component Workers; an Inventor
+  never authors a Component or runs `make_round`.
 
 ## Product work
 
@@ -224,7 +235,7 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
 - A Make session's cost is the number of model requests times the context
   each carries. Run each repair round through the materialized `make-round`
   skill (`scripts/make_round`) and read its summary, instead of calling
-  export, thickness, render, likeness, and motion tools one by one. Its
+  export, thickness, render, and motion tools one by one. Its
   `SKILL.md` is the tool card: the exact invocations of every cad and
   image-to-cad gate. Do not `cat`, `rg`, or `sed` through skill scripts to
   learn their flags, and open a full report only when a summary names a

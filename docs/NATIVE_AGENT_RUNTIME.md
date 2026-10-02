@@ -922,7 +922,8 @@ Canonical product-run sources live at:
 .agents/product-run/AGENTS.md
 .agents/product-run/.agents/skills/autonomous-workshop/**
 src/workshop/make/skills/{cad,design-reference,electromechanical-integration,
-                          image-to-cad,product-design,step-parts,wiki}/**
+                          image-to-cad,make-round,print-details,
+                          product-design,step-parts,wiki}/**
 src/workshop/release/skills/manual-design/**
 inventors/<id>/{inventor.json,TASTE.md,skills/**}
 ```
@@ -1043,6 +1044,61 @@ Codex-only wait fails closed. The projections are run inputs; reopening a run
 refuses one that differs from its Codex source, or an extra one. Before this,
 a Claude run had no spawnable Component Worker or Reviewer, so its root built
 every Component itself. Grok Build receives no projection yet.
+
+A new Codex or Claude Code run also seals a `make_round` guard (ADR 0080): a
+`PreToolUse` hook script in host state, outside the workspace, whose sha256
+the checkpoint binds. Claude Code receives it through `--settings` and Codex
+through `--enable hooks` and a launch-time `--config`, because Codex runs with
+`--ignore-user-config`. The hook admits a component round only from a
+`component-worker`, passing it a one-time nonce, and admits review records and
+assembly rounds only from the root. The host refuses Make output holding a
+component round whose nonce it did not issue. Frozen and Grok runs have no
+guard. On Claude Code, which has no sandbox, the guard is tamper-resistant,
+not tamper-proof.
+
+In a new run `make_round` also enforces the component round policy
+(ADR 0081): a passing component round must be reviewed before the
+Component's geometry may change, a Shape Round is the first geometry change
+after a disagreeing review, and an agreeing review or a Component Acceptance
+locks the Component. A Shared Helper change the Component imports unlocks it
+automatically; an assembly repair unlocks it only through the Manager's
+record-only `--record-unlock`, which the guard admits from the root alone. A
+rerun that rebuilds the reviewed B-rep carries the review forward. A
+component packet binds only the Component's own files and the Shared Helpers
+it imports, and a round that fails its checks is not rendered. Frozen runs
+keep their materialized `make_round`.
+
+A new Claude Code run also binds each Component's reviews to one proven
+Component Reviewer (ADR 0081, extended by issue #77). The guard is registered
+for `Read` and `SubagentStart` as well: it logs every subagent the runtime
+starts and every `Read` by a `component-reviewer`, with the agent id, the
+resolved path and the sha256 of the file, beside the nonce table in host
+state. The launcher sets `WORKSHOP_REVIEWER_RUNTIME=claude`, so
+`--record-review` requires the reviewer's 17-hex native agent id and binds a
+Component's first id. The checkpoint freezes `component_reviewer_binding`,
+and Make acceptance refuses a recorded review whose reviewer was not started
+as a `component-reviewer`, did not read every image of the reviewed packet
+with its exact bytes, or differs from the Component's earlier reviewer.
+Codex runs keep the free-text reviewer until Codex exposes equivalent
+subagent and read evidence.
+
+A new run whose sealed Design Contract has an Interfaces section (ADR 0082)
+also proves the meetings between Components before assembly. The Workshop
+Manager builds samples of the Shared Helpers under `samples/` and runs
+`make_round --shared-helpers`; a pass freezes the helpers by hash, component
+rounds refuse to start before that freeze, and each later component round
+reports a frozen helper it imports that changed, with every Component that
+imports it. A component round of a separable Interface checks its Keep-out
+Envelope with `check_envelope`. `make_round --interface <id>` runs the
+coupled motion check of one Coupled Interface on its locked Components only;
+a failure unlocks the contract's yielding Component with the check's
+evidence, and `--require-component-passes` and the final verifier require a
+current passing check of every Coupled Interface. The guard admits both
+modes from the root alone. The final verifier lists each Interface with its
+proof in `component-acceptance.json`; the Make finalizer copies the list
+into `product.json`, and the host seals it into its Make receipt and the run
+report. Contracts without the section and frozen runs keep the earlier
+protocol.
 
 The Claude Code adapter reports native token usage to the host through the
 same per-turn contract as Codex: gross input and gross output, plus a

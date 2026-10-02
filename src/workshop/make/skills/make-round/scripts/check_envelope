@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""Keep-out Envelope check for one Component of a separable Interface (ADR 0082).
+
+    check_envelope <project>/part_<id>.step.py --envelope ENVELOPE.json --role inside|outside
+                   [--instance N] [--json]
+
+A separable Interface seals a Keep-out Envelope: simple solids in assembly
+coordinates, one per declared pose or a single static one. One Component
+stays inside it, the other outside it, so each side is checked in its own
+component round and either can be repaired without touching the other.
+
+The Component's entry defines ``assembly_pose(shape, pose)``, which returns
+its ``gen_step()`` shape placed in assembly coordinates: at the named pose for
+the inside Component, and at its one assembly placement (``pose`` None) for
+the outside Component.
+
+    inside   in every declared pose, no material lies outside that pose's shape
+    outside  at its assembly placement, no material lies inside any shape
+
+When the Interface names one instance of the Component's geometry
+(``wing#2``, issue #80), --instance N checks that instance: the entry builds it
+with ``gen_step(instance=N)`` when gen_step takes an instance (otherwise every
+instance is the same shape) and places it with
+``assembly_pose(shape, pose, instance=N)``.
+
+Measured on the B-rep with Boolean volumes. Exit 0 when the Component keeps
+to its side, 1 when it does not or cannot be placed, 2 on bad usage.
+"""
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import inspect
+import io
+import json
+import sys
+from pathlib import Path
+
+PLACE_FUNC = "assembly_pose"
+INSTANCE_PARAM = "instance"
+# Material below this many mm3, or this fraction of the part, is a Boolean
+# residue on a shared face, not a clearance problem.
+MIN_TOLERANCE_MM3 = 1e-3
+RELATIVE_TOLERANCE = 1e-6
+
+
+def envelope_solid(item: dict):
+    """The build123d solid of one envelope shape, in assembly coordinates."""
+    from build123d import Align, Box, Plane, Pos, Solid, Vector
+
+    if "box" in item:
+        low, high = item["box"]["min_mm"], item["box"]["max_mm"]
+        size = [b - a for a, b in zip(low, high)]
+        return Pos(*low) * Box(*size, align=(Align.MIN, Align.MIN, Align.MIN))
+    cylinder = item["cylinder"]
+    plane = Plane(origin=Vector(*cylinder["base_mm"]), z_dir=Vector(*cylinder["axis"]))
+    return Solid.make_cylinder(cylinder["radius_mm"], cylinder["height_mm"], plane)
+
+
+def _volume(shape) -> float:
+    try:
+        return float(shape.volume) if shape is not None else 0.0
+    except Exception:  # noqa: BLE001 - an empty Boolean result has no volume
+        return 0.0
+
+
+def _takes_instance(function) -> bool:
+    try:
+        return INSTANCE_PARAM in inspect.signature(function).parameters
+    except (TypeError, ValueError):
+        return False
+
+
+def check(part: Path, envelope: dict, role: str, instance: int | None = None) -> dict:
+    cad = Path(__file__).resolve().parents[2] / "cad" / "scripts"
+    sys.path.insert(0, str(cad))
+    from printlib import GEN_FUNC, load_entry, project_on_path
+
+    with project_on_path(part.parent), contextlib.redirect_stdout(io.StringIO()):
+        module = load_entry(part, "envelope")
+        place = getattr(module, PLACE_FUNC, None)
+        if not callable(place):
+            return {"ok": False, "role": role, "poses": [],
+                    "detail": "%s defines no %s(shape, pose); define it to place the Component in "
+                              "assembly coordinates" % (part.name, PLACE_FUNC)}
+        build = getattr(module, GEN_FUNC)
+        if instance is not None:
+            if not _takes_instance(place):
+                return {"ok": False, "role": role, "poses": [],
+                        "detail": "%s's %s takes no %s; define %s(shape, pose, %s) to place instance %d"
+                                  % (part.name, PLACE_FUNC, INSTANCE_PARAM, PLACE_FUNC, INSTANCE_PARAM, instance)}
+            shape = build(instance=instance) if _takes_instance(build) else build()
+
+            def place(shape, pose, _place=place):
+                return _place(shape, pose, instance=instance)
+        else:
+            shape = build()
+        tolerance = max(MIN_TOLERANCE_MM3, RELATIVE_TOLERANCE * _volume(shape))
+        results = []
+        if role == "inside":
+            for item in envelope["shapes"]:
+                placed = place(shape, item["pose"])
+                outside = _volume(placed - envelope_solid(item))
+                results.append({"pose": item["pose"], "status": "pass" if outside <= tolerance else "fail",
+                                "outside_mm3": round(outside, 6)})
+        else:
+            placed = place(shape, None)
+            for item in envelope["shapes"]:
+                inside = _volume(placed & envelope_solid(item))
+                results.append({"pose": item["pose"], "status": "pass" if inside <= tolerance else "fail",
+                                "inside_mm3": round(inside, 6)})
+    failed = [item for item in results if item["status"] == "fail"]
+    if failed:
+        first = failed[0]
+        detail = ("%s mm3 lies outside the envelope in pose %s" % (first["outside_mm3"], first["pose"])
+                  if role == "inside" else
+                  "%s mm3 enters the envelope of pose %s" % (first["inside_mm3"], first["pose"]))
+    else:
+        detail = "%d pose(s) keep to the %s" % (len(results), role)
+    return {"ok": not failed, "role": role, "poses": results, "detail": detail}
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("part", help="the Component's part_<id>.step.py")
+    parser.add_argument("--envelope", required=True, help="the sealed Keep-out Envelope as a JSON file")
+    parser.add_argument("--role", required=True, choices=("inside", "outside"))
+    parser.add_argument("--instance", type=int, help="check this instance of the Component's geometry")
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args(argv)
+    if args.instance is not None and args.instance < 1:
+        parser.error("--instance counts from 1")
+    part = Path(args.part).resolve()
+    try:
+        envelope = json.loads(Path(args.envelope).read_text(encoding="utf-8"))
+        shapes = envelope["shapes"]
+        if not isinstance(shapes, list) or not shapes:
+            raise ValueError("the envelope has no shapes")
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print("check_envelope: %s" % exc, file=sys.stderr)
+        return 2
+    if not part.is_file():
+        print("check_envelope: no such entry: %s" % part, file=sys.stderr)
+        return 2
+    try:
+        result = check(part, envelope, args.role, args.instance)
+    except Exception as exc:  # noqa: BLE001 - a Component that cannot be placed fails its round
+        result = {"ok": False, "role": args.role, "poses": [],
+                  "detail": "could not build or place %s: %s: %s" % (part.name, type(exc).__name__, exc)}
+    if args.json:
+        print(json.dumps(result, sort_keys=True))
+    else:
+        print("%s  %s  %s" % ("PASS" if result["ok"] else "FAIL", args.role, result["detail"]))
+    return 0 if result["ok"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

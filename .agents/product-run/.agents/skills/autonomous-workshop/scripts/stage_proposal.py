@@ -2029,9 +2029,8 @@ def _sealed_design_contract(
 def _wish_has_sealed_references(run_root: Path, wish_sha256: str) -> bool:
     """Whether the materialized Wish sealed any reference images (ADR 0072).
 
-    A sealed reference can only ever be scored by the final verifier's
-    likeness gate under ``--image-derived``, so the finalizer uses this to
-    require that mode.
+    A sealed reference is accounted for only by the final verifier under
+    ``--image-derived``, so the finalizer uses this to require that mode.
     """
 
     references = _materialized_wish(run_root, wish_sha256).get("references")
@@ -2602,33 +2601,46 @@ def _geometry_validate_disclosure(product_root: Path, verification: Path, produc
     return value
 
 
-LIKENESS_ACCEPTANCE_NAME = "likeness-acceptance.json"
-MAX_LIKENESS_ACCEPTANCES = 64
-_ACCEPTED_LIKENESS_RESULT = re.compile(
-    r"^- Result: \*\*PASS \((\d+) accepted failing gates?\)\*\* \(exit 0\)$", re.MULTILINE
-)
+COMPONENT_ACCEPTANCE_NAME = "component-acceptance.json"
+MAX_COMPONENT_ACCEPTANCES = 64
+COMPONENT_SHAPE_REPAIR_LIMIT = 5
+_MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
+# How the final verifier says each Interface was proven (ADR 0082).
+INTERFACE_PROOFS = {
+    "static": "shared-helper-samples",
+    "separable": "keep-out-envelope",
+    "coupled": "pass",
+}
 
 
-def _likeness_acceptances(
+def _component_acceptances(
     run_root: Path, product_root_value: str, verification_relative: PurePosixPath
-) -> Optional[list[dict[str, Any]]]:
-    """The final verifier's likeness acceptances, or None when it wrote none.
+) -> Optional[tuple[list[dict[str, Any]], Optional[list[dict[str, Any]]]]]:
+    """``(acceptances, interfaces)`` from the final verifier, or None when it
+    wrote no record.
 
-    ADR 0074: the verifier writes ``likeness-acceptance.json`` beside its
-    report and binds it to the report's exact bytes. Every entry is a
-    likeness failure the Workshop Manager accepted after it stalled out, with
-    the reason the run reports when it ends.
+    The verifier writes ``component-acceptance.json`` beside its report and
+    binds it to the report's exact bytes. Every acceptance is a Component
+    whose independent reviewer still disagreed after the shape-repair
+    allowance was spent; the Workshop Manager accepted it with the reason the
+    run reports when it ends. ``interfaces`` lists the sealed contract's
+    Interfaces with how each was proven (ADR 0082), or is None for a
+    contract without an Interfaces section.
     """
 
     relative = "%s/%s" % (
         product_root_value,
-        (verification_relative.parent / LIKENESS_ACCEPTANCE_NAME).as_posix(),
+        (verification_relative.parent / COMPONENT_ACCEPTANCE_NAME).as_posix(),
     )
     if not os.path.lexists(run_root.joinpath(*PurePosixPath(relative).parts)):
         return None
-    label = "Make %s" % LIKENESS_ACCEPTANCE_NAME
+    label = "Make %s" % COMPONENT_ACCEPTANCE_NAME
     document, _, _ = _read_json(run_root, relative, label)
-    record = _fields(document, {"schema_version", "verification_sha256", "acceptances"}, label)
+    record = _mapping(document, label)
+    if not {"schema_version", "verification_sha256", "acceptances"} <= set(record) or not set(record) <= {
+        "schema_version", "verification_sha256", "acceptances", "interfaces"
+    }:
+        raise ProposalError("%s fields are invalid" % label)
     verification_sha256, _, _ = _hash_regular(
         run_root,
         "%s/%s" % (product_root_value, verification_relative.as_posix()),
@@ -2639,32 +2651,85 @@ def _likeness_acceptances(
     ) != verification_sha256:
         raise ProposalError("%s does not bind the current CAD verification report" % label)
     acceptances = _array(record["acceptances"], label + " acceptances")
-    if len(acceptances) > MAX_LIKENESS_ACCEPTANCES:
+    if len(acceptances) > MAX_COMPONENT_ACCEPTANCES:
         raise ProposalError("%s lists too many acceptances" % label)
     for index, raw in enumerate(acceptances, 1):
         item_label = "%s acceptance %d" % (label, index)
-        item = _fields(raw, {"label", "scope", "iou", "floor", "reason", "accepted_by"}, item_label)
-        _bounded_text(item["label"], item_label + " label", 200)
+        item = _fields(
+            raw,
+            {"label", "scope", "reviewer", "shape_rounds", "reason", "accepted_by"},
+            item_label,
+        )
+        if not _bounded_text(item["label"], item_label + " label", 200).startswith("geometry:"):
+            raise ProposalError("%s label must name a sealed geometry image" % item_label)
         scope = _bounded_text(item["scope"], item_label + " scope", 200)
-        if scope != "assembly" and not scope.startswith("component:"):
-            raise ProposalError("%s scope is invalid" % item_label)
+        if not scope.startswith("component:") or not scope[len("component:"):].strip():
+            raise ProposalError("%s scope must name a component" % item_label)
+        reviewer = _bounded_text(item["reviewer"], item_label + " reviewer", 200)
+        if reviewer.strip().lower() in _MANAGER_NAMES:
+            raise ProposalError(
+                "%s reviewer must be someone other than the Workshop Manager" % item_label
+            )
+        shape_rounds = item["shape_rounds"]
+        if type(shape_rounds) is not int or shape_rounds < COMPONENT_SHAPE_REPAIR_LIMIT:
+            raise ProposalError(
+                "%s must record at least %d shape rounds"
+                % (item_label, COMPONENT_SHAPE_REPAIR_LIMIT)
+            )
         _bounded_text(item["reason"], item_label + " reason", 1_000)
         if item["accepted_by"] != "workshop-manager":
             raise ProposalError("%s must be accepted by the workshop-manager" % item_label)
-        floor, iou = item["floor"], item["iou"]
-        if (
-            type(floor) not in (int, float)
-            or type(iou) not in (int, float)
-            or not 0.0 <= iou < floor <= 1.0
+    interfaces = None
+    if "interfaces" in record:
+        interfaces = _verified_interfaces(record["interfaces"], label)
+    return acceptances, interfaces
+
+
+def _verified_interfaces(value: Any, label: str) -> list[dict[str, Any]]:
+    """The verifier's Interface list: each sealed Interface with its Kind,
+    Components and proof. A Coupled Interface is listed only with a current
+    passing --interface check; anything else fails the verifier itself."""
+
+    interfaces = _array(value, label + " interfaces")
+    if len(interfaces) > MAX_COMPONENT_ACCEPTANCES:
+        raise ProposalError("%s lists too many interfaces" % label)
+    seen = set()
+    for index, raw in enumerate(interfaces, 1):
+        item_label = "%s interface %d" % (label, index)
+        item = _mapping(raw, item_label)
+        kind = item.get("kind")
+        expected = {"id", "kind", "components", "check"} | (
+            {"yielding", "round"} if kind == "coupled" else set())
+        if set(item) != expected or kind not in INTERFACE_PROOFS:
+            raise ProposalError("%s fields are invalid" % item_label)
+        identifier = _bounded_text(item["id"], item_label + " id", 200)
+        if identifier in seen:
+            raise ProposalError("%s repeats an interface id" % item_label)
+        seen.add(identifier)
+        components = _array(item["components"], item_label + " components")
+        if len(components) < 2 or len(set(map(str, components))) != len(components):
+            raise ProposalError("%s must join two or more Components" % item_label)
+        for component in components:
+            _bounded_text(component, item_label + " component", 200)
+        if item["check"] != INTERFACE_PROOFS[kind]:
+            raise ProposalError(
+                "%s is not proven: %s needs %s" % (item_label, kind, INTERFACE_PROOFS[kind])
+            )
+        if kind == "coupled" and (
+            item["yielding"] not in components
+            or type(item["round"]) is not int or item["round"] < 1
         ):
-            raise ProposalError("%s must record an IoU below its floor" % item_label)
-    return acceptances
+            raise ProposalError("%s needs its yielding Component and check round" % item_label)
+    return interfaces
 
 
-def _seal_likeness_acceptances(
-    product_root: Path, acceptances: Optional[list[dict[str, Any]]]
+def _seal_component_acceptances(
+    product_root: Path,
+    acceptances: Optional[list[dict[str, Any]]],
+    interfaces: Optional[list[dict[str, Any]]] = None,
 ) -> None:
-    """Copy the verifier's acceptances into product.json; never let the agent author them."""
+    """Copy the verifier's acceptances and Interfaces into product.json;
+    never let the agent author them."""
 
     path = product_root / "product.json"
     if path.is_symlink() or not path.is_file():
@@ -2675,43 +2740,40 @@ def _seal_likeness_acceptances(
         return  # the ordinary product.json read reports it
     if not isinstance(product, dict):
         return
+    if "likeness_acceptances" in product:
+        raise ProposalError(
+            "Make product.json likeness_acceptances is retired; component "
+            "acceptances come only from the final verifier's %s"
+            % COMPONENT_ACCEPTANCE_NAME
+        )
     if acceptances is None:
-        if "likeness_acceptances" in product:
-            raise ProposalError(
-                "Make product.json likeness_acceptances must come from the final "
-                "verifier's %s, which does not exist" % LIKENESS_ACCEPTANCE_NAME
-            )
+        for key in ("component_acceptances", "interfaces"):
+            if key in product:
+                raise ProposalError(
+                    "Make product.json %s must come from the final verifier's %s, "
+                    "which does not exist" % (key, COMPONENT_ACCEPTANCE_NAME)
+                )
         return
+    if interfaces is None and "interfaces" in product:
+        raise ProposalError(
+            "Make product.json interfaces must come from the final verifier's %s, "
+            "which lists none" % COMPONENT_ACCEPTANCE_NAME
+        )
     updated = dict(product)
     if acceptances:
-        updated["likeness_acceptances"] = acceptances
+        updated["component_acceptances"] = acceptances
     else:
-        updated.pop("likeness_acceptances", None)
+        updated.pop("component_acceptances", None)
+    if interfaces is not None:
+        updated["interfaces"] = interfaces
     if updated != product:
         path.write_text(json.dumps(updated, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def _passing_final_result(
-    current_record: str, acceptances: Optional[list[dict[str, Any]]]
-) -> bool:
-    """A plain PASS, or a PASS whose only accepted failures are the Manager's
-    recorded assembly likeness acceptances (ADR 0074)."""
+def _passing_final_result(current_record: str) -> bool:
+    """Only a plain PASS; no verifier gate may be recorded as an accepted failure."""
 
-    if "- Result: **PASS** (exit 0)\n" in current_record:
-        return True
-    match = _ACCEPTED_LIKENESS_RESULT.search(current_record)
-    if match is None or not acceptances or not any(
-        item["scope"] == "assembly" for item in acceptances
-    ):
-        return False
-    rows = [
-        line.split("|")
-        for line in current_record.splitlines()
-        if line.startswith("|") and len(line.split("|")) > 3 and line.split("|")[3].strip() == "accepted-fail"
-    ]
-    return len(rows) == int(match.group(1)) and all(
-        "check_likeness" in row[2] for row in rows
-    )
+    return "- Result: **PASS** (exit 0)\n" in current_record
 
 
 def _make_contract(
@@ -2787,19 +2849,33 @@ def _make_contract(
         raise ProposalError(
             "CAD verification must live inside the declared CAD project"
         )
-    likeness_acceptances = _likeness_acceptances(
+    verified = _component_acceptances(
         run_root, product_root_value, verification_relative
     )
+    component_acceptances = None if verified is None else verified[0]
+    interfaces = None if verified is None else verified[1]
+    sealed_contract = _sealed_design_contract(run_root, assignment["wish_sha256"])
     if (
-        likeness_acceptances is None
+        component_acceptances is None
         and _wish_has_sealed_references(run_root, assignment["wish_sha256"])
-        and _sealed_design_contract(run_root, assignment["wish_sha256"]) is not None
+        and sealed_contract is not None
     ):
         raise ProposalError(
             "Contract Mode Make requires the final verifier's %s bound to its "
-            "report; rerun verify_project --image-derived (ADR 0074)" % LIKENESS_ACCEPTANCE_NAME
+            "report; rerun verify_project --image-derived" % COMPONENT_ACCEPTANCE_NAME
         )
-    _seal_likeness_acceptances(product_root, likeness_acceptances)
+    if verified is not None and sealed_contract is not None and "interfaces" in sealed_contract:
+        # ADR 0082: every sealed Interface is listed with how it was proven.
+        sealed_ids = sorted(
+            str(item.get("id")) for item in sealed_contract.get("interfaces") or ()
+            if isinstance(item, dict)
+        )
+        if interfaces is None or sorted(str(item["id"]) for item in interfaces) != sealed_ids:
+            raise ProposalError(
+                "Make %s must list every Interface of the sealed Design Contract; "
+                "rerun verify_project --image-derived" % COMPONENT_ACCEPTANCE_NAME
+            )
+    _seal_component_acceptances(product_root, component_acceptances, interfaces)
     product_document, product_bytes, _ = _read_json(
         run_root,
         "%s/product.json" % product_root_value,
@@ -2853,7 +2929,7 @@ def _make_contract(
             final_mode not in current_record
             and image_derived_final_mode not in current_record
         )
-        or not _passing_final_result(current_record, likeness_acceptances)
+        or not _passing_final_result(current_record)
     ):
         raise ProposalError(
             "CAD verification must be a passing final report or a disclosed unverified handoff"

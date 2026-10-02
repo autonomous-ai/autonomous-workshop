@@ -10,7 +10,7 @@ from io import StringIO
 from pathlib import Path
 from unittest import mock
 
-from cli.main import main, parser
+from cli.main import _print_native_receipt, main, parser
 from workshop.errors import ContractError, StateConflict, WorkshopError
 from workshop.match.native import (
     InventorRoster,
@@ -52,6 +52,11 @@ from workshop.workflow.native_run import (
     _phase_design_vault,
     _likeness_acceptance_history,
     _made_likeness_acceptances,
+    _component_acceptance_history,
+    _interface_history,
+    _made_component_acceptances,
+    _made_interfaces,
+    _verify_make_round_workers,
     _playtest_score_history,
     _record_playtest_evidence,
     _record_make_evidence,
@@ -80,6 +85,11 @@ from workshop.runtime import (
     CodexRecoverableInvocationError,
 )
 from workshop.make.role_agents import make_role_agent_files
+from workshop.make.role_guard import (
+    install_make_round_guard,
+    installed_make_round_guard,
+    make_round_guard_bytes,
+)
 from workshop.runtime.codex import CodexNativeSessionLauncher
 from workshop.runtime.progress import (
     NativeRunProgress,
@@ -2811,6 +2821,7 @@ class NativeHostTest(unittest.TestCase):
                 "electromechanical-integration",
                 "image-to-cad",
                 "manual-design",
+                "print-details",
                 "product-design",
                 "step-parts",
                 "wiki",
@@ -2951,6 +2962,13 @@ class NativeHostTest(unittest.TestCase):
                 if path.name.endswith("-inventor")
             )
             self.assertEqual(inventor_skills, ["soren-voss-inventor"])
+            # ADR 0080: the make_round guard lives in host state, not the
+            # workspace, and the checkpoint binds its exact bytes.
+            with mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(home)}, clear=True):
+                host_state = native_run_paths(receipt["product_id"]).host_state
+            guard = installed_make_round_guard(host_state)
+            self.assertEqual(guard.read_bytes(), make_round_guard_bytes())
+            self.assertFalse(any(workspace.rglob("make_round_guard.py")))
 
     def test_wish_runs_without_the_vault_when_it_is_unreachable(self):
         launcher = _FakeLauncher()
@@ -3393,6 +3411,141 @@ class NativeHostTest(unittest.TestCase):
         ):
             with self.assertRaises(ContractError):
                 _made_likeness_acceptances({"likeness_acceptances": bad})
+
+    COMPONENT_ACCEPTANCE = {
+        "label": "geometry:arm-right", "scope": "component:arm-right", "reviewer": "blind-critic",
+        "shape_rounds": 5, "reason": "Claws still read as paddles.", "accepted_by": "workshop-manager",
+    }
+
+    def test_component_acceptances_are_read_from_the_latest_make_gate_receipt(self):
+        accepted = dict(self.COMPONENT_ACCEPTANCE)
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary).resolve()
+            self.assertEqual(_component_acceptance_history(host), [])
+            gates = host / "gates"
+            gates.mkdir()
+
+            def receipt(name, checks):
+                (gates / name).write_text(json.dumps({"evidence": {"checks": checks}}), encoding="utf-8")
+
+            receipt("0003-make.json", {"round": 1, "component_acceptances": [accepted]})
+            receipt("0004-playtest.json", {"round": 1, "verdict": "block"})
+            self.assertEqual(_component_acceptance_history(host), [accepted])
+            # A frozen older receipt that carries only likeness acceptances
+            # reports no component acceptance, and vice versa.
+            self.assertEqual(_likeness_acceptance_history(host), [])
+            receipt("0006-make.json", {"round": 2})
+            self.assertEqual(_component_acceptance_history(host), [])
+            receipt("0007-make.json", {"component_acceptances": "nope"})
+            with self.assertRaisesRegex(StateConflict, "malformed: 0007-make.json"):
+                _component_acceptance_history(host)
+            (gates / "0008-make.json").write_text("{nope", encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "unreadable: 0008-make.json"):
+                _component_acceptance_history(host)
+
+    def test_a_guarded_make_refuses_a_component_round_no_worker_ran(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            host = root / "host"
+            host.mkdir()
+            run_root = root / "run"
+            project = run_root / "artifacts/make/r0001/product/cad"
+            rounds = project / "measure/component-rounds/wing/r0001"
+            rounds.mkdir(parents=True)
+            (rounds / "summary.json").write_text(json.dumps({"worker_nonce": None}))
+            made = mock.Mock(product_root="artifacts/make/r0001/product", cad_project_path="cad")
+            # A run created without the guard keeps its frozen behaviour.
+            _verify_make_round_workers(run_root, host, None, made)
+            digest = install_make_round_guard(host)
+            with self.assertRaisesRegex(ContractError, "not run by a component-worker"):
+                _verify_make_round_workers(run_root, host, digest, made)
+            with self.assertRaisesRegex(StateConflict, "make_round guard"):
+                _verify_make_round_workers(run_root, host, "0" * 64, made)
+
+    def test_made_component_acceptances_are_validated_before_the_host_seals_them(self):
+        accepted = dict(self.COMPONENT_ACCEPTANCE)
+        self.assertEqual(_made_component_acceptances({"title": "t"}), [])
+        self.assertEqual(_made_component_acceptances({"component_acceptances": [accepted]}), [accepted])
+        self.assertEqual(
+            _made_component_acceptances({"component_acceptances": [dict(accepted, shape_rounds=9)]}),
+            [dict(accepted, shape_rounds=9)],
+        )
+        for bad in (
+            "nope",
+            {"label": "geometry:x"},
+            [accepted] * 65,
+            ["not a mapping"],
+            [dict(accepted, accepted_by="user")],
+            [dict(accepted, scope="assembly")],
+            [dict(accepted, scope="component:")],
+            [dict(accepted, label="assembly")],
+            [dict(accepted, reviewer="Workshop-Manager")],
+            [dict(accepted, reviewer=" manager ")],
+            [dict(accepted, reviewer="")],
+            [dict(accepted, reviewer=3)],
+            [dict(accepted, shape_rounds=4)],
+            [dict(accepted, shape_rounds=True)],
+            [dict(accepted, shape_rounds=5.0)],
+            [dict(accepted, reason="")],
+            [dict(accepted, reason="x" * 1001)],
+            [dict(accepted, iou=0.4)],
+            [{k: v for k, v in accepted.items() if k != "reviewer"}],
+        ):
+            with self.subTest(bad=bad if not isinstance(bad, list) or len(bad) < 5 else "65 items"):
+                with self.assertRaises(ContractError):
+                    _made_component_acceptances({"component_acceptances": bad})
+
+    INTERFACES = [
+        {"id": "wing-housing", "kind": "separable", "components": ["wing", "spine-housing"],
+         "check": "keep-out-envelope"},
+        {"id": "pinion-sector", "kind": "coupled", "components": ["heart-core", "wing"],
+         "check": "pass", "round": 2, "yielding": "wing"},
+    ]
+
+    def test_made_interfaces_are_validated_before_the_host_seals_them(self):
+        # ADR 0082: a Coupled Interface is reported only with a passing check.
+        self.assertEqual(_made_interfaces({"title": "t"}), [])
+        self.assertEqual(_made_interfaces({"interfaces": self.INTERFACES}), self.INTERFACES)
+        coupled = self.INTERFACES[1]
+        for bad in (
+            "nope",
+            [dict(coupled, check="stale")],
+            [dict(coupled, kind="welded")],
+            [dict(coupled, components=["wing"])],
+            [dict(coupled, yielding="tail")],
+            [dict(coupled, round=0)],
+            [{k: v for k, v in coupled.items() if k != "yielding"}],
+            [dict(self.INTERFACES[0], round=1)],
+            [coupled, coupled],
+        ):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ContractError):
+                    _made_interfaces({"interfaces": bad})
+
+    def test_made_interfaces_keep_instance_references_verbatim(self):
+        # Issue #80: two instances of one Unique Geometry meet.
+        mesh = {"id": "wing-sector-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"],
+                "check": "pass", "round": 1, "yielding": "wing#2"}
+        self.assertEqual(_made_interfaces({"interfaces": [mesh]}), [mesh])
+        for bad in ([dict(mesh, components=["wing#1", "wing#1"])], [dict(mesh, yielding="wing")]):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ContractError):
+                    _made_interfaces({"interfaces": bad})
+
+    def test_interfaces_are_read_from_the_latest_make_gate_receipt(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary).resolve()
+            self.assertEqual(_interface_history(host), [])
+            gates = host / "gates"
+            gates.mkdir()
+            (gates / "0003-make.json").write_text(json.dumps(
+                {"evidence": {"checks": {"interfaces": self.INTERFACES}}}), encoding="utf-8")
+            self.assertEqual(_interface_history(host), self.INTERFACES)
+            self.assertEqual(_component_acceptance_history(host), [])
+            (gates / "0005-make.json").write_text(json.dumps(
+                {"evidence": {"checks": {"interfaces": {"id": "x"}}}}), encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "malformed: 0005-make.json"):
+                _interface_history(host)
 
     def test_repair_base_names_the_best_sealed_round_only_when_the_last_is_worse(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -4503,3 +4656,109 @@ class NativeHostTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReferenceCameraAmendmentTest(unittest.TestCase):
+    """ADR 0083: a camera-mismatch need is answered by amending one
+    reference's Reference Camera; nothing sealed changes and the run goes on."""
+
+    CONTRACT = {
+        "schema_version": 3, "title": "Broken God", "inventor": "fixture",
+        "envelope_mm": [100, 100, 100], "interfaces": [],
+        "references": [
+            {"file": "ref-01-whole.png", "shows": "assembly", "camera": [-60, 20]},
+            {"file": "ref-02-body.png", "shows": "geometry:body", "camera": [90, 15]},
+        ],
+        "geometries": [{"id": "body", "name": "Body", "count": 1, "extents_mm": [10, 10, 10], "wall_min_mm": 1}],
+        "requirements": [{"id": "R01", "scope": "assembly", "text": "Stands."}],
+    }
+
+    def _run(self, contract=None):
+        """Start one run that waits in Make, inside the active patches."""
+
+        launcher = _FakeLauncher()
+        seen = []
+        original = launcher.resume
+
+        def resume(**arguments):
+            path = Path(arguments["run_root"]) / "CONTRACT-AMENDMENTS.json"
+            seen.append(json.loads(path.read_text()) if path.is_file() else None)
+            return original(**arguments)
+
+        launcher.resume = resume
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        home = Path(temporary.name).resolve() / "workshop-home"
+        for patcher in (
+            mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(home)}, clear=True),
+            mock.patch("workshop.workflow.native_run._source_checkout_root", return_value=None),
+            mock.patch("workshop.workflow.native_run.CodexNativeSessionLauncher", return_value=launcher),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        product_id = "camera-amendment-wish"
+        wish = Wish.create(product_id, "Broken God contract",
+                           context={"design_contract": contract or self.CONTRACT, "inventor_id": "soren-voss"})
+        started = start_native_run(wish, effort="spark")
+        return product_id, started, seen
+
+    def test_an_amendment_changes_only_that_reference_camera(self):
+        product_id, started, seen = self._run()
+        self.assertEqual((started["status"], started["stage"]), ("waiting", "make"))
+        paths = native_run_paths(product_id)
+        wish_bytes = (paths.workspace / "WISH.json").read_bytes()
+
+        resumed = resume_native_run(product_id, reference_cameras={"ref-02-body.png": (-90, 15)})
+
+        self.assertEqual((paths.workspace / "WISH.json").read_bytes(), wish_bytes)
+        self.assertEqual(resumed["wish_sha256"], started["wish_sha256"])
+        # The resumed session reads the amendment beside the sealed contract.
+        self.assertEqual(seen, [{
+            "schema_version": 1,
+            "reference_cameras": {"ref-02-body.png": [-90, 15]},
+            "amendments": [{"file": "ref-02-body.png", "shows": "geometry:body",
+                            "from": [90, 15], "to": [-90, 15], "sealed": [90, 15]}],
+        }])
+        self.assertEqual(stat.S_IMODE((paths.workspace / "CONTRACT-AMENDMENTS.json").stat().st_mode), 0o400)
+        self.assertEqual(resumed["contract_amendments"], [
+            {"file": "ref-02-body.png", "shows": "geometry:body", "from": [90, 15], "to": [-90, 15],
+             "sealed": [90, 15]}])
+        records = [json.loads(line) for line in
+                   (paths.host_state / "host-corrections.jsonl").read_text().splitlines()]
+        amendment = [r for r in records if r["correction"] == "reference-camera-amendment"]
+        self.assertEqual(len(amendment), 1)
+        self.assertEqual(amendment[0]["wish_sha256"], hashlib.sha256(wish_bytes).hexdigest())
+        self.assertEqual([c["path"] for c in amendment[0]["changes"]], ["CONTRACT-AMENDMENTS.json"])
+        self.assertEqual(amendment[0]["reason"], "workshop resume --reference-camera ref-02-body.png=-90,15")
+
+        # The same answer again records nothing new; a later one is appended.
+        resume_native_run(product_id, reference_cameras={"ref-02-body.png": (-90, 15)})
+        again = resume_native_run(product_id, reference_cameras={"ref-02-body.png": (0, 15)})
+        self.assertEqual([(item["from"], item["to"]) for item in again["contract_amendments"]],
+                         [([90, 15], [-90, 15]), ([-90, 15], [0, 15])])
+        self.assertEqual(seen[-1]["reference_cameras"], {"ref-02-body.png": [0, 15]})
+
+        output = StringIO()
+        with redirect_stdout(output):
+            _print_native_receipt(again, verb="Resume")
+        self.assertIn("Reference Camera amended: ref-02-body.png (geometry:body) 90,15 -> -90,15", output.getvalue())
+
+    def test_an_amendment_is_refused_before_the_session_resumes(self):
+        product_id, _started, seen = self._run()
+        for cameras, refusal in (
+            ({"ref-09-tail.png": (0, 0)}, "has no reference 'ref-09-tail.png'"),
+            ({"ref-02-body.png": (0, 91)}, "EL in -90..90"),
+            ({"ref-02-body.png": (200, 0)}, "AZ in -180..180"),
+        ):
+            with self.subTest(cameras=cameras), self.assertRaisesRegex(ContractError, refusal):
+                resume_native_run(product_id, reference_cameras=cameras)
+        self.assertEqual(seen, [])
+        self.assertFalse((native_run_paths(product_id).workspace / "CONTRACT-AMENDMENTS.json").exists())
+
+    def test_a_contract_before_schema_3_has_no_camera_to_amend(self):
+        contract = {**self.CONTRACT, "schema_version": 2,
+                    "references": [{"file": r["file"], "shows": r["shows"]} for r in self.CONTRACT["references"]]}
+        product_id, _started, seen = self._run(contract)
+        with self.assertRaisesRegex(ContractError, "schema 3 Design Contract"):
+            resume_native_run(product_id, reference_cameras={"ref-02-body.png": (0, 0)})
+        self.assertEqual(seen, [])

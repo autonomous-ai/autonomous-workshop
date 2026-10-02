@@ -63,7 +63,17 @@ Drive to a written spec containing:
   interfaces, what it mates with. No hedged quantities — the Workshop concept
   contract rejects "roughly", "about", "several", "as needed". If a number is
   not decided, decide it.
-- **Envelope, wall thickness, print stance.**
+- **Envelope, wall thickness, print stance.** Name each geometry's print
+  stance by the face that lies on the bed.
+- **Every joint, pinned.** For each pair of Components that join: the joint
+  type (peg and socket, collar, pin, snap, glue face), its dimensions and
+  clearance in mm, and where it sits on both mating Components. Make builds
+  joints exactly as written and cannot choose them: never write "hidden
+  joints", "Make decides the pegs" or any other hand-off of joint geometry.
+- **No two statements that cannot both hold.** A face cannot be both a
+  Component's print-bed face and carry a peg, and a feature cannot sit on a
+  Component the prose places it off. Make stops with a need when it finds
+  such a pair.
 - **The fixed-frame plan.** How the toy composes in Release's product frame at
   35 degrees azimuth, 22 degrees elevation, against `#f5f0e6`, with the Focal
   Component as the focal point.
@@ -102,13 +112,45 @@ Draft the block per
 [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md): one `geometries[]`
 entry per item on the unique-geometry list, and one `requirements[]` row for
 every checkable claim the prose decided — a dimension, a count, a wall
-thickness, a clearance, a joint range, a visible feature. Check the block against the prose line by line,
+thickness, a clearance, a joint range, a joint's geometry, a print stance, a
+visible feature. Check the block against the prose line by line,
 not just against itself: a block that leaves out a decided number or feature
 lets the run drift, and nobody downstream reads the prose closely enough to
 notice. Name each
 `references[].file` as `ref-NN-<slug>.png` in the order Stage 3 will generate
 them, even though the files do not exist yet. A toy with more than one
 component also gets one `"shows": "assembly"` reference, listed first.
+
+Write the block as `"schema_version": 3`. Every reference gets a `camera`
+(ADR 0083), which Stage 3b fills in once the image exists, and every place
+two or more Components meet gets an `interfaces[]` entry (ADR 0082): a peg in a socket, a
+pinion on a sector, a wing swinging past a housing. Give each its Interface
+Kind:
+
+- **static** for parts that sit together and never move against each other.
+- **separable** when one Component only has to keep clear of another. Give
+  it a Keep-out Envelope: which Component stays `inside` and which stays
+  `outside`, and one simple box or cylinder in assembly coordinates per
+  declared pose (or one for a part that does not move). Size it from the
+  prose's clearances, so each side can be built without the other's outline.
+- **coupled** for anything that needs contact or shares space over time:
+  gears, cams, linkages, parts that pass through one space at different
+  times. Name its `yielding` Component, the one that changes when the
+  check fails, and give its pose table (`poses`: steps and movers, each with
+  its rotation or translation in assembly coordinates) from the same numbers
+  Stage 3d checks.
+
+When copies of one Unique Geometry meet each other, or only one copy meets
+another part, name the copy: `<id>#<n>`, with `n` from 1 to the geometry's
+`count`. A mirror pair that meshes, such as two wing roots geared to each
+other, is a coupled Interface between `wing#1` and `wing#2`; a pinion that
+drives only the left wing joins `wing#1` and the pinion's geometry. Use the
+same names in `inside`, `outside`, `yielding` and the movers, and never put
+`wing` and `wing#1` in one Interface.
+
+A toy whose Components never meet has `"interfaces": []`. Never leave a
+meeting out: one the block does not name is one nobody checks before
+assembly.
 
 Check the drafted block against CONTRACT-FORMAT.md's row limits: at most 16
 assembly-scoped requirements, at most 4 per Unique Geometry, and the whole
@@ -212,6 +254,19 @@ For each image, take its alpha silhouette and check:
    37 mm. Make followed the numbers, and every part came out a different
    shape from its picture.
 
+6. **Reference Camera.** Estimate, by eye, the camera each image shows its
+   subject from: `[AZ, EL]` in degrees, in the Display Pose (assembly)
+   frame, rounded to 15 degrees, in the convention
+   [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md) gives (AZ -90 is
+   the front, 0 the right side; EL 90 looks straight down). For a component
+   image this is where the camera stands relative to the Component as it sits
+   in the assembled toy, not as it prints. Write the cue you read it from in
+   the working notes ("front and left faces visible, seen slightly from
+   above"), and the camera into the image's `references[]` entry. Make
+   renders the Component from exactly this camera beside its image, so a
+   camera that shows the wrong side wastes a run. There is no silhouette
+   pose search; the estimate is yours.
+
 A measurement is a **disagreement** when it is off by more than 5% of the
 dimension it measures and by more than 0.5 mm. The 0.5 mm floor is for small
 features, where 5% is less than the measuring error. Any count, side or
@@ -284,11 +339,31 @@ Any change to size, shape or stance amends the contract. When an image no
 longer shows what the contract says, fix the image by AI editing. Then redo
 Stage 3b for every image you touched, and the assembly image.
 
-Record every check in the working notes as a table: image, feature, size at
-contract scale, minimum, verdict, resolution.
+Then check every hidden joint the contract pins, which no image shows. For
+each Component, take its print stance and its bed face, and for each peg,
+socket, collar, pin or boss it carries:
 
-Done when: every feature the images show meets its minimum, every form has a
-support-free stance, and every change is in both the contract and the images.
+- **Nothing stands on the bed face.** A peg or collar on the bed face lifts
+  the part off the bed. Mating faces that print face down cannot also carry
+  pegs; move the pegs to the other side of the joint or change the stance.
+- **Nothing prints over air.** A collar, lip or boss that sticks out sideways
+  in the print stance hangs unsupported. A socket or pin hole that runs
+  parallel to the bed needs a teardrop or pointed top.
+- **Both sides agree.** The peg and its socket have the same axis and
+  position on the two mating Components, and the clearance is at least
+  0.2 mm a side.
+
+Resolve each problem with the list above. A resolution that moves a visible
+feature from one Component to another is a visible change: redo the images it
+touches. Compute the checks with a script only when the joints are too many to
+check reliably by hand.
+
+Record every check in the working notes as a table: image or joint, feature,
+size at contract scale, minimum, verdict, resolution.
+
+Done when: every feature the images show meets its minimum, every form and
+every hidden joint has a support-free stance, and every change is in both the
+contract and the images.
 
 ## Stage 3d - Check that the mechanism can move
 
@@ -352,14 +427,20 @@ check stops at its time limit and an unfinished sweep proves nothing:
 Record every check in the working notes as a table: check, parts, value,
 limit, verdict, resolution.
 
-Done when: every check passes on the contract as amended, and the motion plan
-is in the contract.
+Bring the Interfaces up to date with what you fixed: every mesh and every
+swept clearance is a coupled Interface whose pose table matches the sweep
+you just ran, and every envelope still holds its side through the travel.
+
+Done when: every check passes on the contract as amended, the motion plan is
+in the contract, and the Interfaces match it.
 
 ## Stage 4 - Visual review
 
 **Stop. This is the only approval gate.** Show the human every reference image
-at once, assembly first. Give each one a single line in plain words: what it is
-and how many parts use it ("ref-02 wheel - four of these"). Publish them as one
+at once, assembly first. Give each one a single line in plain words: what it is,
+how many parts use it, and the camera it is seen from with its cue
+("ref-02 wheel - four of these; seen from the front-left, slightly above
+(-60, 15)"). Approving the images approves these cameras. Publish them as one
 private Artifact page (load the `artifact-design` skill first) that works at
 phone width and shows the whole set in one look, and give the human its link
 plus each file path. Do not show the contract, the requirement rows, the

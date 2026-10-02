@@ -85,6 +85,11 @@ from workshop.release.renders import (
 )
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.role_agents import make_role_agent_files
+from workshop.make.role_guard import (
+    MAKE_ROUND_GUARD_MANAGER_IDS,
+    verify_component_round_nonces,
+    verify_make_round_guard,
+)
 from workshop.make.revision import (
     MAKE_INVENT_REVISION_CAPABILITY_PATH,
     NativeMakeInventRevision,
@@ -2695,6 +2700,185 @@ def _likeness_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]:
     if not isinstance(acceptances, list):
         raise StateConflict("Make gate receipt is malformed: %s" % latest.name)
     return acceptances
+
+
+_COMPONENT_ACCEPTANCE_FIELDS = frozenset(
+    {"label", "scope", "reviewer", "shape_rounds", "reason", "accepted_by"}
+)
+_COMPONENT_SHAPE_REPAIR_LIMIT = 5
+_WORKSHOP_MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
+
+
+def _verify_make_round_workers(
+    run_root: Path,
+    host_state_root: Path,
+    guard_sha256: Optional[str],
+    made: NativeMade,
+    *,
+    require_every_component: bool = False,
+    bind_reviewers: bool = False,
+) -> None:
+    """Refuse Make output holding a Component round no worker ran (ADR 0080).
+
+    A run created without the make_round guard keeps its frozen behaviour. A
+    changed guard is a host-state conflict; a round without an issued worker
+    nonce is a Make rejection the Manager repairs by rerunning it through a
+    component-worker. With ``bind_reviewers`` (issue #77) a recorded
+    Component Review whose reviewer is unproven is refused the same way.
+    """
+
+    if guard_sha256 is None:
+        return
+    verify_make_round_guard(host_state_root, guard_sha256)
+    project = (
+        Path(run_root)
+        .joinpath(*PurePosixPath(made.product_root).parts)
+        .joinpath(*PurePosixPath(made.cad_project_path).parts)
+    )
+    verify_component_round_nonces(
+        project,
+        host_state_root,
+        run_root=Path(run_root),
+        require_every_component=require_every_component,
+        bind_reviewers=bind_reviewers,
+    )
+
+
+def _made_component_acceptances(product: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Components accepted at the shape-repair limit, from sealed product metadata.
+
+    The Make finalizer copies them from the final verifier's hash-bound
+    ``component-acceptance.json``. Each one is a Component whose independent
+    reviewer still disagreed after the shape-repair allowance was spent. The
+    host checks their shape again before sealing them into its own receipt,
+    so a report never repeats an unbounded, self-reviewed or self-labelled
+    "user" acceptance.
+    """
+
+    raw = product.get("component_acceptances", ())
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence) or len(raw) > 64:
+        raise ContractError("Made component acceptances are invalid")
+    acceptances: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, Mapping) or set(item) != _COMPONENT_ACCEPTANCE_FIELDS:
+            raise ContractError("Made component acceptance fields are invalid")
+        label, scope, reason = item["label"], item["scope"], item["reason"]
+        reviewer, shape_rounds = item["reviewer"], item["shape_rounds"]
+        if (
+            not isinstance(label, str) or not 1 <= len(label.strip()) <= 200
+            or not label.startswith("geometry:")
+            or not isinstance(scope, str) or len(scope) > 200
+            or not scope.startswith("component:")
+            or not scope[len("component:"):].strip()
+            or not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= 200
+            or reviewer.strip().lower() in _WORKSHOP_MANAGER_NAMES
+            or type(shape_rounds) is not int
+            or shape_rounds < _COMPONENT_SHAPE_REPAIR_LIMIT
+            or not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 1000
+            or item["accepted_by"] != "workshop-manager"
+        ):
+            raise ContractError("Made component acceptance is invalid")
+        acceptances.append({key: item[key] for key in sorted(_COMPONENT_ACCEPTANCE_FIELDS)})
+    return acceptances
+
+
+_INTERFACE_PROOFS = {
+    "static": "shared-helper-samples",
+    "separable": "keep-out-envelope",
+    "coupled": "pass",
+}
+
+
+def _made_interfaces(product: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The sealed contract's Interfaces with how each was proven (ADR 0082).
+
+    The Make finalizer copies them from the final verifier's hash-bound
+    ``component-acceptance.json``. The host checks their shape again before
+    sealing them into its own receipt: a Coupled Interface is reported only
+    with a passing interface check.
+    """
+
+    raw = product.get("interfaces", ())
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence) or len(raw) > 64:
+        raise ContractError("Made interfaces are invalid")
+    interfaces: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in raw:
+        kind = item.get("kind") if isinstance(item, Mapping) else None
+        expected = {"id", "kind", "components", "check"} | (
+            {"yielding", "round"} if kind == "coupled" else set()
+        )
+        if not isinstance(item, Mapping) or set(item) != expected or kind not in _INTERFACE_PROOFS:
+            raise ContractError("Made interface fields are invalid")
+        identifier, components = item["id"], item["components"]
+        if (
+            not isinstance(identifier, str) or not 1 <= len(identifier) <= 200
+            or identifier in seen
+            or not isinstance(components, list) or len(components) < 2
+            or not all(isinstance(entry, str) and 1 <= len(entry) <= 200 for entry in components)
+            or len(set(components)) != len(components)
+            or item["check"] != _INTERFACE_PROOFS[kind]
+            or (kind == "coupled" and (
+                item["yielding"] not in components
+                or type(item["round"]) is not int or item["round"] < 1
+            ))
+        ):
+            raise ContractError("Made interface is invalid")
+        seen.add(identifier)
+        interfaces.append({key: item[key] for key in sorted(expected)})
+    return interfaces
+
+
+def _component_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The accepted Components of the current Make, from the host's own receipt."""
+
+    return _latest_make_check(host_state_root, "component_acceptances")
+
+
+def _contract_amendment_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """Every Reference Camera amendment the host recorded (ADR 0083), oldest
+    first: the file, what it shows, and the camera before and after."""
+
+    ledger = host_state_root / "host-corrections.jsonl"
+    if not ledger.exists():
+        return []
+    content = _read_stable_private_bytes(ledger, label="host corrections", maximum_bytes=1024 * 1024)
+    amendments = []
+    for line in content.splitlines():
+        record = json.loads(line)
+        if (record.get("kind") == "autonomous-workshop.host-correction"
+                and record.get("correction") == "reference-camera-amendment"):
+            amendments.append({key: record.get(key) for key in ("file", "shows", "from", "to", "sealed")})
+    return amendments
+
+
+def _interface_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The proven Interfaces of the current Make, from the host's own receipt."""
+
+    return _latest_make_check(host_state_root, "interfaces")
+
+
+def _latest_make_check(host_state_root: Path, key: str) -> list[dict[str, Any]]:
+    """One list the latest Make gate receipt sealed among its checks."""
+
+    gates = Path(host_state_root) / "gates"
+    if not gates.is_dir():
+        return []
+    receipts = sorted(
+        path for path in gates.iterdir()
+        if path.name.endswith("-make.json") and not path.is_symlink()
+    )
+    if not receipts:
+        return []
+    latest = receipts[-1]
+    try:
+        checks = json.loads(latest.read_bytes().decode("utf-8"))["evidence"]["checks"]
+        values = checks.get(key) or []
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        raise StateConflict("Make gate receipt is unreadable: %s" % latest.name) from exc
+    if not isinstance(values, list):
+        raise StateConflict("Make gate receipt is malformed: %s" % latest.name)
+    return values
 
 
 def _best_round(history: Sequence[Mapping[str, Any]]) -> Optional[Mapping[str, Any]]:
@@ -7419,6 +7603,15 @@ def _evaluate_make_stage(
             assignment, invented, expected_round=checkpoint.round_index
         )
         canonical = made.validate_product_tree(run.run_root)
+        _verify_make_round_workers(
+            run.run_root,
+            run.host_state_root,
+            checkpoint.make_round_guard_sha256,
+            made,
+            # Component-first Spark Make builds every Component in a round.
+            require_every_component=checkpoint.effort == "spark",
+            bind_reviewers=checkpoint.component_reviewer_binding,
+        )
         # Spark consumes Make's accepted output, not another engineering
         # acceptance pass. Keep only exact-byte and upstream identity checks.
         product_checks = {}
@@ -7435,6 +7628,12 @@ def _evaluate_make_stage(
         likeness_acceptances = _made_likeness_acceptances(made.product)
         if likeness_acceptances:
             product_checks["likeness_acceptances"] = likeness_acceptances
+        component_acceptances = _made_component_acceptances(made.product)
+        if component_acceptances:
+            product_checks["component_acceptances"] = component_acceptances
+        interfaces = _made_interfaces(made.product)
+        if interfaces:
+            product_checks["interfaces"] = interfaces
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -10067,6 +10266,13 @@ def _native_receipt(
     likeness_acceptances = (
         _likeness_acceptance_history(paths.host_state) if paths is not None else []
     )
+    component_acceptances = (
+        _component_acceptance_history(paths.host_state) if paths is not None else []
+    )
+    interfaces = _interface_history(paths.host_state) if paths is not None else []
+    contract_amendments = (
+        _contract_amendment_history(paths.host_state) if paths is not None else []
+    )
     local_release_run = False
     if paths is not None:
         try:
@@ -10283,6 +10489,9 @@ def _native_receipt(
         "kind": "native-agent-run",
         "rounds": rounds,
         "likeness_acceptances": likeness_acceptances,
+        "component_acceptances": component_acceptances,
+        "interfaces": interfaces,
+        "contract_amendments": contract_amendments,
         "product_id": checkpoint.product_id,
         "status": visible_status,
         "stage": visible_stage,
@@ -10571,6 +10780,9 @@ def start_native_run(
                 check_motion=check_motion,
                 carry_unchanged=carry_unchanged,
                 make_role_agents=make_role_agent_files(),
+                # ADR 0080: only runtimes whose hooks name the calling
+                # subagent can admit Component rounds by role.
+                make_round_guard=selected_manager.manager_id in MAKE_ROUND_GUARD_MANAGER_IDS,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.
@@ -10976,10 +11188,15 @@ def resume_native_run(
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
     check_motion: bool = False,
+    reference_cameras: Optional[Mapping[str, Sequence[float]]] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
     """Resume one exact native session under an exclusive host mutation lock.
+
+    reference_cameras answers a camera-mismatch need (ADR 0083): each sealed
+    reference file named is given a corrected Reference Camera, recorded as a
+    host amendment that changes only that camera, before the session resumes.
 
     The ignored keyword preserves source compatibility with the former
     optional-publication API; every resumed Release now requires publication.
@@ -11005,6 +11222,8 @@ def resume_native_run(
         raise ContractError("untimed turn option must be boolean")
     if turn_untimed and turn_seconds is not None:
         raise ContractError("choose an exact turn boundary or an untimed turn, not both")
+    if reference_cameras is not None and not isinstance(reference_cameras, Mapping):
+        raise ContractError("reference cameras must map a reference file to AZ,EL")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _combined_timing_observer(
@@ -11024,6 +11243,16 @@ def resume_native_run(
         if checkpoint.status in ("active", "waiting"):
             checkpoint = _adopt_resume_motion_policy(paths, run, checkpoint, check_motion)
             checkpoint = _adopt_resume_inspection_tools(paths, run, checkpoint)
+        if reference_cameras:
+            if checkpoint.status not in ("active", "waiting"):
+                raise StateConflict("a Reference Camera is amended only on an unfinished run")
+            for file_name, camera in sorted(reference_cameras.items()):
+                run.amend_reference_camera(
+                    file_name, camera,
+                    reason="workshop resume --reference-camera %s=%s"
+                    % (file_name, ",".join("%g" % float(value) for value in camera)),
+                )
+            checkpoint = run.snapshot()
         if adopt_turn_budget:
             _adopt_turn_budget(paths, checkpoint)
         if max_tokens is not None:

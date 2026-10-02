@@ -277,15 +277,25 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "one worker per Component",
             "only that Component's Design Contract rows",
             "10 lines or fewer",
-            "one reviewer thread per Component",
-            "same worker",
-            "Neither you nor a worker views",
-            "Workers never edit a shared helper",
-            "ask the reviewer for its visual check",
-            "`--record-visual`",
-            "This is the only other time you ask that Component's reviewer",
-            "--accept-likeness \"<reason>\" --acceptance-review <review.json>",
+            "Each Component has one reviewer",
+            # Issue #77: one bound reviewer, a fixed request, an unedited answer.
+            "Never spawn a second reviewer for a Component",
+            "The review request has one fixed shape and nothing else",
+            "never edit, filter or summarize the answer",
+            "`reviewer` is the reviewer's native agent id",
+            'tell the worker only "review recorded for round N"',
+            "Neither you nor a worker views a Component's rendered rounds",
+            "Workers never edit a shared file",
+            "--record-review <review.json>",
             "ADR 0077",
+            # ADR 0080: the worker authors, only it runs component rounds,
+            # and a contract contradiction is a need.
+            "In Spark you author no Component",
+            "The worker writes the first draft",
+            "may view its own sealed reference image once",
+            "Only a `component-worker` runs a component round",
+            "an Inventor never runs `make_round`",
+            "return a `waiting` need that quotes both statements",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, make)
@@ -296,9 +306,16 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         )
         self.assertIn("`component-worker`", constitution)
         self.assertIn("`component-reviewer`", constitution)
-        # Main keeps the likeness gate: no per-round review and no repair cap.
-        self.assertNotIn("--record-review", make)
-        self.assertNotIn("shape-repair limit", make)
+        self.assertIn("only a Component Worker runs a Component's", constitution)
+        skill = " ".join(
+            (
+                REPOSITORY
+                / ".agents/product-run/.agents/skills/autonomous-workshop/SKILL.md"
+            ).read_text(encoding="utf-8").split()
+        )
+        self.assertIn(
+            "two statements of the sealed Design Contract cannot both hold", skill
+        )
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:

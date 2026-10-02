@@ -600,6 +600,30 @@ class NativeCommandTest(unittest.TestCase):
             main(("resume", "wish-one", "--check-motion", "yes"))
         resume.assert_not_called()
 
+    def test_resume_passes_each_reference_camera_amendment(self):
+        with mock.patch(
+            "cli.main.resume_native_run", return_value=native_receipt()
+        ) as resume, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            main(("resume", "wish-one"))
+            self.assertNotIn("reference_cameras", resume.call_args.kwargs)
+            main(("resume", "wish-one", "--reference-camera", "ref-02-body.png=-90,15",
+                  "--reference-camera", "ref-03-arm.png=0,7.5"))
+        self.assertEqual(resume.call_args.kwargs["reference_cameras"],
+                         {"ref-02-body.png": (-90.0, 15.0), "ref-03-arm.png": (0.0, 7.5)})
+        for bad in ("ref-02-body.png", "ref-02-body.png=90", "=0,0", "ref-02-body.png=a,b"):
+            with self.subTest(bad=bad), mock.patch("cli.main.resume_native_run") as resume, \
+                    redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+                main(("resume", "wish-one", "--reference-camera", bad))
+            resume.assert_not_called()
+        stderr = StringIO()
+        with mock.patch("cli.main.resume_native_run") as resume, redirect_stderr(stderr), \
+                redirect_stdout(StringIO()):
+            result = main(("resume", "wish-one", "--reference-camera", "ref-02-body.png=0,0",
+                           "--reference-camera", "ref-02-body.png=90,0"))
+        self.assertNotEqual(result, 0)
+        self.assertIn("more than once", stderr.getvalue())
+        resume.assert_not_called()
+
     def test_wish_pins_an_explicit_inventor_in_the_immutable_wish(self):
         with mock.patch(
             "cli.main.generate_wish_id", return_value="wish-pinned-inventor"
@@ -879,6 +903,55 @@ class NativeCommandTest(unittest.TestCase):
             stdout.getvalue(),
         )
 
+    def test_run_text_reports_every_component_accepted_at_the_shape_limit(self):
+        stdout = StringIO()
+        receipt = native_receipt(status="completed", stage="release")
+        receipt["component_acceptances"] = [
+            {"label": "geometry:arm-right", "scope": "component:arm-right", "reviewer": "blind-critic",
+             "shape_rounds": 5, "reason": "Claws still read as paddles.", "accepted_by": "workshop-manager"},
+            "not a mapping",
+            {"label": "geometry:tail", "reviewer": "critic-2", "shape_rounds": "5", "reason": "Tail is short."},
+        ]
+        with mock.patch("cli.main.native_run_status", return_value=receipt), redirect_stdout(stdout):
+            main(("status", "wish-one"))
+        text = stdout.getvalue()
+        self.assertIn(
+            "Component accepted at the shape-repair limit: geometry:arm-right "
+            "(reviewer blind-critic, 5 shape rounds) — Claws still read as paddles.",
+            text,
+        )
+        self.assertIn(
+            "Component accepted at the shape-repair limit: geometry:tail "
+            "(reviewer critic-2, ? shape rounds) — Tail is short.",
+            text,
+        )
+        self.assertNotIn("Likeness accepted", text)
+
+    def test_run_text_lists_each_interface_and_how_it_was_proven(self):
+        stdout = StringIO()
+        receipt = native_receipt(status="completed", stage="release")
+        receipt["interfaces"] = [
+            {"id": "wing-housing", "kind": "separable", "components": ["wing", "spine-housing"],
+             "check": "keep-out-envelope"},
+            {"id": "pinion-sector", "kind": "coupled", "components": ["heart-core", "wing"],
+             "check": "pass", "round": 2, "yielding": "wing"},
+            {"id": "wing-peg", "kind": "static", "components": ["wing", "heart-core"],
+             "check": "shared-helper-samples"},
+            {"id": "wing-sector-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"],
+             "check": "pass", "round": 1, "yielding": "wing#2"},
+            "not a mapping",
+        ]
+        with mock.patch("cli.main.native_run_status", return_value=receipt), redirect_stdout(stdout):
+            main(("status", "wish-one"))
+        text = stdout.getvalue()
+        self.assertIn("Interface wing-housing (separable: wing + spine-housing): Keep-out Envelope "
+                      "checked in each side's component round", text)
+        self.assertIn("Interface pinion-sector (coupled: heart-core + wing): interface check pass at r0002", text)
+        self.assertIn("Interface wing-peg (static: wing + heart-core): Shared Helper samples passed the print gates",
+                      text)
+        # Issue #80: instances are listed by their instance names.
+        self.assertIn("Interface wing-sector-mesh (coupled: wing#1 + wing#2): interface check pass at r0001", text)
+
     def test_status_text_surfaces_actionable_publication_need(self):
         stdout = StringIO()
         receipt = native_receipt(status="waiting", stage="release")
@@ -1015,6 +1088,16 @@ def _contract_text(block=None, prose="# Antisol\n\nA toy about disc worlds.\n"):
     return "%s\n```design-contract\n%s\n```\n" % (prose, json.dumps(body, indent=2))
 
 
+def _contract_image(directory):
+    """The one image ``_contract_block`` lists, under the name it lists."""
+
+    from PIL import Image
+
+    path = Path(directory) / "ref-01-antisol.png"
+    Image.new("RGB", (64, 64), "red").save(path)
+    return path
+
+
 class WishContractCommandTest(unittest.TestCase):
     """``workshop wish --contract`` (ADR 0072, Delivery 2)."""
 
@@ -1029,13 +1112,67 @@ class WishContractCommandTest(unittest.TestCase):
             ), mock.patch(
                 "cli.main.start_native_run", return_value=native_receipt()
             ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
-                result = main(("wish", "--contract", str(contract_path)))
+                result = main(
+                    ("wish", "--contract", str(contract_path),
+                     "--ref", str(_contract_image(tmp)))
+                )
             self.assertEqual(result, 0)
             sealed_wish = start.call_args.args[0]
             self.assertEqual(sealed_wish.objective, text)
             self.assertIn("design_contract", sealed_wish.context)
             self.assertEqual(sealed_wish.context["design_contract"]["title"], "Antisol")
             self.assertIn("Contract Mode: sealed", stdout.getvalue())
+
+    def test_contract_images_seal_under_the_names_the_contract_lists(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            contract_path.write_text(_contract_text(), encoding="utf-8")
+            image = _contract_image(tmp)
+            with mock.patch(
+                "cli.main.generate_wish_id", return_value="wish-one"
+            ), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                result = main(
+                    ("wish", "--contract", str(contract_path), "--ref", str(image))
+                )
+            self.assertEqual(result, 0)
+            sealed_wish = start.call_args.args[0]
+            self.assertEqual(
+                [reference.name for reference in sealed_wish.references],
+                ["ref-01-antisol.png"],
+            )
+
+    def test_images_that_do_not_match_the_contract_refuse_and_start_no_run(self):
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            contract_path.write_text(_contract_text(), encoding="utf-8")
+            image = Path(tmp) / "antisol-front.png"
+            Image.new("RGB", (64, 64), "red").save(image)
+            with mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+                StringIO()
+            ), redirect_stderr(StringIO()) as stderr:
+                result = main(
+                    ("wish", "--contract", str(contract_path), "--ref", str(image))
+                )
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("ref-01-antisol-front.png", stderr.getvalue())
+            self.assertIn("ref-01-antisol.png", stderr.getvalue())
+
+    def test_a_contract_without_its_images_refuses_and_starts_no_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract_path = Path(tmp) / "CONTRACT.md"
+            contract_path.write_text(_contract_text(), encoding="utf-8")
+            with mock.patch("cli.main.start_native_run") as start, redirect_stdout(
+                StringIO()
+            ), redirect_stderr(StringIO()) as stderr:
+                result = main(("wish", "--contract", str(contract_path)))
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("lists 1 reference image(s) but 0 were given", stderr.getvalue())
 
     def test_a_contract_that_does_not_parse_refuses_and_starts_no_run(self):
         with tempfile.TemporaryDirectory() as tmp:
