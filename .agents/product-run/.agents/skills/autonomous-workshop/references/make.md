@@ -158,7 +158,9 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    With the shared files, copy the printable detail library into the
    project; workers build rivets, bosses, low domes, bands, rims, pipe ribs,
-   inset panels, lancet windows and grille slits with it instead of by hand:
+   inset panels, lancet windows, grille slits and teardrop bores with it
+   instead of by hand, and blunt every point, chisel, keel and rib end to a
+   land one minimum wall across with its `blunt_tip` and `rib_end`:
 
    ```bash
    "$WORKSHOP_PYTHON" .agents/skills/print-details/scripts/print_details.py --install <cad-project>

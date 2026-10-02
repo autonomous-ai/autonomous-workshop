@@ -65,6 +65,11 @@ Drive to a written spec containing:
   not decided, decide it.
 - **Envelope, wall thickness, print stance.** Name each geometry's print
   stance by the face that lies on the bed.
+- **Blunt free edges.** Every point, chisel, keel and V underside ends in a
+  flat land at least one minimum wall across: 0.8 mm at Workshop's 0.4 mm
+  nozzle. A wing tip, a horn, a crest feather or a vault ridge is drawn and
+  specified with that land, never as a knife edge. The print gate fails every
+  straight knife edge as a thin wall, however its angle is tuned.
 - **Every joint, pinned.** For each pair of Components that join: the joint
   type (peg and socket, collar, pin, snap, glue face), its dimensions and
   clearance in mm, and where it sits on both mating Components. Make builds
@@ -113,7 +118,14 @@ Draft the block per
 entry per item on the unique-geometry list, and one `requirements[]` row for
 every checkable claim the prose decided — a dimension, a count, a wall
 thickness, a clearance, a joint range, a joint's geometry, a print stance, a
-visible feature. Check the block against the prose line by line,
+visible feature.
+
+Every contract's prose carries the blunt-edge rule, word for word, in its
+print section: "Every point, chisel, keel and V underside ends in a flat land
+at least 0.8 mm across (one minimum wall at a 0.4 mm nozzle)." Use the
+contract's own minimum wall when it is larger. A requirement row that names a
+sharp form says so too: "each wing ends in a chisel tip with a 0.8 mm land",
+never "a sharp chisel tip". Check the block against the prose line by line,
 not just against itself: a block that leaves out a decided number or feature
 lets the run drift, and nobody downstream reads the prose closely enough to
 notice. Name each
@@ -315,6 +327,7 @@ limits:
 | Feature | Minimum |
 |---|---|
 | A solid thin member: a bar, rib, claw, shaft, blade edge or wall | 0.8 mm across |
+| The end of a point, chisel, keel, crest, ridge or V underside | a flat land 0.8 mm across |
 | A gap, slot, slit or opening meant to stay open | 0.5 mm |
 | Raised or sunk decoration: a rivet, boss, ridge or groove | 1.0 mm across |
 
