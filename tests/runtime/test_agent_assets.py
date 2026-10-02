@@ -317,6 +317,35 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "two statements of the sealed Design Contract cannot both hold", skill
         )
 
+    def test_the_root_never_ends_its_turn_while_a_worker_or_reviewer_runs(self):
+        # Issue #85: an ended turn is not a wait; the session can end before
+        # a background worker reports, losing its round.
+        make = " ".join(
+            (
+                REPOSITORY
+                / ".agents/product-run/.agents/skills/autonomous-workshop"
+                / "references/make.md"
+            ).read_text(encoding="utf-8").split()
+        )
+        constitution = " ".join(
+            (REPOSITORY / ".agents/product-run/AGENTS.md").read_text(
+                encoding="utf-8"
+            ).split()
+        )
+        for name, text in (("make", make), ("constitution", constitution)):
+            for required in (
+                "Never end your turn while a Component Worker or a Component "
+                "Reviewer request is still running",
+                "end your turn only on a stage proposal, a recorded need",
+                "or a host stop",
+                "An ended turn is not a wait",
+                "On Claude Code",
+                "`timeout: 600000`",
+                'time.sleep(300)"',
+            ):
+                with self.subTest(name=name, required=required):
+                    self.assertIn(required, text)
+
     def test_the_reviewer_reads_the_contract_from_its_packet_and_lists_reference_conflicts(self):
         # ADR 0084: the Design Contract wins over a reference image.
         def text(*parts):

@@ -819,6 +819,37 @@ class AgentRunTest(unittest.TestCase):
         )
         self.assertEqual(reopened.snapshot(), checkpoint)
 
+    def test_a_claude_run_materializes_the_never_end_a_turn_on_live_workers_rule(self):
+        # Issue #85: the rule reaches a Claude Code run in both the
+        # constitution and the Make reference.
+        import workshop.workflow.native_run as host
+        assets = host.product_run_agent_assets()
+        run = AgentRun.create(
+            self.run_root, host_state_root=self.host_state_root,
+            product_id=self.product_id, wish_bytes=self.wish_bytes,
+            product_run_constitution_source=assets.constitution,
+            skill_root=assets.skill_root,
+            domain_skill_roots=host.product_run_domain_skill_roots(),
+            inventor_source_root=host._product_run_inventor_source_root(assets),
+            manager_id="claude",
+        )
+        inputs = run.snapshot().input_sha256s
+        for relative in (
+            "AGENTS.md",
+            ".agents/skills/autonomous-workshop/references/make.md",
+        ):
+            with self.subTest(relative=relative):
+                self.assertIn(relative, inputs)
+                text = " ".join(
+                    (run.run_root / relative).read_text(encoding="utf-8").split()
+                )
+                self.assertIn(
+                    "Never end your turn while a Component Worker or a "
+                    "Component Reviewer request is still running",
+                    text,
+                )
+                self.assertIn("On Claude Code", text)
+
     def test_a_codex_run_gets_no_claude_agents(self):
         run = self.create(make_role_agents=make_role_agent_files())
         self.assertFalse((run.run_root / ".claude").exists())

@@ -196,6 +196,17 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   no polling at all. This rule is repeated in `references/make.md`; it lives
   here because a compaction drops that file from the session and this file
   survives.
+- Never end your turn while a Component Worker or a Component Reviewer
+  request is still running. Wait for it with the long wait, record what it
+  returns, and end your turn only on a stage proposal, a recorded need, or a
+  host stop. An ended turn is not a wait: the session can end before the
+  agent reports, and its round is lost. On Claude Code, a background agent's
+  result arrives as a notification only after your current tool call
+  returns; when nothing is left to do but wait, run one foreground `Bash`
+  wait with `timeout: 600000`, `"$WORKSHOP_PYTHON" -c "import time;
+  time.sleep(300)"`, read every notification it returns with, and repeat
+  until each running agent has reported. This rule is repeated in
+  `references/make.md` for the same reason as the waiting rule above.
 - Keep every tool subprocess attached to the Manager's dedicated POSIX process
   session. Do not daemonize, detach, call `setsid`/`start_new_session`, or leave
   a background process running after a tool returns. Host timeout recovery
